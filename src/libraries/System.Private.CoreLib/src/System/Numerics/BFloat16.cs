@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Numerics
 {
     /// <summary>
@@ -133,6 +135,86 @@ namespace System.Numerics
 
         // BFloat is effectively a truncation of Single, with lower 16 bits of mantissa truncated.
         // Delegating all operations to Single should be correct and effective.
+
+        // INumberBase
+
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsFinite(BFloat16 value)
+        {
+            uint bits = value._value;
+            return (~bits & PositiveInfinityBits) != 0;
+        }
+
+        /// <summary>Determines whether the specified value is infinite.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInfinity(BFloat16 value)
+        {
+            uint bits = value._value;
+            return (bits & ~SignMask) == PositiveInfinityBits;
+        }
+
+        /// <summary>Determines whether the specified value is NaN.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNaN(BFloat16 value)
+        {
+            uint bits = value._value;
+            return (bits & ~SignMask) > PositiveInfinityBits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(BFloat16 value)
+        {
+            uint bits = value._value;
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
+        }
+
+        /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNegative(BFloat16 value)
+        {
+            return (short)(value._value) < 0;
+        }
+
+        /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNegativeInfinity(BFloat16 value)
+        {
+            return value._value == NegativeInfinityBits;
+        }
+
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNormal(BFloat16 value)
+        {
+            uint bits = value._value;
+            return (ushort)((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
+        }
+
+        /// <summary>Determines whether the specified value is positive infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPositiveInfinity(BFloat16 value)
+        {
+            return value._value == PositiveInfinityBits;
+        }
+
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsSubnormal(BFloat16 value)
+        {
+            uint bits = value._value;
+            return (ushort)((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsZero(BFloat16 value)
+        {
+            uint bits = value._value;
+            return (bits & ~SignMask) == 0;
+        }
 
         // Comparison
 
