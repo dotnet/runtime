@@ -32,6 +32,7 @@ import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -125,6 +126,7 @@ async function instantiateWasmWorker(
     await loaderHelpers.afterConfigLoaded.promise;
 
     replace_linker_placeholders(imports);
+    replaceEmscriptenPThreadInit();
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
@@ -268,12 +270,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         Module.runtimeKeepalivePush();
 
-        // load runtime and apply environment settings (if necessary)
+        // load mono runtime and apply environment settings (if necessary)
         await start_runtime();
-
-        if (runtimeHelpers.config.interpreterPgo) {
-            await interp_pgo_load_data();
-        }
 
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
@@ -515,12 +513,12 @@ export async function start_runtime() {
 
         if (WasmEnableThreads) {
             monoThreadInfo.isAttached = true;
+            monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
-            monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
-            monoThreadInfo.workerNumber = 0;
+            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
             runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
-            runtimeHelpers.isCurrentThread = true;
+            runtimeHelpers.isManagedRunningOnCurrentThread = true;
 
             // start finalizer thread, lazy
             init_finalizer_thread();
@@ -528,6 +526,10 @@ export async function start_runtime() {
 
         // get GCHandle of the ctx
         runtimeHelpers.afterMonoStarted.promise_control.resolve(runtimeHelpers.proxyGCHandle);
+
+        if (runtimeHelpers.config.interpreterPgo) {
+            await interp_pgo_load_data();
+        }
 
         endMeasure(mark, MeasuredBlock.startRuntime);
     } catch (err) {
