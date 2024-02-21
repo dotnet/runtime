@@ -379,7 +379,7 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
 // If nonzero, use the greedy RL policy.
 //
-CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
+CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 1)
 
 // If nonzero, dump out details of parameterized policy evaluation and
 // gradient updates
