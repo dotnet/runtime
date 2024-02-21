@@ -407,14 +407,20 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         else
         {
         TOO_BIG_TO_UNROLL:
+            if (blkNode->IsZeroingGcPointersOnHeap())
+            {
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            }
+            else
+            {
 #ifdef TARGET_AMD64
-            blkNode->gtBlkOpKind =
-                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindHelper;
+                LowerBlockStoreAsHelperCall(blkNode);
+                return;
 #else
-            // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-            blkNode->gtBlkOpKind =
-                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindRepInstr;
+                // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
 #endif
+            }
         }
     }
     else
@@ -513,7 +519,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
 #ifdef TARGET_AMD64
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
 #else
             // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
@@ -522,13 +529,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
 
     assert(blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindInvalid);
-
-#ifndef TARGET_X86
-    if ((MIN_ARG_AREA_FOR_CALL > 0) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper))
-    {
-        RequireOutgoingArgSpace(blkNode, MIN_ARG_AREA_FOR_CALL);
-    }
-#endif
 }
 
 //------------------------------------------------------------------------
