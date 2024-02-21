@@ -22,6 +22,7 @@ import csv
 import datetime
 import locale
 import logging
+import math
 import os
 import multiprocessing
 import platform
@@ -505,7 +506,7 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 def read_csv(path):
-    with open(path) as csv_file:
+    with open(path, encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file)
         return list(reader)
 
@@ -1806,10 +1807,10 @@ def compute_pct(base, diff):
     else:
         return 0.0
 
-def format_pct(pct):
+def format_pct(pct, num_decimals = 2):
     plus_if_positive = "+" if pct > 0 else ""
 
-    text = "{}{:.2f}%".format(plus_if_positive, pct)
+    text = "{}{:.{prec}f}%".format(plus_if_positive, pct, prec=num_decimals)
     if pct != 0:
         color = "red" if pct > 0 else "green"
         return html_color(color, text)
@@ -1864,8 +1865,9 @@ def aggregate_diff_metrics(details):
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
-                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diff executed instructions": 0,
-                    "Diffed contexts": 0}
+                    "Contexts with diffs": 0, "Diffed code bytes": 0,
+                    "Diffed PerfScore" : 0.0, "Relative PerfScore Geomean": 0.0,
+                    "Diff executed instructions": 0, "Diffed contexts": 0}
     base_fullopts = base_minopts.copy()
 
     diff_minopts = base_minopts.copy()
@@ -1909,6 +1911,16 @@ def aggregate_diff_metrics(details):
             base_dict["Diff executed instructions"] += base_insts
             diff_dict["Diff executed instructions"] += diff_insts
 
+            base_perfscore = float(row["Base PerfScore"])
+            diff_perfscore = float(row["Diff PerfScore"])
+            base_dict["Diffed PerfScore"] += base_perfscore
+            diff_dict["Diffed PerfScore"] += diff_perfscore
+
+            if base_perfscore > 0:
+                log_relative_perfscore = math.log(diff_perfscore / base_perfscore)
+                base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+                diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+
             base_dict["Diffed contexts"] += 1
             diff_dict["Diffed contexts"] += 1
 
@@ -1923,6 +1935,18 @@ def aggregate_diff_metrics(details):
     diff_overall = diff_minopts.copy()
     for k in diff_overall.keys():
         diff_overall[k] += diff_fullopts[k]
+
+    for d in [base_overall, base_minopts, base_fullopts, diff_overall, diff_minopts, diff_fullopts]:
+        sum_of_logs = d["Relative PerfScore Geomean"]
+        if d["Diffed contexts"] > 0:
+            d["Relative PerfScore Geomean"] = math.exp(sum_of_logs / d["Diffed contexts"])
+        else:
+            d["Relative PerfScore Geomean"] = 1
+
+        if d["Contexts with diffs"] > 0:
+            d["Relative PerfScore Geomean (Diffs)"] = math.exp(sum_of_logs / d["Contexts with diffs"])
+        else:
+            d["Relative PerfScore Geomean (Diffs)"] = 1
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
             {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
@@ -2265,6 +2289,21 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
                         logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                        logging.info("")
+
+                        base_perfscore = base_metrics["Overall"]["Diffed PerfScore"]
+                        diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
+                        logging.info("Total PerfScore of base: {}".format(base_perfscore))
+                        logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
+                        delta_perfscore = diff_perfscore - base_perfscore
+                        logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        logging.info("")
+
+                        relative_perfscore_geomean = diff_metrics["Overall"]["Relative PerfScore Geomean"]
+                        logging.info("Relative PerfScore Geomean: {:.4%}".format(relative_perfscore_geomean - 1))
+                        relative_perfscore_geomean_diffs = diff_metrics["Overall"]["Relative PerfScore Geomean (Diffs)"]
+                        logging.info("Relative PerfScore Geomean (Diffs): {:.4%}".format(relative_perfscore_geomean_diffs - 1))
+                        logging.info("")
 
                     try:
                         current_text_diff = text_differences.get_nowait()
@@ -2289,6 +2328,10 @@ class SuperPMIReplayAsmDiffs:
                                 if self.coreclr_args.metrics:
                                     for metric in self.coreclr_args.metrics:
                                         command += [ "--metrics", metric ]
+
+                                    if self.coreclr_args.metrics == ["PerfScore"]:
+                                        command += [ "--override-total-base-metric", str(base_perfscore), "--override-total-diff-metric", str(diff_perfscore) ]
+
                                 elif base_bytes is not None and diff_bytes is not None:
                                     command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
 
@@ -2492,19 +2535,20 @@ class SuperPMIReplayAsmDiffs:
                 sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
-                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
-                    write_fh.write("|---|--:|--:|\n")
+                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore in Diffs\n")
+                    write_fh.write("|---|--:|--:|--:|\n")
                     for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
                         # Exclude this particular row?
                         if not has_diffs(diff_metrics[row]):
                             continue
 
-                        write_fh.write("|{}|{:,d}|{}|\n".format(
+                        write_fh.write("|{}|{:,d}|{}|{}|\n".format(
                             mch_file,
                             base_metrics[row]["Diffed code bytes"],
                             format_delta(
                                 base_metrics[row]["Diffed code bytes"],
-                                diff_metrics[row]["Diffed code bytes"])))
+                                diff_metrics[row]["Diffed code bytes"]),
+                            format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100)))
 
             write_top_context_section()
             write_pivot_section("Overall")
@@ -2523,26 +2567,27 @@ class SuperPMIReplayAsmDiffs:
             with DetailsSection(write_fh, "Details"):
                 if any_diffs:
                     write_fh.write("#### Improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|PerfScore Overall (FullOpts)|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
 
-                    def write_row(name, diffs):
+                    def write_row(name, diffs, perfscore_geomean):
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
                         (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
                             name,
                             len(diffs),
                             html_color("green", "{:,d}".format(num_improvements)),
                             html_color("red", "{:,d}".format(num_regressions)),
                             html_color("blue", "{:,d}".format(num_same)),
                             html_color("green", "-{:,d}".format(byte_improvements)),
-                            html_color("red", "+{:,d}".format(byte_regressions))))
+                            html_color("red", "+{:,d}".format(byte_regressions)),
+                            "" if perfscore_geomean is None else format_pct(perfscore_geomean, 4)))
 
-                    for (mch_file, _, _, diffs, _, _) in asm_diffs:
-                        write_row(mch_file, diffs)
+                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                        write_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] * 100 - 100)
 
                     if len(asm_diffs) > 1:
-                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs], None)
 
                     write_fh.write("\n---\n\n")
 
@@ -2667,7 +2712,7 @@ class SuperPMIReplayAsmDiffs:
 
         # If there are non-default metrics then we need to disassemble
         # everything so that jit-analyze can handle those.
-        if self.coreclr_args.metrics is not None:
+        if self.coreclr_args.metrics is not None and self.coreclr_args.metrics != ["PerfScore"]:
             contexts = diffs
             examples = []
         else:
@@ -2685,22 +2730,29 @@ class SuperPMIReplayAsmDiffs:
             smallest_contexts = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
             display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
 
-            # Order by byte-wise improvement, largest improvements first
-            by_diff_size = sorted(diffs, key=lambda r: int(r["Diff size"]) - int(r["Base size"]))
-            # 20 top improvements, byte-wise
-            top_improvements_bytes = by_diff_size[:20]
-            # 20 top regressions, byte-wise
-            top_regressions_bytes = by_diff_size[-20:]
+            if self.coreclr_args.metrics is None:
+                base_metric_name = "Base size"
+                diff_metric_name = "Diff size"
+            else:
+                base_metric_name = "Base PerfScore"
+                diff_metric_name = "Diff PerfScore"
 
-            display_subset("Top {} improvements, byte-wise:", top_improvements_bytes)
-            display_subset("Top {} regressions, byte-wise:", top_regressions_bytes)
+            # Order by improvement, largest improvements first
+            by_diff = sorted(diffs, key=lambda r: float(r[diff_metric_name]) - float(r[base_metric_name]))
+            # 20 top improvements
+            top_improvements = by_diff[:20]
+            # 20 top regressions
+            top_regressions = by_diff[-20:]
+
+            display_subset("Top {} improvements:", top_improvements)
+            display_subset("Top {} regressions:", top_regressions)
 
             # Order by percentage-wise size improvement, largest improvements first
             def diff_pct(r):
-                base = int(r["Base size"])
+                base = float(r[base_metric_name])
                 if base == 0:
                     return 0
-                diff = int(r["Diff size"])
+                diff = float(r[diff_metric_name])
                 return (diff - base) / base
 
             by_diff_size_pct = sorted(diffs, key=diff_pct)
@@ -2722,7 +2774,7 @@ class SuperPMIReplayAsmDiffs:
 
             example_improvements = by_diff_size_pct_examples[:3]
             example_regressions = by_diff_size_pct_examples[3:][-3:]
-            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
+            contexts = smallest_contexts + top_improvements + top_regressions + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
             examples = example_improvements + example_regressions
 
         final_contexts_indices = list(set(int(r["Context"]) for r in contexts))

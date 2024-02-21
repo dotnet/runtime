@@ -43,6 +43,11 @@
     <DefaultSubsets Condition="('$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+tools+host+packs</DefaultSubsets>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- If we're building in the VMR, then we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
+    <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
+  </PropertyGroup>
+
   <!-- Init _subset here to allow RuntimeFlavor to be set as early as possible -->
   <PropertyGroup>
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
@@ -79,7 +84,7 @@
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+libs.pretest</DefaultLibrariesSubsets>
-    <!-- Respect the DotNetBuildTests product flag when building the product. --> 
+    <!-- Respect the DotNetBuildTests product flag when building the product. -->
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildTests)' == 'true'">$(DefaultLibrariesSubsets)+libs.tests</DefaultLibrariesSubsets>
 
     <DefaultToolsSubsets>tools.illink</DefaultToolsSubsets>
@@ -391,7 +396,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(PgoInstrument)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(RuntimeFlavor)' != 'Mono'"/>
   </ItemGroup>
@@ -448,7 +453,7 @@
     <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(PgoInstrument)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
@@ -508,10 +513,10 @@
 
   <Choose>
     <When Condition="$(_subset.Contains('+packs.product+'))">
-      <ItemGroup Condition="'$(PgoInstrument)' != 'true'">
+      <ItemGroup Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj" />
       </ItemGroup>
-      <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(PgoInstrument)' != 'true'">
+      <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
@@ -521,7 +526,7 @@
         <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />
       </ItemGroup>
       <ItemGroup>
-        <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(PgoInstrument)' != 'true'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
+        <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
       </ItemGroup>
       <ItemGroup>
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
@@ -531,12 +536,12 @@
     </When>
   </Choose>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.installers+')) AND '$(PgoInstrument)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+packs.installers+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\installers.proj" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" Category="packs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.tests+')) AND '$(PgoInstrument)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+packs.tests+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
   </ItemGroup>

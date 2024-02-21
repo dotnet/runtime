@@ -462,7 +462,13 @@ namespace System.Runtime.CompilerServices
 
         // Additional conditional fields (see methodtable.h).
         // m_pModule
-        // m_pAuxiliaryData
+
+        /// <summary>
+        /// A pointer to auxiliary data that is cold for method table.
+        /// </summary>
+        [FieldOffset(AuxiliaryDataOffset)]
+        public MethodTableAuxiliaryData* AuxiliaryData;
+
         // union {
         //   m_pEEClass (pointer to the EE class)
         //   m_pCanonMT (pointer to the canonical method table)
@@ -522,6 +528,12 @@ namespace System.Runtime.CompilerServices
             ;
 
         private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
+
+#if TARGET_64BIT
+        private const int AuxiliaryDataOffset = 0x20 + DebugClassNamePtr;
+#else
+        private const int AuxiliaryDataOffset = 0x18 + DebugClassNamePtr;
+#endif
 
 #if TARGET_64BIT
         private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
@@ -608,6 +620,28 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+    }
+
+    // Subset of src\vm\methodtable.h
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct MethodTableAuxiliaryData
+    {
+        [FieldOffset(0)]
+        private uint Flags;
+
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0001;     // Is any field type or sub field type overrode Equals or GetHashCode
+        private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+
+        public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
+
+        public bool CanCompareBitsOrUseFastGetHashCode
+        {
+            get
+            {
+                Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
+                return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
     }
 
     /// <summary>
