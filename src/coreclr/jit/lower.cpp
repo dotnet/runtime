@@ -1860,7 +1860,8 @@ GenTree* Lowering::AddrGen(void* addr)
 bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
-    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
+    assert(call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ||
+           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove));
 
     assert(call->gtArgs.CountUserArgs() == 3);
 
@@ -2215,15 +2216,21 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    GenTree* nextNode = nullptr;
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        GenTree*       nextNode = nullptr;
-        NamedIntrinsic ni       = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
+        NamedIntrinsic ni = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
         if (((ni == NI_System_Buffer_Memmove) && LowerCallMemmove(call, &nextNode)) ||
             ((ni == NI_System_SpanHelpers_SequenceEqual) && LowerCallMemcmp(call, &nextNode)))
         {
             return nextNode;
         }
+    }
+
+    // Try to lower CORINFO_HELP_MEMCPY to unrollable STORE_BLK
+    if (call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
+    {
+        return nextNode;
     }
 #endif
 
