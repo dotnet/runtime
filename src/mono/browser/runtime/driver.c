@@ -227,93 +227,61 @@ mono_wasm_load_runtime (int debug_level)
 	bindings_initialize_internals();
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_invoke_method (MonoMethod *method, void* args, MonoString **out_exc)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 {
 	PVOLATILE(MonoObject) temp_exc = NULL;
 
 	void *invoke_args[1] = { args };
-	int is_err = 0;
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_runtime_invoke (method, NULL, args ? invoke_args : NULL, (MonoObject **)&temp_exc);
 
 	// this failure is unlikely because it would be runtime error, not application exception.
 	// the application exception is passed inside JSMarshalerArguments `args`
-	if (temp_exc && out_exc) {
+	// so, if that happens, we should abort the runtime
+	if (temp_exc) {
 		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
-		if (exc2)
-			store_volatile((MonoObject**)out_exc, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
-		is_err = 1;
-	}
-	MONO_EXIT_GC_UNSAFE;
-	return is_err;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
-{
-	MonoImage *image;
-	MonoMethod *method;
-
-	MONO_ENTER_GC_UNSAFE;
-	image = mono_assembly_get_image (assembly);
-	uint32_t entry = mono_image_get_entry_point (image);
-	if (!entry)
-		goto end;
-
-	mono_domain_ensure_entry_assembly (root_domain, assembly);
-	method = mono_get_method (image, entry, NULL);
-
-	/*
-	 * If the entry point looks like a compiler generated wrapper around
-	 * an async method in the form "<Name>" then try to look up the async methods
-	 * "<Name>$" and "Name" it could be wrapping.  We do this because the generated
-	 * sync wrapper will call task.GetAwaiter().GetResult() when we actually want
-	 * to yield to the host runtime.
-	 */
-	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
-		const char *name = mono_method_get_name (method);
-		int name_length = strlen (name);
-
-		if ((*name != '<') || (name [name_length - 1] != '>'))
-			goto end;
-
-		MonoClass *klass = mono_method_get_class (method);
-		assert(klass);
-		char *async_name = malloc (name_length + 2);
-		snprintf (async_name, name_length + 2, "%s$", name);
-
-		// look for "<Name>$"
-		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
-		if (async_method != NULL) {
-			free (async_name);
-			method = async_method;
-			goto end;
+		store_volatile((MonoObject**)&temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
+		if (exc2) {
+			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_jsexport unexpected double fault", 1, NULL);
+		} else {
+			mono_wasm_trace_logger ("jsinterop", "critical", mono_string_to_utf8((MonoString*)temp_exc), 1, NULL);
 		}
-
-		// look for "Name" by trimming the first and last character of "<Name>"
-		async_name [name_length - 1] = '\0';
-		async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
-
-		free (async_name);
-		if (async_method != NULL)
-			method = async_method;
+		abort ();
 	}
-
-	end:
 	MONO_EXIT_GC_UNSAFE;
-	if (auto_insert_breakpoint)
-	{
-		MonoAssemblyName *aname = mono_assembly_get_name (assembly);
-		const char *name = mono_assembly_name_get_name (aname);
-		if (name != NULL)
-			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
-	}
-	return method;
 }
+
+#ifndef DISABLE_THREADS
+
+extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
+static void
+mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
+{
+	mono_wasm_invoke_jsexport (method, args);
+	// TODO assert receiver_should_free ?
+	if (args)
+		free (args);
+}
+
+// async
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
+}
+
+// sync
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport, method, args);
+}
+
+#endif /* DISABLE_THREADS */
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoString **result)
@@ -441,7 +409,9 @@ mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
+	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
+	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 
@@ -499,11 +469,19 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 // JS is responsible for freeing this
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
-	return mono_method_get_full_name(method);
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_full_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
-	return mono_method_get_name(method);
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE float mono_wasm_get_f32_unaligned (const float *src) {

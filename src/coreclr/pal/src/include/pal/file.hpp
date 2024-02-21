@@ -127,31 +127,6 @@ namespace CorUnix
         );
 
     /*++
-    InternalFgets
-    Wraps fgets
-    --*/
-    char *
-    InternalFgets(
-        char *sz,
-        int nSize,
-        FILE *f,
-        bool fTextMode
-        );
-
-    /*++
-    InternalFwrite
-    Wraps fwrite
-    --*/
-    size_t
-    InternalFwrite(
-        const void *pvBuffer,
-        size_t nSize,
-        size_t nCount,
-        FILE *f,
-        INT *pnErrorCode
-        );
-
-    /*++
     InternalOpen
     Wraps open
     --*/
@@ -223,15 +198,6 @@ Return value:
     TRUE on success, FALSE on failure
 --*/
 BOOL FILEInitStdHandles(void);
-
-/*++
-FILECleanupStdHandles
-
-Close primary handles for stdin, stdout and stderr
-
-(no parameters, no return value)
---*/
-void FILECleanupStdHandles(void);
 
 /*++
 
