@@ -1919,7 +1919,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     // Convert lenCns to bytes
     ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
-    if (CheckedOps::MulOverflows<target_ssize_t>((target_ssize_t)lenCns, (target_ssize_t)lengthScale,
+    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale,
                                                  CheckedOps::Signed))
     {
         // lenCns overflows
