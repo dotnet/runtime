@@ -462,14 +462,15 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void ResolveOrRejectPromise(JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
+            ref JSMarshalerArgument exc = ref arguments[0];
 #if FEATURE_WASM_MANAGED_THREADS
+            exc.slot.CallerNativeTID = targetContext.NativeTID;
+
             if (targetContext.IsCurrentThread())
 #endif
             {
                 fixed (JSMarshalerArgument* ptr = arguments)
                 {
-                    ref JSMarshalerArgument exc = ref arguments[0];
-                    exc.slot.CallerNativeTID = targetContext.NativeTID;
                     Interop.Runtime.ResolveOrRejectPromise((nint)ptr);
                     if (exc.slot.Type != MarshalerType.None)
                     {
@@ -481,9 +482,7 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 // meaning JS side needs to dispose it
-                ref JSMarshalerArgument exc = ref arguments[0];
                 exc.slot.ReceiverShouldFree = true;
-                exc.slot.CallerNativeTID = targetContext.NativeTID;
 
                 // this copy is freed in mono_wasm_resolve_or_reject_promise
                 var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
