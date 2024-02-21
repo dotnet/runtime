@@ -315,6 +315,21 @@ namespace System.Tests
             Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
+        [Fact]
+        public static void StructWithNestedOverriddenNotBitwiseComparableNext()
+        {
+            StructWithNestedOverriddenNotBitwiseComparable obj1 = new StructWithNestedOverriddenNotBitwiseComparable();
+            obj1.value1.value = 0.0;
+            obj1.value2.value = 1.0;
+
+            StructWithNestedOverriddenNotBitwiseComparable obj2 = new StructWithNestedOverriddenNotBitwiseComparable();
+            obj1.value1.value = -0.0;
+            obj1.value2.value = 1.0;
+
+            Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
+        }
+
         public struct S
         {
             public int x;
@@ -412,6 +427,21 @@ namespace System.Tests
         {
             public object o;
             public StructNonOverriddenEqualsOrGetHasCode value;
+        }
+
+        public struct StructOverriddenNotBitwiseComparable
+        {
+            public double value;
+
+            public override bool Equals(object obj) => obj is StructOverriddenNotBitwiseComparable other && value.Equals(other.value);
+
+            public override int GetHashCode() => value.GetHashCode();
+        }
+
+        public struct StructWithNestedOverriddenNotBitwiseComparable
+        {
+            public StructOverriddenNotBitwiseComparable value1;
+            public StructOverriddenNotBitwiseComparable value2;
         }
     }
 }
