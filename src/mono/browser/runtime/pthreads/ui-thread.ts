@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { } from "../globals";
-import { mono_log_warn } from "../logging";
+import { mono_log_debug, mono_log_warn } from "../logging";
 import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseAndController, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
@@ -148,10 +148,11 @@ export async function mono_wasm_init_threads() {
     if (!WasmEnableThreads) return;
 
     // setup the UI thread
-    monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
+    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
     monoThreadInfo.threadName = "UI Thread";
     monoThreadInfo.isUI = true;
     monoThreadInfo.isRunning = true;
+    monoThreadInfo.workerNumber = 0;
     update_thread_info();
 
     // wait until all workers in the pool are loaded - ready to be used as pthread synchronously
@@ -211,7 +212,11 @@ export function init_finalizer_thread() {
     // we don't need it immediately, so we can wait a bit, to keep CPU working on normal startup
     setTimeout(() => {
         try {
-            cwraps.mono_wasm_init_finalizer_thread();
+            if (loaderHelpers.is_runtime_running()) {
+                cwraps.mono_wasm_init_finalizer_thread();
+            } else {
+                mono_log_debug("init_finalizer_thread skipped");
+            }
         }
         catch (err) {
             mono_log_error("init_finalizer_thread() failed", err);

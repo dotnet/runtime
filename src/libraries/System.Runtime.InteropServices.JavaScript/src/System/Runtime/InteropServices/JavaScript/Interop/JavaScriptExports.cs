@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("CallEntrypoint: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"CallEntrypoint: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -205,7 +205,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("CompleteTask: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"CompleteTask: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -280,7 +280,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("BindAssemblyExports: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"BindAssemblyExports: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
