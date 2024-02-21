@@ -678,3 +678,23 @@ function(adhoc_sign_with_entitlements targetName entitlementsFile)
         POST_BUILD
         COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
 endfunction()
+
+# find_nativeaot_library(libraryName [REQUIRED])
+#
+# Imports a native library produced by NativeAOT (see src/native/managed).
+# If the library is found, sets libraryName_FOUND to true, else false.
+# If the library is found, a target libraryName::libraryName is defined.
+# If REQUIRED is specified, it's a fatal error not to find the library, otherwise the library is considered optional.
+#
+# For implementation details see import-nativeaot-library.cmake
+function(find_nativeaot_library libraryName)
+  cmake_parse_arguments(PARSE_ARGV 1 "findNativeAOT_opt" "REQUIRED" "" "")
+  if (NOT "${findNativeAOT_opt_REQUIRED}")
+    find_package(${libraryName} CONFIG NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
+  else()
+    find_package(${libraryName} CONFIG REQUIRED NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
+  endif()
+  set("${libraryName}_FOUND" "${${libraryName}_FOUND}" PARENT_SCOPE)
+  set("${libCmakeName}_CMAKE_FRAGMENT_PATH")
+endfunction()
+

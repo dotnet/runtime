@@ -1,21 +1,6 @@
 
 # Infrastructure to import a native aot compiled library into a native build
 
-# Consumers should use this:
-#
-# find_nativeaot_library(libraryName [REQUIRED])
-#
-function(find_nativeaot_library libraryName)
-  cmake_parse_arguments(PARSE_ARGV 1 "findNativeAOT_opt" "REQUIRED" "" "")
-  if (NOT "${findNativeAOT_opt_REQUIRED}")
-    find_package(${libraryName} CONFIG NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
-  else()
-    find_package(${libraryName} CONFIG REQUIRED NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
-  endif()
-  set("${libraryName}_FOUND" "${${libraryName}_FOUND}" PARENT_SCOPE)
-  set("${libCmakeName}_CMAKE_FRAGMENT_PATH")
-endfunction()
-
 ### Implementation details used by libraryName-config.cmake find_package configuration
 ### files. Consumers don't need to do this directly.
 
