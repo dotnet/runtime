@@ -5,8 +5,8 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
-import { replaceEmscriptenPThreadWorker } from "./pthreads";
-import { replaceEmscriptenPThreadUI } from "./pthreads";
+import { replaceEmscriptenTLSInit } from "./pthreads";
+import { replaceEmscriptenPThreadFactories } from "./pthreads";
 
 const dummyPerformance = {
     now: function () {
@@ -36,9 +36,9 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     // threads
     if (WasmEnableThreads && replacements.modulePThread) {
         if (ENVIRONMENT_IS_WORKER) {
-            replaceEmscriptenPThreadWorker(replacements.modulePThread);
+            replaceEmscriptenTLSInit(replacements.modulePThread);
         } else {
-            replaceEmscriptenPThreadUI(replacements.modulePThread);
+            replaceEmscriptenPThreadFactories(replacements.modulePThread);
         }
     }
 }

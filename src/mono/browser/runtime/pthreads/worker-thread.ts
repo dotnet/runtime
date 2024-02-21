@@ -203,7 +203,7 @@ export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: PThreadPtr
     }
 }
 
-export function replaceEmscriptenPThreadWorker(modulePThread: PThreadLibrary): void {
+export function replaceEmscriptenTLSInit(modulePThread: PThreadLibrary): void {
     if (!WasmEnableThreads) return;
 
     const originalThreadInitTLS = modulePThread.threadInitTLS;
@@ -214,7 +214,7 @@ export function replaceEmscriptenPThreadWorker(modulePThread: PThreadLibrary): v
     };
 }
 
-export function replaceEmscriptenPThreadWorker2(): void {
+export function replaceEmscriptenPThreadInit(): void {
     const original_emscripten_thread_init = Module["__emscripten_thread_init"];
     function emscripten_thread_init_wrapper(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) {
         on_emscripten_thread_init(pthread_ptr);
