@@ -18,7 +18,7 @@ namespace Wasm.Build.Tests
         internal static readonly string? BuiltNuGetsPath           = Environment.GetEnvironmentVariable("BUILT_NUGETS_PATH");
         internal static readonly string? BrowserPathForTests       = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_TESTS");
         internal static readonly string? V8PathForTests            = Environment.GetEnvironmentVariable("V8_PATH_FOR_TESTS");
-        internal static readonly bool    ShowBuildOutput           = Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;
+        internal static readonly bool    ShowBuildOutput           = IsRunningOnCI || Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;
         internal static readonly bool UseWebcil                    = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
         internal static readonly string? SdkDirName                = Environment.GetEnvironmentVariable("SDK_DIR_NAME");
         internal static readonly string? WasiSdkPath               = Environment.GetEnvironmentVariable("WASI_SDK_PATH");
