@@ -388,8 +388,8 @@ namespace System.Text.Tests
             // ISpanFormattable inputs: simple validation of known types that implement the interface
             yield return new object[] { "", (byte)42, "42" };
             yield return new object[] { "", 'A', "A" };
-            yield return new object[] { "", DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "2021-03-15 14:52:51" };
-            yield return new object[] { "", DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "2021-03-15 14:52:51 +00:00" };
+            yield return new object[] { "", DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "03/15/2021 14:52:51" };
+            yield return new object[] { "", DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "03/15/2021 14:52:51 +00:00" };
             yield return new object[] { "", (decimal)42, "42" };
             yield return new object[] { "", (double)42, "42" };
             yield return new object[] { "", Guid.Parse("68d9cfaf-feab-4d5b-96d8-a3fd889ae89f"), "68d9cfaf-feab-4d5b-96d8-a3fd889ae89f" };
@@ -412,26 +412,25 @@ namespace System.Text.Tests
             yield return new object[] { "Hello", $"{new FormattableStringWithSpanOnly("abc")}", "Helloabc" };
         }
 
-        private struct FormattableStringWithSpanOnly : ISpanFormattable
+        private struct FormattableStringWithSpanOnly(string value) : ISpanFormattable
         {
-            private string _value;
-
-            public FormattableStringWithSpanOnly(string value) => _value = value;
-
             public override readonly string ToString() => throw new NotImplementedException();
             public readonly string ToString(string? format, IFormatProvider? formatProvider) => ToString();
 
             public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-                destination.TryWrite($"{_value}", out charsWritten);
+                destination.TryWrite($"{value}", out charsWritten);
         }
 
         [Theory]
         [MemberData(nameof(Append_Object_TestData))]
         public static void Append_Object(string original, object value, string expected)
         {
-            var builder = new StringBuilder(original);
-            builder.Append(value);
-            Assert.Equal(expected, builder.ToString());
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
+                var builder = new StringBuilder(original);
+                builder.Append(value);
+                Assert.Equal(expected, builder.ToString());
+            }
         }
 		
 		[Theory]
