@@ -251,6 +251,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Only windows cares about the key usage attribute in the PKCS12
         public static void ECDHPrivateKey_PfxKeyIsEcdsaConstrained()
         {
             using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
