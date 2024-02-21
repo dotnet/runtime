@@ -35,7 +35,7 @@ namespace ILCompiler
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
 
-                // If there are no substitutions for the method, look for FeatureGuardAttribute on the property,
+                // If there are no substitutions for the method, look for FeatureCheckAttribute on the property,
                 // and substitute 'false' for guards for features that are known to be disabled.
                 if (IsGuardForDisabledFeature (ecmaMethod))
                     return BodySubstitution.Create (0);
@@ -69,9 +69,9 @@ namespace ILCompiler
                 if (getter != ecmaMethod.Handle)
                     continue;
 
-                // Found the matching property. Look for FeatureGuardAttribute on the property.
+                // Found the matching property. Look for FeatureCheckAttribute on the property.
                 PropertyPseudoDesc propertyDesc = new PropertyPseudoDesc(declaringType, propertyHandle);
-                foreach (var attr in propertyDesc.GetDecodedCustomAttributes ("System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
+                foreach (var attr in propertyDesc.GetDecodedCustomAttributes ("System.Diagnostics.CodeAnalysis", "FeatureCheckAttribute")) {
                     if (attr.FixedArguments.Length != 1)
                         continue; 
 

@@ -9,13 +9,13 @@ namespace System.Diagnostics.CodeAnalysis
 #else
     internal
 #endif
-        sealed class FeatureGuardAttribute : Attribute
+        sealed class FeatureCheckAttribute : Attribute
     {
-        public Type RequiresAttributeType { get; }
+        public Type FeatureType { get; }
 
-        public FeatureGuardAttribute(Type requiresAttributeType)
+        public FeatureCheckAttribute(Type featureType)
         {
-            RequiresAttributeType = requiresAttributeType;
+            FeatureType = featureType;
         }
     }
 }

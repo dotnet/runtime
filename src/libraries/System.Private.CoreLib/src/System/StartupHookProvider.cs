@@ -20,7 +20,7 @@ namespace System
 
 #pragma warning disable IL4000
         // Suppression can be removed once we have feature switch attributes
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
         private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
 #pragma warning restore IL4000
 

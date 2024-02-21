@@ -14,7 +14,7 @@ namespace System.Dynamic.Utils
     internal static class DelegateHelpers
     {
         // This can be flipped to false using feature switches at publishing time
-        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+        [FeatureCheck(typeof(RequiresDynamicCodeAttribute))]
 #pragma warning disable IL4000
         internal static bool CanEmitObjectArrayDelegate => true;
 #pragma warning restore IL4000

@@ -4,6 +4,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -15,19 +16,6 @@ using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 using MethodDebugInformation = Internal.IL.MethodDebugInformation;
-
-namespace System.Diagnostics.CodeAnalysis
-{
-    internal sealed class FeatureGuardAttribute : Attribute
-    {
-        public Type RequiresAttributeType { get; }
-        public FeatureGuardAttribute (Type requiresAttributeType)
-        {
-            RequiresAttributeType = requiresAttributeType;
-        }
-    }
-}
-
 
 namespace ILCompiler
 {
