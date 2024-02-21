@@ -1061,7 +1061,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
             pFunc,
             ip,
             flags,
-            GetExactGenericArgsToken(pFunc, pCf->GetRegisterSet(), pCf->GetCodeInfo(), pCf->GetFrame()));
+            pCf->GetExactGenericArgsToken());
 
     // We'll init the IL offsets outside the TSL lock.
 
@@ -1081,58 +1081,6 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     return SWA_CONTINUE;
 }
 #endif // !DACCESS_COMPILE
-
-PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PTR_MethodDesc pFunc, PREGDISPLAY pRD, EECodeInfo* pCodeInfo, PTR_Frame pFrame)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pRD != NULL && pCodeInfo != NULL);
-
-    if (!pFunc || !pFunc->IsSharedByGenericInstantiations())
-        return NULL;
-
-    if (pFunc->AcquiresInstMethodTableFromThis())
-    {
-        // objects could be in invalid state at this time
-        // trying to get this here could result in invalid objects
-        return NULL;
-    }
-    else
-    {
-        if (pFrame == NULL)
-        {
-            return pCodeInfo->GetCodeManager()->GetParamTypeArg(pRD, pCodeInfo);
-        }
-        else
-        {
-            if (!pFunc->RequiresInstArg())
-            {
-                return NULL;
-            }
-
-#ifdef FEATURE_INTERPRETER
-            if (pFrame != NULL && pFrame->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-            {
-#ifdef DACCESS_COMPILE
-                // TBD: DACize the interpreter.
-                return NULL;
-#else
-                return dac_cast<PTR_InterpreterFrame>(pFrame)->GetInterpreter()->GetParamTypeArg();
-#endif
-            }
-            // Otherwise...
-#endif // FEATURE_INTERPRETER
-
-            return (dac_cast<PTR_FramedMethodFrame>(pFrame))->GetParamTypeArg();
-        }
-    }
-}
 
 void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                                                   GetStackFramesData *pData,
@@ -1211,14 +1159,16 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
                 if (cur.ip)
                 {
+                    CrawlFrame frame;
                     EECodeInfo codeInfo(cur.ip);
-                    dwNativeOffset = codeInfo.GetRelOffset();
-                    REGDISPLAY pRD;
+                    frame.codeInfo = codeInfo;
+                    frame.isFrameless = true;
                     CONTEXT ctx = {};
                     SetIP(&ctx, cur.ip);
                     SetSP(&ctx, cur.sp);
-                    FillRegDisplay(&pRD, &ctx);
-                    pExactGenericArgsToken = GetExactGenericArgsToken(cur.pFunc, &pRD, &codeInfo, NULL);
+                    FillRegDisplay(frame.pRD, &ctx);
+                    pExactGenericArgsToken = frame.GetExactGenericArgsToken();
+                    dwNativeOffset = frame.GetRelOffset();
                 }
                 else
                 {

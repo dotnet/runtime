@@ -159,7 +159,6 @@ public:
                   );
 
     static void GetStackFramesFromException(OBJECTREF * e, GetStackFramesData *pData, PTRARRAYREF * pDynamicMethodArray = NULL);
-    static PTR_VOID GetExactGenericArgsToken(PTR_MethodDesc pFunc, PREGDISPLAY pRD, EECodeInfo* pCodeInfo, PTR_Frame pFrame);
 
 #ifndef DACCESS_COMPILE
 // the DAC directly calls GetStackFramesFromException

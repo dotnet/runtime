@@ -72,6 +72,7 @@ class CrawlFrame
 {
 public:
     friend class AsmOffsetsAsserts::AsmOffsets;
+    friend class DebugStackTrace;
 #ifdef TARGET_X86
     friend StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data);
 #endif // TARGET_X86
