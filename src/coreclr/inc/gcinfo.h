@@ -65,9 +65,11 @@ struct GCInfoToken
     }
 #endif
 
-    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion)
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion))
     {
-        // GcInfo version is current from  ReadyToRun version 2.0
+        // TODO: VS versioning. For now assume the latest.
+        //           2.0 => 2
+        //           2.1 => 3
         return GCINFO_VERSION;
     }
 };
