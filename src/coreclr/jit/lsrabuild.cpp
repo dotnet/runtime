@@ -1240,7 +1240,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
         // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
         // during register allocation should be cheaper in terms of TP.
-        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, tree, RBM_SWIFT_ERROR);
+        RefPosition* pos  = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, tree, RBM_SWIFT_ERROR);
         pos->delayRegFree = true;
     }
 #endif // SWIFT_SUPPORT

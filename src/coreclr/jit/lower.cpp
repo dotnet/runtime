@@ -5600,8 +5600,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         {
             insertionPoint = insertionPoint->gtNext;
             assert(insertionPoint != nullptr);
-        }
-        while (!insertionPoint->OperIs(GT_SWIFT_ERROR));
+        } while (!insertionPoint->OperIs(GT_SWIFT_ERROR));
 
         BlockRange().Remove(insertionPoint);
         BlockRange().InsertAfter(call, LIR::SeqTree(comp, insertionPoint));
