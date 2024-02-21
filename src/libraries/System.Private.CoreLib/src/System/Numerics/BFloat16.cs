@@ -93,49 +93,6 @@ namespace System.Numerics
 
         internal BFloat16(ushort value) => _value = value;
 
-        // Casting
-
-        /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(float value)
-        {
-            uint bits = BitConverter.SingleToUInt32Bits(value);
-            uint upper = bits >> 16;
-            // Only do rounding for finite numbers
-            if (float.IsFinite(value))
-            {
-                uint lower = bits & 0xFFFF;
-                // Determine the increment for rounding
-                // When upper is even, midpoint (0x8000) will tie to no increment, which is effectively a decrement of lower
-                uint lowerShift = (~upper) & (lower >> 15) & 1; // Upper is even & lower>=0x8000 (not 0)
-                lower -= lowerShift;
-                uint increment = lower >> 15;
-                // Do the increment, MaxValue will be correctly increased to Infinity
-                upper += increment;
-            }
-            return new BFloat16((ushort)upper);
-        }
-
-        /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
-
-        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="float"/> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float"/> value.</returns>
-
-        public static explicit operator float(BFloat16 value) => BitConverter.Int32BitsToSingle(value._value << 16);
-
-        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="double"/> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="double"/> value.</returns>
-        public static explicit operator double(BFloat16 value) => (double)(float)value;
-
-        // BFloat is effectively a truncation of Single, with lower 16 bits of mantissa truncated.
-        // Delegating all operations to Single should be correct and effective.
-
         // INumberBase
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
@@ -277,5 +234,51 @@ namespace System.Numerics
         /// Returns a string representation of the current value.
         /// </summary>
         public override string ToString() => ((float)this).ToString();
+
+        //
+        // Explicit Convert To BFloat16
+        //
+
+        /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(float value)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(value);
+            uint upper = bits >> 16;
+            // Only do rounding for finite numbers
+            if (float.IsFinite(value))
+            {
+                uint lower = bits & 0xFFFF;
+                // Determine the increment for rounding
+                // When upper is even, midpoint (0x8000) will tie to no increment, which is effectively a decrement of lower
+                uint lowerShift = (~upper) & (lower >> 15) & 1; // Upper is even & lower>=0x8000 (not 0)
+                lower -= lowerShift;
+                uint increment = lower >> 15;
+                // Do the increment, MaxValue will be correctly increased to Infinity
+                upper += increment;
+            }
+            return new BFloat16((ushort)upper);
+        }
+
+        /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
+
+        //
+        // Explicit Convert From BFloat16
+        //
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="float"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float"/> value.</returns>
+
+        public static explicit operator float(BFloat16 value) => BitConverter.Int32BitsToSingle(value._value << 16);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="double"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="double"/> value.</returns>
+        public static explicit operator double(BFloat16 value) => (double)(float)value;
     }
 }
