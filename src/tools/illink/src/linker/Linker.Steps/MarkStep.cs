@@ -703,7 +703,7 @@ namespace Mono.Linker.Steps
 					foreach (var dimInfo in defaultImplementations) {
 						ProcessDefaultImplementation (dimInfo.ImplementingType, dimInfo.InterfaceImpl, dimInfo.DefaultInterfaceMethod);
 
-						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context);
+						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context, dimInfo.InterfaceImpl);
 						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, dimInfo.ImplementingType))
 							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 					}
