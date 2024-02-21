@@ -254,17 +254,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Only windows cares about the key usage attribute in the PKCS12
         public static void ECDHPrivateKey_PfxKeyIsEcdsaConstrained()
         {
-            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
+            using (X509Certificate2 cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test"))
             {
-                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256);
-
-                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
-                {
-                    X509Certificate2 loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
-                    Assert.Null(loaded.GetECDiffieHellmanPrivateKey());
-                    Assert.NotNull(loaded.GetECDiffieHellmanPublicKey());
-                    Assert.NotNull(loaded.GetECDsaPrivateKey());
-                }
+                    Assert.Null(cert.GetECDiffieHellmanPrivateKey());
+                    Assert.NotNull(cert.GetECDiffieHellmanPublicKey());
+                    Assert.NotNull(cert.GetECDsaPrivateKey());
             }
         }
 
