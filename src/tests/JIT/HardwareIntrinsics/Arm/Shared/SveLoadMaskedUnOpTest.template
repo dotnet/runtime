@@ -165,17 +165,6 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        // private void ValidateResult({Op2VectorType}<{Op2BaseType}> firstOp, void* result, [CallerMemberName] string method = "")
-        // {
-        //     {Op2BaseType}[] inArray = new {Op2BaseType}[Op2ElementCount];
-        //     {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-
-        //     Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), firstOp);
-        //     Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-
-        //     ValidateResult(inArray, outArray, method);
-        // }
-
         private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
         {
             {Op2BaseType}[] inArray = new {Op2BaseType}[Op2ElementCount];
