@@ -7364,6 +7364,26 @@ void CodeGen::genReportRichDebugInfoToFile()
 #endif
 
 //------------------------------------------------------------------------
+// SuccessfulSibling:
+//   Find the next sibling inline context that was successfully inlined.
+//
+// Parameters:
+//   context - the inline context. Can be nullptr in which case nullptr is returned.
+//
+// Returns:
+//   The sibling, or nullptr if there is no succesful sibling.
+//
+static InlineContext* SuccessfulSibling(InlineContext* context)
+{
+    while ((context != nullptr) && !context->IsSuccess())
+    {
+        context = context->GetSibling();
+    }
+
+    return context;
+}
+
+//------------------------------------------------------------------------
 // genRecordRichDebugInfoInlineTree:
 //   Recursively process a context in the inline tree and record information
 //   about it.
@@ -7374,26 +7394,28 @@ void CodeGen::genReportRichDebugInfoToFile()
 //
 void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    if (context->IsSuccess())
-    {
-        // We expect 1 + NumInlines unique ordinals
-        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+    assert(context->IsSuccess());
 
-        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
-        node->Method                        = context->GetCallee();
-        node->ILOffset                      = context->GetActualCallOffset();
-        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
-        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
+    // We expect 1 + NumInlines unique ordinals
+    assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+    InlineContext* successfulChild   = SuccessfulSibling(context->GetChild());
+    InlineContext* successfulSibling = SuccessfulSibling(context->GetSibling());
+
+    ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+    node->Method                        = context->GetCallee();
+    node->ILOffset                      = context->GetActualCallOffset();
+    node->Child                         = successfulChild == nullptr ? 0 : successfulChild->GetOrdinal();
+    node->Sibling                       = successfulSibling == nullptr ? 0 : successfulSibling->GetOrdinal();
+
+    if (successfulSibling != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(successfulSibling, nodes);
     }
 
-    if (context->GetSibling() != nullptr)
+    if (successfulChild != nullptr)
     {
-        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
-    }
-
-    if (context->GetChild() != nullptr)
-    {
-        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
+        genRecordRichDebugInfoInlineTree(successfulChild, nodes);
     }
 }
 
@@ -7442,6 +7464,28 @@ void CodeGen::genReportRichDebugInfo()
 
         mappingIndex++;
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported inline tree:\n");
+        for (unsigned i = 0; i < numContexts; i++)
+        {
+            printf("  [#%d] %s @ %d, child = %d, sibling = %d\n", i,
+                   compiler->eeGetMethodFullName(inlineTree[i].Method), inlineTree[i].ILOffset, inlineTree[i].Child,
+                   inlineTree[i].Sibling);
+        }
+
+        printf("\nReported rich mappings:\n");
+        for (size_t i = 0; i < mappingIndex; i++)
+        {
+            printf("  [%zu] 0x%x <-> IL %d in #%d\n", i, mappings[i].NativeOffset, mappings[i].ILOffset,
+                   mappings->Inlinee);
+        }
+
+        printf("\n");
+    }
+#endif
 
     compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
 }
