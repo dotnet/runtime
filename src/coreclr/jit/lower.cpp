@@ -1920,8 +1920,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     // Convert lenCns to bytes
     ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
-    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale,
-                                                 CheckedOps::Signed))
+    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale, CheckedOps::Signed))
     {
         // lenCns overflows
         JITDUMP("lenCns * lengthScale overflows - bail out.\n")
@@ -1956,9 +1955,8 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         blkValue->SetContained();
     }
 
-    GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
-        GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstRefArg, blkValue, comp->typGetBlkLayout((unsigned)lenCns));
-    storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+    GenTreeBlk* storeBlk =
+        comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, blkValue, GTF_IND_UNALIGNED);
     storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
     // Insert/Remove trees into LIR
