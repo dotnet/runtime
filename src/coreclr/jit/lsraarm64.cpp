@@ -1287,16 +1287,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
 
-            // After a Swift call potentially trashes the error register,
-            // the register can be used again only if there is a GT_SWIFT_ERROR node to consume it
-            // (i.e. the register's value is saved to a SwiftError)
-
             // Any register should do here, but the error register value should immediately
             // be moved from GT_SWIFT_ERROR's destination register to the SwiftError struct,
             // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
             // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
             // we can ensure the redundant move is elided.
-            addRefsForPhysRegMask(RBM_SWIFT_ERROR, currentLoc, RefTypeKill, true);
             BuildDef(tree, RBM_SWIFT_ERROR);
             break;
 #endif // SWIFT_SUPPORT

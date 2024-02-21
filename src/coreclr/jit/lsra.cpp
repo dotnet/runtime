@@ -5109,6 +5109,13 @@ void LinearScan::allocateRegistersMinimal()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
+
+#ifdef SWIFT_SUPPORT
+                if (currentRefPosition.delayRegFree)
+                {
+                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                }
+#endif // SWIFT_SUPPORT
             }
             else
             {
@@ -5121,13 +5128,6 @@ void LinearScan::allocateRegistersMinimal()
                 }
                 clearRegBusyUntilKill(regRecord->regNum);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum));
-
-#ifdef SWIFT_SUPPORT
-                if (currentRefPosition.busyUntilNextKill)
-                {
-                    setRegBusyUntilKill(regRecord->regNum, regRecord->registerType);
-                }
-#endif // SWIFT_SUPPORT
             }
             continue;
         }
@@ -5825,6 +5825,13 @@ void LinearScan::allocateRegisters()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
+
+#ifdef SWIFT_SUPPORT
+                if (currentRefPosition.delayRegFree)
+                {
+                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                }
+#endif // SWIFT_SUPPORT
             }
             else
             {
@@ -5837,13 +5844,6 @@ void LinearScan::allocateRegisters()
                 }
                 clearRegBusyUntilKill(regRecord->regNum);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum));
-
-#ifdef SWIFT_SUPPORT
-                if (currentRefPosition.busyUntilNextKill)
-                {
-                    setRegBusyUntilKill(regRecord->regNum, regRecord->registerType);
-                }
-#endif // SWIFT_SUPPORT
             }
             continue;
         }
