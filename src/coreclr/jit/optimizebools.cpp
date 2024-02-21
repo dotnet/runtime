@@ -1775,6 +1775,7 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
     intBoolOpDsc.lclVarArrLength = 0;
     intBoolOpDsc.start = nullptr;
     intBoolOpDsc.end = nullptr;
+    int orOpCount = 0;
 
     if (b3 == nullptr)
     {
@@ -1821,6 +1822,18 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
         {
             case GT_LCL_VAR:
             {
+                if (orOpCount <= 0)
+                {
+                    if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+                    {
+                        intBoolOpDsc.end = b4;
+                        return intBoolOpDsc;
+                    }
+
+                    CleanIntBoolOpDsc(&intBoolOpDsc);
+                    break;
+                }
+
                 intBoolOpDsc.lclVarArrLength++;
                 if (intBoolOpDsc.lclVarArr == nullptr)
                 {
@@ -1833,10 +1846,23 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
                 }
                 
                 intBoolOpDsc.lclVarArr[intBoolOpDsc.lclVarArrLength - 1] = b4;
+                orOpCount--;
                 break;
             }
             case GT_CNS_INT:
             {
+                if (orOpCount <= 0)
+                {
+                    if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+                    {
+                        intBoolOpDsc.end = b4;
+                        return intBoolOpDsc;
+                    }
+                    
+                    CleanIntBoolOpDsc(&intBoolOpDsc);
+                    break;
+                }
+
                 intBoolOpDsc.ctsArrayLength++;
                 if (intBoolOpDsc.ctsArray == nullptr)
                 {
@@ -1848,8 +1874,12 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
                 }
                 ssize_t constant = b4->AsIntConCommon()->IconValue();
                 intBoolOpDsc.ctsArray[intBoolOpDsc.ctsArrayLength - 1] = constant;
+                orOpCount--;
                 break;
             }
+            case GT_OR:
+                orOpCount += 2;
+                break;
             default:
             {
                 break;
