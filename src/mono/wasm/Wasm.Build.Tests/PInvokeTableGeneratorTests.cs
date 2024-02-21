@@ -32,7 +32,7 @@ namespace Wasm.Build.Tests
                     public static int Main(string[] args)
                     {
                         Console.WriteLine($""Main running"");
-                        if (args.Length > 0)
+                        if (args.Length > 2)
                         {
                             // We don't want to run this, because we can't call variadic functions
                             Console.WriteLine($""sum_three: {sum_three(7, 14, 21)}"");
@@ -739,6 +739,16 @@ namespace Wasm.Build.Tests
                 public struct SingleI64Struct {
                     public Int64 Value;
                 }
+                public struct PairStruct {
+                    public int A, B;
+                }
+                public unsafe struct MyFixedArray {
+                    public fixed int elements[2];
+                }
+                [System.Runtime.CompilerServices.InlineArray(2)]
+                public struct MyInlineArray {
+                    public int element0;
+                }
 
                 public class Test
                 {
@@ -765,7 +775,33 @@ namespace Wasm.Build.Tests
                         var res = indirect(sds);
                         Console.WriteLine(""s (s)="" + res.Value);
 
+                        var pair = new PairStruct { A = 1, B = 2 };
+                        var paires = accept_and_return_pair(pair);
+                        Console.WriteLine(""paires.B="" + paires.B);
+
+                        // This test is split into methods to simplify debugging issues with it
+                        var ia = InlineArrayTest1();
+                        var iares = InlineArrayTest2(ia);
+                        Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]}"");
+
+                        MyFixedArray fa = new ();
+                        for (int i = 0; i < 2; i++)
+                            fa.elements[i] = i;
+                        var fares = accept_and_return_fixedarray(fa);
+                        Console.WriteLine(""fares.elements[1]="" + fares.elements[1]);
+
                         return (int)res.Value;
+                    }
+
+                    public static unsafe MyInlineArray InlineArrayTest1 () {
+                        MyInlineArray ia = new ();
+                        for (int i = 0; i < 2; i++)
+                            ia[i] = i;
+                        return ia;
+                    }
+
+                    public static unsafe MyInlineArray InlineArrayTest2 (MyInlineArray ia) {
+                        return accept_and_return_inlinearray(ia);
                     }
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
@@ -782,9 +818,18 @@ namespace Wasm.Build.Tests
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
                     public static extern Int64 direct64(Int64 arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_pair"")]
+                    public static extern PairStruct accept_and_return_pair(PairStruct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_fixedarray"")]
+                    public static extern MyFixedArray accept_and_return_fixedarray(MyFixedArray arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_inlinearray"")]
+                    public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
                 }";
 
-            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
 
             buildArgs = ExpandBuildArgs(buildArgs,
@@ -824,6 +869,10 @@ namespace Wasm.Build.Tests
             Assert.Contains("f (d)=3.14", runOutput);
             Assert.Contains("f (s)=3.14", runOutput);
             Assert.Contains("s (s)=3.14", runOutput);
+            Assert.Contains("paires.B=4", runOutput);
+            Assert.Contains("iares[0]=32", runOutput);
+            Assert.Contains("iares[1]=2", runOutput);
+            Assert.Contains("fares.elements[1]=2", runOutput);
         }
 
         [Theory]

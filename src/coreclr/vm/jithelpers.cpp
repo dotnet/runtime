@@ -4289,7 +4289,10 @@ void RethrowNew()
 
     ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);

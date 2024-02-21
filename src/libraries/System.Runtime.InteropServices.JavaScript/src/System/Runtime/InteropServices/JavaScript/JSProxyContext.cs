@@ -28,10 +28,16 @@ namespace System.Runtime.InteropServices.JavaScript
         private JSProxyContext()
         {
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CA1822 // Mark members as static
+        public bool IsCurrentThread() => true;
+#pragma warning restore CA1822 // Mark members as static
 #else
         public nint ContextHandle;
-        public nint NativeTID;
-        public int ManagedTID;
+        public nint JSNativeTID; // target thread where JavaScript is running
+        public nint NativeTID; // current pthread id
+        public int ManagedTID; // current managed thread id
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
 
@@ -53,7 +59,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
         {
             SynchronizationContext = synchronizationContext;
-            NativeTID = GetNativeThreadId();
+            NativeTID = JSNativeTID = GetNativeThreadId();
             ManagedTID = Environment.CurrentManagedThreadId;
             IsMainThread = isMainThread;
             ContextHandle = (nint)GCHandle.Alloc(this, GCHandleType.Normal);
@@ -467,7 +473,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                         // this is async message, we need to call this as the last thing
                         // the same jsHandle would not be re-used until JS side considers it free
-                        Interop.Runtime.ReleaseCSOwnedObjectPost(ctx.NativeTID, jsHandle);
+                        Interop.Runtime.ReleaseCSOwnedObjectPost(ctx.JSNativeTID, jsHandle);
                     }
 #else
                     Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
