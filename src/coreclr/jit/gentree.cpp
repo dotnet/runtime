@@ -17333,7 +17333,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
             // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
             //
-            if (m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
+            if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
             {
                 // The result of a GT_COMMA node is op2, the normal value number is op2vnp
                 // But we also need to include the union of side effects from op1 and op2.
@@ -18800,6 +18800,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             break;
         }
+    }
+
+    if ((objClass == NO_CLASS_HANDLE) && (vnStore != nullptr))
+    {
+        // Try VN if we haven't found a class handle yet
+        objClass = vnStore->GetObjectType(tree->gtVNPair.GetConservative(), pIsExact, pIsNonNull);
     }
 
     if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && JitConfig.JitEnableExactDevirtualization())
