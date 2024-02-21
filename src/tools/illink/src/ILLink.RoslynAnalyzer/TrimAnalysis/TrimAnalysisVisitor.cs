@@ -437,7 +437,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 
 			// FeatureCheck validation needs to happen only for properties.
-			if (method.MethodKind != MethodKind.PropertyGet)
+			// Include setter properties here because they will get validated later.
+			// TODO: PropertySet is never encountered here.
+			if (method.MethodKind != MethodKind.PropertyGet && method.MethodKind != MethodKind.PropertySet)
 				return;
 
 			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;

@@ -35,7 +35,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// For now, feature check validation is enabled only when trim analysis is enabled.
 			if (context.EnableTrimAnalyzer) {
 				if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean) {
-					// Warn about invalid feature checks (non-static or non-bool properties)
+					// || OwningSymbol.SetMethod != null) { // TODO: checking for SetMethod doesn't work
+					// because we never reach here for set-only properties that don't have a return-value pattern.
+					// Warn about invalid feature checks (non-static, non-bool, or non-get-only properties)
 					diagnosticContext.AddDiagnostic (
 						DiagnosticId.InvalidFeatureCheck);
 					return diagnosticContext.Diagnostics;
