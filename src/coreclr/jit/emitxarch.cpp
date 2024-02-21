@@ -9598,7 +9598,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     id->idIns(ins);
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
 
     UNATIVE_OFFSET sz;
 
@@ -16560,9 +16561,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef TARGET_X86
                     dst += emitOutputWord(dst, code | 0x0500);
 #else  // TARGET_AMD64
-       // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
-       // the addr can be encoded as pc-relative address.
+                    // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
+                    // This addr mode should never be used while generating relocatable ngen code nor if
+                    // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
                     noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
@@ -16622,105 +16623,95 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         DONE_CALL:
 
-            // Now deal with post-call state.
-            // Compute the liveness set, record a call for gc purposes.
-            // We do not need to do that though if we have a tail call as the following
-            // instruction would not even be reachable from here.
+            /* We update the variable (not register) GC info before the call as the variables cannot be
+               used by the call. Killing variables before the call helps with
+               boundary conditions if the call is CORINFO_HELP_THROW - see bug 50029.
+               If we ever track aliased variables (which could be used by the
+               call), we would have to keep them alive past the call.
+             */
+            assert(FitsIn<unsigned char>(dst - *dp));
+            callInstrSize = static_cast<unsigned char>(dst - *dp);
 
-            assert((ins == INS_call) || (ins == INS_tail_i_jmp) || (ins == INS_l_jmp));
-            if (ins == INS_call)
-            {
-
-                /* We update the variable (not register) GC info before the call as the variables cannot be
-                   used by the call. Killing variables before the call helps with
-                   boundary conditions if the call is CORINFO_HELP_THROW - see bug 50029.
-                   If we ever track aliased variables (which could be used by the
-                   call), we would have to keep them alive past the call.
-                 */
-                assert(FitsIn<unsigned char>(dst - *dp));
-                callInstrSize = static_cast<unsigned char>(dst - *dp);
-
-                // Note the use of address `*dp`, the call instruction address, instead of `dst`, the post-call-instruction
-                // address.
-                emitUpdateLiveGCvars(GCvars, *dp);
-
-    #ifdef DEBUG
-                // Output any delta in GC variable info, corresponding to the before-call GC var updates done above.
-                if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
-                {
-                    emitDispGCVarDelta();
-                }
-    #endif // DEBUG
-
-                // If the method returns a GC ref, mark EAX appropriately
-                if (id->idGCref() == GCT_GCREF)
-                {
-                    gcrefRegs |= RBM_EAX;
-                }
-                else if (id->idGCref() == GCT_BYREF)
-                {
-                    byrefRegs |= RBM_EAX;
-                }
-
-#ifdef UNIX_AMD64_ABI
-                // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
-                if (id->idIsLargeCall())
-                {
-                    instrDescCGCA* idCall = (instrDescCGCA*)id;
-                    if (idCall->idSecondGCref() == GCT_GCREF)
-                    {
-                        gcrefRegs |= RBM_RDX;
-                    }
-                    else if (idCall->idSecondGCref() == GCT_BYREF)
-                    {
-                        byrefRegs |= RBM_RDX;
-                    }
-                }
-#endif // UNIX_AMD64_ABI
-
-                // If the GC register set has changed, report the new set
-                if (gcrefRegs != emitThisGCrefRegs)
-                {
-                    emitUpdateLiveGCregs(GCT_GCREF, gcrefRegs, dst);
-                }
-
-                if (byrefRegs != emitThisByrefRegs)
-                {
-                    emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, dst);
-                }
-
-                if (recCall || args)
-                {
-                    // For callee-pop, all arguments will be popped  after the call.
-                    // For caller-pop, any GC arguments will go dead after the call.
-
-                    assert(callInstrSize != 0);
-
-                    if (args >= 0)
-                    {
-                        emitStackPop(dst, /*isCall*/ true, callInstrSize, args);
-                    }
-                    else
-                    {
-                        emitStackKillArgs(dst, -args, callInstrSize);
-                    }
-                }
-
-                // Do we need to record a call location for GC purposes?
-                if (!emitFullGCinfo && recCall)
-                {
-                    assert(callInstrSize != 0);
-                    emitRecordGCcall(dst, callInstrSize);
-                }
+            // Note the use of address `*dp`, the call instruction address, instead of `dst`, the post-call-instruction
+            // address.
+            emitUpdateLiveGCvars(GCvars, *dp);
 
 #ifdef DEBUG
-                if ((ins == INS_call) && !id->idIsTlsGD())
-                {
-                    emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
-                                       (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-                }
-#endif // DEBUG
+            // Output any delta in GC variable info, corresponding to the before-call GC var updates done above.
+            if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+            {
+                emitDispGCVarDelta();
             }
+#endif // DEBUG
+
+            // If the method returns a GC ref, mark EAX appropriately
+            if (id->idGCref() == GCT_GCREF)
+            {
+                gcrefRegs |= RBM_EAX;
+            }
+            else if (id->idGCref() == GCT_BYREF)
+            {
+                byrefRegs |= RBM_EAX;
+            }
+
+#ifdef UNIX_AMD64_ABI
+            // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
+            if (id->idIsLargeCall())
+            {
+                instrDescCGCA* idCall = (instrDescCGCA*)id;
+                if (idCall->idSecondGCref() == GCT_GCREF)
+                {
+                    gcrefRegs |= RBM_RDX;
+                }
+                else if (idCall->idSecondGCref() == GCT_BYREF)
+                {
+                    byrefRegs |= RBM_RDX;
+                }
+            }
+#endif // UNIX_AMD64_ABI
+
+            // If the GC register set has changed, report the new set
+            if (gcrefRegs != emitThisGCrefRegs)
+            {
+                emitUpdateLiveGCregs(GCT_GCREF, gcrefRegs, dst);
+            }
+
+            if (byrefRegs != emitThisByrefRegs)
+            {
+                emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, dst);
+            }
+
+            if (recCall || args)
+            {
+                // For callee-pop, all arguments will be popped  after the call.
+                // For caller-pop, any GC arguments will go dead after the call.
+
+                assert(callInstrSize != 0);
+
+                if (args >= 0)
+                {
+                    emitStackPop(dst, /*isCall*/ true, callInstrSize, args);
+                }
+                else
+                {
+                    emitStackKillArgs(dst, -args, callInstrSize);
+                }
+            }
+
+            // Do we need to record a call location for GC purposes?
+            if (!emitFullGCinfo && recCall)
+            {
+                assert(callInstrSize != 0);
+                emitRecordGCcall(dst, callInstrSize);
+            }
+
+#ifdef DEBUG
+            if ((ins == INS_call) && !id->idIsTlsGD())
+            {
+                emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
+                                   (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+            }
+#endif // DEBUG
 
             break;
         }
