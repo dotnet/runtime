@@ -1178,20 +1178,6 @@ create_class_instance (const char* name_space, const char *name, MonoType *param
 	return ivector_inst;
 }
 
-static gboolean
-is_supported_vector_primitive_type (MonoType *type)
-{
-	gboolean constrained_generic_param = (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
-
-	if (constrained_generic_param && type->data.generic_param->gshared_constraint && MONO_TYPE_IS_VECTOR_PRIMITIVE (type->data.generic_param->gshared_constraint))
-		return TRUE;
-
-	if (MONO_TYPE_IS_VECTOR_PRIMITIVE (type))
-		return TRUE;
-
-	return FALSE;
-}
-
 static guint16 sri_vector_methods [] = {
 	SN_Abs,
 	SN_Add,
@@ -2491,12 +2477,6 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_free (name);
 	}
 
-	if (id == SN_get_IsSupported) {
-		MonoInst *ins;
-		EMIT_NEW_ICONST (cfg, ins, is_supported_vector_primitive_type (etype) ? 1 : 0);
-		return ins;
-	}
-
 	// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype)) {
 		// Happens often in gshared code
@@ -3223,11 +3203,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-
-	if (id == SN_get_IsSupported) {
-		EMIT_NEW_ICONST (cfg, ins, is_supported_vector_primitive_type (etype) ? 1 : 0);
-		return ins;
-	}
 
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
@@ -3957,6 +3932,18 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairScalar, OP_ARM64_STP_SCALAR},
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
 	{SN_StoreSelectedScalar},
+	{SN_StoreVector128x2},
+	{SN_StoreVector128x2AndZip},
+	{SN_StoreVector128x3},
+	{SN_StoreVector128x3AndZip},
+	{SN_StoreVector128x4},
+	{SN_StoreVector128x4AndZip},
+	{SN_StoreVector64x2},
+	{SN_StoreVector64x2AndZip},
+	{SN_StoreVector64x3},
+	{SN_StoreVector64x3AndZip},
+	{SN_StoreVector64x4},
+	{SN_StoreVector64x4AndZip},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -4146,10 +4133,14 @@ emit_arm64_intrinsics (
 			ins->inst_c1 = arg0_type;
 			return ins;
 		}
-		case SN_LoadAndInsertScalar:
-			if (!is_intrinsics_vector_type (fsig->params [0]))
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_LD1_INSERT, 0, arg0_type, fsig, args);
+		case SN_LoadAndInsertScalar: {
+			int load_op;
+			if (is_intrinsics_vector_type (fsig->params [0]))
+				load_op = OP_ARM64_LD1_INSERT;
+			else
+				load_op = OP_ARM64_LDM_INSERT;
+			return emit_simd_ins_for_sig (cfg, klass, load_op, 0, arg0_type, fsig, args);
+		}
 		case SN_InsertSelectedScalar:
 		case SN_InsertScalar:
 		case SN_Insert: {
@@ -4193,9 +4184,13 @@ emit_arm64_intrinsics (
 			return ret;
 		}
 		case SN_StoreSelectedScalar: {
-			if (!is_intrinsics_vector_type (fsig->params [1]))
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_ST1_SCALAR, 0, arg0_type, fsig, args);
+			int store_op;
+			if (is_intrinsics_vector_type (fsig->params [1]))
+				store_op = OP_ARM64_ST1_SCALAR;
+			else
+				store_op = OP_ARM64_STM_SCALAR;
+			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, store_op, 0, arg0_type, fsig, args);
 		}
 		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:
@@ -4350,6 +4345,38 @@ emit_arm64_intrinsics (
 			ins->inst_p1 = offsets;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
+		}
+		case SN_StoreVector128x2:
+		case SN_StoreVector128x3:
+		case SN_StoreVector128x4:
+		case SN_StoreVector64x2:
+		case SN_StoreVector64x3:
+		case SN_StoreVector64x4:
+		case SN_StoreVector128x2AndZip:
+		case SN_StoreVector128x3AndZip:
+		case SN_StoreVector128x4AndZip:
+		case SN_StoreVector64x2AndZip:
+		case SN_StoreVector64x3AndZip:
+		case SN_StoreVector64x4AndZip: {
+			int iid = 0;
+			switch (id) {
+			case SN_StoreVector128x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
+			case SN_StoreVector128x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V128; break;
+			case SN_StoreVector128x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V128; break;
+			case SN_StoreVector64x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
+			case SN_StoreVector64x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
+			case SN_StoreVector64x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
+			case SN_StoreVector128x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
+			case SN_StoreVector128x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
+			case SN_StoreVector128x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
+			case SN_StoreVector64x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
+			case SN_StoreVector64x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
+			case SN_StoreVector64x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
+			default: g_assert_not_reached ();
+			}
+
+			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, OP_ARM64_STM, iid, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();

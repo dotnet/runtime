@@ -5042,6 +5042,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
 
+    // Expand casts
+    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
+
     // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
     DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
 
@@ -5050,9 +5053,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
-
-    // Expand casts
-    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -9089,7 +9089,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -9102,7 +9102,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -9865,14 +9865,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_RELOP_JMP_USED)
                 {
                     chars += printf("[RELOP_JMP_USED]");
-                }
-                break;
-
-            case GT_QMARK:
-
-                if (tree->gtFlags & GTF_QMARK_CAST_INSTOF)
-                {
-                    chars += printf("[QMARK_CAST_INSTOF]");
                 }
                 break;
 

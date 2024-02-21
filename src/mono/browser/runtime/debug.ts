@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+
 import { INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
@@ -82,7 +83,7 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
 
     const { res_ok, res } = commands_received.remove(id);
     if (!res_ok)
-        throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
+        throw new Error("Failed on mono_wasm_send_dbg_command_with_parms");
     return res;
 }
 

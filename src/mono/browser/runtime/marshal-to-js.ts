@@ -14,7 +14,7 @@ import {
     get_arg_b8, get_arg_date, get_arg_length, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol, set_js_handle
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol, set_js_handle, is_receiver_should_free
 } from "./marshal";
 import { monoStringToString, utf16ToString } from "./strings";
 import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType, JSHandle } from "./types/internal";
@@ -55,11 +55,12 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.None, _marshal_null_to_js);
         cs_to_js_marshalers.set(MarshalerType.Void, _marshal_null_to_js);
         cs_to_js_marshalers.set(MarshalerType.Discard, _marshal_null_to_js);
+        cs_to_js_marshalers.set(MarshalerType.DiscardNoWait, _marshal_null_to_js);
     }
 }
 
 export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToJs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.DiscardNoWait) {
         return undefined;
     }
 
@@ -337,6 +338,7 @@ function create_task_holder(res_converter?: MarshalerToJs) {
 
 export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments): void {
     const exc = get_arg(args, 0);
+    const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {
         loaderHelpers.assert_runtime_running();
 
@@ -351,7 +353,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
 
         holder.resolve_or_reject(type, js_handle, arg_value);
-        if (WasmEnableThreads && get_arg_b8(res)) {
+        if (receiver_should_free) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
             Module._free(args as any);
         }
@@ -361,7 +363,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         }
 
     } catch (ex: any) {
-        if (WasmEnableThreads) {
+        if (receiver_should_free) {
             mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
         }
         marshal_exception_to_cs(exc, ex);
