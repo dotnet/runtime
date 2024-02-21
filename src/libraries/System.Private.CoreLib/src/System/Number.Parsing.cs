@@ -61,8 +61,8 @@ namespace System
         static abstract int MinBinaryExponent { get; }
         static abstract int MaxBinaryExponent { get; }
 
-        static abstract int MinDecimalExponent { get; }
-        static abstract int MaxDecimalExponent { get; }
+        static abstract int MinDecimalExponent { get; } // Floor(Log10(Epsilon))
+        static abstract int MaxDecimalExponent { get; } // Ceiling(Log10(MaxValue))
 
         static abstract int ExponentBias { get; }
         static abstract ushort ExponentBits { get; }
@@ -73,13 +73,13 @@ namespace System
         static abstract ushort NormalMantissaBits { get; }
         static abstract ushort DenormalMantissaBits { get; }
 
-        static abstract int MinFastFloatDecimalExponent { get; }
-        static abstract int MaxFastFloatDecimalExponent { get; }
+        static abstract int MinFastFloatDecimalExponent { get; } // MinDecimalExponent
+        static abstract int MaxFastFloatDecimalExponent { get; } // MaxDecimalExponent - 1
 
-        static abstract int MinExponentRoundToEven { get; }
-        static abstract int MaxExponentRoundToEven { get; }
+        static abstract int MinExponentRoundToEven { get; } // -Floor(Log2(2^(64 - NormalMantissaBits)))
+        static abstract int MaxExponentRoundToEven { get; } // Floor(Log5(2^(NormalMantissaBits + 1)))
 
-        static abstract int MaxExponentFastPath { get; }
+        static abstract int MaxExponentFastPath { get; } // Max(n) when 10^n can be precisely represented
         static abstract ulong MaxMantissaFastPath { get; }
 
         static abstract TSelf BitsToFloat(ulong bits);
