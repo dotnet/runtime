@@ -2,7 +2,7 @@
 
 Since introduction of generics in .NET there hasn't been a way to go from less contrained type parameter T to a more constrained type parameter U. If U has any constraints that T doesn't have, a T cannot be substituted for U. We've seen many instances where it would be useful to allow this for concrete substitution of T that match U's constraints. There's no way to do this substitution at runtime besides using reflection right now.
 
-One way to go about this would be to relax constraint checks within method bodies so that constraints are validated at runtime instead of at compile time:
+One way to go about this would be to relax constraint checks within method bodies so that constraints are validated at runtime instead of at compile time. For example:
 
 ```csharp
 //
@@ -13,7 +13,7 @@ static void DoConstrained<T>() where T : struct { }
 
 static void Do<T>
 {
-    if (typeof(T).IsValueType)
+    if (default(T) != null)
     {
         // The T in Do is unconstrainted, but DoConstrained requires it to be a struct
         // The run time check above ensures this.
@@ -64,16 +64,35 @@ static void Do<T>()
 }
 ```
 
-The requirement of never having an invalid type instantiation within the runtime type system means that if we're compiling `Do<int>` (where we cannot allow `Constrained<int>` to exist), the code generator cannot ask questions about all locals (IL locals are scoped to the method, not to a basic block), exception handling regions, or any IL within the `IsAssignableFrom` check. While it may be reasonable to expect the `IsAssignableFrom` check gets optimized out, it would likely not happen for unoptimized code. Locals and EH regions pose additional programs.
+The requirement of never having an invalid type instantiation within the runtime type system means that if we're compiling `Do<int>` (where we cannot allow `Constrained<int>` to exist), the code generator or debugger cannot ask questions about all locals (IL locals are scoped to the method, not to a basic block), exception handling regions, or any IL within the `IsAssignableFrom` check. While it may be reasonable to expect the `IsAssignableFrom` check gets optimized out, it would likely not happen for unoptimized code. Locals and EH regions pose additional programs.
 
-It would greatly simplify the codegen impact of this if we were to limit the amount of places within a method body that are allowed to break the constraints. The least impactful and potentially sufficiently powerful change would be allowing to break constraints on `call` instruction.
+It would greatly simplify impact of this if we were to limit the amount of places within a method body that are allowed to break the constraints. The least impactful and potentially sufficiently powerful change would be allowing to break constraints on `call` instruction only.
+
+Special attention is needed to the `if` checks that guard constraint-breaking calls. While it would be possible to take the approach in the above examples (have language compilers generate `if` blocks guarded with e.g. `IsAssignableFrom`, or other APIs depending on the form of the constraint), it seems preferable to delegate this responsibility to the runtime itself.
+
+Instead of the language compiler generating `if (typeof(T).IsAssignableFrom(typeof(IInterface))` checks or similar, we'll define an IL sequence that would be intrinsically recognized as a _constraints bridge_. The bridge would take the form of:
+
+```
+call RuntimeHelpers.CheckConstraintsForMethodCallThatFollows
+br.false ....
+push arg0
+push arg1
+...
+push argN
+call CodeWithMoreStringentConstraints
+```
+
+The sequence must be within the same basic block and there must not be any other call/callvirt between `CheckConstraintsForMethodCallThatFollows` and the more constrained method call.
+
+NOTE: This would only check constraints that the runtime recognizes. It would still be responsibility of the language compiler to add checks for constraints the runtime doesn't recognize, such as `unmanaged` in C#.
 
 The proposal is to:
 
-* Stop doing the verification-level constraint validation when compiling `call` (i.e. the check on uninstantiated forms).
-* Keep constraint validation of the instantiated form.
-* If the instantiated form of the call target doesn't satisfy constraint, replace the call with a call to a throw helper (we can likely reuse infrastructure around `CORINFO_ACCESS_ILLEGAL`).
-* If the constraint validation requires a runtime check due to shared code, delay validation to run time (this can potentially be optimized out if the potential constraint violation is already in a guarded block).
+* Stop doing the verification-level constraint validation when compiling `call` prefixed with `CheckConstraintsForMethodCallThatFollows` (i.e. the check on uninstantiated forms).
+* Keep constraint validation of the instantiated form. Components operating on instantiated method bodies (such as code generators or debuggers) would do the necessary macro expansion of the _constraints bridge_ IL sequence:
+    * If the constraints are not met, treat the sequence as an unconditional jump to the branch that handles false return from `CheckConstraintsForMethodCallThatFollows`.
+    * If the constraints are met, treat the sequence as a normal call.
+    * If the constraints may be met (e.g. due to shared code), generate a runtime check.
 
 ### Alternative option: allow loading constraint-failing MethodTables
 
@@ -90,6 +109,14 @@ Runtime support for this will be indicated by following property:
 ```diff
 namespace System.Runtime.CompilerServices
 {
+    public static partial class RuntimeHelpers
+    {
++        public static bool CheckConstraintsForMethodCallThatFollows();
+    }
+}
+
+namespace System.Runtime.CompilerServices
+{
     public static partial class RuntimeFeature
     {
 +        /// <summary>
@@ -99,12 +126,3 @@ namespace System.Runtime.CompilerServices
     }
 }
 ```
-
-C# compiler will also need APIs to check for constraints at runtime. Some constraints could be checked using existing reflection APIs; it's questionable if we're okay with the perf characteristics or whether we want new APIs.
-
-* `new()` constraint: add `bool RuntimeHelpers.SatisfiesNewConstraint<T>()` (no existing reflection API for this, we need to check if it's a valuetype or a non-abstract type with public parameterless constructor)
-* `struct` constraint: add `bool RuntimeHelpers.IsValueType<T>()`, or reuse `typeof(T).IsValueType`
-* `class` constraint: can be `!struct` as long as we don't allow using pointers as generic parameters, but probably better to add API
-* `unmanaged` constraint: does `RuntimeHelpers.IsReferenceOrContainsReferences` fit the bill?
-* class/interface constraint: add new RuntimeHelpers API or reuse `Type.IsAssignableFrom`.
-
