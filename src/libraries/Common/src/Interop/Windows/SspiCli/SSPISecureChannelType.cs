@@ -61,15 +61,18 @@ namespace System.Net
 
         public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint qop)
         {
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-                context.DangerousAddRef(ref ignore);
+                context.DangerousAddRef(ref mustRelease);
                 return Interop.SspiCli.EncryptMessage(ref context._handle, qop, ref inputOutput, 0);
             }
             finally
             {
-                context.DangerousRelease();
+                if (mustRelease)
+                {
+                    context.DangerousRelease();
+                }
             }
         }
 
@@ -78,15 +81,18 @@ namespace System.Net
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
             uint qopTemp = 0;
 
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-                context.DangerousAddRef(ref ignore);
+                context.DangerousAddRef(ref mustRelease);
                 status = Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, 0, &qopTemp);
             }
             finally
             {
-                context.DangerousRelease();
+                if (mustRelease)
+                {
+                    context.DangerousRelease();
+                }
             }
 
             qop = qopTemp;
@@ -100,6 +106,11 @@ namespace System.Net
             // Bindings is on the stack, so there's no need for a fixed block.
             SecPkgContext_Bindings bindings = default;
             return SafeFreeContextBufferChannelBinding.QueryContextChannelBinding(phContext, attribute, &bindings, refHandle);
+        }
+
+        public unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, IntPtr* refHandle)
+        {
+            return SafeFreeContextBuffer.QueryContextAttributes(phContext, attribute, refHandle);
         }
 
         public unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle)

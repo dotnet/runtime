@@ -2312,6 +2312,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
@@ -2862,6 +2863,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
     opts.dspGCtbls       = false;
+    opts.dspMetrics      = false;
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
@@ -2951,6 +2953,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.optRepeat = true;
         }
+
+        opts.dspMetrics = (JitConfig.JitMetrics() != 0);
     }
 
     if (verboseDump)
@@ -3046,19 +3050,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.dspDiffable = true;
         }
     }
-
-// These are left for backward compatibility, to be removed
-#ifdef DEBUG
-    if (JitConfig.JitDasmWithAlignmentBoundaries())
-    {
-        opts.disAlignment = true;
-    }
-    if (JitConfig.JitDiffableDasm())
-    {
-        opts.disDiffable = true;
-        opts.dspDiffable = true;
-    }
-#endif // DEBUG
 
 //-------------------------------------------------------------------------
 
@@ -3659,6 +3650,12 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
+#ifdef TARGET_XARCH
+    else if (regs == RBM_ALLMASK)
+    {
+        printf("[allMask]");
+    }
+#endif // TARGET_XARCH
     else
     {
         dspRegMask(regs);
@@ -4507,7 +4504,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4609,6 +4605,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Add any internal blocks/trees we may need
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Remove empty try regions
     //
@@ -5035,7 +5036,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    optLoopsRequirePreHeaders = false;
+    optLoopsCanonical = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5318,8 +5319,8 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     if (top->Prev()->isBBCallFinallyPairTail())
     {
-        // If the previous block is the BBJ_ALWAYS of a
-        // BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we can't add alignment
+        // If the previous block is the BBJ_CALLFINALLYRET of a
+        // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
         // because we can't add instructions in that block. In the
         // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
         // reported EH, as above.
@@ -9088,7 +9089,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -9101,7 +9102,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -10028,11 +10029,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[CALL_GUARDED]");
                     }
 
-                    if (call->IsExpRuntimeLookup())
-                    {
-                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
-                    }
-
                     if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
                     {
                         chars += printf("[CALL_MD_STRESS_TAILCALL]");
@@ -10619,6 +10615,31 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "undefined";
     }
 }
+
+//------------------------------------------------------------------------------
+// printfAlloc: printf a string and allocate the result in CMK_DebugOnly
+// memory.
+//
+// Arguments:
+//    format - Format string
+//
+// Returns:
+//    Allocated string.
+//
+const char* Compiler::printfAlloc(const char* format, ...)
+{
+    char    str[512];
+    va_list args;
+    va_start(args, format);
+    int result = vsprintf_s(str, ArrLen(str), format, args);
+    va_end(args);
+    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
+
+    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
+    memcpy(resultStr, str, (unsigned)result + 1);
+    return resultStr;
+}
+
 #endif // defined(DEBUG)
 
 #if TRACK_ENREG_STATS

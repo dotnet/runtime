@@ -2306,5 +2306,231 @@ internal class Dummy
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void ReferenceMethodsOfDictionaryFieldInGenericTypeWorks()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                TypeBuilder tb = ab.GetDynamicModule("MyModule").DefineType("EnumNameCache", TypeAttributes.NotPublic);
+                GenericTypeParameterBuilder[] param = tb.DefineGenericParameters(["TEnum"]);
+                Type fieldType = typeof(Dictionary<,>).MakeGenericType(param[0], typeof(string));
+                FieldBuilder field = tb.DefineField("Cache", fieldType, FieldAttributes.Public | FieldAttributes.Static);
+                ILGenerator staticCtorIL = tb.DefineTypeInitializer().GetILGenerator();
+                staticCtorIL.Emit(OpCodes.Newobj, TypeBuilder.GetConstructor(
+                    typeof(Dictionary<,>).MakeGenericType(param[0], typeof(string)), typeof(Dictionary<,>).GetConstructor(Type.EmptyTypes)));
+                staticCtorIL.Emit(OpCodes.Stsfld, field);
+                staticCtorIL.Emit(OpCodes.Ret);
+
+                MethodBuilder method = type.DefineMethod("Append", MethodAttributes.Public, typeof(string), null);
+                GenericTypeParameterBuilder[] methParam = method.DefineGenericParameters(["T"]);
+                method.SetParameters(methParam[0], typeof(string));
+                Type typeOfT = tb.MakeGenericType(methParam);
+                FieldInfo fieldOfT = TypeBuilder.GetField(typeOfT, field);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder str = ilGenerator.DeclareLocal(typeof(string));
+                Label labelFalse = ilGenerator.DefineLabel();
+                ilGenerator.Emit(OpCodes.Ldsfld, fieldOfT);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Ldloca_S, 0);
+                ilGenerator.Emit(OpCodes.Callvirt, TypeBuilder.GetMethod(
+                    typeof(Dictionary<,>).MakeGenericType(methParam[0], typeof(string)), typeof(Dictionary<,>).GetMethod("TryGetValue")));
+                ilGenerator.Emit(OpCodes.Brfalse_S, labelFalse);
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                ilGenerator.MarkLabel(labelFalse);
+                ilGenerator.Emit(OpCodes.Ldsfld, fieldOfT);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Ldarg_2);
+                ilGenerator.Emit(OpCodes.Callvirt, TypeBuilder.GetMethod(
+                    typeof(Dictionary<,>).MakeGenericType(methParam[0], typeof(string)), typeof(Dictionary<,>).GetMethod("Add")));
+                ilGenerator.Emit(OpCodes.Ldstr, "Added");
+                ilGenerator.Emit(OpCodes.Ret);
+
+                type.CreateType();
+                tb.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("Append");
+                MethodInfo genericMethod = methodFromDisk.MakeGenericMethod(typeof(int));
+                object obj = Activator.CreateInstance(typeFromDisk);
+                Assert.Equal("Added", genericMethod.Invoke(obj, [1, "hello"]));
+                Assert.Equal("hello", genericMethod.Invoke(obj, [1, "next"]));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void ANestedTypeUsedAsGenericArgumentWorks()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                TypeBuilder nested = type.DefineNestedType("Nested", TypeAttributes.NestedPrivate);
+                Type nestedFType = typeof(Dictionary<,>).MakeGenericType(typeof(Type), nested);
+                FieldBuilder nestedField = nested.DefineField("Helpers", nestedFType, FieldAttributes.Static | FieldAttributes.Private);
+                MethodBuilder nestedMethod = nested.DefineMethod("TryGet", MethodAttributes.Public | MethodAttributes.Static,
+                    typeof(bool), [typeof(Type)]);
+                ParameterBuilder param1 = nestedMethod.DefineParameter(1, ParameterAttributes.None, "type");
+                ConstructorBuilder constructor = nested.DefineDefaultConstructor(MethodAttributes.Public);
+                ILGenerator nestedMILGen = nestedMethod.GetILGenerator();
+                nestedMILGen.DeclareLocal(nested);
+                Label label = nestedMILGen.DefineLabel();
+                nestedMILGen.Emit(OpCodes.Ldsfld, nestedField);
+                nestedMILGen.Emit(OpCodes.Ldarg_0);
+                nestedMILGen.Emit(OpCodes.Ldloca_S, 0);
+                nestedMILGen.Emit(OpCodes.Callvirt, TypeBuilder.GetMethod(nestedFType, typeof(Dictionary<,>).GetMethod("TryGetValue")));
+                nestedMILGen.Emit(OpCodes.Brfalse_S, label);
+                nestedMILGen.Emit(OpCodes.Ldc_I4_1);
+                nestedMILGen.Emit(OpCodes.Ret);
+                nestedMILGen.MarkLabel(label);
+                nestedMILGen.Emit(OpCodes.Ldsfld, nestedField);
+                nestedMILGen.Emit(OpCodes.Ldarg_0);
+                nestedMILGen.Emit(OpCodes.Newobj, constructor);
+                nestedMILGen.Emit(OpCodes.Callvirt, TypeBuilder.GetMethod(nestedFType, typeof(Dictionary<,>).GetMethod("Add")));
+                nestedMILGen.Emit(OpCodes.Ldc_I4_0);
+                nestedMILGen.Emit(OpCodes.Ret);
+
+                ILGenerator nestedStaticCtorIL = nested.DefineTypeInitializer().GetILGenerator();
+                nestedStaticCtorIL.Emit(OpCodes.Newobj, TypeBuilder.GetConstructor(
+                    typeof(Dictionary<,>).MakeGenericType(typeof(Type), nested), typeof(Dictionary<,>).GetConstructor(Type.EmptyTypes)));
+                nestedStaticCtorIL.Emit(OpCodes.Stsfld, nestedField);
+                nestedStaticCtorIL.Emit(OpCodes.Ret);
+
+                MethodBuilder test = type.DefineMethod("TestNested", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), [typeof(Type)]);
+                test.DefineParameter(1, ParameterAttributes.None, "type");
+                ILGenerator testIl = test.GetILGenerator();
+                testIl.Emit(OpCodes.Ldarg_0);
+                testIl.Emit(OpCodes.Call, nestedMethod);
+                testIl.Emit(OpCodes.Ret);
+                nested.CreateType();
+                type.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("TestNested");
+                object obj = Activator.CreateInstance(typeFromDisk);
+                Assert.Equal(false, methodFromDisk.Invoke(null, [typeof(int)]));
+                Assert.Equal(true, methodFromDisk.Invoke(null, [typeof(int)]));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void ReferenceNestedGenericCollectionsWithTypeBuilderParameterInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.NestedPublic);
+
+                Type returnType = typeof(List<>).MakeGenericType(typeof(Dictionary<,>).MakeGenericType(nestedType, typeof(bool)));
+                MethodBuilder nestedMethod = nestedType.DefineMethod("M1", MethodAttributes.Public, returnType, null);
+                ILGenerator nestedIL = nestedMethod.GetILGenerator();
+                nestedIL.Emit(OpCodes.Ldc_I4_4);
+                nestedIL.Emit(OpCodes.Newobj, TypeBuilder.GetConstructor(returnType, typeof(List<>).GetConstructor([typeof(int)])));
+                nestedIL.Emit(OpCodes.Ret);
+
+                nestedType.CreateType();
+                type.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                Type nestedFromDisk = typeFromDisk.GetNestedType("NestedType");
+                MethodInfo methodFromDisk = nestedFromDisk.GetMethod("M1");
+                object obj = Activator.CreateInstance(nestedFromDisk);
+                object result = methodFromDisk.Invoke(obj, null);
+                Assert.NotNull(result);
+                Type listType = result.GetType();
+                Type expectedType = typeof(List<>).MakeGenericType(typeof(Dictionary<,>).MakeGenericType(nestedFromDisk, typeof(bool)));
+                Assert.Equal(expectedType, listType);
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void ReferenceNestedGenericTypeWithConstructedTypeBuilderParameterInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                string[] genParams = new string[] { "T" };
+                GenericTypeParameterBuilder[] param = type.DefineGenericParameters(genParams);
+                TypeBuilder nestedItem = type.DefineNestedType("ItemInfo", TypeAttributes.NestedPublic);
+                GenericTypeParameterBuilder itemParam = nestedItem.DefineGenericParameters(genParams)[0];
+                TypeBuilder nestedSector = type.DefineNestedType("Sector", TypeAttributes.NestedPublic);
+                GenericTypeParameterBuilder nestedParam = nestedSector.DefineGenericParameters(genParams)[0];
+
+                Type nestedOfT = nestedItem.MakeGenericType(nestedParam);
+                Type parent = typeof(HashSet<>).MakeGenericType(nestedOfT);
+                nestedSector.SetParent(parent);
+
+                Type hashSetOf = typeof(HashSet<>);
+                Type tFromHashSetOf = hashSetOf.GetGenericArguments()[0];
+                Type iEqCompOf = typeof(IEqualityComparer<>).MakeGenericType(tFromHashSetOf);
+                Type paramType = typeof(IEqualityComparer<>).MakeGenericType(nestedOfT);
+                ConstructorBuilder nestedCtor = nestedSector.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [paramType]);
+                ILGenerator ctorIL = nestedCtor.GetILGenerator();
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Ldarg_1);
+                ctorIL.Emit(OpCodes.Call, TypeBuilder.GetConstructor(parent, hashSetOf.GetConstructor([iEqCompOf])));
+                ctorIL.Emit(OpCodes.Ret);
+
+                MethodBuilder nestedMethod = nestedSector.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+                ILGenerator methodIL = nestedMethod.GetILGenerator();
+                methodIL.Emit(OpCodes.Initobj, parent);
+                methodIL.Emit(OpCodes.Ret);
+
+                type.CreateType();
+                nestedItem.CreateType();
+                nestedSector.CreateType();
+                ab.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    Type ntfdSector = typeFromDisk.GetNestedType("Sector");
+                    MethodInfo methodFromDisk = ntfdSector.GetMethod("Test");
+                    byte[] body = methodFromDisk.GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(0xFE, body[0]); // Initobj instruction occupies 2 bytes 0xfe15
+                    Assert.Equal(0x15, body[1]);
+                }
+            }
+        }
+
+        [Fact]
+        public void ConstructorOfGenericTypeReferencedCorrectly()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                FieldBuilder field = type.DefineField("Field", typeof(int?), FieldAttributes.Public);
+                ConstructorBuilder ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, Type.EmptyTypes);
+                ILGenerator ctorIL = ctor.GetILGenerator();
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes));
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Ldc_I4_1);
+                ctorIL.Emit(OpCodes.Newobj, typeof(int?).GetConstructor([typeof(int)]));
+                ctorIL.Emit(OpCodes.Stfld, field);
+                ctorIL.Emit(OpCodes.Ret);
+                type.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                FieldInfo fieldFromDisk = typeFromDisk.GetField("Field");
+                object obj = Activator.CreateInstance(typeFromDisk);
+                Assert.Equal(typeof(int?), fieldFromDisk.FieldType);
+                Assert.Equal(1, fieldFromDisk.GetValue(obj));
+                tlc.Unload();
+            }
+        }
     }
 }

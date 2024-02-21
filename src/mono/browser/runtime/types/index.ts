@@ -4,29 +4,84 @@
 import type { EmscriptenModule, NativePointer } from "./emscripten";
 
 export interface DotnetHostBuilder {
-    withConfig(config: MonoConfig): DotnetHostBuilder
-    withConfigSrc(configSrc: string): DotnetHostBuilder
-    withApplicationArguments(...args: string[]): DotnetHostBuilder
-    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder
-    withEnvironmentVariables(variables: { [i: string]: string; }): DotnetHostBuilder
-    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder
-    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder
-    withDebugging(level: number): DotnetHostBuilder
-    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
-    withApplicationArgumentsFromQuery(): DotnetHostBuilder
+    /**
+     * @param config default values for the runtime configuration. It will be merged with the default values.
+     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     */
+    withConfig(config: MonoConfig): DotnetHostBuilder;
+    /**
+     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    /**
+     * "command line" arguments for the Main() method.
+     * @param args
+     */
+    withApplicationArguments(...args: string[]): DotnetHostBuilder;
+    /**
+     * Sets the environment variable for the "process"
+     */
+    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
+    /**
+     * Sets the environment variables for the "process"
+     */
+    withEnvironmentVariables(variables: {
+        [i: string]: string;
+    }): DotnetHostBuilder;
+    /**
+     * Sets the "current directory" for the "process" on the virtual file system.
+     */
+    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
+    /**
+     * @param enabled if "true", writes diagnostic messages during runtime startup and execution to the browser console.
+     */
+    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
+    /**
+     * @param level
+     * level > 0 enables debugging and sets the logging level to debug
+     * level == 0 disables debugging and enables interpreter optimizations
+     * level < 0 enables debugging and disables debug logging.
+     */
+    withDebugging(level: number): DotnetHostBuilder;
+    /**
+     * @param mainAssemblyName Sets the name of the assembly with the Main() method. Default is the same as the .csproj name.
+     */
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
+    /**
+     * Supply "command line" arguments for the Main() method from browser query arguments named "arg". Eg. `index.html?arg=A&arg=B&arg=C`.
+     * @param args
+     */
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    /**
+     * Sets application environment, such as "Development", "Staging", "Production", etc.
+     */
     withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder;
+    /**
+     * Sets application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47
+     */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
-
     /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
-    create(): Promise<RuntimeAPI>
-    run(): Promise<number>
+    /**
+     * Starts the runtime and returns promise of the API object.
+     */
+    create(): Promise<RuntimeAPI>;
+
+    /**
+     * Runs the Main() method of the application and exits the runtime.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArgumentsFromQuery()
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * You can use runMain() if you want to keep the runtime alive.
+     */
+    run(): Promise<number>;
 }
 
-// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
+// when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfig = {
     /**
      * Additional search locations for assets.
@@ -89,10 +144,6 @@ export type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number,
-    /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
-     */
-    startupMemoryCache?: boolean,
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
@@ -243,7 +294,7 @@ export interface AssetEntry {
 
 export type SingleAssetBehaviors =
     /**
-     * The binary of the dotnet runtime.
+     * The binary of the .NET runtime.
      */
     | "dotnetwasm"
     /**
@@ -265,7 +316,15 @@ export type SingleAssetBehaviors =
     /**
      * Typically blazor.boot.json
      */
-    | "manifest";
+    | "manifest"
+    /**
+     * The debugging symbols
+     */
+    | "symbols"
+    /**
+     * Load segmentation rules file for Hybrid Globalization.
+     */
+    | "segmentation-rules";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
@@ -296,14 +355,6 @@ export type AssetBehaviors = SingleAssetBehaviors |
      * The javascript module that came from nuget package .
      */
     | "js-module-library-initializer"
-    /**
-     * The javascript module for threads.
-     */
-    | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules"
 
 export const enum GlobalizationMode {
     /**
@@ -340,48 +391,180 @@ export type DotnetModuleConfig = {
 } & Partial<EmscriptenModule>
 
 export type APIType = {
-    runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>,
-    runMainAndExit: (mainAssemblyName: string, args?: string[]) => Promise<number>,
-    setEnvironmentVariable: (name: string, value: string) => void,
-    getAssemblyExports(assemblyName: string): Promise<any>,
-    setModuleImports(moduleName: string, moduleImports: any): void,
-    getConfig: () => MonoConfig,
-    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
-
-    // memory management
-    setHeapB32: (offset: NativePointer, value: number | boolean) => void,
-    setHeapU8: (offset: NativePointer, value: number) => void,
-    setHeapU16: (offset: NativePointer, value: number) => void,
-    setHeapU32: (offset: NativePointer, value: NativePointer | number) => void,
-    setHeapI8: (offset: NativePointer, value: number) => void,
-    setHeapI16: (offset: NativePointer, value: number) => void,
-    setHeapI32: (offset: NativePointer, value: number) => void,
-    setHeapI52: (offset: NativePointer, value: number) => void,
-    setHeapU52: (offset: NativePointer, value: number) => void,
-    setHeapI64Big: (offset: NativePointer, value: bigint) => void,
-    setHeapF32: (offset: NativePointer, value: number) => void,
-    setHeapF64: (offset: NativePointer, value: number) => void,
-    getHeapB32: (offset: NativePointer) => boolean,
-    getHeapU8: (offset: NativePointer) => number,
-    getHeapU16: (offset: NativePointer) => number,
-    getHeapU32: (offset: NativePointer) => number,
-    getHeapI8: (offset: NativePointer) => number,
-    getHeapI16: (offset: NativePointer) => number,
-    getHeapI32: (offset: NativePointer) => number,
-    getHeapI52: (offset: NativePointer) => number,
-    getHeapU52: (offset: NativePointer) => number,
-    getHeapI64Big: (offset: NativePointer) => bigint,
-    getHeapF32: (offset: NativePointer) => number,
-    getHeapF64: (offset: NativePointer) => number,
-    localHeapViewI8: () => Int8Array,
-    localHeapViewI16: () => Int16Array,
-    localHeapViewI32: () => Int32Array,
-    localHeapViewI64Big: () => BigInt64Array,
-    localHeapViewU8: () => Uint8Array,
-    localHeapViewU16: () => Uint16Array,
-    localHeapViewU32: () => Uint32Array,
-    localHeapViewF32: () => Float32Array,
-    localHeapViewF64: () => Float64Array,
+    /**
+     * Runs the Main() method of the application.
+     * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
+     * @param mainAssemblyName name of the assembly with the Main() method. Optional. Default is the same as the .csproj name.
+     * @param args command line arguments for the Main() method. Optional.
+     * @returns exit code of the Main() method.
+     */
+    runMain: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
+    /**
+     * Runs the Main() method of the application and exits the runtime.
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * @param mainAssemblyName name of the assembly with the Main() method. Optional. Default is the same as the .csproj name.
+     * @param args command line arguments for the Main() method. Optional.
+     * @returns exit code of the Main() method.
+     */
+    runMainAndExit: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
+    /**
+     * Sets the environment variable for the "process"
+     * @param name
+     * @param value
+     */
+    setEnvironmentVariable: (name: string, value: string) => void;
+    /**
+     * Returns the [JSExport] methods of the assembly with the given name
+     * @param assemblyName
+     */
+    getAssemblyExports(assemblyName: string): Promise<any>;
+    /**
+     * Provides functions which could be imported by the managed code using [JSImport]
+     * @param moduleName maps to the second parameter of [JSImport]
+     * @param moduleImports object with functions which could be imported by the managed code. The keys map to the first parameter of [JSImport]
+     */
+    setModuleImports(moduleName: string, moduleImports: any): void;
+    /**
+     * Returns the configuration object used to start the runtime.
+     */
+    getConfig: () => MonoConfig;
+    /**
+     * Executes scripts which were loaded during runtime bootstrap.
+     * You can register the scripts using MonoConfig.resources.modulesAfterConfigLoaded and MonoConfig.resources.modulesAfterRuntimeReady.
+     */
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapB32: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapU8: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapU16: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapU32: (offset: NativePointer, value: NativePointer | number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapI8: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapI16: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapI32: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapI52: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapU52: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapI64Big: (offset: NativePointer, value: bigint) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapF32: (offset: NativePointer, value: number) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapF64: (offset: NativePointer, value: number) => void;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapU8: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapU16: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapU32: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapI8: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapI16: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapI32: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapI52: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapU52: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapI64Big: (offset: NativePointer) => bigint;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapF32: (offset: NativePointer) => number;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapF64: (offset: NativePointer) => number;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewI8: () => Int8Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewI16: () => Int16Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewI32: () => Int32Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewI64Big: () => BigInt64Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewU8: () => Uint8Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewU16: () => Uint16Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewU32: () => Uint32Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewF32: () => Float32Array;
+    /**
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
+     */
+    localHeapViewF64: () => Float64Array;
 }
 
 export type RuntimeAPI = {
@@ -392,12 +575,21 @@ export type RuntimeAPI = {
         productVersion: string,
         gitHash: string,
         buildConfiguration: string,
+        wasmEnableThreads: boolean,
+        wasmEnableSIMD: boolean,
+        wasmEnableExceptionHandling: boolean,
     }
 } & APIType
 
 export type ModuleAPI = {
+    /**
+     * The builder for the .NET runtime.
+     */
     dotnet: DotnetHostBuilder;
-    exit: (code: number, reason?: any) => void
+    /**
+     * Terminates the runtime "process" and reject all further calls to the API.
+     */
+    exit: (code: number, reason?: any) => void;
 }
 
 export type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;

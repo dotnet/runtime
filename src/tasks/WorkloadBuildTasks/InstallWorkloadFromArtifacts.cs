@@ -42,8 +42,10 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        public string         ExtraWorkloadInstallCommandArguments { get; set; } = string.Empty;
         public string?        IntermediateOutputPath { get; set; }
-        public bool           OnlyUpdateManifests{ get; set; }
+        public bool           OnlyUpdateManifests { get; set; }
+        public bool           SkipTempDirectoryCleanup { get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
@@ -139,7 +141,7 @@ namespace Microsoft.Workload.Build.Tasks
             }
             finally
             {
-                if (!string.IsNullOrEmpty(_tempDir) && Directory.Exists(_tempDir))
+                if (!SkipTempDirectoryCleanup && !string.IsNullOrEmpty(_tempDir) && Directory.Exists(_tempDir))
                     Directory.Delete(_tempDir, recursive: true);
             }
         }
@@ -219,7 +221,7 @@ namespace Microsoft.Workload.Build.Tasks
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
                                                     Path.Combine(req.TargetPath, "dotnet"),
-                                                    $"workload install --skip-manifest-update --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {req.WorkloadId}",
+                                                    $"workload install --skip-manifest-update --skip-sign-check --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {ExtraWorkloadInstallCommandArguments} {req.WorkloadId}",
                                                     workingDir: _tempDir,
                                                     envVars: new Dictionary<string, string> () {
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
@@ -257,7 +259,7 @@ namespace Microsoft.Workload.Build.Tasks
             if (!contents.Contains(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase))
                 throw new LogAsErrorException($"Could not find {s_nugetInsertionTag} in {TemplateNuGetConfigPath}");
 
-            return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
+            return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""file://{LocalNuGetsPath}"" />");
         }
 
         private bool InstallWorkloadManifest(ITaskItem workloadId, string name, string version, string sdkDir, string nugetConfigContents, bool stopOnMissing)

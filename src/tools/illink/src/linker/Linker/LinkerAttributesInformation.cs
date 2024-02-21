@@ -62,8 +62,8 @@ namespace Mono.Linker
 					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
 					allowMultiple = true;
 					break;
-				case "FeatureGuardAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
-					attributeValue = ProcessFeatureGuardAttribute (context, provider, customAttribute);
+				case "FeatureCheckAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
+					attributeValue = ProcessFeatureCheckAttribute (context, provider, customAttribute);
 					allowMultiple = true;
 					break;
 				default:
@@ -133,14 +133,14 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static FeatureGuardAttribute? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		static FeatureCheckAttribute? ProcessFeatureCheckAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
 			if (provider is not PropertyDefinition property)
 				return null;
 
 			// property must be a static bool get-only property
 			if (property.HasThis || property.PropertyType.MetadataType != MetadataType.Boolean || property.SetMethod != null) {
-				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureGuard);
+				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureCheck);
 				return null;
 			}
 
@@ -150,15 +150,15 @@ namespace Mono.Linker
 
 				switch (featureType.Name) {
 				case "RequiresUnreferencedCodeAttribute":
-					return new FeatureGuardAttribute (typeof (RequiresUnreferencedCodeAttribute));
+					return new FeatureCheckAttribute (typeof (RequiresUnreferencedCodeAttribute));
 				case "RequiresAssemblyFilesAttribute":
-					return new FeatureGuardAttribute (typeof (RequiresAssemblyFilesAttribute));
+					return new FeatureCheckAttribute (typeof (RequiresAssemblyFilesAttribute));
 				case "RequiresDynamicCodeAttribute":
-					return new FeatureGuardAttribute (typeof (RequiresDynamicCodeAttribute));
+					return new FeatureCheckAttribute (typeof (RequiresDynamicCodeAttribute));
 				}
 			}
 
-			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (FeatureGuardAttribute).FullName ?? "");
+			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (FeatureCheckAttribute).FullName ?? "");
 			return null;
 		}
 	}

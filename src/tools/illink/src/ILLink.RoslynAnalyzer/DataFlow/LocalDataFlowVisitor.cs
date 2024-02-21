@@ -119,7 +119,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			var current = state.Current;
 			HandleReturnValue (branchValue, branchValueOperation, in current.Context);
 			// Must be called for every return value even if it did not return an understood condition,
-			// because the non-understood conditions will produce warnings for FeatureGuard properties.
+			// because the non-understood conditions will produce warnings for FeatureCheck properties.
 			HandleReturnConditionValue (conditionValue, branchValueOperation);
 			return null;
 		}

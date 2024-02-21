@@ -545,6 +545,13 @@ public:
                 pcsExceptionHandler->EmitINITOBJ(m_slIL.GetDispatchCodeStream()->GetToken(returnTypeHnd));
             }
             break;
+        case ELEMENT_TYPE_PTR:
+            pcsExceptionHandler->EmitPOP();
+            pcsExceptionHandler->EmitLDC(0);
+            pcsExceptionHandler->EmitCONV_U();
+            _ASSERTE(retvalLocalNum != (DWORD)-1);
+            pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
+            break;
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_I1:
@@ -3167,7 +3174,6 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
     return S_FALSE;
 }
 
-
 // Either MD or signature & module must be given.
 /*static*/
 BOOL NDirect::MarshalingRequired(
@@ -4257,7 +4263,8 @@ static void CreateNDirectStubAccessMetadata(
     {
         if (unmgdCallConv == CorInfoCallConvExtension::Managed ||
             unmgdCallConv == CorInfoCallConvExtension::Fastcall ||
-            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
+            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
+            unmgdCallConv == CorInfoCallConvExtension::Swift)
         {
             COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
@@ -4895,7 +4902,7 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
+            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();
