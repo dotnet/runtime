@@ -263,6 +263,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     X509Certificate2 loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
                     Assert.Null(loaded.GetECDiffieHellmanPrivateKey());
                     Assert.NotNull(loaded.GetECDiffieHellmanPublicKey());
+                    Assert.NotNull(loaded.GetECDsaPrivateKey());
                 }
             }
         }
