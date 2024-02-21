@@ -326,7 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (assemblyEnd == -1 || assemblyStart.Length == fqnSpan.Length)
                 throw new InvalidOperationException($"No assembly name specified {fqn}");
 
-            string assembly = assemblyStart.Slice(assemblyEnd).Trim().ToString();
+            string assembly = assemblyStart.Slice(assemblyEnd -1).Trim().ToString();
             ReadOnlySpan<char> classAndMethod = assemblyStart.Slice(assemblyEnd + 1).Trim();
 
             int classNameEnd = classAndMethod.IndexOf(':');
