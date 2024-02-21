@@ -5461,6 +5461,24 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_usublt, EA_SCALABLE, REG_V1, REG_V2, REG_V3,
                               INS_OPTS_SCALABLE_D); // USUBLT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
 
+    // IF_SVE_FM_3A
+    theEmitter->emitIns_R_R_R(INS_sve_saddwb, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
+                              INS_OPTS_SCALABLE_H); // SADDWB <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_saddwt, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
+                              INS_OPTS_SCALABLE_S); // SADDWT <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_ssubwb, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
+                              INS_OPTS_SCALABLE_D); // SSUBWB <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_ssubwt, EA_SCALABLE, REG_V9, REG_V10, REG_V11,
+                              INS_OPTS_SCALABLE_H); // SSUBWT <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_uaddwb, EA_SCALABLE, REG_V12, REG_V13, REG_V14,
+                              INS_OPTS_SCALABLE_S); // UADDWB <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_uaddwt, EA_SCALABLE, REG_V15, REG_V16, REG_V17,
+                              INS_OPTS_SCALABLE_D); // UADDWT <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_usubwb, EA_SCALABLE, REG_V18, REG_V19, REG_V20,
+                              INS_OPTS_SCALABLE_H); // USUBWB <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+    theEmitter->emitIns_R_R_R(INS_sve_usubwt, EA_SCALABLE, REG_V21, REG_V22, REG_V23,
+                              INS_OPTS_SCALABLE_S); // USUBWT <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}
