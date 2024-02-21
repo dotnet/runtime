@@ -343,10 +343,10 @@ namespace System
 
 #if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
-        private struct Block16 { }
+        internal struct Block16 { }
 
         [StructLayout(LayoutKind.Sequential, Size = 64)]
-        private struct Block64 { }
+        internal struct Block64 { }
 #endif // HAS_CUSTOM_BLOCKS
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
