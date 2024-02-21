@@ -14,5 +14,7 @@
     <type fullname="System.Configuration.NameValueSectionHandler" />
     <type fullname="System.Configuration.UriSection" />
     <type fullname="System.ConfigurationTests.TypeUtilTests" />
+    <type fullname="System.Configuration.NameValueSectionHandler" />
+    <type fullname="System.Configuration.UriSection" />
   </assembly>
 </linker>
