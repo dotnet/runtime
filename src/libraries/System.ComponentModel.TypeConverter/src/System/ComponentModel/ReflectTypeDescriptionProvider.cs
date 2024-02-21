@@ -199,7 +199,7 @@ namespace System.ComponentModel
             }
         }
 
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
         private static bool IntrinsicNullableConverterIsSupported => false;
 #pragma warning restore IL4000
