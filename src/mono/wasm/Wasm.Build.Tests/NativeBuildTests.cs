@@ -94,19 +94,21 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun]
+        [BuildAndRun(host: RunHost.None, aot: true)]
         public void NativeBuildIsRequired(BuildArgs buildArgs, string id)
         {
-            string projectName = $"simple_native_build_{buildArgs.Config}_{buildArgs.AOT}";
+            string projectName = $"native_build_{buildArgs.Config}_{buildArgs.AOT}";
 
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>false</WasmBuildNative>;<WasmSingleFileBundle>true</WasmSingleFileBundle>");
+            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:WasmBuildNative=false -p:WasmSingleFileBundle=true" };
+            buildArgs = ExpandBuildArgs(buildArgs);
 
-            (_, string output) = BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                DotnetWasmFromRuntimePack: false));
+            (_, string output) = BuildProject(
+                                    buildArgs,
+                                    id: id,
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                        DotnetWasmFromRuntimePack: false,
+                                        ExpectSuccess: false));
 
             Assert.Contains("WasmBuildNative is required", output);
         }
