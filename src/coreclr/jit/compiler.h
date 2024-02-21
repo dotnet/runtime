@@ -65,6 +65,8 @@ inline var_types genActualType(T value);
 #include "simd.h"
 #include "simdashwintrinsic.h"
 
+#include "jitmetadata.h"
+
 /*****************************************************************************
  *                  Forward declarations
  */
@@ -3311,6 +3313,8 @@ public:
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
+    GenTree* gtNewMemoryBarrier(bool loadOnly = false);
+
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
@@ -4966,7 +4970,6 @@ public:
     unsigned        fgEdgeCount;    // # of control flow edges between the BBs
     unsigned        fgBBcount;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
 #ifdef DEBUG
-    unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
     // Used as a quick check for whether loop alignment should look for natural loops.
@@ -4995,7 +4998,6 @@ public:
     // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
     //
     bool optLoopsCanonical;
-    unsigned optNumNaturalLoopsFound; // Number of natural loops found in the loop finding phase
 
     bool fgBBVarSetsInited;
 
@@ -6839,16 +6841,11 @@ public:
 
 public:
     bool fgHasLoops;
-#ifdef DEBUG
-    unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
-    unsigned loopsAligned;        // number of loops actually aligned
-#endif                          // DEBUG
 
 protected:
     unsigned optCallCount;         // number of calls made in the method
     unsigned optIndirectCallCount; // number of virtual, interface and indirect calls made in the method
     unsigned optNativeCallCount;   // number of Pinvoke/Native calls made in the method
-    unsigned optLoopsCloned;       // number of loops cloned in the current method.
 
 #ifdef DEBUG
     void optCheckPreds();
@@ -10153,7 +10150,6 @@ public:
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
-        double      compPerfScore;
         int         compMethodSuperPMIIndex; // useful when debugging under SuperPMI
 
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
@@ -10613,6 +10609,8 @@ public:
 
     static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
+
+    JitMetrics Metrics;
 
     bool compIsForInlining() const;
     bool compDonotInline();

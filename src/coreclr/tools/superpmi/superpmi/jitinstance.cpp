@@ -459,6 +459,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
     }
 
     mc->cr->secondsToCompile = stj.GetSeconds();
+    param.results.CompileResults = mc->cr;
 
     UINT64 insCountAfter = 0;
     Instrumentor_GetInsCount(&insCountAfter);
