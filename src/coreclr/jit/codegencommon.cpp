@@ -7480,7 +7480,7 @@ void CodeGen::genReportRichDebugInfo()
         for (size_t i = 0; i < mappingIndex; i++)
         {
             printf("  [%zu] 0x%x <-> IL %d in #%d\n", i, mappings[i].NativeOffset, mappings[i].ILOffset,
-                   mappings->Inlinee);
+                   mappings[i].Inlinee);
         }
 
         printf("\n");
