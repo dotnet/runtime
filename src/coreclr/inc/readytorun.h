@@ -327,7 +327,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
     READYTORUN_HELPER_Ldelema_Ref               = 0x39,
 
-    READYTORUN_HELPER_MemSet                    = 0x40,
+    READYTORUN_HELPER_MemSet                    = 0x3F,
+    READYTORUN_HELPER_NativeMemSet              = 0x40,
     READYTORUN_HELPER_MemCpy                    = 0x41,
 
     // PInvoke helpers
@@ -443,12 +444,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
-
-    // Array helpers for use with native ints
-    READYTORUN_HELPER_Stelem_Ref_I                = 0x113,
-    READYTORUN_HELPER_Ldelema_Ref_I               = 0x114,
-
-    READYTORUN_HELPER_NativeMemSet                = 0x115,
 };
 
 #include "readytoruninstructionset.h"
