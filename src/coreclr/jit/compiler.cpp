@@ -5008,6 +5008,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
+            // Conservatively mark all VNs as stale
+            vnStore = nullptr;
+
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
