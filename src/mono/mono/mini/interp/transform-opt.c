@@ -1709,8 +1709,7 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		int new_capacity = get_bb_links_capacity (from->out_count + 1);
 		if (new_capacity > prev_capacity) {
 			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
-			for (i = 0; i < from->out_count; ++i)
-				newa [i] = from->out_bb [i];
+			memcpy (newa, from->out_bb, from->out_count * sizeof (InterpBasicBlock*));
 			from->out_bb = newa;
 		}
 		from->out_bb [from->out_count] = to;
@@ -1729,8 +1728,7 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		int new_capacity = get_bb_links_capacity (to->in_count + 1);
 		if (new_capacity > prev_capacity) {
 			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
-			for (i = 0; i < to->in_count; ++i)
-				newa [i] = to->in_bb [i];
+			memcpy (newa, to->in_bb, to->in_count * sizeof (InterpBasicBlock*));
 			to->in_bb = newa;
 		}
 		to->in_bb [to->in_count] = from;
