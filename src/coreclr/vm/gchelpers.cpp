@@ -191,40 +191,60 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
+    Object* retVal = nullptr;
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
 
+    bool isSampled = false;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         // if sampling is on, decide if this object should be sampled
+        // TODO: the provided allocation context fields are not used for LOH/POH allocations
+        //       so 2 global cumulated size/thresholds should be used like for the AllocationTick implementation
     }
     else
     {
+        // check if this allocation overlaps the SOH sampling point
         size_t available = (pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
-        if(pEEAllocContext->fast_alloc_helper_limit_ptr < pAllocContext->alloc_limit &&
-           size > available)
+        isSampled =
+            (pEEAllocContext->fast_alloc_helper_limit_ptr != nullptr) &&
+            (pEEAllocContext->fast_alloc_helper_limit_ptr != pAllocContext->alloc_limit);
+
+    }
+
+    if (isSampled)
+    {
+        // this allocation overlaps the SOH sampling point, record an allocation sampling event
+        // TODO: route this to a sampling callback. I'm thinking we might just add a
+        // bool* was_sampled out parameter and get this signal routed back to PublishObjectAndNotify that is going to
+        // called a few frames up the stack. That lets us get the object initialized before delivering
+        // the notification.
+
+        // check if there is enough space for the object in the remaining of the allocation context to continue the fast path
+        if (size < (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
         {
-            // this allocation overlaps the SOH sampling point, record an allocation sampling event
-            // TODO: route this to a sampling callback. I'm thinking we might just add a
-            // bool* was_sampled out parameter and get this signal routed back to PublishObjectAndNotify that is going to
-            // called a few frames up the stack. That lets us get the object initialized before delivering
-            // the notification.
+            // the object fits in the current allocation context so no need to get a new one
+            // so simulate the fast path by advancing the alloc_ptr and returning the object
+            retVal = (Object*)pAllocContext->alloc_ptr;
+            pAllocContext->alloc_ptr += size;
+
+            // recompute a new sampling threshold for the remaining of the allocation context
+            pEEAllocContext->SetFastAllocHelperLimit();
+
+            return retVal;
         }
     }
 
     GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
-    Object* retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
 
-    if(pEEAllocContext->fast_alloc_helper_limit_ptr > pAllocContext->alloc_limit ||
-        pAllocContext->alloc_ptr > pEEAllocContext->fast_alloc_helper_limit_ptr)
+    // GC will provide a new allocation context for SOH allocations
+    retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+
+    // only SOH allocations require sampling threshold to be recomputed
+    if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0)
     {
-        // fast_alloc_limit_ptr should be in the range [alloc_ptr, alloc_limit]
-        // if it isn't that means at least one of these things just happened:
-        // 1) We allocated a new object that advanced alloc_ptr past fast_alloc_helper_limit_ptr
-        // 2) The GC just moved the allocation context to a different region of memory
-        // Either way we need to update the fast_alloc_limit_ptr to place it back within the
-        // allocation context area.
         pEEAllocContext->SetFastAllocHelperLimit();
     }
+
     return retVal;
 }
 

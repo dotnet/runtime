@@ -446,15 +446,29 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
 {
+
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
+
+    // The allocation context might be modified by the callback, so we need to save
+    // the remaining sampling budget and restore it after the callback.
+    size_t remainingSamplingBudget = (pEEAllocContext->fast_alloc_helper_limit_ptr == nullptr) ? 0 : pEEAllocContext->fast_alloc_helper_limit_ptr - pAllocContext->alloc_ptr;
+
     fn(pAllocContext, param);
-    if(pEEAllocContext->fast_alloc_helper_limit_ptr > pAllocContext->alloc_limit ||
-        pAllocContext->alloc_ptr > pEEAllocContext->fast_alloc_helper_limit_ptr)
+
+    if (remainingSamplingBudget != 0)
     {
         // fast_alloc_limit_ptr should be in the range [alloc_ptr, alloc_limit].
-        // If it isn't that means the GC just moved the allocation context to a
-        // different region of memory within the callback and we need to fix it up.
-        pEEAllocContext->SetFastAllocHelperLimit();
+        if (remainingSamplingBudget > (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
+        {
+            // the allocation context size has been reduced below the sampling threshold (not sure this is possible)
+            // so need to recompute a new sampling limit
+            pEEAllocContext->SetFastAllocHelperLimit();
+        }
+        else
+        {
+            // restore the remaining sampling budget
+            pEEAllocContext->fast_alloc_helper_limit_ptr = pAllocContext->alloc_ptr + remainingSamplingBudget;
+        }
     }
 }
 

@@ -16,19 +16,27 @@ extern "C" {
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
 typedef struct _ee_alloc_context
 {
-    uint8_t* fast_alloc_helper_limit_ptr; 
+    // TODO: rename it to alloc_sampling for consistency sake with alloc_ptr and alloc_limit
+    // This is the address where the next allocation sampling should occur:
+    //  - if sampling is off, this is the same as alloc_limit
+    //  - if sampling is on, this is the next sampled byte in the gc_alloc_context
+    //  - if no such byte exists (i.e. the sampling threshold is outside of the allocation context),
+    //     this is the same as alloc_limit
+    uint8_t* fast_alloc_helper_limit_ptr;
     gc_alloc_context gc_alloc_context;
 
  public:
     void init()
     {
         LIMITED_METHOD_CONTRACT;
-        fast_alloc_helper_limit_ptr = 0;
+        fast_alloc_helper_limit_ptr = nullptr;
         gc_alloc_context.init();
     }
 
+    // TODO: rename it to GenerateAllocSampling()
     inline void SetFastAllocHelperLimit()
     {
+        // TODO: maybe it is easier to assume that the caller of this function will check if sampling is on/off
         // If sampling is off this is just setting fast_alloc_helper_limit_ptr = alloc_limit
         // If sampling is on then we'd do some pseudo-random number generation to decide what is
         // the next sampled byte in the gc_alloc_context, if any.
