@@ -36,6 +36,7 @@
             <NativeLibraryCmakeFragmentProperties Include="libArtifactName" Value="$(NativeLibraryArtifactName)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibPath" Value="$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))" />
+            <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="@(NativeLibraryCmakeFragmentIncludePath, ';')" />
         </ItemGroup>
     </Target>
 
