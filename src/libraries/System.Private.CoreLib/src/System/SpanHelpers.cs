@@ -32,6 +32,7 @@ namespace System
                     do
                     {
                         Vector<byte>.Zero.StoreUnsafe(ref b, offset);
+                        Vector<byte>.Zero.StoreUnsafe(ref b, offset);
                         Vector<byte>.Zero.StoreUnsafe(ref b, offset + (nuint)Vector<byte>.Count);
                         offset += (uint)(2 * Vector<byte>.Count);
                     } while (offset < stopLoopAtOffset);
@@ -69,23 +70,26 @@ namespace System
                 nuint stopLoopAtOffset = byteLength & ~(nuint)7;
                 do
                 {
-                    // JIT is expected to coalesce these stores into a single 8-byte store on 64-bit platforms
-                    Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i) = 0;
-                    Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i + 4) = 0;
+#if TARGET_64BIT
+                    Unsafe.WriteUnaligned<ulong>(ref Unsafe.AddByteOffset(ref b, i), 0);
+#else
+                    Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref b, i), 0);
+                    Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref b, i + 4), 0);
+#endif
                 } while ((i += 8) < stopLoopAtOffset);
             }
 
             // Write next 4 elements if needed
             if ((byteLength & 4) != 0)
             {
-                Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i) = 0;
+                Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref b, i), 0);
                 i += 4;
             }
 
             // Write next 2 elements if needed
             if ((byteLength & 2) != 0)
             {
-                Unsafe.AddByteOffset(ref Unsafe.As<byte, ushort>(ref b), (nint)i) = 0;
+                Unsafe.WriteUnaligned<ushort>(ref Unsafe.AddByteOffset(ref b, i), 0);
                 i += 2;
             }
 
