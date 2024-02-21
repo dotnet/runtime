@@ -4370,7 +4370,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     // Record that we created a new LclVar for use as a CSE temp
     m_addCSEcount++;
     m_pCompiler->optCSEcount++;
-    m_pCompiler->Metrics.Cses++;
+    m_pCompiler->Metrics.CseCount++;
 
     //  Walk all references to this CSE, adding an assignment
     //  to the CSE temp to all defs and changing all refs to

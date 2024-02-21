@@ -1798,7 +1798,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     if (!compIsForInlining())
     {
-        JitMetadata::report(this, JitMetadataName::MethodFullName, info.compFullName);
+        JitMetadata::report(this, JitMetadata::MethodFullName, info.compFullName, strlen(info.compFullName));
     }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
@@ -5021,6 +5021,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
+            // Conservatively mark all VNs as stale
+            vnStore = nullptr;
+
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
@@ -7165,7 +7168,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         opts.disAsm = false;
     }
 
-    INDEBUG(JitMetadata::report(this, JitMetadataName::TieringName, compGetTieringName(true)));
+#ifdef DEBUG
+    {
+        const char* tieringName = compGetTieringName(true);
+        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
+    }
+#endif
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);

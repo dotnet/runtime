@@ -7,40 +7,16 @@
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// JitMetadata::getName: Get the name corresponding to a JitMetadataName value,
-// which can be used to report metadata back to the EE.
-//
-// Parameters:
-//   name - The JitMetadataName enum entry
-//
-// Returns:
-//   String representation of the name
-//
-const char* JitMetadata::getName(JitMetadataName name)
-{
-    switch (name)
-    {
-#define JITMETADATA(name, type, flags)                                                                                 \
-    case JitMetadataName::name:                                                                                        \
-        return #name;
-#include "jitmetadatalist.h"
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
 // JitMetadata::report: Report metadata back to the EE.
 //
 // Parameters:
 //   comp - Compiler instance
-//   name - Enum entry specifying the metadata name
+//   key  - Key name of metadata
 //   data - Pointer to the value to report back
 //
-void JitMetadata::report(Compiler* comp, JitMetadataName name, const void* data)
+void JitMetadata::report(Compiler* comp, const char* key, const void* data, size_t length)
 {
-    comp->info.compCompHnd->reportMetadata(getName(name), data);
+    comp->info.compCompHnd->reportMetadata(key, data, length);
 }
 
 //------------------------------------------------------------------------
@@ -54,7 +30,7 @@ void JitMetadata::report(Compiler* comp, JitMetadataName name, const void* data)
 template <typename T>
 static void reportValue(Compiler* comp, const char* key, T value)
 {
-    comp->info.compCompHnd->reportMetadata(key, &value);
+    JitMetadata::report(comp, key, &value, sizeof(value));
 }
 
 //------------------------------------------------------------------------

@@ -2678,10 +2678,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
 {
     switch (call->GetHelperNum())
     {
-        //
-        // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
-        // where CAST is either ISINST or CASTCLASS.
-        //
         case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTINTERFACE:
@@ -2691,10 +2687,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
         case CORINFO_HELP_ISINSTANCEOFANY:
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         {
-            GenTree* castClsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* castObjArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
-            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
+            GenTree* castClsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* castObjArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
             {
@@ -2704,17 +2698,26 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 return nullptr;
             }
 
-            VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf))
+            // If object has the same VN as the cast, then the cast is effectively a no-op.
+            //
+            if (((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0) && (castObjArg->gtVNPair == call->gtVNPair))
             {
-                ValueNum innerCastClsVN = funcApp.m_args[0];
-                if (innerCastClsVN == castClsArgVN)
+                return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+            }
+
+            // Let's see if gtGetClassHandle may help us to fold the cast (since VNForCast did not).
+            if (castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                bool                 isExact;
+                bool                 isNonNull;
+                CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull);
+                if (castFrom != NO_CLASS_HANDLE)
                 {
-                    // The outer cast is redundant, remove it and preserve its side effects
-                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
-                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
-                    fgSetTreeSeq(result);
-                    return result;
+                    CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
+                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    {
+                        return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    }
                 }
             }
         }

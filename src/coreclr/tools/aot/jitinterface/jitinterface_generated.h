@@ -115,7 +115,7 @@ struct JitInterfaceCallbacks
     void (* getVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars);
     void (* reportRichMappings)(void * thisHandle, CorInfoExceptionClass** ppException, ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings);
-    void (* reportMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, const char* key, const void* value);
+    void (* reportMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, const char* key, const void* value, size_t length);
     void* (* allocateArray)(void * thisHandle, CorInfoExceptionClass** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
     CORINFO_ARG_LIST_HANDLE (* getArgNext)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ARG_LIST_HANDLE args);
@@ -1215,6 +1215,7 @@ public:
     if (pException != nullptr) throw pException;
 }
 
+<<<<<<< HEAD
     virtual void reportMetadata(
           const char* key,
           const void* value)
@@ -1224,6 +1225,19 @@ public:
     if (pException != nullptr) throw pException;
 }
 
+||||||| 9dc6ea62a4d
+=======
+    virtual void reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->reportMetadata(_thisHandle, &pException, key, value, length);
+    if (pException != nullptr) throw pException;
+}
+
+>>>>>>> 80084aa5632026b7d14d559d22e31403a9e89960
     virtual void* allocateArray(
           size_t cBytes)
 {

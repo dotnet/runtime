@@ -1193,10 +1193,10 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
-void interceptor_ICJI::reportMetadata(const char* key, const void* value)
+void interceptor_ICJI::reportMetadata(const char* key, const void* value, size_t length)
 {
     mc->cr->AddCall("reportMetadata");
-    original_ICorJitInfo->reportMetadata(key, value);
+    original_ICorJitInfo->reportMetadata(key, value, length);
 }
 
 /*-------------------------- Misc ---------------------------------------*/

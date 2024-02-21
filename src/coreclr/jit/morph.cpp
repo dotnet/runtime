@@ -13357,29 +13357,29 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
-            BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-            bool         foundVal  = false;
+            size_t     switchVal = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+            bool       foundVal  = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
-                BasicBlock* curJump = *jumpTab;
+                FlowEdge* curEdge = *jumpTab;
 
-                assert(curJump->countOfInEdges() > 0);
+                assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    block->SetKindAndTarget(BBJ_ALWAYS, curJump);
+                    block->SetKindAndTarget(BBJ_ALWAYS, curEdge->getDestinationBlock());
                     foundVal = true;
                 }
                 else
                 {
-                    // Remove 'block' from the predecessor list of 'curJump'
-                    fgRemoveRefPred(curJump, block);
+                    // Remove 'curEdge'
+                    fgRemoveRefPred(curEdge->getDestinationBlock(), block);
                 }
             }
 

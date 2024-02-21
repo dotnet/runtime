@@ -1840,8 +1840,8 @@ public:
 //
 struct BBswtDesc
 {
-    BasicBlock** bbsDstTab; // case label table address
-    unsigned     bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
+    FlowEdge** bbsDstTab; // case label table address
+    unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
 
     // Case number and likelihood of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
@@ -1867,7 +1867,7 @@ struct BBswtDesc
         bbsCount--;
     }
 
-    BasicBlock* getDefault()
+    FlowEdge* getDefault()
     {
         assert(bbsHasDefault);
         assert(bbsCount > 0);
@@ -1994,8 +1994,10 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
             assert(block->bbSwtTargets != nullptr);
             assert(block->bbSwtTargets->bbsDstTab != nullptr);
-            m_begin = block->bbSwtTargets->bbsDstTab;
-            m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
+            m_beginEdge = block->bbSwtTargets->bbsDstTab;
+            m_endEdge   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
+
+            iterateEdges = true;
             break;
 
         default:

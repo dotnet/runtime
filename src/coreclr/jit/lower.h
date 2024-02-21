@@ -141,6 +141,7 @@ private:
     bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
     bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
+    void MoveCFGCallArgs(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
@@ -331,6 +332,7 @@ private:
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
+    void LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void LowerLclHeap(GenTree* node);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
@@ -349,7 +351,7 @@ private:
 
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
-        BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
+        FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
 
     void LowerCast(GenTree* node);
 

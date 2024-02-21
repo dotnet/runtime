@@ -722,12 +722,12 @@ void BasicBlock::dspKind() const
         {
             printf(" ->");
 
-            const unsigned     jumpCnt = bbSwtTargets->bbsCount;
-            BasicBlock** const jumpTab = bbSwtTargets->bbsDstTab;
+            const unsigned   jumpCnt = bbSwtTargets->bbsCount;
+            FlowEdge** const jumpTab = bbSwtTargets->bbsDstTab;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
 
                 const bool isDefault = bbSwtTargets->bbsHasDefault && (i == jumpCnt - 1);
                 if (isDefault)
@@ -1217,7 +1217,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             return bbEhfTargets->bbeSuccs[i]->getDestinationBlock();
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsDstTab[i];
+            return bbSwtTargets->bbsDstTab[i]->getDestinationBlock();
 
         default:
             unreached();
@@ -1774,7 +1774,7 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 {
     // Allocate and fill in a new dst tab
     //
-    bbsDstTab = new (comp, CMK_BasicBlock) BasicBlock*[bbsCount];
+    bbsDstTab = new (comp, CMK_FlowEdge) FlowEdge*[bbsCount];
     for (unsigned i = 0; i < bbsCount; i++)
     {
         bbsDstTab[i] = other->bbsDstTab[i];
