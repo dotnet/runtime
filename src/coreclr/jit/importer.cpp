@@ -10286,12 +10286,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
                 const bool   isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+#ifndef TARGET_X86
                 if (isVolatile && !impStackTop(0).val->IsCnsIntOrI())
                 {
                     // We're going to emit a helper call surrounded by memory barriers, so we need to spill any side
                     // effects.
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
                 }
+#endif
 
                 op3 = impPopStack().val; // Size
                 op2 = impPopStack().val; // Value / Src addr
