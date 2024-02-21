@@ -568,6 +568,22 @@ namespace System.IO
             }
         }
 
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                if (arg == null)
+                {
+                    ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
+                }
+                WriteFormatHelper(format, arg, appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg);
+            }
+        }
+
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
@@ -611,6 +627,18 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ArgumentNullException.ThrowIfNull(arg);
+                WriteFormatHelper(format, arg, appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg);
+            }
+        }
+
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
                 WriteFormatHelper(format, arg, appendNewLine: true);
             }
             else

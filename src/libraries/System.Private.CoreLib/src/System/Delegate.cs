@@ -23,14 +23,21 @@ namespace System
             return a.CombineImpl(b);
         }
 
-        public static Delegate? Combine(params Delegate?[]? delegates)
-        {
-            if (delegates == null || delegates.Length == 0)
-                return null;
+        public static Delegate? Combine(params Delegate?[]? delegates) =>
+            Combine((ReadOnlySpan<Delegate?>)delegates);
 
-            Delegate? d = delegates[0];
-            for (int i = 1; i < delegates.Length; i++)
-                d = Combine(d, delegates[i]);
+        public static Delegate? Combine(/*params*/ ReadOnlySpan<Delegate?> delegates)
+        {
+            Delegate? d = null;
+
+            if (!delegates.IsEmpty)
+            {
+                d = delegates[0];
+                for (int i = 1; i < delegates.Length; i++)
+                {
+                    d = Combine(d, delegates[i]);
+                }
+            }
 
             return d;
         }

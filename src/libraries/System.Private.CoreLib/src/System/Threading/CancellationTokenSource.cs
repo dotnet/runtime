@@ -868,7 +868,11 @@ namespace System.Threading
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
             ArgumentNullException.ThrowIfNull(tokens);
+            return CreateLinkedTokenSource((ReadOnlySpan<CancellationToken>)tokens);
+        }
 
+        public static CancellationTokenSource CreateLinkedTokenSource(/*params*/ ReadOnlySpan<CancellationToken> tokens)
+        {
             return tokens.Length switch
             {
                 0 => throw new ArgumentException(SR.CancellationToken_CreateLinkedToken_TokensIsEmpty),
@@ -935,7 +939,7 @@ namespace System.Threading
             };
             private CancellationTokenRegistration[]? _linkingRegistrations;
 
-            internal LinkedNCancellationTokenSource(CancellationToken[] tokens)
+            internal LinkedNCancellationTokenSource(ReadOnlySpan<CancellationToken> tokens)
             {
                 _linkingRegistrations = new CancellationTokenRegistration[tokens.Length];
 

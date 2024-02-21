@@ -866,6 +866,12 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            Out.WriteLine(format, arg);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.Write(format, arg0);
@@ -890,6 +896,12 @@ namespace System
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
             else
                 Out.Write(format, arg);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            Out.Write(format, arg);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

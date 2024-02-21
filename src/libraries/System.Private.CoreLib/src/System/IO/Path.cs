@@ -371,7 +371,11 @@ namespace System.IO
         public static string Combine(params string[] paths)
         {
             ArgumentNullException.ThrowIfNull(paths);
+            return Combine((ReadOnlySpan<string?>)paths);
+        }
 
+        public static string Combine(/*params*/ ReadOnlySpan<string> paths)
+        {
             int maxSize = 0;
             int firstComponent = 0;
 
@@ -520,8 +524,12 @@ namespace System.IO
         public static string Join(params string?[] paths)
         {
             ArgumentNullException.ThrowIfNull(paths);
+            return Join((ReadOnlySpan<string?>)paths);
+        }
 
-            if (paths.Length == 0)
+        public static string Join(/*params*/ ReadOnlySpan<string?> paths)
+        {
+            if (paths.IsEmpty)
             {
                 return string.Empty;
             }

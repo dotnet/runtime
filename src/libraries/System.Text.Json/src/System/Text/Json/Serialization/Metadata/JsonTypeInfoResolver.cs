@@ -30,6 +30,11 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(resolvers));
             }
 
+            return Combine((ReadOnlySpan<IJsonTypeInfoResolver?>)resolvers)
+        }
+
+        public static IJsonTypeInfoResolver Combine(/*params*/ ReadOnlySpan<IJsonTypeInfoResolver?> resolvers)
+        {
             var resolverChain = new JsonTypeInfoResolverChain();
             foreach (IJsonTypeInfoResolver? resolver in resolvers)
             {

@@ -174,6 +174,12 @@ namespace System.CodeDom.Compiler
             _writer.Write(format, arg);
         }
 
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            OutputTabs();
+            _writer.Write(format, arg);
+        }
+
         /// <summary>
         /// Asynchronously writes the specified <see cref="char"/> to the underlying <see cref="TextWriter"/>, inserting
         /// tabs at the start of every line.
@@ -346,6 +352,13 @@ namespace System.CodeDom.Compiler
         }
 
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
+        {
+            OutputTabs();
+            _writer.WriteLine(format, arg);
+            _tabsPending = true;
+        }
+
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.WriteLine(format, arg);

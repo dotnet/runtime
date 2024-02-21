@@ -317,6 +317,11 @@ namespace System.IO
             Write(string.Format(FormatProvider, format, arg));
         }
 
+        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            Write(string.Format(FormatProvider, format, arg));
+        }
+
         // Writes a line terminator to the text stream. The default line terminator
         // is Environment.NewLine, but this value can be changed by setting the NewLine property.
         //
@@ -514,6 +519,11 @@ namespace System.IO
             WriteLine(string.Format(FormatProvider, format, arg));
         }
 
+        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        {
+            WriteLine(string.Format(FormatProvider, format, arg));
+        }
+
         #region Task based Async APIs
         public virtual Task WriteAsync(char value) =>
             Task.Factory.StartNew(static state =>
@@ -700,6 +710,7 @@ namespace System.IO
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg) { }
             public override Task WriteAsync(char value) => Task.CompletedTask;
             public override Task WriteAsync(string? value) => Task.CompletedTask;
             public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -725,6 +736,7 @@ namespace System.IO
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg) { }
             public override Task WriteLineAsync(char value) => Task.CompletedTask;
             public override Task WriteLineAsync(string? value) => Task.CompletedTask;
             public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -834,6 +846,9 @@ namespace System.IO
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object?[] arg) => _out.Write(format, arg);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, ReadOnlySpan<object?> arg) => _out.Write(format, arg);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine() => _out.WriteLine();
 
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -892,6 +907,9 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object?[] arg) => _out.WriteLine(format, arg);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, ReadOnlySpan<object?> arg) => _out.WriteLine(format, arg);
 
             //
             // On SyncTextWriter all APIs should run synchronously, even the async ones.

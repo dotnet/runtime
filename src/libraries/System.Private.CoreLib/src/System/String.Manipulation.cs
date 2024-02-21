@@ -62,10 +62,14 @@ namespace System
         public static string Concat(params object?[] args)
         {
             ArgumentNullException.ThrowIfNull(args);
+            return Concat((ReadOnlySpan<object?>)args);
+        }
 
+        public static string Concat(/*params*/ ReadOnlySpan<object?> args)
+        {
             if (args.Length <= 1)
             {
-                return args.Length == 0 ?
+                return args.IsEmpty ?
                     Empty :
                     args[0]?.ToString() ?? Empty;
             }
@@ -355,10 +359,14 @@ namespace System
         public static string Concat(params string?[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
+            return Concat((ReadOnlySpan<string?>)values);
+        }
 
+        public static string Concat(/*params*/ ReadOnlySpan<string?> values)
+        {
             if (values.Length <= 1)
             {
-                return values.Length == 0 ?
+                return values.IsEmpty ?
                     Empty :
                     values[0] ?? Empty;
             }
@@ -416,7 +424,7 @@ namespace System
             // something changed concurrently to mutate the input array: fall back to
             // doing the concatenation again, but this time with a defensive copy. This
             // fall back should be extremely rare.
-            return copiedLength == totalLength ? result : Concat((string?[])values.Clone());
+            return copiedLength == totalLength ? result : Concat((ReadOnlySpan<string?>)values.ToArray());
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
@@ -445,6 +453,11 @@ namespace System
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
+            return FormatHelper(null, format, (ReadOnlySpan<object?>)args);
+        }
+
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> args)
+        {
             return FormatHelper(null, format, args);
         }
 
@@ -474,6 +487,11 @@ namespace System
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
+            return FormatHelper(provider, format, (ReadOnlySpan<object?>)args);
+        }
+
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> args)
+        {
             return FormatHelper(provider, format, args);
         }
 
@@ -575,7 +593,7 @@ namespace System
         /// <returns>The formatted string.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
         /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
-        public static string Format(IFormatProvider? provider, CompositeFormat format, ReadOnlySpan<object?> args)
+        public static string Format(IFormatProvider? provider, CompositeFormat format, /*params*/ ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
             format.ValidateNumberOfArgs(args.Length);
@@ -669,6 +687,11 @@ namespace System
             return JoinCore(new ReadOnlySpan<char>(in separator), new ReadOnlySpan<string?>(value));
         }
 
+        public static string Join(char separator, /*params*/ ReadOnlySpan<string?> value)
+        {
+            return JoinCore(new ReadOnlySpan<char>(in separator), value);
+        }
+
         public static string Join(string? separator, params string?[] value)
         {
             if (value == null)
@@ -677,6 +700,11 @@ namespace System
             }
 
             return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(value));
+        }
+
+        public static string Join(string? separator, /*params*/ ReadOnlySpan<string?> value)
+        {
+            return JoinCore(separator.AsSpan(), value);
         }
 
         public static string Join(char separator, string?[] value, int startIndex, int count) =>
@@ -743,20 +771,35 @@ namespace System
             }
         }
 
-        public static string Join(char separator, params object?[] values) =>
-            JoinCore(new ReadOnlySpan<char>(in separator), values);
-
-        public static string Join(string? separator, params object?[] values) =>
-            JoinCore(separator.AsSpan(), values);
-
-        private static string JoinCore(ReadOnlySpan<char> separator, object?[] values)
+        public static string Join(char separator, params object?[] values)
         {
             if (values == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
-            if (values.Length == 0)
+            return JoinCore(new ReadOnlySpan<char>(in separator), (ReadOnlySpan<object?>)values);
+        }
+
+        public static string Join(char separator, /*params*/ ReadOnlySpan<object?> values) =>
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
+
+        public static string Join(string? separator, params object?[] values)
+        {
+            if (values == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            return JoinCore(separator.AsSpan(), (ReadOnlySpan<object?>)values);
+        }
+
+        public static string Join(string? separator, /*params*/ ReadOnlySpan<object?> values) =>
+            JoinCore(separator.AsSpan(), values);
+
+        private static string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
+        {
+            if (values.IsEmpty)
             {
                 return Empty;
             }
@@ -793,22 +836,22 @@ namespace System
 
         private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
             if (typeof(T) == typeof(string))
             {
-                if (values is List<string?> valuesList)
+                if (values.GetType() == typeof(List<string?>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
                 {
-                    return JoinCore(separator, CollectionsMarshal.AsSpan(valuesList));
+                    return JoinCore(separator, CollectionsMarshal.AsSpan(Unsafe.As<List<string?>>(values)));
                 }
 
                 if (values is string?[] valuesArray)
                 {
                     return JoinCore(separator, new ReadOnlySpan<string?>(valuesArray));
                 }
-            }
-
-            if (values == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             using (IEnumerator<T> e = values.GetEnumerator())
@@ -1548,6 +1591,11 @@ namespace System
             return SplitInternal(separator, int.MaxValue, StringSplitOptions.None);
         }
 
+        public string[] Split(/*params*/ ReadOnlySpan<char> separator)
+        {
+            return SplitInternal(separator, int.MaxValue, StringSplitOptions.None);
+        }
+
         // Creates an array of strings by splitting this string at each
         // occurrence of a separator.  The separator is searched for, and if found,
         // the substring preceding the occurrence is stored as the first element in
@@ -2241,6 +2289,19 @@ namespace System
             }
         }
 
+        public unsafe string Trim(/*params*/ ReadOnlySpan<char> trimChars)
+        {
+            if (trimChars.IsEmpty)
+            {
+                return TrimWhiteSpaceHelper(TrimType.Both);
+            }
+
+            fixed (char* pTrimChars = &MemoryMarshal.GetReference(trimChars))
+            {
+                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Both);
+            }
+        }
+
         // Removes a set of characters from the beginning of this string.
         public string TrimStart() => TrimWhiteSpaceHelper(TrimType.Head);
 
@@ -2260,6 +2321,19 @@ namespace System
             }
         }
 
+        public unsafe string TrimStart(/*params*/ ReadOnlySpan<char> trimChars)
+        {
+            if (trimChars.IsEmpty)
+            {
+                return TrimWhiteSpaceHelper(TrimType.Head);
+            }
+
+            fixed (char* pTrimChars = &MemoryMarshal.GetReference(trimChars))
+            {
+                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Head);
+            }
+        }
+
         // Removes a set of characters from the end of this string.
         public string TrimEnd() => TrimWhiteSpaceHelper(TrimType.Tail);
 
@@ -2273,6 +2347,19 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Tail);
             }
+            fixed (char* pTrimChars = &trimChars[0])
+            {
+                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);
+            }
+        }
+
+        public unsafe string TrimEnd(/*params*/ ReadOnlySpan<char> trimChars)
+        {
+            if (trimChars.IsEmpty)
+            {
+                return TrimWhiteSpaceHelper(TrimType.Tail);
+            }
+
             fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);

@@ -39,6 +39,11 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
+        public JsonArray(JsonNodeOptions options, /*param*/ ReadOnlySpan<JsonNode?> items) : base(options)
+        {
+            InitializeFromSpan(items);
+        }
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified array.
         /// </summary>
@@ -46,6 +51,11 @@ namespace System.Text.Json.Nodes
         public JsonArray(params JsonNode?[] items) : base()
         {
             InitializeFromArray(items);
+        }
+
+        public JsonArray(/*params*/ ReadOnlySpan<JsonNode?> items) : base()
+        {
+            InitializeFromSpan(items);
         }
 
         internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
@@ -128,6 +138,27 @@ namespace System.Text.Json.Nodes
         private void InitializeFromArray(JsonNode?[] items)
         {
             var list = new List<JsonNode?>(items);
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                items[i]?.AssignParent(this);
+            }
+
+            _list = list;
+        }
+
+        private void InitializeFromSpan(ReadOnlySpan<JsonNode?> items)
+        {
+            List<JsonNode?> list = new(items.Count);
+
+#if NET8_0_OR_GREATER
+            list.AddRange(items);
+#else
+            foreach (JsonNode? item in items)
+            {
+                list.Add(item);
+            }
+#endif
 
             for (int i = 0; i < items.Length; i++)
             {
