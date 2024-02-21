@@ -12,6 +12,19 @@
 
 ## Triaging errors seen in CI
 
+## Summary
+
+**Passing Build Analysis is required to merge into the runtime repo**.
+
+To resolve failures, do the following, in order:
+
+1. Fix the problem if your PR is the cause.
+2. For all failures not in the "Known test errors" section, [try to file a Known Build Error issue](#what-to-do-if-you-determine-the-failure-is-unrelated).
+3. If all else fails, perform a manual bypass.
+
+
+## Details
+
 In case of failure, any PR on the runtime will have a failed GitHub check - PR Build Analysis - which has a summary of all failures, including a list of matching  known issues as well as any regressions introduced to the build or the tests. This tab should be your first stop for analyzing the PR failures.
 
 ![Build analysis check](analysis-check.png)
