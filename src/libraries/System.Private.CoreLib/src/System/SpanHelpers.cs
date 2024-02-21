@@ -32,7 +32,6 @@ namespace System
                     do
                     {
                         Vector<byte>.Zero.StoreUnsafe(ref b, offset);
-                        Vector<byte>.Zero.StoreUnsafe(ref b, offset);
                         Vector<byte>.Zero.StoreUnsafe(ref b, offset + (nuint)Vector<byte>.Count);
                         offset += (uint)(2 * Vector<byte>.Count);
                     } while (offset < stopLoopAtOffset);
@@ -70,12 +69,7 @@ namespace System
                 nuint stopLoopAtOffset = byteLength & ~(nuint)7;
                 do
                 {
-#if TARGET_64BIT
                     Unsafe.WriteUnaligned<ulong>(ref Unsafe.AddByteOffset(ref b, i), 0);
-#else
-                    Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref b, i), 0);
-                    Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref b, i + 4), 0);
-#endif
                 } while ((i += 8) < stopLoopAtOffset);
             }
 
