@@ -65,6 +65,7 @@ struct REGDISPLAY
 #endif
 };
 
+#ifdef TARGET_X86
 inline TADDR GetRegdisplayFP(REGDISPLAY *display)
 {
     return (TADDR)*display->GetEbpLocation();
@@ -80,6 +81,7 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
     display->PCTAddr = addr;
     display->SetIP(*PTR_PCODE(addr));
 }
+#endif
 
 #elif defined(TARGET_ARM)
 
