@@ -179,7 +179,3 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
   #  strip_symbols("${ARGV0}-shared" symbolFile)
   #endif()
 endfunction()
-
-function(add_imported_nativeaot_library_clr targetName symbolPrefix)
-  add_imported_nativeaot_library(${ARGV})
-endfunction()
