@@ -1,12 +1,6 @@
 add_definitions(-DFEATURE_NO_HOST)
 
-find_nativeaot_library(libhellomanaged REQUIRED)
-if ("${libhellomanaged_FOUND}")
-  message(STATUS "found libhellomanaged")
-else()
-  message(FATAL_ERROR "expected libhellomanaged to be found")
-endif()
-#  include(${CLR_ARTIFACTS_OBJ_DIR}/libhellomanaged/libhellomanaged.cmake OPTIONAL RESULT_VARIABLE INCLUDED_HELLOMANAGED)
+find_nativeaot_library(libhellomanaged)
 
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
