@@ -49,16 +49,16 @@ public static class TestUtils
         bool areEqual = FilesAreEqual(finfo0, finfo1);
 
         if (same && !areEqual)
-            throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {GetFileMetadata(file0)}), and {GetFileMetadata(file1)})");
+            throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {GetFileMetadata(finfo0)}), and {GetFileMetadata(finfo1)})");
 
         if (!same && areEqual)
-            throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {GetFileMetadata(file0)}), and {GetFileMetadata(file1)})");
+            throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {GetFileMetadata(finfo0)}), and {GetFileMetadata(finfo1)})");
     }
 
     static bool FilesAreEqual(FileInfo fileInfo1, FileInfo fileInfo2) =>
         (fileInfo1.Length == fileInfo2.Length &&
         fileInfo1.LastWriteTime == fileInfo2.LastWriteTime &&
-        fileInfo1.CreationTime == fileInfo2.CreationTime)
+        fileInfo1.CreationTime == fileInfo2.CreationTime);
 
     static string GetFileMetadata(FileInfo fileInfo) =>
         $"File Name: {fileInfo.Name}\n" +
