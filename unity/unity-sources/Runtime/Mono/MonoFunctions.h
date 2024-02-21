@@ -51,7 +51,6 @@ DO_API(gint32, mono_class_array_element_size, (MonoClass * ac))
 DO_API(MonoThread *, mono_thread_attach, (MonoDomain * domain))
 
 DO_API(void, mono_thread_detach, (MonoThread * thread))
-DO_API(gboolean, mono_thread_has_sufficient_execution_stack, (void))
 
 DO_API(MonoThread *, mono_thread_current, (void))
 
@@ -72,20 +71,13 @@ DO_API(MonoClass*, mono_class_from_mono_type, (MonoType * image))
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
 
-DO_API(MonoException*, mono_unity_loader_get_last_error_and_error_prepare_exception, (void))
-
 #ifdef WIN32
 typedef int (__cdecl *vprintf_func)(const char* msg, va_list args);
 #else
 typedef int (*vprintf_func)(const char* msg, va_list args);
 #endif
-DO_API(void, mono_unity_set_vprintf_func, (vprintf_func func))
 
 typedef void(*MonoDataFunc) (void *data, void *userData);
-
-DO_API(void, mono_unity_gc_handles_foreach_get_target, (MonoDataFunc callback, void* userData))
-DO_API(uint32_t, mono_unity_allocation_granularity, ())
-DO_API(void, mono_unity_type_get_name_full_chunked, (MonoType * type, MonoDataFunc appendCallback, void* userData))
 
 // GLib functions
 #define g_free mono_unity_g_free

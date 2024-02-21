@@ -24,32 +24,6 @@
 // we only need domain reload for Editor
 // #define UNITY_SUPPORT_DOMAIN_UNLOAD 1
 
-// Match the behavior of Unity.  We need to flush immediately because this is used to log stack traces
-// on the managed side of the embedding api before we call Environment.Exit.  If we were to let the msg be buffered we may not
-// always see the stack trace before the application exits.
-#ifdef WIN32
-int __cdecl print_and_flush(const char* msg, va_list args)
-#else
-int print_and_flush(const char* msg, va_list args)
-#endif
-{
-    auto result = vprintf(msg, args);
-    printf("\n");
-    fflush(stdout);
-    return result;
-}
-
-static vprintf_func our_vprintf = print_and_flush;
-
-void unity_log(const char *format, ...)
-{
-    va_list args;
-    va_start (args, format);
-    our_vprintf (format, args);
-    va_end (args);
-    our_vprintf ("\n", nullptr);
-}
-
 #ifdef WIN32
 #define EXPORT_API __declspec(dllexport)
 #define EXPORT_CC __cdecl
@@ -67,13 +41,6 @@ void* g_CLRRuntimeHost;
 unsigned int g_RootDomainId;
 
 typedef intptr_t ManagedStringPtr_t;
-
-struct HostStructNative
-{
-    void (*unity_log)(const char *format);
-    gboolean (*return_handles_from_api)();
-};
-HostStructNative* g_HostStructNative;
 
 //MonoImage *gCoreCLRHelperAssembly;
 //MonoClass* gALCWrapperClass;
@@ -478,9 +445,6 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_image_get_custom_attribute_data(Mon
     mdImport->GetParentToken(token, parent_type_token);
 }
 
-typedef int32_t (*initialize_scripting_runtime_func)();
-typedef void (*unity_log_func)(const char* format);
-
 extern "C" EXPORT_API void EXPORT_CC coreclr_initialize_domain(void* runtimeHost, unsigned int rootDomainId)
 {
     AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
@@ -806,12 +770,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_thread_detach(MonoThread *thread)
     thread_clr->DetachThread(FALSE);
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_thread_has_sufficient_execution_stack (void)
-{
-    // TODO: Investigate if we need to implement this
-    return TRUE;
-}
-
 extern "C" EXPORT_API int EXPORT_CC mono_type_get_type(MonoType *type)
 {
 retry:
@@ -913,12 +871,6 @@ retry:
     }
 }
 
-extern "C" EXPORT_API uint32_t EXPORT_CC mono_unity_allocation_granularity ()
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return 0;
-}
-
 #if defined(HOST_OSX) || defined(HOST_UNIX)
 extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* context, void* array[], int count)
 {
@@ -947,27 +899,6 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass
 extern "C" EXPORT_API void EXPORT_CC mono_unity_g_free(void* p)
 {
     free(p);
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_unity_gc_handles_foreach_get_target (MonoDataFunc callback, void* userData)
-{
-    ASSERT_NOT_IMPLEMENTED;
-}
-
-extern "C" EXPORT_API MonoException* EXPORT_CC mono_unity_loader_get_last_error_and_error_prepare_exception()
-{
-    //ASSERT_NOT_IMPLEMENTED;
-    return NULL;
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_unity_set_vprintf_func(vprintf_func func)
-{
-    our_vprintf = func;
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_unity_type_get_name_full_chunked(MonoType * type, MonoDataFunc appendCallback, void* userData)
-{
-    ASSERT_NOT_IMPLEMENTED;
 }
 
 extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
