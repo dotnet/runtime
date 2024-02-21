@@ -80,12 +80,6 @@
       <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
     </ItemGroup>
   </Target>
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-    <PrepareInputsForWasmBuildDependsOn>
-      $(PrepareInputsForWasmBuildDependsOn);
-      RemoveInvariantGlobalization;
-    </PrepareInputsForWasmBuildDependsOn>
-  </PropertyGroup>
 
   <Target Name="LocateNativeCompiler"
           Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"

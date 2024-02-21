@@ -93,5 +93,22 @@ namespace Wasm.Build.Tests
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
 
+        [Theory]
+        [BuildAndRun]
+        public void NativeBuildIsRequired(BuildArgs buildArgs, string id)
+        {
+            string projectName = $"simple_native_build_{buildArgs.Config}_{buildArgs.AOT}";
+
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>false</WasmBuildNative>;<WasmSingleFileBundle>true</WasmSingleFileBundle>");
+
+            (_, string output) = BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                DotnetWasmFromRuntimePack: false));
+
+            Assert.Contains("WasmBuildNative is required", output);
+        }
     }
 }
