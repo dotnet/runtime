@@ -828,7 +828,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDeputyThread))]
         public void CallSitesAreUniquePerServiceTypeAndSlotWithOpenGenericInGraph()
         {
             // Connected graph
