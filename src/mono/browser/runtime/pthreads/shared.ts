@@ -71,14 +71,14 @@ export function update_thread_info(): void {
     const threadType = !monoThreadInfo.isRegistered ? "emsc"
         : monoThreadInfo.isUI ? "-UI-"
             : monoThreadInfo.isDeputy ? "dpty"
-            : monoThreadInfo.isTimer ? "timr"
-                : monoThreadInfo.isLongRunning ? "long"
-                    : monoThreadInfo.isThreadPoolGate ? "gate"
-                        : monoThreadInfo.isDebugger ? "dbgr"
-                            : monoThreadInfo.isThreadPoolWorker ? "pool"
-                                : monoThreadInfo.isExternalEventLoop ? "jsww"
-                                    : monoThreadInfo.isBackground ? "back"
-                                        : "norm";
+                : monoThreadInfo.isTimer ? "timr"
+                    : monoThreadInfo.isLongRunning ? "long"
+                        : monoThreadInfo.isThreadPoolGate ? "gate"
+                            : monoThreadInfo.isDebugger ? "dbgr"
+                                : monoThreadInfo.isThreadPoolWorker ? "pool"
+                                    : monoThreadInfo.isExternalEventLoop ? "jsww"
+                                        : monoThreadInfo.isBackground ? "back"
+                                            : "norm";
     const hexPtr = (monoThreadInfo.pthreadId as any).toString(16).padStart(8, "0");
     const hexPrefix = monoThreadInfo.isRegistered ? "0x" : "--";
     monoThreadInfo.threadPrefix = `${hexPrefix}${hexPtr}-${threadType}`;

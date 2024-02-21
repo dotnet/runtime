@@ -32,6 +32,7 @@ import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -125,6 +126,7 @@ async function instantiateWasmWorker(
     await loaderHelpers.afterConfigLoaded.promise;
 
     replace_linker_placeholders(imports);
+    replaceEmscriptenPThreadInit();
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.

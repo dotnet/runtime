@@ -123,8 +123,8 @@ export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, gc_handle);
         if (is_gcv_handle(gc_handle)) {
-        // this must stay synchronous for free_gcv_handle sake
-        invoke_sync_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
+            // this must stay synchronous for free_gcv_handle sake
+            invoke_sync_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
         } else {
             invoke_async_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
         }
