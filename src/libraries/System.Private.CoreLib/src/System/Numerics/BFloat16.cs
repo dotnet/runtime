@@ -224,6 +224,114 @@ namespace System.Numerics
             return (bits & ~SignMask) == 0;
         }
 
+        /// <summary>
+        /// Parses a <see cref="BFloat16"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static BFloat16 Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
+
+        /// <summary>
+        /// Parses a <see cref="BFloat16"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static BFloat16 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
+
+        /// <summary>
+        /// Parses a <see cref="BFloat16"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static BFloat16 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <summary>
+        /// Parses a <see cref="BFloat16"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static BFloat16 Parse(string s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
+        {
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
+        }
+
+        /// <summary>
+        /// Parses a <see cref="BFloat16"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static BFloat16 Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.ParseFloat<char, BFloat16>(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>
+        /// Tries to parse a <see cref="BFloat16"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="BFloat16"/> value representing the input string if the parse was successful. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="BFloat16"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse([NotNullWhen(true)] string? s, out BFloat16 result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+
+        /// <summary>
+        /// Tries to parse a <see cref="BFloat16"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="BFloat16"/> value representing the input string if the parse was successful. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="BFloat16"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse(ReadOnlySpan<char> s, out BFloat16 result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its BFloat16-precision floating-point number equivalent.</summary>
+        /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
+        /// <param name="result">When this method returns, contains a BFloat16-precision floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BFloat16 result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+
+        /// <summary>
+        /// Tries to parse a <see cref="BFloat16"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="BFloat16"/> value representing the input string if the parse was successful. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="BFloat16"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BFloat16 result)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+
+            if (s == null)
+            {
+                result = Zero;
+                return false;
+            }
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        /// <summary>
+        /// Tries to parse a <see cref="BFloat16"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="BFloat16"/> value representing the input string if the parse was successful. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="BFloat16"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BFloat16 result)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
         // Comparison
 
         /// <summary>
@@ -285,6 +393,49 @@ namespace System.Numerics
         /// Returns a string representation of the current value.
         /// </summary>
         public override string ToString() => ((float)this).ToString();
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/>.
+        /// </summary>
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
+        {
+            return Number.FormatBFloat16(this, format, NumberFormatInfo.CurrentInfo);
+        }
+
+        /// <summary>
+        /// Returns a string representation of the current value with the specified <paramref name="provider"/>.
+        /// </summary>
+        public string ToString(IFormatProvider? provider)
+        {
+            return Number.FormatBFloat16(this, null, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
+        /// </summary>
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
+        {
+            return Number.FormatBFloat16(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>
+        /// Tries to format the value of the current BFloat16 instance into the provided span of characters.
+        /// </summary>
+        /// <param name="destination">When this method returns, this instance's value formatted as a span of characters.</param>
+        /// <param name="charsWritten">When this method returns, the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
+        /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
+        /// <returns></returns>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatBFloat16(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatBFloat16(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+        }
 
         //
         // Explicit Convert To BFloat16
@@ -1455,5 +1606,44 @@ namespace System.Numerics
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out BFloat16 result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.NumberBufferLength => Number.BFloat16NumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.InfinityBits => PositiveInfinityBits;
+
+        static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinDecimalExponent => -41;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxDecimalExponent => 39;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<BFloat16>.ExponentBits => BiasedExponentLength;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.InfinityExponent => MaxBiasedExponent;
+
+        static ushort IBinaryFloatParseAndFormatInfo<BFloat16>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<BFloat16>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinFastFloatDecimalExponent => -41;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxFastFloatDecimalExponent => 38;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinExponentRoundToEven => -24;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxExponentRoundToEven => 3;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxExponentFastPath => 3;
+        static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static BFloat16 IBinaryFloatParseAndFormatInfo<BFloat16>.BitsToFloat(ulong bits) => new BFloat16((ushort)(bits));
+
+        static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.FloatToBits(BFloat16 value) => value._value;
     }
 }

@@ -2287,7 +2287,7 @@ namespace System
         static ushort IBinaryFloatParseAndFormatInfo<double>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<double>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<double>.MinFastFloatDecimalExponent => -342;
+        static int IBinaryFloatParseAndFormatInfo<double>.MinFastFloatDecimalExponent => -324;
         static int IBinaryFloatParseAndFormatInfo<double>.MaxFastFloatDecimalExponent => 308;
 
         static int IBinaryFloatParseAndFormatInfo<double>.MinExponentRoundToEven => -4;
