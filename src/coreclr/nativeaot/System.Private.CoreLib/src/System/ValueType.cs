@@ -164,7 +164,8 @@ namespace System
                     var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCodeImpl();
+                        // call virtual method to handle overriden case
+                        hashCode = fieldValue.GetHashCode();
                     }
                     else
                     {
