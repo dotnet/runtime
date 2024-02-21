@@ -309,9 +309,12 @@ BEGIN
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
 
-    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'. Assembly: '%2'."
+
+    IDS_CLASSLOAD_BYREF_OF_BYREF            "Could not create a ByRef of a ByRef. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_POINTER_OF_BYREF          "Could not create a pointer to a ByRef. Type: '%1'. Assembly: '%2'."
 
     IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD "Could not load type '%1' from assembly '%2' because of an invalid self-referential generic field."
 

@@ -76,11 +76,6 @@ FCFuncStart(gStringFuncs)
     FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_Int_Int_Encoding_RetVoid, ECall::CtorSBytePtrStartLengthEncodingManaged)
 FCFuncEnd()
 
-FCFuncStart(gValueTypeFuncs)
-    FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
-    FCFuncElement("GetHashCode", ValueTypeHelper::GetHashCode)
-FCFuncEnd()
-
 FCFuncStart(gDiagnosticsDebugger)
     FCFuncElement("BreakInternal", DebugDebugger::Break)
     FCFuncElement("get_IsAttached", DebugDebugger::IsDebuggerAttached)
@@ -619,7 +614,6 @@ FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
-FCClassElement("ValueType", "System", gValueTypeFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("Variant", "System", gVariantFuncs)
 #endif

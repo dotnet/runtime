@@ -299,6 +299,21 @@ namespace System.Tests
             Assert.True(obj1.Equals(obj2));
             Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
+        
+        [Fact]
+        public static void StructContainsPointerNestedCompareTest()
+        {
+            StructContainsPointerNested obj1 = new StructContainsPointerNested();
+            obj1.o = null;
+            obj1.value.value = 1;
+
+            StructContainsPointerNested obj2 = new StructContainsPointerNested();
+            obj2.o = null;
+            obj2.value.value = 1;
+
+            Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
+        }
 
         public struct S
         {
@@ -391,6 +406,12 @@ namespace System.Tests
             public string s;
             public double value1;
             public double value2;
+        }
+
+        public struct StructContainsPointerNested
+        {
+            public object o;
+            public StructNonOverriddenEqualsOrGetHasCode value;
         }
     }
 }

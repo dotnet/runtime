@@ -24,6 +24,7 @@
     <ItemGroup>
       <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
       <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
+      <_DebugSymbolsIntermediatePath Remove="@(_DebugSymbolsIntermediatePath)" />
     </ItemGroup>
 
     <ItemGroup>

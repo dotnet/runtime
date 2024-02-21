@@ -8,6 +8,7 @@
 #include <config.h>
 #include <glib.h>
 
+// If you change this, update jiterpreter-opcodes.ts.
 typedef enum
 {
 	MintOpNoArgs,

@@ -22,7 +22,7 @@ import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_rules_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
-import { dumpThreads } from "./pthreads/browser";
+import { dumpThreads } from "./pthreads";
 
 export let runtimeList: RuntimeList;
 
