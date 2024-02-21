@@ -10,10 +10,10 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal abstract class GenericDictionary
+    internal abstract unsafe class GenericDictionary
     {
         protected GenericDictionaryCell[] _cells;
-        protected IntPtr _addressOfFirstCellSlot;
+        protected void* _addressOfFirstCellSlot;
 
         public GenericDictionary(GenericDictionaryCell[] cells)
         {
@@ -23,9 +23,9 @@ namespace Internal.Runtime.TypeLoader
 
         public abstract IntPtr Allocate();
 
-        public unsafe void Finish(TypeBuilder typeBuilder)
+        public void Finish(TypeBuilder typeBuilder)
         {
-            Debug.Assert(_cells.Length == 0 || _addressOfFirstCellSlot != IntPtr.Zero);
+            Debug.Assert(_cells.Length == 0 || _addressOfFirstCellSlot != null);
 
             IntPtr* realCells = (IntPtr*)_addressOfFirstCellSlot;
             for (int i = 0; i < _cells.Length; i++)
@@ -41,9 +41,9 @@ namespace Internal.Runtime.TypeLoader
             : base(cells)
         { }
 
-        public override IntPtr Allocate()
+        public override unsafe IntPtr Allocate()
         {
-            Debug.Assert(_addressOfFirstCellSlot == IntPtr.Zero);
+            Debug.Assert(_addressOfFirstCellSlot == null);
 
             if (_cells.Length > 0)
             {
@@ -51,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
                 _addressOfFirstCellSlot = MemoryHelpers.AllocateMemory(checked((int)(_cells.Length * IntPtr.Size)));
             }
 
-            return _addressOfFirstCellSlot;
+            return (IntPtr)_addressOfFirstCellSlot;
         }
     }
 
@@ -63,20 +63,20 @@ namespace Internal.Runtime.TypeLoader
 
         public override unsafe IntPtr Allocate()
         {
-            Debug.Assert(_addressOfFirstCellSlot == IntPtr.Zero);
+            Debug.Assert(_addressOfFirstCellSlot == null);
 
             // Method dictionaries start with a header containing the hash code, which is not part of the native layout.
             // The real first slot is located after the header.
             // Use checked typecast to int to ensure there aren't any overflows/truncations
-            IntPtr dictionaryWithHeader = MemoryHelpers.AllocateMemory(checked((int)((_cells.Length + 1) * IntPtr.Size)));
+            void* dictionaryWithHeader = MemoryHelpers.AllocateMemory(checked((int)((_cells.Length + 1) * IntPtr.Size)));
 
             // Put a magic hash code to indicate dynamically allocated method dictionary for
             // debugging purposes.
             *(int*)dictionaryWithHeader = 0xD1CC0DE; // DICCODE
 
-            _addressOfFirstCellSlot = IntPtr.Add(dictionaryWithHeader, IntPtr.Size);
+            _addressOfFirstCellSlot = (byte*)dictionaryWithHeader + IntPtr.Size;
 
-            return _addressOfFirstCellSlot;
+            return (IntPtr)_addressOfFirstCellSlot;
         }
     }
 }

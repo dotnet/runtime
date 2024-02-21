@@ -25,6 +25,11 @@ struct MachState {
     TADDR          _pc; // program counter after the function returns
     TADDR          _sp; // stack pointer after the function returns
     BOOL           _isValid;
+#ifdef __APPLE__
+    // libunwind on macOS doesn't support context pointers and we cannot modify the captureX19_X29,
+    // so we store the unwound values in a separate array.
+    ULONG64        unwoundX19_X29[NUM_NONVOLATILE_CONTEXT_POINTERS]; // preserved registers
+#endif // __APPLE__
 
     BOOL   isValid()    { LIMITED_METHOD_DAC_CONTRACT; return _isValid; }
     TADDR  GetRetAddr() { LIMITED_METHOD_DAC_CONTRACT; return _pc; }
@@ -55,6 +60,10 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
     _sp = copy->_sp;
     _pc = copy->_pc;
 
+#ifdef __APPLE__
+    memcpy(unwoundX19_X29, copy->unwoundX19_X29, sizeof(unwoundX19_X29));
+#endif // __APPLE__
+
     // Capture* has already been set, so there is no need to touch it
 
     // loop over the nonvolatile context pointers and make
@@ -80,7 +89,6 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
         }
 
         *pDst++ = valueSrc;
-        captureX19_X29[i] = copy->captureX19_X29[i];
     }
 
 

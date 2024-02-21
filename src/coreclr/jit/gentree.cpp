@@ -8651,6 +8651,26 @@ GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeF
     return blkNode;
 }
 
+//------------------------------------------------------------------------
+// gtNewMemoryBarrier: Create a memory barrier node
+//
+// Arguments:
+//    loadOnly - relaxes the full memory barrier to be load-only
+//
+// Return Value:
+//    The created GT_MEMORYBARRIER node.
+//
+GenTree* Compiler::gtNewMemoryBarrier(bool loadOnly)
+{
+    GenTree* tree = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
+    tree->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+    if (loadOnly)
+    {
+        tree->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+    }
+    return tree;
+}
+
 //------------------------------------------------------------------------------
 // gtNewIndir : Create an indirection node.
 //
@@ -12703,11 +12723,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreeBlk::BlkOpKindUnrollMemmove:
                         printf(" (Memmove)");
                         break;
-#ifndef TARGET_X86
-                    case GenTreeBlk::BlkOpKindHelper:
-                        printf(" (Helper)");
-                        break;
-#endif
 
                     case GenTreeBlk::BlkOpKindLoop:
                         printf(" (Loop)");
@@ -17259,8 +17274,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                         colon->gtOp2  = (elseSideEffects != nullptr) ? elseSideEffects : m_compiler->gtNewNothingNode();
                         qmark->gtType = TYP_VOID;
                         colon->gtType = TYP_VOID;
-
-                        qmark->gtFlags &= ~GTF_QMARK_CAST_INSTOF;
                         Append(qmark);
                     }
 
