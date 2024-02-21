@@ -238,7 +238,7 @@ private:
         }
 
         // Update flow
-        block->SetKindAndTarget(BBJ_THROW);
+        block->SetKindAndTargetEdge(BBJ_THROW);
 
         // Add helper call
         //

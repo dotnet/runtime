@@ -1012,8 +1012,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
-    m_b1->SetKindAndTarget(BBJ_ALWAYS, m_b1->GetFalseTarget());
+    m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
+    m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, m_b1->GetFalseEdge());
     m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
@@ -1307,7 +1307,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(m_b3 != nullptr);
-        m_b1->SetKindAndTarget(BBJ_RETURN);
+        m_b1->SetKindAndTargetEdge(BBJ_RETURN);
     }
     else
     {

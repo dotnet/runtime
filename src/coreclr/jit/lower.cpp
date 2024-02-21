@@ -861,7 +861,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     {
         JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
         noway_assert(comp->opts.OptimizationDisabled());
-        originalSwitchBB->SetKindAndTarget(BBJ_ALWAYS, jumpTab[0]->getDestinationBlock());
+        originalSwitchBB->SetKindAndTargetEdge(BBJ_ALWAYS, jumpTab[0]);
 
         if (originalSwitchBB->JumpsToNext())
         {
@@ -1014,7 +1014,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             comp->fgRemoveRefPred(uniqueSucc);
         }
 
-        afterDefaultCondBlock->SetKindAndTarget(BBJ_ALWAYS, uniqueSucc->getDestinationBlock());
+        afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, uniqueSucc);
 
         if (afterDefaultCondBlock->JumpsToNext())
         {
@@ -1081,7 +1081,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             }
 
             // Wire up the predecessor list for the "branch" case.
-            comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
+            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1090,7 +1090,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->SetKindAndTarget(BBJ_ALWAYS, targetBlock);
+                currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
             else
             {
@@ -1118,7 +1118,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // There is a fall-through to the following block. In the loop
             // above, we deleted all the predecessor edges from the switch.
             // In this case, we need to add one back.
-            comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            // comp->fgAddRefPred(currentBlock->Next(), currentBlock);
         }
 
         if (!fUsedAfterDefaultCondBlock)
@@ -1129,7 +1129,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
-            currentBlock->SetKindAndTarget(BBJ_ALWAYS, currentBlock->Next());
+            FlowEdge* const newEdge = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }

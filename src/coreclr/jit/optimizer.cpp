@@ -590,20 +590,24 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_LEAVE:
+        {
+            FlowEdge* newEdge;
+
             // Determine if newBlk should be redirected to a different target from blk's target
             if (redirectMap->Lookup(blk->GetTarget(), &newTarget))
             {
                 // newBlk needs to be redirected to a new target
-                newBlk->SetKindAndTarget(blk->GetKind(), newTarget);
+                newEdge = fgAddRefPred(newTarget, newblk);
             }
             else
             {
                 // newBlk uses the same target as blk
-                newBlk->SetKindAndTarget(blk->GetKind(), blk->GetTarget());
+                newEdge = fgAddRefPred(blk->GetTarget(), newBlk);
             }
 
-            fgAddRefPred(newBlk->GetTarget(), newBlk);
+            newBlk->SetKindAndTargetEdge(blk->GetKind(), newEdge);
             break;
+        }
 
         case BBJ_COND:
         {
@@ -701,16 +705,18 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
+        {
             // newBlk's jump target should not need to be redirected
             assert(!redirectMap->Lookup(blk->GetTarget(), &newTarget));
-            newBlk->SetKindAndTarget(blk->GetKind(), blk->GetTarget());
-            fgAddRefPred(newBlk->GetTarget(), newBlk);
+            FlowEdge* newEdge = fgAddRefPred(newBlk->GetTarget(), newBlk);
+            newBlk->SetKindAndTargetEdge(blk->GetKind(), newEdge);
             break;
+        }
 
         default:
             // blk doesn't have a jump destination
             assert(blk->NumSucc() == 0);
-            newBlk->SetKindAndTarget(blk->GetKind());
+            newBlk->SetKindAndTargetEdge(blk->GetKind());
             break;
     }
 
@@ -1713,12 +1719,12 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             testCopyStmt->SetRootNode(sideEffList);
         }
 
-        fgRemoveRefPred(prevTestBlock->GetTrueTarget(), prevTestBlock);
-        fgRemoveRefPred(prevTestBlock->GetFalseTarget(), prevTestBlock);
+        fgRemoveRefPred(prevTestBlock->GetTrueEdge());
+        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
 
         // Redirect exit edge from previous iteration to new entry.
-        prevTestBlock->SetKindAndTarget(BBJ_ALWAYS, target);
-        fgAddRefPred(target, prevTestBlock);
+        FlowEdge* const newEdge = fgAddRefPred(target, prevTestBlock);
+        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
         JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
                 target->bbNum);
@@ -2140,9 +2146,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Create a new block after `block` to put the copied condition code.
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
-    block->SetKindAndTarget(BBJ_ALWAYS, bNewCond);
-    block->SetFlags(BBF_NONE_QUIRK);
-    assert(block->JumpsToNext());
 
     // Clone each statement in bTest and append to bNewCond.
     for (Statement* const stmt : bTest->Statements())
@@ -2205,8 +2208,12 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     fgAddRefPred(bJoin, bNewCond);
     fgAddRefPred(bTop, bNewCond);
 
-    fgAddRefPred(bNewCond, block);
-    fgRemoveRefPred(bTest, block);
+    fgRemoveRefPred(block->GetTargetEdge());
+    FlowEdge* const newEdge = fgAddRefPred(bNewCond, block);
+
+    block->SetTargetEdge(newEdge);
+    block->SetFlags(BBF_NONE_QUIRK);
+    assert(block->JumpsToNext());
 
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to

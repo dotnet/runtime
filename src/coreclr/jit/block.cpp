@@ -861,7 +861,7 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(BBJ_ALWAYS, from->GetTargetEdge());
             CopyFlags(from, BBF_NONE_QUIRK);
             break;
         case BBJ_CALLFINALLY:
@@ -869,10 +869,10 @@ void BasicBlock::TransferTarget(BasicBlock* from)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(from->GetKind(), from->GetTargetEdge());
             break;
         default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
+            SetKindAndTargetEdge(from->GetKind()); // Clear the target
             break;
     }
     assert(KindIs(from->GetKind()));

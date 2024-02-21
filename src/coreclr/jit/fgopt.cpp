@@ -132,7 +132,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 
             block->RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
             block->SetFlags(BBF_IMPORTED);
-            block->SetKindAndTarget(BBJ_THROW);
+            block->SetKindAndTargetEdge(BBJ_THROW);
             block->bbSetRunRarely();
         }
         else
@@ -643,7 +643,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // plausible flow target. Simplest is to just mark it as a throw.
                         if (bbIsHandlerBeg(newTryEntry->Next()))
                         {
-                            newTryEntry->SetKindAndTarget(BBJ_THROW);
+                            newTryEntry->SetKindAndTargetEdge(BBJ_THROW);
                         }
                         else
                         {
@@ -1286,10 +1286,10 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            block->SetKindAndTarget(bNext->GetKind(), bNext->GetTarget());
-
             /* Update the predecessor list for 'bNext->bbTarget' */
-            fgReplacePred(bNext->GetTarget(), bNext, block);
+            fgReplacePred(bNext->GetTargetEdge(), block);
+            
+            block->SetKindAndTargetEdge(bNext->GetKind(), bNext->GetTargetEdge());
             break;
 
         case BBJ_COND:
@@ -1995,10 +1995,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         }
 
         // Change the switch jump into a BBJ_ALWAYS
-        block->SetKindAndTarget(BBJ_ALWAYS, block->GetSwitchTargets()->bbsDstTab[0]->getDestinationBlock());
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetSwitchTargets()->bbsDstTab[0]);
         for (unsigned i = 1; i < jmpCnt; ++i)
         {
-            fgRemoveRefPred(jmpTab[i]->getDestinationBlock(), block);
+            fgRemoveRefPred(jmpTab[i]);
         }
 
         return true;
@@ -5663,13 +5663,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                predBlock->SetKindAndTarget(BBJ_ALWAYS, crossJumpTarget);
-
                 if (commSucc != nullptr)
                 {
                     fgRemoveRefPred(commSucc, predBlock);
                 }
-                fgAddRefPred(crossJumpTarget, predBlock);
+                
+                FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
+                predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
 
             // We changed things

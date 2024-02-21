@@ -167,12 +167,12 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 fgPrepareCallFinallyRetForRemoval(leaveBlock);
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
-                currentBlock->SetKindAndTarget(BBJ_ALWAYS, postTryFinallyBlock);
-                currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
-
                 // Ref count updates.
-                fgAddRefPred(postTryFinallyBlock, currentBlock);
-                fgRemoveRefPred(firstBlock, currentBlock);
+                fgRemoveRefPred(currentBlock->GetTargetEdge());
+                FlowEdge* const newEdge = fgAddRefPred(postTryFinallyBlock, currentBlock);
+                
+                currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
                 // Cleanup the postTryFinallyBlock
                 fgCleanupContinuation(postTryFinallyBlock);
@@ -524,8 +524,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                     assert(finallyRetExpr->gtOper == GT_RETFILT);
                     fgRemoveStmt(block, finallyRet);
-                    block->SetKindAndTarget(BBJ_ALWAYS, continuation);
-                    fgAddRefPred(continuation, block);
+                    FlowEdge* const newEdge = fgAddRefPred(continuation, block);
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
             }
 
@@ -1093,9 +1093,9 @@ PhaseStatus Compiler::fgCloneFinally()
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                newBlock->SetKindAndTarget(BBJ_ALWAYS, normalCallFinallyReturn);
 
-                fgAddRefPred(normalCallFinallyReturn, newBlock);
+                FlowEdge* const newEdge = fgAddRefPred(normalCallFinallyReturn, newBlock);
+                newBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
             else
             {
@@ -1135,13 +1135,13 @@ PhaseStatus Compiler::fgCloneFinally()
                     fgPrepareCallFinallyRetForRemoval(leaveBlock);
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
-                    // This call returns to the expected spot, so retarget it to branch to the clone.
-                    currentBlock->SetKindAndTarget(BBJ_ALWAYS, firstCloneBlock);
-                    currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
-
                     // Ref count updates.
-                    fgAddRefPred(firstCloneBlock, currentBlock);
-                    fgRemoveRefPred(firstBlock, currentBlock);
+                    fgRemoveRefPred(currentBlock->GetTargetEdge());
+                    FlowEdge* const newEdge = fgAddRefPred(firstCloneBlock, currentBlock);
+                    
+                    // This call returns to the expected spot, so retarget it to branch to the clone.
+                    currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
+                    currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Make sure iteration isn't going off the deep end.
                     assert(leaveBlock != endCallFinallyRangeBlock);

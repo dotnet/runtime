@@ -623,13 +623,6 @@ public:
         return bbTargetOffs;
     }
 
-    void SetKindAndTarget(BBKinds kind, unsigned targetOffs)
-    {
-        bbKind       = kind;
-        bbTargetOffs = targetOffs;
-        assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
-    }
-
     bool HasTarget() const
     {
         // These block types should always have bbTarget set
@@ -710,16 +703,16 @@ public:
         bbFalseTarget = falseTarget;
     }
 
-    // Set both the block kind and target. This can clear `bbTarget` when setting
-    // block kinds that don't use `bbTarget`.
-    void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
+    // Set both the block kind and target edge. This can clear `bbTargetEdge` when setting
+    // block kinds that don't use `bbTargetEdge`.
+    void SetKindAndTargetEdge(BBKinds kind, FlowEdge* targetEdge = nullptr)
     {
         bbKind   = kind;
-        bbTarget = target;
+        bbTargetEdge = targetEdge;
 
-        // If bbKind indicates this block has a jump, bbTarget cannot be null.
+        // If bbKind indicates this block has a jump, bbTargetEdge cannot be null.
         // You shouldn't use this to set a BBJ_COND, BBJ_SWITCH, or BBJ_EHFINALLYRET.
-        assert(HasTarget() ? HasInitializedTarget() : (bbTarget == nullptr));
+        assert(HasTarget() ? HasInitializedTarget() : (bbTargetEdge == nullptr));
     }
 
     bool HasInitializedTarget() const
