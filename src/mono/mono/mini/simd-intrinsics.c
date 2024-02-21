@@ -634,6 +634,7 @@ emit_xconst_v128 (MonoCompile *cfg, MonoClass *klass, guint8 value[16])
 	ins->type = STACK_VTYPE;
 	ins->dreg = alloc_xreg (cfg);
 	ins->inst_p0 = mono_mem_manager_alloc (cfg->mem_manager, size);
+	ins->klass = klass;
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	memcpy (ins->inst_p0, &value[0], size);
@@ -3301,8 +3302,20 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	break;
 	case SN_Conjugate: {
-		return NULL;
+#if defined (TARGET_ARM64)
+		float value[4];
+		value [0] = -1.0f;
+		value [1] = -1.0f;
+		value [2] = -1.0f;
+		value [3] = 1.0f;
+		MonoInst* r = emit_xconst_v128 (cfg, klass, (guint8*)value);
+		MonoInst* result = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, r->dreg);
+		result->inst_c0 = OP_FMUL;
+		result->inst_c1 = MONO_TYPE_R4;
+		return result;
+#endif
 	}
+	break;
 	default:
 		g_assert_not_reached ();
 	}
