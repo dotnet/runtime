@@ -297,7 +297,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (attr.Provider is ModuleDefinition or AssemblyDefinition);
 				var assembly = (provider is ModuleDefinition module) ? module.Assembly : provider as AssemblyDefinition;
 
-				using var assemblyScope = ScopeStack.PushLocalScope (new MessageOrigin (assembly));
+				using var assemblyScope = ScopeStack.PushScope (new MessageOrigin (assembly));
 
 				if (!Annotations.IsMarked (attr.Attribute) && IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute)) {
 					MarkCustomAttribute (attr.Attribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, attr.Provider));
@@ -362,7 +362,7 @@ namespace Mono.Linker.Steps
 
 			// Prevent cases where there's nothing on the stack (can happen when marking entire assemblies)
 			// In which case we would generate warnings with no source (hard to debug)
-			using MarkScopeStack.LocalScope? _ = ScopeStack.CurrentScope.Origin.Provider == null ? ScopeStack.PushLocalScope (new MessageOrigin (type)) : null;
+			using var _ = ScopeStack.CurrentScope.Origin.Provider == null ? ScopeStack.PushScope (new MessageOrigin (type)) : null;
 
 			if (!_entireTypesMarked.Add (type))
 				return;
@@ -451,7 +451,7 @@ namespace Mono.Linker.Steps
 
 			// Setup empty scope - there has to be some scope setup since we're doing marking below
 			// but there's no "origin" right now (command line is the origin really)
-			using var localScope = ScopeStack.PushLocalScope (new MessageOrigin ((ICustomAttributeProvider?) null));
+			using var localScope = ScopeStack.PushScope (new MessageOrigin ((ICustomAttributeProvider?) null));
 
 			// Beware: this works on loaded assemblies, not marked assemblies, so it should not be tied to marking.
 			// We could further optimize this to only iterate through assemblies if the last mark iteration loaded
@@ -488,7 +488,7 @@ namespace Mono.Linker.Steps
 
 		bool ProcessMarkedPending ()
 		{
-			using var emptyScope = ScopeStack.PushLocalScope (new MessageOrigin (null as ICustomAttributeProvider));
+			using var emptyScope = ScopeStack.PushScope (new MessageOrigin (null as ICustomAttributeProvider));
 
 			bool marked = false;
 			foreach (var pending in Annotations.GetMarkedPending ()) {
@@ -498,7 +498,7 @@ namespace Mono.Linker.Steps
 				if (Annotations.IsProcessed (pending.Key))
 					continue;
 
-				using var localScope = ScopeStack.PushLocalScope (pending.Value);
+				using var localScope = ScopeStack.PushScope (pending.Value);
 
 				switch (pending.Key) {
 				case TypeDefinition type:
@@ -572,7 +572,7 @@ namespace Mono.Linker.Steps
 		void ProcessVirtualMethods ()
 		{
 			foreach ((var method, var scope) in _virtual_methods) {
-				using (ScopeStack.PushLocalScope (scope)) {
+				using (ScopeStack.PushScope (scope)) {
 					ProcessVirtualMethod (method);
 				}
 			}
@@ -597,7 +597,7 @@ namespace Mono.Linker.Steps
 				// UnusedInterfaces optimization is turned off mark all interface implementations
 				bool unusedInterfacesOptimizationEnabled = Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type);
 
-				using (ScopeStack.PushLocalScope (scope)) {
+				using (ScopeStack.PushScope (scope)) {
 					if (Annotations.IsInstantiated (type) || Annotations.IsRelevantToVariantCasting (type) ||
 						!unusedInterfacesOptimizationEnabled) {
 						MarkInterfaceImplementations (type);
@@ -685,7 +685,7 @@ namespace Mono.Linker.Steps
 			for (int i = 0; i < _unreachableBodies.Count; i++) {
 				(var body, var scope) = _unreachableBodies[i];
 				if (Annotations.IsInstantiated (body.Method.DeclaringType)) {
-					using (ScopeStack.PushLocalScope (scope))
+					using (ScopeStack.PushScope (scope))
 						MarkMethodBody (body);
 
 					_unreachableBodies.RemoveAt (i--);
@@ -703,7 +703,7 @@ namespace Mono.Linker.Steps
 					foreach (var dimInfo in defaultImplementations) {
 						ProcessDefaultImplementation (dimInfo.ImplementingType, dimInfo.InterfaceImpl, dimInfo.DefaultInterfaceMethod);
 
-						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context, dimInfo.InterfaceImpl);
+						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context);
 						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, dimInfo.ImplementingType))
 							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 					}
@@ -874,7 +874,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			IMemberDefinition providerMember = (IMemberDefinition) provider; ;
-			using (ScopeStack.PushLocalScope (new MessageOrigin (providerMember)))
+			using (ScopeStack.PushScope (new MessageOrigin (providerMember)))
 				foreach (var dynamicDependency in Annotations.GetLinkerAttributes<DynamicDependency> (providerMember))
 					MarkDynamicDependency (dynamicDependency, providerMember);
 		}
@@ -1407,7 +1407,7 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (assembly))
 				return;
 
-			using var assemblyScope = ScopeStack.PushLocalScope (new MessageOrigin (assembly));
+			using var assemblyScope = ScopeStack.PushScope (new MessageOrigin (assembly));
 
 			EmbeddedXmlInfo.ProcessDescriptors (assembly, Context);
 
@@ -1537,7 +1537,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (provider is ModuleDefinition or AssemblyDefinition);
 				var assembly = (provider is ModuleDefinition module) ? module.Assembly : provider as AssemblyDefinition;
 
-				using var assemblyScope = ScopeStack.PushLocalScope (new MessageOrigin (assembly));
+				using var assemblyScope = ScopeStack.PushScope (new MessageOrigin (assembly));
 
 				var resolved = Context.Resolve (customAttribute.Constructor);
 				if (resolved == null) {
@@ -1607,7 +1607,7 @@ namespace Mono.Linker.Steps
 				}
 
 				markOccurred = true;
-				using (ScopeStack.PushLocalScope (scope)) {
+				using (ScopeStack.PushScope (scope)) {
 					MarkCustomAttribute (customAttribute, reason);
 				}
 			}
@@ -1788,7 +1788,7 @@ namespace Mono.Linker.Steps
 			// Use the original scope for marking the declaring type - it provides better warning message location
 			MarkType (field.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, field));
 
-			using var fieldScope = ScopeStack.PushLocalScope (new MessageOrigin (field));
+			using var fieldScope = ScopeStack.PushScope (new MessageOrigin (field));
 			MarkType (field.FieldType, new DependencyInfo (DependencyKind.FieldType, field));
 			MarkCustomAttributes (field, new DependencyInfo (DependencyKind.CustomAttribute, field));
 			MarkMarshalSpec (field, new DependencyInfo (DependencyKind.FieldMarshalSpec, field));
@@ -2007,7 +2007,7 @@ namespace Mono.Linker.Steps
 			if (reference == null)
 				return null;
 
-			using MarkScopeStack.LocalScope? localScope = origin.HasValue ? ScopeStack.PushLocalScope (origin.Value) : null;
+			using var localScope = origin.HasValue ? ScopeStack.PushScope (origin.Value) : null;
 
 			(reference, reason) = GetOriginalType (reference, reason);
 
@@ -2053,7 +2053,7 @@ namespace Mono.Linker.Steps
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
 
-			using var typeScope = ScopeStack.PushLocalScope (new MessageOrigin (type));
+			using var typeScope = ScopeStack.PushScope (new MessageOrigin (type));
 
 			foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
 				handleMarkType (type);
@@ -2141,7 +2141,7 @@ namespace Mono.Linker.Steps
 					}
 				}
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
-					using (ScopeStack.PopToParentScope ())
+					using (ScopeStack.PopToParent ())
 						MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
@@ -2440,7 +2440,7 @@ namespace Mono.Linker.Steps
 				if (property.Name != property_name)
 					continue;
 
-				using (ScopeStack.PushLocalScope (new MessageOrigin (property))) {
+				using (ScopeStack.PushScope (new MessageOrigin (property))) {
 					// This marks methods directly without reporting the property.
 					MarkMethod (property.GetMethod, reason, ScopeStack.CurrentScope.Origin);
 					MarkMethod (property.SetMethod, reason, ScopeStack.CurrentScope.Origin);
@@ -2804,7 +2804,7 @@ namespace Mono.Linker.Steps
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
-					using MarkScopeStack.LocalScope? _ = ScopeStack.CurrentScope.Origin.Provider == null ? ScopeStack.PushLocalScope (new MessageOrigin (((MemberReference) instance).Resolve ())) : null;
+					using var _ = ScopeStack.CurrentScope.Origin.Provider == null ? ScopeStack.PushScope (new MessageOrigin (((MemberReference) instance).Resolve ())) : null;
 					var scanner = new GenericArgumentDataFlow (Context, this, ScopeStack.CurrentScope.Origin);
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
@@ -2832,7 +2832,7 @@ namespace Mono.Linker.Steps
 
 		void ApplyPreserveInfo (TypeDefinition type)
 		{
-			using var typeScope = ScopeStack.PushLocalScope (new MessageOrigin (type));
+			using var typeScope = ScopeStack.PushScope (new MessageOrigin (type));
 
 			if (Annotations.TryGetPreserve (type, out TypePreserve preserve)) {
 				if (!Annotations.SetAppliedPreserve (type, preserve))
@@ -3203,8 +3203,8 @@ namespace Mono.Linker.Steps
 				throw new InternalErrorException ($"Unsupported method dependency {reason.Kind}");
 #endif
 			ScopeStack.AssertIsEmpty ();
-			using var parentScope = ScopeStack.PushLocalScope (new MarkScopeStack.Scope (origin));
-			using var methodScope = ScopeStack.PushLocalScope (new MessageOrigin (method));
+			using var parentScope = ScopeStack.PushScope (new MarkScopeStack.Scope (origin));
+			using var methodScope = ScopeStack.PushScope (new MessageOrigin (method));
 
 			bool markedForCall =
 				reason.Kind == DependencyKind.DirectCall ||
@@ -3360,7 +3360,7 @@ namespace Mono.Linker.Steps
 
 			Annotations.MarkInstantiated (type);
 
-			using var typeScope = ScopeStack.PushLocalScope (new MessageOrigin (type));
+			using var typeScope = ScopeStack.PushScope (new MessageOrigin (type));
 
 			MarkInterfaceImplementations (type);
 
@@ -3450,7 +3450,7 @@ namespace Mono.Linker.Steps
 			if (disablePrivateReflection == null)
 				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (null, DiagnosticId.CouldNotFindType, "System.Runtime.CompilerServices.DisablePrivateReflectionAttribute"));
 
-			using (ScopeStack.PushLocalScope (new MessageOrigin (null as ICustomAttributeProvider))) {
+			using (ScopeStack.PushScope (new MessageOrigin (null as ICustomAttributeProvider))) {
 				MarkType (disablePrivateReflection, DependencyInfo.DisablePrivateReflectionRequirement);
 
 				var ctor = MarkMethodIf (disablePrivateReflection.Methods, MethodDefinitionExtensions.IsDefaultConstructor, new DependencyInfo (DependencyKind.DisablePrivateReflectionRequirement, disablePrivateReflection), ScopeStack.CurrentScope.Origin);
@@ -3570,7 +3570,7 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (prop, reason))
 				return;
 
-			using var propertyScope = ScopeStack.PushLocalScope (new MessageOrigin (prop));
+			using var propertyScope = ScopeStack.PushScope (new MessageOrigin (prop));
 
 			// Consider making this more similar to MarkEvent method?
 			MarkCustomAttributes (prop, new DependencyInfo (DependencyKind.CustomAttribute, prop));
@@ -3582,7 +3582,7 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (evt, reason))
 				return;
 
-			using var eventScope = ScopeStack.PushLocalScope (new MessageOrigin (evt));
+			using var eventScope = ScopeStack.PushScope (new MessageOrigin (evt));
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
 
@@ -3681,7 +3681,7 @@ namespace Mono.Linker.Steps
 
 			requiresReflectionMethodBodyScanner =
 				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (Context, methodIL.Method);
-			using var _ = ScopeStack.PushLocalScope (new MessageOrigin (methodIL.Method));
+			using var _ = ScopeStack.PushScope (new MessageOrigin (methodIL.Method));
 			foreach (Instruction instruction in methodIL.Instructions)
 				MarkInstruction (instruction, methodIL.Method, ref requiresReflectionMethodBodyScanner);
 
@@ -3832,7 +3832,7 @@ namespace Mono.Linker.Steps
 				return;
 			Annotations.MarkProcessed (iface, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, ScopeStack.CurrentScope.Origin.Provider));
 
-			using MarkScopeStack.LocalScope? localScope = origin.HasValue ? ScopeStack.PushLocalScope (origin.Value) : null;
+			using var localScope = origin.HasValue ? ScopeStack.PushScope (origin.Value) : null;
 
 			// Blame the type that has the interfaceimpl, expecting the type itself to get marked for other reasons.
 			MarkCustomAttributes (iface, new DependencyInfo (DependencyKind.CustomAttribute, iface));
