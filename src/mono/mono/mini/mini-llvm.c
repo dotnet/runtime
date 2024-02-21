@@ -8486,6 +8486,7 @@ MONO_RESTORE_WARNING
 #endif
 				break;
 			}
+#if defined(TARGET_ARM64)
 			case INTRINS_AARCH64_ADV_SIMD_FRSQRTS: {
 				IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 				LLVMValueRef call_args [] = { l, r };
@@ -8493,6 +8494,7 @@ MONO_RESTORE_WARNING
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, call_args, "");
 				break;
 			}
+#endif
 			default:
 				g_assert_not_reached ();
 			}
