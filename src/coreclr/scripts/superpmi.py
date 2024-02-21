@@ -506,7 +506,7 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 def read_csv(path):
-    with open(path) as csv_file:
+    with open(path, encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file)
         return list(reader)
 
