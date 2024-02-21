@@ -1928,7 +1928,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             }
         }
 
-        _ASSERTE(indirectionsDataSize == dataOffset);
+        _ASSERTE((codeSize == dataOffset) || (indirectionsDataSize == dataOffset));
 
         // No null test required
         if (!pLookup->testForNull)
