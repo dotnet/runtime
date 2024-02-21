@@ -32,7 +32,6 @@ import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
-import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -269,10 +268,25 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         Module.runtimeKeepalivePush();
 
-        // load runtime and apply environment settings (if necessary)
-        await start_runtime();
-        if (!ENVIRONMENT_IS_WORKER) {
-            Module.runtimeKeepalivePush();
+        if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyThread) {
+            // this will create thread and call start_runtime() on it
+            runtimeHelpers.monoThreadInfo = monoThreadInfo;
+            runtimeHelpers.isManagedRunningOnCurrentThread = false;
+            update_thread_info();
+            runtimeHelpers.managedThreadTID = tcwraps.mono_wasm_create_deputy_thread();
+            runtimeHelpers.proxyGCHandle = await runtimeHelpers.afterMonoStarted.promise;
+
+            // TODO make UI thread not managed
+            tcwraps.mono_wasm_register_ui_thread();
+            monoThreadInfo.isAttached = true;
+            monoThreadInfo.isRegistered = true;
+
+            runtimeHelpers.runtimeReady = true;
+            update_thread_info();
+            bindings_init();
+        } else {
+            // load mono runtime and apply environment settings (if necessary)
+            await start_runtime();
         }
 
         if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
@@ -515,8 +529,11 @@ export async function start_runtime() {
             monoThreadInfo.isRegistered = true;
             runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
-            runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
-            runtimeHelpers.isCurrentThread = true;
+            runtimeHelpers.proxyGCHandle = install_main_synchronization_context(
+                runtimeHelpers.config.jsThreadBlockingMode!,
+                runtimeHelpers.config.jsThreadInteropMode!,
+                runtimeHelpers.config.mainThreadingMode!);
+            runtimeHelpers.isManagedRunningOnCurrentThread = true;
 
             // start finalizer thread, lazy
             init_finalizer_thread();

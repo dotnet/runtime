@@ -133,7 +133,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     }
 
     function async_bound_fn(args: JSMarshalerArguments): void {
-            forceThreadMemoryViewRefresh();
+        forceThreadMemoryViewRefresh();
         bound_fn(args);
     }
 
@@ -152,12 +152,12 @@ function bind_js_import(signature: JSFunctionSignature): Function {
 
     let wrapped_fn: WrappedJSFunction = bound_fn;
     if (WasmEnableThreads) {
-    if (is_async || is_discard_no_wait) {
-        wrapped_fn = async_bound_fn;
-    }
-    else {
-        wrapped_fn = sync_bound_fn;
-    }
+        if (is_async || is_discard_no_wait) {
+            wrapped_fn = async_bound_fn;
+        }
+        else {
+            wrapped_fn = sync_bound_fn;
+        }
     }
 
     // this is just to make debugging easier by naming the function in the stack trace.
