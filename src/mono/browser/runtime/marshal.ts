@@ -85,7 +85,7 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
 }
 
 export function is_receiver_should_free(args: JSMarshalerArguments): boolean {
-    if (WasmEnableThreads) return false;
+    if (!WasmEnableThreads) return false;
     mono_assert(args, "Null args");
     return getB32(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree);
 }
@@ -193,9 +193,9 @@ export function set_arg_element_type(arg: JSMarshalerArgument, type: MarshalerTy
     setU8(<any>arg + JSMarshalerArgumentOffsets.ElementType, type);
 }
 
-export function get_arg_b8(arg: JSMarshalerArgument): boolean {
+export function get_arg_bool(arg: JSMarshalerArgument): boolean {
     mono_assert(arg, "Null arg");
-    return !!getU8(<any>arg);
+    return getB32(<any>arg);
 }
 
 export function get_arg_u8(arg: JSMarshalerArgument): number {
@@ -251,10 +251,10 @@ export function get_arg_f64(arg: JSMarshalerArgument): number {
     return getF64(<any>arg);
 }
 
-export function set_arg_b8(arg: JSMarshalerArgument, value: boolean): void {
+export function set_arg_bool(arg: JSMarshalerArgument, value: boolean): void {
     mono_assert(arg, "Null arg");
     mono_check(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
-    setU8(<any>arg, value ? 1 : 0);
+    setB32(<any>arg, value ? 1 : 0);
 }
 
 export function set_arg_u8(arg: JSMarshalerArgument, value: number): void {

@@ -10958,6 +10958,22 @@ void CEEJitInfo::reportRichMappings(
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEJitInfo::reportMetadata(
+        const char* key,
+        const void* value,
+        size_t length)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
 void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {
@@ -14418,6 +14434,12 @@ void CEEInfo::reportRichMappings(
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::reportMetadata(const char* key, const void* value, size_t length)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

@@ -10096,7 +10096,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
     {
         fprintf(file, ",%u", sumStats[statIndex]);
     }
-    fprintf(file, ",%.2f\n", compiler->info.compPerfScore);
+    fprintf(file, ",%.2f\n", compiler->Metrics.PerfScore);
 }
 
 // -----------------------------------------------------------
