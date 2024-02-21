@@ -15,10 +15,7 @@ public partial class ConsoleEncoding
     {
         RemoteExecutor.Invoke(() =>
         {
-            Encoding encoding = Console.InputEncoding.CodePage != Encoding.ASCII.CodePage
-                ? Encoding.ASCII
-                : Encoding.Latin1;
-
+            Encoding encoding = Encoding.GetEncoding(0);
             Console.InputEncoding = encoding;
             Assert.Equal(encoding, Console.InputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleCP());
@@ -69,10 +66,7 @@ public partial class ConsoleEncoding
     {
         RemoteExecutor.Invoke(() =>
         {
-            Encoding encoding = Console.OutputEncoding.CodePage != Encoding.ASCII.CodePage
-                ? Encoding.ASCII
-                : Encoding.Latin1;
-
+            Encoding encoding = Encoding.GetEncoding(0);
             Console.OutputEncoding = encoding;
             Assert.Equal(encoding, Console.OutputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleOutputCP());
