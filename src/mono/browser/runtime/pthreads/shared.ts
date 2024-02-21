@@ -38,7 +38,7 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
     mono_assert(!runtimeHelpers.proxyGCHandle, "JS interop should not be already installed on this worker.");
     runtimeHelpers.proxyGCHandle = context_gc_handle;
     if (ENVIRONMENT_IS_PTHREAD) {
-        runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+        runtimeHelpers.managedThreadTID = runtimeHelpers.currentThreadTID;
         runtimeHelpers.isManagedRunningOnCurrentThread = true;
     }
     Module.runtimeKeepalivePush();
@@ -70,6 +70,7 @@ export function update_thread_info(): void {
     if (!WasmEnableThreads) return;
     const threadType = !monoThreadInfo.isRegistered ? "emsc"
         : monoThreadInfo.isUI ? "-UI-"
+            : monoThreadInfo.isDeputy ? "dpty"
             : monoThreadInfo.isTimer ? "timr"
                 : monoThreadInfo.isLongRunning ? "long"
                     : monoThreadInfo.isThreadPoolGate ? "gate"
@@ -124,6 +125,8 @@ export interface MonoWorkerToMainMessage {
     monoCmd: WorkerToMainMessageType;
     info: PThreadInfo;
     port?: MessagePort;
+    error?: string;
+    deputyProxyGCHandle?: GCHandle;
 }
 
 /// Identification of the current thread executing on a worker

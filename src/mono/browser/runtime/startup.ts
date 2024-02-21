@@ -3,9 +3,9 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
+import { DotnetModuleInternal, CharPtrNull, MainThreadingMode } from "./types/internal";
 import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
-import cwraps, { init_c_exports } from "./cwraps";
+import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
@@ -126,7 +126,6 @@ async function instantiateWasmWorker(
     await loaderHelpers.afterConfigLoaded.promise;
 
     replace_linker_placeholders(imports);
-    replaceEmscriptenPThreadInit();
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
@@ -270,9 +269,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         Module.runtimeKeepalivePush();
 
-        // load mono runtime and apply environment settings (if necessary)
+        // load runtime and apply environment settings (if necessary)
         await start_runtime();
-
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
@@ -518,7 +516,7 @@ export async function start_runtime() {
             runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
             runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
-            runtimeHelpers.isManagedRunningOnCurrentThread = true;
+            runtimeHelpers.isCurrentThread = true;
 
             // start finalizer thread, lazy
             init_finalizer_thread();

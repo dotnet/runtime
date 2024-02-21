@@ -343,7 +343,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 var jsTid = WebWorkerTestHelper.GetTid();
                 var csTid = WebWorkerTestHelper.NativeThreadId;
-                if (executor.Type == ExecutorType.Main || executor.Type == ExecutorType.JSWebWorker)
+                if (executor.Type == ExecutorType.JSWebWorker)
                 {
                     Assert.Equal(jsTid, csTid);
                 }
