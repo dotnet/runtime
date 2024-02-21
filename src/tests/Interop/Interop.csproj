@@ -21,6 +21,8 @@
     <Compile Include="LayoutClass/*.cs" />
     <Compile Include="ArrayMarshalling/**/*.cs" />
     <Compile Include="MarshalAPI/**/*.cs" />
+    <!-- Disable build of GenericFunctionPointer tests on mono -->
+    <Compile Condition="'$(RuntimeFlavor)' == 'mono'" Remove="MarshalAPI/FunctionPointer/GenericFunctionPointer.cs" />
     <Compile Include="PInvoke/Array/**/*.cs" />
     <Compile Include="PInvoke/ArrayWithOffset/**/*.cs" />
     <Compile Include="PInvoke/AsAny/**/*.cs" />
