@@ -249,10 +249,10 @@ namespace System.Diagnostics
                     if (declaringType != null)
                     {
                         // Append t.FullName, replacing '+' with '.'
-                        string fullName = declaringType.FullName!;
-                        for (int i = 0; i < fullName.Length; i++)
+                        string fullNameWithoutAssemblyInfo = declaringType.ToString();
+                        for (int i = 0; i < fullNameWithoutAssemblyInfo.Length; i++)
                         {
-                            char ch = fullName[i];
+                            char ch = fullNameWithoutAssemblyInfo[i];
                             sb.Append(ch == '+' ? '.' : ch);
                         }
                         sb.Append('.');
@@ -273,7 +273,12 @@ namespace System.Diagnostics
                             else
                                 fFirstTyParam = false;
 
-                            sb.Append(typars[k].Name);
+                            string typeName = typars[k].ToString();
+                            for (int i = 0; i < typeName.Length; i++)
+                            {
+                                char ch = typeName[i];
+                                sb.Append(ch == '+' ? '.' : ch);
+                            }
                             k++;
                         }
                         sb.Append(']');
@@ -305,8 +310,12 @@ namespace System.Diagnostics
 
                             string typeName = "<UnknownType>";
                             if (pi[j].ParameterType != null)
-                                typeName = pi[j].ParameterType.Name;
-                            sb.Append(typeName);
+                                typeName = pi[j].ParameterType.ToString();
+                            for (int i = 0; i < typeName.Length; i++)
+                            {
+                                char ch = typeName[i];
+                                sb.Append(ch == '+' ? '.' : ch);
+                            }
                             string? parameterName = pi[j].Name;
                             if (parameterName != null)
                             {
