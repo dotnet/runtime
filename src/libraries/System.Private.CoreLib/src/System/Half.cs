@@ -1354,7 +1354,7 @@ namespace System
         int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+        int IFloatingPoint<Half>.GetSignificandBitLength() => SignificandLength;
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
