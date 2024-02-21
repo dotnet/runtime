@@ -413,6 +413,7 @@ bool GcInfoDecoder::IsSafePoint()
 
 bool GcInfoDecoder::AreSafePointsInterruptible()
 {
+    // TODO: VS add a DOTNET_InterruptibleCallSites  knob?
     return m_Version == 3;
 }
 
