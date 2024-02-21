@@ -2856,6 +2856,8 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
 
+        case CORINFO_HELP_FAIL_FAST:
+
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
