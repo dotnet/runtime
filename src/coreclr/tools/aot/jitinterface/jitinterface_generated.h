@@ -1215,18 +1215,6 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-<<<<<<< HEAD
-    virtual void reportMetadata(
-          const char* key,
-          const void* value)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->reportMetadata(_thisHandle, &pException, key, value);
-    if (pException != nullptr) throw pException;
-}
-
-||||||| 9dc6ea62a4d
-=======
     virtual void reportMetadata(
           const char* key,
           const void* value,
@@ -1237,7 +1225,6 @@ public:
     if (pException != nullptr) throw pException;
 }
 
->>>>>>> 80084aa5632026b7d14d559d22e31403a9e89960
     virtual void* allocateArray(
           size_t cBytes)
 {
