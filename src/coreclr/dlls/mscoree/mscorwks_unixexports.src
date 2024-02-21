@@ -18,6 +18,7 @@ MetaDataGetDispenser
 ; mono
 coreclr_image_get_custom_attribute_data
 coreclr_unity_profiler_register
+coreclr_unity_gc_concurrent_mode
 mono_array_element_size
 mono_assembly_get_assemblyref
 mono_assembly_get_image
