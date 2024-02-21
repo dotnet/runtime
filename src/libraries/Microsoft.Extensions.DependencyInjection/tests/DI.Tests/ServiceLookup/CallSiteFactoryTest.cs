@@ -792,7 +792,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.ServiceIdentifier.ServiceType);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDeputyThread))]
         public void CallSitesAreUniquePerServiceTypeAndSlot()
         {
             // Connected graph

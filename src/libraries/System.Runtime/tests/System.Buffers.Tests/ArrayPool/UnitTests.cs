@@ -272,7 +272,7 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(id, bt.GetHashCode());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDeputyThread))]
         [MemberData(nameof(BytePoolInstances))]
         public static void CanRentManySizedBuffers(ArrayPool<byte> pool)
         {

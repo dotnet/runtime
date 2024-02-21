@@ -214,7 +214,7 @@ namespace Tests.System
         }
 #endif // NETFRAMEWORK
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDeputyThread))]
         [MemberData(nameof(TimersProvidersListData))]
         public static void CancellationTokenSourceWithTimer(TimeProvider provider)
         {
