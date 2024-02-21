@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- TODO: ;$(NetFrameworkToolCurrent) also? -->
     <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
     <Description>Example managed library that will be included in a NativeAOT compiled binary</Description>
     <EnableDefaultItems>true</EnableDefaultItems>
@@ -10,22 +9,8 @@
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShipping>true</IsShipping>
-    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
-          WasmAppBuilder task and the BrowserDebugProxy -->
+    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the libhellomanaged native library -->
     <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
-
-  <!-- TODO: remove -->
-  <ItemGroup Condition="false">
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" /> 
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
-  </ItemGroup>
-
-  <!-- TODO: remove -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-    <Compile Include="..\..\..\tasks\Common\IsExternalInit.cs" />
-  </ItemGroup>
 
 </Project>
