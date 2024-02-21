@@ -102,7 +102,7 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
     set(libFilename "${libName}${${symbolPrefix}_EXT}") # <libName>.dll, <libName>.so or <libName>.dylib
     set(libFullPath "${libPath}/${libFilename}")
     # windows import library
-    set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically \...\artifacts\bin\<libName>\<config>\<rid>\native\<libName>.lib
+    set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/native/<libName>.lib
 
     add_library(${targetName} SHARED IMPORTED GLOBAL)
     set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${libFullPath}")
@@ -146,7 +146,7 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
       target_link_options(${targetName}-static INTERFACE "LINKER:--exclude-libs=${libFilename}")
     elseif("${CLR_CMAKE_HOST_WIN32}")
       add_library(${targetName}-static STATIC IMPORTED)
-      set_property(TARGET ${targetName}-static PROPERTY IMPORTED_LOCATION "${libPath}\\${libFilename}")
+      set_property(TARGET ${targetName}-static PROPERTY IMPORTED_LOCATION "${libPath}/${libFilename}")
     endif()
 
     # TODO bake this into the cmake fragment?
