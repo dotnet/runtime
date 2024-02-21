@@ -227,9 +227,9 @@ namespace Mono.Linker
 					// Find the matching interface implementation if the base is an interface method
 					foreach (var iface in method.DeclaringType.Interfaces)
 					{
-						if (context.TryResolve (iface.InterfaceType) ==  baseMethod.DeclaringType)
+						if (context.TryResolve (iface.InterfaceType) == baseMethod.DeclaringType)
 						{
-							AnnotateMethods (baseMethod, method, new InterfaceImplementor (method.DeclaringType, iface, context.Resolve (baseMethod.DeclaringType)!));
+							AnnotateMethods (baseMethod, method, new InterfaceImplementor (method.DeclaringType, iface, baseMethod.DeclaringType));
 							break;
 						}
 					}
@@ -314,7 +314,7 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
-						AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl, context.Resolve(interfaceMethod.DeclaringType)!), potentialImplMethod);
+						AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl, interfaceMethod.DeclaringType), potentialImplMethod);
 						foundImpl = true;
 						break;
 					}
@@ -325,7 +325,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var baseMethod in potentialImplMethod.Overrides) {
 						if (context.TryResolve (baseMethod) == interfaceMethod) {
-							AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl, context.Resolve(interfaceMethod.DeclaringType)!), @potentialImplMethod);
+							AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl, interfaceMethod.DeclaringType), @potentialImplMethod);
 							foundImpl = true;
 							break;
 						}
