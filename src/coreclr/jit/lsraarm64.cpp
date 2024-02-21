@@ -1431,7 +1431,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         assert(intrin.op4->isContainedIntOrIImmed());
                         break;
 
-                    case NI_Sve_TrueMask:
+                    case NI_Sve_CreateTrueMaskByte:
+                    case NI_Sve_CreateTrueMaskDouble:
+                    case NI_Sve_CreateTrueMaskInt16:
+                    case NI_Sve_CreateTrueMaskInt32:
+                    case NI_Sve_CreateTrueMaskInt64:
+                    case NI_Sve_CreateTrueMaskSByte:
+                    case NI_Sve_CreateTrueMaskSingle:
+                    case NI_Sve_CreateTrueMaskUInt16:
+                    case NI_Sve_CreateTrueMaskUInt32:
+                    case NI_Sve_CreateTrueMaskUInt64:
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
@@ -1740,7 +1749,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         switch (intrin.id)
         {
-            case NI_Sve_TrueMask:
+            case NI_Sve_CreateTrueMaskByte:
+            case NI_Sve_CreateTrueMaskDouble:
+            case NI_Sve_CreateTrueMaskInt16:
+            case NI_Sve_CreateTrueMaskInt32:
+            case NI_Sve_CreateTrueMaskInt64:
+            case NI_Sve_CreateTrueMaskSByte:
+            case NI_Sve_CreateTrueMaskSingle:
+            case NI_Sve_CreateTrueMaskUInt16:
+            case NI_Sve_CreateTrueMaskUInt32:
+            case NI_Sve_CreateTrueMaskUInt64:
                 dstCandidates = RBM_ALLMASK;
                 break;
 

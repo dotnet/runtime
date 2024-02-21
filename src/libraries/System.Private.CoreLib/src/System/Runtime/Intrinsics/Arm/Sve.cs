@@ -29,6 +29,97 @@ namespace System.Runtime.Intrinsics.Arm
         }
 
 
+        ///  CreateTrueMaskByte : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskByte(pattern);
+
+
+        ///  CreateTrueMaskDouble : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskDouble(pattern);
+
+
+        ///  CreateTrueMaskInt16 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskInt16(pattern);
+
+
+        ///  CreateTrueMaskInt32 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<int> CreateTrueMaskInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskInt32(pattern);
+
+
+        ///  CreateTrueMaskInt64 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<long> CreateTrueMaskInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskInt64(pattern);
+
+
+        ///  CreateTrueMaskSByte : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateTrueMaskSByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskSByte(pattern);
+
+
+        ///  CreateTrueMaskSingle : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<float> CreateTrueMaskSingle([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskSingle(pattern);
+
+
+        ///  CreateTrueMaskUInt16 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b16(enum svpattern pattern)
+        ///   PTRUE Presult.H, pattern
+        /// </summary>
+        public static unsafe Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskUInt16(pattern);
+
+
+        ///  CreateTrueMaskUInt32 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b32(enum svpattern pattern)
+        ///   PTRUE Presult.S, pattern
+        /// </summary>
+        public static unsafe Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskUInt32(pattern);
+
+
+        ///  CreateTrueMaskUInt64 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b64(enum svpattern pattern)
+        ///   PTRUE Presult.D, pattern
+        /// </summary>
+        public static unsafe Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskUInt64(pattern);
+
+
+
         ///  LoadVector : Unextended load
 
         /// <summary>
@@ -100,22 +191,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LD1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe Vector<double> LoadVector(Vector<double> mask, double* address) => LoadVector(mask, address);
-
-
-        ///  TrueMask : Set predicate elements to true
-
-        /// <summary>
-        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
-        ///   PTRUE Presult.B, pattern
-        /// svbool_t svptrue_pat_b16(enum svpattern pattern)
-        ///   PTRUE Presult.H, pattern
-        /// svbool_t svptrue_pat_b32(enum svpattern pattern)
-        ///   PTRUE Presult.S, pattern
-        /// svbool_t svptrue_pat_b64(enum svpattern pattern)
-        ///   PTRUE Presult.D, pattern
-        /// </summary>
-
-        public static unsafe Vector<byte> TrueMask([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => TrueMask(pattern);
 
     }
 }

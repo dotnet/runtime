@@ -31,6 +31,97 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 
+        ///  CreateTrueMaskByte : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskDouble : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskInt16 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskInt32 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<int> CreateTrueMaskInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskInt64 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<long> CreateTrueMaskInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskSByte : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateTrueMaskSByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskSingle : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// </summary>
+        public static unsafe Vector<float> CreateTrueMaskSingle([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskUInt16 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b16(enum svpattern pattern)
+        ///   PTRUE Presult.H, pattern
+        /// </summary>
+        public static unsafe Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskUInt32 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b32(enum svpattern pattern)
+        ///   PTRUE Presult.S, pattern
+        /// </summary>
+        public static unsafe Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+        ///  CreateTrueMaskUInt64 : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b64(enum svpattern pattern)
+        ///   PTRUE Presult.D, pattern
+        /// </summary>
+        public static unsafe Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
+
+
+
         ///  LoadVector : Unextended load
 
         /// <summary>
@@ -103,20 +194,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> LoadVector(Vector<double> mask, double* address) { throw new PlatformNotSupportedException(); }
 
-
-        ///  TrueMask : Set predicate elements to true
-
-        /// <summary>
-        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
-        ///   PTRUE Presult.B, pattern
-        /// svbool_t svptrue_pat_b16(enum svpattern pattern)
-        ///   PTRUE Presult.H, pattern
-        /// svbool_t svptrue_pat_b32(enum svpattern pattern)
-        ///   PTRUE Presult.S, pattern
-        /// svbool_t svptrue_pat_b64(enum svpattern pattern)
-        ///   PTRUE Presult.D, pattern
-        /// </summary>
-        public static unsafe Vector<byte> TrueMask([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw new PlatformNotSupportedException(); }
 
     }
 }
