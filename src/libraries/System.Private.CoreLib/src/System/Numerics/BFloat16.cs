@@ -1210,6 +1210,27 @@ namespace System.Numerics
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BFloat16>.TryConvertFromChecked<TOther>(TOther value, out BFloat16 result)
+        {
+            return TryConvertFrom(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BFloat16>.TryConvertFromSaturating<TOther>(TOther value, out BFloat16 result)
+        {
+            return TryConvertFrom(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BFloat16>.TryConvertFromTruncating<TOther>(TOther value, out BFloat16 result)
+        {
+            return TryConvertFrom(value, out result);
+        }
+
         private static bool TryConvertFrom<TOther>(TOther value, out BFloat16 result)
             where TOther : INumberBase<TOther>
         {
