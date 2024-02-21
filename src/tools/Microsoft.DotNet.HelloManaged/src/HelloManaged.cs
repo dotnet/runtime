@@ -9,5 +9,5 @@ public class HelloManaged
 {
         public HelloManaged() {}
 
-        public ulong GetMagic() => 0x20240209L;
+        public ulong GetMagic() => 0x20240222L;
 }

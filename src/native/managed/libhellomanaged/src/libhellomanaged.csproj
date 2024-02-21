@@ -16,6 +16,7 @@
   <PropertyGroup>
       <PublishAot>true</PublishAot>
       <SelfContained>true</SelfContained>
+      <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
   <PropertyGroup>

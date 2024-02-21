@@ -104,9 +104,26 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
     # windows import library
     set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/native/<libName>.lib
 
+    # Copy the imported library into our binary dir.
+    # We do this so that we may strip it and also so that cmake dependency tracking will be aware if the file changes
+    set (importedFullPath "${CMAKE_CURRENT_BINARY_DIR}/imported_nativeaot_library/${targetNameIn}/${libFilename}")
+
+    add_custom_command(OUTPUT "${importedFullPath}"
+      DEPENDS "${libFullPath}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libFullPath}" "${importedFullPath}"
+    )
+    # TODO: if Windows, also copy the PDB file
+    
+    # now make a custom target that other targets can depend on
+    set(copy_target_name "${targetNameIn}_copy_imported_library")
+    add_custom_target("${copy_target_name}" DEPENDS "${importedFullPath}")
+    
+
     add_library(${targetName} SHARED IMPORTED GLOBAL)
-    set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${libFullPath}")
+    add_dependencies(${targetName} "${copy_target_name}")
+    set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${importedFullPath}")
     set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY 1)
+    set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY_COPY_TARGET "${copy_target_name}")
 
     if("${CLR_CMAKE_HOST_WIN32}")
       set_property(TARGET ${targetName} PROPERTY IMPORTED_IMPLIB "${libImpLibFullPath}")
@@ -114,6 +131,8 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
 
     set(libIncludePath "${${symbolPrefix}_INCLUDE}")
     target_include_directories(${targetName} INTERFACE "${libIncludePath}")
+
+    strip_symbols(${targetName} symbolFile)
 
   elseif ("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
     add_nativeAotFramework_targets_once()
