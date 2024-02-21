@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -15,15 +15,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IAggregationOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IBinaryOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IIndexOfOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IStatefulUnaryOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.ITernaryOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IUnaryInputBinaryOutput.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IUnaryOneToTwoOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IUnaryOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Operators\TensorPrimitives.IUnaryTwoToOneOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IAggregationOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBinaryOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IIndexOfOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IStatefulUnaryOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.ITernaryOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryInputBinaryOutput.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToTwoOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryTwoToOneOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acosh.cs" />
