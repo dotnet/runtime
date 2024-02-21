@@ -2770,7 +2770,7 @@ CSE_HeuristicParameterized::Choice& CSE_HeuristicParameterized::ChooseGreedy(Arr
     for (int i = 1; i < choices.Height(); i++)
     {
         Choice& choice     = choices.TopRef(i);
-        Choice& bestChoice = choices.TopRef(0);
+        Choice& bestChoice = choices.TopRef(choiceNum);
 
         const double delta = choice.m_preference - bestChoice.m_preference;
 
