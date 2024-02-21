@@ -5,8 +5,7 @@
     <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
 
     <_targetOS>$(RuntimeIdentifier.SubString(0, $(RuntimeIdentifier.LastIndexOf('-'))))</_targetOS>
-    <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
-    <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
+    <_targetOS Condition="$(_targetOS.Contains('.'))">$(_targetOS.SubString(0, $(_targetOS.IndexOf('.'))))</_targetOS>
     <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
 
     <!-- On non-Windows, determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
