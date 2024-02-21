@@ -907,5 +907,153 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static BFloat16 Abs(BFloat16 value) => new BFloat16((ushort)(value._value & ~SignMask));
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BFloat16 result;
+
+            if (typeof(TOther) == typeof(BFloat16))
+            {
+                result = (BFloat16)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BFloat16 result;
+
+            if (typeof(TOther) == typeof(BFloat16))
+            {
+                result = (BFloat16)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BFloat16 result;
+
+            if (typeof(TOther) == typeof(BFloat16))
+            {
+                result = (BFloat16)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<BFloat16>.IsCanonical(BFloat16 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<BFloat16>.IsComplexNumber(BFloat16 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(BFloat16 value) => float.IsEvenInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<BFloat16>.IsImaginaryNumber(BFloat16 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(BFloat16 value) => float.IsInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(BFloat16 value) => float.IsOddInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(BFloat16 value) => (short)(value._value) >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(BFloat16 value)
+        {
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for a real number.
+
+#pragma warning disable CS1718
+            return value == value;
+#pragma warning restore CS1718
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<BFloat16>.IsZero(BFloat16 value) => IsZero(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static BFloat16 MaxMagnitude(BFloat16 x, BFloat16 y) => (BFloat16)MathF.MaxMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static BFloat16 MaxMagnitudeNumber(BFloat16 x, BFloat16 y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            BFloat16 ax = Abs(x);
+            BFloat16 ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static BFloat16 MinMagnitude(BFloat16 x, BFloat16 y) => (BFloat16)MathF.MinMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static BFloat16 MinMagnitudeNumber(BFloat16 x, BFloat16 y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            BFloat16 ax = Abs(x);
+            BFloat16 ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
     }
 }
