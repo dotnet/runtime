@@ -44,6 +44,9 @@
             <!-- make a semicolon-separted list from the item group, then escape the backslashes -->
             <NativeLibraryArtifactIncludePath>@(NativeLibraryCmakeFragmentIncludePath, ';')</NativeLibraryArtifactIncludePath>
             <NativeLibraryArtifactIncludePath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactIncludePath.Replace('\', '\\'))</NativeLibraryArtifactIncludePath>
+            <!-- when writing the location of the cmake fragment file into the config file, escape the backslashes -->
+            <NativeLibraryCMakeFragmentPath_ Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryCMakeFragmentPath.Replace('\', '\\'))</NativeLibraryCMakeFragmentPath_>
+            <NativeLibraryCMakeFragmentPath_ Condition="'$(TargetOS)' != 'windows'">$(NativeLibraryCMakeFragmentPath)</NativeLibraryCMakeFragmentPath_>
         </PropertyGroup>
         <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libCmakeName" Value="$(NativeLibraryCMakeVarPrefix)" />
@@ -51,7 +54,7 @@
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibPath" Value="$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="$(NativeLibraryArtifactIncludePath.TrimEnd('\\/'))" />
-            <NativeLibraryCmakeFragmentProperties Include="libArtifactConfigFragment" Value="$(NativeLibraryCMakeFragmentPath)" />
+            <NativeLibraryCmakeFragmentProperties Include="libArtifactConfigFragment" Value="$(NativeLibraryCMakeFragmentPath_)" />
         </ItemGroup>
     </Target>
 
