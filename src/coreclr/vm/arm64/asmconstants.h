@@ -96,7 +96,11 @@ ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 #define LazyMachState_captureX19_X29 MachState__captureX19_X29
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureX19_X29 == offsetof(LazyMachState, captureX19_X29))
 
+#ifdef __APPLE__
+#define LazyMachState_captureSp     (MachState__isValid+8+88) // padding for alignment
+#else // __APPLE__
 #define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
+#endif // __APPLE
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
 
 #define LazyMachState_captureIp     (LazyMachState_captureSp+8)

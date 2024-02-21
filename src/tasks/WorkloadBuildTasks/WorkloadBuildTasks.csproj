@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);net8.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <!-- net8.0 is only need for the internal nuget produced which isn't required for source builds -->
+    <TargetFrameworks Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(TargetFrameworks);net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>

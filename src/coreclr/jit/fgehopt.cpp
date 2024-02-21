@@ -1099,8 +1099,7 @@ PhaseStatus Compiler::fgCloneFinally()
             }
             else
             {
-                newBlock->CopyTarget(this, block);
-                optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
+                optSetMappedBlockTargets(block, newBlock, &blockMap);
             }
         }
 

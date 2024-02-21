@@ -897,6 +897,8 @@ public:
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings) override final;
 
+    void reportMetadata(const char* key, const void* value, size_t length) override final;
+
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
                        void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
@@ -1143,7 +1145,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
                                                DWORD         dictionaryIndexAndSlot = -1,
                                                Module *      pModule = NULL);
 
-void ClearJitGenericHandleCache(AppDomain *pDomain);
+void ClearJitGenericHandleCache();
 
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 

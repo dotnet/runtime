@@ -171,10 +171,6 @@ namespace System.Reflection.Emit.Tests
                 {
                     ParameterBuilder pb = meb.DefineParameter(param.Position + 1, param.Attributes, param.Name);
                     paramAttributes.ForEach(pb.SetCustomAttribute);
-                    if (param.ParameterType.Equals(typeof(string)))
-                    {
-                        pb.SetConstant("Hello");
-                    }
                 }
             }
         }

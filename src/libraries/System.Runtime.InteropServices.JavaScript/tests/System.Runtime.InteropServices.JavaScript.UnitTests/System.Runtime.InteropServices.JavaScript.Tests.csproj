@@ -13,7 +13,7 @@
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- to see timing and which test aborted the runtime -->
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -21,7 +21,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportExportTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSInteropTestBase.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
