@@ -10285,9 +10285,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_CPBLK:
             {
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                op3                     = impPopStack().val; // Size
-                op2                     = impPopStack().val; // Value / Src addr
-                op1                     = impPopStack().val; // Dst addr
+                const bool   isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+                if (isVolatile && !impStackTop(0).val->IsCnsIntOrI())
+                {
+                    // We're going to emit a helper call surrounded by memory barriers, so we need to spill any side
+                    // effects.
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                }
+
+                op3 = impPopStack().val; // Size
+                op2 = impPopStack().val; // Value / Src addr
+                op1 = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
@@ -10324,21 +10332,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
+                    if (TARGET_POINTER_SIZE == 8)
+                    {
+                        // Cast size to TYP_LONG on 64-bit targets
+                        op3 = gtNewCastNode(TYP_LONG, op3, /* fromUnsigned */ true, TYP_LONG);
+                    }
+
 // TODO: enable for X86 as well, it currently doesn't support memset/memcpy helpers
 // Then, get rid of GT_STORE_DYN_BLK entirely.
 #ifndef TARGET_X86
-                    const bool     isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
-                    const unsigned helper     = opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
-#ifdef TARGET_64BIT
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
-#endif
+                    const unsigned helper = opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
                     if (isVolatile)
                     {
                         // Wrap with memory barriers: full-barrier + call + load-barrier
-                        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
-                        op1 = gtNewHelperCallNode(helper, TYP_VOID, op1, op2, op3);
                         impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
-                        impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(gtNewHelperCallNode(helper, TYP_VOID, op1, op2, op3), CHECK_SPILL_ALL,
+                                      impCurStmtDI);
                         op1 = gtNewMemoryBarrier(true);
                     }
                     else
@@ -10357,12 +10366,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op2 = gtNewIndir(TYP_STRUCT, op2);
                     }
-
-#ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
-#endif
-
                     op1 = gtNewStoreDynBlkNode(op1, op2, op3, indirFlags);
 #endif
                 }
