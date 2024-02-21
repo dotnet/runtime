@@ -1188,6 +1188,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3())); // mmmmm/aaaaa
             break;
 
+        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            break;
+
         case IF_SVE_EG_3A:   // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
         case IF_SVE_EY_3A:   // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_EZ_3A:   // ...........iimmm ......nnnnnddddd -- SVE mixed sign dot product (indexed)
@@ -10966,8 +10973,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_umullt:
         case INS_sve_sqdmullb:
         case INS_sve_sqdmullt:
-        case INS_sve_pmullb:
-        case INS_sve_pmullt:
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1)); // ddddd
             assert(isVectorRegister(reg2)); // nnnnn
@@ -10978,11 +10983,20 @@ void emitter::emitIns_R_R_R(instruction     ins,
 
         case INS_sve_pmullb:
         case INS_sve_pmullt:
-            assert(insOptsScalable(id->idInsOpt()));
-            assert(isVectorRegister(reg10)); // mmmmm
-            assert(isVectorRegister(reg20)); // nnnnn
-            assert(isVectorRegister(reg30)); // ddddd
-            fmt = IF_SVE_FN_3B;
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (insOptsNone(opt))
+            {
+                fmt = IF_SVE_FN_3B;
+            }
+            else
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+                fmt = IF_SVE_FN_3A;
+            }
             break;
 
         case INS_sve_clz:
@@ -22937,6 +22951,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
         case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
@@ -26584,6 +26599,13 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn/mmmmm
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
+            break;
+
+        // <Zd>.Q, <Zn>.D, <Zm>.D
+        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_Q, true);  // ddddd
+            emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_D, true);  // nnnnn/mmmmm
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_Q, false); // mmmmm/aaaaa
             break;
 
         // <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
@@ -30295,6 +30317,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
+        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
