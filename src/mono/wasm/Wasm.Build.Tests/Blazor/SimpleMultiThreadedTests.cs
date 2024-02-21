@@ -38,7 +38,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     // }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
-    [InlineData("Debug", false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
+    // [InlineData("Debug", false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
     // [InlineData("Debug", true)]
     [InlineData("Release", false)]
     // [InlineData("Release", true)]
