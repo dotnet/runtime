@@ -258,6 +258,8 @@ typedef struct MonoAotOptions {
 	char *clangxx;
 	char *depfile;
 	char *runtime_init_callback;
+	GPtrArray *runtime_args;
+	const char *aot_options;
 } MonoAotOptions;
 
 typedef enum {
@@ -15528,13 +15530,15 @@ emit_aot_image (MonoAotCompile *acfg)
 }
 
 int
-mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, const char *aot_options)
+mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, GPtrArray *runtime_args, const char *aot_options)
 {
 	int res = 0;
 	MonoAotOptions aot_opts;
 
 	init_options (&aot_opts);
 	mono_aot_parse_options (aot_options, &aot_opts);
+	aot_opts.runtime_args = runtime_args;
+	aot_opts.aot_options = aot_options;
 	if (aot_opts.direct_extern_calls && !(aot_opts.llvm && aot_opts.static_link)) {
 		fprintf (stderr, "The 'direct-extern-calls' option requires the 'llvm' and 'static' options.\n");
 		res = 1;
@@ -15637,7 +15641,7 @@ mono_aot_get_method_index (MonoMethod *method)
 }
 
 int
-mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 opts, const char *aot_options)
+mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, GPtrArray *runtime_args, const char *aot_options)
 {
 	return 0;
 }
