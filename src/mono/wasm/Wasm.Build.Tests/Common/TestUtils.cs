@@ -46,12 +46,25 @@ public static class TestUtils
         FileInfo finfo0 = new(file0);
         FileInfo finfo1 = new(file1);
 
-        if (same && finfo0.Length != finfo1.Length)
-            throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+        bool areEqual = FilesAreEqual(finfo0, finfo1);
 
-        if (!same && finfo0.Length == finfo1.Length)
-            throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+        if (same && !areEqual)
+            throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {GetFileMetadata(file0)}), and {GetFileMetadata(file1)})");
+
+        if (!same && areEqual)
+            throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {GetFileMetadata(file0)}), and {GetFileMetadata(file1)})");
     }
+
+    static bool FilesAreEqual(FileInfo fileInfo1, FileInfo fileInfo2) =>
+        (fileInfo1.Length == fileInfo2.Length &&
+        fileInfo1.LastWriteTime == fileInfo2.LastWriteTime &&
+        fileInfo1.CreationTime == fileInfo2.CreationTime)
+
+    static string GetFileMetadata(FileInfo fileInfo) =>
+        $"File Name: {fileInfo.Name}\n" +
+        $"Size: {fileInfo.Length} bytes\n" +
+        $"Last Write Time: {fileInfo.LastWriteTime}\n" +
+        $"Creation Time: {fileInfo.CreationTime}\n";
 
     public static string FindSubDirIgnoringCase(string parentDir, string dirName)
     {
