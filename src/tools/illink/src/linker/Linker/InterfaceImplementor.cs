@@ -8,11 +8,20 @@ namespace Mono.Linker
 {
 	public class InterfaceImplementor
 	{
+		/// <summary>
+		/// The type that implements <see cref="InterfaceImplementor.InterfaceType"/>.
+		/// </summary>
 		public TypeDefinition Implementor { get; }
+		/// <summary>
+		/// The .interfaceimpl on <see cref="InterfaceImplementor.Implementor"/>that points to <see cref="InterfaceImplementor.InterfaceType"/>
+		/// </summary>
 		public InterfaceImplementation InterfaceImplementation { get; }
-		public TypeDefinition? InterfaceType { get; }
+		/// <summary>
+		/// The type of the interface that is implemented by <see cref="InterfaceImplementor.Implementor"/>
+		/// </summary>
+		public TypeDefinition InterfaceType { get; }
 
-		public InterfaceImplementor (TypeDefinition implementor, InterfaceImplementation interfaceImplementation, TypeDefinition? interfaceType)
+		public InterfaceImplementor (TypeDefinition implementor, InterfaceImplementation interfaceImplementation, TypeDefinition interfaceType)
 		{
 			Implementor = implementor;
 			InterfaceImplementation = interfaceImplementation;
