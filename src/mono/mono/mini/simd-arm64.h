@@ -38,7 +38,6 @@ SIMD_OP  (64,  OP_ARM64_XADDV, INTRINS_AARCH64_ADV_SIMD_FADDV, WTDS,     _UNDEF,
 SIMD_OP  (64,  OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT,  WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fsqrt,   _UNDEF)
 SIMD_OP  (64,  OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS,   WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fabs,    _UNDEF)
 SIMD_OP  (64,  OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRSQRTE,WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_frsqrte, _UNDEF)
-SIMD_OP  (64,  OP_XBINOP,      INTRINS_AARCH64_ADV_SIMD_FRSQRTS,WTDSS,   _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_frsqrts, _UNDEF)
 
 /* 128-bit vectors */
 /*         Width  Opcode          Function              Operand config      I8                I16               I32               I64               F32               F64         */
@@ -94,4 +93,3 @@ SIMD_OP  (128, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT,  WTDS,    _UNDEF,
 SIMD_OP  (128, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_ABS,    WTDS,    arm_neon_abs,     arm_neon_abs,     arm_neon_abs,    arm_neon_abs,      _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS,   WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fabs,    arm_neon_fabs)
 SIMD_OP  (128, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRSQRTE,WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_frsqrte, arm_neon_frsqrte)
-SIMD_OP  (128, OP_XBINOP,      INTRINS_AARCH64_ADV_SIMD_FRSQRTS,WTDSS,   _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_frsqrts, arm_neon_frsqrts)

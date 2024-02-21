@@ -1149,7 +1149,7 @@ emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg){
 		recip_sqrt_2->inst_c0 = OP_FMUL;
 		recip_sqrt_2->inst_c1 = MONO_TYPE_R4;
 
-		corr = emit_simd_ins (cfg, klass, OP_XBINOP, sum->dreg, recip_sqrt_2->dreg);
+		corr = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X_X, sum->dreg, recip_sqrt_2->dreg);
 		corr->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FRSQRTS;
 		corr->inst_c1 = MONO_TYPE_R4;
 

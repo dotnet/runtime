@@ -4112,6 +4112,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case INTRINS_AARCH64_ADV_SIMD_USHL:
 				arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
 				break;
+			case INTRINS_AARCH64_ADV_SIMD_FRSQRTS:
+				arm_neon_frsqrts (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
