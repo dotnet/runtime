@@ -15,7 +15,10 @@ public partial class ConsoleEncoding
     {
         RemoteExecutor.Invoke(() =>
         {
-            Encoding encoding = Encoding.GetEncoding(0);
+            Encoding encoding = Console.InputEncoding.CodePage != Encoding.ASCII.CodePage
+                ? Encoding.ASCII
+                : Encoding.Latin1;
+
             Console.InputEncoding = encoding;
             Assert.Equal(encoding, Console.InputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleCP());
@@ -44,8 +47,9 @@ public partial class ConsoleEncoding
     {
         RemoteExecutor.Invoke(() =>
         {
-            Encoding encoding = Encoding.GetEncoding(0);
-            Assert.NotEqual(encoding.CodePage, Console.InputEncoding.CodePage);
+            Encoding encoding = Console.InputEncoding.CodePage != Encoding.ASCII.CodePage
+                ? Encoding.ASCII
+                : Encoding.Latin1;
 
             // use FreeConsole to detach the current console - simulating a process started with the "DETACHED_PROCESS" flag
             FreeConsole();
@@ -65,7 +69,10 @@ public partial class ConsoleEncoding
     {
         RemoteExecutor.Invoke(() =>
         {
-            Encoding encoding = Encoding.GetEncoding(0);
+            Encoding encoding = Console.OutputEncoding.CodePage != Encoding.ASCII.CodePage
+                ? Encoding.ASCII
+                : Encoding.Latin1;
+
             Console.OutputEncoding = encoding;
             Assert.Equal(encoding, Console.OutputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleOutputCP());
@@ -94,8 +101,9 @@ public partial class ConsoleEncoding
     {
         RemoteExecutor.Invoke(() =>
         {
-            Encoding encoding = Encoding.GetEncoding(0);
-            Assert.NotEqual(encoding.CodePage, Console.OutputEncoding.CodePage);
+            Encoding encoding = Console.OutputEncoding.CodePage != Encoding.ASCII.CodePage
+                ? Encoding.ASCII
+                : Encoding.Latin1;
 
             // use FreeConsole to detach the current console - simulating a process started with the "DETACHED_PROCESS" flag
             FreeConsole();
