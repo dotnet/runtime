@@ -95,6 +95,8 @@ namespace System
                 Unsafe.AddByteOffset(ref b, (nint)i) = 0;
             }
 
+            return;
+
         PInvoke:
             Buffer._ZeroMemory(ref b, byteLength);
         }
