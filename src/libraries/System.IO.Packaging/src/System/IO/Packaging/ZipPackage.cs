@@ -108,9 +108,9 @@ namespace System.IO.Packaging
         protected override void DeletePartCore(Uri partUri)
         {
             //Validating the PartUri - this method will do the argument checking required for uri.
-            partUri = PackUriHelper.ValidatePartUri(partUri);
+            PackUriHelper.ValidatedPartUri validatedUri = PackUriHelper.ValidatePartUri(partUri);
 
-            string partZipName = GetZipItemNameFromOpcName(PackUriHelper.GetStringForPartUri(partUri));
+            string partZipName = GetZipItemNameFromOpcName(PackUriHelper.GetStringForPartUri(validatedUri));
             ZipArchiveEntry? zipArchiveEntry = _zipArchive.GetEntry(partZipName);
             if (zipArchiveEntry != null)
             {
@@ -122,14 +122,14 @@ namespace System.IO.Packaging
                 // This can happen if the part is interleaved.
                 // Important Note: This method relies on the fact that the base class does not
                 // clean up all the information about the part to be deleted before this method
-                // is called. If ever that behaviour in Package.Delete(0 changes, this method
+                // is called. If ever that behaviour in Package.Delete() changes, this method
                 // should be changed.
                 // Ideally we would have liked to avoid this kind of a restriction but due to the
                 // current class interfaces and data structure ownerships between these objects,
                 // it's tough to re-design at this point.
-                if (PartExists(partUri))
+                if (PartExists(validatedUri))
                 {
-                    ZipPackagePart partToDelete = (ZipPackagePart)GetPart(partUri);
+                    ZipPackagePart partToDelete = (ZipPackagePart)GetPart(validatedUri);
                     // If the part has a non-null PieceDescriptors property, it is interleaved.
                     List<ZipPackagePartPiece>? pieceDescriptors = partToDelete.PieceDescriptors;
 
@@ -143,10 +143,10 @@ namespace System.IO.Packaging
             // We are not absolutely required to clean up all the items in the ignoredItems list,
             // but it will help to clean up incomplete and leftover pieces that belonged to the same
             // part.
-            _ignoredItemHelper.Delete((PackUriHelper.ValidatedPartUri)partUri);
+            _ignoredItemHelper.Delete(validatedUri);
 
             //Delete the content type for this part if it was specified as an override
-            _contentTypeHelper.DeleteContentType((PackUriHelper.ValidatedPartUri)partUri);
+            _contentTypeHelper.DeleteContentType(validatedUri);
         }
 
         /// <summary>

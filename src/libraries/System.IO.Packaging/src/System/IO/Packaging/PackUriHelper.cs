@@ -139,9 +139,9 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException(nameof(partUri));
             }
 
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
-            return ((ValidatedPartUri)partUri).NormalizedPartUri;
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
+
+            return validatedUri.NormalizedPartUri;
         }
 
         /// <summary>
@@ -187,10 +187,9 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException(nameof(partUri));
             }
 
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
-            return ((ValidatedPartUri)partUri).IsRelationshipPartUri;
+            return validatedUri.IsRelationshipPartUri;
         }
 
         /// <summary>
@@ -673,14 +672,14 @@ namespace System.IO.Packaging
 
             #endregion IComparable Methods
 
-            #region IEqualityComparer Methods
+            #region IEquatable Methods
 
             bool IEquatable<ValidatedPartUri>.Equals(ValidatedPartUri? otherPartUri)
             {
                 return Compare(otherPartUri) == 0;
             }
 
-            #endregion IEqualityComparer Methods
+            #endregion IEquatable Methods
 
             #region Internal Properties
 
@@ -857,10 +856,7 @@ namespace System.IO.Packaging
                 if (IsNormalized)
                     return this;
                 else
-                    return new ValidatedPartUri(_normalizedPartUriString!,
-                                                true /*isNormalized*/,
-                                                false /*computeIsRelationship*/,
-                                                IsRelationshipPartUri);
+                    return new ValidatedPartUri(_normalizedPartUriString!, true, false, IsRelationshipPartUri);
             }
 
             private int Compare(ValidatedPartUri? otherPartUri)
@@ -870,7 +866,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.CompareOrdinal(this.NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------
