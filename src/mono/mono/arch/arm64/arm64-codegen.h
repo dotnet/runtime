@@ -1270,6 +1270,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_fabs(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b0, 0b10 | (type), 0b01111, (rd), (rn))
 #define arm_neon_fneg(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b1, 0b10 | (type), 0b01111, (rd), (rn))
 #define arm_neon_fsqrt(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b1, 0b10 | (type), 0b11111, (rd), (rn))
+#define arm_neon_frsqrte(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b1, 0b10 | (type), 0b11101, (rd), (rn))
 #define arm_neon_fcvtn(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_2, 0b10110, (rd), (rn))
 #define arm_neon_fcvtn2(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b0, SIZE_2, 0b10110, (rd), (rn))
 #define arm_neon_fcvtl(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_LOW, 0b0, SIZE_2, 0b10111, (rd), (rn))
@@ -1845,6 +1846,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_fcmge(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b11100, (rd), (rn), (rm))
 #define arm_neon_fcmgt(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, 0b10 | (type), 0b11100, (rd), (rn), (rm))
 #define arm_neon_faddp(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b11010, (rd), (rn), (rm))
+#define arm_neon_frsqrts(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, 0b10 | (type), 0b11111, (rd), (rn), (rm))
 
 // Generalized macros for bitwise ops:
 //	width - determines if full register or its lower half is used one of {VREG_LOW, VREG_FULL}

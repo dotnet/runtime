@@ -688,6 +688,26 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 		return ins;
 	}
 }
+
+static MonoInst*
+emit_sum_sqrt_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg) {
+	MonoInst *sum = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, arg->dreg, -1);
+	sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
+	sum->inst_c1 = MONO_TYPE_R4;
+
+	MonoInst* sum_sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
+	sum_sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
+	sum_sqrt->inst_c1 = MONO_TYPE_R4;
+
+	if (COMPILE_LLVM (cfg)) {
+		return sum_sqrt;
+	} else {
+		MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sum_sqrt->dreg, -1);
+		ins->inst_c0 = 0;
+		ins->inst_c1 = MONO_TYPE_R4;
+		return ins;
+	}
+}
 #endif
 #ifdef TARGET_WASM
 static MonoInst* emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg);
@@ -1086,6 +1106,58 @@ emit_vector_insert_element (
 
 	return ins;
 }
+
+#if defined(TARGET_ARM64)
+static MonoInst*
+emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg){
+	MonoInst *vec_squared = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, arg->dreg);
+	vec_squared->inst_c0 = OP_FMUL;
+	vec_squared->inst_c1 = MONO_TYPE_R4;
+
+	const char *class_name = m_class_get_name (klass);
+	if (!strcmp ("Plane", class_name)) {
+		static float r4_0 = 0;
+		MonoInst *zero;
+		int zero_dreg = alloc_freg (cfg);
+		MONO_INST_NEW (cfg, zero, OP_R4CONST);
+		zero->inst_p0 = (void*)&r4_0;
+		zero->dreg = zero_dreg;
+		MONO_ADD_INS (cfg->cbb, zero);
+		vec_squared = emit_vector_insert_element (cfg, klass, vec_squared, MONO_TYPE_R4, zero, 3, FALSE);
+	}
+
+	MonoInst *sum = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, vec_squared->dreg, -1);
+	sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
+	sum->inst_c1 = MONO_TYPE_R4;
+
+	MonoInst *recip_sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
+	recip_sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FRSQRTE;
+	recip_sqrt->inst_c1 = MONO_TYPE_R4;
+
+
+	MonoInst *recip_sqrt_2, *corr;
+
+	for (int i = 0; i < 2; i++) {
+		recip_sqrt_2 = emit_simd_ins (cfg, klass, OP_XBINOP, recip_sqrt->dreg, recip_sqrt->dreg);
+		recip_sqrt_2->inst_c0 = OP_FMUL;
+		recip_sqrt_2->inst_c1 = MONO_TYPE_R4;
+
+		corr = emit_simd_ins (cfg, klass, OP_XBINOP, sum->dreg, recip_sqrt_2->dreg);
+		corr->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FRSQRTS;
+		corr->inst_c1 = MONO_TYPE_R4;
+
+		recip_sqrt = emit_simd_ins (cfg, klass, OP_XBINOP, recip_sqrt->dreg, corr->dreg);
+		recip_sqrt->inst_c0 = OP_FMUL;
+		recip_sqrt->inst_c1 = MONO_TYPE_R4;
+	}
+
+	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, recip_sqrt->dreg);
+	normalized_vec->inst_c0 = OP_FMUL;
+	normalized_vec->inst_c1 = MONO_TYPE_R4;
+
+	return normalized_vec;
+}
+#endif
 
 static MonoInst *
 emit_vector_create_elementwise (
@@ -2749,6 +2821,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	etype = m_class_get_byval_arg (mono_defaults.single_class);
 	len = mono_class_value_size (klass, NULL) / 4;
 
+	const char *class_name = m_class_get_name (klass);
 #ifndef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
@@ -2926,6 +2999,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		value [1] = 1.0f;
 		value [2] = 1.0f;
 		value [3] = 1.0f;
+		if (len == 3)
+			value [3] = 0.0f;
 		return emit_xconst_v128 (cfg, klass, (guint8*)value);
 	}
 	case SN_set_Item: {
@@ -3076,9 +3151,42 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return NULL;
 #endif
 	}
-	case SN_CopyTo:
-		// FIXME: https://github.com/dotnet/runtime/issues/91394
-		return NULL;
+	case SN_CopyTo: {
+#if defined(TARGET_ARM64)
+		MonoInst *index_ins;
+		int val_vreg, end_index_reg;
+		val_vreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
+
+		if (fsig->param_count == 2) {
+			index_ins = args [2];
+		} else {
+			EMIT_NEW_ICONST (cfg, index_ins, 0);
+		}
+
+		MonoInst *ldelema_ins;
+		if ((fsig->param_count == 1 || fsig->param_count == 2) && (fsig->params [0]->type == MONO_TYPE_SZARRAY)) {
+			MonoInst *array_ins = args [1];
+			/* CopyTo () does complicated argument checks */
+			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException", FALSE);
+			end_index_reg = alloc_ireg (cfg);
+			int len_reg = alloc_ireg (cfg);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, len_reg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), MONO_INST_INVARIANT_LOAD);
+			EMIT_NEW_BIALU (cfg, ins, OP_ISUB, end_index_reg, len_reg, index_ins->dreg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, end_index_reg, len);
+			MONO_EMIT_NEW_COND_EXC (cfg, LT, "ArgumentException");
+
+			/* Load the array slice into the simd reg */
+			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, FALSE, FALSE);
+			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, val_vreg);
+			ins->klass = cmethod->klass;
+			return ins;
+		} else {
+			//TODO: CopyTo(Span<Single>)
+			return NULL;
+		}
+#endif
+	}
+	break;
 	case SN_Clamp: {
 		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
 			return NULL;
@@ -3093,13 +3201,94 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 		return min;
 	}
-	case SN_Conjugate:
-	case SN_Distance:
-	case SN_DistanceSquared:
+	case SN_Distance: 
+	case SN_DistanceSquared: {
+#if defined(TARGET_ARM64)
+		MonoInst *diffs = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FSUB, MONO_TYPE_R4, fsig, args);
+		MonoInst *diffs_squared = emit_simd_ins (cfg, klass, OP_XBINOP, diffs->dreg, diffs->dreg);
+		diffs_squared->inst_c0 = OP_FMUL;
+		diffs_squared->inst_c1 = MONO_TYPE_R4;
+
+		switch (id) {
+		case SN_Distance:
+			return emit_sum_sqrt_vector_2_3_4 (cfg, klass, diffs_squared);
+		case SN_DistanceSquared:
+			return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, diffs_squared);
+		default:
+			g_assert_not_reached ();
+		}
+#endif
+	}
+	break;
 	case SN_Length:
-	case SN_LengthSquared:
-	case SN_Lerp:
+	case SN_LengthSquared: {
+#if defined (TARGET_ARM64)
+		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
+
+		MonoInst *vec_squared = emit_simd_ins (cfg, klass, OP_XBINOP, src1, src1);
+		vec_squared->inst_c0 = OP_FMUL;
+		vec_squared->inst_c1 = MONO_TYPE_R4;
+
+		switch (id) {
+		case SN_Length:
+			return emit_sum_sqrt_vector_2_3_4 (cfg, klass, vec_squared);
+		case SN_LengthSquared:
+			return emit_sum_vector (cfg, type, MONO_TYPE_R4, vec_squared);
+		default:
+			g_assert_not_reached ();
+		}
+#endif
+	}
+	break;
+	case SN_Lerp: {
+#if defined (TARGET_ARM64)
+		MonoInst* v1 = args [1];
+		if (!strcmp ("Quaternion", class_name)) {
+			MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FMUL, MONO_TYPE_R4, fsig, args);
+			pairwise_multiply->sreg3 = -1;
+			MonoInst *dot = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, pairwise_multiply->dreg, -1);
+			dot->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
+			dot->inst_c1 = MONO_TYPE_R4;
+
+			MonoInst* zeros = emit_xzero (cfg, klass);
+
+			MonoInst* ge_0 = emit_simd_ins (cfg, klass, OP_XCOMPARE_FP, dot->dreg, zeros->dreg);
+			ge_0->inst_c0 = CMP_GE;
+			ge_0->inst_c1 = MONO_TYPE_R4;
+
+			MonoInst* negated_v1 = emit_simd_ins (cfg, klass, OP_NEGATION, args [1]->dreg, -1);
+			negated_v1->inst_c1 = MONO_TYPE_R4;
+
+			v1 = emit_simd_ins (cfg, klass, OP_BSL, ge_0->dreg, args [1]->dreg);
+			v1->sreg3 = negated_v1->dreg;
+			v1->inst_c1 = MONO_TYPE_R4;
+		}
+
+		MonoInst *diffs = emit_simd_ins (cfg, klass, OP_XBINOP, v1->dreg, args [0]->dreg);
+		diffs->inst_c0 = OP_FSUB;
+		diffs->inst_c1 = MONO_TYPE_R4;
+
+		MonoInst *scaled_diffs = handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [2]->dreg, diffs->dreg, OP_FMUL);
+		
+		MonoInst *result = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, scaled_diffs->dreg);
+		result->inst_c0 = OP_FADD;
+		result->inst_c1 = MONO_TYPE_R4;
+
+		if (!strcmp ("Quaternion", class_name)) {
+			return emit_normalize_vector_2_3_4 (cfg, klass, result);
+		}
+
+		return result;
+#endif
+	}
+	break;
 	case SN_Normalize: {
+#if defined (TARGET_ARM64)
+	return emit_normalize_vector_2_3_4 (cfg, klass, args[0]);
+#endif
+	}
+	break;
+	case SN_Conjugate: {
 		// FIXME: https://github.com/dotnet/runtime/issues/91394
 		return NULL;
 	}
