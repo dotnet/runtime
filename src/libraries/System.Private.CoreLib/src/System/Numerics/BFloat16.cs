@@ -8,27 +8,83 @@ namespace System.Numerics
     /// </summary>
     public readonly struct BFloat16
         : IComparable,
+          ISpanFormattable,
           IComparable<BFloat16>,
-          IEquatable<BFloat16>
+          IEquatable<BFloat16>,
+          IBinaryFloatingPointIeee754<BFloat16>,
+          IMinMaxValue<BFloat16>,
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<BFloat16>
     {
+        // Constants for manipulating the private bit-representation
+
+        internal const ushort SignMask = 0x8000;
+        internal const int SignShift = 15;
+        internal const byte ShiftedSignMask = SignMask >> SignShift;
+
+        internal const ushort BiasedExponentMask = 0x7F80;
+        internal const int BiasedExponentShift = 7;
+        internal const int BiasedExponentLength = 8;
+        internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
+
+        internal const ushort TrailingSignificandMask = 0x007F;
+
+        internal const byte MinSign = 0;
+        internal const byte MaxSign = 1;
+
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0xFF;
+
+        internal const byte ExponentBias = 127;
+
+        internal const sbyte MinExponent = -126;
+        internal const sbyte MaxExponent = +127;
+
+        internal const ushort MinTrailingSignificand = 0x0000;
+        internal const ushort MaxTrailingSignificand = 0x007F;
+
+        internal const int TrailingSignificandLength = 7;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
+
+        // Constants representing the private bit-representation for various default values
+
+        private const ushort PositiveZeroBits = 0x0000;
+        private const ushort NegativeZeroBits = 0x8000;
+
         private const ushort EpsilonBits = 0x0001;
+
+        private const ushort PositiveInfinityBits = 0x7F80;
+        private const ushort NegativeInfinityBits = 0xFF80;
+
+        private const ushort PositiveQNaNBits = 0x7FC0;
+        private const ushort NegativeQNaNBits = 0xFFC0;
 
         private const ushort MinValueBits = 0xFF7F;
         private const ushort MaxValueBits = 0x7F7F;
 
-        /// <summary>
-        /// Represents the smallest positive <see cref="BFloat16"/> value that is greater than zero.
-        /// </summary>
+        private const ushort PositiveOneBits = 0x3F80;
+        private const ushort NegativeOneBits = 0xBF80;
+
+        private const ushort SmallestNormalBits = 0x0080;
+
+        private const ushort EBits = 0x402E;
+        private const ushort PiBits = 0x4049;
+        private const ushort TauBits = 0x40C9;
+
+        // Well-defined and commonly used values
+
         public static BFloat16 Epsilon => new BFloat16(EpsilonBits);
 
-        /// <summary>
-        /// Represents the smallest possible value of <see cref="BFloat16"/>.
-        /// </summary>
+        public static BFloat16 PositiveInfinity => new BFloat16(PositiveInfinityBits);
+
+        public static BFloat16 NegativeInfinity => new BFloat16(NegativeInfinityBits);
+
+        public static BFloat16 NaN => new BFloat16(NegativeQNaNBits);
+
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static BFloat16 MinValue => new BFloat16(MinValueBits);
 
-        /// <summary>
-        /// Represents the largest possible value of <see cref="BFloat16"/>.
-        /// </summary>
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static BFloat16 MaxValue => new BFloat16(MaxValueBits);
 
         internal readonly ushort _value;
