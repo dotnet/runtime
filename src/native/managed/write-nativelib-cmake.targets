@@ -30,13 +30,16 @@
             <NativeLibraryArtifactLibPath>$(PublishDir)/</NativeLibraryArtifactLibPath>
             <!-- escape backslashes in windows-style paths to make cmake happy -->
             <NativeLibraryArtifactLibPath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactLibPath.Replace('\', '\\'))</NativeLibraryArtifactLibPath>
+            <!-- make a semicolon-separted list from the item group, then escape the backslashes -->
+            <NativeLibraryArtifactIncludePath>@(NativeLibraryCmakeFragmentIncludePath, ';')</NativeLibraryArtifactIncludePath>
+            <NativeLibraryArtifactIncludePath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactIncludePath.Replace('\', '\\'))</NativeLibraryArtifactIncludePath>
         </PropertyGroup>
         <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libCmakeName" Value="$(NativeLibraryCMakeVarPrefix)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactName" Value="$(NativeLibraryArtifactName)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibPath" Value="$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))" />
-            <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="@(NativeLibraryCmakeFragmentIncludePath, ';')" />
+            <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="$(NativeLibraryArtifactIncludePath.TrimEnd('\\/'))" />
         </ItemGroup>
     </Target>
 
