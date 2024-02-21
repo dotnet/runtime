@@ -10329,16 +10329,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifndef TARGET_X86
                     const bool isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
                     unsigned   helper     = opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
-                    op3                   = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
-
-                    if (isVolatile)
-                    {
-                        op3 = gtNewOperNode(GT_COMMA, TYP_I_IMPL, gtNewMemoryBarrier(), op3);
-                    }
+#ifdef TARGET_64BIT
+                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
+#endif
                     op1 = gtNewHelperCallNode(helper, TYP_VOID, op1, op2, op3);
 
                     if (isVolatile)
                     {
+                        // Wrap with memory barriers: full-barrier + call + load-barrier
+                        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                        impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
                         impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
                         op1 = gtNewMemoryBarrier(true);
                     }
