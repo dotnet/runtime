@@ -50,6 +50,7 @@ namespace System
     internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
         where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
     {
+        // The significant digits count for (BiasedExponent=1, TrailingSignificand=all bits set), plus 2
         static abstract int NumberBufferLength { get; }
 
         static abstract ulong ZeroBits { get; }
