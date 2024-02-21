@@ -9,5 +9,10 @@
     <type fullname="System.Diagnostics.SystemDiagnosticsSection" />
     <type fullname="System.Configuration.Internal.InternalConfigConfigurationFactory" />
     <type fullname="System.Configuration.ProviderSettingsCollection" />
+    <type fullname="System.Diagnostics.FilterElement" />
+    <type fullname="System.Configuration.ConnectionStringSettingsCollection" />
+    <type fullname="System.Configuration.NameValueSectionHandler" />
+    <type fullname="System.Configuration.UriSection" />
+    <type fullname="System.ConfigurationTests.TypeUtilTests" />
   </assembly>
 </linker>
