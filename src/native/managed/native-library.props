@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <!-- the cmake build will strip and save the symbols -->
+    <StripSymbols>false</StripSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- in net9.0 we can do this -->
+    <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- passed by compile-native.proj to set - -gcc-toolchain=$(ROOTFS_DIR)/usr -->
+    <CustomLinkerArg Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="$(CustomLinkerArgToolchainArg)" />
+  </ItemGroup>
+</Project>

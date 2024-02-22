@@ -3,6 +3,12 @@
             <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
     </ItemGroup>
 
+    <!-- set a default include path, if there wasn't one already in the project -->
+    <ItemGroup>
+        <NativeLibraryCmakeFragmentIncludePath Condition="'@(NativeLibraryCmakeFragmentIncludePath->Count())' == '0' and Exists($([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)\..\inc')))" Include="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)\..\inc'))" />
+    </ItemGroup>
+
+
     <PropertyGroup>
         <NativeLibraryCMakeFindPackageConfigOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)\cmake\find_package\'))</NativeLibraryCMakeFindPackageConfigOutputPath>
     </PropertyGroup>

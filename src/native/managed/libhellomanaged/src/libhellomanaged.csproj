@@ -13,30 +13,12 @@
     <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
-  <PropertyGroup>
-      <PublishAot>true</PublishAot>
-      <SelfContained>true</SelfContained>
-      <StripSymbols>false</StripSymbols>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- in net9.0 we can do this -->
-    <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
-  </PropertyGroup>
-
-  <ItemGroup>
-      <NativeLibraryCmakeFragmentIncludePath Include="$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\inc'))" />
-  </ItemGroup>
-
-  <ItemGroup>
-      <!-- passed by compile-native.proj to set - -gcc-toolchain=$(ROOTFS_DIR)/usr -->
-      <CustomLinkerArg Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="$(CustomLinkerArgToolchainArg)" />
-  </ItemGroup>
+  <Import Project="..\..\native-library.props" />
 
   <ItemGroup>
       <ProjectReference Include="..\..\..\..\tools\Microsoft.DotNet.HelloManaged\src\Microsoft.DotNet.HelloManaged.csproj" />
   </ItemGroup>
 
-  <Import Project="..\..\write-nativelib-cmake.targets" />
+  <Import Project="..\..\native-library.targets" />
 
 </Project>
