@@ -201,10 +201,10 @@ RhpULng2Dbl ENDP
 EXTERN __alldiv : PROC
 
 RhpLDiv PROC public
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
     call    __alldiv
     ret     16
 RhpLDiv ENDP
@@ -212,10 +212,10 @@ RhpLDiv ENDP
 EXTERN __allrem : PROC
 
 RhpLMod PROC public
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
     call    __allrem
     ret     16
 RhpLMod ENDP
@@ -223,10 +223,10 @@ RhpLMod ENDP
 EXTERN __aulldiv : PROC
 
 RhpULDiv PROC public
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
     call    __aulldiv
     ret     16
 RhpULDiv ENDP
@@ -234,10 +234,10 @@ RhpULDiv ENDP
 EXTERN __aullrem : PROC
 
 RhpULMod PROC public
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
-    push    dword ptr [esp+16]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
     call    __aullrem
     ret     16
 RhpULMod ENDP
@@ -245,10 +245,10 @@ RhpULMod ENDP
 EXTERN __allmul : PROC
 
 RhpLMul PROC public
-    push    DWORD PTR [esp+16]
-    push    DWORD PTR [esp+16]
-    push    DWORD PTR [esp+16]
-    push    DWORD PTR [esp+16]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
     call    __allmul
     ret     16
 RhpLMul ENDP
