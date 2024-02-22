@@ -2757,7 +2757,12 @@ namespace System
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
-                im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
+                MethodInfo targetMethod = (MethodInfo)rtTypeMethodBase!;
+                // https://github.com/dotnet/runtime/issues/90863
+                if (targetMethod.IsGenericMethod && !targetMethod.IsGenericMethodDefinition)
+                    targetMethod = targetMethod.GetGenericMethodDefinition();
+
+                im.TargetMethods[i] = targetMethod;
             }
 
             return im;
