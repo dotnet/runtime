@@ -100,7 +100,7 @@ namespace System.Reflection.Metadata.Tests
                     Type genericTypeDefinition = GetTypeFromParsedTypeName(genericTypeDefinitionName);
                     Debug.Assert(genericTypeDefinition.IsGenericTypeDefinition);
 
-                    TypeName[] genericArgs = parsed.GetGenericArguments();
+                    ReadOnlySpan<TypeName> genericArgs = parsed.GetGenericArguments();
                     Type[] typeArguments = new Type[genericArgs.Length];
                     for (int i = 0; i < genericArgs.Length; i++)
                     {

@@ -153,7 +153,7 @@ namespace System.Reflection.Metadata
             return (int)Math.Min((uint)offset, (uint)input.Length);
         }
 
-        private static int GetIndexOfFirstInvalidCharacter(ReadOnlySpan<char> input, bool strictMode, ReadOnlySpan<bool> allowedAsciiCharsMap)
+        private static int GetIndexOfFirstInvalidCharacter(ReadOnlySpan<char> input, bool strictMode, bool assemblyName)
         {
             if (input.IsEmpty)
             {
@@ -163,6 +163,10 @@ namespace System.Reflection.Metadata
             {
                 return -1;
             }
+
+            ReadOnlySpan<bool> allowedAsciiCharsMap = assemblyName
+                ? GetAssemblyNameAsciiCharsAllowMap()
+                : GetTypeNameAsciiCharsAllowMap();
 
             Debug.Assert(allowedAsciiCharsMap.Length == 128);
 
@@ -187,13 +191,8 @@ namespace System.Reflection.Metadata
             }
 
             return -1;
-        }
 
-        internal static int GetIndexOfFirstInvalidAssemblyNameCharacter(ReadOnlySpan<char> input, bool strictMode)
-        {
-            return GetIndexOfFirstInvalidCharacter(input, strictMode, GetAsciiCharsAllowMap());
-
-            static ReadOnlySpan<bool> GetAsciiCharsAllowMap() =>
+            static ReadOnlySpan<bool> GetAssemblyNameAsciiCharsAllowMap() =>
             [
                 false, // U+0000 (NUL)
                 false, // U+0001 (SOH)
@@ -324,13 +323,8 @@ namespace System.Reflection.Metadata
                 true, // U+007E '~'
                 false, // U+007F (DEL)
             ];
-        }
 
-        internal static int GetIndexOfFirstInvalidTypeNameCharacter(ReadOnlySpan<char> input, bool strictMode)
-        {
-            return GetIndexOfFirstInvalidCharacter(input, strictMode, GetAsciiCharsAllowMap());
-
-            static ReadOnlySpan<bool> GetAsciiCharsAllowMap() =>
+            static ReadOnlySpan<bool> GetTypeNameAsciiCharsAllowMap() =>
             [
                 false, // U+0000 (NUL)
                 false, // U+0001 (SOH)
@@ -463,6 +457,12 @@ namespace System.Reflection.Metadata
             ];
         }
 
+        internal static int GetIndexOfFirstInvalidAssemblyNameCharacter(ReadOnlySpan<char> input, bool strictMode)
+            => GetIndexOfFirstInvalidCharacter(input, strictMode, assemblyName: true);
+
+        internal static int GetIndexOfFirstInvalidTypeNameCharacter(ReadOnlySpan<char> input, bool strictMode)
+            => GetIndexOfFirstInvalidCharacter(input, strictMode, assemblyName: false);
+
         internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
         {
 #if NET8_0_OR_GREATER
@@ -587,7 +587,7 @@ namespace System.Reflection.Metadata
 
             if (TryStripFirstCharAndTrailingSpaces(ref input, '*'))
             {
-                rankOrModifier = TypeNameParserHelpers.Pointer;
+                rankOrModifier = Pointer;
                 return true;
             }
 

@@ -2411,7 +2411,6 @@ namespace System.Reflection.Metadata
     public sealed partial class TypeName
     {
         internal TypeName() { }
-        public System.Reflection.AssemblyName? AssemblyName { get { throw null; } }
         public string AssemblyQualifiedName { get { throw null; } }
         public System.Reflection.Metadata.TypeName? ContainingType { get { throw null; } }
         public bool IsArray { get { throw null; } }
@@ -2428,7 +2427,8 @@ namespace System.Reflection.Metadata
         public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
         public int GetArrayRank() { throw null; }
-        public System.Reflection.Metadata.TypeName[] GetGenericArguments() { throw null; }
+        public System.Reflection.AssemblyName? GetAssemblyName() { throw null; }
+        public System.ReadOnlySpan<System.Reflection.Metadata.TypeName> GetGenericArguments() { throw null; }
     }
     public sealed partial class TypeNameParserOptions
     {

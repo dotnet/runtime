@@ -41,7 +41,7 @@ namespace System.Reflection.Metadata
             if (trimmedName.IsEmpty)
             {
                 // whitespace input needs to report the error index as 0
-                return ThrowInvalidTypeNameOrReturnNull(throwOnError, 0);
+                return ThrowInvalidTypeNameOrReturnNull(throwOnError, errorIndex: 0);
             }
 
             int recursiveDepth = 0;

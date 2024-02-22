@@ -72,6 +72,9 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameParser.cs">
       <Link>Utilities\AssemblyNameParser.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameParser.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+      <Link>Utilities\AssemblyNameParser.netstandard.cs</Link>
+    </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeName.cs">
       <Link>Utilities\TypeName.cs</Link>
     </Compile>

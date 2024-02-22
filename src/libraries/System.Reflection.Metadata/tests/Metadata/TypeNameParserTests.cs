@@ -91,17 +91,19 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
                 Assert.Equal(type.FullName, parsed.FullName);
                 Assert.Equal(type.Name, parsed.Name);
-                Assert.NotNull(parsed.AssemblyName);
 
-                Assert.Equal(expectedAssemblyName.Name, parsed.AssemblyName.Name);
-                Assert.Equal(expectedAssemblyName.Version, parsed.AssemblyName.Version);
-                Assert.Equal(expectedAssemblyName.CultureName, parsed.AssemblyName.CultureName);
-                Assert.Equal(expectedAssemblyName.GetPublicKeyToken(), parsed.AssemblyName.GetPublicKeyToken());
-                Assert.Equal(expectedAssemblyName.FullName, parsed.AssemblyName.FullName);
+                AssemblyName parsedAssemblyName = parsed.GetAssemblyName();
+                Assert.NotNull(parsedAssemblyName);
 
-                Assert.Equal(default, parsed.AssemblyName.ContentType);
-                Assert.Equal(default, parsed.AssemblyName.Flags);
-                Assert.Equal(default, parsed.AssemblyName.ProcessorArchitecture);
+                Assert.Equal(expectedAssemblyName.Name, parsedAssemblyName.Name);
+                Assert.Equal(expectedAssemblyName.Version, parsedAssemblyName.Version);
+                Assert.Equal(expectedAssemblyName.CultureName, parsedAssemblyName.CultureName);
+                Assert.Equal(expectedAssemblyName.GetPublicKeyToken(), parsedAssemblyName.GetPublicKeyToken());
+                Assert.Equal(expectedAssemblyName.FullName, parsedAssemblyName.FullName);
+
+                Assert.Equal(default, parsedAssemblyName.ContentType);
+                Assert.Equal(default, parsedAssemblyName.Flags);
+                Assert.Equal(default, parsedAssemblyName.ProcessorArchitecture);
             }
         }
 
@@ -248,7 +250,7 @@ namespace System.Reflection.Metadata.Tests
             static void Validate(TypeName parsed, int maxDepth)
             {
                 Assert.True(parsed.IsConstructedGenericType);
-                TypeName[] genericArgs = parsed.GetGenericArguments();
+                TypeName[] genericArgs = parsed.GetGenericArguments().ToArray();
                 Assert.Equal(maxDepth - 1, genericArgs.Length);
                 Assert.All(genericArgs, arg => Assert.False(arg.IsConstructedGenericType));
             }
@@ -310,7 +312,7 @@ namespace System.Reflection.Metadata.Tests
 
                 if (assemblyNames is not null)
                 {
-                    Assert.Equal(assemblyNames[i].FullName, genericArg.AssemblyName.FullName);
+                    Assert.Equal(assemblyNames[i].FullName, genericArg.GetAssemblyName().FullName);
                 }
             }
         }
@@ -509,9 +511,11 @@ namespace System.Reflection.Metadata.Tests
                 }
                 else if (typeName.UnderlyingType is null) // elemental
                 {
-                    Type? type = typeName.AssemblyName is null
+                    AssemblyName? assemblyName = typeName.GetAssemblyName();
+
+                    Type? type = assemblyName is null
                         ? Type.GetType(typeName.FullName, throwOnError, ignoreCase)
-                        : Assembly.Load(typeName.AssemblyName).GetType(typeName.FullName, throwOnError, ignoreCase);
+                        : Assembly.Load(assemblyName).GetType(typeName.FullName, throwOnError, ignoreCase);
 
                     return Make(type);
                 }
@@ -526,7 +530,7 @@ namespace System.Reflection.Metadata.Tests
                     }
                     else if (typeName.IsConstructedGenericType)
                     {
-                        TypeName[] genericArgs = typeName.GetGenericArguments();
+                        ReadOnlySpan<TypeName> genericArgs = typeName.GetGenericArguments();
                         Type[] genericTypes = new Type[genericArgs.Length];
                         for (int i = 0; i < genericArgs.Length; i++)
                         {

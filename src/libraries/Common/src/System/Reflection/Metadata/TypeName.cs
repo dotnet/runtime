@@ -22,6 +22,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         private readonly int _rankOrModifier;
         private readonly TypeName[]? _genericArguments;
+        private readonly AssemblyName? _assemblyName;
         private string? _assemblyQualifiedName;
 
         internal TypeName(string name, string fullName,
@@ -33,7 +34,7 @@ namespace System.Reflection.Metadata
         {
             Name = name;
             FullName = fullName;
-            AssemblyName = assemblyName;
+            _assemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
             UnderlyingType = underlyingType;
             ContainingType = containingType;
@@ -45,16 +46,10 @@ namespace System.Reflection.Metadata
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
         /// </summary>
         /// <remarks>
-        /// If <see cref="AssemblyName"/> is null, simply returns <see cref="FullName"/>.
+        /// If <see cref="GetAssemblyName()"/> returns null, simply returns <see cref="FullName"/>.
         /// </remarks>
         public string AssemblyQualifiedName
-            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}";
-
-        /// <summary>
-        /// The assembly which contains this type, or null if this <see cref="TypeName"/> was not
-        /// created from a fully-qualified name.
-        /// </summary>
-        public AssemblyName? AssemblyName { get; } // TODO: AssemblyName is mutable, are we fine with that? Does it not offer too much?
+            => _assemblyQualifiedName ??= _assemblyName is null ? FullName : $"{FullName}, {_assemblyName.FullName}";
 
         /// <summary>
         /// If this type is a nested type (see <see cref="IsNestedType"/>), gets
@@ -205,18 +200,34 @@ namespace System.Reflection.Metadata
             };
 
         /// <summary>
-        /// If this <see cref="TypeName"/> represents a constructed generic type, returns an array
-        /// of all the generic arguments. Otherwise it returns an empty array.
+        /// Returns assembly name which contains this type, or null if this <see cref="TypeName"/> was not
+        /// created from a fully-qualified name.
+        /// </summary>
+        /// <remarks>Since <seealso cref="AssemblyName"/> is mutable, this method returns a copy of it.</remarks>
+        public AssemblyName? GetAssemblyName()
+        {
+            if (_assemblyName is null)
+            {
+                return null;
+            }
+
+#if SYSTEM_PRIVATE_CORELIB
+            return _assemblyName; // no need for a copy in CoreLib
+#else
+            return (AssemblyName)_assemblyName.Clone();
+#endif
+        }
+
+        /// <summary>
+        /// If this <see cref="TypeName"/> represents a constructed generic type, returns a span
+        /// of all the generic arguments. Otherwise it returns an empty span.
         /// </summary>
         /// <remarks>
-        /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element array containing
+        /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element span containing
         /// string and int.</para>
-        /// <para>The caller controls the returned array and may mutate it freely.</para>
         /// </remarks>
-        public TypeName[] GetGenericArguments()
-            => _genericArguments is not null
-                ? (TypeName[])_genericArguments.Clone() // we return a copy on purpose, to not allow for mutations. TODO: consider returning a ROS
-                : Array.Empty<TypeName>(); // TODO: should we throw (Levi's parser throws InvalidOperationException in such case), Type.GetGenericArguments just returns an empty array
+        public ReadOnlySpan<TypeName> GetGenericArguments()
+            => _genericArguments is null ? ReadOnlySpan<TypeName>.Empty : _genericArguments.AsSpan();
 
         private static int GetTotalComplexity(TypeName? underlyingType, TypeName? containingType, TypeName[]? genericTypeArguments)
         {

@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 
+#nullable enable
+
 namespace System.Reflection
 {
     internal ref partial struct AssemblyNameParser
@@ -13,6 +15,11 @@ namespace System.Reflection
 
         private static bool IsPredefinedCulture(string cultureName)
         {
+            if (cultureName is null)
+            {
+                return false;
+            }
+
             if (_predefinedCultureNames is null)
             {
                 lock (_predefinedCultureNamesLock)
@@ -28,7 +35,10 @@ namespace System.Reflection
                 HashSet<string> result = new(StringComparer.Ordinal);
                 foreach (CultureInfo culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
                 {
-                    result.Add(AnsiToLower(culture.Name));
+                    if (culture.Name is not null)
+                    {
+                        result.Add(AnsiToLower(culture.Name));
+                    }
                 }
                 return result;
             }
@@ -37,11 +47,6 @@ namespace System.Reflection
             // All non-ASCII characters are left alone.
             static string AnsiToLower(string input)
             {
-                if (input is null)
-                {
-                    return null;
-                }
-
                 int idx;
                 for (idx = 0; idx < input.Length; idx++)
                 {
