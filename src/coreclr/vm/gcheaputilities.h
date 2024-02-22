@@ -29,12 +29,16 @@ typedef struct _ee_alloc_context
     void init()
     {
         LIMITED_METHOD_CONTRACT;
+
+        // we can't compute a sampling limit
+        // because we don't know the size of the allocation context yet
         fast_alloc_helper_limit_ptr = nullptr;
+
         gc_alloc_context.init();
     }
 
     // TODO: rename it to GenerateAllocSampling()
-    inline void SetFastAllocHelperLimit()
+    inline void ComputeSamplingLimit()
     {
         // TODO: maybe it is easier to assume that the caller of this function will check if sampling is on/off
         // If sampling is off this is just setting fast_alloc_helper_limit_ptr = alloc_limit
