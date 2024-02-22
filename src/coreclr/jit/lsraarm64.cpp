@@ -1684,6 +1684,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);
+                buildInternalRegisterUses();
                 FALLTHROUGH;
             }
 
