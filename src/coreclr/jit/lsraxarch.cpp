@@ -1390,8 +1390,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
         // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
         // during register allocation should be cheaper in terms of TP.
-        RefPosition* pos  = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
-        pos->delayRegFree = true;
+        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
+        pos->setDelayFree();
     }
 #endif // SWIFT_SUPPORT
 
