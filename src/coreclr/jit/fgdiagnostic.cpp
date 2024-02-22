@@ -136,7 +136,7 @@ void Compiler::fgDebugCheckUpdate()
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
         if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            noway_assert(!"BBJ_COND true/false targets are the same!");
+            noway_assert(!"Unnecessary jump to the next block!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
@@ -856,8 +856,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 
                 if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
-                                      BBF_LOOP_ALIGN))
+                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -876,10 +875,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (block->HasFlag(BBF_LOOP_HEAD))
                     {
                         fprintf(fgxFile, "L");
-                    }
-                    if (block->HasFlag(BBF_LOOP_PREHEADER))
-                    {
-                        fprintf(fgxFile, "P");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -1106,7 +1101,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetSwitchTargets()->getDefault() == bTarget)
+                        if (bSource->GetSwitchTargets()->getDefault()->getDestinationBlock() == bTarget)
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
@@ -1809,7 +1804,10 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 /*****************************************************************************/
 #ifdef DEBUG
 
-void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
+void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
+                                     const BasicBlock* nextBlock /* = nullptr */,
+                                     int               blockTargetFieldWidth /* = 21 */,
+                                     int               ibcColWidth /* = 0 */)
 {
     const unsigned __int64 flags            = block->GetFlagsRaw();
     unsigned               bbNumMax         = fgBBNumMax;
@@ -1818,6 +1816,10 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     int blockNumWidth                       = CountDigits(block->bbNum);
     blockNumWidth                           = max(blockNumWidth, 2);
     int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
+
+    // Instead of displaying a block number, should we instead display "*" when the specified block is
+    // the next block?
+    const bool terseNext = (JitConfig.JitDumpTerseNextBlock() != 0);
 
     printf("%s %2u", block->dspToString(blockNumPadding), block->bbRefs);
 
@@ -1924,71 +1926,106 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     // Display block branch target
     //
 
+    int printedBlockWidth;
+
+    // Call `dspBlockNum()` to get the block number to print, and update `printedBlockWidth` with the width
+    // of the generated string. Note that any computation using `printedBlockWidth` must be done after all
+    // calls to this function.
+    auto dspBlockNum = [terseNext, nextBlock, &printedBlockWidth](const BasicBlock* b) -> const char* {
+        static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
+        static int  nextBufferIndex = 0;
+
+        auto& buffer    = buffers[nextBufferIndex];
+        nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+
+        if (b == nullptr)
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "NULL");
+            printedBlockWidth += 4;
+        }
+        else if (terseNext && (b == nextBlock))
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "*");
+            printedBlockWidth += 1;
+        }
+        else
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB, b->bbNum);
+            printedBlockWidth += 2 /* BB */ + max(CountDigits(b->bbNum), 2);
+        }
+
+        return buffer;
+    };
+
     if (flags & BBF_REMOVED)
     {
-        printf("[removed]       ");
+        printedBlockWidth = 10;
+        printf("[removed] %*s", blockTargetFieldWidth - printedBlockWidth, "");
     }
     else
     {
         switch (block->GetKind())
         {
             case BBJ_COND:
-                printf("-> " FMT_BB "%*s ( cond )", block->GetTrueTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTrueTarget()->bbNum), 2), "");
+                printedBlockWidth = 3 /* "-> " */ + 1 /* comma */ + 9 /* kind */;
+                printf("-> %s,%s", dspBlockNum(block->GetTrueTargetRaw()), dspBlockNum(block->GetFalseTargetRaw()));
+                printf("%*s ( cond )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLY:
-                printf("-> " FMT_BB "%*s (callf )", block->GetTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
+                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("%*s (callf )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLYRET:
-                printf("-> " FMT_BB "%*s (callfr)", block->GetFinallyContinuation()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetFinallyContinuation()->bbNum), 2), "");
+                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printf("-> %s", dspBlockNum(block->GetFinallyContinuation()));
+                printf("%*s (callfr)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_ALWAYS:
                 const char* label;
-                label = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
-                printf("-> " FMT_BB "%*s (%s)", block->GetTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "", label);
+                label             = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
+                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("%*s (%s)", blockTargetFieldWidth - printedBlockWidth, "", label);
                 break;
 
             case BBJ_LEAVE:
-                printf("-> " FMT_BB "%*s (leave )", block->GetTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
+                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("%*s (leave )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHFINALLYRET:
             {
                 printf("->");
+                printedBlockWidth = 2 + 9 /* kind */;
 
-                int                    ehfWidth = 0;
-                const BBehfDesc* const ehfDesc  = block->GetEhfTargets();
+                const BBehfDesc* const ehfDesc = block->GetEhfTargets();
                 if (ehfDesc == nullptr)
                 {
                     printf(" ????");
-                    ehfWidth = 5;
+                    printedBlockWidth += 5;
                 }
                 else
                 {
                     // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
 
-                    const unsigned     jumpCnt = ehfDesc->bbeCount;
-                    BasicBlock** const jumpTab = ehfDesc->bbeSuccs;
+                    const unsigned   jumpCnt = ehfDesc->bbeCount;
+                    FlowEdge** const jumpTab = ehfDesc->bbeSuccs;
 
                     for (unsigned i = 0; i < jumpCnt; i++)
                     {
-                        printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
-                        ehfWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+                        printedBlockWidth += 1 /* space/comma */;
+                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
                     }
                 }
 
-                int singleBlockWidth = 1 /* space */ + 2 /* BB */ + maxBlockNumWidth;
-                if (ehfWidth < singleBlockWidth)
+                if (printedBlockWidth < blockTargetFieldWidth)
                 {
-                    // only if we didn't display anything or we displayeda small numbered block
-                    printf("%*s", singleBlockWidth - ehfWidth, "");
+                    printf("%*s", blockTargetFieldWidth - printedBlockWidth, "");
                 }
 
                 printf(" (finret)");
@@ -1996,68 +2033,75 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             }
 
             case BBJ_EHFAULTRET:
-                printf("%*s        (falret)", maxBlockNumWidth - 2, "");
+                printedBlockWidth = 9 /* kind */;
+                printf("%*s (falret)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("-> " FMT_BB "%*s (fltret)", block->GetTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
+                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("%*s (fltret)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHCATCHRET:
-                printf("-> " FMT_BB "%*s ( cret )", block->GetTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
+                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("%*s ( cret )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_THROW:
-                printf("%*s        (throw )", maxBlockNumWidth - 2, "");
+                printedBlockWidth = 9 /* kind */;
+                printf("%*s (throw )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_RETURN:
-                printf("%*s        (return)", maxBlockNumWidth - 2, "");
-                break;
-
-            default:
-                printf("%*s                ", maxBlockNumWidth - 2, "");
+                printedBlockWidth = 9 /* kind */;
+                printf("%*s (return)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_SWITCH:
             {
                 printf("->");
+                printedBlockWidth = 2 + 9 /* kind */;
 
-                const BBswtDesc* const jumpSwt     = block->GetSwitchTargets();
-                const unsigned         jumpCnt     = jumpSwt->bbsCount;
-                BasicBlock** const     jumpTab     = jumpSwt->bbsDstTab;
-                int                    switchWidth = 0;
+                const BBswtDesc* const jumpSwt = block->GetSwitchTargets();
+                const unsigned         jumpCnt = jumpSwt->bbsCount;
+                FlowEdge** const       jumpTab = jumpSwt->bbsDstTab;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
-                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+                    printedBlockWidth += 1 /* space/comma */;
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
 
                     const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
                     if (isDefault)
                     {
                         printf("[def]");
-                        switchWidth += 5;
+                        printedBlockWidth += 5;
                     }
 
                     const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
                     if (isDominant)
                     {
                         printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
-                        switchWidth += 10;
+                        printedBlockWidth += 10;
                     }
                 }
 
-                if (switchWidth < 7)
+                if (printedBlockWidth < blockTargetFieldWidth)
                 {
-                    printf("%*s", 8 - switchWidth, "");
+                    printf("%*s", blockTargetFieldWidth - printedBlockWidth, "");
                 }
 
                 printf(" (switch)");
             }
             break;
+
+            default:
+                // Bad Kind
+                printedBlockWidth = 9 /* kind */;
+                printf("%*s (ERROR )", blockTargetFieldWidth - printedBlockWidth, "");
+                break;
         }
     }
 
@@ -2236,6 +2280,11 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         }
     }
 
+    if (ibcColWidth > 0)
+    {
+        ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
+    }
+
     bool inDefaultOrder = true;
 
     struct fgBBNumCmp
@@ -2267,41 +2316,50 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         inDefaultOrder = false;
     }
 
-    if (ibcColWidth > 0)
-    {
-        ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
-    }
-
     unsigned bbNumMax         = fgBBNumMax;
     int      maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
     int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
 
+    // Calculate the field width allocated for the block target. The field width is allocated to allow for two blocks
+    // for BBJ_COND. It does not include any extra space for variable-sized BBJ_EHFINALLYRET and BBJ_SWITCH.
+    int blockTargetFieldWidth = 3 /* "-> " */ + 2 /* BB */ + maxBlockNumWidth + 1 /* comma */ + 2 /* BB */ +
+                                maxBlockNumWidth + 1 /* space */ + 8 /* kind: "(xxxxxx)" */;
+
     // clang-format off
 
     printf("\n");
-    printf("------%*s-------------------------------------%*s--------------------------%*s----------------------------------------\n",
-        padWidth, "------------",
-        ibcColWidth, "------------",
-        maxBlockNumWidth, "----");
-    printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s  [IL range]     [jump]%*s    [EH region]         [flags]\n",
+    printf("------%*s-------------------------------------%*s--------------------------%*s--------------------------\n",
+        padWidth, "------------", //
+        ibcColWidth, "------------", //
+        blockTargetFieldWidth, "-----------------------"); //
+    printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s [IL range]   [jump]%*s [EH region]        [flags]\n",
         padWidth, "",
-        (fgPredsComputed    ? "preds      "
+        (fgPredsComputed        ? "preds      "
                                 : "           "),
         ((ibcColWidth > 0) ? ibcColWidth - 3 : 0), "",  // Subtract 3 for the width of "IBC", printed next.
         ((ibcColWidth > 0)      ? "IBC"
                                 : ""),
-        maxBlockNumWidth, ""
+        blockTargetFieldWidth - 8 /* "   [jump]" */, ""
         );
-    printf("------%*s-------------------------------------%*s--------------------------%*s----------------------------------------\n",
-        padWidth, "------------",
-        ibcColWidth, "------------",
-        maxBlockNumWidth, "----");
+    printf("------%*s-------------------------------------%*s--------------------------%*s--------------------------\n",
+        padWidth, "------------", //
+        ibcColWidth, "------------", //
+        blockTargetFieldWidth, "-----------------------"); //
 
     // clang-format on
 
-    for (BasicBlock* block : *fgBBOrder)
+    for (auto block_iter = fgBBOrder->begin(), block_iter_end = fgBBOrder->end(); block_iter != block_iter_end;
+         ++block_iter)
     {
+        BasicBlock* block           = *block_iter;
+        BasicBlock* nextBlock       = nullptr;
+        auto        block_iter_next = block_iter + 1;
+        if (block_iter_next != block_iter_end)
+        {
+            nextBlock = *block_iter_next;
+        }
+
         // First, do some checking on the bbPrev links
         if (!block->IsFirst())
         {
@@ -2315,25 +2373,27 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             printf("bad prev link!\n");
         }
 
-        if (inDefaultOrder && (block->IsFirstColdBlock(this)))
+        if (inDefaultOrder && block->IsFirstColdBlock(this))
         {
-            printf(
-                "~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~"
-                "~~~~~~~~~~~~~~~~\n",
-                padWidth, "~~~~~~~~~~~~", ibcColWidth, "~~~~~~~~~~~~", maxBlockNumWidth, "~~~~");
+            printf("~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~"
+                   "~~~~~~~~~~~~~~~~\n",
+                   padWidth, "~~~~~~~~~~~~",                          //
+                   ibcColWidth, "~~~~~~~~~~~~",                       //
+                   blockTargetFieldWidth, "~~~~~~~~~~~~~~~~~~~~~~~"); //
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
         if (inDefaultOrder && (block == fgFirstFuncletBB))
         {
-            printf(
-                "++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++++++++++++++++"
-                "++++++++++++++++ funclets follow\n",
-                padWidth, "++++++++++++", ibcColWidth, "++++++++++++", maxBlockNumWidth, "++++");
+            printf("++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++"
+                   "++++++++++++++++ funclets follow\n",
+                   padWidth, "++++++++++++",                          //
+                   ibcColWidth, "++++++++++++",                       //
+                   blockTargetFieldWidth, "+++++++++++++++++++++++"); //
         }
 #endif // FEATURE_EH_FUNCLETS
 
-        fgTableDispBasicBlock(block, ibcColWidth);
+        fgTableDispBasicBlock(block, nextBlock, blockTargetFieldWidth, ibcColWidth);
 
         if (block == lastBlock)
         {
@@ -2341,10 +2401,11 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         }
     }
 
-    printf(
-        "------%*s-------------------------------------%*s--------------------------%*s--------------------------------"
-        "--------\n",
-        padWidth, "------------", ibcColWidth, "------------", maxBlockNumWidth, "----");
+    printf("------%*s-------------------------------------%*s--------------------------%*s------------------"
+           "--------\n",
+           padWidth, "------------",                          //
+           ibcColWidth, "------------",                       //
+           blockTargetFieldWidth, "-----------------------"); //
 
     if (dumpTrees)
     {
@@ -2353,8 +2414,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             fgDumpBlock(block);
         }
         printf("\n-----------------------------------------------------------------------------------------------------"
-               "----"
-               "----------\n");
+               "--------------\n");
     }
 }
 
@@ -2623,6 +2683,10 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         }
 
         assert(CheckJump(blockPred, block));
+
+        // Make sure the pred edge's destination block is correct
+        //
+        assert(pred->getDestinationBlock() == block);
     }
 
     // Make sure preds are in increasing BBnum order
@@ -3132,6 +3196,15 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
+    // Ensure that all throw helper blocks are currently in the block list.
+    for (Compiler::AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    {
+        if (add->acdUsed)
+        {
+            assert(add->acdDstBlk->bbTraversalStamp == curTraversalStamp);
+        }
+    }
+
     // If this is an inlinee, we're done checking.
     if (compIsForInlining())
     {
@@ -3349,21 +3422,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             {
                 assert(doesMethodHaveRecursiveTailcall());
                 assert(block->HasFlag(BBF_RECURSIVE_TAILCALL));
-            }
-
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                // TODO-Cleanup: this is a patch for a violation in our GTF_ASG propagation.
-                // see https://github.com/dotnet/runtime/issues/13758
-                if (arg.GetEarlyNode() != nullptr)
-                {
-                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
-                }
-
-                if (arg.GetLateNode() != nullptr)
-                {
-                    actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
-                }
             }
         }
         break;
@@ -4665,12 +4723,20 @@ void Compiler::fgDebugCheckLoops()
     {
         return;
     }
-    if (optLoopsRequirePreHeaders)
+    if (optLoopsCanonical)
     {
         for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
         {
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+
+            loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+                for (BasicBlock* pred : exit->PredBlocks())
+                {
+                    assert(loop->ContainsBlock(pred));
+                }
+                return BasicBlockVisit::Continue;
+            });
         }
     }
 }

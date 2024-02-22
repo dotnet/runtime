@@ -162,6 +162,7 @@
 #include "disassembler.h"
 #include "jithost.h"
 #include "pgo.h"
+#include "pendingload.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -623,6 +624,8 @@ void EEStartupHelper()
         // This needs to be done before the EE has started
         InitializeStartupFlags();
 
+        PendingTypeLoadTable::Init();
+
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         Thread::StaticInitialize();
@@ -633,6 +636,7 @@ void EEStartupHelper()
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
         OnStackReplacementManager::StaticInitialize();
+        MethodTable::InitMethodDataCache();
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();

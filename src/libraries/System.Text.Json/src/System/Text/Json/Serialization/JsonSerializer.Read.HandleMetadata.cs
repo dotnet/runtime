@@ -27,6 +27,27 @@ namespace System.Text.Json
             Debug.Assert(state.Current.ObjectState == StackFrameObjectState.StartToken);
             Debug.Assert(state.Current.CanContainMetadata);
 
+            Utf8JsonReader checkpoint;
+            bool allowOutOfOrderMetadata = jsonTypeInfo.Options.AllowOutOfOrderMetadataProperties;
+            bool isReadingAheadOfNonMetadataProperties = false;
+
+            if (allowOutOfOrderMetadata && !reader.IsFinalBlock)
+            {
+                // When reading ahead for metadata properties, we need to make sure
+                // that the entire object has been buffered so that we can roll back
+                // the reader state when the read-ahead has been completed.
+                checkpoint = reader;
+                if (!checkpoint.TrySkipPartial())
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Checkpointing not used in this mode.
+                checkpoint = default;
+            }
+
             while (true)
             {
                 if (state.Current.PropertyState == StackFramePropertyState.None)
@@ -34,6 +55,7 @@ namespace System.Text.Json
                     // Read the property name.
                     if (!reader.Read())
                     {
+                        Debug.Assert(!allowOutOfOrderMetadata, "Object must have already been buffered in this mode.");
                         return false;
                     }
 
@@ -45,7 +67,7 @@ namespace System.Text.Json
                     if (reader.TokenType == JsonTokenType.EndObject)
                     {
                         // Read the entire object while parsing for metadata.
-                        return true;
+                        goto Done;
                     }
 
                     // We just read a property. The only valid next tokens are EndObject and PropertyName.
@@ -54,10 +76,10 @@ namespace System.Text.Json
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Ref) != 0)
                     {
                         // No properties whatsoever should follow a $ref property.
-                        ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetSpan(), ref state);
+                        ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetUnescapedSpan(), ref state);
                     }
 
-                    ReadOnlySpan<byte> propertyName = reader.GetSpan();
+                    ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
                     switch (state.Current.LatestMetadataPropertyName = GetMetadataPropertyName(propertyName, jsonTypeInfo.PolymorphicTypeResolver))
                     {
                         case MetadataPropertyName.Id:
@@ -71,7 +93,7 @@ namespace System.Text.Json
                             if ((state.Current.MetadataPropertyNames & (MetadataPropertyName.Id | MetadataPropertyName.Ref)) != 0)
                             {
                                 // No $id or $ref properties should precede $id properties.
-                                ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty(propertyName, ref state);
+                                ThrowHelper.ThrowJsonException_MetadataIdCannotBeCombinedWithRef(propertyName, ref state);
                             }
                             if (!converter.CanHaveMetadata)
                             {
@@ -94,16 +116,16 @@ namespace System.Text.Json
                                 // Should not be permitted if the converter is a struct.
                                 ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(converter.Type!);
                             }
-                            if (state.Current.MetadataPropertyNames != 0)
+                            if (state.Current.MetadataPropertyNames != 0 || isReadingAheadOfNonMetadataProperties)
                             {
-                                // No metadata properties should precede a $ref property.
-                                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetSpan(), ref state);
+                                // No properties should precede a $ref property.
+                                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetUnescapedSpan(), ref state);
                             }
 
                             break;
 
                         case MetadataPropertyName.Type:
-                            state.Current.JsonPropertyName = jsonTypeInfo.PolymorphicTypeResolver?.TypeDiscriminatorPropertyNameUtf8 ?? s_typePropertyName;
+                            state.Current.JsonPropertyName = jsonTypeInfo.PolymorphicTypeResolver?.CustomTypeDiscriminatorPropertyNameUtf8 ?? s_typePropertyName;
 
                             if (jsonTypeInfo.PolymorphicTypeResolver is null)
                             {
@@ -112,7 +134,8 @@ namespace System.Text.Json
                             }
                             if (state.PolymorphicTypeDiscriminator != null)
                             {
-                                ThrowHelper.ThrowJsonException_MetadataDuplicateTypeProperty();
+                                // Found a duplicate $type property.
+                                ThrowHelper.ThrowJsonException_DuplicateMetadataProperty(state.Current.JsonPropertyName);
                             }
 
                             break;
@@ -120,10 +143,16 @@ namespace System.Text.Json
                         case MetadataPropertyName.Values:
                             state.Current.JsonPropertyName = s_valuesPropertyName;
 
-                            if (state.Current.MetadataPropertyNames == MetadataPropertyName.None)
+                            if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                             {
-                                // Cannot have a $values property unless there are preceding metadata properties.
-                                ThrowHelper.ThrowJsonException_MetadataStandaloneValuesProperty(ref state, propertyName);
+                                // Found a duplicate $values property.
+                                ThrowHelper.ThrowJsonException_DuplicateMetadataProperty(s_valuesPropertyName);
+                            }
+
+                            if (isReadingAheadOfNonMetadataProperties)
+                            {
+                                // Cannot combine a $values property with other non-metadata properties.
+                                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, jsonTypeInfo.Type, reader);
                             }
 
                             break;
@@ -131,8 +160,35 @@ namespace System.Text.Json
                         default:
                             Debug.Assert(state.Current.LatestMetadataPropertyName == MetadataPropertyName.None);
 
-                            // Encountered a non-metadata property, exit the reader.
-                            return true;
+                            // Encountered a non-metadata property
+                            if (allowOutOfOrderMetadata)
+                            {
+                                if (!isReadingAheadOfNonMetadataProperties)
+                                {
+                                    // This is the first non-metadata property, checkpoint the current reader state.
+                                    isReadingAheadOfNonMetadataProperties = true;
+                                    checkpoint = reader;
+                                }
+
+                                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
+                                {
+                                    // Cannot combine a $values property with other non-metadata properties.
+                                    ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, jsonTypeInfo.Type, reader);
+                                }
+
+                                if (IsMetadataPropertyName(propertyName, resolver: null))
+                                {
+                                    // properties starting with '$' are reserved for metadata
+                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                }
+
+                                break;
+                            }
+                            else
+                            {
+                                // Exit immediately if no read-ahead is enabled.
+                                goto Done;
+                            }
                     }
 
                     state.Current.PropertyState = StackFramePropertyState.Name;
@@ -143,6 +199,7 @@ namespace System.Text.Json
                     // Read the property value.
                     if (!reader.Read())
                     {
+                        Debug.Assert(!allowOutOfOrderMetadata, "Object must have already been buffered in this mode.");
                         return false;
                     }
 
@@ -206,12 +263,29 @@ namespace System.Text.Json
                             ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken(reader.TokenType);
                         }
 
-                        state.Current.PropertyState = StackFramePropertyState.None;
-                        state.Current.MetadataPropertyNames |= state.Current.LatestMetadataPropertyName;
-                        return true; // "$values" property contains the nested payload, exit the metadata reader now.
+                        if (allowOutOfOrderMetadata)
+                        {
+                            // The $values property contains the collection payload,
+                            // checkpoint the current reader and continue the read-ahead.
+                            Debug.Assert(!isReadingAheadOfNonMetadataProperties, "must have already verified if non-metadata properties precede $values");
+                            isReadingAheadOfNonMetadataProperties = true;
+                            checkpoint = reader;
+                            reader.SkipWithVerify();
+                        }
+                        else
+                        {
+                            state.Current.MetadataPropertyNames |= MetadataPropertyName.Values;
+                            state.Current.PropertyState = StackFramePropertyState.None;
+                            goto Done; // "$values" property contains the nested payload, exit the metadata reader now.
+                        }
+
+                        break;
 
                     default:
-                        Debug.Fail("Non-metadata properties should not reach this stage.");
+                        Debug.Assert(state.Current.LatestMetadataPropertyName == MetadataPropertyName.None);
+                        Debug.Assert(allowOutOfOrderMetadata, "should only be reached if reading ahead is required.");
+                        reader.SkipWithVerify();
+
                         break;
                 }
 
@@ -219,13 +293,28 @@ namespace System.Text.Json
                 state.Current.PropertyState = StackFramePropertyState.None;
                 state.Current.JsonPropertyName = null;
             }
+
+        Done:
+            if (state.Current.MetadataPropertyNames is MetadataPropertyName.Values)
+            {
+                // Cannot have a $values property unless there are other metadata properties.
+                ThrowHelper.ThrowJsonException_MetadataStandaloneValuesProperty(ref state, s_valuesPropertyName);
+            }
+
+            if (isReadingAheadOfNonMetadataProperties)
+            {
+                // Roll back the reader state to the first non-metadata property.
+                reader = checkpoint;
+            }
+
+            return true;
         }
 
         internal static bool IsMetadataPropertyName(ReadOnlySpan<byte> propertyName, PolymorphicTypeResolver? resolver)
         {
             return
                 (propertyName.Length > 0 && propertyName[0] == '$') ||
-                (resolver?.TypeDiscriminatorPropertyNameUtf8?.AsSpan().SequenceEqual(propertyName) == true);
+                (resolver?.CustomTypeDiscriminatorPropertyNameUtf8?.AsSpan().SequenceEqual(propertyName) == true);
         }
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, PolymorphicTypeResolver? resolver)
@@ -251,7 +340,7 @@ namespace System.Text.Json
                         }
                         break;
 
-                    case 5 when resolver?.TypeDiscriminatorPropertyNameUtf8 is null:
+                    case 5 when resolver?.CustomTypeDiscriminatorPropertyNameUtf8 is null:
                         if (propertyName[1] == 't' &&
                             propertyName[2] == 'y' &&
                             propertyName[3] == 'p' &&
@@ -275,7 +364,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (resolver?.TypeDiscriminatorPropertyNameUtf8 is byte[] customTypeDiscriminator &&
+            if (resolver?.CustomTypeDiscriminatorPropertyNameUtf8 is byte[] customTypeDiscriminator &&
                 propertyName.SequenceEqual(customTypeDiscriminator))
             {
                 return MetadataPropertyName.Type;
@@ -440,7 +529,7 @@ namespace System.Text.Json
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartArray:
-                    Debug.Assert(state.Current.MetadataPropertyNames == MetadataPropertyName.None || state.Current.LatestMetadataPropertyName == MetadataPropertyName.Values);
+                    Debug.Assert(state.Current.MetadataPropertyNames is MetadataPropertyName.None || state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values));
                     break;
 
                 case JsonTokenType.EndObject:

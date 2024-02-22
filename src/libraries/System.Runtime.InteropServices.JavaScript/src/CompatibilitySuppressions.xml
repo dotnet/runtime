@@ -12,4 +12,16 @@
     <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.JavaScript.JSType.DiscardNoWait</Target>
+    <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
+    <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.InteropServices.JavaScript.JSMarshalerType.get_DiscardNoWait</Target>
+    <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
+    <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
+  </Suppression>
 </Suppressions>

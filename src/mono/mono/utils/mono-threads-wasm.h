@@ -27,21 +27,18 @@ MonoNativeThreadId
 mono_threads_wasm_ui_thread_tid (void);
 
 #ifndef DISABLE_THREADS
-/**
- * Runs the given function asynchronously on the main thread.
- * See emscripten/threading.h emscripten_async_run_in_main_runtime_thread
- */
-void
-mono_threads_wasm_async_run_in_ui_thread (void (*func) (void));
 
-/*
- * Variant that takes an argument. Add more variants as needed.
- */
-void
-mono_threads_wasm_async_run_in_ui_thread_vi (void (*func)(gpointer), gpointer user_data);
+gboolean
+mono_threads_wasm_is_deputy_thread (void);
+
+MonoNativeThreadId
+mono_threads_wasm_deputy_thread_tid (void);
+
+MonoNativeThreadId
+mono_wasm_create_deputy_thread (void);
 
 void
-mono_threads_wasm_async_run_in_ui_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+mono_wasm_register_ui_thread (void);
 
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
@@ -51,6 +48,9 @@ mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (
 
 void
 mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
+void
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
 static inline
 int32_t
@@ -74,12 +74,18 @@ extern MonoNativeTlsKey jobs_key;
 extern GSList *jobs;
 #endif /* DISABLE_THREADS */
 
+void
+mono_threads_wasm_on_thread_registered (void);
+
 // Called from register_thread when a pthread attaches to the runtime
 void
-mono_threads_wasm_on_thread_attached (void);
+mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gboolean background_thread, gboolean threadpool_thread, gboolean external_eventloop, gboolean debugger_thread);
 
 void
-mono_threads_wasm_on_thread_detached (void);
+mono_threads_wasm_on_thread_unregistered (void);
+
+void
+mono_wasm_pthread_set_name (const char* thread_name);
 
 #endif /* HOST_WASM*/
 

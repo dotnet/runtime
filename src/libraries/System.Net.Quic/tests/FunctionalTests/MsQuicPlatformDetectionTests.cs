@@ -8,6 +8,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    [Collection(nameof(QuicTestCollection))]
     public class MsQuicPlatformDetectionTests : QuicTestBase
     {
         public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output) { }
@@ -57,7 +58,7 @@ namespace System.Net.Quic.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsRaspbian10), nameof(PlatformDetection.IsArmv6Process), nameof(PlatformDetection.IsInContainer))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsPpc64leProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsPpc64leProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsS390xProcess))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInHelix))]
         [PlatformSpecific(TestPlatforms.Linux)]

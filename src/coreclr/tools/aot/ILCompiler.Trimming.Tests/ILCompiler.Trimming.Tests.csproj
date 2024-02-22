@@ -15,10 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="6.0.0-alpha0002" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
 
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases/**/*.csproj" />
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />

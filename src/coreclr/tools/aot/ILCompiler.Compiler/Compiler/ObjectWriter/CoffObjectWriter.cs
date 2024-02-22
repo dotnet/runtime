@@ -628,6 +628,35 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private protected override void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+            if (!debugNode.GetNativeSequencePoints().Any())
+                return;
+
+            CodeViewSymbolsBuilder debugSymbolsBuilder;
+
+            if (ShouldShareSymbol((ObjectNode)debugNode))
+            {
+                // If the method is emitted in COMDAT section then we need to create an
+                // associated COMDAT section for the debugging symbols.
+                var sectionWriter = GetOrCreateSection(DebugSymbolSection, methodName, null);
+                debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture, sectionWriter);
+            }
+            else
+            {
+                debugSymbolsBuilder = _debugSymbolsBuilder;
+            }
+
+            debugSymbolsBuilder.EmitLineInfo(
+                _debugFileTableBuilder,
+                methodName,
+                methodSymbol.Size,
+                debugNode.GetNativeSequencePoints());
+        }
+
         private protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
