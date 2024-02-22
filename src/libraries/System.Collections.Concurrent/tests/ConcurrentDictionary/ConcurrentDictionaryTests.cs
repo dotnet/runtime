@@ -13,7 +13,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentDictionaryTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestBasicScenarios()
         {
             ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>();

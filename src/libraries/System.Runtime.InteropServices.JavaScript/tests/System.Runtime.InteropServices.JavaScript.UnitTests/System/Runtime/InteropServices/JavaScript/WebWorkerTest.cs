@@ -437,6 +437,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndNotBlockingWait))]
         public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
         {
             using var cts = CreateTestCaseTimeoutSource();

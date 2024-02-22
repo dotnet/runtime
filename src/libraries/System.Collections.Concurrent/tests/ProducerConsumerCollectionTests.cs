@@ -766,7 +766,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Empty(c);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         [InlineData(ConcurrencyTestSeconds)]
         public void ManyConcurrentAddsTakesPeeks_ForceContentionWithOtherThreadsTaking(double seconds)
         {

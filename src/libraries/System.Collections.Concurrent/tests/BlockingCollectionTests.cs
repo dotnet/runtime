@@ -15,7 +15,7 @@ namespace System.Collections.Concurrent.Tests
     /// <summary>The class that contains the unit tests of the BlockingCollection.</summary>
     public class BlockingCollectionTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestBasicScenarios()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(3);
@@ -152,7 +152,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>
         /// Making sure if TryTakeFromAny succeeds, it returns the correct index
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestBugFix914998()
         {
             var producer1 = new BlockingCollection<int>();
@@ -230,7 +230,7 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="numOfAdds">The number of elements to add to the BlockingCollection.</param>
         /// <param name="numOfTakes">The number of elements to Take from the BlockingCollection.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection, -1 is unbounded.</param>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         [InlineData(1, 1, -1)]
         [InlineData(5, 3, 1)]
         public static void TestAddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
@@ -252,7 +252,7 @@ namespace System.Collections.Concurrent.Tests
         /// present in the collection.</summary>
         /// <param name="numOfThreads">Number of producer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements added per thread.</param>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         [InlineData(2, 1024)]
         [InlineData(8, 512)]
         public static void TestConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
@@ -464,7 +464,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Validates GetConsumingEnumerator and makes sure that BlockingCollection.GetConsumingEnumerator()
         /// produces the same results as if call Take in a loop.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void Test6_GetConsumingEnumerable()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -655,7 +655,7 @@ namespace System.Collections.Concurrent.Tests
 
         /// <summary>Validates BlockingCollection.IsCompleted and BlockingCollection.AddingIsCompleted.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void Test12_IsCompleted_AddingIsCompleted()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -713,7 +713,7 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="numOfBlockingCollections">Length of BlockingCollections array.</param>
         /// <param name="indexOfBlockingCollectionUnderTest">Index of the BlockingCollection that will accept the operations.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection under test.</param>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         [InlineData(1, 1, 16, 0, -1)]
         [InlineData(10, 10, 16, 14, 10)]
         public static void TestAddAnyTakeAny(int numOfAdds,
@@ -994,7 +994,7 @@ namespace System.Collections.Concurrent.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void Test_WithNullEntries()
         {
             BlockingCollection<string> collection = new BlockingCollection<string>()
