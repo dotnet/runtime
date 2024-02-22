@@ -1189,7 +1189,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
-            assert(insOptsNone(id->idInsOpt()));
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_Q);
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
@@ -10974,9 +10974,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_sqdmullb:
         case INS_sve_sqdmullt:
             assert(insOptsScalableAtLeastHalf(opt));
-            assert(isVectorRegister(reg1)); // ddddd
-            assert(isVectorRegister(reg2)); // nnnnn
-            assert(isVectorRegister(reg3)); // mmmmm
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_FN_3A;
             break;
@@ -10987,13 +10987,13 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmmmm
 
-            if (insOptsNone(opt))
+            if (opt == INS_OPTS_SCALABLE_Q)
             {
                 fmt = IF_SVE_FN_3B;
             }
             else
             {
-                assert(insOptsScalableAtLeastHalf(opt));
+                assert((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_D));
                 assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
                 fmt = IF_SVE_FN_3A;
             }
@@ -26601,13 +26601,6 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
             break;
 
-        // <Zd>.Q, <Zn>.D, <Zm>.D
-        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
-            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_Q, true);  // ddddd
-            emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_D, true);  // nnnnn/mmmmm
-            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_Q, false); // mmmmm/aaaaa
-            break;
-
         // <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
         // <Zd>.<T>, {<Zn>.<T>}, <Zm>.<T>
         case IF_SVE_BZ_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
@@ -27275,6 +27268,8 @@ void emitter::emitDispInsHelp(
         // <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
         case IF_SVE_FL_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract long
         case IF_SVE_FN_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+        // <Zd>.Q, <Zn>.D, <Zm>.D
+        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
         {
             const insOpts smallSizeSpecifier = (insOpts)(id->idInsOpt() - 1);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);      // ddddd
@@ -30276,8 +30271,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
-        case IF_SVE_FN_3A:        // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
-            switch(ins)
+        case IF_SVE_FN_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+            switch (ins)
             {
                 case INS_sve_smullb:
                 case INS_sve_smullt:
