@@ -68,7 +68,9 @@ namespace AsmOffsetsAsserts
     class AsmOffsets;
 };
 
+#ifdef FEATURE_EH_FUNCLETS
 extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
+#endif
 
 class CrawlFrame
 {
@@ -461,7 +463,7 @@ private:
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
-    friend void AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
+    friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
 
     CodeManState      codeManState;
