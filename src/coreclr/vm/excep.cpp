@@ -7761,6 +7761,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 #endif
 }
 
+#ifdef FEATURE_EH_FUNCLETS
 //
 // This function continues exception interception unwind after it crossed native frames using
 // standard EH / SEH.
@@ -7793,6 +7794,8 @@ VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
 
     UNREACHABLE();
 }
+
+#endif // FEATURE_EH_FUNCLETS
 
 //
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
