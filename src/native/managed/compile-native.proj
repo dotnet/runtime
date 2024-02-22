@@ -35,7 +35,6 @@
                           AdditionalProperties="%(AdditionalProperties);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps)"/>
     </ItemGroup>
 
-    <!-- FIXME: incremental build -->
     <Target Name="BuildNativeLibs" BeforeTargets="Build" Condition="$(SupportsNativeAotComponents)">
         <Message Importance="High" Text="Restoring native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Restoring native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
