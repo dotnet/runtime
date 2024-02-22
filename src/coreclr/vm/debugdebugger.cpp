@@ -1159,14 +1159,20 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
                 if (cur.ip)
                 {
-                    CrawlFrame frame;
                     EECodeInfo codeInfo(cur.ip);
-                    frame.codeInfo = codeInfo;
-                    frame.isFrameless = true;
-                    T_CONTEXT ctx = {};
+                    REGDISPLAY pRD;
+                    T_CONTEXT ctx;
+                    memset(&ctx, 0x00, sizeof(T_CONTEXT));
                     SetIP(&ctx, cur.ip);
                     SetSP(&ctx, cur.sp);
-                    FillRegDisplay(frame.pRD, &ctx);
+                    FillRegDisplay(&pRD, &ctx);
+                    
+                    CrawlFrame frame;
+                    frame.codeInfo = codeInfo;
+                    frame.isFrameless = true;
+                    frame.pFunc = cur.pFunc;
+                    frame.pRD = &pRD;
+
                     pExactGenericArgsToken = frame.GetExactGenericArgsToken();
                     dwNativeOffset = frame.GetRelOffset();
                 }
