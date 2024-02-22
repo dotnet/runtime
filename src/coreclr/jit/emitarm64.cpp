@@ -2524,8 +2524,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_BJ_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point exponential accelerator
         case IF_SVE_CH_2A: // ........xx...... ......nnnnnddddd -- SVE unpack vector elements
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
-            assert(insOptsScalableStandard(id->idInsOpt()));
-            assert(id->idInsOpt() != INS_OPTS_SCALABLE_B); // reserved
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -8830,8 +8829,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_sve_frecpe:
         case INS_sve_frsqrte:
             assert(insScalableOptsNone(sopt));
-            assert(insOptsScalableStandard(opt));
-            assert(opt != INS_OPTS_SCALABLE_B); // reserved
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
@@ -8843,8 +8841,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_sve_uunpkhi:
         case INS_sve_uunpklo:
             assert(insScalableOptsNone(sopt));
-            assert(insOptsScalableStandard(opt));
-            assert(opt != INS_OPTS_SCALABLE_B); // reserved
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
@@ -8853,8 +8850,7 @@ void emitter::emitIns_R_R(instruction     ins,
 
         case INS_sve_fexpa:
             assert(insScalableOptsNone(sopt));
-            assert(insOptsScalableStandard(opt));
-            assert(opt != INS_OPTS_SCALABLE_B); // reserved
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
@@ -8878,6 +8874,10 @@ void emitter::emitIns_R_R(instruction     ins,
 #endif // DEBUG
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_SVE_CB_2A;
+
+            // DUP is an alias for MOV;
+            // MOV is the preferred disassembly
+            ins = INS_sve_mov;
             break;
 
         case INS_sve_bf1cvt:
@@ -8894,6 +8894,7 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
             fmt = IF_SVE_HH_2A;
+            unreached(); // not supported yet
             break;
 
         case INS_sve_movprfx:
