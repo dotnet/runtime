@@ -6,14 +6,12 @@ parameters:
   crossBuild: false
   dependOnEvaluatePaths: false
   disableComponentGovernance: false
-  disableClrTest: false
   isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
   platform: ''
   pool: ''
   runtimeVariant: ''
-  signBinaries: false
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
@@ -33,7 +31,6 @@ jobs:
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
-    disableClrTest: ${{ parameters.disableClrTest }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}',
@@ -74,12 +71,6 @@ jobs:
     - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), ne(parameters.archType, 'arm64'))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
-
-    - name: clrInterpreterBuildArg
-      value: ''
-    - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
-      - name: clrInterpreterBuildArg
-        value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
 
     - name: clrRuntimeComponentsBuildArg
       value: ''
@@ -141,19 +132,19 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build/Generate native prerequisites
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
       displayName: Build and generate native prerequisites
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 -ci -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg)
         displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
@@ -163,70 +154,24 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
-    # Build native test components
-    - ${{ if ne(parameters.disableClrTest, true) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg)
-        displayName: Build native test components
-
-    # Sign and add entitlements to these MacOS binaries
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-
-        - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-          parameters:
-            filesToSign:
-            - name: createdump
-              path: $(buildProductRootFolderPath)
-            - name: corerun
-              path: $(buildProductRootFolderPath)
-
-        - task: CopyFiles@2
-          displayName: 'Copy signed createdump to sharedFramework'
-          inputs:
-            contents: createdump
-            sourceFolder: $(buildProductRootFolderPath)
-            targetFolder: $(buildProductRootFolderPath)/sharedFramework
-            overWrite: true
-
-    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
-      - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-        parameters:
-          basePath: $(buildProductRootFolderPath)
-          isOfficialBuild: ${{ parameters.signBinaries }}
-          timeoutInMinutes: 30
-
-    - ${{ if ne(parameters.disableClrTest, true) }}:
-      # Publish product output directory for consumption by tests.
-      - template: /eng/pipelines/common/upload-artifact-step.yml
-        parameters:
-          rootFolder: $(buildProductRootFolderPath)
-          includeRootFolder: false
-          archiveType: $(archiveType)
-          tarCompression: $(tarCompression)
-          archiveExtension: $(archiveExtension)
-          artifactName: $(buildProductArtifactName)
-          displayName: 'product build'
-
-    - ${{ if and(ne(parameters.testGroup, ''), ne(parameters.disableClrTest, true)) }}:
-      # Publish test native components for consumption by test execution.
-      - template: /eng/pipelines/common/upload-artifact-step.yml
-        parameters:
-          rootFolder: $(nativeTestArtifactRootFolderPath)
-          includeRootFolder: false
-          archiveType: $(archiveType)
-          tarCompression: $(tarCompression)
-          archiveExtension: $(archiveExtension)
-          artifactName: $(nativeTestArtifactName)
-          displayName: 'native test components'
+    # Publish product output directory for consumption by tests.
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(buildProductRootFolderPath)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: $(buildProductArtifactName)
+        displayName: 'product build'
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
       - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
         displayName: Collect vslogs on exit
         condition: always()
-
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

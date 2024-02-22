@@ -21,7 +21,7 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - linux_arm
@@ -32,7 +32,7 @@ extends:
           - windows_arm64
           - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
-            testGroup: clrinterpreter
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release /p:CMakeArgs="-DFEATURE_INTERPRETER=1"
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:

@@ -122,11 +122,4 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - name: osArg
-      value: ''
-
-    - ${{ if eq(parameters.osGroup, 'freebsd') }}:
-      - name: osArg
-        value: -os freebsd
-
     steps: ${{ parameters.steps }}

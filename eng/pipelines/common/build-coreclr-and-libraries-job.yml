@@ -8,7 +8,6 @@ parameters:
   testGroup: ''
   crossBuild: false
   timeoutInMinutes: ''
-  signBinaries: false
   variables: {}
   pool: ''
   platform: ''
@@ -26,7 +25,6 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
-    signBinaries: ${{ parameters.signBinaries }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
     disableComponentGovernance: ${{ parameters.disableComponentGovernance }}

@@ -56,7 +56,6 @@ jobs:
       condition: ${{ parameters.condition }}
 
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    disableClrTest: ${{ parameters.disableClrTest }}
 
     # Compute job name from template parameters
     name: ${{ format('installer_{0}_{1}_{2}_{3}_', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
