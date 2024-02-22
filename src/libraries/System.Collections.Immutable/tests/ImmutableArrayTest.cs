@@ -2507,7 +2507,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { "1" }, s_twoElementRefTypeWithNull.OfType<string>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void AddThreadSafety()
         {
             // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.

@@ -53,7 +53,7 @@ namespace System.Collections.Concurrent.Tests
         /// BlockingCollection throws InvalidOperationException when calling CompleteAdding even after adding and taking all elements
         /// </summary>
         /// <returns></returns>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TestBugFix544259()
         {
             int count = 8;
@@ -88,7 +88,7 @@ namespace System.Collections.Concurrent.Tests
         // Since the change to wait as part of CTS.Dispose, the ODE no longer occurs
         // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled
         // to prevent users of the source CTS mistakenly calling methods on disposed targets.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TestBugFix626345()
         {
             const int noOfProducers = 1;
@@ -193,7 +193,7 @@ namespace System.Collections.Concurrent.Tests
         /// Tests the default BlockingCollection constructor which initializes a BlockingQueue
         /// </summary>
         /// <param name="boundedCapacity"></param>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(-1)]
         [InlineData(10)]
         public static void TestConstruction(int boundedCapacity)
@@ -291,7 +291,7 @@ namespace System.Collections.Concurrent.Tests
         /// are consumed by consumers with no element lost nor consumed more than once.</summary>
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(8, 1024)]
         public static void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
         {
@@ -509,7 +509,7 @@ namespace System.Collections.Concurrent.Tests
         /// to Take will not block waiting for more input, and calls to MoveNext on the enumerator returned from GetEnumerator
         /// on the enumerable returned from GetConsumingEnumerable will return false when the collection's count reaches 0.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Test7_CompleteAdding()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -534,7 +534,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(0, counter);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Test7_ConcurrentAdd_CompleteAdding()
         {
             BlockingCollection<ushort> blockingCollection = ConstructBlockingCollection<ushort>();
@@ -625,7 +625,7 @@ namespace System.Collections.Concurrent.Tests
 
         /// <summary>Validates BlockingCollection.Count.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Test10_Count()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(1);
@@ -861,7 +861,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<InvalidOperationException>(() => bc.Add(1));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Test_AddTakeWithReject_DoNotCorruptCount()
         {
             var secondFalse = new FalseOnSecondAddOrTake();

@@ -272,7 +272,7 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(id, bt.GetHashCode());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(BytePoolInstances))]
         public static void CanRentManySizedBuffers(ArrayPool<byte> pool)
         {
@@ -561,7 +561,7 @@ namespace System.Buffers.ArrayPool.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(BytePoolInstances))]
         public static void UsePoolInParallel(ArrayPool<byte> pool)
         {

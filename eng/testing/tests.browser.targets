@@ -90,6 +90,7 @@
     <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(_WasmAllowBlockingWait)' == 'true'">$(WasmXHarnessMonoArgs) --allow-blocking-wait</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(_WasmAllowBlockingWait)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsWasmAllowBlockingWait=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMonoArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsWasmBackgroundExec=true</WasmXHarnessMonoArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 

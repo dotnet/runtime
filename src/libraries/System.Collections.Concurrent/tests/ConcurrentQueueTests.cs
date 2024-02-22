@@ -20,7 +20,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override string CopyToNoLengthParamName => null;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Concurrent_Enqueue_TryDequeue_AllItemsReceived()
         {
             int items = 1000;
@@ -90,7 +90,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(producer, consumer);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(1, 4, 1024)]
         [InlineData(4, 1, 1024)]
         [InlineData(3, 3, 1024)]
@@ -357,7 +357,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]
         [InlineData(8, 1000)]
