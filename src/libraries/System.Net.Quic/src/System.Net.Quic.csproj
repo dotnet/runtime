@@ -161,7 +161,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
                         '$(TargetOS)' == 'windows' and
                         ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm64') and
-                        '$(DotNetBuildFromSource)' != 'true'">
+                        '$(DotNetBuildSourceOnly)' != 'true'">
 
     <!-- Project references -->
     <PackageReference Include="runtime.win-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
@@ -191,7 +191,7 @@
                           '$(TargetOS)' == 'osx' and
                           '$(TargetArchitecture)' == 'x64' and
                           '$(Configuration)' == 'Debug' and
-                          '$(DotNetBuildFromSource)' != 'true'">
+                          '$(DotNetBuildSourceOnly)' != 'true'">
       <!-- MsQuic packages do not have macOS binaries. Our transport package is only one source. -->
       <PackageReference Include="runtime.osx-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
                         Version="$(SystemNetMsQuicTransportVersion)"

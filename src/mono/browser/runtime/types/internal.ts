@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors } from ".";
-import type { PThreadLibrary } from "../pthreads/shared/emscripten-internals";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -13,6 +12,9 @@ export type JSHandle = {
 }
 export type JSFnHandle = {
     __brand: "JSFnHandle"
+}
+export type PThreadPtr = {
+    __brand: "PThreadPtr" // like pthread_t in C
 }
 export interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject"
@@ -56,9 +58,11 @@ export const MonoStringRefNull: MonoStringRef = <MonoStringRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
 export const GCHandleNull: GCHandle = <GCHandle><any>0;
+export const GCHandleInvalid: GCHandle = <GCHandle><any>-1;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
+export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
 export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
@@ -127,7 +131,8 @@ export type LoaderHelpers = {
     scriptUrl: string
     modulesUniqueQuery?: string
     preferredIcuAsset?: string | null,
-    invariantMode: boolean,
+    loadingWorkers: PThreadWorker[],
+    workerNextNumber: number,
 
     actual_downloaded_assets_count: number,
     actual_instantiated_assets_count: number,
@@ -155,7 +160,6 @@ export type LoaderHelpers = {
     out(message: string): void;
     err(message: string): void;
 
-    hasDebuggingEnabled(config: MonoConfig): boolean,
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     logDownloadStatsToConsole: () => void;
@@ -166,6 +170,7 @@ export type LoaderHelpers = {
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
     libraryInitializers?: { scriptName: string, exports: any }[];
 
+    isDebuggingSupported(): boolean,
     isChromium: boolean,
     isFirefox: boolean
 
@@ -194,13 +199,17 @@ export type RuntimeHelpers = {
     quit: Function,
     nativeExit: (code: number) => void,
     nativeAbort: (reason: any) => void,
-    javaScriptExports: JavaScriptExports,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
-    proxy_context_gc_handle: GCHandle,
+    monoThreadInfo: PThreadInfo,
+    proxyGCHandle: GCHandle | undefined,
+    managedThreadTID: PThreadPtr,
+    currentThreadTID: PThreadPtr,
+    isManagedRunningOnCurrentThread: boolean,
+    isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
     allAssetsInMemory: PromiseAndController<void>,
@@ -210,6 +219,7 @@ export type RuntimeHelpers = {
     afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
+    afterMonoStarted: PromiseAndController<GCHandle | undefined>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
@@ -300,35 +310,6 @@ export function notThenable<T>(x: T | PromiseLike<T>): x is T {
 /// Primarily intended for debugging purposes.
 export type EventPipeSessionID = bigint;
 
-// in all the exported internals methods, we use the same data structures for stack frame as normal full blow interop
-// see src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs
-export interface JavaScriptExports {
-    // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
-    release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
-
-    // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    complete_task(holder_gc_handle: GCHandle, isCanceling: boolean, error?: any, data?: any, res_converter?: MarshalerToCs): void;
-
-    // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
-    call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
-        res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): any;
-
-    // the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
-    call_entry_point(entry_point: MonoMethod, args?: string[]): Promise<number>;
-
-    // the marshaled signature is: void InstallMainSynchronizationContext()
-    install_main_synchronization_context(): void;
-
-    // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
-    get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
-
-    // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
-    load_satellite_assembly(dll: Uint8Array): void;
-
-    // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
-    load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): void;
-}
-
 export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
 export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?: MarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
@@ -362,6 +343,7 @@ export enum MarshalerType {
     Span,
     Action,
     Function,
+    DiscardNoWait,
 
     // only on runtime
     JSException,
@@ -445,6 +427,7 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     maybeExit(): void;
+    __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -511,4 +494,66 @@ export const enum WorkerToMainMessageType {
 
 export const enum MainToWorkerMessageType {
     applyConfig = "apply_mono_config",
+}
+
+export interface PThreadWorker extends Worker {
+    pthread_ptr: PThreadPtr;
+    loaded: boolean;
+    // this info is updated via async messages from the worker, it could be stale
+    info: PThreadInfo;
+    thread?: Thread;
+}
+
+export interface PThreadInfo {
+    pthreadId: PThreadPtr;
+
+    workerNumber: number,
+    reuseCount: number,
+    updateCount: number,
+
+    threadName: string,
+    threadPrefix: string,
+
+    isLoaded?: boolean,
+    isRegistered?: boolean,
+    isRunning?: boolean,
+    isAttached?: boolean,
+    isExternalEventLoop?: boolean,
+    isUI?: boolean;
+    isBackground?: boolean,
+    isDebugger?: boolean,
+    isThreadPoolWorker?: boolean,
+    isTimer?: boolean,
+    isLongRunning?: boolean,
+    isThreadPoolGate?: boolean,
+    isFinalizer?: boolean,
+    isDirtyBecauseOfInterop?: boolean,
+}
+
+export interface PThreadLibrary {
+    unusedWorkers: PThreadWorker[];
+    runningWorkers: PThreadWorker[];
+    pthreads: PThreadInfoMap;
+    allocateUnusedWorker: () => void;
+    loadWasmModuleToWorker: (worker: PThreadWorker) => Promise<PThreadWorker>;
+    threadInitTLS: () => void,
+    getNewWorker: () => PThreadWorker,
+    returnWorkerToPool: (worker: PThreadWorker) => void,
+}
+
+export interface PThreadInfoMap {
+    [key: number]: PThreadWorker;
+}
+
+export interface Thread {
+    readonly pthreadPtr: PThreadPtr;
+    readonly port: MessagePort;
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
+}
+
+export interface MonoThreadMessage {
+    // Type of message.  Generally a subsystem like "diagnostic_server", or "event_pipe", "debugger", etc.
+    type: string;
+    // A particular kind of message. For example, "started", "stopped", "stopped_with_error", etc.
+    cmd: string;
 }

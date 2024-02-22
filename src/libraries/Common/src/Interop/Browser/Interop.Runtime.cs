@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 internal static partial class Interop
@@ -26,8 +27,6 @@ internal static partial class Interop
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ResolveOrRejectPromise(nint data);
 #if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -48,11 +47,11 @@ internal static partial class Interop
         public static extern void UninstallWebWorkerInterop();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportSync(nint data, nint signature);
+        public static extern void InvokeJSImportSync(nint signature, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportSyncSend(nint targetNativeTID, nint data, nint signature);
+        public static extern void InvokeJSImportSyncSend(nint targetNativeTID, nint signature, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportAsyncPost(nint targetNativeTID, nint data, nint signature);
+        public static extern void InvokeJSImportAsyncPost(nint targetNativeTID, nint signature, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void CancelPromise(nint taskHolderGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -61,11 +60,15 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImport(int importHandle, nint data);
+        public static extern void InvokeJSImportST(int importHandle, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void CancelPromise(nint gcHandle);
 #endif
-
-
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AssemblyGetEntryPoint(IntPtr assemblyNamePtr, int auto_insert_breakpoint, void** monoMethodPtrPtr);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void BindAssemblyExports(IntPtr assemblyNamePtr);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetAssemblyExport(IntPtr assemblyNamePtr, IntPtr namespacePtr, IntPtr classnamePtr, IntPtr methodNamePtr, IntPtr* monoMethodPtrPtr);
     }
 }

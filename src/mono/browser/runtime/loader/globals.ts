@@ -15,7 +15,7 @@ import { assertIsControllablePromise, createPromiseController, getPromiseControl
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
 import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { deep_merge_config, hasDebuggingEnabled } from "./config";
+import { deep_merge_config, isDebuggingSupported } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
@@ -74,10 +74,9 @@ export function setLoaderGlobals(
     });
     const rh: Partial<RuntimeHelpers> = {
         mono_wasm_bindings_is_ready: false,
-        javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        nativeAbort: (reason: any) => { throw reason; },
+        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
         nativeExit: (code: number) => { throw new Error("exit:" + code); }
     };
     const lh: Partial<LoaderHelpers> = {
@@ -93,6 +92,8 @@ export function setLoaderGlobals(
         loadedFiles: [],
         loadedAssemblies: [],
         libraryInitializers: [],
+        loadingWorkers: [],
+        workerNextNumber: 1,
         actual_downloaded_assets_count: 0,
         actual_instantiated_assets_count: 0,
         expected_downloaded_assets_count: 0,
@@ -118,9 +119,9 @@ export function setLoaderGlobals(
         purgeUnusedCacheEntriesAsync,
         installUnhandledErrorHandler,
 
-        hasDebuggingEnabled,
         retrieve_asset_download,
         invokeLibraryInitializers,
+        isDebuggingSupported,
 
         // from wasm-feature-detect npm package
         exceptions,

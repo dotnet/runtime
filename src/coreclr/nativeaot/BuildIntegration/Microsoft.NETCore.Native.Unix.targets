@@ -23,7 +23,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
-    <IlcDefaultStackSize Condition="'$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
+    <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -39,15 +39,17 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">arm</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">armv7</CrossCompileArch>
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
-      <CrossCompileAbi Condition="$(CrossCompileRid.EndsWith('-arm'))">gnueabihf</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-'))">android21</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm'">androideabi21</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
 
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and $(CrossCompileRid.StartsWith('linux-bionic'))">$(CrossCompileArch)-linux-android21</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
 
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(_IsApplePlatform)' != 'true'">$ORIGIN</IlcRPath>
@@ -226,6 +228,19 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="@(ExtraLinkerArg->'-Wl,%(Identity)')" />
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
+    </ItemGroup>
+
+    <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false' and '$(_IsApplePlatform)' == 'true'">
+      <CustomLinkerArg Condition="'$(_XcodeVersion)' &gt;= '15'" Include="-ld_classic" />
     </ItemGroup>
 
     <PropertyGroup>
