@@ -5588,25 +5588,6 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
     JITDUMP("======= Inserting PInvoke call epilog\n");
 
-    GenTree* insertionPoint = call;
-
-#ifdef SWIFT_SUPPORT
-    // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
-    // that consumes the error register is the call node's successor.
-    // This is to simplify logic for marking the error register as busy in LSRA.
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
-    {
-        do
-        {
-            insertionPoint = insertionPoint->gtNext;
-            assert(insertionPoint != nullptr);
-        } while (!insertionPoint->OperIs(GT_SWIFT_ERROR));
-
-        BlockRange().Remove(insertionPoint);
-        BlockRange().InsertAfter(call, LIR::SeqTree(comp, insertionPoint));
-    }
-#endif // SWIFT_SUPPORT
-
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
@@ -5623,13 +5604,13 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         GenTreeCall* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, frameAddr);
 
         comp->fgMorphTree(helperCall);
-        BlockRange().InsertAfter(insertionPoint, LIR::SeqTree(comp, helperCall));
+        BlockRange().InsertAfter(call, LIR::SeqTree(comp, helperCall));
         ContainCheckCallOperands(helperCall);
         return;
     }
 
     // gcstate = 1
-    insertionPoint = insertionPoint->gtNext;
+    GenTree* insertionPoint = call->gtNext;
 
     GenTree* tree = SetGCState(1);
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
@@ -5811,6 +5792,26 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     {
         InsertPInvokeCallEpilog(call);
     }
+
+#ifdef SWIFT_SUPPORT
+    // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
+    // that consumes the error register is the call node's successor.
+    // This is to simplify logic for marking the error register as busy in LSRA.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        GenTree* swiftErrorNode = call->gtNext;
+        assert(swiftErrorNode != nullptr);
+
+        while (!swiftErrorNode->OperIs(GT_SWIFT_ERROR))
+        {
+            swiftErrorNode = swiftErrorNode->gtNext;
+            assert(swiftErrorNode != nullptr);
+        }
+
+        BlockRange().Remove(swiftErrorNode);
+        BlockRange().InsertAfter(call, swiftErrorNode);
+    }
+#endif // SWIFT_SUPPORT
 
     return result;
 }
