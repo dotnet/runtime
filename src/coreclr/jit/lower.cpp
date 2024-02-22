@@ -1875,11 +1875,11 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     GenTree* dstRefArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-    GenTree* valueArg  = nullptr;
+    GenTree* valueArg;
 
     if (!lengthArg->IsIntegralConst())
     {
-        JITDUMP("Length is not a constant - bail out.\n")
+        JITDUMP("Length is not a constant - bail out.\n");
         return false;
     }
 
@@ -1892,19 +1892,26 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
         //
         assert(call->gtArgs.CountUserArgs() == 3);
-        valueArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        CallArg* valueCallArg = call->gtArgs.GetUserArgByIndex(2);
+        valueArg              = valueCallArg->GetNode();
+
+        if (!valueArg->IsCnsIntOrI() || !valueArg->TypeIs(TYP_INT))
+        {
+            // Can be enabled if needed. Currently, only XARCH can expand it
+            JITDUMP("Value is not a constant in Fill - bail out.\n");
+            return false;
+        }
 
         // Get that <T> from the signature
-        CORINFO_SIG_INFO sig;
-        comp->info.compCompHnd->getMethodSig(call->gtCallMethHnd, &sig, nullptr);
-        assert(sig.sigInst.methInstCount == 1);
-        lengthScale = genTypeSize(
-            JITtype2varType(comp->info.compCompHnd->getTypeForPrimitiveValueClass(sig.sigInst.methInst[0])));
+        var_types valueType = valueCallArg->GetSignatureType();
+        lengthScale         = genTypeSize(valueType);
+
+        assert(varTypeIsIntegralOrI(valueType));
 
         // If value is not zero, we can only unroll for single-byte values
         if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
         {
-            JITDUMP("SpanHelpers.Fill's value is not unroll-friendly - bail out.\n")
+            JITDUMP("SpanHelpers.Fill's value is not unroll-friendly - bail out.\n");
             return false;
         }
     }
@@ -1914,8 +1921,11 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         //
         assert(call->gtArgs.CountUserArgs() == 2);
         assert(ni == NI_System_SpanHelpers_ClearWithoutReferences);
-
         lengthScale = 1; // it's always in bytes
+
+        // Simple zeroing
+        valueArg = comp->gtNewZeroConNode(TYP_INT);
+        BlockRange().InsertBefore(call, valueArg);
     }
 
     // Convert lenCns to bytes
@@ -1936,57 +1946,32 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
     }
 
     JITDUMP("Accepted for unrolling!\nOld tree:\n");
-    DISPTREE(call);
+    DISPTREERANGE(BlockRange(), call);
 
-    GenTree* blkInnerValue = nullptr;
-    GenTree* blkValue;
-    if (valueArg == nullptr || valueArg->IsIntegralConst(0))
+    if (!valueArg->IsIntegralConst(0))
     {
-        // Simple zeroing
-        blkValue = comp->gtNewZeroConNode(TYP_INT);
-        blkValue->SetContained();
-    }
-    else
-    {
-        // Non-zero (byte) value
-        blkInnerValue = comp->gtCloneExpr(valueArg);
-        blkInnerValue->SetContained();
-        blkValue = comp->gtNewOperNode(GT_INIT_VAL, TYP_INT, blkInnerValue);
-        blkValue->SetContained();
+        // Non-zero (byte) value, wrap value with GT_INIT_VAL
+        GenTree* initVal = valueArg;
+        valueArg         = comp->gtNewOperNode(GT_INIT_VAL, TYP_INT, initVal);
+        BlockRange().InsertAfter(initVal, valueArg);
     }
 
+    valueArg->SetContained();
     GenTreeBlk* storeBlk =
-        comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, blkValue, GTF_IND_UNALIGNED);
+        comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, valueArg, GTF_IND_UNALIGNED);
     storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
     // Insert/Remove trees into LIR
-    BlockRange().InsertBefore(call, blkValue);
     BlockRange().InsertBefore(call, storeBlk);
-    BlockRange().Remove(lengthArg);
-    BlockRange().Remove(call);
-    if (valueArg != nullptr)
-    {
-        // valueArg is just a constant in case of Fill<T>
-        // and doesn't exist in case of ClearWithoutReferences
-        assert(valueArg->IsIntegralConst());
-        BlockRange().Remove(valueArg);
-    }
-    if (blkInnerValue != nullptr)
-    {
-        BlockRange().InsertBefore(blkValue, blkInnerValue);
-    }
 
-    // Remove all non-user args (e.g. r2r cell)
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        if (arg.IsArgAddedLate())
-        {
-            arg.GetNode()->SetUnusedValue();
-        }
-    }
+    // Remove the call and mark everything as unused ...
+    BlockRange().Remove(call, true);
+    // ... except the args we're going to re-use
+    dstRefArg->ClearUnusedValue();
+    valueArg->ClearUnusedValue();
 
     JITDUMP("\nNew tree:\n");
-    DISPTREE(storeBlk);
+    DISPTREERANGE(BlockRange(), storeBlk);
     *next = storeBlk;
     return true;
 }
