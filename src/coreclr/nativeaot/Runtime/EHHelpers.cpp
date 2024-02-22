@@ -285,7 +285,23 @@ EXTERN_C void* RhpRethrow2   = NULL;
 #endif
 
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
+#endif
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
+#endif
 EXTERN_C CODE_LOCATION RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedXchgAVLocation;
 #if !defined(HOST_AMD64) && !defined(HOST_ARM64)
@@ -311,7 +327,23 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
     static uintptr_t writeBarrierAVLocations[] =
     {
         (uintptr_t)&RhpAssignRefAVLocation,
+#if defined(HOST_X86)
+        (uintptr_t)&RhpAssignRefEAXAVLocation,
+        (uintptr_t)&RhpAssignRefECXAVLocation,
+        (uintptr_t)&RhpAssignRefEBXAVLocation,
+        (uintptr_t)&RhpAssignRefESIAVLocation,
+        (uintptr_t)&RhpAssignRefEDIAVLocation,
+        (uintptr_t)&RhpAssignRefEBPAVLocation,
+#endif
         (uintptr_t)&RhpCheckedAssignRefAVLocation,
+#if defined(HOST_X86)
+        (uintptr_t)&RhpCheckedAssignRefEAXAVLocation,
+        (uintptr_t)&RhpCheckedAssignRefECXAVLocation,
+        (uintptr_t)&RhpCheckedAssignRefEBXAVLocation,
+        (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
+        (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
+        (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
+#endif
         (uintptr_t)&RhpCheckedLockCmpXchgAVLocation,
         (uintptr_t)&RhpCheckedXchgAVLocation,
 #if !defined(HOST_AMD64) && !defined(HOST_ARM64)

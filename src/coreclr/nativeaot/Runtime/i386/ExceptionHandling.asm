@@ -16,6 +16,7 @@ include AsmMacros.inc
 CALL_FUNCLET  macro  SUFFIX
         push    ebp
         mov     ebp, eax
+        mov     eax, ecx
         call    edx
 ALTERNATE_ENTRY _RhpCall&SUFFIX&Funclet2
         pop     ebp

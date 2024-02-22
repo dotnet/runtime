@@ -107,6 +107,8 @@ FASTCALL_FUNC RhpAssignRef&REFREG&, 8
     ALTERNATE_ENTRY _RhpAssignRefAVLocation
     endif
 
+    ALTERNATE_ENTRY _RhpAssignRef&REFREG&AVLocation
+
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
     mov     dword ptr [DESTREG], REFREG
@@ -202,6 +204,8 @@ FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 8
     ALTERNATE_ENTRY RhpCheckedAssignRef
     ALTERNATE_ENTRY _RhpCheckedAssignRefAVLocation
     endif
+
+    ALTERNATE_ENTRY _RhpCheckedAssignRef&REFREG&AVLocation
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
