@@ -1844,7 +1844,8 @@ GenTree* Lowering::AddrGen(void* addr)
 
 // LowerCallMemset: Replaces the following memset-like special intrinsics:
 //
-//    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, 0)
+//    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
+//    CORINFO_HELP_MEMSET(ref dstRef, CNS_VALUE, CNS_SIZE)
 //    SpanHelpers.ClearWithoutReferences(ref dstRef, CNS_SIZE)
 //
 //  with a GT_STORE_BLK node:
@@ -1862,6 +1863,10 @@ GenTree* Lowering::AddrGen(void* addr)
 //
 bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 {
+    assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill) ||
+           call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences) ||
+           call->IsHelperCall(comp, CORINFO_HELP_MEMSET));
+
     JITDUMP("Considering Memset-like call [%06d] for unrolling.. ", comp->dspTreeID(call))
 
     if (comp->info.compHasNextCallRetAddr)
@@ -1870,12 +1875,48 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         return false;
     }
 
-    // void SpanHelpers::Fill<T>(ref T dstRef, nuint numElements, T value)
-    // void SpanHelpers::ClearWithoutReferences(ref byte dstRef, nuint byteLength)
-
     GenTree* dstRefArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-    GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    GenTree* lengthArg;
     GenTree* valueArg;
+
+    // Fill<T>'s length is not in bytes, so we need to scale it depending on the signature
+    unsigned lengthScale;
+
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill))
+    {
+        // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg             = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        CallArg* valueCallArg = call->gtArgs.GetUserArgByIndex(2);
+        valueArg              = valueCallArg->GetNode();
+
+        // Get that <T> from the signature
+        lengthScale = genTypeSize(valueCallArg->GetSignatureType());
+        // NOTE: structs and TYP_REF will be ignored by the "Value is not a constant" check
+        // Some of those cases can be enabled in future, e.g. s
+    }
+    else if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET))
+    {
+        // void CORINFO_HELP_MEMSET(ref T refData, byte value, nuint numElements)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg   = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        valueArg    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        lengthScale = 1; // it's always in bytes
+    }
+    else
+    {
+        // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
+        //
+        assert(call->gtArgs.CountUserArgs() == 2);
+
+        // Simple zeroing
+        lengthArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        valueArg  = comp->gtNewZeroConNode(TYP_INT);
+        BlockRange().InsertBefore(call, valueArg);
+        lengthScale = 1; // it's always in bytes
+    }
 
     if (!lengthArg->IsIntegralConst())
     {
@@ -1883,49 +1924,17 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         return false;
     }
 
-    // Fill<T>'s length is not in bytes, so we need to scale it depending on the signature
-    unsigned lengthScale;
-
-    const NamedIntrinsic ni = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
-    if (ni == NI_System_SpanHelpers_Fill)
+    if (!valueArg->IsCnsIntOrI() || !valueArg->TypeIs(TYP_INT))
     {
-        // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
-        //
-        assert(call->gtArgs.CountUserArgs() == 3);
-        CallArg* valueCallArg = call->gtArgs.GetUserArgByIndex(2);
-        valueArg              = valueCallArg->GetNode();
-
-        if (!valueArg->IsCnsIntOrI() || !valueArg->TypeIs(TYP_INT))
-        {
-            // Can be enabled if needed. Currently, only XARCH can expand it
-            JITDUMP("Value is not a constant in Fill - bail out.\n");
-            return false;
-        }
-
-        // Get that <T> from the signature
-        var_types valueType = valueCallArg->GetSignatureType();
-        lengthScale         = genTypeSize(valueType);
-
-        assert(varTypeIsIntegralOrI(valueType));
-
-        // If value is not zero, we can only unroll for single-byte values
-        if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
-        {
-            JITDUMP("SpanHelpers.Fill's value is not unroll-friendly - bail out.\n");
-            return false;
-        }
+        JITDUMP("Value is not a constant - bail out.\n");
+        return false;
     }
-    else
-    {
-        // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
-        //
-        assert(call->gtArgs.CountUserArgs() == 2);
-        assert(ni == NI_System_SpanHelpers_ClearWithoutReferences);
-        lengthScale = 1; // it's always in bytes
 
-        // Simple zeroing
-        valueArg = comp->gtNewZeroConNode(TYP_INT);
-        BlockRange().InsertBefore(call, valueArg);
+    // If value is not zero, we can only unroll for single-byte values
+    if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
+    {
+        JITDUMP("Value is not unroll-friendly - bail out.\n");
+        return false;
     }
 
     // Convert lenCns to bytes
@@ -2386,6 +2395,12 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
     // Try to lower CORINFO_HELP_MEMCPY to unrollable STORE_BLK
     if (call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
+    {
+        return nextNode;
+    }
+
+    // Try to lower CORINFO_HELP_MEMSET to unrollable STORE_BLK
+    if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET) && LowerCallMemset(call, &nextNode))
     {
         return nextNode;
     }
