@@ -353,6 +353,32 @@ namespace System
             }
 
             /// <summary>
+            /// Do partial divide, yielding 64-bit result and 64-bit remainder.
+            /// Divisor must be larger than upper 64 bits of dividend.
+            /// </summary>
+            /// <param name="bufNum">128-bit dividend as array of uints, least-sig first</param>
+            /// <param name="den">64-bit divisor</param>
+            /// <returns>Returns quotient. Remainder overwrites lower 64-bits of dividend.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static unsafe ulong Div128By64(Buf16* bufNum, ulong den)
+            {
+                Debug.Assert(den > bufNum->High64);
+
+                if (X86.X86Base.X64.IsSupported)
+                {
+                    // Assert above states: den > bufNum.High64 so den > bufNum.U2 and we can be sure we will not overflow
+                    (ulong quotient, bufNum->Low64) = X86.X86Base.X64.DivRem(bufNum->Low64, bufNum->High64, den);
+                    return quotient;
+                }
+                else
+                {
+                    uint hiBits = Div96By64(ref *(Buf12*)&bufNum->U1, den);
+                    uint loBits = Div96By64(ref *(Buf12*)bufNum, den);
+                    return ((ulong)hiBits << 32 | loBits);
+                }
+            }
+
+            /// <summary>
             /// Do partial divide, yielding 32-bit result and 64-bit remainder.
             /// Divisor must be larger than upper 64 bits of dividend.
             /// </summary>
@@ -2031,10 +2057,7 @@ ReturnZero:
                         // Have a 64-bit divisor in sdlDivisor.  The remainder
                         // (currently 96 bits spread over 4 uints) will be < divisor.
                         //
-                        bufQuo.U2 = 0;
-                        bufQuo.U1 = Div96By64(ref *(Buf12*)&bufRem.U1, divisor);
-                        bufQuo.U0 = Div96By64(ref *(Buf12*)&bufRem, divisor);
-
+                        bufQuo.Low64 = Div128By64(&bufRem, divisor);
                         while (true)
                         {
                             if (bufRem.Low64 == 0)
