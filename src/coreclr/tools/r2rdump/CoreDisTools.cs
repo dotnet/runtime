@@ -236,6 +236,11 @@ namespace R2RDump
             }
 
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _reader.Image, out instruction);
+            if (instrSize == 0)
+            {
+                instruction = "Decode failure, aborting disassembly" + Environment.NewLine;
+                return rtf.Size - rtfOffset;
+            }
 
             // CoreDisTools dumps instructions in the following format:
             //
