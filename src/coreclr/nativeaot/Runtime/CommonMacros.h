@@ -177,11 +177,38 @@ typedef uint8_t CODE_LOCATION;
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
 //
-#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #ifdef HOST_X86
+#define COOP_ARGHELPER_NAME(_1, _2, _3, _4, _5, _6, NAME, ...) NAME
+#define COOP_ARGHELPER_NAME_(tuple) COOP_ARGHELPER_NAME tuple
+
+#define COOP_ARGHELPER1(a) (a)
+#define COOP_ARGHELPER2(a, b) (a, b)
+#define COOP_ARGHELPER3(a, b, c) (a, b, c)
+#define COOP_ARGHELPER4(a, b, c, d) (a, b, d, c)
+#define COOP_ARGHELPER5(a, b, c, d, e) (a, b, e, d, c)
+#define COOP_ARGHELPER6(a, b, c, d, e, f) (a, b, f, e, d, c)
+#define COOP_ARGHELPER_REORDER(...) COOP_ARGHELPER_NAME_((__VA_ARGS__, COOP_ARGHELPER6, COOP_ARGHELPER5, COOP_ARGHELPER4, COOP_ARGHELPER3, COOP_ARGHELPER2, COOP_ARGHELPER1)) (__VA_ARGS__)
+
+#define COOP_STRINGIFY(s) #s
+#define COOP_XSTRINGIFY(s) COOP_STRINGIFY(s)
+#define COOP_ARGHELPER_STACKSIZE(...) COOP_ARGHELPER_NAME_((__VA_ARGS__, 24, 20, 16, 12, 8, 4))
+
+#define COOP_FASTCALL_ALTNAME(_method, _argSize) COOP_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
+#define COOP_FASTCALL_ALTNAME0(_method) COOP_XSTRINGIFY(/alternatename:_method=@_method@0)
+
+#define COOP_PINVOKE_HELPER(_rettype, _method, _args) \
+    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method COOP_ARGHELPER_REORDER _args
+
+#define COOP_PINVOKE_HELPER_NOARGS(_rettype, _method)  \
+    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME0(_method))) ) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method COOP_ARGHELPER_REORDER (void)
+
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
 #define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype __cdecl _method _args
 #else
+#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
+#define COOP_PINVOKE_HELPER_NOARGS(_rettype, _method) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method (void)
 #define COOP_PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER
 #endif
 

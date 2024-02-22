@@ -7,6 +7,8 @@
 option  casemap:none
 .code
 
+include AsmMacros.inc
+
 ;; -----------------------------------------------------------------------------------------------------------
 ;; standard macros
 ;; -----------------------------------------------------------------------------------------------------------
@@ -80,22 +82,22 @@ LEAF_END RhCommonStub, _TEXT
 ;;
 ;; IntPtr RhGetCommonStubAddress()
 ;;
-LEAF_ENTRY RhGetCommonStubAddress, _TEXT
+FASTCALL_FUNC RhGetCommonStubAddress, 0
         lea     eax, [RhCommonStub]
         ret
-LEAF_END RhGetCommonStubAddress, _TEXT
+FASTCALL_ENDFUNC
 
 
 ;;
 ;; IntPtr RhGetCurrentThunkContext()
 ;;
-LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
+FASTCALL_FUNC RhGetCurrentThunkContext, 0
         mov     ecx, [__tls_index]
         mov     edx, fs:[__tls_array]
         mov     ecx, [edx + ecx * POINTER_SIZE]
         mov     eax, [ecx + OFFSET ThunkParamSlot]                 ;;   eax <- ThunkParamSlot
         ret
-LEAF_END RhGetCurrentThunkContext, _TEXT
+FASTCALL_ENDFUNC
 
 
 end

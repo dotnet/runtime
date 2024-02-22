@@ -98,6 +98,7 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.

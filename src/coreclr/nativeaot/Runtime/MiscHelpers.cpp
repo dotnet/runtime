@@ -37,7 +37,7 @@
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
 
-COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhDebugBreak)
 {
     PalDebugBreak();
 }
@@ -386,7 +386,7 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
     g_threadExitCallback = (ThreadExitCallback)pCallback;
 }
 
-COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
+COOP_PINVOKE_HELPER_NOARGS(int32_t, RhGetProcessCpuCount)
 {
     return PalGetProcessCpuCount();
 }

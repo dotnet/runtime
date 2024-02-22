@@ -59,13 +59,13 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEType, (MethodTable * pEE
     return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
 }
 
-COOP_PINVOKE_HELPER(void, RhpValidateExInfoStack, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpValidateExInfoStack)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
     pThisThread->ValidateExInfoStack();
 }
 
-COOP_PINVOKE_HELPER(void, RhpClearThreadDoNotTriggerGC, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpClearThreadDoNotTriggerGC)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
 
@@ -75,7 +75,7 @@ COOP_PINVOKE_HELPER(void, RhpClearThreadDoNotTriggerGC, ())
     pThisThread->ClearDoNotTriggerGc();
 }
 
-COOP_PINVOKE_HELPER(void, RhpSetThreadDoNotTriggerGC, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpSetThreadDoNotTriggerGC)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
 
@@ -248,27 +248,27 @@ EXTERN_C int32_t RhpPInvokeExceptionGuard()
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
 EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhpThrowHwEx(int, int);
 #else
-COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpThrowHwEx)
 {
     ASSERT_UNCONDITIONALLY("RhpThrowHwEx NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpThrowEx, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpThrowEx)
 {
     ASSERT_UNCONDITIONALLY("RhpThrowEx NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpCallCatchFunclet, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpCallCatchFunclet)
 {
     ASSERT_UNCONDITIONALLY("RhpCallCatchFunclet NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpCallFinallyFunclet, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpCallFinallyFunclet)
 {
     ASSERT_UNCONDITIONALLY("RhpCallFinallyFunclet NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpCallFilterFunclet, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpCallFilterFunclet)
 {
     ASSERT_UNCONDITIONALLY("RhpCallFilterFunclet NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpRethrow, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpRethrow)
 {
     ASSERT_UNCONDITIONALLY("RhpRethrow NYI for this architecture!");
 }
@@ -605,7 +605,7 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
 #endif // TARGET_UNIX
 
-COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
+COOP_PINVOKE_HELPER_NOARGS(void, RhpFallbackFailFast)
 {
     RhFailFast();
 }

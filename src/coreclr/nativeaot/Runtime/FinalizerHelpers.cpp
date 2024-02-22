@@ -194,7 +194,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete(uint32_t fcoun
 //
 
 // Fetch next object which needs finalization or return null if we've reached the end of the list.
-COOP_PINVOKE_HELPER(OBJECTREF, RhpGetNextFinalizableObject, ())
+COOP_PINVOKE_HELPER_NOARGS(OBJECTREF, RhpGetNextFinalizableObject)
 {
     while (true)
     {

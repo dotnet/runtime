@@ -445,11 +445,7 @@ bool InitializeInterfaceDispatch()
     return true;
 }
 
-#ifdef TARGET_X86
-COOP_PINVOKE_HELPER(PCODE, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PCODE pTargetCode, DispatchCellInfo *pNewCellInfo, MethodTable* pInstanceType))
-#else
 COOP_PINVOKE_HELPER(PCODE, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo))
-#endif
 {
     // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
     // is none).

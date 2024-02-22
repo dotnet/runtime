@@ -59,7 +59,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DebugBreak:
-                    methodDesc = context.GetRuntimeImport("RhDebugBreak");
+                    mangledName = "RhDebugBreak";
                     break;
 
                 case ReadyToRunHelper.WriteBarrier:
@@ -126,10 +126,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewArray:
-                    methodDesc = context.GetRuntimeImport("RhNewArray");
+                    mangledName = "RhNewArray";
                     break;
                 case ReadyToRunHelper.NewObject:
-                    methodDesc = context.GetRuntimeImport("RhNewObject");
+                    mangledName = "RhNewObject";
                     break;
 
                 case ReadyToRunHelper.Stelem_Ref:
@@ -253,10 +253,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.ReversePInvokeEnter:
-                    methodDesc = context.GetRuntimeImport("RhpReversePInvoke");
+                    mangledName = "RhpReversePInvoke";
                     break;
                 case ReadyToRunHelper.ReversePInvokeExit:
-                    methodDesc = context.GetRuntimeImport("RhpReversePInvokeReturn");
+                    mangledName = "RhpReversePInvokeReturn";
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
