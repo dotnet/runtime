@@ -592,11 +592,13 @@ void GCCoverageInfo::SprinkleBreakpoints(
         {
             *(cur + writeableOffset) = INTERRUPT_INSTR;
         }
+#ifdef TARGET_AMD64
         else if (safePointDecoder.AreSafePointsInterruptible() &&
             safePointDecoder.IsSafePoint((UINT32)dwRelOffset))
         {
             *(cur + writeableOffset) = INTERRUPT_INSTR;
         }
+#endif
 
 #ifdef TARGET_X86
         // we will whack every instruction in the prolog and epilog to make certain
