@@ -111,7 +111,7 @@ jobs:
       platforms:
         - browser_wasm
       nameSuffix: _Threading_BlockingWait
-      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmAllowBlockingWait:true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmAllowBlockingWait=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
