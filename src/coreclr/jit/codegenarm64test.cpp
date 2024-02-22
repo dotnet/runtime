@@ -7986,7 +7986,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
     // IF_SVE_HF_2A
     // FRECPE  <Zd>.<T>, <Zn>.<T>
-    theEmitter->emitIns_R_R(INS_sve_frecpe, EA_SCALABLE, REG_V0, REG_V2, INS_OPTS_SCALABLE_H); 
+    theEmitter->emitIns_R_R(INS_sve_frecpe, EA_SCALABLE, REG_V0, REG_V2, INS_OPTS_SCALABLE_H);
     // FRSQRTE <Zd>.<T>, <Zn>.<T>
     theEmitter->emitIns_R_R(INS_sve_frsqrte, EA_SCALABLE, REG_V5, REG_V3, INS_OPTS_SCALABLE_S);
     // FRSQRTE <Zd>.<T>, <Zn>.<T>
