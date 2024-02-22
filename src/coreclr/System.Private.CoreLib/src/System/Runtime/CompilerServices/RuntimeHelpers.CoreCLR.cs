@@ -232,9 +232,6 @@ namespace System.Runtime.CompilerServices
             return rt.GetUninitializedObject();
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateUninitializedClone(object obj);
-
         [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
         private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
