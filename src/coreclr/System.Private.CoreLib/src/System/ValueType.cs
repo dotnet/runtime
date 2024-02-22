@@ -120,7 +120,7 @@ namespace System
             else
             {
                 object thisRef = this;
-                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out delegate* managed<ref byte, int> getHashCodeMethod))
+                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT))
                 {
                     case ValueTypeHashCodeStrategy.ReferenceField:
                         hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
@@ -140,8 +140,9 @@ namespace System
                         break;
 
                     case ValueTypeHashCodeStrategy.ValueTypeOverride:
-                        Debug.Assert(getHashCodeMethod != null);
-                        hashCode.Add(getHashCodeMethod(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)));
+                        Debug.Assert(fieldMT != null);
+                        // Box the field to handle complicated cases like mutable method and shared generic
+                        hashCode.Add(RuntimeHelpers.Box(fieldMT, ref Unsafe.AddByteOffset(ref rawData, fieldOffset))?.GetHashCode() ?? 0);
                         break;
                 }
             }
@@ -162,7 +163,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
-            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out delegate* managed<ref byte, int> getHashCodeMethod);
+            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT);
 
         public override string? ToString()
         {
