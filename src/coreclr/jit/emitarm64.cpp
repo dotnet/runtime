@@ -11739,15 +11739,14 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
  *  Add an instruction referencing three registers and a constant.
  */
 
-void emitter::emitIns_R_R_R_I(instruction     ins,
-                              emitAttr        attr,
-                              regNumber       reg1,
-                              regNumber       reg2,
-                              regNumber       reg3,
-                              ssize_t         imm,
-                              insOpts         opt /* = INS_OPTS_NONE */,
-                              emitAttr        attrReg2 /* = EA_UNKNOWN */,
-                              insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+void emitter::emitIns_R_R_R_I(instruction ins,
+                              emitAttr    attr,
+                              regNumber   reg1,
+                              regNumber   reg2,
+                              regNumber   reg3,
+                              ssize_t     imm,
+                              insOpts     opt /* = INS_OPTS_NONE */,
+                              emitAttr    attrReg2 /* = EA_UNKNOWN */)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
