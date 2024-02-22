@@ -196,6 +196,9 @@ typedef uint8_t CODE_LOCATION;
 #define COOP_FASTCALL_ALTNAME(_method, _argSize) COOP_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
 #define COOP_FASTCALL_ALTNAME0(_method) COOP_XSTRINGIFY(/alternatename:_method=@_method@0)
 
+#define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) \
+    NATIVEAOT_API _rettype REDHAWK_CALLCONV _method COOP_ARGHELPER_REORDER _args
+
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) \
     _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
     EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method COOP_ARGHELPER_REORDER _args
@@ -207,6 +210,7 @@ typedef uint8_t CODE_LOCATION;
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
 #define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype __cdecl _method _args
 #else
+#define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #define COOP_PINVOKE_HELPER_NOARGS(_rettype, _method) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method (void)
 #define COOP_PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER

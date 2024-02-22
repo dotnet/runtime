@@ -62,9 +62,7 @@ namespace System.Runtime
 
         internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false, bool* fIsExceptionIntercepted = null)
         {
-            if (fIsExceptionIntercepted != null)
-                *fIsExceptionIntercepted = false;
-            return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault);
+            return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);
         }
 
         internal bool Next()
@@ -79,9 +77,7 @@ namespace System.Runtime
 
         internal bool Next(uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted)
         {
-            if (fIsExceptionIntercepted != null)
-                *fIsExceptionIntercepted = false;
-            return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke);
+            return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke, fIsExceptionIntercepted);
         }
     }
 }

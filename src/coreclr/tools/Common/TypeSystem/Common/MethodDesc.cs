@@ -18,7 +18,6 @@ namespace Internal.TypeSystem
         UnmanagedCallingConventionCdecl      = 0x0001,
         UnmanagedCallingConventionStdCall    = 0x0002,
         UnmanagedCallingConventionThisCall   = 0x0003,
-        UnmanagedCallingConventionFastCall   = 0x0004,
         CallingConventionVarargs             = 0x0005,
         UnmanagedCallingConvention           = 0x0009,
 

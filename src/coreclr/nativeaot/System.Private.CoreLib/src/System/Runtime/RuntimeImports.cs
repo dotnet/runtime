@@ -537,11 +537,11 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhFindBlob")]
-        private static extern unsafe int RhFindBlob(ref TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob);
+        private static extern unsafe bool RhFindBlob(ref TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob);
 
         internal static unsafe bool RhFindBlob(TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob)
         {
-            return RhFindBlob(ref typeManagerHandle, blobId, ppbBlob, pcbBlob) != 0;
+            return RhFindBlob(ref typeManagerHandle, blobId, ppbBlob, pcbBlob);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
