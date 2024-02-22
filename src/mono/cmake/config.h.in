@@ -183,9 +183,6 @@
 /* Define to 1 if you have the <unwind.h> header file. */
 #cmakedefine HAVE_UNWIND_H 1
 
-/* Use static ICU */
-#cmakedefine STATIC_ICU 1
-
 /* Use in-tree zlib */
 #cmakedefine INTERNAL_ZLIB 1
 
