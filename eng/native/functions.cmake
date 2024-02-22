@@ -407,13 +407,15 @@ function(strip_symbols targetName outputFilename)
   get_symbol_file_name(${targetName} strip_destination_file)
   set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   if (CLR_CMAKE_HOST_UNIX)
-    get_target_property(targetImportedNativeAotLib "${targetName}" CLR_IMPORTED_NATIVEAOT_LIBRARY)
-    if (NOT "${targetImportedNativeAotLib}")
+    get_property(copy_target TARGET ${targetName} PROPERTY CLR_IMPORTED_COPY_TARGET)
+    if (NOT "${copy_target}")
+      # normal target, we will add the post-build event to it
       set(strip_source_file $<TARGET_FILE:${targetName}>)
+      set(post_build_target "${targetName}")
     else()
+      # for an imported library, we will add the post-build event on the copy target
       get_property(strip_source_file TARGET ${targetName} PROPERTY IMPORTED_LOCATION)
-      # for an imported library, we will hang the post-build event on the copy target
-      get_property(copy_target TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY_COPY_TARGET)
+      set(post_build_target "${copy_target}")
     endif()
 
     if (CLR_CMAKE_TARGET_APPLE)
@@ -464,12 +466,6 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         )
     else (CLR_CMAKE_TARGET_APPLE)
-
-      if (NOT "${targetImportedNativeAotLib}")
-        set(post_build_target "${targetName}")
-      else()
-        set(post_build_target "${copy_target}")
-      endif()
 
       add_custom_command(
         TARGET ${post_build_target}

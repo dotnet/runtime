@@ -58,7 +58,7 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
     add_dependencies(${targetName} "${copy_target_name}")
     set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${importedFullPath}")
     set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY 1)
-    set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY_COPY_TARGET "${copy_target_name}")
+    set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_COPY_TARGET "${copy_target_name}")
 
     if("${CLR_CMAKE_HOST_WIN32}")
       set_property(TARGET ${targetName} PROPERTY IMPORTED_IMPLIB "${libImpLibFullPath}")
