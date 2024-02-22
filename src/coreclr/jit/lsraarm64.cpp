@@ -2025,17 +2025,30 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
         return true;
     }
 
+    bool atConsecutiveRegsLoc = consecutiveRegistersLocation == nodeLocation;
+    bool treeNeedsConsecutiveRegisters = false;
+
+    if ((treeNode != nullptr) && treeNode->OperIsHWIntrinsic())
+    {
+        const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+        treeNeedsConsecutiveRegisters = HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+    }
+
     if (refType == RefTypeDef)
     {
-        if (treeNode->OperIsHWIntrinsic())
-        {
-            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
-            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
-        }
+        return treeNeedsConsecutiveRegisters;
     }
-    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    else if (refType == RefTypeUse)
     {
-        return consecutiveRegistersLocation == nodeLocation;
+        if (isIntervalRef() && getInterval()->isInternal)
+        {
+            return treeNeedsConsecutiveRegisters;
+        }
+        return atConsecutiveRegsLoc;
+    }
+    else if (refType == RefTypeUpperVectorRestore)
+    {
+        return atConsecutiveRegsLoc;
     }
     return false;
 }
