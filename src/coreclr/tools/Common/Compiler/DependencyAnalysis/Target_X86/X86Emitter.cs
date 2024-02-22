@@ -17,6 +17,12 @@ namespace ILCompiler.DependencyAnalysis.X86
         public ObjectDataBuilder Builder;
         public TargetRegisterMap TargetRegister;
 
+        public void EmitMOV(ref AddrMode addrMode, Register reg)
+        {
+            Debug.Assert(addrMode.Size != AddrModeSize.Int8 && addrMode.Size != AddrModeSize.Int16);
+            EmitIndirInstruction(0x89, (byte)reg, ref addrMode);
+        }
+
         public void EmitMOV(Register reg, ref AddrMode addrMode)
         {
             Debug.Assert(addrMode.Size != AddrModeSize.Int8 && addrMode.Size != AddrModeSize.Int16);
@@ -96,6 +102,19 @@ namespace ILCompiler.DependencyAnalysis.X86
         public void EmitZeroReg(Register reg)
         {
             EmitXOR(reg, reg);
+        }
+
+        public void EmitPOP(Register reg)
+        {
+            Builder.EmitByte((byte)(0x58 + (byte)reg));
+        }
+
+        public void EmitStackDup()
+        {
+            // PUSH [ESP]
+            Builder.EmitByte(0xff);
+            Builder.EmitByte(0x34);
+            Builder.EmitByte(0x24);
         }
 
         public void EmitPUSH(sbyte imm8)

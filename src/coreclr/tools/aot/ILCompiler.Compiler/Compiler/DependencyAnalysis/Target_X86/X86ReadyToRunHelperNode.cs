@@ -103,9 +103,12 @@ namespace ILCompiler.DependencyAnalysis
                                 encoder.EmitCMP(ref initialized, 0);
                                 encoder.EmitJE(helper);
 
-                                encoder.EmitPUSH(encoder.TargetRegister.Result);
-                                encoder.EmitCALL(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
-                                encoder.EmitRET();
+                                // Add extra parameter and tail call
+                                encoder.EmitStackDup();
+                                AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
+                                encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                             }
                         }
                     }
@@ -140,7 +143,47 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        encoder.EmitINT3();
+                        DelegateCreationInfo target = (DelegateCreationInfo)Target;
+
+                        encoder.EmitStackDup();
+
+                        if (target.Thunk != null)
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 3);
+                            encoder.EmitStackDup();
+                            // TODO: Is it possible to fold this into one MOV?
+                            encoder.EmitMOV(encoder.TargetRegister.Result, target.Thunk);
+                            AddrMode storeAtEspPlus8 = new AddrMode(Register.ESP, null, 8, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(ref storeAtEspPlus8, encoder.TargetRegister.Result);
+                        }
+                        else
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 2);
+                        }
+
+                        if (target.TargetNeedsVTableLookup)
+                        {
+                            Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable(factory));
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                            int slot = 0;
+                            if (!relocsOnly)
+                                slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, target.TargetMethod, target.TargetMethod.OwningType);
+
+                            Debug.Assert(slot != -1);
+                            AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
+                        }
+                        else
+                        {
+                            encoder.EmitMOV(encoder.TargetRegister.Result, target.GetTargetNode(factory));
+                        }
+
+                        AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
+                        encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                        encoder.EmitJMP(target.Constructor);
                     }
                     break;
 

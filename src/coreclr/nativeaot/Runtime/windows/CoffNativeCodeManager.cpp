@@ -511,8 +511,13 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         // all outgoing arguments.
         upperBound = dac_cast<TADDR>(basePointer + slot);
 #else
-        PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
-        RhFailFast();
+        hdrInfo info;
+        DecodeGCHdrInfo(GCInfoToken(p), 0, &info);
+        assert(info.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+        upperBound =
+            info.ebpFrame ? 
+            dac_cast<TADDR>(pRegisterSet->GetFP()) - info.revPInvokeOffset :
+            dac_cast<TADDR>(pRegisterSet->GetSP()) + info.revPInvokeOffset;
 #endif
     }
     else
@@ -624,15 +629,20 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         }
 
         *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
+#else
+        hdrInfo info;
+        DecodeGCHdrInfo(GCInfoToken(p), 0, &info);
+        assert(info.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+        *ppPreviousTransitionFrame = 
+            info.ebpFrame ? 
+            *(PInvokeTransitionFrame**)(dac_cast<TADDR>(pRegisterSet->GetFP()) - info.revPInvokeOffset) :
+            *(PInvokeTransitionFrame**)(dac_cast<TADDR>(pRegisterSet->GetSP()) + info.revPInvokeOffset);
+#endif
 
         if ((flags & USFF_StopUnwindOnTransitionFrame) != 0)
         {
             return true;
         }
-#else
-        PORTABILITY_ASSERT("UnwindStackFrame");
-        RhFailFast();
-#endif
     }
     else
     {

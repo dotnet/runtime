@@ -236,13 +236,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LRsz:
-                    methodDesc = context.GetRuntimeImport("RhpLRsz");
+                    mangledName = "RhpLRsz";
                     break;
                 case ReadyToRunHelper.LRsh:
-                    methodDesc = context.GetRuntimeImport("RhpLRsh");
+                    mangledName = "RhpLRsh";
                     break;
                 case ReadyToRunHelper.LLsh:
-                    methodDesc = context.GetRuntimeImport("RhpLLsh");
+                    mangledName = "RhpLLsh";
                     break;
 
                 case ReadyToRunHelper.PInvokeBegin:

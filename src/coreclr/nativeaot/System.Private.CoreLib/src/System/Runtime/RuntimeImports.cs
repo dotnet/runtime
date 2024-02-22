@@ -860,53 +860,89 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpDbl2Lng")]
-        internal static extern long RhpDbl2Lng(double value);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpDbl2Lng")]
+        internal static partial long RhpDbl2Lng(double value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpDbl2ULng")]
-        internal static extern ulong RhpDbl2ULng(double value);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpDbl2ULng")]
+        internal static partial ulong RhpDbl2ULng(double value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpDbl2Int")]
-        internal static extern int RhpDbl2Int(double value);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpDbl2Int")]
+        internal static partial int RhpDbl2Int(double value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpDbl2UInt")]
-        internal static extern uint RhpDbl2UInt(double value);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpDbl2UInt")]
+        internal static partial uint RhpDbl2UInt(double value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLng2Dbl")]
-        internal static extern double RhpLng2Dbl(long value);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpLng2Dbl")]
+        internal static partial double RhpLng2Dbl(long value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLng2Dbl")]
-        internal static extern double RhpULng2Dbl(ulong value);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpLng2Dbl")]
+        internal static partial double RhpULng2Dbl(ulong value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpDblRem")]
-        internal static extern double RhpDblRem(double dividend, double divisor);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpDblRem")]
+        internal static partial double RhpDblRem(double dividend, double divisor);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpFltRem")]
-        internal static extern float RhpFltRem(float dividend, float divisor);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpFltRem")]
+        internal static partial float RhpFltRem(float dividend, float divisor);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLMul")]
-        internal static extern long RhpLMul(long i, long j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpLMul")]
+        internal static partial long RhpLMul(long i, long j);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLRsz")]
-        internal static extern ulong RhpLRsz(ulong i, int j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpLRsz")]
+        internal static partial ulong RhpLRsz(ulong i, int j);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLRsh")]
-        internal static extern long RhpLRsh(long i, int j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpLRsh")]
+        internal static partial long RhpLRsh(long i, int j);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLLsh")]
-        internal static extern long RhpLLsh(long i, int j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //[RuntimeImport(RuntimeLibrary, "RhpLLsh")]
+        internal static partial long RhpLLsh(long i, int j);
 
         [Intrinsic]
         [LibraryImport(RuntimeImports.RuntimeLibrary)]

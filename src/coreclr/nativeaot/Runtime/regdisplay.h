@@ -74,11 +74,6 @@ inline TADDR GetRegdisplayFP(REGDISPLAY *display)
     return (TADDR)*display->GetEbpLocation();
 }
 
-inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display)
-{
-    return (LPVOID)display->GetEbpLocation();
-}
-
 inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 {
     display->PCTAddr = addr;

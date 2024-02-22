@@ -175,7 +175,7 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                _signature ??= new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConventionCdecl, 0,
                             Context.GetWellKnownType(WellKnownType.Int32),
                             new TypeDesc[2] {
                                 Context.GetWellKnownType(WellKnownType.Int32),

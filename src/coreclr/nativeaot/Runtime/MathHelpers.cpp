@@ -9,7 +9,7 @@
 // Floating point and 64-bit integer math helpers.
 //
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpDbl2ULng(double val)
 {
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
@@ -29,7 +29,7 @@ EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
 #undef max
 #include <cmath>
 
-EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
+EXTERN_C NATIVEAOT_API float __cdecl RhpFltRem(float dividend, float divisor)
 {
     //
     // From the ECMA standard:
@@ -54,7 +54,7 @@ EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float di
     return fmodf(dividend,divisor);
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
+EXTERN_C NATIVEAOT_API double __cdecl RhpDblRem(double dividend, double divisor)
 {
     //
     // From the ECMA standard:
@@ -91,13 +91,13 @@ EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpUDiv(uint32_t i, uint32_t j)
     return i / j;
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLDiv(int64_t i, int64_t j)
+EXTERN_C NATIVEAOT_API int64_t __cdecl RhpLDiv(int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpULDiv(uint64_t i, uint64_t j)
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpULDiv(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
@@ -115,64 +115,66 @@ EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpUMod(uint32_t i, uint32_t j)
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLMod(int64_t i, int64_t j)
+EXTERN_C NATIVEAOT_API int64_t __cdecl RhpLMod(int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpULMod(uint64_t i, uint64_t j)
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpULMod(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLMul(int64_t i, int64_t j)
+EXTERN_C NATIVEAOT_API int64_t __cdecl RhpLMul(int64_t i, int64_t j)
 {
     return i * j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpULMul(uint64_t i, uint64_t j)
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpULMul(uint64_t i, uint64_t j)
 {
     return i * j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpLRsz(uint64_t i, int32_t j)
+#ifndef TARGET_X86
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpLRsz(uint64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLRsh(int64_t i, int32_t j)
+EXTERN_C NATIVEAOT_API int64_t __cdecl RhpLRsh(int64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLLsh(int64_t i, int32_t j)
+EXTERN_C NATIVEAOT_API int64_t __cdecl RhpLLsh(int64_t i, int32_t j)
 {
     return i << (j & 0x3f);
 }
+#endif
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
+EXTERN_C NATIVEAOT_API int64_t __cdecl RhpDbl2Lng(double val)
 {
     return (int64_t)val;
 }
 
-EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
+EXTERN_C NATIVEAOT_API int32_t __cdecl RhpDbl2Int(double val)
 {
     return (int32_t)val;
 }
 
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
+EXTERN_C NATIVEAOT_API uint32_t __cdecl RhpDbl2UInt(double val)
 {
     return (uint32_t)val;
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpLng2Dbl(int64_t val)
+EXTERN_C NATIVEAOT_API double __cdecl RhpLng2Dbl(int64_t val)
 {
     return (double)val;
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpULng2Dbl(uint64_t val)
+EXTERN_C NATIVEAOT_API double __cdecl RhpULng2Dbl(uint64_t val)
 {
     return (double)val;
 }

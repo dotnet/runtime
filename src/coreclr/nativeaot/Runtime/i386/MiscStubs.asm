@@ -46,5 +46,114 @@ ALTERNATE_HELPER_ENTRY RhpEndCatch
 
 _RhpEndCatch ENDP
 
+;; *********************************************************************/
+;; llshl - long shift left
+;;
+;; Purpose:
+;;    Does a Long Shift Left (signed and unsigned are identical)
+;;    Shifts a long left any number of bits.
+;;
+;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
+;;
+;; Entry:
+;;    EDX:EAX - long value to be shifted
+;;        ECX - number of bits to shift by
+;;
+;; Exit:
+;;    EDX:EAX - shifted value
+;;
+RhpLLsh PROC public
+    ;; Reduce shift amount mod 64
+    and     ecx, 63
+
+    cmp     ecx, 32
+    jae     LLshMORE32
+
+    ;; Handle shifts of between bits 0 and 31
+    shld    edx, eax, cl
+    shl     eax, cl
+    ret
+
+LLshMORE32:
+    ;; Handle shifts of between bits 32 and 63
+    ;; The x86 shift instructions only use the lower 5 bits.
+    mov     edx, eax
+    xor     eax, eax
+    shl     edx, cl
+    ret
+RhpLLsh ENDP
+
+;; *********************************************************************/
+;; LRsh - long shift right
+;;
+;; Purpose:
+;;    Does a signed Long Shift Right
+;;    Shifts a long right any number of bits.
+;;
+;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
+;;
+;; Entry:
+;;    EDX:EAX - long value to be shifted
+;;        ECX - number of bits to shift by
+;;
+;; Exit:
+;;    EDX:EAX - shifted value
+;;
+RhpLRsh PROC public
+    ;; Reduce shift amount mod 64
+    and     ecx, 63
+
+    cmp     ecx, 32
+    jae     LRshMORE32
+
+    ;; Handle shifts of between bits 0 and 31
+    shrd    eax, edx, cl
+    sar     edx, cl
+    ret
+
+LRshMORE32:
+    ;; Handle shifts of between bits 32 and 63
+    ;; The x86 shift instructions only use the lower 5 bits.
+    mov     eax, edx
+    sar     edx, 31
+    sar     eax, cl
+    ret
+RhpLRsh ENDP
+
+;; *********************************************************************/
+;;  LRsz:
+;; Purpose:
+;;    Does a unsigned Long Shift Right
+;;    Shifts a long right any number of bits.
+;;
+;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
+;;
+;; Entry:
+;;    EDX:EAX - long value to be shifted
+;;        ECX - number of bits to shift by
+;;
+;; Exit:
+;;    EDX:EAX - shifted value
+;;
+RhpLRsz PROC public
+    ;; Reduce shift amount mod 64
+    and     ecx, 63
+
+    cmp     ecx, 32
+    jae     LRszMORE32
+
+    ;; Handle shifts of between bits 0 and 31
+    shrd    eax, edx, cl
+    shr     edx, cl
+    ret
+
+LRszMORE32:
+    ;; Handle shifts of between bits 32 and 63
+    ;; The x86 shift instructions only use the lower 5 bits.
+    mov     eax, edx
+    xor     edx, edx
+    shr     eax, cl
+    ret
+RhpLRsz ENDP
 
 end

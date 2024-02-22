@@ -132,7 +132,33 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        encoder.EmitINT3();
+                        // This is a weird helper. Codegen populated Arg0 and Arg1 with the values that the constructor
+                        // method expects. Codegen also passed us the generic context on stack.
+                        // We now need to load the delegate target method on the stack (using a dictionary lookup)
+                        // and the optional 4th parameter, and call the ctor.
+
+                        var target = (DelegateCreationInfo)_target;
+
+                        AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
+                        encoder.EmitMOV(encoder.TargetRegister.Result, ref storeAtEspPlus4);
+                        EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Result, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
+
+                        if (target.Thunk != null)
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 3);
+                            AddrMode storeAtEspPlus8 = new AddrMode(Register.ESP, null, 8, 0, AddrModeSize.Int32);
+                            encoder.EmitStackDup();
+                            encoder.EmitMOV(ref storeAtEspPlus8, encoder.TargetRegister.Result);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, target.Thunk);
+                            encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                        }
+                        else
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 2);
+                            encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                        }
+
+                        encoder.EmitJMP(target.Constructor);
                     }
                     break;
 
