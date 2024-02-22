@@ -246,7 +246,7 @@ namespace System.Collections.Concurrent.Tests
             GC.KeepAlive(queue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void ManySegments_ConcurrentDequeues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();

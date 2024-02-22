@@ -134,7 +134,7 @@ namespace System.IO.Pipelines.Tests
             Pipe.Reader.AdvanceTo(buffer.Start, buffer.Start);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void ReadAsyncCancellationDeadlock()
         {
             var cts = new CancellationTokenSource();

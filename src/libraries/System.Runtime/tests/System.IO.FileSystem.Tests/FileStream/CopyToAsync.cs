@@ -135,7 +135,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DerivedFileStream_ReadAsyncInvoked(bool useAsync)

@@ -28,7 +28,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public async Task CallMemoryReadWriteAsyncOnDerivedFileStream_ArrayMethodsUsed()
         {
             using (var fs = new DerivedFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 0x1000, FileOptions.None))
