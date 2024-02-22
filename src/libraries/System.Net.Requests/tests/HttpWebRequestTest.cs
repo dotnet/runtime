@@ -2178,9 +2178,8 @@ namespace System.Net.Tests
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
-                    var exception = bool.Parse(async) ?
-                        await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync()) :
-                        Assert.Throws<WebException>(() => request.GetResponse());
+                    var exception = 
+                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
                     tcs.SetResult();
                     Assert.NotNull(exception.Response);
                     using (var responseStream = exception.Response.GetResponseStream())
