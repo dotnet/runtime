@@ -297,7 +297,7 @@ collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help=
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file. Default is a constructed file name in the current directory.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
-collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets DOTNET_ZapDisable=1 and DOTNET_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
@@ -506,7 +506,7 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 def read_csv(path):
-    with open(path) as csv_file:
+    with open(path, encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file)
         return list(reader)
 
@@ -842,8 +842,7 @@ class SuperPMICollect:
             else:
                 dotnet_env["TieredCompilation"] = "0"
 
-            if self.coreclr_args.use_zapdisable:
-                dotnet_env["ZapDisable"] = "1"
+            if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
 
             logging.debug("Starting collection.")
@@ -4603,9 +4602,9 @@ def setup_args(args):
                             "Unable to set clean.")
 
         coreclr_args.verify(args,
-                            "use_zapdisable",
+                            "disable_r2r",
                             lambda unused: True,
-                            "Unable to set use_zapdisable")
+                            "Unable to set disable_r2r")
 
         coreclr_args.verify(args,
                             "tiered_compilation",
