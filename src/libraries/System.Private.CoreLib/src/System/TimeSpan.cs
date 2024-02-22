@@ -335,19 +335,19 @@ namespace System
         /// </exception>
         public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
-            Int128 totalMicroseconds = ((Int128)days * (Int128)MicrosecondsPerDay)
-                                     + ((Int128)hours * (Int128)MicrosecondsPerHour)
-                                     + ((Int128)minutes * (Int128)MicrosecondsPerMinute)
-                                     + ((Int128)seconds * (Int128)MicrosecondsPerSecond)
-                                     + ((Int128)milliseconds * (Int128)MicrosecondsPerMillisecond)
-                                     + (Int128)microseconds;
+            Int128 totalMicroseconds = Math.BigMul(days, MicrosecondsPerDay)
+                                     + Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
 
             if ((totalMicroseconds > MaxMicroseconds) || (totalMicroseconds < MinMicroseconds))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             }
             var ticks = (long)totalMicroseconds * TicksPerMicrosecond;
-            return new TimeSpan(ticks);
+            return TimeSpan.FromTicks(ticks);
         }
 
         /// <summary>
