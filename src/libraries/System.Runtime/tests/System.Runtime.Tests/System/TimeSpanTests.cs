@@ -449,12 +449,13 @@ namespace System.Tests
             // Each possibility for individual property to overflow or underflow
             for (var i = 0; i < individualMaxValues.Length; i++)
             {
-               object[] result = [ 0, 0, 0, 0, 0, 0 ];
-               var iVal = individualMaxValues[i] + 1;
-               result[i] = iVal;
-               yield return result;
-               result[i] = -iVal;
-               yield return result;
+                var iVal = individualMaxValues[i] + 1;
+               object[] resultPos = [ 0, 0, 0, 0, 0, 0 ];
+               resultPos[i] = iVal;
+               yield return resultPos;
+               object[] resultNeg = [ 0, 0, 0, 0, 0, 0 ];
+               resultNeg[i] = -iVal;
+               yield return resultNeg;
             }
             // Each possibility for 2 properties to overflow or underflow
             // while neither of them individually overflow or underflow
@@ -464,13 +465,14 @@ namespace System.Tests
                 {
                     var iVal = individualMaxValues[i];
                     var jVal = individualMaxValues[j];
-                    object[] result = [ 0, 0, 0, 0, 0, 0 ];
-                    result[i] = iVal;
-                    result[j] = jVal;
-                    yield return result;
-                    result[i] = -iVal;
-                    result[j] = -jVal;
-                    yield return result;
+                    object[] resultPos = [ 0, 0, 0, 0, 0, 0 ];
+                    resultPos[i] = iVal;
+                    resultPos[j] = jVal;
+                    yield return resultPos;
+                    object[] resultNeg = [ 0, 0, 0, 0, 0, 0 ];
+                    resultNeg[i] = -iVal;
+                    resultNeg[j] = -jVal;
+                    yield return resultNeg;
                 }
             }
         }
