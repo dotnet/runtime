@@ -299,9 +299,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
-        ClassLayout* layout  = blkNode->GetLayout();
-        bool         doCpObj = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
-        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
         if (doCpObj && (size <= copyBlockUnrollLimit))
         {
