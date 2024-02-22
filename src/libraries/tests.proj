@@ -402,10 +402,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true' and '$(RunDisabledWasmTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\BackgroundExec\System.Runtime.InteropServices.JavaScript.BackgroundExec.Tests.csproj" />
-  </ItemGroup>
-
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
   </ItemGroup>
