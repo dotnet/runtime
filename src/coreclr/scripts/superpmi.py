@@ -1917,9 +1917,10 @@ def aggregate_diff_metrics(details):
             base_dict["Diffed PerfScore"] += base_perfscore
             diff_dict["Diffed PerfScore"] += diff_perfscore
 
-            log_relative_perfscore = math.log(max(diff_perfscore, 1.0) / max(base_perfscore, 1.0))
-            base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
-            diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+            if base_perfscore > 0:
+                log_relative_perfscore = math.log(diff_perfscore / base_perfscore)
+                base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+                diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
 
             base_dict["Diffed contexts"] += 1
             diff_dict["Diffed contexts"] += 1
