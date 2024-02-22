@@ -830,7 +830,7 @@ namespace System.Collections.Tests
         private Queue _queueDaughter;
         private Queue _queueGrandDaughter;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void SyncRoot()
         {
             var queueMother = new Queue();
@@ -903,7 +903,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void SynchronizedEnqueue()
         {
             // Enqueue

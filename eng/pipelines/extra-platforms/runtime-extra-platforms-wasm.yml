@@ -322,3 +322,27 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
+
+  # Library tests with full threading & blocking .Wait
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      nameSuffix: _Threading_BlockingWait
+      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmAllowBlockingWait:true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      alwaysRun: ${{ variables.isRollingBuild }}
+      scenarios:
+        - WasmTestOnBrowser
+
+  # Library tests with full threading & running tests on thread pool
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      nameSuffix: _Threading_BackgroundExec
+      extraBuildArgs: /p:WasmEnableThreads=true /p:_XUnitBackgroundExec=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - WasmTestOnBrowser

@@ -13,7 +13,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class PartitionerStaticTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestStaticPartitioningIList()
         {
             RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 0);
@@ -21,7 +21,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestStaticPartitioningArray()
         {
             RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 1);
@@ -29,7 +29,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 1);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestLoadBalanceIList()
         {
             RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 2);
@@ -37,7 +37,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestLoadBalanceArray()
         {
             RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 3);
@@ -45,7 +45,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void TestLoadBalanceEnumerator()
         {
             RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 4);

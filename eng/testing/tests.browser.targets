@@ -87,8 +87,9 @@
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll</_AppArgs>
 
-    <_XUnitBackgroundExec Condition="'$(_XUnitBackgroundExec)' == '' and '$(WasmEnableThreads)' == 'true'">true</_XUnitBackgroundExec>
     <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
+
+    <WasmXHarnessMonoArgs Condition="'$(_WasmAllowBlockingWait)' == 'true'">$(WasmXHarnessMonoArgs) --allow-blocking-wait</WasmXHarnessMonoArgs>
     <WasmXHarnessMonoArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsWasmBackgroundExec=true</WasmXHarnessMonoArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 

@@ -114,7 +114,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void Update_HighConcurrency()
         {
             UpdateHelper<ImmutableList<int>>(func =>
@@ -180,7 +180,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void Update_CarefullyScheduled()
         {
             UpdateHelper<ImmutableHashSet<int>>(func =>
@@ -239,7 +239,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public void UpdateArray_CarefullyScheduled()
         {
             UpdateArrayHelper<int>(func =>

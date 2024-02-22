@@ -10,7 +10,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class BlockingCollectionCancellationTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void InternalCancellation_CompleteAdding_Negative()
         {
             BlockingCollection<int> coll1 = new BlockingCollection<int>();
@@ -26,7 +26,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while waiting
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void InternalCancellation_WakingUp()
         {
             for (int test = 0; test < 2; test++)
@@ -60,7 +60,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void ExternalCancel_Negative()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(); //empty collection.
@@ -96,7 +96,7 @@ namespace System.Collections.Concurrent.Tests
                cs.Token);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void ExternalCancel_AddToAny()
         {
             for (int test = 0; test < 3; test++)
@@ -129,7 +129,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
         public static void ExternalCancel_GetConsumingEnumerable()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>();

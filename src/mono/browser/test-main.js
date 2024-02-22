@@ -135,6 +135,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.runtimeArgs.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             runArgs.enableGC = false;
+        } else if (currentArg == "--allow-blocking-wait") {
+            runArgs.allowBlockingWait = true;
         } else if (currentArg == "--diagnostic-tracing") {
             runArgs.diagnosticTracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
@@ -255,7 +257,6 @@ function configureRuntime(dotnet, runArgs) {
         .withConfig({
             loadAllSatelliteResources: true
         });
-
     if (ENVIRONMENT_IS_NODE) {
         dotnet
             .withEnvironmentVariable("NodeJSPlatform", process.platform)
@@ -277,6 +278,11 @@ function configureRuntime(dotnet, runArgs) {
     // dotnet.withEnvironmentVariable("DOTNET_DebugWriteToStdErr", "1")
 
     if (ENVIRONMENT_IS_WEB) {
+        if (runArgs.allowBlockingWait) {
+            dotnet.withConfig({
+                jsThreadBlockingMode: 100 /* JSThreadBlockingMode.AllowBlockingWait */
+            });
+        }
         if (runArgs.interpreterPgo)
             dotnet.withInterpreterPgo(true);
         dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
