@@ -329,6 +329,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     do {
         if (!tree->gtOverflow() && varTypeIsFloating(srcType) &&  varTypeIsIntegral(dstType))
         {
+            if (varTypeIsLong(dstType) && (srcType == TYP_FLOAT))
+            {
+                oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+                srcType = TYP_DOUBLE;
+            }
             if (tree->IsSaturatedConversion())
             {
                 break;
@@ -417,7 +422,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     //get the max value vector
                     
                     GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal)) : gtNewDconNodeF(static_cast<float>(actualMaxVal));
-                    GenTree* max_valDup = gtNewIconNode(actualMaxVal, dstType);
+                    GenTree* max_valDup = (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewLconNode(actualMaxVal);
                     max_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
                     max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_valDup, destFieldType, 16);
                     
@@ -433,6 +438,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     GenTree* tree1 = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
 
                     //usage 2 --> use thecompared mask with input value and max value to blend
+                    // GenTree* dummy = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewLconNode(2), destFieldType, 16);
                     saturate_val = gtNewSimdCndSelNode(TYP_SIMD16, saturate_val, max_valDup, tree1, destFieldType, 16);
                     saturate_val = gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, destFieldType, 16);
                     return fgMorphTree(saturate_val);
