@@ -607,9 +607,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
                     return _compilation.NodeFactory.ExternSymbol("RhpGcPoll");
 
-                case CorInfoHelpFunc.CORINFO_HELP_ENDCATCH:
-                    return _compilation.NodeFactory.ExternSymbol("RhpEndCatch");
-
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
                     break;

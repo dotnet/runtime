@@ -13,7 +13,6 @@ include AsmMacros.inc
 ;; allocation context then automatically fallback to the slow allocation path.
 ;;  ECX == MethodTable
 FASTCALL_FUNC   RhpNewFast, 4
-ALTERNATE_HELPER_ENTRY RhpNewFast
 
         ;; edx = GetThread(), TRASHES eax
         INLINE_GETTHREAD edx, eax
@@ -93,7 +92,6 @@ FASTCALL_ENDFUNC
 ;; Allocate non-array object with finalizer.
 ;;  ECX == MethodTable
 FASTCALL_FUNC   RhpNewFinalizable, 4
-ALTERNATE_HELPER_ENTRY RhpNewFinalizable
         ;; Create EBP frame.
         push        ebp
         mov         ebp, esp
@@ -142,7 +140,6 @@ FASTCALL_ENDFUNC
 ;;  ECX == MethodTable
 ;;  EDX == element count
 FASTCALL_FUNC   RhNewString, 8
-ALTERNATE_HELPER_ENTRY RhNewString
 
         push        ecx
         push        edx
@@ -255,7 +252,6 @@ FASTCALL_ENDFUNC
 ;;  ECX == MethodTable
 ;;  EDX == element count
 FASTCALL_FUNC   RhpNewArray, 8
-ALTERNATE_HELPER_ENTRY RhpNewArray
 
         push        ecx
         push        edx

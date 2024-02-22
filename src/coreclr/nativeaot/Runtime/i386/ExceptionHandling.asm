@@ -10,8 +10,6 @@
 
 include AsmMacros.inc
 
-RhpThrowHwEx equ @RhpThrowHwEx@8
-
 ;; input:   ECX: possible exception object
 ;;          EDX: funclet IP
 ;;          EAX: funclet EBP
@@ -19,7 +17,7 @@ CALL_FUNCLET  macro  SUFFIX
         push    ebp
         mov     ebp, eax
         call    edx
-ALTERNATE_ENTRY RhpCall&SUFFIX&Funclet2
+ALTERNATE_ENTRY _RhpCall&SUFFIX&Funclet2
         pop     ebp
 endm
 
@@ -83,7 +81,7 @@ FASTCALL_FUNC  RhpThrowHwEx, 8
         ;; edx contains the address of the ExInfo
         call    RhThrowHwEx
 
-ALTERNATE_ENTRY RhpThrowHwEx2
+ALTERNATE_ENTRY _RhpThrowHwEx2
 
         ;; no return
         int 3
@@ -100,7 +98,6 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpThrowEx, 4
-ALTERNATE_HELPER_ENTRY RhpThrowEx
 
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
@@ -161,7 +158,7 @@ ALTERNATE_HELPER_ENTRY RhpThrowEx
         ;; edx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY _RhpThrowEx2
 
         ;; no return
         int 3
@@ -180,8 +177,6 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpRethrow, 0
-ALTERNATE_HELPER_ENTRY RhpRethrow
-
 
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
@@ -232,7 +227,7 @@ ALTERNATE_HELPER_ENTRY RhpRethrow
         ;; edx contains the address of the new ExInfo
         call    RhRethrow
 
-ALTERNATE_ENTRY RhpRethrow2
+ALTERNATE_ENTRY _RhpRethrow2
 
         ;; no return
         int 3
@@ -285,7 +280,6 @@ endm
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallCatchFunclet, 16
-ALTERNATE_HELPER_ENTRY RhpCallCatchFunclet
 
         FUNCLET_CALL_PROLOGUE 2
 
@@ -391,7 +385,6 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallFinallyFunclet, 8
-ALTERNATE_HELPER_ENTRY RhpCallFinallyFunclet
 
         FUNCLET_CALL_PROLOGUE 0
 
@@ -457,7 +450,6 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallFilterFunclet, 12
-ALTERNATE_HELPER_ENTRY RhpCallFilterFunclet
 
         FUNCLET_CALL_PROLOGUE 0
 

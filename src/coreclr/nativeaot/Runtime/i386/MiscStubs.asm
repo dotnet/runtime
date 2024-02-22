@@ -18,8 +18,7 @@ include AsmMacros.inc
 ; NOTE: this helper will modify a value of esp and must establish the frame pointer.
 PROBE_STEP equ 1000h
 
-_RhpStackProbe PROC public
-ALTERNATE_HELPER_ENTRY RhpStackProbe
+RhpStackProbe PROC public
     ; On entry:
     ;   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
     ;
@@ -39,13 +38,7 @@ ProbeLoop:
     pop     ebp
     ret
 
-_RhpStackProbe ENDP
-
-_RhpEndCatch PROC stdcall public
-ALTERNATE_HELPER_ENTRY RhpEndCatch
-    int 3
-
-_RhpEndCatch ENDP
+RhpStackProbe ENDP
 
 ;; *********************************************************************/
 ;; llshl - long shift left

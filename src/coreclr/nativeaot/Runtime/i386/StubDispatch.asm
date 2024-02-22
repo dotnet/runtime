@@ -99,7 +99,7 @@ RhpInterfaceDispatchSlow endp
 RhpInterfaceDispatchNullReference proc public
         push    ebp
         mov     ebp, esp
-ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation
+ALTERNATE_ENTRY _RhpInterfaceDispatchAVLocation
         mov     ebx, [ecx]  ;; This should A/V
         int     3
 RhpInterfaceDispatchNullReference endp
@@ -122,8 +122,7 @@ _RhpVTableOffsetDispatch endp
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
 FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
-ALTERNATE_HELPER_ENTRY RhpInitialDynamicInterfaceDispatch
-ALTERNATE_ENTRY RhpInitialInterfaceDispatch
+ALTERNATE_ENTRY _RhpInitialInterfaceDispatch
         jmp RhpInterfaceDispatchSlow
 FASTCALL_ENDFUNC
 

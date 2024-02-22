@@ -10,7 +10,6 @@
 include AsmMacros.inc
 
 FASTCALL_FUNC  RhpLockCmpXchg64, 20
-ALTERNATE_HELPER_ENTRY RhpLockCmpXchg64
 
 _value$ = 8
 _comparand$ = 16
@@ -22,7 +21,7 @@ _comparand$ = 16
         push    esi
         mov     esi, ecx
         mov     ecx, DWORD PTR _value$[esp+8]
-ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
+ALTERNATE_ENTRY _RhpLockCmpXchg64AVLocation
         lock cmpxchg8b QWORD PTR [esi]
         pop     esi
         pop     ebx

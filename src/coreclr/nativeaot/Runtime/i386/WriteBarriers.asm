@@ -100,14 +100,11 @@ DEFINE_WRITE_BARRIER macro DESTREG, REFREG
 ;; decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
 ;; location is in one of the other general registers determined by the value of REFREG.
 FASTCALL_FUNC RhpAssignRef&REFREG&, 8
-ALTERNATE_HELPER_ENTRY RhpAssignRef&REFREG&
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    @RhpAssignRef@8 label proc
-    PUBLIC @RhpAssignRef@8
-    ALTERNATE_HELPER_ENTRY RhpAssignRef
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
+    ALTERNATE_ENTRY RhpAssignRef
+    ALTERNATE_ENTRY _RhpAssignRefAVLocation
     endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -199,14 +196,11 @@ DEFINE_CHECKED_WRITE_BARRIER macro DESTREG, REFREG
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 8
-ALTERNATE_HELPER_ENTRY RhpCheckedAssignRef&REFREG&
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    @RhpCheckedAssignRef@8 label proc
-    PUBLIC @RhpCheckedAssignRef@8
-    ALTERNATE_HELPER_ENTRY RhpCheckedAssignRef
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+    ALTERNATE_ENTRY RhpCheckedAssignRef
+    ALTERNATE_ENTRY _RhpCheckedAssignRefAVLocation
     endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -244,8 +238,7 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, EBP
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 ;; pass third argument in EAX
 FASTCALL_FUNC RhpCheckedLockCmpXchg, 12
-ALTERNATE_HELPER_ENTRY RhpCheckedLockCmpXchg
-ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
+ALTERNATE_ENTRY _RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [ecx], edx
     jne              RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
 
@@ -257,12 +250,11 @@ FASTCALL_ENDFUNC
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedXchgAVLocation@0
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 FASTCALL_FUNC RhpCheckedXchg, 8
-ALTERNATE_HELPER_ENTRY RhpCheckedXchg
 
     ;; Setup eax with the new object for the exchange, that way it will automatically hold the correct result
     ;; afterwards and we can leave edx unaltered ready for the GC write barrier below.
     mov             eax, edx
-ALTERNATE_ENTRY RhpCheckedXchgAVLocation
+ALTERNATE_ENTRY _RhpCheckedXchgAVLocation
     xchg            [ecx], eax
 
     DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, ECX, EDX, ret
@@ -281,10 +273,9 @@ FASTCALL_ENDFUNC
 ;;      ecx: trashed
 ;;
 FASTCALL_FUNC RhpByRefAssignRef, 8
-ALTERNATE_HELPER_ENTRY RhpByRefAssignRef
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+ALTERNATE_ENTRY _RhpByRefAssignRefAVLocation1
     mov     ecx, [esi]
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
+ALTERNATE_ENTRY _RhpByRefAssignRefAVLocation2
     mov     [edi], ecx
 
     ;; Check whether the writes were even into the heap. If not there's no card update required.
