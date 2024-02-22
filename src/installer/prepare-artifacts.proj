@@ -23,6 +23,8 @@
   </PropertyGroup>
   <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <Import Project="$(RepositoryEngineeringDir)Publishing.props" Condition="Exists('$(RepositoryEngineeringDir)Publishing.props')" />
+
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -105,36 +107,47 @@
     <ItemGroup>
       <ItemsToPush Remove="@(ItemsToPush)" />
 
-      <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
+      <ItemsToPush Include="@(ShippingNupkgToPublishFile)">
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
+      </ItemsToPush>
+
       <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
-      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
+
+      <ItemsToPush Include="@(SymbolNupkgToPublishFile)">
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
+      </ItemsToPush>
 
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
         Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
         <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
       </ItemsToPush>
 
       <ItemsToPush Include="@(GeneratedChecksumFile)">
         <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
         <Category>Checksum</Category>
         <PublishFlatContainer>true</PublishFlatContainer>
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
       </ItemsToPush>
 
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)productVersion.txt">
         <RelativeBlobPath>$(InstallersRelativePath)productVersion.txt</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
       </ItemsToPush>
 
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt">
         <RelativeBlobPath>$(InstallersRelativePath)runtime-productVersion.txt</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
       </ItemsToPush>
 
       <ItemsToPush Include="@(WorkloadsVSInsertionFile)">
         <RelativeBlobPath>$(InstallersRelativePath)workloads/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
+        <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
       </ItemsToPush>
 
       <!-- Source build intermediated packages will be pushed and signed by the sourcebuild leg. -->
