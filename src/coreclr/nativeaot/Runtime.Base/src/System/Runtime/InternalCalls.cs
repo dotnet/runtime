@@ -209,11 +209,11 @@ namespace System.Runtime
 
         [RuntimeImport(Redhawk.BaseName, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault, bool* fIsExceptionIntercepted);
+        internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault);
 
         [RuntimeImport(Redhawk.BaseName, "RhpSfiNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
+        internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke);
 
         //
         // Miscellaneous helpers.

@@ -17,6 +17,18 @@ namespace ILCompiler.DependencyAnalysis.X86
         public ObjectDataBuilder Builder;
         public TargetRegisterMap TargetRegister;
 
+        public void EmitMOV(Register reg, ref AddrMode addrMode)
+        {
+            Debug.Assert(addrMode.Size != AddrModeSize.Int8 && addrMode.Size != AddrModeSize.Int16);
+            EmitIndirInstruction(0x8B, (byte)reg, ref addrMode);
+        }
+
+        public void EmitLEA(Register reg, ref AddrMode addrMode)
+        {
+            Debug.Assert(addrMode.Size != AddrModeSize.Int8 && addrMode.Size != AddrModeSize.Int16);
+            EmitIndirInstruction(0x8D, (byte)reg, ref addrMode);
+        }
+
         public void EmitCMP(ref AddrMode addrMode, sbyte immediate)
         {
             if (addrMode.Size == AddrModeSize.Int16)
@@ -31,6 +43,19 @@ namespace ILCompiler.DependencyAnalysis.X86
                 Builder.EmitByte(0x66);
             EmitIndirInstruction((byte)((addrMode.Size != AddrModeSize.Int8) ? 0x83 : 0x80), (byte)0, ref addrMode);
             Builder.EmitByte((byte)immediate);
+        }
+
+        public void EmitCALL(ISymbolNode symbol)
+        {
+            if (symbol.RepresentsIndirectionCell)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                Builder.EmitByte(0xE8);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            }
         }
 
         public void EmitJMP(ISymbolNode symbol)
@@ -48,16 +73,40 @@ namespace ILCompiler.DependencyAnalysis.X86
             }
         }
 
+        public void EmitJE(ISymbolNode symbol)
+        {
+            if (symbol.RepresentsIndirectionCell)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                Builder.EmitByte(0x0f);
+                Builder.EmitByte(0x84);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            }
+        }
+
         public void EmitXOR(Register register1, Register register2)
         {
             Builder.EmitByte(0x33);
             Builder.EmitByte((byte)(0xC0 | ((byte)register1 << 3) | (byte)register2));
         }
 
+        public void EmitZeroReg(Register reg)
+        {
+            EmitXOR(reg, reg);
+        }
+
         public void EmitPUSH(sbyte imm8)
         {
             Builder.EmitByte(0x6A);
             Builder.EmitByte(unchecked((byte)imm8));
+        }
+
+        public void EmitPUSH(Register reg)
+        {
+            Builder.EmitByte((byte)(0x50 + (byte)reg));
         }
 
         public void EmitPUSH(ISymbolNode node)
@@ -101,6 +150,11 @@ namespace ILCompiler.DependencyAnalysis.X86
         public void EmitINT3()
         {
             Builder.EmitByte(0xCC);
+        }
+
+        public void EmitJmpToAddrMode(ref AddrMode addrMode)
+        {
+            EmitIndirInstruction(0xFF, 0x4, ref addrMode);
         }
 
         public void EmitRET()

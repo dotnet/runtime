@@ -260,7 +260,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("IsInstanceOfClass", null);
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("CheckCastAny", null);
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
                     methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("CheckCastInterface", null);

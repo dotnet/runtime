@@ -184,12 +184,14 @@ RtlVirtualUnwind_Unsafe(
 #ifdef HOST_X86
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
+    DWORD EndAddress;
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
 typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #endif // HOST_X86
 #endif // !HOST_UNIX
 
@@ -207,7 +209,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    PTR_UNWIND_INFO pUnwindInfo = (PTR_UNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
+    PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
 
     return FunctionEntry->BeginAddress + pUnwindInfo->FunctionLength;
 }

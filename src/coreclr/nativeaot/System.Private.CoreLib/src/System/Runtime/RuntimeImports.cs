@@ -534,18 +534,20 @@ namespace System.Runtime
         //
         // Blob support
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhFindBlob")]
-        private static extern unsafe bool RhFindBlob(ref TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        private static unsafe partial int RhFindBlob(ref TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob);
 
         internal static unsafe bool RhFindBlob(TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob)
         {
-            return RhFindBlob(ref typeManagerHandle, blobId, ppbBlob, pcbBlob);
+            return RhFindBlob(ref typeManagerHandle, blobId, ppbBlob, pcbBlob) != 0;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
-        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static unsafe partial TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]

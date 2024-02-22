@@ -130,7 +130,12 @@ namespace Internal.JitInterface
 
         private static string GetTargetSpec(TargetDetails target)
         {
-            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
+            string targetOSComponent = target.OperatingSystem switch
+            {
+                TargetOS.Windows when target.Architecture == TargetArchitecture.X86 => "win_aot",
+                TargetOS.Windows => "win",
+                _ => "unix"
+            };
             string targetArchComponent = target.Architecture switch
             {
                 TargetArchitecture.X86 => "x86",
