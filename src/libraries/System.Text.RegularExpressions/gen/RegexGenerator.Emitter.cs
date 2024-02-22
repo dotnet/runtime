@@ -1056,7 +1056,7 @@ namespace System.Text.RegularExpressions.Generator
                 StringComparison stringComparison = opts.FindMode is FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight ?
                     StringComparison.OrdinalIgnoreCase :
                     StringComparison.Ordinal;
-                string fieldName = GetSHA256FieldName($"s_indexOfAnyStrings_{stringComparison}", prefixes);
+                string fieldName = GetSHA256FieldName($"s_indexOfAnyStrings_{stringComparison}_", prefixes);
 
                 if (!requiredHelpers.ContainsKey(fieldName))
                 {

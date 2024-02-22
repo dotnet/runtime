@@ -11,30 +11,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
     internal static class RegexPrefixAnalyzer
     {
-        /// <summary>Cache of ToString() strings for the ASCII chars.</summary>
-        /// <remarks>The strings are lazily created on first use.</remarks>
-        private static string[]? s_asciiCharStrings;
-
-        /// <summary>Gets the ToString() string for the specified char.</summary>
-        private static string GetCharString(char ch)
-        {
-            // If the character isn't ASCII, just ToString it.
-            if (ch >= 128)
-            {
-                return ch.ToString();
-            }
-
-            // Use a lazily-initialized cache of strings for ASCII characters. The overall cache is initialized
-            // with Interlocked.CompareExchange simply to avoid accidentally throwing out a lot of strings accidentally.
-
-            string[] asciiCharString =
-                s_asciiCharStrings ??
-                Interlocked.CompareExchange(ref s_asciiCharStrings, new string[128], null) ??
-                s_asciiCharStrings;
-
-            return asciiCharString[ch] ??= ch.ToString();
-        }
-
         /// <summary>Finds an array of multiple prefixes that a node can begin with.</summary>
         /// <param name="node">The node to search.</param>
         /// <param name="ignoreCase">true to find ordinal ignore-case prefixes; false for case-sensitive.</param>
