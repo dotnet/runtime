@@ -156,24 +156,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     using var cts = new CancellationTokenSource(8);
                     try {
                         mr.Wait(cts.Token);
-                    } catch (Exception ex) {
-                        if (ex is OperationCanceledException)
-                        {
-                            throw;
-                        }
-                    }
+                    } catch (OperationCanceledException) { /* ignore */ }
                 }},
                 new NamedCall { Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
                     using var sem = new SemaphoreSlim(2);
                     var cts = new CancellationTokenSource(8);
                     try {
                         sem.Wait(cts.Token);
-                    } catch (Exception ex) {
-                        if (ex is OperationCanceledException)
-                        {
-                            throw;
-                        }
-                    }
+                    } catch (OperationCanceledException) { /* ignore */ }
                 }},
         };
 
