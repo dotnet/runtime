@@ -5285,8 +5285,7 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //
 void Compiler::fgDebugCheckProfileWeights()
 {
-    const bool configEnabled  = (JitConfig.JitProfileChecks() >= 0) && fgHaveProfileWeights() && fgPredsComputed;
-    const bool resetSwitchMap = (m_switchDescMap == nullptr);
+    const bool configEnabled = (JitConfig.JitProfileChecks() >= 0) && fgHaveProfileWeights() && fgPredsComputed;
 
     if (configEnabled)
     {
@@ -5296,14 +5295,6 @@ void Compiler::fgDebugCheckProfileWeights()
     {
         ProfileChecks checks = ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::RAISE_ASSERT;
         fgDebugCheckProfileWeights(checks);
-    }
-
-    if (resetSwitchMap)
-    {
-        // m_switchDescMap did not exist beforehand, but we created it during profile checks
-        // (likely while iterating successor edges for a switch block).
-        // We don't want Debug behavior to diverge from Release behavior, so reset the map.
-        InvalidateUniqueSwitchSuccMap();
     }
 }
 
