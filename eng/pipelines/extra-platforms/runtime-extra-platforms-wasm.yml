@@ -330,7 +330,9 @@ jobs:
         - browser_wasm
       nameSuffix: _Threading_BlockingWait
       extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmAllowBlockingWait:true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      alwaysRun: ${{ variables.isRollingBuild }}
+      alwaysRun: true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - WasmTestOnBrowser
 
@@ -341,7 +343,7 @@ jobs:
         - browser_wasm
       nameSuffix: _Threading_BackgroundExec
       extraBuildArgs: /p:WasmEnableThreads=true /p:_XUnitBackgroundExec=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
