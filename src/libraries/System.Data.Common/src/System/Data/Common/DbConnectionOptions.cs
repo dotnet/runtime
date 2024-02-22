@@ -190,7 +190,7 @@ namespace System.Data.Common
             }
             if ((null != value) && value.Contains('\0'))
             {
-                throw ADP.InvalidValue(keyword);
+                throw ADP.InvalidValue(value);
             }
         }
     }
