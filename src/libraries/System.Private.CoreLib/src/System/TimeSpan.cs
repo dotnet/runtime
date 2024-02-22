@@ -313,7 +313,7 @@ namespace System
         /// days.
         /// </summary>
         /// <param name="days">Number of days.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of days.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -329,7 +329,7 @@ namespace System
         /// <param name="seconds">Number of seconds.</param>
         /// <param name="milliseconds">Number of milliseconds.</param>
         /// <param name="microseconds">Number of microseconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of days, hours, minutes, seconds, milliseconds, and microseconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -355,7 +355,7 @@ namespace System
         /// hours.
         /// </summary>
         /// <param name="hours">Number of hours.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of hours.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -370,7 +370,7 @@ namespace System
         /// <param name="seconds">Number of seconds.</param>
         /// <param name="milliseconds">Number of milliseconds.</param>
         /// <param name="microseconds">Number of microseconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of hours, minutes, seconds, milliseconds, and microseconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -382,7 +382,7 @@ namespace System
         /// minutes.
         /// </summary>
         /// <param name="minutes">Number of minutes.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of minutes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -396,7 +396,7 @@ namespace System
         /// <param name="seconds">Number of seconds.</param>
         /// <param name="milliseconds">Number of milliseconds.</param>
         /// <param name="microseconds">Number of microseconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of minutes, seconds, milliseconds, and microseconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -408,7 +408,7 @@ namespace System
         /// seconds.
         /// </summary>
         /// <param name="seconds">Number of seconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of seconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -421,7 +421,7 @@ namespace System
         /// <param name="seconds">Number of seconds.</param>
         /// <param name="milliseconds">Number of milliseconds.</param>
         /// <param name="microseconds">Number of microseconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of seconds, milliseconds, and microseconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -434,7 +434,7 @@ namespace System
         /// </summary>
         /// <param name="milliseconds">Number of milliseconds.</param>
         /// <param name="microseconds">Number of microseconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of milliseconds, and microseconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
@@ -445,7 +445,7 @@ namespace System
         /// microseconds.
         /// </summary>
         /// <param name="microseconds">Number of microseconds.</param>
-        /// <returns></returns>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of microseconds.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
