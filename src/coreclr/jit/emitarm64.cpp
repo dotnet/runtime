@@ -1092,6 +1092,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_FP_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 bitwise exclusive-or interleaved
         case IF_SVE_FQ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 bitwise permute
         case IF_SVE_FS_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract interleaved long
+        case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -11037,6 +11038,16 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg3));                        // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_FS_3A;
+            break;
+
+        case INS_sve_saba:
+        case INS_sve_uaba:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FW_3A;
             break;
 
         case INS_sve_clz:
@@ -22847,6 +22858,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FP_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 bitwise exclusive-or interleaved
         case IF_SVE_FQ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 bitwise permute
         case IF_SVE_FS_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract interleaved long
+        case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // nnnnn
@@ -26636,6 +26648,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_EV_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer clamp
         // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
         case IF_SVE_EM_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 saturating multiply-add high
+        case IF_SVE_FW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
         // <Zd>.Q, <Zn>.Q, <Zm>.Q
         case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
         // <Zda>.D, <Zn>.D, <Zm>.D
@@ -30438,6 +30451,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EL_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply-add long
         case IF_SVE_EN_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 saturating multiply-add interleaved long
         case IF_SVE_EO_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 saturating multiply-add long
+        case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
