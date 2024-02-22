@@ -1169,6 +1169,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/castclassvaluetype_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
