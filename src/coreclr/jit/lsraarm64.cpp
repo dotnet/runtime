@@ -2025,7 +2025,7 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
         return true;
     }
 
-    bool atConsecutiveRegsLoc = consecutiveRegistersLocation == nodeLocation;
+    bool atConsecutiveRegsLoc          = consecutiveRegistersLocation == nodeLocation;
     bool treeNeedsConsecutiveRegisters = false;
 
     if ((treeNode != nullptr) && treeNode->OperIsHWIntrinsic())
