@@ -240,13 +240,13 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, EBP
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedLockCmpXchgAVLocation@0
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
-;; pass third argument in EAX
 FASTCALL_FUNC RhpCheckedLockCmpXchg, 12
+    mov             eax, [esp+4]
 ALTERNATE_ENTRY _RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [ecx], edx
-    jne              RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
+    jne             RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, ECX, EDX, ret
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, ECX, EDX, ret 4
 
 FASTCALL_ENDFUNC
 
