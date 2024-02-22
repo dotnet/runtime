@@ -91,7 +91,8 @@ namespace Internal.IL.Stubs
                 // Type check
                 if (_method.Kind == ArrayMethodKind.Set)
                 {
-                    MethodDesc checkArrayStore = context.GetRuntimeImport("RhCheckArrayStore");
+                    MethodDesc checkArrayStore =
+                        context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore", null);
 
                     codeStream.EmitLdArg(0);
                     codeStream.EmitLdArg(_rank + argStartOffset);

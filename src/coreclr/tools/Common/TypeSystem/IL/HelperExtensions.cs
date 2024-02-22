@@ -33,20 +33,6 @@ namespace Internal.IL
             return helperMethod;
         }
 
-        public static MethodDesc GetRuntimeImport(this TypeSystemContext context, string methodName)
-        {
-            MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports");;
-            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
-            return helperMethod;
-        }
-
-        public static MethodDesc GetRuntimeExport(this TypeSystemContext context, string methodName)
-        {
-            MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", "RuntimeExports");;
-            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
-            return helperMethod;
-        }
-
         public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
         {
             MetadataType helperType = context.GetOptionalHelperType(typeName);
