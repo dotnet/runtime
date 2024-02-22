@@ -3200,3 +3200,723 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
     return true;
 }
+
+#ifndef CHECK_APP_DOMAIN
+#define CHECK_APP_DOMAIN    0
+#endif
+
+#ifdef FEATURE_NATIVEAOT
+// Use the lower 2 bits of the offsets stored in the tables
+// to encode properties
+
+const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
+
+//
+//  Note for untracked locals the flags allowed are "pinned" and "byref"
+//   and for tracked locals the flags allowed are "this" and "byref"
+//  Note that these definitions should also match the definitions of
+//   GC_CALL_INTERIOR and GC_CALL_PINNED in VM/gc.h
+//
+const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
+const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
+#if !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
+const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
+#endif
+#endif
+
+bool EnumGcRefs(PREGDISPLAY     pContext,
+                PTR_CBYTE       methodStart,
+                DWORD           curOffs,
+                GCInfoToken     gcInfoToken,
+                bool            isFunclet,
+                bool            isFilterFunclet,
+                unsigned        flags,
+                GCEnumCallback  pCallBack,
+                LPVOID          hCallBack)
+{
+#ifdef FEATURE_EH_FUNCLETS
+    if (flags & ParentOfFuncletStackFrame)
+    {
+        LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
+        return true;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    unsigned  EBP     = GetRegdisplayFP(pContext);
+    unsigned  ESP     = pContext->SP;
+
+    unsigned  ptrOffs;
+
+    unsigned  count;
+
+    hdrInfo   info;
+    PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info);
+#if 0
+    printf("EECodeManager::EnumGcRefs - EIP = %08x ESP = %08x  offset = %x  GC Info is at %08x\n", *pContext->pPC, ESP, curOffs, table);
+#endif
+
+
+    /* Extract the necessary information from the info block header */
+
+    table += DecodeGCHdrInfo(gcInfoToken,
+                             curOffs,
+                             &info);
+
+    _ASSERTE( curOffs <= info.methodSize);
+
+#ifdef  _DEBUG
+//    if ((gcInfoToken.Info == (void*)0x37760d0) && (curOffs == 0x264))
+//        __asm int 3;
+
+    if (trEnumGCRefs) {
+        static unsigned lastESP = 0;
+        unsigned        diffESP = ESP - lastESP;
+        if (diffESP > 0xFFFF) {
+            printf("------------------------------------------------------\n");
+        }
+        lastESP = ESP;
+        printf("EnumGCRefs [%s][%s] at %s.%s + 0x%03X:\n",
+               info.ebpFrame?"ebp":"   ",
+               info.interruptible?"int":"   ",
+               "UnknownClass","UnknownMethod", curOffs);
+        fflush(stdout);
+    }
+#endif
+
+    /* Are we in the prolog or epilog of the method? */
+
+    if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
+        info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+    {
+
+#if !DUMP_PTR_REFS
+        // Under normal circumstances the system will not suspend a thread
+        // if it is in the prolog or epilog of the function.   However ThreadAbort
+        // exception or stack overflows can cause EH to happen in a prolog.
+        // Once in the handler, a GC can happen, so we can get to this code path.
+        // However since we are tearing down this frame, we don't need to report
+        // anything and we can simply return.
+
+        _ASSERTE(flags & ExecutionAborted);
+#endif
+        return true;
+    }
+
+#ifdef _DEBUG
+#define CHK_AND_REPORT_REG(reg, doIt, iptr, regName)                    \
+        if  (doIt)                                                      \
+        {                                                               \
+            if (dspPtr)                                                 \
+                printf("    Live pointer register %s: ", #regName);     \
+                pCallBack(hCallBack,                                    \
+                          (OBJECTREF*)(pContext->Get##regName##Location()), \
+                          (iptr ? GC_CALL_INTERIOR : 0)                 \
+                          | CHECK_APP_DOMAIN                            \
+                          DAC_ARG(DacSlotLocation(reg, 0, false)));     \
+        }
+#else // !_DEBUG
+#define CHK_AND_REPORT_REG(reg, doIt, iptr, regName)                    \
+        if  (doIt)                                                      \
+                pCallBack(hCallBack,                                    \
+                          (OBJECTREF*)(pContext->Get##regName##Location()), \
+                          (iptr ? GC_CALL_INTERIOR : 0)                 \
+                          | CHECK_APP_DOMAIN                            \
+                          DAC_ARG(DacSlotLocation(reg, 0, false)));
+
+#endif // _DEBUG
+
+    /* What kind of a frame is this ? */
+
+    FrameType   frameType = FR_NORMAL;
+    TADDR       baseSP = 0;
+
+    if (info.handlers)
+    {
+        _ASSERTE(info.ebpFrame);
+
+        bool    hasInnerFilter, hadInnerFilter;
+        frameType = GetHandlerFrameInfo(&info, EBP,
+                                        ESP, (DWORD) IGNORE_VAL,
+                                        &baseSP, NULL,
+                                        &hasInnerFilter, &hadInnerFilter);
+        _ASSERTE(frameType != FR_INVALID);
+
+        /* If this is the parent frame of a filter which is currently
+           executing, then the filter would have enumerated the frame using
+           the filter PC.
+         */
+
+        if (hasInnerFilter)
+            return true;
+
+        /* If are in a try and we had a filter execute, we may have reported
+           GC refs from the filter (and not using the try's offset). So
+           we had better use the filter's end offset, as the try is
+           effectively dead and its GC ref's would be stale */
+
+        if (hadInnerFilter)
+        {
+            PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(EBP, &info);
+            curOffs = (unsigned)pFirstBaseSPslot[1] - 1;
+            _ASSERTE(curOffs < info.methodSize);
+
+            /* Extract the necessary information from the info block header */
+
+            table = PTR_CBYTE(gcInfoToken.Info);
+
+            table += DecodeGCHdrInfo(gcInfoToken,
+                                     curOffs,
+                                     &info);
+        }
+    }
+
+    bool        willContinueExecution = !(flags & ExecutionAborted);
+    unsigned    pushedSize = 0;
+
+    /* if we have been interrupted we don't have to report registers/arguments
+     * because we are about to lose this context anyway.
+     * Alas, if we are in a ebp-less method we have to parse the table
+     * in order to adjust ESP.
+     *
+     * Note that we report "this" for all methods, even if
+     * noncontinuable, because of the off chance they may be
+     * synchronized and we have to release the monitor on unwind. This
+     * could conceivably be optimized, but it turns out to be more
+     * expensive to check whether we're synchronized (which involves
+     * consulting metadata) than to just report "this" all the time in
+     * our most important scenarios.
+     */
+
+    if  (info.interruptible)
+    {
+        unsigned curOffsRegs = curOffs;
+
+        // Don't decrement curOffsRegs when it is 0, as it is an unsigned and will wrap to MAX_UINT
+        //
+        if (curOffsRegs > 0)
+        {
+            // If we are not on the active stack frame, we need to report gc registers
+            // that are live before the call. The reason is that the liveness of gc registers
+            // may change across a call to a method that does not return. In this case the instruction
+            // after the call may be a jump target and a register that didn't have a live gc pointer
+            // before the call may have a live gc pointer after the jump. To make sure we report the
+            // registers that have live gc pointers before the call we subtract 1 from curOffs.
+            if ((flags & ActiveStackFrame) == 0)
+            {
+                // We are not the top most stack frame (i.e. the ActiveStackFrame)
+                curOffsRegs--;   // decrement curOffsRegs
+            }
+        }
+
+        pushedSize = scanArgRegTableI(skipToArgReg(info, table), curOffsRegs, curOffs, &info);
+
+        RegMask   regs  = info.regMaskResult;
+        RegMask  iregs  = info.iregMaskResult;
+        ptrArgTP  args  = info.argMaskResult;
+        ptrArgTP iargs  = info.iargMaskResult;
+
+        _ASSERTE((isZero(args) || pushedSize != 0) || info.ebpFrame);
+        _ASSERTE((args & iargs) == iargs);
+        // Only synchronized methods and generic code that accesses
+        // the type context via "this" need to report "this".
+        // If its reported for other methods, its probably
+        // done incorrectly. So flag such cases.
+        _ASSERTE(info.thisPtrResult == REGI_NA /*||
+                 pCodeInfo->GetMethodDesc()->IsSynchronized() ||
+                 pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()*/);
+
+            /* now report registers and arguments if we are not interrupted */
+
+        if  (willContinueExecution)
+        {
+
+            /* Propagate unsafed registers only in "current" method */
+            /* If this is not the active method, then the callee wil
+             * trash these registers, and so we wont need to report them */
+
+            if (flags & ActiveStackFrame)
+            {
+                CHK_AND_REPORT_REG(REGI_EAX, regs & RM_EAX, iregs & RM_EAX, Eax);
+                CHK_AND_REPORT_REG(REGI_ECX, regs & RM_ECX, iregs & RM_ECX, Ecx);
+                CHK_AND_REPORT_REG(REGI_EDX, regs & RM_EDX, iregs & RM_EDX, Edx);
+            }
+
+            CHK_AND_REPORT_REG(REGI_EBX, regs & RM_EBX, iregs & RM_EBX, Ebx);
+            CHK_AND_REPORT_REG(REGI_EBP, regs & RM_EBP, iregs & RM_EBP, Ebp);
+            CHK_AND_REPORT_REG(REGI_ESI, regs & RM_ESI, iregs & RM_ESI, Esi);
+            CHK_AND_REPORT_REG(REGI_EDI, regs & RM_EDI, iregs & RM_EDI, Edi);
+            _ASSERTE(!(regs & RM_ESP));
+
+            /* Report any pending pointer arguments */
+
+            DWORD * pPendingArgFirst;       // points **AT** first parameter
+            if (!info.ebpFrame)
+            {
+                // -sizeof(void*) because we want to point *AT* first parameter
+                pPendingArgFirst = (DWORD *)(size_t)(ESP + pushedSize - sizeof(void*));
+            }
+            else
+            {
+                _ASSERTE(willContinueExecution);
+
+                if (info.handlers)
+                {
+                    // -sizeof(void*) because we want to point *AT* first parameter
+                    pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
+                }
+                else if (info.localloc)
+                {
+                    baseSP = *(DWORD *)(size_t)(EBP - GetLocallocSPOffset(&info));
+                    // -sizeof(void*) because we want to point *AT* first parameter
+                    pPendingArgFirst = (DWORD *)(size_t) (baseSP - sizeof(void*));
+                }
+                else
+                {
+                    // Note that 'info.stackSize includes the size for pushing EBP, but EBP is pushed
+                    // BEFORE EBP is set from ESP, thus (EBP - info.stackSize) actually points past
+                    // the frame by one DWORD, and thus points *AT* the first parameter
+
+                    pPendingArgFirst = (DWORD *)(size_t)(EBP - info.stackSize);
+                }
+            }
+
+            if  (!isZero(args))
+            {
+                unsigned   i = 0;
+                ptrArgTP   b(1);
+                for (; !isZero(args) && (i < MAX_PTRARG_OFS); i += 1, b <<= 1)
+                {
+                    if  (intersect(args,b))
+                    {
+                        unsigned    argAddr = (unsigned)(size_t)(pPendingArgFirst - i);
+                        bool        iptr    = false;
+
+                        setDiff(args, b);
+                        if (intersect(iargs,b))
+                        {
+                            setDiff(iargs, b);
+                            iptr   = true;
+                        }
+
+#ifdef _DEBUG
+                        if (dspPtr)
+                        {
+                            printf("    Pushed ptr arg  [E");
+                            if  (info.ebpFrame)
+                                printf("BP-%02XH]: ", EBP - argAddr);
+                            else
+                                printf("SP+%02XH]: ", argAddr - ESP);
+                        }
+#endif
+                        _ASSERTE(true == GC_CALL_INTERIOR);
+                        pCallBack(hCallBack, (OBJECTREF *)(size_t)argAddr, (int)iptr | CHECK_APP_DOMAIN
+                                  DAC_ARG(DacSlotLocation(info.ebpFrame ? REGI_EBP : REGI_ESP,
+                                                          info.ebpFrame ? EBP - argAddr : argAddr - ESP,
+                                                          true)));
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Is "this" enregistered. If so, report it as we might need to
+            // release the monitor for synchronized methods.
+            // Else, it is on the stack and will be reported below.
+
+            if (info.thisPtrResult != REGI_NA)
+            {
+                // Synchronized methods and methods satisfying
+                // MethodDesc::AcquiresInstMethodTableFromThis (i.e. those
+                // where "this" is reported in thisPtrResult) are
+                // not supported on value types.
+                _ASSERTE((regNumToMask(info.thisPtrResult) & info.iregMaskResult)== 0);
+
+                void * thisReg = getCalleeSavedReg(pContext, info.thisPtrResult);
+                pCallBack(hCallBack, (OBJECTREF *)thisReg, CHECK_APP_DOMAIN
+                          DAC_ARG(DacSlotLocation(info.thisPtrResult, 0, false)));
+            }
+        }
+    }
+    else /* not interruptible */
+    {
+        pushedSize = scanArgRegTable(skipToArgReg(info, table), curOffs, &info);
+
+        RegMask    regMask = info.regMaskResult;
+        RegMask   iregMask = info.iregMaskResult;
+        ptrArgTP   argMask = info.argMaskResult;
+        ptrArgTP  iargMask = info.iargMaskResult;
+        unsigned   argHnum = info.argHnumResult;
+        PTR_CBYTE   argTab = info.argTabResult;
+
+        // Only synchronized methods and generic code that accesses
+        // the type context via "this" need to report "this".
+        // If its reported for other methods, its probably
+        // done incorrectly. So flag such cases.
+        _ASSERTE(info.thisPtrResult == REGI_NA /*||
+                 pCodeInfo->GetMethodDesc()->IsSynchronized()   ||
+                 pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()*/);
+
+
+        /* now report registers and arguments if we are not interrupted */
+
+        if  (willContinueExecution)
+        {
+
+            /* Report all live pointer registers */
+
+            CHK_AND_REPORT_REG(REGI_EDI, regMask & RM_EDI, iregMask & RM_EDI, Edi);
+            CHK_AND_REPORT_REG(REGI_ESI, regMask & RM_ESI, iregMask & RM_ESI, Esi);
+            CHK_AND_REPORT_REG(REGI_EBX, regMask & RM_EBX, iregMask & RM_EBX, Ebx);
+            CHK_AND_REPORT_REG(REGI_EBP, regMask & RM_EBP, iregMask & RM_EBP, Ebp);
+
+            /* Esp cant be reported */
+            _ASSERTE(!(regMask & RM_ESP));
+            /* No callee-trashed registers */
+            _ASSERTE(!(regMask & RM_CALLEE_TRASHED));
+            /* EBP can't be reported unless we have an EBP-less frame */
+            _ASSERTE(!(regMask & RM_EBP) || !(info.ebpFrame));
+
+            /* Report any pending pointer arguments */
+
+            if (argTab != 0)
+            {
+                unsigned    lowBits, stkOffs, argAddr, val;
+
+                // argMask does not fit in 32-bits
+                // thus arguments are reported via a table
+                // Both of these are very rare cases
+
+                do
+                {
+                    val = fastDecodeUnsigned(argTab);
+
+                    lowBits = val &  OFFSET_MASK;
+                    stkOffs = val & ~OFFSET_MASK;
+                    _ASSERTE((lowBits == 0) || (lowBits == byref_OFFSET_FLAG));
+
+                    argAddr = ESP + stkOffs;
+#ifdef _DEBUG
+                    if (dspPtr)
+                        printf("    Pushed %sptr arg at [ESP+%02XH]",
+                               lowBits ? "iptr " : "", stkOffs);
+#endif
+                    _ASSERTE(byref_OFFSET_FLAG == GC_CALL_INTERIOR);
+                    pCallBack(hCallBack, (OBJECTREF *)(size_t)argAddr, lowBits | CHECK_APP_DOMAIN
+                              DAC_ARG(DacSlotLocation(REGI_ESP, stkOffs, true)));
+                }
+                while(--argHnum);
+
+                _ASSERTE(info.argTabResult + info.argTabBytes == argTab);
+            }
+            else
+            {
+                unsigned argAddr = ESP;
+
+                while (!isZero(argMask))
+                {
+                    _ASSERTE(argHnum-- > 0);
+
+                    if  (toUnsigned(argMask) & 1)
+                    {
+                        bool     iptr    = false;
+
+                        if (toUnsigned(iargMask) & 1)
+                            iptr = true;
+#ifdef _DEBUG
+                        if (dspPtr)
+                            printf("    Pushed ptr arg at [ESP+%02XH]",
+                                   argAddr - ESP);
+#endif
+                        _ASSERTE(true == GC_CALL_INTERIOR);
+                        pCallBack(hCallBack, (OBJECTREF *)(size_t)argAddr, (int)iptr | CHECK_APP_DOMAIN
+                                  DAC_ARG(DacSlotLocation(REGI_ESP, argAddr - ESP, true)));
+                    }
+
+                    argMask >>= 1;
+                    iargMask >>= 1;
+                    argAddr  += 4;
+                }
+
+            }
+
+        }
+        else
+        {
+            // Is "this" enregistered. If so, report it as we will need to
+            // release the monitor. Else, it is on the stack and will be
+            // reported below.
+
+            // For partially interruptible code, info.thisPtrResult will be
+            // the last known location of "this". So the compiler needs to
+            // generate information which is correct at every point in the code,
+            // not just at call sites.
+
+            if (info.thisPtrResult != REGI_NA)
+            {
+                // Synchronized methods on value types are not supported
+                _ASSERTE((regNumToMask(info.thisPtrResult) & info.iregMaskResult)== 0);
+
+                void * thisReg = getCalleeSavedReg(pContext, info.thisPtrResult);
+                pCallBack(hCallBack, (OBJECTREF *)thisReg, CHECK_APP_DOMAIN
+                          DAC_ARG(DacSlotLocation(info.thisPtrResult, 0, false)));
+            }
+        }
+
+    } //info.interruptible
+
+    /* compute the argument base (reference point) */
+
+    unsigned    argBase;
+
+    if (info.ebpFrame)
+        argBase = EBP;
+    else
+        argBase = ESP + pushedSize;
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
+#endif
+
+    unsigned ptrAddr;
+    unsigned lowBits;
+
+
+    /* Process the untracked frame variable table */
+
+#if defined(FEATURE_EH_FUNCLETS)   // funclets
+    // Filters are the only funclet that run during the 1st pass, and must have
+    // both the leaf and the parent frame reported.  In order to avoid double
+    // reporting of the untracked variables, do not report them for the filter.
+    //if (!pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
+    if (!isFilterFunclet)
+#endif // FEATURE_EH_FUNCLETS
+    {
+        count = info.untrackedCnt;
+        int lastStkOffs = 0;
+        while (count-- > 0)
+        {
+            int stkOffs = fastDecodeSigned(table);
+            stkOffs = lastStkOffs - stkOffs;
+            lastStkOffs = stkOffs;
+
+            _ASSERTE(0 == ~OFFSET_MASK % sizeof(void*));
+
+            lowBits  =   OFFSET_MASK & stkOffs;
+            stkOffs &=  ~OFFSET_MASK;
+
+            ptrAddr = argBase + stkOffs;
+            if (info.doubleAlign && stkOffs >= int(info.stackSize - sizeof(void*))) {
+                // We encode the arguments as if they were ESP based variables even though they aren't
+                // If this frame would have ben an ESP based frame,   This fake frame is one DWORD
+                // smaller than the real frame because it did not push EBP but the real frame did.
+                // Thus to get the correct EBP relative offset we have to adjust by info.stackSize-sizeof(void*)
+                ptrAddr = EBP + (stkOffs-(info.stackSize - sizeof(void*)));
+            }
+
+#ifdef  _DEBUG
+            if (dspPtr)
+            {
+                printf("    Untracked %s%s local at [E",
+                            (lowBits & pinned_OFFSET_FLAG) ? "pinned " : "",
+                            (lowBits & byref_OFFSET_FLAG)  ? "byref"   : "");
+
+                int   dspOffs = ptrAddr;
+                char  frameType;
+
+                if (info.ebpFrame) {
+                    dspOffs   -= EBP;
+                    frameType  = 'B';
+                }
+                else {
+                    dspOffs   -= ESP;
+                    frameType  = 'S';
+                }
+
+                if (dspOffs < 0)
+                    printf("%cP-%02XH]: ", frameType, -dspOffs);
+                else
+                    printf("%cP+%02XH]: ", frameType, +dspOffs);
+            }
+#endif
+
+            _ASSERTE((pinned_OFFSET_FLAG == GC_CALL_PINNED) &&
+                   (byref_OFFSET_FLAG  == GC_CALL_INTERIOR));
+            pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, lowBits | CHECK_APP_DOMAIN
+                      DAC_ARG(DacSlotLocation(info.ebpFrame ? REGI_EBP : REGI_ESP,
+                                              info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
+                                              true)));
+        }
+
+    }
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xCAFE);
+#endif
+
+    /* Process the frame variable lifetime table */
+    count = info.varPtrTableSize;
+
+    /* If we are not in the active method, we are currently pointing
+     * to the return address; at the return address stack variables
+     * can become dead if the call the last instruction of a try block
+     * and the return address is the jump around the catch block. Therefore
+     * we simply assume an offset inside of call instruction.
+     */
+
+    unsigned newCurOffs;
+
+    if (willContinueExecution)
+    {
+        newCurOffs = (flags & ActiveStackFrame) ?  curOffs    // after "call"
+                                                :  curOffs-1; // inside "call"
+    }
+    else
+    {
+        /* However if ExecutionAborted, then this must be one of the
+         * ExceptionFrames. Handle accordingly
+         */
+        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
+
+        newCurOffs = (flags & AbortingCall) ? curOffs-1 // inside "call"
+                                            : curOffs;  // at faulting instr, or start of "try"
+    }
+
+    ptrOffs    = 0;
+
+    while (count-- > 0)
+    {
+        int       stkOffs;
+        unsigned  begOffs;
+        unsigned  endOffs;
+
+        stkOffs = fastDecodeUnsigned(table);
+        begOffs  = ptrOffs + fastDecodeUnsigned(table);
+        endOffs  = begOffs + fastDecodeUnsigned(table);
+
+        _ASSERTE(0 == ~OFFSET_MASK % sizeof(void*));
+
+        lowBits  =   OFFSET_MASK & stkOffs;
+        stkOffs &=  ~OFFSET_MASK;
+
+        if (info.ebpFrame) {
+            stkOffs = -stkOffs;
+            _ASSERTE(stkOffs < 0);
+        }
+        else {
+            _ASSERTE(stkOffs >= 0);
+        }
+
+        ptrAddr = argBase + stkOffs;
+
+        /* Is this variable live right now? */
+
+        if (newCurOffs >= begOffs)
+        {
+            if (newCurOffs <  endOffs)
+            {
+#ifdef  _DEBUG
+                if (dspPtr) {
+                    printf("    Frame %s%s local at [E",
+                           (lowBits & byref_OFFSET_FLAG) ? "byref "   : "",
+#ifndef FEATURE_EH_FUNCLETS
+                           (lowBits & this_OFFSET_FLAG)  ? "this-ptr" : "");
+#else
+                           (lowBits & pinned_OFFSET_FLAG)  ? "pinned" : "");
+#endif
+
+
+                    int  dspOffs = ptrAddr;
+                    char frameType;
+
+                    if (info.ebpFrame) {
+                        dspOffs   -= EBP;
+                        frameType  = 'B';
+                    }
+                    else {
+                        dspOffs   -= ESP;
+                        frameType  = 'S';
+                    }
+
+                    if (dspOffs < 0)
+                        printf("%cP-%02XH]: ", frameType, -dspOffs);
+                    else
+                        printf("%cP+%02XH]: ", frameType, +dspOffs);
+                }
+#endif
+
+                unsigned flags = CHECK_APP_DOMAIN;
+#ifndef FEATURE_EH_FUNCLETS
+                // First  Bit : byref
+                // Second Bit : this
+                // The second bit means `this` not `pinned`. So we ignore it.
+                flags |= lowBits & byref_OFFSET_FLAG;
+#else
+                // First  Bit : byref
+                // Second Bit : pinned
+                // Both bits are valid
+                flags |= lowBits;
+#endif
+
+                _ASSERTE(byref_OFFSET_FLAG == GC_CALL_INTERIOR);
+                pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, flags
+                          DAC_ARG(DacSlotLocation(info.ebpFrame ? REGI_EBP : REGI_ESP,
+                                          info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
+                                          true)));
+            }
+        }
+        // exit loop early if start of live range is beyond PC, as ranges are sorted by lower bound
+        else break;
+
+        ptrOffs  = begOffs;
+    }
+
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBABE);
+#endif
+
+#ifdef FEATURE_EH_FUNCLETS   // funclets
+    //
+    // If we're in a funclet, we do not want to report the incoming varargs.  This is
+    // taken care of by the parent method and the funclet should access those arguments
+    // by way of the parent method's stack frame.
+    //
+    //if(pCodeInfo->IsFunclet())
+    if (isFunclet)
+    {
+        return true;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    /* Are we a varargs function, if so we have to report all args
+       except 'this' (note that the GC tables created by the x86 jit
+       do not contain ANY arguments except 'this' (even if they
+       were statically declared */
+
+    if (info.varargs) {
+        _ASSERTE("NOT IMPLEMENTED");
+        /*
+        LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));
+
+        PTR_BYTE argsStart;
+
+        if (info.ebpFrame || info.doubleAlign)
+            argsStart = PTR_BYTE((size_t)EBP) + 2* sizeof(void*);                 // pushed EBP and retAddr
+        else
+            argsStart = PTR_BYTE((size_t)argBase) + info.stackSize + sizeof(void*);   // ESP + locals + retAddr
+
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
+        // Note that I really want to say hCallBack is a GCCONTEXT, but this is pretty close
+        extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
+        _ASSERTE((void*) GcEnumObject == pCallBack);
+#endif
+        GCCONTEXT   *pCtx = (GCCONTEXT *) hCallBack;
+
+        // For varargs, look up the signature using the varArgSig token passed on the stack
+        PTR_VASigCookie varArgSig = *PTR_PTR_VASigCookie(argsStart);
+
+        promoteVarArgs(argsStart, varArgSig, pCtx);*/
+    }
+
+    return true;
+}

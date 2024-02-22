@@ -179,6 +179,7 @@ enum ICodeManagerFlags
     ExecutionAborted  =  0x0002, // execution of this function has been aborted
                                  // (i.e. it will not continue execution at the
                                  // current location)
+    AbortingCall      =  0x0004, // The current call will never return
     ParentOfFuncletStackFrame
                       =  0x0040, // A funclet for this frame was previously reported
 

@@ -50,6 +50,9 @@ struct REGDISPLAY
 #ifdef TARGET_X86
     TADDR PCTAddr;
 
+    inline unsigned long *GetEaxLocation() { return (unsigned long *)pRax; }
+    inline unsigned long *GetEcxLocation() { return (unsigned long *)pRcx; }
+    inline unsigned long *GetEdxLocation() { return (unsigned long *)pRdx; }
     inline unsigned long *GetEbpLocation() { return (unsigned long *)pRbp; }
     inline unsigned long *GetEbxLocation() { return (unsigned long *)pRbx; }
     inline unsigned long *GetEsiLocation() { return (unsigned long *)pRsi; }
