@@ -68,7 +68,7 @@ namespace System.Reflection
             }
         }
 
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName assemblyNameIfAny)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName assemblyNameIfAny, string fullEscapedName)
         {
             ModuleDesc module = (assemblyNameIfAny == null) ? _module :
                 _module.Context.ResolveAssembly(assemblyNameIfAny, throwIfNotFound: _throwIfNotFound);
@@ -96,7 +96,7 @@ namespace System.Reflection
             }
 
             if (_throwIfNotFound)
-                ThrowHelper.ThrowTypeLoadException(EscapeTypeName(typeName, nestedTypeNames), module);
+                ThrowHelper.ThrowTypeLoadException(fullEscapedName, module);
             return null;
         }
 

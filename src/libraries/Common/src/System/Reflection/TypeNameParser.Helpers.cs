@@ -10,6 +10,8 @@ namespace System.Reflection
 {
     internal partial struct TypeNameParser
     {
+        private const char EscapeCharacter = '\\';
+
 #if NETCOREAPP
         private static ReadOnlySpan<char> CharsToEscape => "\\[]+*&,";
 
@@ -22,36 +24,69 @@ namespace System.Reflection
             => Array.IndexOf(CharsToEscape, c) >= 0;
 #endif
 
-        private static string EscapeTypeName(string name)
+        private static string UnescapeTypeName(string name)
         {
-            if (name.AsSpan().IndexOfAny(CharsToEscape) < 0)
-                return name;
-
-            var sb = new ValueStringBuilder(stackalloc char[64]);
-            foreach (char c in name)
+            int indexOfEscapeCharacter = name.IndexOf(EscapeCharacter);
+            if (indexOfEscapeCharacter < 0)
             {
-                if (NeedsEscapingInTypeName(c))
-                    sb.Append('\\');
-                sb.Append(c);
+                return name;
+            }
+
+            // this code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#)
+            var sb = new ValueStringBuilder(stackalloc char[64]);
+            sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
+
+            for (int i = indexOfEscapeCharacter; i < name.Length;)
+            {
+                char c = name[i++];
+
+                if (c != EscapeCharacter)
+                {
+                    sb.Append(c);
+                }
+                else if (i < name.Length && name[i] == EscapeCharacter) // escaped escape character ;)
+                {
+                    sb.Append(c);
+                    i++; // escaped escape character followed by another escaped char like "\\\\\\+"
+                }
             }
 
             return sb.ToString();
         }
 
-        private static string EscapeTypeName(string typeName, ReadOnlySpan<string> nestedTypeNames)
+        /// <summary>
+        /// Initializes <paramref name="unescapedNames"/> only when some unescaping of nested names is required.
+        /// </summary>
+        private static void UnescapeTypeNames(ReadOnlySpan<string> names, ref string[]? unescapedNames)
         {
-            string fullName = EscapeTypeName(typeName);
-            if (nestedTypeNames.Length > 0)
+            if (names.IsEmpty) // nothing to check
             {
-                var sb = new StringBuilder(fullName);
-                for (int i = 0; i < nestedTypeNames.Length; i++)
-                {
-                    sb.Append('+');
-                    sb.Append(EscapeTypeName(nestedTypeNames[i]));
-                }
-                fullName = sb.ToString();
+                return;
             }
-            return fullName;
+
+            int i = 0;
+            for (; i < names.Length; i++)
+            {
+                if (names[i].Contains(EscapeCharacter))
+                {
+                    break;
+                }
+            }
+
+            if (i == names.Length) // nothing to escape
+            {
+                return;
+            }
+
+            unescapedNames = new string[names.Length];
+            for (int j = 0; j < i; j++)
+            {
+                unescapedNames[j] = names[j]; // copy what not needed escaping
+            }
+            for (; i < names.Length; i++)
+            {
+                unescapedNames[i] = UnescapeTypeName(names[i]); // escape the rest
+            }
         }
 
         private static (string typeNamespace, string name) SplitFullTypeName(string typeName)
@@ -97,12 +132,12 @@ namespace System.Reflection
                 }
                 string nonNestedParentName = current!.FullName;
 
-                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.GetAssemblyName());
+                Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.GetAssemblyName(), typeName.FullName);
                 return Make(type, typeName);
             }
             else if (typeName.UnderlyingType is null)
             {
-                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.GetAssemblyName());
+                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.GetAssemblyName(), typeName.FullName);
 
                 return Make(type, typeName);
             }

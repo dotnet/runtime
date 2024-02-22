@@ -60,6 +60,10 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("MissingClosingSquareBrackets`1[[type1, assembly1")] // missing ]]
         [InlineData("MissingClosingSquareBracket`1[[type1, assembly1]")] // missing ]
         [InlineData("CantMakeByRefToByRef&&")]
+        [InlineData("EscapeCharacterAtTheEnd\\")]
+        [InlineData("EscapeNonSpecialChar\\a")]
+        [InlineData("EscapeNonSpecialChar\\0")]
+        [InlineData("DoubleNestingChar++Bla")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));

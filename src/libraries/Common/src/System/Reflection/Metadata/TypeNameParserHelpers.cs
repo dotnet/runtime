@@ -28,11 +28,9 @@ namespace System.Reflection.Metadata
         internal const int Pointer = -2;
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
-        private const string EndOfTypeNameDelimiters = ".+";
-        private const string EndOfFullTypeNameDelimiters = "[]&*,+";
 #if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> _endOfTypeNameDelimitersSearchValues = SearchValues.Create(EndOfTypeNameDelimiters);
-        private static readonly SearchValues<char> _endOfFullTypeNameDelimitersSearchValues = SearchValues.Create(EndOfFullTypeNameDelimiters);
+        private static readonly SearchValues<char> _endOfTypeNameDelimitersSearchValues = SearchValues.Create(".+");
+        private static readonly SearchValues<char> _endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
 
         /// <returns>
@@ -122,9 +120,11 @@ namespace System.Reflection.Metadata
             return result.ToString();
         }
 
-        // Normalizes "not found" to input length, since caller is expected to slice.
+        /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
         {
+            isNestedType = false;
+
             // NET 6+ guarantees that MemoryExtensions.IndexOfAny has worst-case complexity
             // O(m * i) if a match is found, or O(m * n) if a match is not found, where:
             //   i := index of match position
@@ -139,20 +139,49 @@ namespace System.Reflection.Metadata
 
 #if NET8_0_OR_GREATER
             int offset = input.IndexOfAny(_endOfFullTypeNameDelimitersSearchValues);
-#elif NET6_0_OR_GREATER
-            int offset = input.IndexOfAny(EndOfTypeNameDelimiters);
-#else
-            int offset;
-            for (offset = 0; offset < input.Length; offset++)
+            if (offset < 0)
             {
-                if (EndOfFullTypeNameDelimiters.IndexOf(input[offset]) >= 0) { break; }
+                return input.Length; // no type name end chars were found, the whole input is the type name
             }
+
+            if (input[offset] == EscapeCharacter) // this is very rare (IL Emit or pure IL)
+            {
+                offset = GetUnescapedOffset(input, startOffset: offset); // this is slower, but very rare so acceptable
+            }
+#else
+            int offset = GetUnescapedOffset(input, startOffset: 0);
 #endif
             isNestedType = offset > 0 && offset < input.Length && input[offset] == '+';
+            return offset;
 
-            return (int)Math.Min((uint)offset, (uint)input.Length);
+            static int GetUnescapedOffset(ReadOnlySpan<char> input, int startOffset)
+            {
+                int offset = startOffset;
+                for (; offset < input.Length; offset++)
+                {
+                    char c = input[offset];
+                    if (c == EscapeCharacter)
+                    {
+                        offset++; // skip the escaped char
+
+                        if (offset == input.Length || // invalid name that ends with escape character
+                            !NeedsEscaping(input[offset])) // invalid name, escapes a char that does not need escaping
+                        {
+                            return -1;
+                        }
+                    }
+                    else if (NeedsEscaping(c))
+                    {
+                        break;
+                    }
+                }
+                return offset;
+            }
+
+            static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
+        // this method checks for a single banned char, not for invalid combinations of characters like invalid escaping
         private static int GetIndexOfFirstInvalidCharacter(ReadOnlySpan<char> input, bool strictMode, bool assemblyName)
         {
             if (input.IsEmpty)
@@ -467,16 +496,33 @@ namespace System.Reflection.Metadata
         {
 #if NET8_0_OR_GREATER
             int offset = fullName.LastIndexOfAny(_endOfTypeNameDelimitersSearchValues);
-#elif NET6_0_OR_GREATER
-            int offset = fullName.LastIndexOfAny(EndOfTypeNameDelimiters);
-#else
-            int offset = fullName.Length - 1;
-            for (; offset >= 0; offset--)
+            Debug.Assert(offset != 0, "The provided full name must be valid");
+
+            if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
             {
-                if (EndOfTypeNameDelimiters.IndexOf(fullName[offset]) >= 0) { break; }
+                offset = GetUnescapedOffset(fullName, startIndex: offset);
             }
+#else
+            int offset = GetUnescapedOffset(fullName, startIndex: fullName.Length - 1);
 #endif
             return offset < 0 ? fullName : fullName.Slice(offset + 1);
+
+            static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
+            {
+                int offset = startIndex;
+                for (; offset >= 0; offset--)
+                {
+                    if (fullName[offset] is '.' or '+')
+                    {
+                        if (offset == 0 || fullName[offset - 1] != EscapeCharacter)
+                        {
+                            break;
+                        }
+                        offset--; // skip the escaping character
+                    }
+                }
+                return offset;
+            }
         }
 
         internal static string GetRankOrModifierStringRepresentation(int rankOrModifier)
@@ -554,8 +600,13 @@ namespace System.Reflection.Metadata
             do
             {
                 int length = GetFullTypeNameLength(input.Slice(totalLength), out isNestedType);
-                if (length <= 0) // it's possible only for a pair of unescaped '+' characters
+                if (length <= 0)
                 {
+                    // invalid type names:
+                    // -1: invalid escaping
+                    // 0: pair of unescaped "++" characters
+                    nestedNameLengths = null;
+                    totalLength = genericArgCount = 0;
                     return false;
                 }
 

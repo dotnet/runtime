@@ -58,14 +58,19 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("ABCDE,otherType]]", 5, false)]
         [InlineData("Containing+Nested", 10, true)]
         [InlineData("NoSpecial.Characters", 20, false)]
-        // TODO adsitnik: add escaping handling
+        [InlineData("Requires\\+Escaping", 18, false)]
+        [InlineData("Requires\\[Escaping+Nested", 18, true)]
+        [InlineData("Worst\\[\\]\\&\\*\\,\\+Case", 21, false)]
+        [InlineData("EscapingSthThatShouldNotBeEscaped\\A", -1 , false)]
+        [InlineData("EndsWithEscaping\\", -1, false)]
         public void GetFullTypeNameLengthReturnsExpectedValue(string input, int expected, bool expectedIsNested)
         {
             Assert.Equal(expected, TypeNameParserHelpers.GetFullTypeNameLength(input.AsSpan(), out bool isNested));
             Assert.Equal(expectedIsNested, isNested);
 
             string withNamespace = $"Namespace1.Namespace2.Namespace3.{input}";
-            Assert.Equal(expected + withNamespace.Length - input.Length, TypeNameParserHelpers.GetFullTypeNameLength(withNamespace.AsSpan(), out isNested));
+            int expectedWithNamespace = expected < 0 ? expected : expected + withNamespace.Length - input.Length;
+            Assert.Equal(expectedWithNamespace, TypeNameParserHelpers.GetFullTypeNameLength(withNamespace.AsSpan(), out isNested));
             Assert.Equal(expectedIsNested, isNested);
         }
 
@@ -149,6 +154,18 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("JustTypeName", "JustTypeName")]
+        [InlineData("Namespace.TypeName", "TypeName")]
+        [InlineData("Namespace1.Namespace2.TypeName", "TypeName")]
+        [InlineData("Namespace.NotNamespace\\.TypeName", "NotNamespace\\.TypeName")]
+        [InlineData("Namespace1.Namespace2.Containing+Nested", "Nested")]
+        [InlineData("Namespace1.Namespace2.Not\\+Nested", "Not\\+Nested")]
+        [InlineData("NotNamespace1\\.NotNamespace2\\.TypeName", "NotNamespace1\\.NotNamespace2\\.TypeName")]
+        [InlineData("NotNamespace1\\.NotNamespace2\\.Not\\+Nested", "NotNamespace1\\.NotNamespace2\\.Not\\+Nested")]
+        public void GetNameReturnsJustName(string fullName, string expected)
+            => Assert.Equal(expected, TypeNameParserHelpers.GetName(fullName.AsSpan()).ToString());
+
+        [Theory]
         [InlineData(TypeNameParserHelpers.SZArray, "[]")]
         [InlineData(TypeNameParserHelpers.Pointer, "*")]
         [InlineData(TypeNameParserHelpers.ByRef, "&")]
@@ -208,8 +225,12 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [InlineData("A.B.C", true, null, 5, 0)]
+        [InlineData("A.B.C\\", false, null, 0, 0)] // invalid type name: ends with escape character
+        [InlineData("A.B.C\\DoeNotNeedEscaping", false, null, 0, 0)] // invalid type name: escapes non-special character
+        [InlineData("A.B+C", true, new int[] { 3 }, 5, 0)]
+        [InlineData("A.B++C", false, null, 0, 0)] // invalid type name: two following, unescaped +
+        [InlineData("A.B`1", true, null, 5, 1)]
         [InlineData("A+B`1+C1`2+DD2`3+E", true, new int[] { 1, 3, 4, 5 }, 18, 6)]
-        // TODO adsitnik: add escaping handling and more test cases
         public void TryGetTypeNameInfoGetsAllTheInfo(string input, bool expectedResult, int[] expectedNestedNameLengths,
             int expectedTotalLength, int expectedGenericArgCount)
         {
