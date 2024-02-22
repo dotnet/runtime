@@ -732,6 +732,11 @@ namespace System.Text.RegularExpressions.Generator
                             EmitIndexOfString_RightToLeft();
                             break;
 
+                        case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                        case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
+                            EmitIndexOfStrings_LeftToRight();
+                            break;
+
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                         case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                             EmitFixedSet_LeftToRight();
@@ -1038,6 +1043,37 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     return true;
+                }
+            }
+
+            // Emits a case-sensitive left-to-right search for any one of multiple leading prefixes.
+            void EmitIndexOfStrings_LeftToRight()
+            {
+                RegexFindOptimizations opts = regexTree.FindOptimizations;
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingStrings_LeftToRight or FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight);
+
+                string prefixes = string.Join(", ", opts.LeadingPrefixes.Select(prefix => Literal(prefix)));
+                StringComparison stringComparison = opts.FindMode is FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight ?
+                    StringComparison.OrdinalIgnoreCase :
+                    StringComparison.Ordinal;
+                string fieldName = GetSHA256FieldName($"s_indexOfAnyStrings_{stringComparison}", prefixes);
+
+                if (!requiredHelpers.ContainsKey(fieldName))
+                {
+                    requiredHelpers.Add(fieldName,
+                    [
+                        $"/// <summary>Supports searching for the specified strings.</summary>",
+                        $"internal static readonly SearchValues<string> {fieldName} = SearchValues.Create([{prefixes}], StringComparison.{stringComparison});", // explicitly using an array in case prefixes is large
+                    ]);
+                }
+
+                writer.WriteLine($"// The pattern has multiple strings that could begin the match. Search for any of them.");
+                writer.WriteLine($"// If none can be found, there's no match.");
+                writer.WriteLine($"int i = inputSpan.Slice(pos).IndexOfAny({HelpersTypeName}.{fieldName});");
+                using (EmitBlock(writer, "if (i >= 0)"))
+                {
+                    writer.WriteLine("base.runtextpos = pos + i;");
+                    writer.WriteLine("return true;");
                 }
             }
 
