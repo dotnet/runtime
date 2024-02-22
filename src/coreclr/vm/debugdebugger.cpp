@@ -1163,7 +1163,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     EECodeInfo codeInfo(cur.ip);
                     frame.codeInfo = codeInfo;
                     frame.isFrameless = true;
-                    CONTEXT ctx = {};
+                    T_CONTEXT ctx = {};
                     SetIP(&ctx, cur.ip);
                     SetSP(&ctx, cur.sp);
                     FillRegDisplay(frame.pRD, &ctx);
