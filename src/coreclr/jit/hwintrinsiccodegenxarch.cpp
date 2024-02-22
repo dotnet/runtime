@@ -108,7 +108,7 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
     // .NET doesn't support raising IEEE 754 floating-point exceptions,
     // we simplify the handling below to only consider the 2-bits of RC.
 
-    assert((instOptions & INS_OPTS_b_MASK) == 0);
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     unsigned result = static_cast<unsigned>(instOptions);
 
     switch (mode & 0x03)
@@ -141,6 +141,35 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
 }
 
 //------------------------------------------------------------------------
+// AddEmbMaskingMode: Adds the embedded masking mode to the insOpts
+//
+// Arguments:
+//    instOptions   - The existing insOpts
+//    maskReg       - The register to use for the embedded mask
+//    mergeWithZero - true if the mask merges with zero; otherwise, false
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddEmbMaskingMode(insOpts instOptions, regNumber maskReg, bool mergeWithZero)
+{
+    assert((instOptions & INS_OPTS_EVEX_aaa_MASK) == 0);
+    assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+
+    unsigned result = static_cast<unsigned>(instOptions);
+    unsigned em_k   = (maskReg - KBASE) << 2;
+    unsigned em_z   = mergeWithZero ? INS_OPTS_EVEX_em_zero : 0;
+
+    assert(emitter::isMaskReg(maskReg));
+    assert((em_k & INS_OPTS_EVEX_aaa_MASK) == em_k);
+
+    result |= em_k;
+    result |= em_z;
+
+    return static_cast<insOpts>(result);
+}
+
+//------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //
 // Arguments:
@@ -152,6 +181,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
+    GenTree*               embMaskOp   = nullptr;
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
     assert(compiler->compIsaSupportedDebugOnly(isa));
@@ -162,57 +192,143 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (GetEmitter()->UseEvexEncoding())
     {
-        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+        if (numArgs == 3)
         {
-            assert(isTableDriven);
-            size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+            GenTree* op2 = node->Op(2);
 
-            if (numArgs == expectedArgNum)
+            if (op2->IsEmbMaskOp())
             {
-                GenTree* lastOp = node->Op(numArgs);
+                assert(intrinsicId == NI_AVX512F_BlendVariableMask);
+                assert(op2->isContained());
+                assert(op2->OperIsHWIntrinsic());
 
-                // Now that we've extracted the rounding mode, we'll remove the
-                // last operand, adjust the arg count, and continue. This allows
-                // us to reuse all the existing logic without having to add new
-                // specialized handling everywhere.
+                // We currently only support this for table driven intrinsics
+                assert(isTableDriven);
 
-                switch (numArgs)
+                GenTree* op1 = node->Op(1);
+                GenTree* op3 = node->Op(3);
+
+                regNumber targetReg = node->GetRegNum();
+                regNumber mergeReg  = op1->GetRegNum();
+                regNumber maskReg   = op3->GetRegNum();
+
+                // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
+                assert(!op2->isRMWHWIntrinsic(compiler));
+
+                bool mergeWithZero = op1->isContained();
+
+                if (mergeWithZero)
                 {
-                    case 3:
-                    {
-                        numArgs = 2;
-                        node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2));
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-
-                if (lastOp->isContained())
-                {
-                    assert(lastOp->IsCnsIntOrI());
-
-                    int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
-                    instOptions = AddEmbRoundingMode(instOptions, mode);
+                    // We're merging with zero, so we the target register isn't RMW
+                    assert(op1->IsVectorZero());
+                    mergeWithZero = true;
                 }
                 else
                 {
-                    var_types baseType = node->GetSimdBaseType();
+                    // We're merging with a non-zero value, so the target register is RMW
+                    emitAttr attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+                    GetEmitter()->emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, /* canSkip */ true);
+                }
 
-                    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                    assert(ins != INS_invalid);
+                // Update op2 to use the actual target register
+                op2->ClearContained();
+                op2->SetRegNum(targetReg);
 
-                    emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-                    assert(simdSize != 0);
+                // Fixup all the already initialized variables
+                node        = op2->AsHWIntrinsic();
+                intrinsicId = node->GetHWIntrinsicId();
+                isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+                category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+                numArgs     = node->GetOperandCount();
 
-                    genConsumeMultiOpOperands(node);
-                    genConsumeRegs(lastOp);
+                // Add the embedded masking info to the insOpts
+                instOptions = AddEmbMaskingMode(instOptions, maskReg, mergeWithZero);
 
+                // We don't need to genProduceReg(node) since that will be handled by processing op2
+                // likewise, processing op2 will ensure its own registers are consumed
+
+                // Make sure we consume the registers that are getting specially handled
+                genConsumeReg(op1);
+                embMaskOp = op3;
+            }
+        }
+
+        if (node->OperIsEmbRoundingEnabled())
+        {
+            GenTree* lastOp = node->Op(numArgs);
+
+            // Now that we've extracted the rounding mode, we'll remove the
+            // last operand, adjust the arg count, and continue. This allows
+            // us to reuse all the existing logic without having to add new
+            // specialized handling everywhere.
+
+            switch (numArgs)
+            {
+                case 2:
+                {
+                    numArgs = 1;
+                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1));
+                    break;
+                }
+
+                case 3:
+                {
+                    numArgs = 2;
+                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2));
+                    break;
+                }
+
+                case 4:
+                {
+                    numArgs = 3;
+                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2), node->Op(3));
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            if (lastOp->isContained())
+            {
+                assert(lastOp->IsCnsIntOrI());
+
+                int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
+                instOptions = AddEmbRoundingMode(instOptions, mode);
+            }
+            else
+            {
+                var_types baseType = node->GetSimdBaseType();
+
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                assert(ins != INS_invalid);
+
+                emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+                assert(simdSize != 0);
+
+                genConsumeMultiOpOperands(node);
+                genConsumeRegs(lastOp);
+
+                if (isTableDriven)
+                {
                     switch (numArgs)
                     {
+                        case 1:
+                        {
+                            regNumber targetReg = node->GetRegNum();
+                            GenTree*  rmOp      = node->Op(1);
+                            auto emitSwCase     = [&](int8_t i) {
+                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
+                            };
+                            regNumber baseReg = node->ExtractTempReg();
+                            regNumber offsReg = node->GetSingleTempReg();
+                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                            emitSwCase);
+                            break;
+                        }
                         case 2:
                         {
                             auto emitSwCase = [&](int8_t i) {
@@ -231,10 +347,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             unreached();
                         }
                     }
-
-                    genProduceReg(node);
-                    return;
                 }
+                else
+                {
+                    // There are a few embedded rounding intrinsics that need to be emitted with special handling.
+                    genNonTableDrivenHWIntrinsicsJumpTableFallback(node, lastOp);
+                }
+
+                genProduceReg(node);
+                return;
             }
         }
     }
@@ -305,7 +426,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, op1);
+                        genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, op1, instOptions);
                     }
                 }
                 break;
@@ -562,9 +683,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
         }
 
+        if (embMaskOp != nullptr)
+        {
+            // Handle an extra operand we need to consume so that
+            // embedded masking can work without making the overall
+            // logic significantly more complex.
+            genConsumeReg(embMaskOp);
+        }
+
         genProduceReg(node);
         return;
     }
+
+    assert(embMaskOp == nullptr);
 
     switch (isa)
     {
@@ -614,7 +745,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             genBMI1OrBMI2Intrinsic(node, instOptions);
             break;
         case InstructionSet_FMA:
-            genFMAIntrinsic(node);
+            genFMAIntrinsic(node, instOptions);
             break;
         case InstructionSet_LZCNT:
         case InstructionSet_LZCNT_X64:
@@ -648,12 +779,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 //    attr - The emit attribute for the instruction being generated
 //    reg  - The register
 //    rmOp - The register/memory operand node
-//
+//    instOptions - the existing intOpts
 void CodeGen::genHWIntrinsic_R_RM(
-    GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp)
+    GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp, insOpts instOptions)
 {
     emitter*    emit     = GetEmitter();
     OperandDesc rmOpDesc = genOperandDesc(rmOp);
+
+    if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (rmOpDesc.GetKind() == OperandKind::Reg))
+    {
+        // As embedded rounding only appies in R_R case, we can skip other checks for different paths.
+        regNumber op1Reg = rmOp->GetRegNum();
+        assert(op1Reg != REG_NA);
+
+        emit->emitIns_R_R(ins, attr, reg, op1Reg, instOptions);
+        return;
+    }
 
     if (rmOpDesc.IsContained())
     {
@@ -980,9 +1121,15 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
 //    op1Reg    - The register of the first operand
 //    op2Reg    - The register of the second operand
 //    op3       - The third operand
+//    instOptions - The options that modify how the instruction is generated
 //
-void CodeGen::genHWIntrinsic_R_R_R_RM(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3)
+void CodeGen::genHWIntrinsic_R_R_R_RM(instruction ins,
+                                      emitAttr    attr,
+                                      regNumber   targetReg,
+                                      regNumber   op1Reg,
+                                      regNumber   op2Reg,
+                                      GenTree*    op3,
+                                      insOpts     instOptions)
 {
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
@@ -990,6 +1137,16 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 
     emitter*    emit    = GetEmitter();
     OperandDesc op3Desc = genOperandDesc(op3);
+
+    if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (op3Desc.GetKind() == OperandKind::Reg))
+    {
+        // As embedded rounding only appies in R_R case, we can skip other checks for different paths.
+        regNumber op3Reg = op3->GetRegNum();
+        assert(op3Reg != REG_NA);
+
+        emit->emitIns_SIMD_R_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, op3Desc.GetReg(), instOptions);
+        return;
+    }
 
     switch (op3Desc.GetKind())
     {
@@ -1182,6 +1339,113 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     }
 
     genDefineTempLabel(switchTableEnd);
+}
+
+void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* lastOp)
+{
+    NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+
+    assert(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId));
+    assert(!lastOp->isContained());
+    assert(!genIsTableDrivenHWIntrinsic(intrinsicId, category));
+
+    var_types   baseType   = node->GetSimdBaseType();
+    emitAttr    attr       = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+    var_types   targetType = node->TypeGet();
+    instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+    regNumber   targetReg  = node->GetRegNum();
+
+    insOpts instOptions = INS_OPTS_NONE;
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        {
+            // This intrinsic has several overloads, only the ones with floating number inputs should reach this part.
+            assert(varTypeIsFloating(baseType));
+            GenTree* rmOp   = node->Op(1);
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
+            };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            break;
+        }
+
+        case NI_AVX512F_ConvertToInt32:
+        case NI_AVX512F_ConvertToUInt32:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertToInt64:
+        case NI_AVX512F_X64_ConvertToUInt64:
+#endif // TARGET_AMD64
+        {
+            assert(varTypeIsFloating(baseType));
+            attr          = emitTypeSize(targetType);
+            GenTree* rmOp = node->Op(1);
+
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
+            };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            break;
+        }
+
+        case NI_AVX512F_X64_ConvertScalarToVector128Single:
+        case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        {
+            assert(varTypeIsLong(baseType));
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, newInstOptions);
+            };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            break;
+        }
+
+        case NI_AVX512F_FusedMultiplyAdd:
+        case NI_AVX512F_FusedMultiplyAddScalar:
+        case NI_AVX512F_FusedMultiplyAddNegated:
+        case NI_AVX512F_FusedMultiplyAddNegatedScalar:
+        case NI_AVX512F_FusedMultiplyAddSubtract:
+        case NI_AVX512F_FusedMultiplySubtract:
+        case NI_AVX512F_FusedMultiplySubtractAdd:
+        case NI_AVX512F_FusedMultiplySubtractNegated:
+        case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+        case NI_AVX512F_FusedMultiplySubtractScalar:
+        {
+            // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
+            // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
+            assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            regNumber op1Reg = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, newInstOptions);
+            };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1887,7 +2151,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId))
     {
-        genFMAIntrinsic(node);
+        genFMAIntrinsic(node, instOptions);
         return;
     }
 
@@ -2449,8 +2713,10 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
+        case NI_AVX512F_ConvertToInt32:
         case NI_AVX512F_ConvertToUInt32:
         case NI_AVX512F_ConvertToUInt32WithTruncation:
+        case NI_AVX512F_X64_ConvertToInt64:
         case NI_AVX512F_X64_ConvertToUInt64:
         case NI_AVX512F_X64_ConvertToUInt64WithTruncation:
         {
@@ -2458,7 +2724,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             emitAttr attr = emitTypeSize(targetType);
 
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_RM(node, ins, attr, targetReg, node->Op(1));
+            genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             break;
         }
 
@@ -2470,7 +2736,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             if (varTypeIsFloating(baseType))
             {
                 instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
                 break;
             }
             FALLTHROUGH;
@@ -2522,7 +2788,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512F_X64_ConvertScalarToVector128Double:
         case NI_AVX512F_X64_ConvertScalarToVector128Single:
         {
-            assert(baseType == TYP_ULONG);
+            assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
@@ -2672,7 +2938,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptio
 // Arguments:
 //    node - The hardware intrinsic node
 //
-void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
@@ -2779,7 +3045,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     assert(ins != INS_invalid);
-    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
+    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3, instOptions);
     genProduceReg(node);
 }
 

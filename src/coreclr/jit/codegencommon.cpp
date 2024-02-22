@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "patchpointinfo.h"
+#include "optcse.h" // for cse metrics
 
 /*****************************************************************************/
 
@@ -314,10 +315,8 @@ void CodeGen::genPrepForCompiler()
         }
     }
     VarSetOps::AssignNoCopy(compiler, genLastLiveSet, VarSetOps::MakeEmpty(compiler));
-    genLastLiveMask = RBM_NONE;
-#ifdef DEBUG
-    compiler->fgBBcountAtCodegen = compiler->fgBBcount;
-#endif
+    genLastLiveMask                        = RBM_NONE;
+    compiler->Metrics.BasicBlocksAtCodegen = compiler->fgBBcount;
 }
 
 //------------------------------------------------------------------------
@@ -395,7 +394,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
 
                 // If we need a jump to the false target, give it a label
-                if (!block->CanRemoveJumpToFalseTarget(compiler))
+                if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
                 {
                     JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
                     block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
@@ -964,7 +963,7 @@ void CodeGen::genDefineInlineTempLabel(BasicBlock* label)
 // Notes:
 //    This only makes an adjustment if !FEATURE_FIXED_OUT_ARGS, if there is no frame pointer,
 //    and if 'block' is a throw helper block with a non-zero stack level.
-
+//
 void CodeGen::genAdjustStackLevel(BasicBlock* block)
 {
 #if !FEATURE_FIXED_OUT_ARGS
@@ -1002,35 +1001,33 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 #endif // !FEATURE_FIXED_OUT_ARGS
 }
 
-/*****************************************************************************
- *
- *  Take an address expression and try to find the best set of components to
- *  form an address mode; returns non-zero if this is successful.
- *
- *  TODO-Cleanup: The RyuJIT backend never uses this to actually generate code.
- *  Refactor this code so that the underlying analysis can be used in
- *  the RyuJIT Backend to do lowering, instead of having to call this method with the
- *  option to not generate the code.
- *
- *  'fold' specifies if it is OK to fold the array index which hangs off
- *  a GT_NOP node.
- *
- *  If successful, the parameters will be set to the following values:
- *
- *      *rv1Ptr     ...     base operand
- *      *rv2Ptr     ...     optional operand
- *      *revPtr     ...     true if rv2 is before rv1 in the evaluation order
- *      *mulPtr     ...     optional multiplier (2/4/8) for rv2
- *                          Note that for [reg1 + reg2] and [reg1 + reg2 + icon], *mulPtr == 0.
- *      *cnsPtr     ...     integer constant [optional]
- *
- *  IMPORTANT NOTE: This routine doesn't generate any code, it merely
- *                  identifies the components that might be used to
- *                  form an address mode later on.
- */
-
-bool CodeGen::genCreateAddrMode(
-    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
+//------------------------------------------------------------------------
+// genCreateAddrMode:
+//  Take an address expression and try to find the best set of components to
+//  form an address mode; returns true if this is successful.
+//
+// Parameters:
+//   addr - Tree that potentially computes an address
+//   fold - Secifies if it is OK to fold the array index which hangs off a GT_NOP node.
+//   naturalMul - For arm64 specifies the natural multiplier for the address mode (i.e. the size of the parent
+//   indirection).
+//   revPtr     - [out] True if rv2 is before rv1 in the evaluation order
+//   rv1Ptr     - [out] Base operand
+//   rv2Ptr     - [out] Optional operand
+//   mulPtr     - [out] Optional multiplier for rv2. If non-zero and naturalMul is non-zero, it must match naturalMul.
+//   cnsPtr     - [out] Integer constant [optional]
+//
+// Returns:
+//   True if some address mode components were extracted.
+//
+bool CodeGen::genCreateAddrMode(GenTree*  addr,
+                                bool      fold,
+                                unsigned  naturalMul,
+                                bool*     revPtr,
+                                GenTree** rv1Ptr,
+                                GenTree** rv2Ptr,
+                                unsigned* mulPtr,
+                                ssize_t*  cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1170,8 +1167,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-                // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+                // TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
                     {
@@ -1181,10 +1177,11 @@ AGAIN:
                     FALLTHROUGH;
 
                 case GT_LSH:
-
-                    mul = op1->GetScaledIndex();
-                    if (mul)
+                {
+                    unsigned mulCandidate = op1->GetScaledIndex();
+                    if (jitIsScaleIndexMul(mulCandidate, naturalMul))
                     {
+                        mul = mulCandidate;
                         /* We can use "[mul*rv2 + icon]" */
 
                         rv1 = nullptr;
@@ -1193,7 +1190,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+                }
 
                 default:
                     break;
@@ -1214,8 +1211,8 @@ AGAIN:
 
     switch (op1->gtOper)
     {
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+#ifdef TARGET_XARCH
+        // TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
             if (op1->gtOverflow())
@@ -1236,6 +1233,7 @@ AGAIN:
                 }
             }
             break;
+#endif // TARGET_XARCH
 
         case GT_MUL:
 
@@ -1247,11 +1245,12 @@ AGAIN:
             FALLTHROUGH;
 
         case GT_LSH:
-
-            mul = op1->GetScaledIndex();
-            if (mul)
+        {
+            unsigned mulCandidate = op1->GetScaledIndex();
+            if (jitIsScaleIndexMul(mulCandidate, naturalMul))
             {
                 /* 'op1' is a scaled value */
+                mul = mulCandidate;
 
                 rv1 = op2;
                 rv2 = op1->AsOp()->gtOp1;
@@ -1259,7 +1258,7 @@ AGAIN:
                 int argScale;
                 while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
-                    if (jitIsScaleIndexMul(argScale * mul))
+                    if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
                         mul = mul * argScale;
                         rv2 = rv2->AsOp()->gtOp1;
@@ -1276,7 +1275,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+        }
 
         case GT_COMMA:
 
@@ -1290,7 +1289,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#ifdef TARGET_XARCH
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
         // arm doesn't support both scale and offset at the same. Offset is handled
         // at the emitter as a peephole optimization.
@@ -1314,6 +1313,7 @@ AGAIN:
                 goto AGAIN;
             }
             break;
+#endif // TARGET_XARCH
 
         case GT_MUL:
 
@@ -1325,16 +1325,17 @@ AGAIN:
             FALLTHROUGH;
 
         case GT_LSH:
-
-            mul = op2->GetScaledIndex();
-            if (mul)
+        {
+            unsigned mulCandidate = op2->GetScaledIndex();
+            if (jitIsScaleIndexMul(mulCandidate, naturalMul))
             {
+                mul = mulCandidate;
                 // 'op2' is a scaled value...is it's argument also scaled?
                 int argScale;
                 rv2 = op2->AsOp()->gtOp1;
                 while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
-                    if (jitIsScaleIndexMul(argScale * mul))
+                    if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
                         mul = mul * argScale;
                         rv2 = rv2->AsOp()->gtOp1;
@@ -1350,7 +1351,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+        }
 
         case GT_COMMA:
 
@@ -1700,7 +1701,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
 
 #ifdef DEBUG
-    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries())
+    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
+    //
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
     {
         void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_ASSIGN_STRUCT; i++)
@@ -2024,16 +2027,36 @@ void CodeGen::genEmitMachineCode()
     }
 
 #ifdef DEBUG
-    if (compiler->opts.disAsm || verbose)
+    const bool dspMetrics     = compiler->opts.dspMetrics;
+    const bool dspSummary     = compiler->opts.disAsm || verbose;
+    const bool dspMetricsOnly = dspMetrics && !dspSummary;
+
+    if (dspSummary || dspMetrics)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
+        if (!dspMetricsOnly)
+        {
+            printf("\n");
+        }
+
+        printf("; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d",
-               codeSize, prologSize, compiler->info.compPerfScore, instrCount,
+               codeSize, prologSize, compiler->Metrics.PerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
 
-        if (JitConfig.JitMetrics() > 0)
+        if (dspMetrics)
         {
-            printf(", num cse %d", compiler->optCSEcount);
+            printf(", num cse %d num cand %d", compiler->optCSEcount, compiler->optCSECandidateCount);
+
+            CSE_HeuristicCommon* const cseHeuristic = compiler->optGetCSEheuristic();
+            if (cseHeuristic != nullptr)
+            {
+                cseHeuristic->DumpMetrics();
+            }
+
+            if (compiler->info.compMethodSuperPMIIndex >= 0)
+            {
+                printf(" spmi index %d", compiler->info.compMethodSuperPMIIndex);
+            }
         }
 
 #if TRACK_LSRA_STATS
@@ -2046,8 +2069,12 @@ void CodeGen::genEmitMachineCode()
         printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
                compiler->compGetTieringName(true));
 
-        printf("; ============================================================\n\n");
-        printf(""); // in our logic this causes a flush
+        if (!dspMetricsOnly)
+        {
+            printf("; ============================================================\n\n");
+        }
+
+        fflush(jitstdout());
     }
 
     if (verbose)
@@ -6519,10 +6546,19 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // For certain indirect calls we may introduce helper calls before that we need to skip:
     // - CFG may introduce a call to the validator first
     // - Generic virtual methods may compute the target dynamically through a separate helper call
-    if (call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
-        call->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    // - memset/memcpy helper calls emitted for GT_STORE_DYN_BLK/GT_STORE_BLK
+    if (call->IsHelperCall())
     {
-        return;
+        switch (compiler->eeGetHelperNum(call->gtCallMethHnd))
+        {
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_MEMCPY:
+                return;
+            default:
+                break;
+        }
     }
 
     genDefineInlineTempLabel(genPendingCallLabel);
@@ -7328,6 +7364,26 @@ void CodeGen::genReportRichDebugInfoToFile()
 #endif
 
 //------------------------------------------------------------------------
+// SuccessfulSibling:
+//   Find the next sibling inline context that was successfully inlined.
+//
+// Parameters:
+//   context - the inline context. Can be nullptr in which case nullptr is returned.
+//
+// Returns:
+//   The sibling, or nullptr if there is no succesful sibling.
+//
+static InlineContext* SuccessfulSibling(InlineContext* context)
+{
+    while ((context != nullptr) && !context->IsSuccess())
+    {
+        context = context->GetSibling();
+    }
+
+    return context;
+}
+
+//------------------------------------------------------------------------
 // genRecordRichDebugInfoInlineTree:
 //   Recursively process a context in the inline tree and record information
 //   about it.
@@ -7338,26 +7394,28 @@ void CodeGen::genReportRichDebugInfoToFile()
 //
 void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    if (context->IsSuccess())
-    {
-        // We expect 1 + NumInlines unique ordinals
-        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+    assert(context->IsSuccess());
 
-        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
-        node->Method                        = context->GetCallee();
-        node->ILOffset                      = context->GetActualCallOffset();
-        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
-        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
+    // We expect 1 + NumInlines unique ordinals
+    assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+    InlineContext* successfulChild   = SuccessfulSibling(context->GetChild());
+    InlineContext* successfulSibling = SuccessfulSibling(context->GetSibling());
+
+    ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+    node->Method                        = context->GetCallee();
+    node->ILOffset                      = context->GetActualCallOffset();
+    node->Child                         = successfulChild == nullptr ? 0 : successfulChild->GetOrdinal();
+    node->Sibling                       = successfulSibling == nullptr ? 0 : successfulSibling->GetOrdinal();
+
+    if (successfulSibling != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(successfulSibling, nodes);
     }
 
-    if (context->GetSibling() != nullptr)
+    if (successfulChild != nullptr)
     {
-        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
-    }
-
-    if (context->GetChild() != nullptr)
-    {
-        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
+        genRecordRichDebugInfoInlineTree(successfulChild, nodes);
     }
 }
 
@@ -7406,6 +7464,28 @@ void CodeGen::genReportRichDebugInfo()
 
         mappingIndex++;
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported inline tree:\n");
+        for (unsigned i = 0; i < numContexts; i++)
+        {
+            printf("  [#%d] %s @ %d, child = %d, sibling = %d\n", i,
+                   compiler->eeGetMethodFullName(inlineTree[i].Method), inlineTree[i].ILOffset, inlineTree[i].Child,
+                   inlineTree[i].Sibling);
+        }
+
+        printf("\nReported rich mappings:\n");
+        for (size_t i = 0; i < mappingIndex; i++)
+        {
+            printf("  [%zu] 0x%x <-> IL %d in #%d\n", i, mappings[i].NativeOffset, mappings[i].ILOffset,
+                   mappings[i].Inlinee);
+        }
+
+        printf("\n");
+    }
+#endif
 
     compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
 }
