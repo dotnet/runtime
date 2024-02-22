@@ -95,12 +95,20 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
             worker.thread = thread;
             worker.info.isRunning = true;
             resolveThreadPromises(pthreadId, thread);
+            worker.info = Object.assign(worker.info!, message.info, {});
+            break;
+        case WorkerToMainMessageType.deputyStarted:
+            runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
+            break;
+        case WorkerToMainMessageType.deputyFailed:
+            runtimeHelpers.afterMonoStarted.promise_control.reject(new Error(message.error));
             break;
         case WorkerToMainMessageType.monoRegistered:
         case WorkerToMainMessageType.monoAttached:
         case WorkerToMainMessageType.enabledInterop:
         case WorkerToMainMessageType.monoUnRegistered:
         case WorkerToMainMessageType.updateInfo:
+        case WorkerToMainMessageType.deputyCreated:
             // just worker.info updates above
             break;
         default:
