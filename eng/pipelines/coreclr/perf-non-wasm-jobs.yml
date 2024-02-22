@@ -316,30 +316,29 @@ jobs:
             parameters:
               name: MonoRuntimePacks
 
-  # Disabled due to: https://github.com/dotnet/performance/issues/3655
-  # # build PerfBDN app
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: mono
-  #     platforms:
-  #     - ios_arm64
-  #     jobParameters:
-  #       dependsOn:
-  #        - Build_android_arm64_release_Mono_Packs
-  #       buildArgs: -s mono -c $(_BuildConfig)
-  #       nameSuffix: PerfBDNApp
-  #       isOfficialBuild: false
-  #       pool:
-  #         vmImage: 'macos-12'
-  #       postBuildSteps:
-  #         - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
-  #           parameters:
-  #             rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-  #             includeRootFolder: true
-  #             displayName: Android BDN App Artifacts
-  #             artifactName: PerfBDNAppArm
-  #             archiveExtension: '.tar.gz'
-  #             archiveType: tar
-  #             tarCompression: gz
+  # build PerfBDN app
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        dependsOn:
+         - Build_android_arm64_release_Mono_Packs
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: PerfBDNApp
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-12'
+        postBuildSteps:
+          - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: Android BDN App Artifacts
+              artifactName: PerfBDNAppArm
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz
