@@ -1,8 +1,7 @@
-
 # Infrastructure to import a native aot compiled library into a native build
 
-### Implementation details used by libraryName-config.cmake find_package configuration
-### files. Consumers don't need to do this directly.
+# ## Implementation details used by libraryName-config.cmake find_package configuration
+# ## files. Consumers don't need to do this directly.
 
 # If we're statically linking one or more NativeAOTed libraries, add a target that brings in the
 # static library NativeAOT runtime components.  This function can be called more than once.  Each
@@ -13,13 +12,13 @@
 # they will each run in their own isolated NativeAOT runtime.
 function(add_nativeAotFramework_targets_once)
   get_property(targets_added GLOBAL PROPERTY CLR_CMAKE_NATIVEAOTFRAMEWORK_TARGETS_ADDED)
-  if (NOT "${targets_added}")
+
+  if(NOT "${targets_added}")
     add_library(nativeAotFramework INTERFACE)
 
     # depends on NATIVEAOT_FRAMEWORK_PATH and NATIVEAOT_SDK_PATH to be set
     # by the generated .cmake fragment during the managed build
-
-    if ("${CLR_CMAKE_HOST_WIN32}")
+    if("${CLR_CMAKE_HOST_WIN32}")
       set(NAOT_SDK_BASE_BOOTSTRAP bootstrapperdll${CMAKE_C_OUTPUT_EXTENSION})
     else()
       set(NAOT_SDK_BASE_BOOTSTRAP libbootstrapperdll${CMAKE_C_OUTPUT_EXTENSION})
@@ -79,7 +78,7 @@ function(add_nativeAotFramework_targets_once)
       target_link_directories(nativeAotFramework INTERFACE "${NATIVEAOT_FRAMEWORK_PATH}" "${NATIVEAOT_SDK_PATH}")
       target_link_libraries(nativeAotFramework INTERFACE "${NAOT_SDK_BOOTSTRAP}" "${NAOT_SDK_LIBS}" "${NAOT_FRAMEWORK_LIBS}" BCrypt)
     endif()
-    
+
     set_property(GLOBAL PROPERTY CLR_CMAKE_NATIVEAOTFRAMEWORK_TARGETS_ADDED 1)
   endif()
 endfunction()
@@ -95,29 +94,45 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
   message(TRACE "${symbolPrefix}_MODE is ${${symbolPrefix}_MODE}")
   set(targetName "${add_imported_opt_NAMESPACE}${targetNameIn}")
   message(TRACE "Adding target ${targetName}")
-  
-  if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED")
+
+  if("${${symbolPrefix}_MODE}" STREQUAL "SHARED")
     set(libName "${${symbolPrefix}_NAME}") # typically same as targetName
     set(libPath "${${symbolPrefix}_LIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/publish
     set(libFilename "${libName}${${symbolPrefix}_EXT}") # <libName>.dll, <libName>.so or <libName>.dylib
     set(libFullPath "${libPath}/${libFilename}")
+
+    if(CLR_CMAKE_HOST_WIN32)
+      set(libPdbFullPath "${libPath}/${libName}.pdb")
+    endif()
+
     # windows import library
     set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/native/<libName>.lib
 
     # Copy the imported library into our binary dir.
     # We do this so that we may strip it and also so that cmake dependency tracking will be aware if the file changes
-    set (importedFullPath "${CMAKE_CURRENT_BINARY_DIR}/imported_nativeaot_library/${targetNameIn}/${libFilename}")
+    set(importedFullPath "${CMAKE_CURRENT_BINARY_DIR}/imported_nativeaot_library/${targetNameIn}/${libFilename}")
 
     add_custom_command(OUTPUT "${importedFullPath}"
       DEPENDS "${libFullPath}"
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libFullPath}" "${importedFullPath}"
     )
-    # TODO: if Windows, also copy the PDB file
-    
+
+    if(CLR_CMAKE_HOST_WIN32)
+      set(importedPdbFullPath "${CMAKE_CURRENT_BINARY_DIR}/imported_nativeaot_library/${targetNameIn}/${libName}.pdb")
+      message(STATUS "Copying ${libPdbFullPath} to ${importedPdbFullPath} for ${targetName}")
+      add_custom_command(OUTPUT "${importedPdbFullPath}"
+        DEPENDS "${libPdbFullPath}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libPdbFullPath}" "${importedPdbFullPath}")
+    endif()
+
     # now make a custom target that other targets can depend on
     set(copy_target_name "${targetNameIn}_copy_imported_library")
-    add_custom_target("${copy_target_name}" DEPENDS "${importedFullPath}")
-    
+
+    if(CLR_CMAKE_HOST_WIN32)
+      add_custom_target("${copy_target_name}" DEPENDS "${importedFullPath}" "${importedPdbFullPath}")
+    else()
+      add_custom_target("${copy_target_name}" DEPENDS "${importedFullPath}")
+    endif()
 
     add_library(${targetName} SHARED IMPORTED GLOBAL)
     add_dependencies(${targetName} "${copy_target_name}")
@@ -134,7 +149,7 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
 
     strip_symbols(${targetName} symbolFile)
 
-  elseif ("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
+  elseif("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
     add_nativeAotFramework_targets_once()
 
     set(libName "${${symbolPrefix}_NAME}") # typically same as targetName
@@ -151,9 +166,9 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
     # "-fvisibility=hidden" mechanism would hide all the non-exported symbols.  Or if we had an
     # exported symbols list we could use an LD version script or the apple -exported_symbols_list
     # option.  But we dont' have that, so instead we use the GNU LD `--exclude-libs=libtargetName.a` option, or the  apple `-hidden-ltargetName` option
-
     if("${CLR_CMAKE_HOST_APPLE}")
       message(STATUS creeating ${targetName}-static for apple)
+
       # hack: -hidden-l wants the library name without a "lib" prefix
       STRING(REGEX REPLACE "^lib" "" libBaseName ${libName})
       add_library(${targetName}-static INTERFACE IMPORTED)
@@ -177,9 +192,6 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
     set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY 1)
   else()
     message(FATAL_ERROR "${symbolPrefix}_MODE must be one of SHARED or STATIC")
-  endif()
-  # FIXME: target xyz-shared is imported and does not build here
-  #if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-  #  strip_symbols("${ARGV0}-shared" symbolFile)
-  #endif()
+  endif() # FIXME: target xyz-shared is imported and does not build here# if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)# strip_symbols("${ARGV0}-shared" symbolFile)
+# endif()
 endfunction()
