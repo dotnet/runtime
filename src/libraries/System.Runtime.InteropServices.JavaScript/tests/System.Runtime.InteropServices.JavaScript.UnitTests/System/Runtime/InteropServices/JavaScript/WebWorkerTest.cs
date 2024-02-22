@@ -436,7 +436,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, cts.Token);
         }
 
-        [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        [MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndNotBlockingWait))]
         public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
         {
