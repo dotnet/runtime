@@ -676,11 +676,11 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> %s (fltret)", dspBlockNum(bbTarget));
+            printf(" -> %s (fltret)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> %s (cret)", dspBlockNum(bbTarget));
+            printf(" -> %s (cret)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_THROW:
@@ -694,24 +694,24 @@ void BasicBlock::dspKind() const
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> %s (ALWAYS)", dspBlockNum(bbTarget));
+                printf(" -> %s (ALWAYS)", dspBlockNum(GetTarget()));
             }
             else
             {
-                printf(" -> %s (always)", dspBlockNum(bbTarget));
+                printf(" -> %s (always)", dspBlockNum(GetTarget()));
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> %s (leave)", dspBlockNum(bbTarget));
+            printf(" -> %s (leave)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> %s (callf)", dspBlockNum(bbTarget));
+            printf(" -> %s (callf)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_CALLFINALLYRET:
-            printf(" -> %s (callfr)", dspBlockNum(bbTarget));
+            printf(" -> %s (callfr)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_COND:
@@ -985,7 +985,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
-    return KindIs(BBJ_ALWAYS) ? bbTarget : nullptr;
+    return KindIs(BBJ_ALWAYS) ? GetTarget() : nullptr;
 }
 
 // Static vars.
@@ -1199,7 +1199,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTarget();
 
         case BBJ_COND:
             if (i == 0)
@@ -1309,8 +1309,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     {
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == bbTarget);
-            return bbTarget;
+            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
+            return GetTarget();
 
         case BBJ_EHFINALLYRET:
             assert(bbEhfTargets != nullptr);
@@ -1322,7 +1322,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTarget();
 
         case BBJ_COND:
             if (i == 0)

@@ -46,7 +46,7 @@ public:
 private:
     BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
     BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
-    BasicBlock* m_b3; // m_b1->bbTarget. Null if m_b2 is not a return block.
+    BasicBlock* m_b3; // m_b1's target block. Null if m_b2 is not a return block.
 
     Compiler* m_comp; // The pointer to the Compiler instance
 

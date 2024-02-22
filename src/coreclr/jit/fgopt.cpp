@@ -1286,7 +1286,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            /* Update the predecessor list for 'bNext->bbTarget' */
+            /* Update the predecessor list for bNext's target */
             fgReplacePred(bNext->GetTargetEdge(), block);
             
             block->SetKindAndTargetEdge(bNext->GetKind(), bNext->GetTargetEdge());
@@ -1642,7 +1642,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             else
             {
                 // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
-                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block->bbTarget.
+                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block's target.
                 if (bPrev->bbFallsThrough() && !block->JumpsToNext())
                 {
                     break;

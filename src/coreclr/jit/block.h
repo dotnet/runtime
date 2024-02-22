@@ -526,7 +526,7 @@ private:
     /* The following union describes the jump target(s) of this block */
     union {
         unsigned    bbTargetOffs; // PC offset (temporary only)
-        BasicBlock* bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
+        FlowEdge*   bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
         BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
         BBswtDesc*  bbSwtTargets; // switch descriptor
         BBehfDesc*  bbEhfTargets; // BBJ_EHFINALLYRET descriptor
@@ -625,7 +625,7 @@ public:
 
     bool HasTarget() const
     {
-        // These block types should always have bbTarget set
+        // These block types should always have bbTargetEdge set
         return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
     }
 
@@ -718,7 +718,7 @@ public:
     bool HasInitializedTarget() const
     {
         assert(HasTarget());
-        return (bbTarget != nullptr);
+        return (bbTargetEdge != nullptr);
     }
 
     bool TargetIs(const BasicBlock* target) const
@@ -764,19 +764,13 @@ public:
         bbEhfTargets = ehfTarget;
     }
 
-    // BBJ_CALLFINALLYRET uses the `bbTarget` field. However, also treat it specially:
+    // BBJ_CALLFINALLYRET uses the `bbTargetEdge` field. However, also treat it specially:
     // for callers that know they want a continuation, use this function instead of the
     // general `GetTarget()` to allow asserting on the block kind.
     BasicBlock* GetFinallyContinuation() const
     {
         assert(KindIs(BBJ_CALLFINALLYRET));
-        return bbTarget;
-    }
-
-    void SetFinallyContinuation(BasicBlock* finallyContinuation)
-    {
-        assert(KindIs(BBJ_CALLFINALLYRET));
-        bbTarget = finallyContinuation;
+        return ;
     }
 
 #ifdef DEBUG
@@ -785,7 +779,7 @@ public:
     BasicBlock* GetTargetRaw() const
     {
         assert(HasTarget());
-        return bbTarget;
+        return (bbTargetEdge == nullptr) ? nullptr : bbTargetEdge->getDestinationBlock();
     }
 
     // Return the BBJ_COND true target; it might be null. Only used during dumping.
@@ -1952,7 +1946,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->bbTarget;
+            m_succs[0] = block->GetTarget();
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
