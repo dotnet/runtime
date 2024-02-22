@@ -191,6 +191,9 @@ struct EXCEPTION_REGISTRATION_RECORD
 
 EXTERN_C void __cdecl RhpFailFastForPInvokeExceptionPreemp(intptr_t PInvokeCallsiteReturnAddr,
                                                            void* pExceptionRecord, void* pContextRecord);
+#if defined(HOST_X86) && defined(HOST_WINDOWS)
+#pragma comment(linker, "/alternatename:@RhpFailFastForPInvokeExceptionCoop@12=RhpFailFastForPInvokeExceptionCoop")
+#endif
 EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(intptr_t PInvokeCallsiteReturnAddr,
                                                                   void* pExceptionRecord, void* pContextRecord);
 int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);

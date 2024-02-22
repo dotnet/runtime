@@ -244,6 +244,7 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, EBP
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 ;; pass third argument in EAX
 FASTCALL_FUNC RhpCheckedLockCmpXchg, 12
+ALTERNATE_HELPER_ENTRY RhpCheckedLockCmpXchg
 ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [ecx], edx
     jne              RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
@@ -256,6 +257,7 @@ FASTCALL_ENDFUNC
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedXchgAVLocation@0
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 FASTCALL_FUNC RhpCheckedXchg, 8
+ALTERNATE_HELPER_ENTRY RhpCheckedXchg
 
     ;; Setup eax with the new object for the exchange, that way it will automatically hold the correct result
     ;; afterwards and we can leave edx unaltered ready for the GC write barrier below.

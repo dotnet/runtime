@@ -93,12 +93,6 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
-#if defined(_WIN32) && !defined(_WIN64)
-#define REDHAWK_CALLCONV __fastcall
-#else
-#define REDHAWK_CALLCONV
-#endif
-
 extern "C" bool RhInitialize(bool isDll);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
@@ -109,39 +103,52 @@ extern "C" bool RhRegisterOSModule(void * pModule,
 
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
 
-extern "C" void REDHAWK_CALLCONV GetRuntimeException(uint32_t);
-extern "C" void REDHAWK_CALLCONV RuntimeFailFast(uint32_t, uintptr_t, uintptr_t, uintptr_t);
-extern "C" void REDHAWK_CALLCONV AppendExceptionStackFrame(uintptr_t, uintptr_t, int32_t);
-extern "C" void REDHAWK_CALLCONV GetSystemArrayEEType();
-extern "C" void REDHAWK_CALLCONV OnFirstChanceException(uintptr_t);
-extern "C" void REDHAWK_CALLCONV OnUnhandledException(uintptr_t);
-extern "C" void REDHAWK_CALLCONV IDynamicCastableIsInterfaceImplemented(uintptr_t, uintptr_t, int32_t);
-extern "C" void REDHAWK_CALLCONV IDynamicCastableGetInterfaceImplementation(uintptr_t, uintptr_t, int32_t);
-#ifdef FEATURE_OBJCMARSHAL
-extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalTryGetTaggedMemory(uintptr_t, uintptr_t);
-extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalGetIsTrackedReferenceCallback();
-extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
-extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalGetUnhandledExceptionPropagationHandler(uintptr_t, uintptr_t, uintptr_t);
+#if defined(HOST_X86) && defined(HOST_WINDOWS)
+#define STRINGIFY(s) #s
+#define MANAGED_RUNTIME_EXPORT_ALTNAME(_method) STRINGIFY(/alternatename:_##_method=_method)
+#define MANAGED_RUNTIME_EXPORT(_name) \
+    __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
+    extern "C" void __cdecl _name();
+#define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
+#else
+#define MANAGED_RUNTIME_EXPORT(_name) \
+    extern "C" void __cdecl _name();
+#define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
 #endif
 
-typedef void (REDHAWK_CALLCONV *pfn)();
+MANAGED_RUNTIME_EXPORT(GetRuntimeException)
+MANAGED_RUNTIME_EXPORT(RuntimeFailFast)
+MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
+MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
+MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
+MANAGED_RUNTIME_EXPORT(OnUnhandledException)
+MANAGED_RUNTIME_EXPORT(IDynamicCastableIsInterfaceImplemented)
+MANAGED_RUNTIME_EXPORT(IDynamicCastableGetInterfaceImplementation)
+#ifdef FEATURE_OBJCMARSHAL
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalTryGetTaggedMemory)
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetIsTrackedReferenceCallback)
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback)
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
+#endif
+
+typedef void (__cdecl *pfn)();
 
 static const pfn c_classlibFunctions[] = {
-    (pfn)&GetRuntimeException,
-    (pfn)&RuntimeFailFast,
+    &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
+    &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
     nullptr, // &UnhandledExceptionHandler,
-    (pfn)&AppendExceptionStackFrame,
+    &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     nullptr, // &CheckStaticClassConstruction,
-    (pfn)&GetSystemArrayEEType,
-    (pfn)&OnFirstChanceException,
-    (pfn)&OnUnhandledException,
-    (pfn)&IDynamicCastableIsInterfaceImplemented,
-    (pfn)&IDynamicCastableGetInterfaceImplementation,
+    &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
+    &MANAGED_RUNTIME_EXPORT_NAME(OnFirstChanceException),
+    &MANAGED_RUNTIME_EXPORT_NAME(OnUnhandledException),
+    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableIsInterfaceImplemented),
+    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableGetInterfaceImplementation),
 #ifdef FEATURE_OBJCMARSHAL
-    (pfn)&ObjectiveCMarshalTryGetTaggedMemory,
-    (pfn)&ObjectiveCMarshalGetIsTrackedReferenceCallback,
-    (pfn)&ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
-    (pfn)&ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalTryGetTaggedMemory),
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetIsTrackedReferenceCallback),
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback),
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler),
 #else
     nullptr,
     nullptr,

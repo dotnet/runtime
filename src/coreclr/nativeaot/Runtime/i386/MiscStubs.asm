@@ -1,7 +1,8 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-        .586
+        .686P
+        .XMM
         .model  flat
         option  casemap:none
         .code
@@ -155,5 +156,108 @@ LRszMORE32:
     shr     eax, cl
     ret
 RhpLRsz ENDP
+
+EXTERN __dtol3 : PROC
+
+RhpDbl2Lng PROC public
+    movsd   xmm0, qword ptr [esp+4]
+    call    __dtol3
+    ret 8
+RhpDbl2Lng ENDP
+
+RhpDbl2Int PROC public
+    movsd   xmm0, qword ptr [esp+4]
+    cvttsd2si eax, xmm0
+    ret 8
+RhpDbl2Int ENDP
+
+RhpDbl2UInt PROC public
+    movsd   xmm0, qword ptr [esp+4]
+    call    __dtol3
+    ret 8
+RhpDbl2UInt ENDP
+
+EXTERN @RhpDbl2ULng@8 : PROC
+
+RhpDbl2ULng PROC public
+    jmp @RhpDbl2ULng@8
+RhpDbl2ULng ENDP
+
+EXTERN __ltod3 : PROC
+
+RhpLng2Dbl PROC public
+    mov     edx, dword ptr [esp+8]
+    mov     ecx, dword ptr [esp+4]
+    call    __ltod3
+    movsd   qword ptr [esp+4], xmm0
+    fld     qword ptr [esp+4]
+    ret     8
+RhpLng2Dbl ENDP
+
+EXTERN __ultod3 : PROC
+
+RhpULng2Dbl PROC public
+    mov     edx, dword ptr [esp+8]
+    mov     ecx, dword ptr [esp+4]
+    call    __ultod3
+    movsd   qword ptr [esp+4], xmm0
+    fld     qword ptr [esp+4]
+    ret     8
+RhpULng2Dbl ENDP
+
+EXTERN __alldiv : PROC
+
+RhpLDiv PROC public
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    call    __alldiv
+    ret     16
+RhpLDiv ENDP
+
+EXTERN __allrem : PROC
+
+RhpLMod PROC public
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    call    __allrem
+    ret     16
+RhpLMod ENDP
+
+EXTERN __aulldiv : PROC
+
+RhpULDiv PROC public
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    call    __aulldiv
+    ret     16
+RhpULDiv ENDP
+
+EXTERN __aullrem : PROC
+
+RhpULMod PROC public
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    push    dword ptr [esp+16]
+    call    __aullrem
+    ret     16
+RhpULMod ENDP
+
+EXTERN __allmul : PROC
+
+RhpLMul PROC public
+    push    DWORD PTR [esp+16]
+    push    DWORD PTR [esp+16]
+    push    DWORD PTR [esp+16]
+    push    DWORD PTR [esp+16]
+    call    __allmul
+    ret     16
+RhpLMul ENDP
 
 end

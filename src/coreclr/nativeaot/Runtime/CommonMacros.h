@@ -177,7 +177,7 @@ typedef uint8_t CODE_LOCATION;
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
 //
-#ifdef HOST_X86
+#if defined(HOST_X86) && defined(HOST_WINDOWS)
 #define COOP_ARGHELPER_NAME(_1, _2, _3, _4, _5, _6, NAME, ...) NAME
 #define COOP_ARGHELPER_NAME_(tuple) COOP_ARGHELPER_NAME tuple
 

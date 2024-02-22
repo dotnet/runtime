@@ -14,7 +14,6 @@
 #include "RestrictedCallouts.h"
 #include "gchandleutilities.h"
 
-
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);

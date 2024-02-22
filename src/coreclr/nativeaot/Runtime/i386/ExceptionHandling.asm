@@ -285,6 +285,7 @@ endm
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallCatchFunclet, 16
+ALTERNATE_HELPER_ENTRY RhpCallCatchFunclet
 
         FUNCLET_CALL_PROLOGUE 2
 
@@ -390,6 +391,7 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallFinallyFunclet, 8
+ALTERNATE_HELPER_ENTRY RhpCallFinallyFunclet
 
         FUNCLET_CALL_PROLOGUE 0
 
@@ -455,6 +457,7 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallFilterFunclet, 12
+ALTERNATE_HELPER_ENTRY RhpCallFilterFunclet
 
         FUNCLET_CALL_PROLOGUE 0
 

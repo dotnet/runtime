@@ -102,8 +102,8 @@ namespace ILCompiler
             }
             else
             {
-                Debug.Assert(method is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod && (ecmaMethod.GetRuntimeExportName() != null || ecmaMethod.GetRuntimeImportName() != null));
-                callConv = UnmanagedCallingConventions.Fastcall;
+                Debug.Assert(method is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod && (ecmaMethod.GetRuntimeImportName() != null || ecmaMethod.GetRuntimeExportName() != null));
+                return unmangledName;
             }
 
             int signatureBytes = 0;

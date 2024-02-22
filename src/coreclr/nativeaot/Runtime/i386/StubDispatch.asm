@@ -12,8 +12,6 @@ include AsmMacros.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-RhpCidResolve equ @RhpCidResolve@8
-
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
 
