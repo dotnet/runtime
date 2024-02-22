@@ -156,19 +156,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     using var cts = new CancellationTokenSource(8);
                     try {
                         mr.Wait(cts.Token);
-                    } catch (OperationCanceledException) { 
-                        Console.WriteLine("ManualResetEventSlim.Wait: OperationCanceledException is ignored " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
-                        /* ignore */
-                 }
+                    } catch (Exception ex) {
+                        if (ex is OperationCanceledException)
+                        {
+                            throw;
+                        }
+                    }
                 }},
                 new NamedCall { Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
                     using var sem = new SemaphoreSlim(2);
                     var cts = new CancellationTokenSource(8);
                     try {
                         sem.Wait(cts.Token);
-                    } catch (OperationCanceledException) { 
-                        Console.WriteLine("SemaphoreSlim.Wait: OperationCanceledException is ignored " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
-                        /* ignore */ 
+                    } catch (Exception ex) {
+                        if (ex is OperationCanceledException)
+                        {
+                            throw;
+                        }
                     }
                 }},
         };
