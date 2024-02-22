@@ -87,13 +87,46 @@ extern "C" void QCALLTYPE ObjectNative_GetClassHelper(MethodTable* pMT, QCall::O
     END_QCALL;
 }
 
-// This routine is called by the Object.GetType() routine.   It is a major way to get the System.Type
-FCIMPL1(Object*, ObjectNative::GetClassIfExists, MethodTable* pMT)
+NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
 {
-    FCALL_CONTRACT;
+    FC_INNER_PROLOG(ObjectNative::GetClass);
+    _ASSERTE(objRef != NULL);
+    TypeHandle typeHandle = objRef->GetTypeHandle();
+    OBJECTREF refType = NULL;
 
-    OBJECTREF typePtr = pMT->GetManagedClassObjectIfExists();
-    return OBJECTREFToObject(typePtr);
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refType);
+
+        refType = typeHandle.GetManagedClassObject();
+
+    HELPER_METHOD_FRAME_END();
+    FC_INNER_EPILOG();
+    return OBJECTREFToObject(refType);
+}
+
+// This routine is called by the Object.GetType() routine.   It is a major way to get the System.Type
+FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
+{
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        INJECT_FAULT(FCThrow(kOutOfMemoryException););
+    }
+    CONTRACTL_END;
+
+    OBJECTREF objRef = ObjectToOBJECTREF(pThis);
+    if (objRef != NULL)
+    {
+        MethodTable* pMT = objRef->GetMethodTable();
+        OBJECTREF typePtr = pMT->GetManagedClassObjectIfExists();
+        if (typePtr != NULL)
+        {
+            return OBJECTREFToObject(typePtr);
+        }
+    }
+    else
+        FCThrow(kNullReferenceException);
+
+    FC_INNER_RETURN(Object*, GetClassHelper(objRef));
 }
 FCIMPLEND
 

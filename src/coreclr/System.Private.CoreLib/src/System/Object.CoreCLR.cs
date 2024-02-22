@@ -10,14 +10,8 @@ namespace System
     {
         // Returns a Type object which represent this object instance.
         [Intrinsic]
-        public unsafe Type GetType()
-        {
-            // Throws NullReferenceException as expected
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
-            Type type = Type.GetTypeFromHandleUnsafe((IntPtr)pMT);
-            GC.KeepAlive(this);
-            return type;
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern Type GetType();
 
         // Returns a new object instance that is a memberwise copy of this
         // object.  This is always a shallow copy of the instance. The method is protected
