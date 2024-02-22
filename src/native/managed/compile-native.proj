@@ -46,7 +46,7 @@
         <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps);_RandomOtherPropertyToPleaseMSBuild=BuildingAndPublishing"
+                 Properties="_IsPublishing=true;Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps);"
                  Targets="Build;Publish" />
     </Target>
 </Project>
