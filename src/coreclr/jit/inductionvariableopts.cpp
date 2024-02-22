@@ -1284,12 +1284,12 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 void Compiler::optBestEffortReplaceNarrowIVUsesWith(
     unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt)
 {
-    JITDUMP("  Replacing V%02u -> V%02u in " FMT_BB " starting at " FMT_STMT "\n", lclNum, newLclNum, block->bbNum,
+    JITDUMP("Replacing V%02u -> V%02u in " FMT_BB " starting at " FMT_STMT "\n", lclNum, newLclNum, block->bbNum,
             firstStmt == nullptr ? 0 : firstStmt->GetID());
 
     for (Statement* stmt = firstStmt; stmt != nullptr; stmt = stmt->GetNextStmt())
     {
-        JITDUMP("  Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum, dspTreeID(stmt->GetRootNode()));
+        JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum, dspTreeID(stmt->GetRootNode()));
         DISPSTMT(stmt);
         JITDUMP("\n");
 
@@ -1414,7 +1414,7 @@ PhaseStatus Compiler::optInductionVariables()
 
             BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
             BasicBlock* initBlock = preheader;
-            if (startSsaDsc->GetBlock() != nullptr)
+            if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
             {
                 initBlock = startSsaDsc->GetBlock();
             }
@@ -1427,7 +1427,7 @@ PhaseStatus Compiler::optInductionVariables()
             changed = true;
 
             Statement* insertInitAfter = nullptr;
-            if ((initBlock != preheader) && (startSsaDsc->GetDefNode() != nullptr))
+            if (initBlock != preheader)
             {
                 GenTree* narrowInitRoot = startSsaDsc->GetDefNode();
                 while (true)
