@@ -2,7 +2,7 @@
     <PropertyGroup>
         <!-- We always want to use release for publishing using NativeAOT -->
         <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
-	<!-- we always want to make shared libs - static libs don't work for CoreCLR; except if you override NativeLibKind -->
+	<!-- we always want to make shared libs -->
         <NativeLibKind Condition="'$(NativeLibKind)' == ''">shared</NativeLibKind>
     </PropertyGroup>
 

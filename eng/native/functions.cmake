@@ -589,7 +589,6 @@ function(install_clr)
         endif()
       elseif("${targetType}" STREQUAL "SHARED_LIBRARY")
         #imported shared lib - install the imported artifacts
-        #imported static lib - nothing to install
 
         if ("${CMAKE_VERSION}" VERSION_LESS "3.21")
           install(PROGRAMS $<TARGET_PROPERTY:${targetName},IMPORTED_LOCATION> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})

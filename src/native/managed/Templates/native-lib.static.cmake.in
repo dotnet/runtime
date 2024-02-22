@@ -1,7 +1,0 @@
-set(${libCmakeName}_MODE "STATIC")
-set(${libCmakeName}_NAME "${libArtifactName}")
-set(${libCmakeName}_EXT "${libArtifactExt}")
-set(${libCmakeName}_LIBPATH "${libArtifactLibPath}")
-set(NATIVEAOT_FRAMEWORK_PATH "${libArtifactNativeAotFrameworkPath}")
-set(NATIVEAOT_SDK_PATH "${libArtifactNativeAotSdkPath}")
-set(${libCmakeName}_INCLUDE "${libArtifactIncludePath}")
