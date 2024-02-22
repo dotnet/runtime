@@ -27,11 +27,6 @@ extends:
           jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
           buildConfig: checked
           platformGroup: gcstress
-          jobParameters:
-            # libraries test build platforms
-            testBuildPlatforms:
-            - linux_x64
-            - windows_x64
 
       #
       # Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes

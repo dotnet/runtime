@@ -12,7 +12,6 @@ parameters:
   variables: {}
   pool: ''
   platform: ''
-  testBuildPlatforms: []
   disableComponentGovernance: false
 
 jobs:
@@ -49,5 +48,4 @@ jobs:
     pool: ${{ parameters.pool }}
     liveRuntimeBuildConfig: ${{ parameters.buildConfig }}
     platform: ${{ parameters.platform }}
-    testBuildPlatforms: ${{ parameters.testBuildPlatforms }}
     disableComponentGovernance: ${{ parameters.disableComponentGovernance }}

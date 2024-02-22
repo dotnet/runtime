@@ -29,7 +29,6 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
-    enableMicrobuild: true
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
@@ -90,9 +89,6 @@ jobs:
       - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component alljits -component nativeaot -component spmi '
 
-    - name: SignType
-      value: $[ coalesce(variables.OfficialSignType, 'real') ]
-
     # Set a default empty argument for the pgo path.
     # This will be set during the 'native prerequisites' step if PGO optimization is enabled.
     - name: CoreClrPgoDataArg
@@ -121,17 +117,6 @@ jobs:
     # We can't do this from within the build, so we need to do this as a separate step.
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
-
-    # Install MicroBuild for signing the DAC and DBI
-    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), eq(parameters.signBinaries, true), eq(parameters.osGroup, 'windows')) }}:
-      - task: MicroBuildSigningPlugin@2
-        displayName: Install MicroBuild plugin for Signing
-        inputs:
-          signType: $(SignType)
-          zipSources: false
-          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-        continueOnError: false
-        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
       - ${{ if ne(parameters.osGroup, 'windows') }}:
@@ -184,7 +169,7 @@ jobs:
       displayName: Build managed product components and packages
 
     # Build native test components
-    - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
+    - ${{ if ne(parameters.disableClrTest, true) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
@@ -229,22 +214,15 @@ jobs:
 
     - ${{ if and(ne(parameters.testGroup, ''), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.
-      - ${{ if ne(parameters.isOfficialBuild, true) }}:
-        - template: /eng/pipelines/common/upload-artifact-step.yml
-          parameters:
-            rootFolder: $(nativeTestArtifactRootFolderPath)
-            includeRootFolder: false
-            archiveType: $(archiveType)
-            tarCompression: $(tarCompression)
-            archiveExtension: $(archiveExtension)
-            artifactName: $(nativeTestArtifactName)
-            displayName: 'native test components'
-
-    # Save packages using the prepare-signed-artifacts format.
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+      - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          name: ${{ parameters.platform }}
+          rootFolder: $(nativeTestArtifactRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(nativeTestArtifactName)
+          displayName: 'native test components'
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
       - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log

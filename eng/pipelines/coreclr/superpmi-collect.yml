@@ -48,10 +48,6 @@ extends:
           - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: outerloop
-            # libraries test build platforms
-            testBuildPlatforms:
-            - linux_x64
-            - windows_x64
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       # superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
