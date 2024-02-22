@@ -505,6 +505,7 @@ CONFIG_DWORD_INFO(INTERNAL_DiagnosticSuspend, W("DiagnosticSuspend"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuspendDeadlockTimeout, W("SuspendDeadlockTimeout"), 40000, "")
 CONFIG_DWORD_INFO(INTERNAL_SuspendThreadDeadlockTimeoutMs, W("SuspendThreadDeadlockTimeoutMs"), 2000, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSuspendInjection"), 1, "Specifies whether to inject activations for thread suspension on Unix")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterruptibleCallSites, W("InterruptibleCallSites"), 1, "Specifies whether to allow asynchronous thread interruptions at call sites (requires GCInfo v3)")
 
 ///
 /// Thread (miscellaneous)
