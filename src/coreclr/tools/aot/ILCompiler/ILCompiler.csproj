@@ -73,6 +73,19 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
     </Exec>
 
+    <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(NativeAotSupported)' == 'true' and '$(_IsApplePlatform)' == 'true'">
+      <CustomLinkerArg Condition="'$(_XcodeVersion)' &gt;= '15'" Include="-ld_classic" />
+    </ItemGroup>
+
     <PropertyGroup>
       <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
       <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>

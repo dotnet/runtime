@@ -81,9 +81,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                 {
                     CancellationTokenSource cts = new CancellationTokenSource();
-                    var promise = response.Content.ReadAsStringAsync(cts.Token);
-                    cts.Cancel();
-                    await promise;
+                    try
+                    {
+                        var promise = response.Content.ReadAsStringAsync(cts.Token);
+                        Console.WriteLine("HttpClient_CancelInDifferentThread: ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
+                        cts.Cancel();
+                        await promise;
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+                        Console.WriteLine("HttpClient_CancelInDifferentThread: TaskCanceledException is thrown with message: " + ex.ToString());
+                        throw;
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        Console.WriteLine("HttpClient_CancelInDifferentThread: OperationCanceledException is thrown with message: " + ex.ToString());
+                        throw;
+                    }
                 });
             });
         }

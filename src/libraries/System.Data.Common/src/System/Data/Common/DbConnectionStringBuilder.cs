@@ -607,6 +607,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetAttributes(this, true);
         }
+        [RequiresUnreferencedCode("Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.")]
         object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             // return TypeDescriptor.GetEditor(this, editorBaseType, true);

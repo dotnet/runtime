@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
         public unsafe void OptimizedPaths()
         {
             JavaScriptTestHelper.optimizedReached = 0;
@@ -529,6 +529,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #region Int32
         [Theory]
         [MemberData(nameof(MarshalInt32Cases))]
+        public async Task JsImportInt32DiscardNoWait(int value)
+        {
+            JavaScriptTestHelper.store1DiscardNoWait_Int32(value);
+            await JavaScriptTestHelper.Delay(0);
+            Assert.Equal(value, JavaScriptTestHelper.retrieve1_Int32());
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalInt32Cases))]
         public void JsImportInt32(int value)
         {
             JsImportTest(value,
@@ -913,7 +922,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await JavaScriptTestHelper.sleep(100);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // slow
         public async Task JsImportTaskTypes()
         {
             for (int i = 0; i < 100; i++)
@@ -1108,7 +1117,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Action
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_EchoAction()
         {
             bool called = false;
@@ -1123,7 +1132,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        /* TODO deputy
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void JsImportCallback_EchoActionThrows_MT()
         {
@@ -1139,7 +1147,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Throws<JSException>(()=>actual());
             Assert.False(called);
         }
-        */
 
         [Fact]
         public async Task JsImportCallback_Async()
@@ -1157,7 +1164,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [Fact]
         [OuterLoop]
         public async Task JsImportCallback_EchoActionMany()
         {
@@ -1178,7 +1185,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_Action()
         {
             bool called = false;
@@ -1189,7 +1196,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportEcho_ActionAction()
         {
             bool called = false;
@@ -1202,7 +1209,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportEcho_ActionIntActionInt()
         {
             int calledA = -1;
@@ -1215,7 +1222,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, calledA);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionInt()
         {
             int called = -1;
@@ -1226,7 +1233,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1239,7 +1246,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, res);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportBackCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1254,7 +1261,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, called);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportBackCallback_FunctionIntIntIntInt()
         {
             int calledA = -1;
@@ -1273,7 +1280,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, calledB);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntInt()
         {
             int calledA = -1;
@@ -1287,7 +1294,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionLongLong()
         {
             long calledA = -1;
@@ -1301,7 +1308,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntLong()
         {
             int calledA = -1;
@@ -1315,7 +1322,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [Fact] //TODO [Fact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntThrow()
         {
             int called = -1;

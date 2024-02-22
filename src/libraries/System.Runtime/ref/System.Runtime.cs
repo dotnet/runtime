@@ -4710,6 +4710,7 @@ namespace System
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
+        public static System.ReadOnlySpan<T> CastUp<TDerived>(System.ReadOnlySpan<TDerived> items) where TDerived : class?, T { throw null; }
         public void CopyTo(System.Span<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use the equality operator instead.")]
