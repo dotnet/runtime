@@ -9211,6 +9211,7 @@ public:
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
+        // | riscv64     |    64  |    32  | no SIMD support
         //
         // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //
