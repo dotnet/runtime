@@ -50,8 +50,7 @@ namespace System
     internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
         where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
     {
-        // The significant digits count for (BiasedExponent=1, TrailingSignificand=all bits set), plus 2
-        static abstract int NumberBufferLength { get; }
+        static abstract int NumberBufferLength { get; } // Ceiling(Log10(5^(Abs(MinBinaryExponent) - 1))) + NormalMantissaBits + 1 + 1
 
         static abstract ulong ZeroBits { get; }
         static abstract ulong InfinityBits { get; }
@@ -74,10 +73,10 @@ namespace System
         static abstract ushort NormalMantissaBits { get; }
         static abstract ushort DenormalMantissaBits { get; }
 
-        static abstract int MinFastFloatDecimalExponent { get; } // MinDecimalExponent
+        static abstract int MinFastFloatDecimalExponent { get; } // Floor(Log10(2^(MinBinaryExponent-DenormalMantissaBits-64)))
         static abstract int MaxFastFloatDecimalExponent { get; } // MaxDecimalExponent - 1
 
-        static abstract int MinExponentRoundToEven { get; } // -Floor(Log2(2^(64 - NormalMantissaBits)))
+        static abstract int MinExponentRoundToEven { get; } // -Floor(Log5(2^(64 - NormalMantissaBits)))
         static abstract int MaxExponentRoundToEven { get; } // Floor(Log5(2^(NormalMantissaBits + 1)))
 
         static abstract int MaxExponentFastPath { get; } // Max(n) when 10^n can be precisely represented
