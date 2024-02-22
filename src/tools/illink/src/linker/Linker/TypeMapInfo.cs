@@ -181,7 +181,7 @@ namespace Mono.Linker
 					}
 
 					// Look for a default implementation last.
-					FindAndAddDefaultInterfaceImplementations (type, type, resolvedInterfaceMethod);
+					FindAndAddDefaultInterfaceImplementations (type, type, resolvedInterfaceMethod, interfaceImpl.OriginalImpl);
 				}
 			}
 		}
