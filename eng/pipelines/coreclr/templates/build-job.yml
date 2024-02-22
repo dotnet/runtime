@@ -61,8 +61,6 @@ jobs:
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-    - name: compilerArg
-      value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
     - name: officialBuildIdArg
@@ -148,14 +146,14 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg)
         displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
@@ -165,12 +163,12 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Build native test components
     - ${{ if ne(parameters.disableClrTest, true) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg)
         displayName: Build native test components
 
     # Sign and add entitlements to these MacOS binaries

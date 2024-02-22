@@ -53,9 +53,6 @@ jobs:
     - name: uploadAs
       value: ${{ parameters.uploadAs }}
 
-    - name: compilerArg
-      value: ''
-
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonSetupScript
         value: 'py -3 -m venv $(Build.SourcesDirectory)\venv'
@@ -96,7 +93,7 @@ jobs:
 
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits -component spmi
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -component alljits -component spmi
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits -component spmi

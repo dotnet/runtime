@@ -37,7 +37,6 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    compilerArg: ''
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -69,8 +68,6 @@ jobs:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
         value: 'libs+clr.iltools -c Release -ci'
-      - name: compilerArg
-        value: ''
 
       - name: runtimeFlavorArgs
         value: ''
@@ -99,7 +96,7 @@ jobs:
         displayName: Install native dependencies
 
     # Build core/libraries dependencies of test build
-    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(crossArg) $(compilerArg)
+    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(crossArg)
       displayName: Build coreclr/libs components needed by test build
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
