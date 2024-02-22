@@ -101,5 +101,7 @@
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />
 
+    <Compile Include="JitInterface\SwiftPhysicalLowering.cs" />
+
   </ItemGroup>
 </Project>

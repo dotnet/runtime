@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ILCompiler.Compiler.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -42,5 +42,6 @@
   <ItemGroup>
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
+    <Compile Include="SwiftLoweringTests.cs" />
   </ItemGroup>
 </Project>
