@@ -75,7 +75,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftInvalidCallConv/*">
+            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftSelfContext/*">
             <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
         </ExcludeList>
     </ItemGroup>
