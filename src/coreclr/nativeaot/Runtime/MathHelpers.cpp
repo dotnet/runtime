@@ -132,7 +132,6 @@ EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLMul(int64_t i, int64_t j)
     return i * j;
 }
 
-#ifndef TARGET_X86
 EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpLRsz(uint64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
@@ -147,7 +146,6 @@ EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLLsh(int64_t i, int32_t j)
 {
     return i << (j & 0x3f);
 }
-#endif
 
 EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
 {
