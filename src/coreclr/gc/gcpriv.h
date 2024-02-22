@@ -4237,8 +4237,6 @@ private:
     {
         static const int sample_size = 3;
         static const int recorded_tcp_array_size = 64;
-        // If we need to calculate an average, this is how many entries we look at.
-        static const int count_for_average = 3;
 
         struct sample
         {
@@ -4362,6 +4360,11 @@ private:
 
         // Currently only used for dprintf.
         size_t          first_below_target_gc_index;
+
+        float get_range_upper (float t)
+        {
+            return (t * 1.2f);
+        }
 
         bool is_tcp_in_range (float diff_pct, float slope)
         {
