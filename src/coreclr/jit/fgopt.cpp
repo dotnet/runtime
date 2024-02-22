@@ -1885,7 +1885,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     if (modified)
     {
         // Invalidate the set of unique targets for block, since we modified the targets
-        InvalidateUniqueSwitchSuccMap();
+        fgInvalidateSwitchDescMapEntry(block);
     }
 
     Statement*  switchStmt = nullptr;
