@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
+using System.Numerics;
 using Xunit;
 
 public class InvalidCallingConvTests
@@ -35,6 +36,10 @@ public class InvalidCallingConvTests
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
     public static extern void FuncWithNonPrimitiveArg(StringClass arg1);
+
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
+    public static extern void FuncWithSIMDArg(Vector4 vec);
 
     [Fact]
     public static void TestFuncWithTwoSelfParameters()
@@ -76,5 +81,13 @@ public class InvalidCallingConvTests
         StringClass arg1 = new StringClass();
         arg1.value = "fail";
         Assert.Throws<InvalidProgramException>(() => FuncWithNonPrimitiveArg(arg1));
+    }
+
+    [Fact]
+    public static void TestFuncWithSIMDArg()
+    {
+        // Invalid due to a SIMD argument.
+        Vector4 vec = new Vector4(); // Using Vector4 as it is a SIMD type across all architectures for Mono
+        Assert.Throws<InvalidProgramException>(() => FuncWithSIMDArg(vec));
     }
 }

@@ -36,11 +36,14 @@ namespace System.Runtime.InteropServices.JavaScript
 #else
         public nint ContextHandle;
         public nint JSNativeTID; // target thread where JavaScript is running
-        public int ManagedTID;
+        public nint NativeTID; // current pthread id
+        public int ManagedTID; // current managed thread id
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsCurrentThread()
         {
             return ManagedTID == Environment.CurrentManagedThreadId;
@@ -58,7 +61,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
         {
             SynchronizationContext = synchronizationContext;
-            JSNativeTID = GetNativeThreadId();
+            NativeTID = JSNativeTID = GetNativeThreadId();
             ManagedTID = Environment.CurrentManagedThreadId;
             IsMainThread = isMainThread;
             ContextHandle = (nint)GCHandle.Alloc(this, GCHandleType.Normal);
@@ -231,7 +234,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static JSProxyContext AssertIsInteropThread()
         {
 #if FEATURE_WASM_MANAGED_THREADS
