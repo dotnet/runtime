@@ -45,7 +45,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(itemsPerThread * threadsCount, bag.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void AddOnOneThread_PeekOnAnother_EnsureWeCanTakeOnTheOriginal()
         {
             var bag = new ConcurrentBag<int>(Enumerable.Range(1, 5));

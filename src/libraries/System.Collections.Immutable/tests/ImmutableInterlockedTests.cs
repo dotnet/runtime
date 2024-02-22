@@ -147,7 +147,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void UpdateArray_HighConcurrency()
         {
             UpdateArrayHelper<int>(func =>

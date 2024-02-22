@@ -56,7 +56,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(producer, consumer);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Concurrent_Enqueue_TryPeek_TryDequeue_AllItemsSeen()
         {
             int items = 1000;
@@ -276,7 +276,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(Iters, dequeues);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();

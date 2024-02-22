@@ -35,7 +35,7 @@ namespace System.Timers.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void TestTimerStartAutoReset()
         {
             using (var timer = new TestTimer(1))

@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
             Assert.DoesNotContain('#', activity.Id);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
