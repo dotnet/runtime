@@ -1909,12 +1909,12 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
     {
         // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
         //
+        assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences));
         assert(call->gtArgs.CountUserArgs() == 2);
 
         // Simple zeroing
-        lengthArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-        valueArg  = comp->gtNewZeroConNode(TYP_INT);
-        BlockRange().InsertBefore(call, valueArg);
+        lengthArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        valueArg    = comp->gtNewZeroConNode(TYP_INT);
         lengthScale = 1; // it's always in bytes
     }
 
@@ -1972,12 +1972,21 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     // Insert/Remove trees into LIR
     BlockRange().InsertBefore(call, storeBlk);
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences))
+    {
+        // Value didn't exist in LIR previously
+        BlockRange().InsertBefore(storeBlk, valueArg);
+    }
 
     // Remove the call and mark everything as unused ...
     BlockRange().Remove(call, true);
     // ... except the args we're going to re-use
     dstRefArg->ClearUnusedValue();
     valueArg->ClearUnusedValue();
+    if (valueArg->OperIs(GT_INIT_VAL))
+    {
+        valueArg->gtGetOp1()->ClearUnusedValue();
+    }
 
     JITDUMP("\nNew tree:\n");
     DISPTREERANGE(BlockRange(), storeBlk);
