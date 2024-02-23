@@ -13661,6 +13661,26 @@ void emitter::emitInsSve_R_R_R_I(instruction ins,
             break;
 
         case INS_sve_adr:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidUimm2(imm)); // index shift amount
+
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_D_SXTW:
+                    fmt = IF_SVE_BH_3B;
+                    break;
+
+                case INS_OPTS_SCALABLE_D_UXTW:
+                    fmt = IF_SVE_BH_3B_A;
+                    break;
+
+                default:
+                    assert(insOptsScalableWords(opt));
+                    fmt = IF_SVE_BH_3A;
+                    break;
+            }
             break;
 
         default:
