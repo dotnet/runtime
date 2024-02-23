@@ -186,8 +186,8 @@ inline void CheckObjectSize(size_t alloc_size)
 // TODO: what are the call sites other than the fast path helpers?
 // if there is not,
 //      isSampled =
-//          (pEEAllocContext->fast_alloc_helper_limit_ptr != nullptr) &&
-//          (pEEAllocContext->fast_alloc_helper_limit_ptr != pAllocContext->alloc_limit);
+//          (pEEAllocContext->alloc_sampling != nullptr) &&
+//          (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit);
 //
 inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
 {
@@ -203,7 +203,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // TODO: isSampled could be an out parameter used by PublishObjectAndNotify()
     //       where the event would be emitted
     bool isSampled = false;
-    size_t samplingBudget = (size_t)(pAllocContext->alloc_limit - pEEAllocContext->fast_alloc_helper_limit_ptr);
+    size_t samplingBudget = (size_t)(pAllocContext->alloc_limit - pEEAllocContext->alloc_sampling);
     size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
@@ -218,14 +218,14 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         // check if this allocation overlaps the SOH sampling point:
         //    if the sampling threashold was outside of the allocation context,
         //    then
-        //      fast_alloc_helper_limit_ptr was set to alloc_limit
+        //      alloc_sampling was set to alloc_limit
         //      or the allocation context was just initialized to nullptr for the first allocation
         //    else
-        //      use the fast_alloc_helper_limit_ptr to decide if this allocation should be sampled
+        //      use the alloc_sampling to decide if this allocation should be sampled
         // see the comment at the beginning of the function for the simplified check
         isSampled =
-            (pEEAllocContext->fast_alloc_helper_limit_ptr != nullptr) &&  // nullptr first time the allocation context is used
-            (pEEAllocContext->fast_alloc_helper_limit_ptr != pAllocContext->alloc_limit) &&
+            (pEEAllocContext->alloc_sampling != nullptr) &&  // nullptr first time the allocation context is used
+            (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
             (size > samplingBudget);
     }
 

@@ -22,7 +22,7 @@ typedef struct _ee_alloc_context
     //  - if sampling is on, this is the next sampled byte in the gc_alloc_context
     //  - if no such byte exists (i.e. the sampling threshold is outside of the allocation context),
     //     this is the same as alloc_limit
-    uint8_t* fast_alloc_helper_limit_ptr;
+    uint8_t* alloc_sampling;
     gc_alloc_context gc_alloc_context;
 
  public:
@@ -32,7 +32,7 @@ typedef struct _ee_alloc_context
 
         // we can't compute a sampling limit
         // because we don't know the size of the allocation context yet
-        fast_alloc_helper_limit_ptr = nullptr;
+        alloc_sampling = nullptr;
 
         gc_alloc_context.init();
     }
@@ -41,12 +41,12 @@ typedef struct _ee_alloc_context
     inline void ComputeSamplingLimit()
     {
         // TODO: maybe it is easier to assume that the caller of this function will check if sampling is on/off
-        // If sampling is off this is just setting fast_alloc_helper_limit_ptr = alloc_limit
+        // If sampling is off this is just setting alloc_sampling = alloc_limit
         // If sampling is on then we'd do some pseudo-random number generation to decide what is
         // the next sampled byte in the gc_alloc_context, if any.
 
         //TODO: implement sampling limit placement strategy
-        fast_alloc_helper_limit_ptr = gc_alloc_context.alloc_limit;
+        alloc_sampling = gc_alloc_context.alloc_limit;
     }
 } ee_alloc_context;
 

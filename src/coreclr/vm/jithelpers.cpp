@@ -2411,8 +2411,8 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         ee_alloc_context *eeAllocContext = thread->GetEEAllocContext();
         gc_alloc_context *allocContext = &eeAllocContext->gc_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= eeAllocContext->fast_alloc_helper_limit_ptr);
-        if (size > static_cast<SIZE_T>(eeAllocContext->fast_alloc_helper_limit_ptr - allocPtr))
+        _ASSERTE(allocPtr <= eeAllocContext->alloc_sampling);
+        if (size > static_cast<SIZE_T>(eeAllocContext->alloc_sampling - allocPtr))
         {
             break;
         }
@@ -2536,8 +2536,8 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         ee_alloc_context *eeAllocContext = thread->GetEEAllocContext();
         gc_alloc_context *allocContext = &eeAllocContext->gc_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= eeAllocContext->fast_alloc_helper_limit_ptr);
-        if (totalSize > static_cast<SIZE_T>(eeAllocContext->fast_alloc_helper_limit_ptr - allocPtr))
+        _ASSERTE(allocPtr <= eeAllocContext->alloc_sampling);
+        if (totalSize > static_cast<SIZE_T>(eeAllocContext->alloc_sampling - allocPtr))
         {
             break;
         }
@@ -2685,8 +2685,8 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
         ee_alloc_context *eeAllocContext = thread->GetEEAllocContext();
         gc_alloc_context *allocContext = &eeAllocContext->gc_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= eeAllocContext->fast_alloc_helper_limit_ptr);
-        if (totalSize > static_cast<SIZE_T>(eeAllocContext->fast_alloc_helper_limit_ptr - allocPtr))
+        _ASSERTE(allocPtr <= eeAllocContext->alloc_sampling);
+        if (totalSize > static_cast<SIZE_T>(eeAllocContext->alloc_sampling - allocPtr))
         {
             break;
         }
@@ -2745,8 +2745,8 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
         ee_alloc_context *eeAllocContext = thread->GetEEAllocContext();
         gc_alloc_context *allocContext = &eeAllocContext->gc_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= eeAllocContext->fast_alloc_helper_limit_ptr);
-        if (totalSize > static_cast<SIZE_T>(eeAllocContext->fast_alloc_helper_limit_ptr - allocPtr))
+        _ASSERTE(allocPtr <= eeAllocContext->alloc_sampling);
+        if (totalSize > static_cast<SIZE_T>(eeAllocContext->alloc_sampling - allocPtr))
         {
             break;
         }

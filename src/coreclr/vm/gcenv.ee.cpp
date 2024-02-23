@@ -451,7 +451,7 @@ void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context
 
     // The allocation context might be modified by the callback, so we need to save
     // the remaining sampling budget and restore it after the callback.
-    size_t remainingSamplingBudget = (pEEAllocContext->fast_alloc_helper_limit_ptr == nullptr) ? 0 : pEEAllocContext->fast_alloc_helper_limit_ptr - pAllocContext->alloc_ptr;
+    size_t remainingSamplingBudget = (pEEAllocContext->alloc_sampling == nullptr) ? 0 : pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr;
 
     fn(pAllocContext, param);
 
@@ -463,13 +463,13 @@ void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context
             // the allocation context size has been reduced below the sampling threshold (not sure this is possible)
             // TODO: if remainingSamplingBudget was not 0, it means that an object would have been sampled.
             //       but now that the allocation context is smaller than the sampling limit, what should be done?
-            //       maybe set fast_alloc_helper_limit_ptr to alloc_ptr to trigger the sampling at the next allocation
+            //       maybe set alloc_sampling to alloc_ptr to trigger the sampling at the next allocation
             //       if we don't do this, the distribution statistics will be skewed. Same if we recompute the limit.
         }
         else
         {
             // restore the remaining sampling budget
-            pEEAllocContext->fast_alloc_helper_limit_ptr = pAllocContext->alloc_ptr + remainingSamplingBudget;
+            pEEAllocContext->alloc_sampling = pAllocContext->alloc_ptr + remainingSamplingBudget;
         }
     }
 }
