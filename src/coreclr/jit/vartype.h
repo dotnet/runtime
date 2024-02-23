@@ -321,7 +321,7 @@ inline bool varTypeUsesMaskReg(T vt)
 // However, we only have one type that uses VTR_MASK today
 // and so its quite a bit cheaper to just check that directly
 
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     assert((TypeGet(vt) == TYP_MASK) || (varTypeRegister[TypeGet(vt)] != VTR_MASK));
     return TypeGet(vt) == TYP_MASK;
 #else

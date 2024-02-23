@@ -930,7 +930,7 @@ struct HWIntrinsic final
         InitializeBaseType(node);
     }
 
-    bool IsTableDriven() const
+    bool codeGenIsTableDriven() const
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
         bool isTableDrivenCategory = category != HW_Category_Helper;

@@ -144,6 +144,10 @@
   #define RBM_HIGHMASK             (RBM_P8 | RBM_P9 | RBM_P10 | RBM_P11 | RBM_P12 | RBM_P13 | RBM_P14 | RBM_P15)
   #define RBM_ALLMASK              (RBM_LOWMASK | RBM_HIGHMASK)
 
+  // TODO-SVE: Fix when adding predicate register allocation
+  #define RBM_MSK_CALLEE_SAVED    (0)
+  #define RBM_MSK_CALLEE_TRASH    (0)
+
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:

@@ -1329,8 +1329,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     const HWIntrinsic intrin(intrinsicTree);
 
-    int srcCount = 0;
-    int dstCount = 0;
+    int       srcCount      = 0;
+    int       dstCount      = 0;
     regMaskTP dstCandidates = RBM_NONE;
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
@@ -1547,17 +1547,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP srcCandidates = RBM_NONE;
+            regMaskTP predMask = RBM_ALLMASK;
             switch (intrin.id)
             {
-                case NI_Sve_LoadVector:
-                    srcCandidates = RBM_LOWMASK;
+                case NI_Sve_ConvertVectorToMask: // Uses INS_sve_cmpne
+                case NI_Sve_LoadVector:          // TODO-SVE: are we sure?
+                    predMask = RBM_LOWMASK;
+                    break;
+
+                case NI_Sve_ConvertMaskToVector: // Uses INS_sve_pmov
                     break;
 
                 default:
-                    noway_assert(!"Not a supported masked operation");
+                    noway_assert(!"Not a supported predicated result SVE operation");
             }
-            srcCount += BuildOperandUses(intrin.op1, srcCandidates);
+            srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1757,28 +1761,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
         return srcCount;
-    }
-
-    else if (HWIntrinsicInfo::ReturnsPerElementMask(intrin.id))
-    {
-        switch (intrin.id)
-        {
-            case NI_Sve_CreateTrueMaskByte:
-            case NI_Sve_CreateTrueMaskDouble:
-            case NI_Sve_CreateTrueMaskInt16:
-            case NI_Sve_CreateTrueMaskInt32:
-            case NI_Sve_CreateTrueMaskInt64:
-            case NI_Sve_CreateTrueMaskSByte:
-            case NI_Sve_CreateTrueMaskSingle:
-            case NI_Sve_CreateTrueMaskUInt16:
-            case NI_Sve_CreateTrueMaskUInt32:
-            case NI_Sve_CreateTrueMaskUInt64:
-                dstCandidates = RBM_ALLMASK;
-                break;
-
-            default:
-                noway_assert(!"Not a supported ReturnsPerElementMask operation");
-        }
     }
 
     else if (intrin.op2 != nullptr)

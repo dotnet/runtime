@@ -63,8 +63,10 @@ DEF_TP(SIMD16   ,"simd16" , TYP_SIMD16,  16,16, 16,   4,16, VTR_FLOAT, available
 #if defined(TARGET_XARCH)
 DEF_TP(SIMD32   ,"simd32" , TYP_SIMD32,  32,32, 32,   8,16, VTR_FLOAT, availableDoubleRegs, RBM_FLT_CALLEE_SAVED,    RBM_FLT_CALLEE_TRASH,    VTF_S|VTF_VEC)
 DEF_TP(SIMD64   ,"simd64" , TYP_SIMD64,  64,64, 64,  16,16, VTR_FLOAT, availableDoubleRegs, RBM_FLT_CALLEE_SAVED,    RBM_FLT_CALLEE_TRASH,    VTF_S|VTF_VEC)
-DEF_TP(MASK     ,"mask"   , TYP_MASK,     8, 8,  8,   2, 8, VTR_MASK,  availableMaskRegs,   RBM_MSK_CALLEE_SAVED,    RBM_MSK_CALLEE_TRASH,    VTF_S)
 #endif // TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+DEF_TP(MASK     ,"mask"   , TYP_MASK,     8, 8,  8,   2, 8, VTR_MASK,  availableMaskRegs,   RBM_MSK_CALLEE_SAVED,    RBM_MSK_CALLEE_TRASH,    VTF_S)
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
 
 DEF_TP(UNKNOWN ,"unknown" ,TYP_UNKNOWN,  0,  0,  0,   0, 0, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_ANY)

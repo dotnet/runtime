@@ -1356,6 +1356,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         compFloatingPointUsed = true;
     }
 
+    var_types nodeRetType = retType;
+#if defined(TARGET_ARM64)
+    if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsic))
+    {
+        // Ensure the result is generated to a mask.
+        nodeRetType = TYP_MASK;
+    }
+#endif // defined(TARGET_ARM64)
+
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
     {
@@ -1392,7 +1401,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case 0:
             {
                 assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseJitType, simdSize);
                 break;
             }
 
@@ -1410,8 +1419,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
 
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseJitType, simdSize);
 
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
@@ -1462,8 +1471,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
 
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar
+                              ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic)
+                              : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
@@ -1543,9 +1553,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
                 }
 
-                retNode = isScalar
-                              ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
-                              : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType,
+                                                              simdSize);
 
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_AVX2_GatherVector128) || (intrinsic == NI_AVX2_GatherVector256))
@@ -1566,7 +1576,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
 
                 assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
                 break;
             }
 
@@ -1576,8 +1587,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, nodeRetType, simdSize);
     }
+
+#if defined(TARGET_ARM64)
+    if (HWIntrinsicInfo::IsMaskedOperation(intrinsic))
+    {
+        // Op1 input is a vector. HWInstrinsic requires a mask, so convert to a mask.
+        assert(numArgs > 0);
+        GenTree* op1                    = retNode->AsHWIntrinsic()->Op(1);
+        op1                             = convertHWIntrinsicToMask(retType, op1, simdBaseJitType, simdSize);
+        retNode->AsHWIntrinsic()->Op(1) = op1;
+    }
+
+    if (retType != nodeRetType)
+    {
+        // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
+        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
+        retNode = convertHWIntrinsicFromMask(retNode->AsHWIntrinsic(), retType);
+    }
+#endif // defined(TARGET_ARM64)
 
     if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
     {

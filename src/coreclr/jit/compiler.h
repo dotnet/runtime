@@ -4543,6 +4543,11 @@ protected:
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
 
+#if defined(TARGET_ARM64)
+    GenTree* convertHWIntrinsicToMask(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type);
+#endif
+
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,

@@ -290,8 +290,8 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve_CreateTrueMaskUInt16:
             case NI_Sve_CreateTrueMaskUInt32:
             case NI_Sve_CreateTrueMaskUInt64:
-                immLowerBound = (int) SVE_PATTERN_POW2;
-                immUpperBound = (int) SVE_PATTERN_ALL;
+                immLowerBound = (int)SVE_PATTERN_POW2;
+                immUpperBound = (int)SVE_PATTERN_ALL;
                 break;
 
             default:
@@ -2193,6 +2193,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             break;
         }
+
         default:
         {
             return nullptr;
@@ -2200,6 +2201,92 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     return retNode;
+}
+
+//------------------------------------------------------------------------
+// convertHWIntrinsicFromMask: Convert a HW instrinsic vector node to a mask
+//
+// Arguments:
+//    node            -- The node to convert
+//    simdBaseJitType -- the base jit type of the converted node
+//    simdSize        -- the simd size of the converted node
+//
+// Return Value:
+//    The node converted to the a mask type
+//
+GenTree* Compiler::convertHWIntrinsicToMask(var_types   type,
+                                            GenTree*    node,
+                                            CorInfoType simdBaseJitType,
+                                            unsigned    simdSize)
+{
+    // ConvertVectorToMask uses cmpne which requires an embedded mask.
+    // TODO-SVE: Refactor this out once full embedded masking is adding.
+    NamedIntrinsic maskName;
+    switch (simdBaseJitType)
+    {
+        case CORINFO_TYPE_UBYTE:
+            maskName = NI_Sve_CreateTrueMaskAllByte;
+            break;
+
+        case CORINFO_TYPE_DOUBLE:
+            maskName = NI_Sve_CreateTrueMaskAllDouble;
+            break;
+
+        case CORINFO_TYPE_SHORT:
+            maskName = NI_Sve_CreateTrueMaskAllInt16;
+            break;
+
+        case CORINFO_TYPE_INT:
+            maskName = NI_Sve_CreateTrueMaskAllInt32;
+            break;
+
+        case CORINFO_TYPE_LONG:
+            maskName = NI_Sve_CreateTrueMaskAllInt64;
+            break;
+
+        case CORINFO_TYPE_BYTE:
+            maskName = NI_Sve_CreateTrueMaskAllSByte;
+            break;
+
+        case CORINFO_TYPE_FLOAT:
+            maskName = NI_Sve_CreateTrueMaskAllSingle;
+            break;
+
+        case CORINFO_TYPE_USHORT:
+            maskName = NI_Sve_CreateTrueMaskAllUInt16;
+            break;
+
+        case CORINFO_TYPE_UINT:
+            maskName = NI_Sve_CreateTrueMaskAllUInt32;
+            break;
+
+        case CORINFO_TYPE_ULONG:
+            maskName = NI_Sve_CreateTrueMaskAllUInt64;
+            break;
+
+        default:
+            unreached();
+    }
+    GenTree* embeddedMask = gtNewSimdHWIntrinsicNode(TYP_MASK, maskName, simdBaseJitType, simdSize);
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, embeddedMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType,
+                                    simdSize);
+}
+
+//------------------------------------------------------------------------
+// convertHWIntrinsicFromMask: Convert a HW instrinsic mask node to a vector
+//
+// Arguments:
+//    node          -- The node to convert
+//    type          -- The type of the node to convert to
+//
+// Return Value:
+//    The node converted to the given type
+//
+GenTree* Compiler::convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type)
+{
+    assert(node->TypeGet() == TYP_MASK);
+    return gtNewSimdHWIntrinsicNode(type, node, NI_Sve_ConvertMaskToVector, node->GetSimdBaseJitType(),
+                                    node->GetSimdSize());
 }
 
 #endif // FEATURE_HW_INTRINSICS
