@@ -25,9 +25,9 @@ public class SignalRClientTests : AppTestBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [InlineData("Debug", "LongPolling")]
-    // [InlineData("Release", "LongPolling")]
-    // [InlineData("Debug", "WebSockets")]
-    // [InlineData("Release", "WebSockets")]
+    [InlineData("Release", "LongPolling")]
+    [InlineData("Debug", "WebSockets")]
+    [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
         CopyTestAsset("BlazorHostedApp", "SignalRClientTests");
@@ -84,7 +84,7 @@ public class SignalRClientTests : AppTestBase
                 await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
             }
         }
-        // killing, what about killing? what about iterative runs?they fail...
+        string output = string.Join(Environment.NewLine, testOutput);
 
         // check sending threadId
         var confirmation = testOutput.FirstOrDefault(m => m.Contains($"SignalRPassMessages was sent by CurrentManagedThreadId="));
@@ -96,7 +96,6 @@ public class SignalRClientTests : AppTestBase
         Assert.True(confirmation != null, $"Expected to find a log that signalR message was received. TestOutput: {output}.");
         string threadIdUsedForReceiving = confirmation?.Split("CurrentManagedThreadId=")[1] ?? "";
 
-        string output = string.Join(Environment.NewLine, testOutput);
         Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
             $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
     }
