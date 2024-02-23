@@ -807,21 +807,27 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
+    // Remove the 2nd condition block as we no longer need it
+    m_comp->fgRemoveRefPred(m_b1->GetFalseEdge());
+    m_comp->fgRemoveBlock(m_b2, true);
+    
     // Re-direct firstBlock to jump to inRangeBb
-    m_comp->fgAddRefPred(inRangeBb, m_b1);
+    FlowEdge* const newEdge = m_comp->fgAddRefPred(inRangeBb, m_b1);
+    
     if (!cmp2IsReversed)
     {
-        m_b1->SetTrueTarget(inRangeBb);
-        m_b1->SetFalseTarget(notInRangeBb);
+        m_b1->SetFalseEdge(m_b1->GetTrueEdge());
+        m_b1->SetTrueEdge(newEdge);
+        assert(m_b1->TrueTargetIs(inRangeBb));
+        assert(m_b1->FalseTargetIs(notInRangeBb));
     }
     else
     {
-        m_b1->SetFalseTarget(inRangeBb);
+        m_b1->SetFalseEdge(newEdge);
+        m_b1->SetTrueEdge(m_b1->GetFalseEdge());
+        assert(m_b1->TrueTargetIs(notInRangeBb));
+        assert(m_b1->FalseTargetIs(inRangeBb));
     }
-
-    // Remove the 2nd condition block as we no longer need it
-    m_comp->fgRemoveRefPred(m_b2, m_b1);
-    m_comp->fgRemoveBlock(m_b2, true);
 
     Statement* stmt = m_b1->lastStmt();
     m_comp->gtSetStmtInfo(stmt);
@@ -1266,22 +1272,19 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetTrueTarget(), m_b1);
+        FlowEdge* edge1 = m_b1->GetTrueEdge();
         FlowEdge* edge2;
 
         if (m_sameTarget)
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetTrueTarget(), m_b2);
+            edge2 = m_b2->GetTrueEdge();
         }
         else
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetFalseTarget(), m_b2);
-
-            m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
-
-            m_b1->SetTrueTarget(m_b2->GetTrueTarget());
-
-            m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
+            edge2 = m_b2->GetFalseEdge();
+            m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
+            FlowEdge* const newEdge = m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
+            m_b1->SetTrueEdge(newEdge);
         }
 
         assert(edge1 != nullptr);
@@ -1324,9 +1327,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         //
         // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
         // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
-        m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
-        m_b1->SetFalseTarget(m_b2->GetFalseTarget());
+        m_comp->fgReplacePred(m_b2->GetFalseEdge(), m_b1);
+        m_comp->fgRemoveRefPred(m_b2->GetTrueEdge());
+        m_b1->SetFalseEdge(m_b2->GetFalseEdge());
     }
 
     // Get rid of the second block

@@ -207,8 +207,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
     assert(fgFirstBBScratch == nullptr);
 
-    BasicBlock* block = BasicBlock::New(this, BBJ_ALWAYS);
-    block->SetFlags(BBF_NONE_QUIRK);
+    BasicBlock* block;
 
     if (fgFirstBB != nullptr)
     {
@@ -226,14 +225,16 @@ bool Compiler::fgEnsureFirstBBisScratch()
         fgFirstBB->bbRefs--;
 
         // The new scratch bb will fall through to the old first bb
+        block = BasicBlock::New(this);
         FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
         edge->setLikelihood(1.0);
-        block->SetTargetEdge(edge);
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, edge);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
     {
         noway_assert(fgLastBB == nullptr);
+        block = BasicBlock::New(this, BBJ_ALWAYS);
         fgFirstBB = block;
         fgLastBB  = block;
     }
@@ -241,7 +242,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
     noway_assert(fgLastBB != nullptr);
 
     // Set the expected flags
-    block->SetFlags(BBF_INTERNAL | BBF_IMPORTED);
+    block->SetFlags(BBF_INTERNAL | BBF_IMPORTED | BBF_NONE_QUIRK);
 
     // This new first BB has an implicit ref, and no others.
     //
@@ -2971,10 +2972,10 @@ void Compiler::fgLinkBasicBlocks()
             {
                 BasicBlock* const trueTarget  = fgLookupBB(curBBdesc->GetTargetOffs());
                 BasicBlock* const falseTarget = curBBdesc->Next();
-                curBBdesc->SetTrueTarget(trueTarget);
-                curBBdesc->SetFalseTarget(falseTarget);
-                fgAddRefPred<initializingPreds>(trueTarget, curBBdesc);
-                fgAddRefPred<initializingPreds>(falseTarget, curBBdesc);
+                FlowEdge* const trueEdge = fgAddRefPred<initializingPreds>(trueTarget, curBBdesc);
+                FlowEdge* const falseEdge = fgAddRefPred<initializingPreds>(falseTarget, curBBdesc);
+                curBBdesc->SetTrueEdge(trueEdge);
+                curBBdesc->SetFalseEdge(falseEdge);
 
                 if (trueTarget->bbNum <= curBBdesc->bbNum)
                 {
@@ -5455,15 +5456,17 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     {
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
-        bSrc->SetFalseTarget(jmpBlk);
-        fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
+        FlowEdge* oldEdge = bSrc->GetFalseEdge();
+        fgReplacePred(oldEdge, jmpBlk);
+        assert(jmpBlk->TargetIs(bDst));
+
+        FlowEdge* newEdge = fgAddRefPred(jmpBlk, bSrc, oldEdge);
+        bSrc->SetFalseEdge(newEdge);
 
         // When adding a new jmpBlk we will set the bbWeight and bbFlags
         //
         if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
         {
-            FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
-
             jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
             if (bSrc->bbWeight == BB_ZERO_WEIGHT)
             {
@@ -5500,9 +5503,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 jmpBlk->CopyFlags(bDst, BBF_RUN_RARELY);
             }
         }
-
-        fgReplacePred(bDst, bSrc, jmpBlk);
-
 
         JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
                 bSrc->bbNum);

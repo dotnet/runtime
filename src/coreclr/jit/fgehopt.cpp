@@ -2104,16 +2104,17 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
     assert(predBlock->FalseTargetIs(nonCanonicalBlock));
 
     BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true);
-    predBlock->SetFalseTarget(newBlock);
 
     JITDUMP("*** " FMT_BB " now falling through to empty " FMT_BB " and then to " FMT_BB "\n", predBlock->bbNum,
             newBlock->bbNum, canonicalBlock->bbNum);
 
     // Remove the old flow
-    fgRemoveRefPred(nonCanonicalBlock, predBlock);
+    fgRemoveRefPred(predEdge);
 
     // Wire up the new flow
-    fgAddRefPred(newBlock, predBlock, predEdge);
+    FlowEdge* const falseEdge = fgAddRefPred(newBlock, predBlock, predEdge);
+    predBlock->SetFalseEdge(falseEdge);
+    assert(predBlock->FalseTargetIs(canonicalBlock));
 
     FlowEdge* const newEdge = fgAddRefPred(canonicalBlock, newBlock, predEdge);
     newBlock->SetTargetEdge(newEdge);
