@@ -1965,7 +1965,6 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         BlockRange().InsertAfter(initVal, valueArg);
     }
 
-    valueArg->SetContained();
     GenTreeBlk* storeBlk =
         comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, valueArg, GTF_IND_UNALIGNED);
     storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
