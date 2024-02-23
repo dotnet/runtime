@@ -3,10 +3,6 @@
 
 #include "common.h"
 
-#ifdef FEATURE_NATIVEAOT
-#include "RhConfig.h"
-#endif
-
 #include "gcinfodecoder.h"
 
 #ifdef USE_GC_INFO_DECODER
@@ -417,25 +413,7 @@ bool GcInfoDecoder::IsSafePoint()
 
 bool GcInfoDecoder::AreSafePointsInterruptible()
 {
-    if (m_Version < 3)
-        return false;
-
-    // zero initialized
-    static bool fInterruptibleCallSitesInited;
-    static uint64_t fInterruptibleCallSites;
-
-    if (!fInterruptibleCallSitesInited)
-    {
-#ifdef FEATURE_NATIVEAOT
-        fInterruptibleCallSites = 1;
-        g_pRhConfig->ReadConfigValue("InterruptibleCallSites", &fInterruptibleCallSites);
-#else
-        fInterruptibleCallSites = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterruptibleCallSites);
-#endif
-        fInterruptibleCallSitesInited = true;
-    }
-
-    return fInterruptibleCallSites != 0;
+    return   m_Version >= 3;
 }
 
 bool GcInfoDecoder::IsInterruptibleSafePoint()
