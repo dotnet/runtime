@@ -33,19 +33,21 @@ extends:
           - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release /p:CMakeArgs="-DFEATURE_INTERPRETER=1"
-          postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
-                includeRootFolder: false
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
-                artifactName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-                displayName: Build Assets
-          extraVariablesTemplates:
-            - /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: clrinterpreter
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:

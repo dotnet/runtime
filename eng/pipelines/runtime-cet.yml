@@ -59,8 +59,10 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
-          extraVariablesTemplates:
-            - /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: innerloop
 
       #
       # CoreCLR Test build
