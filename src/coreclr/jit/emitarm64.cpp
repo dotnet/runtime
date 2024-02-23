@@ -2541,6 +2541,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
             elemsize = id->idOpSize();
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
@@ -2549,7 +2552,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
-            assert(isValidImmShift(id->idInsOpt())); // hh
             break;
 
         default:
@@ -18489,6 +18491,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'sz' at bit location '22'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_sz_22(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_4BYTE:
+            return 0;
+
+        case EA_8BYTE:
+            return (1 << 22);
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
  *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
  */
@@ -24387,13 +24411,27 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+            imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                           // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());                         // mmmmm
+            code |= insEncodeSveElemsize_sz_22(optGetSveElemsize(id->idInsOpt())); // x
+
+            if (imm != 0)
+            {
+                code |= (1 << 11) | (1 << 10); // hh
+            }
+
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
         case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
             code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -28230,6 +28268,17 @@ void emitter::emitDispInsHelp(
 
         // <Zd>.<T>, [<Zn>.<T>, <Zm>.<T>{, <mod><amount>}]
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+
+            // TODO: clean this up.
+            printf("[");
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), imm != 0);
+            if (imm != 0)
+            {
+                emitDispImm(imm, false);
+            }
+            printf("]");
             break;
 
         // <Zd>.D, [<Zn>.D, <Zm>.D, SXTW{<amount>}]

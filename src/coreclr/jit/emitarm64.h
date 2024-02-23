@@ -532,6 +532,10 @@ static code_t insEncodeSveElemsize_18_to_17(emitAttr size);
 // This specifically encodes the field 'sz' at bit location '21'.
 static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the field 'sz' at bit location '22'.
+static code_t insEncodeSveElemsize_sz_22(emitAttr size);
+
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
