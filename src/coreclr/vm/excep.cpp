@@ -2889,7 +2889,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
     CONTRACTL_END;
 
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrow(throwable, FALSE);
+    RealCOMPlusThrowWorker(throwable, FALSE);
 }
 #endif // USE_CHECKED_OBJECTREFS
 
@@ -7830,7 +7830,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
-            DispatchManagedException(orThrowable);
+            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
         }
     }
     else

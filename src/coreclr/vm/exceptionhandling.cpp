@@ -939,7 +939,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord);
+            DispatchManagedException(oref, pContextRecord, /* preserveStackTrace */ false);
         }
     }
 #endif // !HOST_UNIX
