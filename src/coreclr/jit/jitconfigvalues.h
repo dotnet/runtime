@@ -377,6 +377,14 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
+// If nonzero, use the greedy RL policy.
+//
+CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
+
+// If nonzero, dump out details of parameterized policy evaluation and
+// gradient updates
+CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
+
 #if defined(DEBUG)
 // Allow fine-grained controls of CSEs done in a particular method
 //
@@ -415,7 +423,7 @@ CONFIG_STRING(JitReplayCSE, W("JitReplayCSE"))
 CONFIG_STRING(JitReplayCSEReward, W("JitReplayCSEReward"))
 
 // When set, specifies the initial parameter string for
-// a reinforcement-learning based CSE heuristic.
+// the reinforcement-learning based CSE heuristic.
 //
 // Note you can also set JitReplayCSE and JitReplayCSEPerfScore
 // along with this, in which case we are asking for a policy
@@ -426,15 +434,8 @@ CONFIG_STRING(JitRLCSE, W("JitRLCSE"))
 // use in learning.
 CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
 
-// If nonzero, dump out details of policy evaluation and
-// gradient updates
-CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
-
 // If nonzero, dump candidate feature values
 CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
-
-// If nonzero, use the greedy policy with current parameters.
-CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
 
 #endif
 

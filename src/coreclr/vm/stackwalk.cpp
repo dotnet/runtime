@@ -1234,6 +1234,12 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
+#ifdef FEATURE_EH_FUNCLETS
+    if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
+    {
+        m_crawl.hasFaulted = true;
+    }
+#endif // FEATURE_EH_FUNCLETS
     ProcessCurrentFrame();
 
     // advance to the next frame which matches the stackwalk flags
@@ -1373,7 +1379,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                 else
                 {
                     // unwind the REGDISPLAY using the transition frame and check the EBP
-                    m_crawl.pFrame->UpdateRegDisplay(&tmpRD);
+                    m_crawl.pFrame->UpdateRegDisplay(&tmpRD, m_flags & UNWIND_FLOATS);
                     if (GetRegdisplayFP(&tmpRD) != curEBP)
                     {
                         break;
@@ -1400,8 +1406,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                     m_crawl.isIPadjusted = false;
                 }
 
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
-
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
                 _ASSERTE(curPc == GetControlPC(m_crawl.pRD));
             }
 
@@ -2721,7 +2726,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             if (m_crawl.isFrameless)
             {
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
                 CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);

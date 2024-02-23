@@ -407,14 +407,20 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         else
         {
         TOO_BIG_TO_UNROLL:
+            if (blkNode->IsZeroingGcPointersOnHeap())
+            {
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            }
+            else
+            {
 #ifdef TARGET_AMD64
-            blkNode->gtBlkOpKind =
-                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindHelper;
+                LowerBlockStoreAsHelperCall(blkNode);
+                return;
 #else
-            // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-            blkNode->gtBlkOpKind =
-                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindRepInstr;
+                // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
 #endif
+            }
         }
     }
     else
@@ -513,7 +519,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
 #ifdef TARGET_AMD64
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
 #else
             // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
@@ -522,13 +529,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
 
     assert(blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindInvalid);
-
-#ifndef TARGET_X86
-    if ((MIN_ARG_AREA_FOR_CALL > 0) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper))
-    {
-        RequireOutgoingArgSpace(blkNode, MIN_ARG_AREA_FOR_CALL);
-    }
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -1068,29 +1068,24 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
-    if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+    if (node->OperIsEmbRoundingEnabled())
     {
-        size_t numArgs        = node->GetOperandCount();
-        size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+        size_t   numArgs = node->GetOperandCount();
+        GenTree* lastOp  = node->Op(numArgs);
+        uint8_t  mode    = 0xFF;
 
-        if (numArgs == expectedArgNum)
+        if (lastOp->IsCnsIntOrI())
         {
-            GenTree* lastOp = node->Op(numArgs);
-            uint8_t  mode   = 0xFF;
+            // Mark the constant as contained since it's specially encoded
+            MakeSrcContained(node, lastOp);
 
-            if (lastOp->IsCnsIntOrI())
-            {
-                // Mark the constant as contained since it's specially encoded
-                MakeSrcContained(node, lastOp);
+            mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
+        }
 
-                mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
-            }
-
-            if ((mode & 0x03) != 0x00)
-            {
-                // Embedded rounding only works for register-to-register operations, so skip containment
-                return node->gtNext;
-            }
+        if ((mode & 0x03) != 0x00)
+        {
+            // Embedded rounding only works for register-to-register operations, so skip containment
+            return node->gtNext;
         }
     }
 

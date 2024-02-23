@@ -4,6 +4,7 @@
   <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskName="Microsoft.WebAssembly.Build.Tasks.UpdateChromeVersions" />
   <PropertyGroup>
     <ChromeVersionsPath>$(RepositoryEngineeringDir)testing\ChromeVersions.props</ChromeVersionsPath>
+    <EnvVarsForPRPath>$(RepositoryEngineeringDir)testing\bump-chrome-pr.env</EnvVarsForPRPath>
   </PropertyGroup>
 
   <Target Name="UpdateChromeVersion">
@@ -13,19 +14,13 @@
                 Channel="$(ChromeChannel)"
                 MaxMajorVersionsToCheck="1"
                 IntermediateOutputPath="$(ArtifactsObjDir)"
-                ChromeVersionsPath="$(ChromeVersionsPath)">                
+                ChromeVersionsPath="$(ChromeVersionsPath)"
+                EnvVarsForPRPath="$(EnvVarsForPRPath)">                
       <Output TaskParameter="VersionsChanged" PropertyName="VersionsChanged" />
     </UpdateChromeVersions>
 
-    <ItemGroup>
-      <!-- ensure newline at the end -->
-      <EnvVarForPR Include="CHROME_LINUX_VER=$(linux_ChromeVersion)" />
-      <EnvVarForPR Include="CHROME_WIN_VER=$(win_ChromeVersion)" />
-    </ItemGroup>
-
     <Message Text="No major changes: skipping version props update." Importance="High" Condition="'$(VersionsChanged)' != 'true'"/>
     <Message Text="Version props got updated" Importance="High" Condition="'$(VersionsChanged)' == 'true'"/>
-
   </Target>
 
   <Import Project="..\..\Directory.Build.targets" />

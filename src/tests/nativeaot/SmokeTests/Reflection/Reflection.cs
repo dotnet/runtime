@@ -1509,6 +1509,7 @@ internal static class ReflectionTest
             try
             {
                 Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+                Type.GetType("System.Collections.Generic.Dictionary`2[System.String]");
             }
             catch { }
 

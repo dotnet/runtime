@@ -404,6 +404,28 @@ enum insSvePattern : unsigned
     SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
 };
 
+// Prefetch operation specifier for SVE instructions such as prfb.
+enum insSvePrfop : unsigned
+{
+    SVE_PRFOP_PLDL1KEEP = 0b0000,
+    SVE_PRFOP_PLDL1STRM = 0b0001, 
+    SVE_PRFOP_PLDL2KEEP = 0b0010, 
+    SVE_PRFOP_PLDL2STRM = 0b0011, 
+    SVE_PRFOP_PLDL3KEEP = 0b0100, 
+    SVE_PRFOP_PLDL3STRM = 0b0101, 
+    SVE_PRFOP_PSTL1KEEP = 0b1000, 
+    SVE_PRFOP_PSTL1STRM = 0b1001, 
+    SVE_PRFOP_PSTL2KEEP = 0b1010, 
+    SVE_PRFOP_PSTL2STRM = 0b1011, 
+    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PSTL3STRM = 0b1101,
+
+    SVE_PRFOP_CONST6    = 0b0110,
+    SVE_PRFOP_CONST7    = 0b0111,
+    SVE_PRFOP_CONST14   = 0b1110,
+    SVE_PRFOP_CONST15   = 0b1111
+};
+
 enum insCond : unsigned
 {
     INS_COND_EQ,
