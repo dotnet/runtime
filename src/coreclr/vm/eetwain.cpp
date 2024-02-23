@@ -1499,10 +1499,19 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     if (gcInfoDecoder.IsInterruptible())
         return true;
 
-    if (gcInfoDecoder.IsInterruptibleSafePoint())
+    if (InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint())
         return true;
 
     return false;
+}
+
+bool EECodeManager::InterruptibleSafePointsEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // zero initialized
+    static ConfigDWORD interruptibleCallSitesEnabled;
+    return interruptibleCallSitesEnabled.val(CLRConfig::INTERNAL_InterruptibleCallSites) != 0;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1641,6 +1650,12 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return (info.interruptible);
 }
 
+bool EECodeManager::InterruptibleSafePointsEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return false;
+}
 
 /*****************************************************************************/
 static
@@ -5228,7 +5243,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        if(!_gcInfoDecoder.IsInterruptible() && !_gcInfoDecoder.IsInterruptibleSafePoint())
+        if(!_gcInfoDecoder.IsInterruptible() &&
+            !(InterruptibleSafePointsEnabled() && _gcInfoDecoder.IsInterruptibleSafePoint()))
         {
             // This must be the offset after a call
 #ifdef _DEBUG
@@ -5248,7 +5264,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.IsInterruptibleSafePoint());
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() ||
+            (InterruptibleSafePointsEnabled() && _gcInfoDecoder.IsInterruptibleSafePoint()));
     }
 #endif
 
@@ -5353,7 +5370,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                 curOffs - 1
             );
 
-            _ASSERTE(gcInfoDecoder.IsInterruptibleSafePoint());
+            _ASSERTE((InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint()));
         }
     }
 
