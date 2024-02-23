@@ -10295,9 +10295,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 #endif
 
-                op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Value / Src addr
-                op1 = impPopStack().val; // Dst addr
+                op3 = gtFoldExpr(impPopStack().val); // Size
+                op2 = gtFoldExpr(impPopStack().val); // Value / Src addr
+                op1 = impPopStack().val;             // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
@@ -10343,18 +10343,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 // TODO: enable for X86 as well, it currently doesn't support memset/memcpy helpers
 // Then, get rid of GT_STORE_DYN_BLK entirely.
 #ifndef TARGET_X86
-                    const unsigned helper = opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
+                    GenTreeCall* call;
+                    if (opcode == CEE_INITBLK)
+                    {
+                        if (op2->IsIntegralConst(0))
+                        {
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, op1, op3);
+                        }
+                        else
+                        {
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMSET, TYP_VOID, op1, op2, op3);
+                        }
+                    }
+                    else
+                    {
+                        call = gtNewHelperCallNode(CORINFO_HELP_MEMCPY, TYP_VOID, op1, op2, op3);
+                    }
+
                     if (isVolatile)
                     {
                         // Wrap with memory barriers: full-barrier + call + load-barrier
                         impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
-                        impAppendTree(gtNewHelperCallNode(helper, TYP_VOID, op1, op2, op3), CHECK_SPILL_ALL,
-                                      impCurStmtDI);
+                        impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
                         op1 = gtNewMemoryBarrier(true);
                     }
                     else
                     {
-                        op1 = gtNewHelperCallNode(helper, TYP_VOID, op1, op2, op3);
+                        op1 = call;
                     }
 #else
                     if (opcode == CEE_INITBLK)
