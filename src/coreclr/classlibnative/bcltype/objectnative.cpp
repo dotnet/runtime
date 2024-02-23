@@ -75,6 +75,30 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
 }
 FCIMPLEND
 
+FCIMPL2(FC_BOOL_RET, ObjectNative::SequenceEqualWithReferences, Object *pThisRef, Object *pCompareRef)
+{
+    FCALL_CONTRACT;
+
+    // Should be ensured by caller
+    _ASSERTE(pThisRef != NULL);
+    _ASSERTE(pCompareRef != NULL);
+    _ASSERTE(pThisRef->GetMethodTable() == pCompareRef->GetMethodTable());
+
+    MethodTable *pThisMT = pThisRef->GetMethodTable();
+
+    // Compare the contents (size - vtable - sync block index).
+    DWORD dwBaseSize = pThisMT->GetBaseSize();
+    BOOL ret = memcmp(
+        (void *) (pThisRef+1),
+        (void *) (pCompareRef+1),
+        dwBaseSize - sizeof(Object) - sizeof(int)) == 0;
+
+    FC_GC_POLL_RET();
+
+    FC_RETURN_BOOL(ret);
+}
+FCIMPLEND
+
 extern "C" void QCALLTYPE ObjectNative_GetClassHelper(MethodTable* pMT, QCall::ObjectHandleOnStack ret)
 {
     QCALL_CONTRACT;

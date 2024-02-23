@@ -162,23 +162,20 @@ namespace System.Runtime.CompilerServices
             if (o1 is null || o2 is null)
                 return false;
 
-            MethodTable* pMT = GetMethodTable(o1);
-
             // If it's not a value class, don't compare by value
-            if (!pMT->IsValueType)
+            if (!o1.GetType().IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (pMT != GetMethodTable(o2))
+            if (o1.GetType() != o2.GetType())
                 return false;
 
             // Compare the contents
-            uint size = pMT->GetNumInstanceFieldBytes();
-            return SpanHelpers.SequenceEqual(
-                ref GetRawData(o1),
-                ref GetRawData(o2),
-                size);
+            return SequenceEqualWithReferences(o1, o2);
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe bool SequenceEqualWithReferences(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
