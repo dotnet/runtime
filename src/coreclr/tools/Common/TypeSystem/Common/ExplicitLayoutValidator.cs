@@ -44,6 +44,15 @@ namespace Internal.TypeSystem
                     }
                     return FieldLayoutTag.ORef;
                 }
+                else if (fieldType.IsByRef)
+                {
+                    if (offset % PointerSize != 0)
+                    {
+                        // Misaligned ByRef
+                        ThrowFieldLayoutError(offset);
+                    }
+                    return FieldLayoutTag.ByRef;
+                }
                 else if (fieldType.IsPointer || fieldType.IsFunctionPointer)
                 {
                     return FieldLayoutTag.NonORef;
