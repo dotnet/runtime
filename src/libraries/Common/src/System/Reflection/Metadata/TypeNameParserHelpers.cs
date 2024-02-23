@@ -1,18 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if SYSTEM_PRIVATE_CORELIB
-#define NET8_0_OR_GREATER
-#endif
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-#if SYSTEM_PRIVATE_CORELIB
-using StringBuilder = System.Text.ValueStringBuilder;
-#else
-using StringBuilder = System.Text.StringBuilder;
-#endif
+using System.Text;
 
 using static System.Array;
 using static System.Char;
@@ -92,21 +84,9 @@ namespace System.Reflection.Metadata
                 return fullTypeName.ToString();
             }
 
-            int size = fullTypeName.Length + 1;
-            foreach (TypeName genericArg in genericArgs)
-            {
-                size += 3 + genericArg.AssemblyQualifiedName.Length;
-            }
-
-            StringBuilder result = new(size);
-#if NET8_0_OR_GREATER
+            ValueStringBuilder result = new(stackalloc char[128]);
             result.Append(fullTypeName);
-#else
-            for (int i = 0; i < fullTypeName.Length; i++)
-            {
-                result.Append(fullTypeName[i]);
-            }
-#endif
+
             result.Append('[');
             foreach (TypeName genericArg in genericArgs)
             {
@@ -549,7 +529,7 @@ namespace System.Reflection.Metadata
                     buffer[^1] = ']';
                 });
 #else
-                StringBuilder sb = new(2 + arrayRank - 1);
+                ValueStringBuilder sb = new(stackalloc char[16]);
                 sb.Append('[');
                 for (int i = 1; i < arrayRank; i++)
                     sb.Append(',');
@@ -591,7 +571,7 @@ namespace System.Reflection.Metadata
 
         internal static ReadOnlySpan<char> TrimStart(ReadOnlySpan<char> input) => input.TrimStart();
 
-        internal static bool TryGetTypeNameInfo(ReadOnlySpan<char> input, ref List<int>? nestedNameLengths,
+        internal static bool TryGetTypeNameInfo(ref ReadOnlySpan<char> input, ref List<int>? nestedNameLengths,
             out int totalLength, out int genericArgCount)
         {
             bool isNestedType;
@@ -609,6 +589,18 @@ namespace System.Reflection.Metadata
                     totalLength = genericArgCount = 0;
                     return false;
                 }
+
+#if SYSTEM_PRIVATE_CORELIB
+                // Compat: Ignore leading '.' for type names without namespace. .NET Framework historically ignored leading '.' here. It is likely
+                // that code out there depends on this behavior. For example, type names formed by concatenating namespace and name, without checking for
+                // empty namespace (bug), are going to have superfluous leading '.'.
+                // This behavior means that types that start with '.' are not round-trippable via type name.
+                if (length > 1 && input[0] == '.' && input.Slice(0, length).LastIndexOf('.') == 0)
+                {
+                    input = input.Slice(1);
+                    length--;
+                }
+#endif
 
                 int generics = GetGenericArgumentCount(input.Slice(totalLength, length));
                 if (generics < 0)

@@ -235,7 +235,8 @@ namespace System.Reflection.Metadata.Tests
             int expectedTotalLength, int expectedGenericArgCount)
         {
             List<int>? nestedNameLengths = null;
-            bool result = TypeNameParserHelpers.TryGetTypeNameInfo(input.AsSpan(), ref nestedNameLengths, out int totalLength, out int genericArgCount);
+            ReadOnlySpan<char> span = input.AsSpan();
+            bool result = TypeNameParserHelpers.TryGetTypeNameInfo(ref span, ref nestedNameLengths, out int totalLength, out int genericArgCount);
 
             Assert.Equal(expectedResult, result);
             Assert.Equal(expectedNestedNameLengths, nestedNameLengths?.ToArray());

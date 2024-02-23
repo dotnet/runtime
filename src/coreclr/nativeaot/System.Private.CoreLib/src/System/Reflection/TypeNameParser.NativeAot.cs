@@ -80,7 +80,7 @@ namespace System.Reflection
             {
                 return null;
             }
-            else if (parsed.AssemblyName is not null && topLevelAssembly is not null)
+            else if (parsed.GetAssemblyName() is not null && topLevelAssembly is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -117,7 +117,7 @@ namespace System.Reflection
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny, string _)
         {
             Assembly? assembly;
 
@@ -137,8 +137,6 @@ namespace System.Reflection
             // Resolve the top level type.
             if (_typeResolver is not null)
             {
-                string escapedTypeName = EscapeTypeName(typeName);
-
                 type = _typeResolver(assembly, escapedTypeName, _ignoreCase);
 
                 if (type is null)
@@ -158,14 +156,14 @@ namespace System.Reflection
                 {
                     if (assembly is RuntimeAssemblyInfo runtimeAssembly)
                     {
-                        type = runtimeAssembly.GetTypeCore(typeName, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                        type = runtimeAssembly.GetTypeCore(UnescapeTypeName(escapedTypeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                     }
                     else
                     {
                         // This is a third-party Assembly object. We can emulate GetTypeCore() by calling the public GetType()
                         // method. This is wasteful because it'll probably reparse a type string that we've already parsed
                         // but it can't be helped.
-                        type = assembly.GetType(EscapeTypeName(typeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                        type = assembly.GetType(escapedTypeName, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                     }
 
                     if (type is null)
@@ -179,7 +177,7 @@ namespace System.Reflection
                         defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(_defaultAssemblyName));
                         if (defaultAssembly != null)
                         {
-                            type = defaultAssembly.GetTypeCore(typeName, throwOnError: false, ignoreCase: _ignoreCase);
+                            type = defaultAssembly.GetTypeCore(UnescapeTypeName(escapedTypeName), throwOnError: false, ignoreCase: _ignoreCase);
                         }
                     }
 
@@ -189,7 +187,7 @@ namespace System.Reflection
                         coreLib = (RuntimeAssemblyInfo)typeof(object).Assembly;
                         if (coreLib != assembly)
                         {
-                            type = coreLib.GetTypeCore(typeName, throwOnError: false, ignoreCase: _ignoreCase);
+                            type = coreLib.GetTypeCore(UnescapeTypeName(escapedTypeName), throwOnError: false, ignoreCase: _ignoreCase);
                         }
                     }
 
@@ -197,7 +195,7 @@ namespace System.Reflection
                     {
                         if (_throwOnError)
                         {
-                            throw Helpers.CreateTypeLoadException(typeName, (defaultAssembly ?? coreLib).FullName);
+                            throw Helpers.CreateTypeLoadException(UnescapeTypeName(escapedTypeName), (defaultAssembly ?? coreLib).FullName);
                         }
                         return null;
                     }
@@ -234,7 +232,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : typeName));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : escapedTypeName));
                     }
                     return null;
                 }

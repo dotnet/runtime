@@ -238,10 +238,8 @@ namespace System.Reflection
                     // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
                     if (!_extensibleParser || !_ignoreCase)
                     {
-                        string[]? unescapedNestedNames = null;
-                        UnescapeTypeNames(nestedTypeNames, ref unescapedNestedNames);
                         return runtimeAssembly.GetTypeCore(UnescapeTypeName(escapedTypeName),
-                            unescapedNestedNames is not null ? unescapedNestedNames : nestedTypeNames,
+                            UnescapeTypeNames(nestedTypeNames) ?? nestedTypeNames,
                             throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                     }
                     type = runtimeAssembly.GetTypeCore(UnescapeTypeName(escapedTypeName), default, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
@@ -283,14 +281,13 @@ namespace System.Reflection
         private Type? GetTypeFromDefaultAssemblies(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, string fullEscapedName)
         {
             string unescapedTypeName = UnescapeTypeName(escapedTypeName);
-            string[]? unescapedNestedNames = null;
-            UnescapeTypeNames(nestedTypeNames, ref unescapedNestedNames);
+            string[]? unescapedNestedNames = UnescapeTypeNames(nestedTypeNames);
 
             RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
             if (requestingAssembly is not null)
             {
                 Type? type = ((RuntimeAssembly)requestingAssembly).GetTypeCore(unescapedTypeName,
-                    unescapedNestedNames is null ? nestedTypeNames : unescapedNestedNames, throwOnError: false, ignoreCase: _ignoreCase);
+                    unescapedNestedNames ?? nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }
@@ -299,7 +296,7 @@ namespace System.Reflection
             if (requestingAssembly != coreLib)
             {
                 Type? type = ((RuntimeAssembly)coreLib).GetTypeCore(unescapedTypeName,
-                    unescapedNestedNames is null ? nestedTypeNames : unescapedNestedNames, throwOnError: false, ignoreCase: _ignoreCase);
+                    unescapedNestedNames ?? nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }
@@ -308,7 +305,7 @@ namespace System.Reflection
             if (resolvedAssembly is not null)
             {
                 Type? type = resolvedAssembly.GetTypeCore(unescapedTypeName,
-                    unescapedNestedNames is null ? nestedTypeNames : unescapedNestedNames, throwOnError: false, ignoreCase: _ignoreCase);
+                    unescapedNestedNames ?? nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }

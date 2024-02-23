@@ -2413,6 +2413,7 @@ namespace System.Reflection.Metadata
         internal TypeName() { }
         public string AssemblyQualifiedName { get { throw null; } }
         public System.Reflection.Metadata.TypeName? ContainingType { get { throw null; } }
+        public string FullName { get { throw null; } }
         public bool IsArray { get { throw null; } }
         public bool IsConstructedGenericType { get { throw null; } }
         public bool IsElementalType { get { throw null; } }
@@ -2434,7 +2435,7 @@ namespace System.Reflection.Metadata
     {
         public TypeNameParserOptions() { }
         public bool AllowFullyQualifiedName { get { throw null; } set { } }
-        public int MaxRecursiveDepth { get { throw null; } set { } }
+        public int MaxTotalComplexity { get { throw null; } set { } }
         public bool StrictValidation { get; set; }
     }
     public readonly partial struct TypeReference

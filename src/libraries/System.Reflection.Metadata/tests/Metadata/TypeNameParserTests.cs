@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests
@@ -20,6 +21,18 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(expectedName, parsed.Name);
             Assert.Equal(expectedFullName, parsed.FullName);
             Assert.Equal(expectedFullName, parsed.AssemblyQualifiedName);
+        }
+
+        [Fact]
+        public void LeadingDotIsNotConsumedForFullTypeNamesWithoutNamespace()
+        {
+            // This is true only for the public API.
+            // The internal CoreLib implementation consumes the leading dot for backward compat.
+            TypeName parsed = TypeName.Parse(".NoNamespace".AsSpan());
+
+            Assert.Equal("NoNamespace", parsed.Name);
+            Assert.Equal(".NoNamespace", parsed.FullName);
+            Assert.Equal(".NoNamespace", parsed.AssemblyQualifiedName);
         }
 
         [Theory]
@@ -59,6 +72,10 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("ExtraCommaAfterFirstGenericArg`1[[type1, assembly1],]")]
         [InlineData("MissingClosingSquareBrackets`1[[type1, assembly1")] // missing ]]
         [InlineData("MissingClosingSquareBracket`1[[type1, assembly1]")] // missing ]
+        [InlineData("MissingClosingSquareBracketsMixedMode`2[[type1, assembly1], type2")] // missing ]
+        [InlineData("MissingClosingSquareBrackets`2[[type1, assembly1], [type2, assembly2")] // missing ]
+        [InlineData("MissingClosingSquareBracketsMixedMode`2[type1, [type2, assembly2")] // missing ]]
+        [InlineData("MissingClosingSquareBracketsMixedMode`2[type1, [type2, assembly2]")] // missing ]
         [InlineData("CantMakeByRefToByRef&&")]
         [InlineData("EscapeCharacterAtTheEnd\\")]
         [InlineData("EscapeNonSpecialChar\\a")]
@@ -150,11 +167,11 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(10, "[]")] // array of arrays
         [InlineData(100, "*")]
         [InlineData(100, "[]")]
-        public void MaxRecursiveDepthIsRespected_TooManyDecorators(int maxDepth, string decorator)
+        public void MaxTotalComplexityIsRespected_TooManyDecorators(int maxDepth, string decorator)
         {
             TypeNameParserOptions options = new()
             {
-                MaxRecursiveDepth = maxDepth
+                MaxTotalComplexity = maxDepth
             };
 
             string notTooMany = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, maxDepth - 1))}";
@@ -185,11 +202,11 @@ namespace System.Reflection.Metadata.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        public void MaxRecursiveDepthIsRespected_TooDeepGenerics(int maxDepth)
+        public void MaxTotalComplexityIsRespected_TooDeepGenerics(int maxDepth)
         {
             TypeNameParserOptions options = new()
             {
-                MaxRecursiveDepth = maxDepth
+                MaxTotalComplexity = maxDepth
             };
 
             string tooDeep = GetName(maxDepth);
@@ -229,11 +246,11 @@ namespace System.Reflection.Metadata.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        public void MaxRecursiveDepthIsRespected_TooManyGenericArguments(int maxDepth)
+        public void MaxTotalComplexityIsRespected_TooManyGenericArguments(int maxDepth)
         {
             TypeNameParserOptions options = new()
             {
-                MaxRecursiveDepth = maxDepth
+                MaxTotalComplexity = maxDepth
             };
 
             string tooMany = GetName(maxDepth);
@@ -266,6 +283,15 @@ namespace System.Reflection.Metadata.Tests
             {
                 "Generic`1[[A]]",
                 "Generic`1",
+                "Generic`1[[A]]",
+                new string[] { "A" },
+                null
+            };
+            yield return new object[]
+            {
+                "Generic`1[A]",
+                "Generic`1",
+                "Generic`1[[A]]",
                 new string[] { "A" },
                 null
             };
@@ -273,6 +299,15 @@ namespace System.Reflection.Metadata.Tests
             {
                 "Generic`3[[A],[B],[C]]",
                 "Generic`3",
+                "Generic`3[[A],[B],[C]]",
+                new string[] { "A", "B", "C" },
+                null
+            };
+            yield return new object[]
+            {
+                "Generic`3[A,B,C]",
+                "Generic`3",
+                "Generic`3[[A],[B],[C]]",
                 new string[] { "A", "B", "C" },
                 null
             };
@@ -280,6 +315,7 @@ namespace System.Reflection.Metadata.Tests
             {
                 "Generic`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
                 "Generic`1",
+                "Generic`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
                 new string[] { "System.Int32" },
                 new AssemblyName[] { new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089") }
             };
@@ -287,6 +323,7 @@ namespace System.Reflection.Metadata.Tests
             {
                 "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
                 "Generic`2",
+                "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
                 new string[] { "System.Int32", "System.Boolean" },
                 new AssemblyName[]
                 {
@@ -294,16 +331,66 @@ namespace System.Reflection.Metadata.Tests
                     new AssemblyName("mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
                 }
             };
+            yield return new object[]
+            {
+                "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089], System.Boolean]",
+                "Generic`2",
+                "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean]]",
+                new string[] { "System.Int32", "System.Boolean" },
+                new AssemblyName[]
+                {
+                    new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"),
+                    null
+                }
+            };
+            yield return new object[]
+            {
+                "Generic`2[System.Boolean, [System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                "Generic`2",
+                "Generic`2[[System.Boolean],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                new string[] { "System.Boolean", "System.Int32" },
+                new AssemblyName[]
+                {
+                    null,
+                    new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+                }
+            };
+            yield return new object[]
+            {
+                "Generic`3[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089], System.Boolean, [System.Byte, other, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                "Generic`3",
+                "Generic`3[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean],[System.Byte, other, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                new string[] { "System.Int32", "System.Boolean", "System.Byte" },
+                new AssemblyName[]
+                {
+                    new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"),
+                    null,
+                    new AssemblyName("other, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+                }
+            };
+            yield return new object[]
+            {
+                "Generic`3[System.Boolean, [System.Byte, other, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089], System.Int32]",
+                "Generic`3",
+                "Generic`3[[System.Boolean],[System.Byte, other, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32]]",
+                new string[] { "System.Boolean", "System.Byte", "System.Int32" },
+                new AssemblyName[]
+                {
+                    null,
+                    new AssemblyName("other, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"),
+                    null
+                }
+            };
         }
 
         [Theory]
         [MemberData(nameof(GenericArgumentsAreSupported_Arguments))]
-        public void GenericArgumentsAreSupported(string input, string name, string[] genericTypesFullNames, AssemblyName[]? assemblyNames)
+        public void GenericArgumentsAreSupported(string input, string name, string fullName, string[] genericTypesFullNames, AssemblyName[]? assemblyNames)
         {
             TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(name, parsed.Name);
-            Assert.Equal(input, parsed.FullName);
+            Assert.Equal(fullName, parsed.FullName);
             Assert.True(parsed.IsConstructedGenericType);
             Assert.False(parsed.IsElementalType);
 
@@ -316,7 +403,14 @@ namespace System.Reflection.Metadata.Tests
 
                 if (assemblyNames is not null)
                 {
-                    Assert.Equal(assemblyNames[i].FullName, genericArg.GetAssemblyName().FullName);
+                    if (assemblyNames[i] is null)
+                    {
+                        Assert.Null(genericArg.GetAssemblyName());
+                    }
+                    else
+                    {
+                        Assert.Equal(assemblyNames[i].FullName, genericArg.GetAssemblyName().FullName);
+                    }
                 }
             }
         }
@@ -418,6 +512,31 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
         }
 
+        public static IEnumerable<object[]> GetTypesThatRequireEscaping()
+        {
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TypesThatRequireEscaping"), AssemblyBuilderAccess.Run);
+                ModuleBuilder module = assembly.DefineDynamicModule("TypesThatRequireEscapingModule");
+
+                yield return new object[] { module.DefineType("TypeNameWith+ThatIsNotNestedType").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith\\TheEscapingCharacter").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith&Ampersand").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith*Asterisk").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith[OpeningSquareBracket").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith]ClosingSquareBracket").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith[]BothSquareBrackets").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith[[]]NestedSquareBrackets").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith,Comma").CreateType() };
+                yield return new object[] { module.DefineType("TypeNameWith\\[]+*&,AllSpecialCharacters").CreateType() };
+
+                TypeBuilder containingType = module.DefineType("ContainingTypeWithA+Plus");
+                _ = containingType.CreateType(); // containing type must exist!
+                yield return new object[] { containingType.DefineNestedType("NoSpecialCharacters").CreateType() };
+                yield return new object[] { containingType.DefineNestedType("Contains+Plus").CreateType() };
+            }
+        }
+
         [Theory]
         [InlineData(typeof(List<int>))]
         [InlineData(typeof(List<List<int>>))]
@@ -426,6 +545,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
+        [MemberData(nameof(GetTypesThatRequireEscaping))]
         public void ParsedNamesMatchSystemTypeNames(Type type)
         {
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
@@ -434,10 +554,13 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(type.FullName, parsed.FullName);
             Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
 
-            Type genericType = type.GetGenericTypeDefinition();
-            Assert.Equal(genericType.Name, parsed.UnderlyingType.Name);
-            Assert.Equal(genericType.FullName, parsed.UnderlyingType.FullName);
-            Assert.Equal(genericType.AssemblyQualifiedName, parsed.UnderlyingType.AssemblyQualifiedName);
+            if (type.IsGenericType)
+            {
+                Type genericType = type.GetGenericTypeDefinition();
+                Assert.Equal(genericType.Name, parsed.UnderlyingType.Name);
+                Assert.Equal(genericType.FullName, parsed.UnderlyingType.FullName);
+                Assert.Equal(genericType.AssemblyQualifiedName, parsed.UnderlyingType.AssemblyQualifiedName);
+            }
         }
 
         [Theory]

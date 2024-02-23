@@ -1,17 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if SYSTEM_PRIVATE_CORELIB
-#define NET8_0_OR_GREATER
-#endif
 using System.Collections.Generic;
 using System.Diagnostics;
-
-#if SYSTEM_PRIVATE_CORELIB
-using StringBuilder = System.Text.ValueStringBuilder;
-#else
-using StringBuilder = System.Text.StringBuilder;
-#endif
+using System.Text;
 
 using static System.Reflection.Metadata.TypeNameParserHelpers;
 
@@ -59,7 +51,7 @@ namespace System.Reflection.Metadata
 
             // there was an error and we need to throw
 #if !SYSTEM_PRIVATE_CORELIB
-            if (recursiveDepth >= parser._parseOptions.MaxRecursiveDepth)
+            if (recursiveDepth >= parser._parseOptions.MaxTotalComplexity)
             {
                 throw new InvalidOperationException("SR.RecursionCheck_MaxDepthExceeded");
             }
@@ -91,7 +83,7 @@ namespace System.Reflection.Metadata
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameInfo(_inputString, ref nestedNameLengths, out int fullTypeNameLength, out int genericArgCount))
+            if (!TryGetTypeNameInfo(ref _inputString, ref nestedNameLengths, out int fullTypeNameLength, out int genericArgCount))
             {
                 return null;
             }
@@ -132,6 +124,8 @@ namespace System.Reflection.Metadata
                 recursiveDepth = startingRecursionCheck;
                 // Namespace.Type`1[[GenericArgument1, AssemblyName1],[GenericArgument2, AssemblyName2]] - double square bracket syntax allows for fully qualified type names
                 // Namespace.Type`1[GenericArgument1,GenericArgument2] - single square bracket syntax is legal only for non-fully qualified type names
+                // Namespace.Type`1[[GenericArgument1, AssemblyName1], GenericArgument2] - mixed mode
+                // Namespace.Type`1[GenericArgument1, [GenericArgument2, AssemblyName2]] - mixed mode
                 TypeName? genericArg = ParseNextTypeName(allowFullyQualifiedName: doubleBrackets, ref recursiveDepth);
                 if (genericArg is null) // parsing failed
                 {
@@ -153,9 +147,9 @@ namespace System.Reflection.Metadata
                 {
                     // Parsing the rest would hit the limit.
                     // -1 because the first generic arg has been already parsed.
-                    if (maxObservedRecursionCheck + genericArgCount - 1 > _parseOptions.MaxRecursiveDepth)
+                    if (maxObservedRecursionCheck + genericArgCount - 1 > _parseOptions.MaxTotalComplexity)
                     {
-                        recursiveDepth = _parseOptions.MaxRecursiveDepth;
+                        recursiveDepth = _parseOptions.MaxTotalComplexity;
                         return null;
                     }
 
@@ -163,14 +157,11 @@ namespace System.Reflection.Metadata
                 }
                 genericArgs[genericArgIndex++] = genericArg;
 
+                // Is there a ',[' indicating fully qualified generic type arg?
+                // Is there a ',' indicating non-fully qualified generic type arg?
                 if (TryStripFirstCharAndTrailingSpaces(ref _inputString, ','))
                 {
-                    // For [[, is there a ',[' indicating another generic type arg?
-                    // For [, it's just a ','
-                    if (doubleBrackets && !TryStripFirstCharAndTrailingSpaces(ref _inputString, '['))
-                    {
-                        return null;
-                    }
+                    doubleBrackets = TryStripFirstCharAndTrailingSpaces(ref _inputString, '[');
 
                     goto ParseAnotherGenericArg;
                 }
@@ -246,9 +237,10 @@ namespace System.Reflection.Metadata
 
             if (previousDecorator != default) // some decorators were recognized
             {
-                StringBuilder fullNameSb = new(genericTypeFullName.Length + 4);
+                ValueStringBuilder fullNameSb = new(stackalloc char[128]);
                 fullNameSb.Append(genericTypeFullName);
-                StringBuilder nameSb = new(name.Length + 4);
+
+                ValueStringBuilder nameSb = new(stackalloc char[32]);
                 nameSb.Append(name);
 
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
@@ -258,8 +250,13 @@ namespace System.Reflection.Metadata
                     nameSb.Append(trimmedModifier);
                     fullNameSb.Append(trimmedModifier);
 
-                    result = new(nameSb.ToString(), fullNameSb.ToString(), assemblyName, parsedModifier, underlyingType: result);
+                    result = new(nameSb.AsSpan().ToString(), fullNameSb.AsSpan().ToString(), assemblyName, parsedModifier, underlyingType: result);
                 }
+
+                // The code above is not calling ValueStringBuilder.ToString() directly,
+                // because it calls Dispose and we want to reuse the builder content until we are done with all decorators.
+                fullNameSb.Dispose();
+                nameSb.Dispose();
             }
 
             return result;
@@ -339,7 +336,7 @@ namespace System.Reflection.Metadata
 
         private bool TryDive(ref int depth)
         {
-            if (depth >= _parseOptions.MaxRecursiveDepth)
+            if (depth >= _parseOptions.MaxTotalComplexity)
             {
                 return false;
             }

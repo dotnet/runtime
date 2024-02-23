@@ -67,7 +67,7 @@ namespace System.Reflection.Metadata.Tests
                     // To prevent from unbounded recursion, we set the max depth for parser options.
                     // By ensuring that the max depth limit is enforced, we can safely use recursion in
                     // GetTypeFromParsedTypeName to get arrays of arrays and generics of generics.
-                    MaxRecursiveDepth = 10
+                    MaxTotalComplexity = 10
                 };
 
                 if (!TypeName.TryParse(typeName.AsSpan(), out TypeName parsed, _options))

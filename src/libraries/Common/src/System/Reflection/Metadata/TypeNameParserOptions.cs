@@ -10,13 +10,16 @@ namespace System.Reflection.Metadata
 #endif
     sealed class TypeNameParserOptions
     {
-        private int _maxRecursiveDepth = int.MaxValue;
+        private int _maxComplexity = int.MaxValue;
 
         public bool AllowFullyQualifiedName { get; set; } = true;
 
-        public int MaxRecursiveDepth
+        /// <summary>
+        /// Limits the maximum value of <seealso cref="TypeName.TotalComplexity"/> that parser can handle.
+        /// </summary>
+        public int MaxTotalComplexity
         {
-            get => _maxRecursiveDepth;
+            get => _maxComplexity;
             set
             {
 #if NET8_0_OR_GREATER
@@ -28,7 +31,7 @@ namespace System.Reflection.Metadata
                 }
 #endif
 
-                _maxRecursiveDepth = value;
+                _maxComplexity = value;
             }
         }
 

@@ -95,13 +95,11 @@ namespace System.Reflection
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny)
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny, string _)
         {
             Assembly? assembly = (assemblyNameIfAny is not null) ? ResolveAssembly(assemblyNameIfAny) : null;
 
             // Both the external type resolver and the default type resolvers expect escaped type names
-            string escapedTypeName = EscapeTypeName(typeName);
-
             Type? type;
 
             // Resolve the top level type.
@@ -152,7 +150,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : typeName));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : escapedTypeName));
                     }
                     return null;
                 }

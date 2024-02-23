@@ -12,18 +12,6 @@ namespace System.Reflection
     {
         private const char EscapeCharacter = '\\';
 
-#if NETCOREAPP
-        private static ReadOnlySpan<char> CharsToEscape => "\\[]+*&,";
-
-        private static bool NeedsEscapingInTypeName(char c)
-            => CharsToEscape.Contains(c);
-#else
-        private static char[] CharsToEscape { get; } = "\\[]+*&,".ToCharArray();
-
-        private static bool NeedsEscapingInTypeName(char c)
-            => Array.IndexOf(CharsToEscape, c) >= 0;
-#endif
-
         private static string UnescapeTypeName(string name)
         {
             int indexOfEscapeCharacter = name.IndexOf(EscapeCharacter);
@@ -47,7 +35,9 @@ namespace System.Reflection
                 else if (i < name.Length && name[i] == EscapeCharacter) // escaped escape character ;)
                 {
                     sb.Append(c);
-                    i++; // escaped escape character followed by another escaped char like "\\\\\\+"
+                    // Consume the escaped escape character, it's important for edge cases
+                    // like escaped escape character followed by another escaped char (example: "\\\\\\+")
+                    i++;
                 }
             }
 
@@ -55,19 +45,23 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Initializes <paramref name="unescapedNames"/> only when some unescaping of nested names is required.
+        /// Returns non-null array when some unescaping of nested names was required.
         /// </summary>
-        private static void UnescapeTypeNames(ReadOnlySpan<string> names, ref string[]? unescapedNames)
+        private static string[]? UnescapeTypeNames(ReadOnlySpan<string> names)
         {
             if (names.IsEmpty) // nothing to check
             {
-                return;
+                return null;
             }
 
             int i = 0;
             for (; i < names.Length; i++)
             {
+#if NETCOREAPP
                 if (names[i].Contains(EscapeCharacter))
+#else
+                if (names[i].IndexOf(EscapeCharacter) >= 0)
+#endif
                 {
                     break;
                 }
@@ -75,10 +69,10 @@ namespace System.Reflection
 
             if (i == names.Length) // nothing to escape
             {
-                return;
+                return null;
             }
 
-            unescapedNames = new string[names.Length];
+            string[] unescapedNames = new string[names.Length];
             for (int j = 0; j < i; j++)
             {
                 unescapedNames[j] = names[j]; // copy what not needed escaping
@@ -87,6 +81,7 @@ namespace System.Reflection
             {
                 unescapedNames[i] = UnescapeTypeName(names[i]); // escape the rest
             }
+            return unescapedNames;
         }
 
         private static (string typeNamespace, string name) SplitFullTypeName(string typeName)
