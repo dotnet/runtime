@@ -396,6 +396,18 @@ namespace System.Collections.Tests
             }
         }
 
+        // https://github.com/dotnet/runtime/issues/98813
+        [Fact]
+        public static void CopyToIntArray_Regression98813()
+        {
+            BitArray bitArray = new BitArray(256);
+            bitArray.Length = 32;
+            int[] expectedOutput = new int[] { 0 };
+            int[] actualOutput = new int[1];
+            bitArray.CopyTo(actualOutput, 0);
+            Assert.Equal(expectedOutput, actualOutput);
+        }
+
         // https://github.com/dotnet/runtime/issues/30440
         [Fact]
         public static void CopyToByteArray_Regression39929()

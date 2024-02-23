@@ -756,21 +756,14 @@ namespace System.Collections
 
             if (array is int[] intArray)
             {
-                Div32Rem(m_length, out int extraBits);
+                int fullInts = Div32Rem(m_length, out int extraBits);
 
-                if (extraBits == 0)
-                {
-                    // we have perfect bit alignment, no need to sanitize, just copy
-                    Array.Copy(m_array, 0, intArray, index, m_array.Length);
-                }
-                else
-                {
-                    int last = (m_length - 1) >> BitShiftPerInt32;
-                    // do not copy the last int, as it is not completely used
-                    Array.Copy(m_array, 0, intArray, index, last);
+                Array.Copy(m_array, 0, intArray, index, fullInts);
 
+                if (extraBits > 0)
+                {
                     // the last int needs to be masked
-                    intArray[index + last] = m_array[last] & unchecked((1 << extraBits) - 1);
+                    intArray[index + fullInts] = m_array[fullInts] & unchecked((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[] byteArray)
@@ -791,8 +784,8 @@ namespace System.Collections
 
                 Span<byte> span = byteArray.AsSpan(index);
 
-                int quotient = Div4Rem(arrayLength, out int remainder);
-                for (int i = 0; i < quotient; i++)
+                int fullInts = Div4Rem(arrayLength, out int extraBytes);
+                for (int i = 0; i < fullInts; i++)
                 {
                     BinaryPrimitives.WriteInt32LittleEndian(span, m_array[i]);
                     span = span.Slice(4);
@@ -801,23 +794,23 @@ namespace System.Collections
                 if (extraBits > 0)
                 {
                     Debug.Assert(span.Length > 0);
-                    Debug.Assert(m_array.Length > quotient);
+                    Debug.Assert(m_array.Length > fullInts);
                     // mask the final byte
-                    span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
+                    span[extraBytes] = (byte)((m_array[fullInts] >> (extraBytes * 8)) & ((1 << (int)extraBits) - 1));
                 }
 
-                switch (remainder)
+                switch (extraBytes)
                 {
                     case 3:
-                        span[2] = (byte)(m_array[quotient] >> 16);
+                        span[2] = (byte)(m_array[fullInts] >> 16);
                         goto case 2;
                     // fall through
                     case 2:
-                        span[1] = (byte)(m_array[quotient] >> 8);
+                        span[1] = (byte)(m_array[fullInts] >> 8);
                         goto case 1;
                     // fall through
                     case 1:
-                        span[0] = (byte)m_array[quotient];
+                        span[0] = (byte)m_array[fullInts];
                         break;
                 }
             }
