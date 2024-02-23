@@ -1113,14 +1113,19 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                         {
                             if(pFile) fclose(pFile);
                             pFile = NULL;
-                            if(fopen_s(&pFile,szFileName,"rt") != 0)
+#ifdef HOST_WINDOWS
+                            const char* const mode = "rt";
+#else
+                            const char* const mode = "r";
+#endif
+                            if(fopen_s(&pFile,szFileName, mode) != 0)
                             {
                                 char* pch = strrchr(szFileName, DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef HOST_WINDOWS
                                 if(pch == NULL) pch = strrchr(szFileName,':');
 #endif
                                 pFile = NULL;
-                                if(pch) fopen_s(&pFile,pch+1,"rt");
+                                if(pch) fopen_s(&pFile,pch+1, mode);
                             }
                             if(bIsNewFile)
                             {

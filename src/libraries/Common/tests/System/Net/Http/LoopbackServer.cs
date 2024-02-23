@@ -147,7 +147,7 @@ namespace System.Net.Test.Common
                     socket.NoDelay = true;
                 }
                 // OSX can throw if socket is in weird state during close or cancellation
-                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsApplePlatform) { }
 
                 stream = new NetworkStream(socket, ownsSocket: false);
 #endif

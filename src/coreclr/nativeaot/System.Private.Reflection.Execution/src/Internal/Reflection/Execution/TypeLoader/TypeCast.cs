@@ -382,7 +382,7 @@ namespace Internal.Reflection.Execution
         {
             Debug.Assert(!pBaseType.IsInterface, "did not expect interface type");
 
-            for (;;)
+            for (; ; )
             {
                 if (AreTypesEquivalentInternal(pDerivedType, pBaseType))
                     return true;

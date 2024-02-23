@@ -1421,7 +1421,7 @@ namespace System.Text.RegularExpressions
         /// </returns>
         public StartingLiteralData? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max efficiently optimized by IndexOfAny today
         {
-            Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
+            Debug.Assert(maxSetCharacters is >= 0 and <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
 
             if (FindStartingLiteralNode() is RegexNode node)
             {
@@ -1603,14 +1603,9 @@ namespace System.Text.RegularExpressions
                         prev.Str = prev.Ch.ToString();
                     }
 
-                    if ((optionsAt & RegexOptions.RightToLeft) == 0)
-                    {
-                        prev.Str = (at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str;
-                    }
-                    else
-                    {
-                        prev.Str = (at.Kind == RegexNodeKind.One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str;
-                    }
+                    prev.Str = (optionsAt & RegexOptions.RightToLeft) == 0 ?
+                        ((at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str) :
+                        ((at.Kind == RegexNodeKind.One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str);
                 }
                 else if (at.Kind == RegexNodeKind.Empty)
                 {
@@ -2566,14 +2561,7 @@ namespace System.Text.RegularExpressions
                 {
                     // In particular we want to look for sets that contain only the upper and lowercase variant
                     // of the same ASCII letter.
-                    if (RegexCharClass.IsNegated(child.Str!) ||
-                        RegexCharClass.GetSetChars(child.Str!, twoChars) != 2 ||
-                        twoChars[0] >= 128 ||
-                        twoChars[1] >= 128 ||
-                        twoChars[0] == twoChars[1] ||
-                        !char.IsLetter(twoChars[0]) ||
-                        !char.IsLetter(twoChars[1]) ||
-                        ((twoChars[0] | 0x20) != (twoChars[1] | 0x20)))
+                    if (!RegexCharClass.SetContainsAsciiOrdinalIgnoreCaseCharacter(child.Str!, twoChars))
                     {
                         break;
                     }
@@ -2586,7 +2574,7 @@ namespace System.Text.RegularExpressions
                     // but can still remain in some situations.
                 }
                 else if (consumeZeroWidthNodes &&
-                                       // anchors
+                         // anchors
                          child.Kind is RegexNodeKind.Beginning or
                                        RegexNodeKind.Bol or
                                        RegexNodeKind.Start or
@@ -2927,7 +2915,7 @@ namespace System.Text.RegularExpressions
                     break;
                 case RegexNodeKind.Multi:
                     sb.Append(" \"");
-                    foreach(char c in Str!)
+                    foreach (char c in Str!)
                     {
                         sb.Append(RegexCharClass.DescribeChar(c));
                     }

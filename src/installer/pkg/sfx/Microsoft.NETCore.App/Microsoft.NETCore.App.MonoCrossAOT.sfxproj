@@ -29,6 +29,7 @@
 
     <ItemGroup>
       <_ToolFile Include="$(AotCompilerPath)**" />
+      <_ToolFileExcludingSymbols Include="@(_ToolFile)" Condition="'%(Extension)' != '.dwarf' and '%(Extension)' != '.dbg'" />
       <NativeRuntimeAsset Include="@(_ToolFile)" TargetPath="tools/" />
 
       <_SdkPropsProperties Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value="" />
@@ -36,7 +37,7 @@
       <_SdkPropsProperties Include="TargetRid" Value="$(TargetCrossRid)" />
     </ItemGroup>
     <PropertyGroup>
-      <_PermissionsFiles>@(_ToolFile -> '&lt;File Path=&quot;tools/%(RecursiveDir)%(FileName)%(Extension)&quot; Permission=&quot;755&quot; /&gt;', ' ')</_PermissionsFiles>
+      <_PermissionsFiles>@(_ToolFileExcludingSymbols -> '&lt;File Path=&quot;tools/%(RecursiveDir)%(FileName)%(Extension)&quot; Permission=&quot;755&quot; /&gt;', ' ')</_PermissionsFiles>
     </PropertyGroup>
     <ItemGroup>
       <_PermissionsProperties Include="PermissionsProperties" Value="$(_PermissionsFiles)" />
@@ -45,11 +46,11 @@
     <GenerateFileFromTemplate
       Condition="!$([MSBuild]::IsOsPlatform('Windows'))"
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml.in"
-      Properties="@(_PermissionsProperties)"
+      Properties="@(_PermissionsProperties->'%(Identity)=%(Value)')"
       OutputPath="$(IntermediateOutputPath)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" />
     <GenerateFileFromTemplate
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"
-      Properties="@(_SdkPropsProperties)"
+      Properties="@(_SdkPropsProperties->'%(Identity)=%(Value)')"
       OutputPath="$(IntermediateOutputPath)$(TargetCrossRid).Sdk.props" />
   </Target>
 
@@ -57,4 +58,8 @@
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
     <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath). MonoAotCrossDir=$(MonoAotCrossDir)" />
   </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
 </Project>

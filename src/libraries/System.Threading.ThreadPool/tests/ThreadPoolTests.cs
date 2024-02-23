@@ -136,7 +136,7 @@ namespace System.Threading.ThreadPools.Tests
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
                     Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                    Assert.Equal(PlatformDetection.IsNetFramework, ThreadPool.SetMaxThreads(-1, -1));
+                    Assert.False(ThreadPool.SetMaxThreads(-1, -1));
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                     Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));

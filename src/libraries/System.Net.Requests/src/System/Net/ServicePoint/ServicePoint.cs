@@ -14,6 +14,8 @@ namespace System.Net
         private int _receiveBufferSize = -1;
         private int _connectionLimit;
 
+        internal TcpKeepAlive? KeepAlive { get; set; }
+
         internal ServicePoint(Uri address)
         {
             Debug.Assert(address != null);
@@ -87,11 +89,20 @@ namespace System.Net
 
         public void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval)
         {
-            if (enabled)
+            if (!enabled)
             {
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveTime);
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveInterval);
+                KeepAlive = null;
+                return;
             }
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveTime);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveInterval);
+
+            KeepAlive = new TcpKeepAlive
+            {
+                Time = keepAliveTime,
+                Interval = keepAliveInterval
+            };
         }
     }
 }

@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal sealed class CallSiteJsonFormatter: CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object?>
+    internal sealed class CallSiteJsonFormatter : CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object?>
     {
         internal static CallSiteJsonFormatter Instance = new CallSiteJsonFormatter();
 
@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
-                    Builder.Append( "null");
+                    Builder.Append("null");
                 }
             }
 

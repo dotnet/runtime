@@ -163,7 +163,7 @@ namespace System.Globalization.Tests
                 Assert.NotNull(CultureInfo.CurrentCulture);
                 Assert.NotNull(CultureInfo.CurrentUICulture);
 
-                if (PlatformDetection.IsOSXLike)
+                if (PlatformDetection.IsApplePlatform)
                 {
                     Assert.NotEqual("", CultureInfo.CurrentCulture.Name);
                     Assert.NotEqual("", CultureInfo.CurrentUICulture.Name);

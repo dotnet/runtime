@@ -56,6 +56,7 @@ namespace Internal.JitInterface
             ARM = 0x01c4,
             ARM64 = 0xaa64,
             LoongArch64 = 0x6264,
+            RiscV64 = 0x5064,
         }
 
         internal const string JitLibrary = "clrjitilc";
@@ -411,9 +412,10 @@ namespace Internal.JitInterface
 
             if (codeSize < _code.Length)
             {
-                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64
+                    && _compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.RiscV64)
                 {
-                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
+                    // For xarch/arm32/RiscV64, the generated code is sometimes smaller than the memory allocated.
                     // In that case, trim the codeBlock to the actual value.
                     //
                     // For arm64, the allocation request of `hotCodeSize` also includes the roData size
@@ -1061,8 +1063,6 @@ namespace Internal.JitInterface
         {
             CorInfoFlag result = 0;
 
-            // CORINFO_FLG_PROTECTED - verification only
-
             if (method.Signature.IsStatic)
                 result |= CorInfoFlag.CORINFO_FLG_STATIC;
 
@@ -1589,6 +1589,9 @@ namespace Internal.JitInterface
                 case UnmanagedCallingConventions.Fastcall:
                     result = CorInfoCallConvExtension.Fastcall;
                     break;
+                case UnmanagedCallingConventions.Swift:
+                    result = CorInfoCallConvExtension.Swift;
+                    break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     result = CorInfoCallConvExtension.Managed; // unreachable
@@ -2009,15 +2012,6 @@ namespace Internal.JitInterface
             return HandleToObject(cls).IsValueType;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // TODO: when we support multiple modules at runtime, this will need to do more work
-            // NOTE: cls can be null
-            return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
-        }
-
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
@@ -2059,9 +2053,6 @@ namespace Internal.JitInterface
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
-
-            if (type.HasVariance)
-                result |= CorInfoFlag.CORINFO_FLG_VARIANCE;
 
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
@@ -2913,6 +2904,41 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
+        private bool isExactType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            while (type.IsArray)
+            {
+                ArrayType arrayType = (ArrayType)type;
+
+                // Single dimensional array with non-zero bounds may be SZ array.
+                if (arrayType.IsMdArray && arrayType.Rank == 1)
+                    return false;
+
+                type = arrayType.ElementType;
+
+                // Arrays of primitives are interchangeable with arrays of enums of the same underlying type.
+                if (type.IsPrimitive || type.IsEnum)
+                    return false;
+            }
+
+            // Use conservative answer for pointers and custom types.
+            if (!type.IsDefType)
+                return false;
+
+            // Use conservative answer for equivalent and variant types.
+            if (type.HasTypeEquivalence || type.HasVariance)
+                return false;
+
+            // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
+            // is not compatible change.
+            if (type.IsValueType)
+                return true;
+
+            return _compilation.IsEffectivelySealed(type);
+        }
+
         private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
         {
             Debug.Assert(cls != null);
@@ -3131,6 +3157,12 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
+        private void reportMetadata(byte* key, void* value, nuint length)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
         private void* allocateArray(UIntPtr cBytes)
 #pragma warning restore CA1822 // Mark members as static
         {
@@ -3233,7 +3265,7 @@ namespace Internal.JitInterface
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
-                   target.IsOSXLike ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+                   target.IsApplePlatform ? CORINFO_OS.CORINFO_APPLE : CORINFO_OS.CORINFO_UNIX;
         }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
@@ -3853,6 +3885,11 @@ namespace Internal.JitInterface
                     const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
                     const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
                     const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21 = 0x107;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_LD64_LO12 = 0x108;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_ADD_LO12 = 0x109;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_CALL = 0x10A;
+
 
                     switch (fRelocType)
                     {
@@ -3862,6 +3899,14 @@ namespace Internal.JitInterface
                             return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
                         case IMAGE_REL_ARM64_PAGEOFFSET_12A:
                             return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                        case IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21;
+                        case IMAGE_REL_ARM64_TLSDESC_ADD_LO12:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12;
+                        case IMAGE_REL_ARM64_TLSDESC_LD64_LO12:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12;
+                        case IMAGE_REL_ARM64_TLSDESC_CALL:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;
@@ -3878,6 +3923,19 @@ namespace Internal.JitInterface
                             return RelocType.IMAGE_REL_BASED_LOONGARCH64_PC;
                         case IMAGE_REL_LOONGARCH64_JIR:
                             return RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
+                case TargetArchitecture.RiscV64:
+                {
+                    const ushort IMAGE_REL_RISCV64_PC = 3;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_RISCV64_PC:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_PC;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;
@@ -3984,6 +4042,8 @@ namespace Internal.JitInterface
                     return (uint)ImageFileMachine.ARM64;
                 case TargetArchitecture.LoongArch64:
                     return (uint)ImageFileMachine.LoongArch64;
+                case TargetArchitecture.RiscV64:
+                    return (uint)ImageFileMachine.RiscV64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
@@ -4058,6 +4118,9 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
                     Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
+
+                    if ((_compilation.InstructionSetSupport.Flags & InstructionSetSupportFlags.Vector512Throttling) != 0)
+                        flags.Set(CorJitFlag.CORJIT_FLAG_VECTOR512_THROTTLING);
                     break;
 
                 case TargetArchitecture.ARM64:
@@ -4065,10 +4128,11 @@ namespace Internal.JitInterface
                     break;
             }
 
-#if READYTORUN
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
-#endif
+
+            if (targetArchitecture == TargetArchitecture.RiscV64)
+                flags.Set(CorJitFlag.CORJIT_FLAG_FRAMED);
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
@@ -4085,7 +4149,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                 // TODO: enable this check in full AOT
-                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>(), ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
+                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module, this.MethodBeingCompiled.GetUnmanagedCallersOnlyMethodCallingConventions())) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }

@@ -7,4 +7,7 @@
 
     <WasiSdkBinPath>$([MSBuild]::NormalizeDirectory($(WasiSdkRoot), 'bin'))</WasiSdkBinPath>
   </PropertyGroup>
+  <ItemGroup>
+    <WasmToolchainEnvVars Include="PATH=$(WasiSdkBinPath)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+  </ItemGroup>
 </Project>

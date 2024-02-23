@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <NoWarn>8002,NU1701</NoWarn>
-    <Platforms>x64;x86;arm64;arm;loongarch64</Platforms>
+    <Platforms>x64;x86;arm64;arm;loongarch64;riscv64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

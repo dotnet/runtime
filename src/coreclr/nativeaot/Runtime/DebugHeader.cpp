@@ -36,12 +36,12 @@ struct GlobalValueEntry
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t DebugTypeEntriesArraySize = 96;
+static constexpr size_t DebugTypeEntriesArraySize = 100;
 static DebugTypeEntry s_DebugEntries[DebugTypeEntriesArraySize];
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t GlobalEntriesArraySize = 6;
+static constexpr size_t GlobalEntriesArraySize = 8;
 static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 
 // This structure is part of a in-memory serialization format that is used by diagnostic tools to
@@ -108,6 +108,10 @@ struct DotNetRuntimeDebugHeader
 };
 
 extern "C" struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader;
+
+#ifdef HOST_UNIX
+__attribute__ ((visibility ("default")))
+#endif
 struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
 
 #define MAKE_DEBUG_ENTRY(TypeName, FieldName, Value)                             \
@@ -115,7 +119,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                            \
         s_DebugEntries[currentDebugPos] = { #TypeName, #FieldName, Value, 0  };  \
         ++currentDebugPos;                                                       \
-        ASSERT(currentDebugPos <= DebugTypeEntriesArraySize);                    \
+        ASSERT(currentDebugPos < DebugTypeEntriesArraySize);                     \
     } while(0)
 
 #define MAKE_DEBUG_FIELD_ENTRY(TypeName, FieldName) MAKE_DEBUG_ENTRY(TypeName, FieldName, offsetof(TypeName, FieldName))
@@ -129,7 +133,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                             \
         s_GlobalEntries[currentGlobalPos] = { #Name, Name };                      \
         ++currentGlobalPos;                                                       \
-        ASSERT(currentGlobalPos <= GlobalEntriesArraySize);                       \
+        ASSERT(currentGlobalPos < GlobalEntriesArraySize);                        \
     } while(0)                                                                    \
 
 extern "C" void PopulateDebugHeaders()

@@ -5,13 +5,13 @@
 		<!-- IL2008 -->
 		<type fullname="Mono.Linker.Tests.Cases.Warnings.CanWarnAsError.NonExistentType" />
 		<type fullname="Mono.Linker.Tests.Cases.Warnings.CanWarnAsError/HelperClass">
-			<!-- IL2009 -->
+			<!-- IL2012 -->
 			<field name="NonExistentField" />
 			<!-- IL2010 -->
 			<method signature="System.Int32 HelperMethod()" body="stub" value="InvalidValue" />
 			<!-- IL2011 -->
 			<method signature="System.Int32 HelperMethod()" body="UnknownBodyModification" value="InvalidValue" />
-			<!-- IL2012 -->
+			<!-- IL2009 -->
 			<method signature="NonExistentMethod" />
 		</type>
 	</assembly>

@@ -57,18 +57,31 @@ if(HAVE_SYS_ICU)
   endif()
 
   set(icu_shim_sources_base
+      pal_idna.c
+      pal_common.c
+      entrypoints.c
+      ${pal_icushim_sources_base})
+
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
-      pal_common.c
-      pal_idna.c
       pal_locale.c
       pal_localeNumberData.c
       pal_localeStringData.c
       pal_normalization.c
       pal_timeZoneInfo.c
-      entrypoints.c
-      ${pal_icushim_sources_base})
+    )
+endif()
+
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
+      pal_placeholders.c
+    )
+endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
@@ -95,6 +108,9 @@ if(HAVE_SYS_ICU)
   endif()
   if(ICU_LIBDIR)
     set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+  endif()
+  if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(ICU_LDFLAGS "-licucore")
   endif()
 
   add_library(icu_shim_objects OBJECT "${icu_shim_sources}")
@@ -298,6 +314,7 @@ set(interp_sources
     interp/mintops.h
     interp/mintops.c
     interp/transform.c
+    interp/transform-opt.c
     interp/tiering.h
     interp/tiering.c
     interp/jiterpreter.c
@@ -426,7 +443,11 @@ if(NOT DISABLE_SHARED_LIBS)
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
-  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${Z_LIBS})
+  else()
+    target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  endif()
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()

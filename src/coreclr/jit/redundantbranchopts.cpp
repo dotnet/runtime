@@ -24,8 +24,7 @@ PhaseStatus Compiler::optRedundantBranches()
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false)
         {
         }
 
@@ -37,7 +36,7 @@ PhaseStatus Compiler::optRedundantBranches()
         {
             // Skip over any removed blocks.
             //
-            if ((block->bbFlags & BBF_REMOVED) != 0)
+            if (block->HasFlag(BBF_REMOVED))
             {
                 return;
             }
@@ -48,43 +47,43 @@ PhaseStatus Compiler::optRedundantBranches()
             {
                 bool madeChangesThisBlock = m_compiler->optRedundantRelop(block);
 
-                BasicBlock* const bbNext = block->Next();
-                BasicBlock* const bbJump = block->GetJumpDest();
+                BasicBlock* const bbFalse = block->GetFalseTarget();
+                BasicBlock* const bbTrue  = block->GetTrueTarget();
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
 
-                // If we modified some flow out of block but it's still
+                // If we modified some flow out of block but it's still referenced and
                 // a BBJ_COND, retry; perhaps one of the later optimizations
                 // we can do has enabled one of the earlier optimizations.
                 //
-                if (madeChangesThisBlock && block->KindIs(BBJ_COND))
+                if (madeChangesThisBlock && block->KindIs(BBJ_COND) && (block->countOfInEdges() > 0))
                 {
                     JITDUMP("Will retry RBO in " FMT_BB " after partial optimization\n", block->bbNum);
                     madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
                 }
 
-                // It's possible that the changed flow into bbNext or bbJump may unblock
+                // It's possible that the changed flow into bbFalse or bbTrue may unblock
                 // further optimizations there.
                 //
                 // Note this misses cascading retries, consider reworking the overall
                 // strategy here to iterate until closure.
                 //
-                if (madeChangesThisBlock && (bbNext->countOfInEdges() == 0))
+                if (madeChangesThisBlock && (bbFalse->countOfInEdges() == 0))
                 {
-                    for (BasicBlock* succ : bbNext->Succs())
+                    for (BasicBlock* succ : bbFalse->Succs())
                     {
                         JITDUMP("Will retry RBO in " FMT_BB "; pred " FMT_BB " now unreachable\n", succ->bbNum,
-                                bbNext->bbNum);
+                                bbFalse->bbNum);
                         m_compiler->optRedundantBranch(succ);
                     }
                 }
 
-                if (madeChangesThisBlock && (bbJump->countOfInEdges() == 0))
+                if (madeChangesThisBlock && (bbTrue->countOfInEdges() == 0))
                 {
-                    for (BasicBlock* succ : bbJump->Succs())
+                    for (BasicBlock* succ : bbTrue->Succs())
                     {
                         JITDUMP("Will retry RBO in " FMT_BB "; pred " FMT_BB " now unreachable\n", succ->bbNum,
-                                bbNext->bbNum);
+                                bbFalse->bbNum);
                         m_compiler->optRedundantBranch(succ);
                     }
                 }
@@ -96,7 +95,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     optReachableBitVecTraits = nullptr;
     OptRedundantBranchesDomTreeVisitor visitor(this);
-    visitor.WalkTree();
+    visitor.WalkTree(m_domTree);
 
 #if DEBUG
     if (verbose && visitor.madeChanges)
@@ -104,6 +103,9 @@ PhaseStatus Compiler::optRedundantBranches()
         fgDispBasicBlocks(verboseTrees);
     }
 #endif // DEBUG
+
+    // DFS tree is always considered invalid after RBO.
+    fgInvalidateDfsTree();
 
     return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -151,6 +153,174 @@ struct RelopImplicationRule
     VNFunc treeRelop;
     bool   reverse;
 };
+
+enum RelopResult
+{
+    Unknown,
+    AlwaysFalse,
+    AlwaysTrue
+};
+
+//------------------------------------------------------------------------
+// IsCmp2ImpliedByCmp1: given two constant range checks:
+//
+//   if (X oper1 bound1)
+//   {
+//        if (X oper2 bound2)
+//        {
+//
+// determine if the second range check is implied by the dominating first one.
+//
+// Arguments:
+//   oper1  - the first comparison operator
+//   bound1 - the first constant bound
+//   oper2  - the second comparison operator
+//   bound2 - the second constant bound
+//
+// Returns:
+//   Unknown     - the second check is not implied by the first one
+//   AlwaysFalse - the second check is implied by the first one and is always false
+//   AlwaysTrue  - the second check is implied by the first one and is always true
+//
+RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTreeOps oper2, target_ssize_t bound2)
+{
+    struct IntegralRange
+    {
+        target_ssize_t startIncl; // inclusive
+        target_ssize_t endIncl;   // inclusive
+
+        bool Intersects(const IntegralRange other) const
+        {
+            return (startIncl <= other.endIncl) && (other.startIncl <= endIncl);
+        }
+
+        bool Contains(const IntegralRange other) const
+        {
+            return (startIncl <= other.startIncl) && (other.endIncl <= endIncl);
+        }
+    };
+
+    constexpr target_ssize_t minValue = TARGET_POINTER_SIZE == 4 ? INT32_MIN : INT64_MIN;
+    constexpr target_ssize_t maxValue = TARGET_POINTER_SIZE == 4 ? INT32_MAX : INT64_MAX;
+
+    // Start with the widest possible ranges
+    IntegralRange range1 = {minValue, maxValue};
+    IntegralRange range2 = {minValue, maxValue};
+
+    // Update ranges based on inputs
+    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
+        switch (oper)
+        {
+            case GT_LT:
+                // x < cns -> [minValue, cns - 1]
+                if (bound == minValue)
+                {
+                    // overflows
+                    return false;
+                }
+                range->endIncl = bound - 1;
+                return true;
+
+            case GT_LE:
+                // x <= cns -> [minValue, cns]
+                range->endIncl = bound;
+                return true;
+
+            case GT_GT:
+                // x > cns -> [cns + 1, maxValue]
+                if (bound == maxValue)
+                {
+                    // overflows
+                    return false;
+                }
+                range->startIncl = bound + 1;
+                return true;
+
+            case GT_GE:
+                // x >= cns -> [cns, maxValue]
+                range->startIncl = bound;
+                return true;
+
+            case GT_EQ:
+            case GT_NE:
+                // x == cns -> [cns, cns]
+                // NE is special-cased below
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                return true;
+
+            default:
+                // unsupported operator
+                return false;
+        }
+    };
+
+    if (setRange(oper1, bound1, &range1) && setRange(oper2, bound2, &range2))
+    {
+        // Special handling of GT_NE:
+        if ((oper1 == GT_NE) || (oper2 == GT_NE))
+        {
+            // if (x != 100)
+            //    if (x != 100) // always true
+            if (oper1 == oper2)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysTrue : RelopResult::Unknown;
+            }
+
+            // if (x == 100)
+            //    if (x != 100) // always false
+            //
+            // if (x == 100)
+            //    if (x != 101) // always true
+            if (oper1 == GT_EQ)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysFalse : RelopResult::AlwaysTrue;
+            }
+
+            // if (x > 100)
+            //    if (x != 10) // always true
+            if ((oper2 == GT_NE) && !range1.Intersects(range2))
+            {
+                return AlwaysTrue;
+            }
+
+            return RelopResult::Unknown;
+        }
+
+        // If ranges never intersect, then the 2nd range is never "true"
+        if (!range1.Intersects(range2))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [SSIZE_T_MIN ..  10]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x <= 10) // always false
+            //
+            return RelopResult::AlwaysFalse;
+        }
+
+        // If range1 is a subset of range2, then the 2nd range is always "true"
+        if (range2.Contains(range1))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [10  .. SSIZE_T_MAX]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x >= 10) // always true
+            //
+            return RelopResult::AlwaysTrue;
+        }
+    }
+    return RelopResult::Unknown;
+}
 
 //------------------------------------------------------------------------
 // s_implicationRules: rule table for unrelated relops
@@ -257,8 +427,6 @@ static const RelopImplicationRule s_implicationRules[] =
 // We don't get all the cases here we could. Still to do:
 // * two unsigned compares, same operands
 // * mixture of signed/unsigned compares, same operands
-// * mixture of compares, one operand same, other operands different constants
-//   x > 1 ==> x >= 0
 //
 void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 {
@@ -334,6 +502,68 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
                     JITDUMP("Can infer %s from [%s] dominating %s\n", ValueNumStore::VNFuncName(treeFunc),
                             rii->canInferFromTrue ? "true" : "false", ValueNumStore::VNFuncName(domFunc));
+                    return;
+                }
+            }
+        }
+
+        // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+        // We assume cns1 and cns2 are always on the RHS of the compare.
+        if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
+            vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
+            vnStore->TypeOfVN(domApp.m_args[0]) == vnStore->TypeOfVN(treeApp.m_args[1]) &&
+            vnStore->TypeOfVN(domApp.m_args[1]) == vnStore->TypeOfVN(treeApp.m_args[1]))
+        {
+            // We currently don't handle VNF_relop_UN funcs here
+            if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
+                ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
+            {
+                // Dominating "X relop CNS"
+                const genTreeOps     domOper = static_cast<genTreeOps>(domApp.m_func);
+                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domApp.m_args[1]);
+
+                // Dominated "X relop CNS"
+                const genTreeOps     treeOper = static_cast<genTreeOps>(treeApp.m_func);
+                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeApp.m_args[1]);
+
+                // Example:
+                //
+                // void Test(int x)
+                // {
+                //     if (x > 100)
+                //         if (x > 10)
+                //             Console.WriteLine("Taken!");
+                // }
+                //
+
+                // Corresponding BB layout:
+                //
+                // BB1:
+                //   if (x <= 100)
+                //       goto BB4
+                //
+                // BB2:
+                //   // x is known to be > 100 here
+                //   if (x <= 10) // never true
+                //       goto BB4
+                //
+                // BB3:
+                //   Console.WriteLine("Taken!");
+                //
+                // BB4:
+                //   return;
+
+                // Check whether the dominating compare being "false" implies the dominated compare is known
+                // to be either "true" or "false".
+                RelopResult treeOperStatus =
+                    IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                if (treeOperStatus != RelopResult::Unknown)
+                {
+                    rii->canInfer          = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+                    rii->canInferFromTrue  = false;
+                    rii->canInferFromFalse = true;
+                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
                     return;
                 }
             }
@@ -567,8 +797,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     const bool domIsSameRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
                                                 (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
 
-                    BasicBlock* const trueSuccessor  = domBlock->GetJumpDest();
-                    BasicBlock* const falseSuccessor = domBlock->Next();
+                    BasicBlock* const trueSuccessor  = domBlock->GetTrueTarget();
+                    BasicBlock* const falseSuccessor = domBlock->GetFalseTarget();
 
                     // If we can trace the flow from the dominating relop, we can infer its value.
                     //
@@ -598,22 +828,22 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     }
                     else if (trueReaches && !falseReaches && rii.canInferFromTrue)
                     {
-                        // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
+                        // True path in dominator reaches, false path doesn't; relop must be true/false.
                         //
                         const bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
-                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
-                                domBlock->GetJumpDest()->bbNum, domBlock->bbNum, dspTreeID(tree),
+                        JITDUMP("True successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
+                                domBlock->GetTrueTarget()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsTrue ? "true" : "false");
                         relopValue = relopIsTrue ? 1 : 0;
                         break;
                     }
                     else if (falseReaches && !trueReaches && rii.canInferFromFalse)
                     {
-                        // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
+                        // False path from dominator reaches, true path doesn't; relop must be false/true.
                         //
                         const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
-                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
-                                domBlock->Next()->bbNum, domBlock->bbNum, dspTreeID(tree),
+                        JITDUMP("False successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
+                                domBlock->GetFalseTarget()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsFalse ? "false" : "true");
                         relopValue = relopIsFalse ? 0 : 1;
                         break;
@@ -697,6 +927,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    Metrics.RedundantBranchesEliminated++;
     return true;
 }
 
@@ -710,9 +941,8 @@ struct JumpThreadInfo
 {
     JumpThreadInfo(Compiler* comp, BasicBlock* block)
         : m_block(block)
-        , m_trueTarget(block->GetJumpDest())
-        , m_falseTarget(block->Next())
-        , m_fallThroughPred(nullptr)
+        , m_trueTarget(block->GetTrueTarget())
+        , m_falseTarget(block->GetFalseTarget())
         , m_ambiguousVNBlock(nullptr)
         , m_truePreds(BlockSetOps::MakeEmpty(comp))
         , m_ambiguousPreds(BlockSetOps::MakeEmpty(comp))
@@ -731,8 +961,6 @@ struct JumpThreadInfo
     BasicBlock* const m_trueTarget;
     // Block successor if predicate is false
     BasicBlock* const m_falseTarget;
-    // Unique pred that falls through to block, if any
-    BasicBlock* m_fallThroughPred;
     // Block that brings in the ambiguous VN
     BasicBlock* m_ambiguousVNBlock;
     // Pred blocks for which the predicate will be true
@@ -777,39 +1005,6 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         return false;
     }
 
-    // If block is a loop header, skip jump threading.
-    //
-    // This is an artificial limitation to ensure that subsequent loop table valididity
-    // checking can pass. We do not expect a loop entry to have multiple non-loop predecessors.
-    //
-    // This only blocks jump threading in a small number of cases.
-    // Revisit once we can ensure that loop headers are not critical blocks.
-    //
-    // Likewise we can't properly update the loop table if we thread the entry block.
-    // Not clear how much impact this has.
-    //
-    for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-    {
-        const LoopDsc& loop = optLoopTable[loopNum];
-
-        if (loop.lpIsRemoved())
-        {
-            continue;
-        }
-
-        if (block == loop.lpHead)
-        {
-            JITDUMP(FMT_BB " is the header for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-            return false;
-        }
-
-        if (block == loop.lpEntry)
-        {
-            JITDUMP(FMT_BB " is the entry for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-            return false;
-        }
-    }
-
     // Verify that dom block dominates all of block's predecessors.
     //
     // This will initially be true but if we jump thread through
@@ -819,7 +1014,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     {
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (!fgDominate(domBlock, predBlock))
+            if (m_dfsTree->Contains(predBlock) && !m_domTree->Dominates(domBlock, predBlock))
             {
                 JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
                         predBlock->bbNum);
@@ -1042,38 +1237,12 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
     // * It's also possible that the pred is a switch; we will treat switch
     // preds as ambiguous as well.
     //
-    // * We note if there is an un-ambiguous pred that falls through to block.
-    // This is the "fall through pred", and the (true/false) pred set it belongs to
-    // is the "fall through set".
+    // If there are ambiguous preds they will continue to flow into the
+    // unaltered block, while true and false preds will flow to the appropriate
+    // successors directly.
     //
-    // Now for some case analysis.
-    //
-    // (1) If we have both an ambiguous pred and a fall through pred, we treat
-    // the fall through pred as an ambiguous pred (we can't reroute its flow to
-    // avoid block, and we need to keep block intact), and jump thread the other
-    // preds per (2) below.
-    //
-    // (2) If we have an ambiguous pred and no fall through, we reroute the true and
-    // false preds to branch to the true and false successors, respectively.
-    //
-    // (3) If we don't have an ambiguous pred and don't have a fall through pred,
-    // we choose one of the pred sets to be treated as if it was the fall through set.
-    // For now the choice is arbitrary, so we chose the true preds, and proceed
-    // per (4) below.
-    //
-    // (4) If we don't have an ambiguous pred, and we have a fall through, we leave
-    // all preds in the fall through set alone -- they continue branching to block.
-    // We modify block to branch to the appropriate successor for the fall through set.
-    // Note block will be empty other than phis and the branch, so this is ok.
-    // The preds in the other set target the other successor.
-    //
-    // The goal of the above is to maximize the number of cases where we jump thread,
-    // and to maximize the number of jump threads that reuse the original block. This
-    // latter should prove useful in subsequent work, where we aim to enable jump
-    // threading in cases where block has side effects.
-    //
-    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->GetJumpDest() : domBlock->Next();
-    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->Next() : domBlock->GetJumpDest();
+    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->GetTrueTarget() : domBlock->GetFalseTarget();
+    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->GetFalseTarget() : domBlock->GetTrueTarget();
     JumpThreadInfo    jti(this, block);
 
     for (BasicBlock* const predBlock : block->PredBlocks())
@@ -1090,10 +1259,10 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             continue;
         }
 
-        const bool isTruePred = ((predBlock == domBlock) && (domTrueSuccessor == block)) ||
-                                optReachable(domTrueSuccessor, predBlock, domBlock);
-        const bool isFalsePred = ((predBlock == domBlock) && (domFalseSuccessor == block)) ||
-                                 optReachable(domFalseSuccessor, predBlock, domBlock);
+        const bool isTruePred =
+            (predBlock == domBlock) ? (domTrueSuccessor == block) : optReachable(domTrueSuccessor, predBlock, domBlock);
+        const bool isFalsePred = (predBlock == domBlock) ? (domFalseSuccessor == block)
+                                                         : optReachable(domFalseSuccessor, predBlock, domBlock);
 
         if (isTruePred == isFalsePred)
         {
@@ -1139,15 +1308,6 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
 
             jti.m_numFalsePreds++;
             JITDUMP(FMT_BB " is a false pred\n", predBlock->bbNum);
-        }
-
-        // Note if the true or false pred is the fall through pred.
-        //
-        if (predBlock->NextIs(block))
-        {
-            JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
-            assert(jti.m_fallThroughPred == nullptr);
-            jti.m_fallThroughPred = predBlock;
         }
     }
 
@@ -1400,15 +1560,6 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
             continue;
         }
-
-        // Note if the true or false pred is the fall through pred.
-        //
-        if (predBlock->NextIs(block))
-        {
-            JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
-            assert(jti.m_fallThroughPred == nullptr);
-            jti.m_fallThroughPred = predBlock;
-        }
     }
 
     // Do the optimization.
@@ -1441,102 +1592,9 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         return false;
     }
 
-    if ((jti.m_numAmbiguousPreds > 0) && (jti.m_fallThroughPred != nullptr))
-    {
-        // TODO: Simplify jti.m_fallThroughPred logic, now that implicit fallthrough is disallowed.
-        const bool fallThroughIsTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
-        const bool predJumpsToNext = jti.m_fallThroughPred->KindIs(BBJ_ALWAYS) && jti.m_fallThroughPred->JumpsToNext();
-
-        if (predJumpsToNext && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
-                                (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
-        {
-            JITDUMP(FMT_BB " has ambiguous preds and a (%s) fall through pred and no (%s) preds.\n"
-                           "Fall through pred " FMT_BB " is BBJ_ALWAYS\n",
-                    jti.m_block->bbNum, fallThroughIsTruePred ? "true" : "false",
-                    fallThroughIsTruePred ? "false" : "true", jti.m_fallThroughPred->bbNum);
-
-            assert(jti.m_fallThroughPred->HasJumpTo(jti.m_block));
-        }
-        else
-        {
-            // Treat the fall through pred as an ambiguous pred.
-            JITDUMP(FMT_BB " has both ambiguous preds and a fall through pred\n", jti.m_block->bbNum);
-            JITDUMP("Treating fall through pred " FMT_BB " as an ambiguous pred\n", jti.m_fallThroughPred->bbNum);
-
-            if (fallThroughIsTruePred)
-            {
-                BlockSetOps::RemoveElemD(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
-                assert(jti.m_numTruePreds > 0);
-                jti.m_numTruePreds--;
-            }
-            else
-            {
-                assert(jti.m_numFalsePreds > 0);
-                jti.m_numFalsePreds--;
-            }
-
-            assert(!(BlockSetOps::IsMember(this, jti.m_ambiguousPreds, jti.m_fallThroughPred->bbNum)));
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, jti.m_fallThroughPred->bbNum);
-            jti.m_numAmbiguousPreds++;
-        }
-
-        jti.m_fallThroughPred = nullptr;
-    }
-
-    // There still should be at least one pred that can bypass block.
-    //
-    if ((jti.m_numTruePreds == 0) && (jti.m_numFalsePreds == 0))
-    {
-        // This is possible, but also should be rare.
-        //
-        JITDUMP(FMT_BB " now only has ambiguous preds, not jump threading\n", jti.m_block->bbNum);
-        return false;
-    }
-
-    // Determine if either set of preds will route via block.
-    //
-    bool truePredsWillReuseBlock  = false;
-    bool falsePredsWillReuseBlock = false;
-
-    if (jti.m_fallThroughPred != nullptr)
-    {
-        assert(jti.m_numAmbiguousPreds == 0);
-        truePredsWillReuseBlock  = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
-        falsePredsWillReuseBlock = !truePredsWillReuseBlock;
-    }
-    else if (jti.m_numAmbiguousPreds == 0)
-    {
-        truePredsWillReuseBlock  = true;
-        falsePredsWillReuseBlock = !truePredsWillReuseBlock;
-    }
-
-    assert(!(truePredsWillReuseBlock && falsePredsWillReuseBlock));
-
     // We should be good to go
     //
     JITDUMP("Optimizing via jump threading\n");
-
-    // Fix block, if we're reusing it.
-    //
-    if (truePredsWillReuseBlock)
-    {
-        Statement* const lastStmt = jti.m_block->lastStmt();
-        fgRemoveStmt(jti.m_block, lastStmt);
-        JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", jti.m_block->bbNum, jti.m_trueTarget->bbNum);
-        fgRemoveRefPred(jti.m_falseTarget, jti.m_block);
-        jti.m_block->SetJumpKind(BBJ_ALWAYS);
-    }
-    else if (falsePredsWillReuseBlock)
-    {
-        Statement* const lastStmt = jti.m_block->lastStmt();
-        fgRemoveStmt(jti.m_block, lastStmt);
-        JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
-                jti.m_falseTarget->bbNum);
-        fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
-        jti.m_block->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget);
-        jti.m_block->bbFlags |= BBF_NONE_QUIRK;
-        assert(jti.m_block->JumpsToNext());
-    }
 
     // Now reroute the flow from the predecessors.
     // If this pred is in the set that will reuse block, do nothing.
@@ -1553,29 +1611,15 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
         const bool isTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, predBlock->bbNum);
 
-        // Do we need to alter flow from this pred?
+        // Jump to the appropriate successor.
         //
-        if ((isTruePred && truePredsWillReuseBlock) || (!isTruePred && falsePredsWillReuseBlock))
-        {
-            // No, we can leave as is.
-            //
-            JITDUMP("%s pred " FMT_BB " will continue to target " FMT_BB "\n", isTruePred ? "true" : "false",
-                    predBlock->bbNum, jti.m_block->bbNum);
-            continue;
-        }
-
-        // Yes, we need to jump to the appropriate successor.
-        // Note we should not be altering flow for the fall-through pred.
-        //
-        assert(predBlock != jti.m_fallThroughPred);
-
         if (isTruePred)
         {
             JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                     " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
 
-            fgReplaceJumpTarget(predBlock, jti.m_trueTarget, jti.m_block);
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
         }
         else
         {
@@ -1583,7 +1627,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
 
-            fgReplaceJumpTarget(predBlock, jti.m_falseTarget, jti.m_block);
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
         }
     }
 
@@ -1604,7 +1648,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             {
                 JITDUMP(FMT_BB " has %s memory phi; marking as BBF_NO_CSE_IN\n", jti.m_block->bbNum,
                         memoryKindNames[memoryKind]);
-                jti.m_block->bbFlags |= BBF_NO_CSE_IN;
+                jti.m_block->SetFlags(BBF_NO_CSE_IN);
                 break;
             }
         }
@@ -1640,6 +1684,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
     // We optimized.
     //
+    Metrics.JumpThreadingsPerformed++;
     fgModified = true;
     return true;
 }
@@ -1841,10 +1886,18 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
+        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
+        {
+            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
+            break;
+        }
+
+        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
+
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
-        if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
+        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeData->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -1856,28 +1909,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             sideEffect = true;
         }
 
-        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
-            break;
-        }
-
-        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
-
         // If we are seeing PHIs we have run out of interesting stmts.
         //
         if (prevTreeData->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
-            break;
-        }
-
-        // Bail if value has an embedded assignment. We could handle this
-        // if we generalized the interference check we run below.
-        //
-        if ((prevTreeData->gtFlags & GTF_ASG) != 0)
-        {
-            JITDUMP(" -- prev tree RHS has embedded assignment\n");
             break;
         }
 
@@ -1951,7 +1987,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeData, definedLocals[i]))
+            if (gtTreeHasLocalRead(prevTreeData, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -1961,6 +1997,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         if (interferes)
         {
+            break;
+        }
+
+        if (gtMayHaveStoreInterference(prevTreeData, tree))
+        {
+            JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
             break;
         }
 
@@ -1994,7 +2036,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             // replacing.
             for (Statement* cur = prevStmt->GetNextStmt(); cur != stmt; cur = cur->GetNextStmt())
             {
-                if (gtHasRef(cur->GetRootNode(), prevTreeLclNum))
+                if (gtTreeHasLocalRead(cur->GetRootNode(), prevTreeLclNum))
                 {
                     JITDUMP("-- prev tree has GTF_GLOB_REF and " FMT_STMT " has an interfering use\n", cur->GetID());
                     hasExtraUses = true;

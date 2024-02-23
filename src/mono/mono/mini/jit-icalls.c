@@ -1450,7 +1450,8 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 		break;
 	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
 		/* Calling a ref method with a ref receiver */
-		this_arg = *(gpointer*)mp;
+		/* Static calls don't have this arg */
+		this_arg = m_method_is_static (cmethod) ? NULL : *(gpointer*)mp;
 		m = info->method;
 		break;
 	default:
@@ -1482,7 +1483,8 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 		g_assert (fsig->param_count < 16);
 		memcpy (new_args, args, fsig->param_count * sizeof (gpointer));
 		for (int i = 0; i < fsig->param_count; ++i) {
-			if (deref_args [i])
+			// If the argument is not a vtype or nullable, deref it
+			if (deref_args [i] && (deref_args [i] != MONO_GSHAREDVT_BOX_TYPE_VTYPE && deref_args [i] != MONO_GSHAREDVT_BOX_TYPE_NULLABLE))
 				new_args [i] = *(gpointer*)new_args [i];
 		}
 		args = new_args;

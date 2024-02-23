@@ -46,6 +46,8 @@ namespace System.Net
             }
         }
 
+        internal static TcpKeepAlive? KeepAlive { get; private set; }
+
         public static int MaxServicePoints
         {
             get { return s_maxServicePoints; }
@@ -153,7 +155,8 @@ namespace System.Net
                     ConnectionLimit = DefaultConnectionLimit,
                     IdleSince = DateTime.Now,
                     Expect100Continue = Expect100Continue,
-                    UseNagleAlgorithm = UseNagleAlgorithm
+                    UseNagleAlgorithm = UseNagleAlgorithm,
+                    KeepAlive = KeepAlive
                 };
                 s_servicePointTable[tableKey] = new WeakReference<ServicePoint>(sp);
 
@@ -208,11 +211,20 @@ namespace System.Net
 
         public static void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval)
         {
-            if (enabled)
+            if (!enabled)
             {
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveTime);
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveInterval);
+                KeepAlive = null;
+                return;
             }
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveTime);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveInterval);
+
+            KeepAlive = new TcpKeepAlive
+            {
+                Time = keepAliveTime,
+                Interval = keepAliveInterval
+            };
         }
     }
 }

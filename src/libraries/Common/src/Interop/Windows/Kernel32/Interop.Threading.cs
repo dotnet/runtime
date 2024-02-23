@@ -41,7 +41,7 @@ internal static partial class Interop
         internal const int DUPLICATE_SAME_ACCESS = 2;
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        [return:MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DuplicateHandle(
             IntPtr hSourceProcessHandle,
             IntPtr hSourceHandle,
@@ -68,7 +68,7 @@ internal static partial class Interop
         internal static partial ThreadPriority GetThreadPriority(SafeWaitHandle hThread);
 
         [LibraryImport(Libraries.Kernel32)]
-        [return:MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]

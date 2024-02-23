@@ -33,5 +33,5 @@
   </ItemGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
-  <Import Project="$(MonoProjectRoot)wasi\build\WasiApp.InTree.props" />
+  <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.props" />
 </Project>

@@ -393,18 +393,8 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =	t->data.klass;
-
-			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
-				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
-				if (!bcheck_blob (p, 7, boundp, error))
-					return NULL;
-				*val = read64 (p);
-				*end = p + 8;
-				return val;
-			}
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		}
-		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		break;
 
 	case MONO_TYPE_STRING: {
@@ -733,19 +723,8 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =	t->data.klass;
-
-			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
-				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
-				if (!bcheck_blob (p, 7, boundp, error))
-					return NULL;
-				*val = read64 (p);
-				*end = p + 8;
-				result->value.primitive = val;
-				return result;
-			}
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		}
-		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		break;
 
 	case MONO_TYPE_STRING: {

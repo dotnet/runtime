@@ -4,12 +4,12 @@
     <!-- Package Validation isn't helpful when authoring shared framework packages. -->
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == '' and
                                         '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
-                                        '$(DotNetBuildFromSource)' != 'true'">true</EnablePackageValidation>
+                                        '$(DotNetBuildSourceOnly)' != 'true'">true</EnablePackageValidation>
     <!-- Don't perform baseline validation if we don't have a stable prebuilt version.
          Don't attempt to restore prebuilts during source-build. -->
     <DisablePackageBaselineValidation Condition="'$(IsShipping)' == 'false' or
                                                  '$(SuppressFinalPackageVersion)' == 'true' or
-                                                 '$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
+                                                 '$(DotNetBuildSourceOnly)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(ApiCompatNetCoreAppBaselineVersion)</PackageValidationBaselineVersion>
 
     <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
@@ -39,7 +39,7 @@
     <!-- When in source-build we need to generate all packages when building for all configurations even in servicing. -->
     <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
                                        '$(BuildAllConfigurations)' == 'true' and
-                                       '$(DotNetBuildFromSource)' == 'true'">true</GeneratePackageOnBuild>
+                                       '$(DotNetBuildSourceOnly)' == 'true'">true</GeneratePackageOnBuild>
 
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
@@ -62,12 +62,13 @@
     <!-- Always update the package version in servicing. -->
     <Version>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</Version>
     <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
-    <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
-    <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
-    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
-    <!-- The assembly version gets updated when the assembly isn't part of a targeting pack. -->
-    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
+
+  <!-- Main packages intentionally don't include assets for net6.0 and net7.0 anymore. -->
+  <ItemGroup>
+    <PackageValidationBaselineFrameworkToIgnore Include="net6.0" />
+    <PackageValidationBaselineFrameworkToIgnore Include="net7.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
@@ -306,7 +307,7 @@
   <Target Name="ValidateServicingVersionIsProperlySet"
           Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
                      '$(PackageUseIncrementalServicingVersion)' == 'true' and
-                     '$(DotNetBuildFromSource)' != 'true'"
+                     '$(DotNetBuildSourceOnly)' != 'true'"
           AfterTargets="GenerateNuspec">
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>

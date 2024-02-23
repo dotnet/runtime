@@ -117,30 +117,34 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 //
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    GetEmitter()->emitIns_J(INS_bl, block->GetJumpDest());
+    assert(block->KindIs(BBJ_CALLFINALLY));
+
+    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
     BasicBlock* nextBlock = block->Next();
 
-    if (block->bbFlags & BBF_RETLESS_CALL)
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT);
         }
+
+        return block;
     }
     else
     {
-        assert((nextBlock != nullptr) && nextBlock->isBBCallAlwaysPairTail());
+        assert((nextBlock != nullptr) && nextBlock->isBBCallFinallyPairTail());
 
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
 
         // Now go to where the finally funclet needs to return to.
-        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
             // TODO-ARM-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -150,29 +154,20 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            GetEmitter()->emitIns_J(INS_b, jumpDest);
+            GetEmitter()->emitIns_J(INS_b, finallyContinuation);
         }
 
         GetEmitter()->emitEnableGC();
-    }
 
-    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallAlwaysPair());
-        block = nextBlock;
+        return nextBlock;
     }
-    return block;
 }
 
 //------------------------------------------------------------------------
 // genEHCatchRet:
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    genMov32RelocatableDisplacement(block->GetJumpDest(), REG_INTRET);
+    genMov32RelocatableDisplacement(block->GetTarget(), REG_INTRET);
 }
 
 //------------------------------------------------------------------------
@@ -655,9 +650,9 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
-    unsigned     jmpTabBase;
+    unsigned   jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    unsigned   jmpTabBase;
 
     jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);
 
@@ -665,8 +660,9 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        BasicBlock* target = (*jumpTable)->getDestinationBlock();
+        jumpTable++;
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -1321,7 +1317,14 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_tst, reg, reg, genActualType(op));
-    inst_JMP(EJ_ne, compiler->compCurBB->GetJumpDest());
+    inst_JMP(EJ_ne, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2322,7 +2325,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 

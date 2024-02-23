@@ -53,6 +53,87 @@ namespace System
             HandleToInfo
         }
 
+        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
+        internal struct ListBuilder<T> where T : class
+        {
+            private T[]? _items;
+            private T _item;
+            private int _count;
+            private int _capacity;
+
+            public ListBuilder(int capacity)
+            {
+                _items = null;
+                _item = null!;
+                _count = 0;
+                _capacity = capacity;
+            }
+
+            public T this[int index]
+            {
+                get
+                {
+                    Debug.Assert(index < Count);
+                    return (_items != null) ? _items[index] : _item;
+                }
+            }
+
+            public T[] ToArray()
+            {
+                if (_count == 0)
+                    return Array.Empty<T>();
+                if (_count == 1)
+                    return new T[1] { _item };
+
+                Array.Resize(ref _items, _count);
+                _capacity = _count;
+                return _items!;
+            }
+
+            public void CopyTo(object[] array, int index)
+            {
+                if (_count == 0)
+                    return;
+
+                if (_count == 1)
+                {
+                    array[index] = _item;
+                    return;
+                }
+
+                Array.Copy(_items!, 0, array, index, _count);
+            }
+
+            public int Count => _count;
+
+            public void Add(T item)
+            {
+                if (_count == 0)
+                {
+                    _item = item;
+                }
+                else
+                {
+                    if (_count == 1)
+                    {
+                        if (_capacity < 2)
+                            _capacity = 4;
+                        _items = new T[_capacity];
+                        _items[0] = _item;
+                    }
+                    else if (_capacity == _count)
+                    {
+                        int newCapacity = 2 * _capacity;
+                        Array.Resize(ref _items, newCapacity);
+                        _capacity = newCapacity;
+                    }
+
+                    _items![_count] = item;
+                }
+                _count++;
+            }
+        }
+
         internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
@@ -1357,7 +1438,6 @@ namespace System
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
-            private bool m_bIsDomainInitialized;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1440,12 +1520,6 @@ namespace System
 
                     return value;
                 }
-            }
-
-            internal bool DomainInitialized
-            {
-                get => m_bIsDomainInitialized;
-                set => m_bIsDomainInitialized = value;
             }
 
             internal string? GetName(TypeNameKind kind)
@@ -1854,12 +1928,6 @@ namespace System
             set => Cache.GenericCache = value;
         }
 
-        internal bool DomainInitialized
-        {
-            get => Cache.DomainInitialized;
-            set => Cache.DomainInitialized = value;
-        }
-
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {
             return GetFieldInfo(RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle), fieldHandle);
@@ -1965,11 +2033,7 @@ namespace System
             if (nsDelimiter >= 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
+                name = fullname.Substring(nsDelimiter + 1);
                 Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
@@ -2745,7 +2809,7 @@ namespace System
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.AsSpan());
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
                 }
             }
 
@@ -2774,7 +2838,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
@@ -2812,7 +2876,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.AsSpan(), returnType, types);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             binder ??= DefaultBinder;
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
@@ -3800,6 +3864,31 @@ namespace System
             {
                 return Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
             }
+        }
+
+        /// <summary>
+        /// Helper to get instances of uninitialized objects.
+        /// </summary>
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object GetUninitializedObject()
+        {
+            object? genericCache = GenericCache;
+
+            if (genericCache is not CreateUninitializedCache cache)
+            {
+                if (genericCache is ActivatorCache activatorCache)
+                {
+                    cache = activatorCache.GetCreateUninitializedCache(this);
+                }
+                else
+                {
+                    cache = new CreateUninitializedCache(this);
+                    GenericCache = cache;
+                }
+            }
+
+            return cache.CreateUninitializedObject(this);
         }
 
         /// <summary>

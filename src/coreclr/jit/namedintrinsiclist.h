@@ -76,6 +76,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsEnum,
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
+    NI_System_Type_get_IsPrimitive,
     NI_System_Type_get_IsByRefLike,
     NI_System_Type_get_TypeHandle,
     NI_System_Type_IsAssignableFrom,
@@ -100,7 +101,6 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Activator_AllocatorOf,
     NI_System_Activator_DefaultConstructorOf,
-    NI_System_EETypePtr_EETypePtrOf,
 
     NI_Internal_Runtime_MethodTable_Of,
 
@@ -115,6 +115,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,
     NI_System_String_StartsWith,
+    NI_System_String_EndsWith,
     NI_System_Span_get_Item,
     NI_System_Span_get_Length,
     NI_System_SpanHelpers_SequenceEqual,
@@ -125,6 +126,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_MemoryExtensions_Equals,
     NI_System_MemoryExtensions_SequenceEqual,
     NI_System_MemoryExtensions_StartsWith,
+    NI_System_MemoryExtensions_EndsWith,
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,

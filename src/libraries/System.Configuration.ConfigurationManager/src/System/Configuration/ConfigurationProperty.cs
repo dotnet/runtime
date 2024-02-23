@@ -139,7 +139,7 @@ namespace System.Configuration
                     if (collectionAttribute.AddItemName.IndexOf(',') == -1)
 #endif
                     {
-                      AddElementName = collectionAttribute.AddItemName;
+                        AddElementName = collectionAttribute.AddItemName;
                     }
                     RemoveElementName = collectionAttribute.RemoveItemName;
                     ClearElementName = collectionAttribute.ClearItemsName;

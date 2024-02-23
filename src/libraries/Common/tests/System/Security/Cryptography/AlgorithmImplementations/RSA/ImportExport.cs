@@ -10,8 +10,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class ImportExport
     {
-        private static readonly Lazy<bool> s_supports16384 = new Lazy<bool>(TestRsa16384);
-        public static bool Supports16384 => s_supports16384.Value;
+        public static bool Supports16384 { get; } = TestRsa16384();
 
         [Fact]
         public static void ExportAutoKey()
@@ -455,9 +454,9 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 return true;
             }
-            catch (CryptographicException)
+            catch (Exception e) when (e is CryptographicException or PlatformNotSupportedException)
             {
-                // The key is too big for this platform.
+                // The key is too big for this platform or the platform is not supported.
                 return false;
             }
         }

@@ -34,7 +34,7 @@ namespace System
         // What are the consequences of making this an enum?
         ///////////////////////////////////////////////////////////////////////
         // If you update this, update the corresponding stuff in OAVariantLib.cs,
-        // COMOAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
+        // OAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
         ///////////////////////////////////////////////////////////////////////
         internal const int CV_EMPTY = 0x0;
         internal const int CV_VOID = 0x1;

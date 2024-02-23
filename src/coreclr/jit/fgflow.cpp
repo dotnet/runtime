@@ -136,6 +136,32 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
+
+                // This edge should have been given a likelihood when it was created.
+                // Since we're increasing its duplicate count, update the likelihood.
+                //
+                assert(flow->hasLikelihood());
+                const unsigned numSucc = blockPred->NumSucc();
+                assert(numSucc > 0);
+
+                if (numSucc == 1)
+                {
+                    // BasicBlock::NumSucc() returns 1 for BBJ_CONDs with the same true/false target.
+                    // For blocks that only ever have one successor (BBJ_ALWAYS, BBJ_LEAVE, etc.),
+                    // their successor edge should never have a duplicate count over 1.
+                    //
+                    assert(blockPred->KindIs(BBJ_COND));
+                    assert(blockPred->TrueTargetIs(blockPred->GetFalseTarget()));
+                    flow->setLikelihood(1.0);
+                }
+                else
+                {
+                    // Duplicate count isn't updated until later, so add 1 for now.
+                    //
+                    const unsigned dupCount = flow->getDupCount() + 1;
+                    assert(dupCount > 1);
+                    flow->setLikelihood((1.0 / numSucc) * dupCount);
+                }
             }
         }
     }
@@ -166,7 +192,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         //
         // We may be disallowing edge creation, except for edges targeting special blocks.
         //
-        assert(fgSafeFlowEdgeCreation || ((block->bbFlags & BBF_CAN_ADD_PRED) != 0));
+        assert(fgSafeFlowEdgeCreation || block->HasFlag(BBF_CAN_ADD_PRED));
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
@@ -178,13 +204,27 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
         // Create new edge in the list in the correct ordered location.
         //
-        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, *listp);
+        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, block, *listp);
         flow->incrementDupCount();
         *listp = flow;
 
         if (initializingPreds)
         {
             block->bbLastPred = flow;
+
+            // When initializing preds, ensure edge likelihood is set,
+            // such that this edge is as likely as any other successor edge
+            //
+            const unsigned numSucc = blockPred->NumSucc();
+            assert(numSucc > 0);
+            assert(flow->getDupCount() == 1);
+            flow->setLikelihood(1.0 / numSucc);
+        }
+        else if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
+        {
+            // Copy likelihood from old edge, if any.
+            //
+            flow->setLikelihood(oldEdge->getLikelihood());
         }
 
         if (fgHaveValidEdgeWeights)
@@ -227,6 +267,10 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     // Pred list should (still) be ordered.
     //
     assert(block->checkPredListOrder());
+
+    // When initializing preds, edge likelihood should always be set.
+    //
+    assert(!initializingPreds || flow->hasLikelihood());
 
     return flow;
 }
@@ -296,6 +340,44 @@ FlowEdge* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
 }
 
 //------------------------------------------------------------------------
+// fgRemoveRefPred: Decrements the reference count of `edge`, removing it from its successor block's pred list
+// if the reference count is zero.
+//
+// Arguments:
+//    edge -- The FlowEdge* to decrement the reference count of.
+//
+// Notes:
+//    -- succBlock->bbRefs is decremented by one to account for the reduction in incoming edges.
+//    -- fgModified is set if a flow edge is removed, indicating that the flow graph shape has changed.
+//
+void Compiler::fgRemoveRefPred(FlowEdge* edge)
+{
+    assert(edge != nullptr);
+    assert(fgPredsComputed);
+
+    BasicBlock* predBlock = edge->getSourceBlock();
+    BasicBlock* succBlock = edge->getDestinationBlock();
+    assert(predBlock != nullptr);
+    assert(succBlock != nullptr);
+
+    succBlock->bbRefs--;
+
+    assert(edge->getDupCount() > 0);
+    edge->decrementDupCount();
+
+    if (edge->getDupCount() == 0)
+    {
+        // Splice out the predecessor edge in succBlock's pred list, since it's no longer necessary.
+        FlowEdge** ptrToPred;
+        FlowEdge*  pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
+        *ptrToPred      = pred->getNextPredEdge();
+
+        // Any changes to the flow graph invalidate the dominator sets.
+        fgModified = true;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgRemoveAllRefPreds: Removes a predecessor edge from one block to another, no matter what the "dup count" is.
 //
 // Arguments:
@@ -346,26 +428,30 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
     PREFIX_ASSUME(block != nullptr);
 
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            fgRemoveRefPred(block->GetJumpDest(), block);
+            fgRemoveRefPred(block->GetTarget(), block);
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->GetJumpDest(), block);
-            fgRemoveRefPred(block->Next(), block);
+            fgRemoveRefPred(block->GetTrueTarget(), block);
+            fgRemoveRefPred(block->GetFalseTarget(), block);
             break;
 
         case BBJ_EHFINALLYRET:
-            for (BasicBlock* const succ : block->EHFinallyRetSuccs())
+        {
+            BBehfDesc* const ehfDesc = block->GetEhfTargets();
+            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
             {
-                fgRemoveRefPred(succ, block);
+                fgRemoveRefPred(ehfDesc->bbeSuccs[i]);
             }
             break;
+        }
 
         case BBJ_EHFAULTRET:
         case BBJ_THROW:
@@ -373,14 +459,17 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-            for (BasicBlock* const bTarget : block->SwitchTargets())
+        {
+            BBswtDesc* const swtDesc = block->GetSwitchTargets();
+            for (unsigned i = 0; i < swtDesc->bbsCount; i++)
             {
-                fgRemoveRefPred(bTarget, block);
+                fgRemoveRefPred(swtDesc->bbsDstTab[i]);
             }
             break;
+        }
 
         default:
-            noway_assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            noway_assert(!"Block doesn't have a valid bbKind!!!!");
             break;
     }
 }
@@ -437,87 +526,6 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     }
 }
 
-void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
-                                                 BasicBlock*   switchBlk,
-                                                 BasicBlock*   from,
-                                                 BasicBlock*   to)
-{
-    assert(switchBlk->KindIs(BBJ_SWITCH)); // Precondition.
-
-    // Is "from" still in the switch table (because it had more than one entry before?)
-    bool fromStillPresent = false;
-    for (BasicBlock* const bTarget : switchBlk->SwitchTargets())
-    {
-        if (bTarget == from)
-        {
-            fromStillPresent = true;
-            break;
-        }
-    }
-
-    // Is "to" already in "this"?
-    bool toAlreadyPresent = false;
-    for (unsigned i = 0; i < numDistinctSuccs; i++)
-    {
-        if (nonDuplicates[i] == to)
-        {
-            toAlreadyPresent = true;
-            break;
-        }
-    }
-
-    // Four cases:
-    //   If "from" is still present, and "to" is already present, do nothing
-    //   If "from" is still present, and "to" is not, must reallocate to add an entry.
-    //   If "from" is not still present, and "to" is not present, write "to" where "from" was.
-    //   If "from" is not still present, but "to" is present, remove "from".
-    if (fromStillPresent && toAlreadyPresent)
-    {
-        return;
-    }
-    else if (fromStillPresent && !toAlreadyPresent)
-    {
-        // reallocate to add an entry
-        BasicBlock** newNonDups = new (alloc) BasicBlock*[numDistinctSuccs + 1];
-        memcpy(newNonDups, nonDuplicates, numDistinctSuccs * sizeof(BasicBlock*));
-        newNonDups[numDistinctSuccs] = to;
-        numDistinctSuccs++;
-        nonDuplicates = newNonDups;
-    }
-    else if (!fromStillPresent && !toAlreadyPresent)
-    {
-        // write "to" where "from" was
-        INDEBUG(bool foundFrom = false);
-        for (unsigned i = 0; i < numDistinctSuccs; i++)
-        {
-            if (nonDuplicates[i] == from)
-            {
-                nonDuplicates[i] = to;
-                INDEBUG(foundFrom = true);
-                break;
-            }
-        }
-        assert(foundFrom);
-    }
-    else
-    {
-        assert(!fromStillPresent && toAlreadyPresent);
-        // remove "from".
-        INDEBUG(bool foundFrom = false);
-        for (unsigned i = 0; i < numDistinctSuccs; i++)
-        {
-            if (nonDuplicates[i] == from)
-            {
-                nonDuplicates[i] = nonDuplicates[numDistinctSuccs - 1];
-                numDistinctSuccs--;
-                INDEBUG(foundFrom = true);
-                break;
-            }
-        }
-        assert(foundFrom);
-    }
-}
-
 /*****************************************************************************
  *
  *  Simple utility function to remove an entry for a block in the switch desc
@@ -530,22 +538,5 @@ void Compiler::fgInvalidateSwitchDescMapEntry(BasicBlock* block)
     if (m_switchDescMap != nullptr)
     {
         m_switchDescMap->Remove(block);
-    }
-}
-
-void Compiler::UpdateSwitchTableTarget(BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to)
-{
-    if (m_switchDescMap == nullptr)
-    {
-        return; // No mappings, nothing to do.
-    }
-
-    // Otherwise...
-    BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
-    SwitchUniqueSuccSet*  res       = switchMap->LookupPointer(switchBlk);
-    if (res != nullptr)
-    {
-        // If no result, nothing to do. Otherwise, update it.
-        res->UpdateTarget(getAllocator(), switchBlk, from, to);
     }
 }

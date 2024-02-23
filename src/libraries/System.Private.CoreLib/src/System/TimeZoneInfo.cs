@@ -1109,7 +1109,7 @@ namespace System
         /// <param name="windowsId">The Windows time zone ID.</param>
         /// <param name="ianaId">String object holding the IANA ID which resulted from the Windows ID conversion.</param>
         /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) =>  TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
 
         /// <summary>
         /// Tries to convert a Windows time zone ID to an IANA ID.
@@ -1611,7 +1611,7 @@ namespace System
             if (nextdaylightTime.End < nextdaylightTime.Start && !nextYearRule.IsEndDateMarkerForEndOfYear())
             {
                 // It is the Southern sphere time zone. The year is started with DST on. Use the DST end to get the when DST ends that year.
-                dstEnd =  nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                dstEnd = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
                 return true;
             }
 

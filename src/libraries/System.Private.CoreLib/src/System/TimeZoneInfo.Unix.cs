@@ -26,7 +26,7 @@ namespace System
         // Handle UTC and its aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
         // (This list is not likely to change.)
-        private static bool IsUtcAlias (string id)
+        private static bool IsUtcAlias(string id)
         {
             switch ((ushort)id[0])
             {

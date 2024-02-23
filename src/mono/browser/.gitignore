@@ -1,0 +1,5 @@
+!Makefile
+.stamp-wasm-install-and-select*
+emsdk
+
+runtime/dotnet.d.ts.sha256

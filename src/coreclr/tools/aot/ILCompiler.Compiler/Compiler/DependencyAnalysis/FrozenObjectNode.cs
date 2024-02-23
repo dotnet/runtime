@@ -60,13 +60,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            GetNonRelocationDependencies(ref dependencies, factory);
-
             return dependencies;
-        }
-
-        public virtual void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
-        {
         }
 
         public abstract void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly);

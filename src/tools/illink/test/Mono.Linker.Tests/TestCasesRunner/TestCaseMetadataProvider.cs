@@ -180,5 +180,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return _testCaseTypeDefinition.CustomAttributes
 				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkPublicAndFamilyAttribute)) != null;
 		}
+
+		public virtual bool LinkAll ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkAllAttribute)) != null;
+		}
 	}
 }

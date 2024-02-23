@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
+using OSThreadPriority = Interop.Kernel32.ThreadPriority;
+
 namespace System.Threading
 {
-    using OSThreadPriority = Interop.Kernel32.ThreadPriority;
-
     public sealed partial class Thread
     {
         [ThreadStatic]
@@ -167,7 +167,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits: false);
                 }
 
                 return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
@@ -317,7 +317,7 @@ namespace System.Threading
         private static void InitializeComForThreadPoolThread()
         {
             // Initialized COM - take advantage of implicit MTA initialized by the finalizer thread
-            SpinWait sw = new SpinWait();
+            SpinWait sw = default(SpinWait);
             while (!s_comInitializedOnFinalizerThread)
             {
                 RuntimeImports.RhInitializeFinalizerThread();

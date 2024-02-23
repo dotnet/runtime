@@ -153,6 +153,9 @@
           <GenericArgument Name="System.Int16,System.Runtime" />
         </Method>
         <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Char,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
           <GenericArgument Name="System.UInt32,System.Runtime" />
         </Method>
         <Method Name="Max_AllTypes" Dynamic="Required All">
@@ -178,6 +181,12 @@
         </Method>
         <Method Name="Max_AllTypes" Dynamic="Required All">
           <GenericArgument Name="System.UIntPtr,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int128,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt128,System.Runtime" />
         </Method>
       </Type>
 

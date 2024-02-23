@@ -9,27 +9,13 @@ let runBenchmark;
 let setTasks;
 let setExclusions;
 let getFullJsonResults;
-let legacyExportTargetInt;
 let jsExportTargetInt;
-let legacyExportTargetString;
 let jsExportTargetString;
 let _jiterpreter_dump_stats, _interp_pgo_save_data;
-
-function runLegacyExportInt(count) {
-    for (let i = 0; i < count; i++) {
-        legacyExportTargetInt(i);
-    }
-}
 
 function runJSExportInt(count) {
     for (let i = 0; i < count; i++) {
         jsExportTargetInt(i);
-    }
-}
-
-function runLegacyExportString(count) {
-    for (let i = 0; i < count; i++) {
-        legacyExportTargetString("A" + i);
     }
 }
 
@@ -61,7 +47,7 @@ function importTargetThrows(value) {
 }
 
 class MainApp {
-    async init({ getAssemblyExports, setModuleImports, BINDING, INTERNAL }) {
+    async init({ getAssemblyExports, setModuleImports, INTERNAL }) {
         const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         // Capture these two internal APIs for use at the end of the benchmark run
         _jiterpreter_dump_stats = INTERNAL.jiterpreter_dump_stats.bind(INTERNAL);
@@ -71,17 +57,13 @@ class MainApp {
         setExclusions = exports.Sample.Test.SetExclusions;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
-        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
         jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
-        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
         jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
 
         setModuleImports("main.js", {
             Sample: {
                 Test: {
-                    runLegacyExportInt,
                     runJSExportInt,
-                    runLegacyExportString,
                     runJSExportString,
                     importTargetInt,
                     importTargetString,
@@ -209,9 +191,9 @@ class MainApp {
                     return;
                 console.error(`waitFor ${eventName} timed out`);
                 promiseResolve();
-            // Make sure this timeout is big enough that it won't cause measurements
-            //  to be truncated! i.e. "Blazor Reach managed cold" is nearly 10k in some
-            //  configurations right now
+                // Make sure this timeout is big enough that it won't cause measurements
+                //  to be truncated! i.e. "Blazor Reach managed cold" is nearly 10k in some
+                //  configurations right now
             }, 20000);
 
             document.body.appendChild(this._frame);

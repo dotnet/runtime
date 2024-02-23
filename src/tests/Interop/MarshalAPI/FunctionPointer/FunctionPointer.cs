@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
+[SkipOnMono("needs triage")]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public partial class FunctionPtr
 {
     static class FunctionPointerNative
@@ -17,12 +21,15 @@ public partial class FunctionPtr
         [DllImport(nameof(FunctionPointerNative))]
         static unsafe extern void FillOutPtr(IntPtr* p);
 
-	[DllImport(nameof(FunctionPointerNative))]
-	static unsafe extern void FillOutIntParameter(out IntPtr p);
+        [DllImport(nameof(FunctionPointerNative))]
+        static unsafe extern void FillOutIntParameter(out IntPtr p);
     }
 
     delegate void VoidDelegate();
 
+    [Fact]
+
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/164", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunGetDelForFcnPtrTest()
     {
         Console.WriteLine($"Running {nameof(RunGetDelForFcnPtrTest)}...");
@@ -68,6 +75,7 @@ public partial class FunctionPtr
 
     private unsafe delegate void DelegateToFillOutPtr([Out] IntPtr* p);
 
+    [Fact]
     public static void RunGetDelForOutPtrTest()
     {
         Console.WriteLine($"Running {nameof(RunGetDelForOutPtrTest)}...");
@@ -89,6 +97,7 @@ public partial class FunctionPtr
 
     private unsafe delegate void DelegateToFillOutIntParameter(out IntPtr p);
 
+    [Fact]
     public static void RunGetDelForOutIntTest()
     {
         Console.WriteLine($"Running {nameof(RunGetDelForOutIntTest)}...");
@@ -103,24 +112,5 @@ public partial class FunctionPtr
             GC.KeepAlive(d);
         }
         Assert.Equal(expectedValue, outVar);
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            RunGetDelForFcnPtrTest();
-            RunGetFcnPtrSingleMulticastTest();
-            RunGetDelForOutPtrTest();
-            RunGetDelForOutIntTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
-
-        return 100;
     }
 }

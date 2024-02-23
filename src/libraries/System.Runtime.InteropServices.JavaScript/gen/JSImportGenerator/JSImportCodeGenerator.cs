@@ -31,7 +31,7 @@ namespace Microsoft.Interop.JavaScript
             JSImportData attributeData,
             JSSignatureContext signatureContext,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver)
         {
             _signatureContext = signatureContext;
             ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier)
@@ -39,7 +39,7 @@ namespace Microsoft.Interop.JavaScript
                 CodeEmitOptions = new(SkipInit: true)
             };
             _context = new JSImportCodeContext(attributeData, innerContext);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new EmptyJSGenerator(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 

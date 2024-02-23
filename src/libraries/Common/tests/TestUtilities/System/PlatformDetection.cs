@@ -30,6 +30,7 @@ namespace System
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
+        public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
@@ -55,7 +56,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
-        public static bool IsBsdLike => IsOSXLike || IsFreeBSD || IsNetBSD;
+        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -106,9 +107,20 @@ namespace System
         public static bool IsReleaseLibrary(Assembly assembly) => !IsDebuggable(assembly);
         public static bool IsDebugLibrary(Assembly assembly) => IsDebuggable(assembly);
 
-        // For use as needed on tests that time out when run on a Debug runtime.
+        // For use as needed on tests that time out when run on a Debug or Checked runtime.
         // Not relevant for timeouts on external activities, such as network timeouts.
-        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+        public static int SlowRuntimeTimeoutModifier
+        {
+            get
+            {
+                if (IsReleaseRuntime)
+                    return 1;
+                if (IsRiscV64Process)
+                    return IsDebugRuntime? 10 : 2;
+                else
+                    return IsDebugRuntime? 5 : 1;
+            }
+        }
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
@@ -123,6 +135,9 @@ namespace System
         public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
+        public static bool IsWasmBackgroundExec => IsBrowser && IsEnvironmentVariableTrue("IsWasmBackgroundExec");
+        public static bool IsWasmBackgroundExecOrSingleThread => IsWasmBackgroundExec || IsNotWasmThreadingSupported;
+        public static bool IsThreadingSupportedOrBrowserBackgroundExec => IsWasmBackgroundExec || !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -211,6 +226,8 @@ namespace System
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
         public static bool IsSingleFile => !HasAssemblyFiles;
 
+        public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
         {
@@ -267,6 +284,7 @@ namespace System
         // Changed to `true` when trimming
         public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
+        public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -368,15 +386,17 @@ namespace System
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
         public static bool IsHybridGlobalization => m_isHybrid.Value;
         public static bool IsHybridGlobalizationOnBrowser => m_isHybrid.Value && IsBrowser;
-        public static bool IsHybridGlobalizationOnOSX => m_isHybrid.Value && (IsOSX || IsMacCatalyst || IsiOS || IstvOS);
+        public static bool IsHybridGlobalizationOnApplePlatform => m_isHybrid.Value && (IsMacCatalyst || IsiOS || IstvOS);
         public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
-        public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
-        public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
+        public static bool IsNotHybridGlobalizationOnApplePlatform => !IsHybridGlobalizationOnApplePlatform;
+
+        // HG on apple platforms implies ICU
+        public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnApplePlatform || ICUVersion > new Version(0, 0, 0, 0));
+
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
-        public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
-        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
 
         public static bool IsSubstAvailable
         {
@@ -403,19 +423,26 @@ namespace System
         private static Version GetICUVersion()
         {
             int version = 0;
-            try
+            // When HG on Apple platforms, our ICU lib is not loaded
+            if (IsNotHybridGlobalizationOnApplePlatform)
             {
-                Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
-                if (interopGlobalization != null)
+                try
                 {
-                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
-                    if (methodInfo != null)
+                    Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
+                    if (interopGlobalization != null)
                     {
-                        version = (int)methodInfo.Invoke(null, null);
+                        MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                        if (methodInfo != null)
+                        {
+                            // Ensure that ICU has been loaded
+                            GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
+
+                            version = (int)methodInfo.Invoke(null, null);
+                        }
                     }
                 }
+                catch { }
             }
-            catch { }
 
             return new Version(version >> 24,
                               (version >> 16) & 0xFF,
@@ -524,7 +551,7 @@ namespace System
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
-            if (IsOSXLike || IsAndroid)
+            if (IsApplePlatform || IsAndroid)
             {
                 return true;
             }
@@ -552,7 +579,7 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
             // on macOS and Android TLS 1.1 is supported.
-            else if (IsOSXLike || IsAndroid)
+            else if (IsApplePlatform || IsAndroid)
             {
                 return true;
             }

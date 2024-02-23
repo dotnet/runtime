@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->GetJumpKind())
+            switch (block->GetKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -692,7 +692,7 @@ void Compiler::fgExtendDbgScopes()
         // If we get to a funclet, reset the scope lists and start again, since the block
         // offsets will be out of order compared to the previous block.
 
-        if (block->bbFlags & BBF_FUNCLET_BEG)
+        if (block->HasFlag(BBF_FUNCLET_BEG))
         {
             compResetScopeLists();
             VarSetOps::ClearD(this, inScope);
@@ -886,28 +886,24 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+            case BBJ_CALLFINALLY:
+                VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
                 break;
 
-            case BBJ_CALLFINALLY:
-                if (!(block->bbFlags & BBF_RETLESS_CALL))
-                {
-                    assert(block->isBBCallAlwaysPair());
-                    PREFIX_ASSUME(!block->IsLast());
-                    VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                }
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+            case BBJ_CALLFINALLYRET:
+                VarSetOps::UnionD(this, initVars, block->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetFinallyContinuation()->bbScope);
                 break;
 
             case BBJ_COND:
                 PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetFalseTarget()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetTrueTarget()->bbScope);
                 break;
 
             case BBJ_SWITCH:
@@ -930,7 +926,7 @@ void Compiler::fgExtendDbgLifetimes()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 
@@ -1098,8 +1094,7 @@ class LiveVarAnalysis
             }
         }
 
-        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() &&
-            ((block->bbFlags & BBF_RECURSIVE_TAILCALL) != 0))
+        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
         {
             // Early liveness happens between import and morph where we may
             // have identified a tailcall-to-loop candidate but not yet
@@ -1173,7 +1168,7 @@ class LiveVarAnalysis
             {
                 // Only "extend" liveness over BBF_INTERNAL blocks
 
-                noway_assert(block->bbFlags & BBF_INTERNAL);
+                noway_assert(block->HasFlag(BBF_INTERNAL));
 
                 liveInChanged = !VarSetOps::IsSubset(m_compiler, m_liveIn, block->bbLiveIn);
                 if (liveInChanged || !VarSetOps::IsSubset(m_compiler, m_liveOut, block->bbLiveOut))
@@ -1245,7 +1240,7 @@ class LiveVarAnalysis
 
                     noway_assert(m_compiler->opts.compDbgCode && (m_compiler->info.compVarScopesCount > 0));
 
-                    if (!(block->bbFlags & BBF_INTERNAL))
+                    if (!block->HasFlag(BBF_INTERNAL))
                     {
                         continue;
                     }

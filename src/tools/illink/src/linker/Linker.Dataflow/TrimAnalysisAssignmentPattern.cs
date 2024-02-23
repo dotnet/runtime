@@ -11,9 +11,9 @@ namespace Mono.Linker.Dataflow
 {
 	public readonly record struct TrimAnalysisAssignmentPattern
 	{
-		public MultiValue Source { init; get; }
-		public MultiValue Target { init; get; }
-		public MessageOrigin Origin { init; get; }
+		public MultiValue Source { get; init; }
+		public MultiValue Target { get; init; }
+		public MessageOrigin Origin { get; init; }
 
 		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, MessageOrigin origin)
 		{

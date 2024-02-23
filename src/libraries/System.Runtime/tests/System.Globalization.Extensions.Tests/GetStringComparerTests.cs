@@ -20,6 +20,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [InlineData("hello", "hello", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", "HELLo", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", null, "fr-FR", CompareOptions.IgnoreCase, 1, 1)]

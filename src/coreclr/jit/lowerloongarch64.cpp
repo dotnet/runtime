@@ -326,9 +326,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            // We're going to use REG_R0 for zero
+            src->SetContained();
+        }
         else
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
         }
     }
     else
@@ -381,8 +388,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
         }
     }
 }

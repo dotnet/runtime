@@ -64,7 +64,7 @@ namespace System.Diagnostics
 
                     if (IdFormat == ActivityIdFormat.Unknown)
                     {
-                        IdFormat =ActivityIdFormat.Hierarchical;
+                        IdFormat = ActivityIdFormat.Hierarchical;
                     }
                 }
                 else

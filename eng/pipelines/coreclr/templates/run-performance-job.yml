@@ -89,6 +89,7 @@ jobs:
         export ORIGPYPATH=$PYTHONPATH
         export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
         echo "** Installing prerequistes **";
+        sudo apt-get -y install python3-pip &&
         python3 -m pip install --user -U pip &&
         sudo apt-get -y install python3-venv &&
         python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv &&

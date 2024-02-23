@@ -181,7 +181,7 @@ RhpWaitForGC  endp
 
 ifdef FEATURE_GC_STRESS
 ;;
-;; Set the Thread state and invoke RedhawkGCInterface::StressGC().
+;; Set the Thread state and invoke RhpStressGC().
 ;;
 ;; Assumes EBX is the Thread pointer.
 ;;
@@ -197,7 +197,7 @@ ifdef FEATURE_GC_STRESS
 ;;
 StressGC macro
         mov         [ebx + OFFSETOF__Thread__m_pDeferredTransitionFrame], esp
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        RhpStressGc
 endm
 
 ;;

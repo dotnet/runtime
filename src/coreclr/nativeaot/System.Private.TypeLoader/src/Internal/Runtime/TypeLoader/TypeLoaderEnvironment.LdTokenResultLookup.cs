@@ -43,7 +43,7 @@ namespace Internal.Runtime.TypeLoader
         #region String conversions
         private static unsafe string GetStringFromMemoryInNativeFormat(IntPtr pointerToDataStream)
         {
-            byte* dataStream = (byte*)pointerToDataStream.ToPointer();
+            byte* dataStream = (byte*)pointerToDataStream;
             uint stringLen = NativePrimitiveDecoder.DecodeUnsigned(ref dataStream);
             return Encoding.UTF8.GetString(dataStream, checked((int)stringLen));
         }
@@ -54,7 +54,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public IntPtr GetNativeFormatStringForString(string str)
+        public unsafe IntPtr GetNativeFormatStringForString(string str)
         {
             using (_typeLoaderLock.EnterScope())
             {
@@ -62,20 +62,20 @@ namespace Internal.Runtime.TypeLoader
                 if (_nativeFormatStrings.TryGetValue(str, out result))
                     return result;
 
-                NativePrimitiveEncoder stringEncoder = new NativePrimitiveEncoder();
+                NativePrimitiveEncoder stringEncoder = default;
                 stringEncoder.Init();
                 byte[] utf8Bytes = Encoding.UTF8.GetBytes(str);
                 stringEncoder.WriteUnsigned(checked((uint)utf8Bytes.Length));
                 foreach (byte b in utf8Bytes)
                     stringEncoder.WriteByte(b);
 
-                IntPtr allocatedNativeFormatString = MemoryHelpers.AllocateMemory(stringEncoder.Size);
+                void* allocatedNativeFormatString = MemoryHelpers.AllocateMemory(stringEncoder.Size);
                 unsafe
                 {
-                    stringEncoder.Save((byte*)allocatedNativeFormatString.ToPointer(), stringEncoder.Size);
+                    stringEncoder.Save((byte*)allocatedNativeFormatString, stringEncoder.Size);
                 }
-                _nativeFormatStrings.Add(str, allocatedNativeFormatString);
-                return allocatedNativeFormatString;
+                _nativeFormatStrings.Add(str, (IntPtr)allocatedNativeFormatString);
+                return (IntPtr)allocatedNativeFormatString;
             }
         }
 
@@ -161,7 +161,7 @@ namespace Internal.Runtime.TypeLoader
                 if (_genericArgs != null)
                 {
                     if (_genericArgs.Length != other._genericArgs.Length)
-                       return false;
+                        return false;
 
                     for (int i = 0; i < _genericArgs.Length; i++)
                         if (!_genericArgs[i].Equals(other._genericArgs[i]))
@@ -197,16 +197,12 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_runtimeFieldHandles.TryGetValue(key, out runtimeFieldHandle))
                 {
-                    IntPtr runtimeFieldHandleValue = MemoryHelpers.AllocateMemory(sizeof(DynamicFieldHandleInfo));
-                    if (runtimeFieldHandleValue == IntPtr.Zero)
-                        throw new OutOfMemoryException();
-
-                    DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)runtimeFieldHandleValue.ToPointer();
+                    DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)MemoryHelpers.AllocateMemory(sizeof(DynamicFieldHandleInfo));
                     fieldData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
                     fieldData->FieldName = fieldName;
 
                     // Special flag (lowest bit set) in the handle value to indicate it was dynamically allocated
-                    runtimeFieldHandleValue++;
+                    IntPtr runtimeFieldHandleValue = (IntPtr)fieldData + 1;
                     runtimeFieldHandle = *(RuntimeFieldHandle*)&runtimeFieldHandleValue;
 
                     _runtimeFieldHandles.Add(key, runtimeFieldHandle);
@@ -228,10 +224,9 @@ namespace Internal.Runtime.TypeLoader
             IntPtr runtimeFieldHandleValue = *(IntPtr*)&runtimeFieldHandle;
 
             // Special flag in the handle value to indicate it was dynamically allocated
-            Debug.Assert((runtimeFieldHandleValue.ToInt64() & 0x1) == 0x1);
-            runtimeFieldHandleValue--;
+            Debug.Assert((runtimeFieldHandleValue & 0x1) == 0x1);
 
-            DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)runtimeFieldHandleValue.ToPointer();
+            DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)(runtimeFieldHandleValue - 1);
             declaringTypeHandle = *(RuntimeTypeHandle*)&(fieldData->DeclaringType);
 
             // FieldName points to the field name in NativeLayout format, so we parse it using a NativeParser
@@ -297,11 +292,8 @@ namespace Internal.Runtime.TypeLoader
                     int numGenericMethodArgs = genericMethodArgs == null ? 0 : genericMethodArgs.Length;
                     // Use checked arithmetics to ensure there aren't any overflows/truncations
                     sizeToAllocate = checked(sizeToAllocate + (numGenericMethodArgs > 0 ? sizeof(IntPtr) * (numGenericMethodArgs - 1) : 0));
-                    IntPtr runtimeMethodHandleValue = MemoryHelpers.AllocateMemory(sizeToAllocate);
-                    if (runtimeMethodHandleValue == IntPtr.Zero)
-                        throw new OutOfMemoryException();
 
-                    DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
+                    DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)MemoryHelpers.AllocateMemory(sizeToAllocate);
                     methodData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
                     methodData->MethodName = methodName;
                     methodData->MethodSignature = methodSignature;
@@ -314,8 +306,8 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     // Special flag in the handle value to indicate it was dynamically allocated, and doesn't point into the InvokeMap blob
-                    runtimeMethodHandleValue++;
-                    runtimeMethodHandle = * (RuntimeMethodHandle*)&runtimeMethodHandleValue;
+                    IntPtr runtimeMethodHandleValue = (IntPtr)methodData + 1;
+                    runtimeMethodHandle = *(RuntimeMethodHandle*)&runtimeMethodHandleValue;
 
                     _runtimeMethodHandles.Add(key, runtimeMethodHandle);
                 }
@@ -346,12 +338,12 @@ namespace Internal.Runtime.TypeLoader
         private unsafe bool TryGetDynamicRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs)
         {
             IntPtr runtimeMethodHandleValue = *(IntPtr*)&runtimeMethodHandle;
-            Debug.Assert((runtimeMethodHandleValue.ToInt64() & 0x1) == 0x1);
 
             // Special flag in the handle value to indicate it was dynamically allocated, and doesn't point into the InvokeMap blob
-            runtimeMethodHandleValue--;
+            Debug.Assert((runtimeMethodHandleValue & 0x1) == 0x1);
 
-            DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
+            DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)(runtimeMethodHandleValue - 1);
+
             declaringTypeHandle = *(RuntimeTypeHandle*)&(methodData->DeclaringType);
             genericMethodArgs = null;
 

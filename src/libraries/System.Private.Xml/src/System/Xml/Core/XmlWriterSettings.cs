@@ -487,7 +487,7 @@ namespace System.Xml
 
 
         internal bool ReadOnly { get; set; }
-        private void CheckReadOnly([CallerMemberName]string? propertyName = null)
+        private void CheckReadOnly([CallerMemberName] string? propertyName = null)
         {
             if (ReadOnly)
             {

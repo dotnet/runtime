@@ -134,6 +134,9 @@ namespace Internal.NativeCrypto
             [LibraryImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", StringMarshalling = StringMarshalling.Utf16)]
             private static partial NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
 
+            [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
+            public static partial NTSTATUS BCryptSetProperty(SafeBCryptHandle hObject, string pszProperty, ReadOnlySpan<byte> pbInput, int cbInput, int dwFlags);
+
             public static unsafe NTSTATUS BCryptSetIntProperty(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int dwFlags)
             {
                 return BCryptSetIntPropertyPrivate(hObject, pszProperty, ref pdwInput, sizeof(int), dwFlags);

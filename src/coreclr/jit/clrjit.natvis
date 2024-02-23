@@ -21,10 +21,10 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="BasicBlock">
-    <DisplayString Condition="bbJumpKind==BBJ_COND || bbJumpKind==BBJ_ALWAYS || bbJumpKind==BBJ_LEAVE || bbJumpKind==BBJ_EHCATCHRET || bbJumpKind==BBJ_CALLFINALLY || bbJumpKind==BBJ_EHFILTERRET">BB{bbNum,d}->BB{bbJumpDest->bbNum,d}; {bbJumpKind,en}</DisplayString>
-    <DisplayString Condition="bbJumpKind==BBJ_SWITCH">BB{bbNum,d}; {bbJumpKind,en}; {bbJumpSwt->bbsCount} cases</DisplayString>
-    <DisplayString Condition="bbJumpKind==BBJ_EHFINALLYRET">BB{bbNum,d}; {bbJumpKind,en}; {bbJumpEhf->bbeCount} succs</DisplayString>
-    <DisplayString>BB{bbNum,d}; {bbJumpKind,en}</DisplayString>
+    <DisplayString Condition="bbKind==BBJ_COND || bbKind==BBJ_ALWAYS || bbKind==BBJ_LEAVE || bbKind==BBJ_EHCATCHRET || bbKind==BBJ_CALLFINALLY || bbKind==BBJ_CALLFINALLYRET || bbKind==BBJ_EHFILTERRET">BB{bbNum,d}->BB{bbTarget->bbNum,d}; {bbKind,en}</DisplayString>
+    <DisplayString Condition="bbKind==BBJ_SWITCH">BB{bbNum,d}; {bbKind,en}; {bbSwtTargets->bbsCount} cases</DisplayString>
+    <DisplayString Condition="bbKind==BBJ_EHFINALLYRET">BB{bbNum,d}; {bbKind,en}; {bbEhfTargets->bbeCount} succs</DisplayString>
+    <DisplayString>BB{bbNum,d}; {bbKind,en}</DisplayString>
   </Type>
 
   <Type Name="Compiler::LoopDsc">

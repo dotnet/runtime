@@ -172,7 +172,7 @@ namespace System.Net.Security
         {
             if (frame.Length < HeaderSize)
             {
-                header.Length= -1;
+                header.Length = -1;
                 return false;
             }
 
@@ -190,12 +190,12 @@ namespace System.Net.Security
                 int length;
                 if ((frame[0] & 0x80) != 0)
                 {
-                            // Two bytes
+                    // Two bytes
                     length = (((frame[0] & 0x7f) << 8) | frame[1]) + 2;
                 }
                 else
                 {
-                            // Three bytes
+                    // Three bytes
                     length = (((frame[0] & 0x3f) << 8) | frame[1]) + 3;
                 }
 

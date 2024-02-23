@@ -26,7 +26,7 @@ jobs:
     fetchDepth: 20
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
-    - task: NuGetAuthenticate@0
+    - task: NuGetAuthenticate@1
 
   - task: MicroBuildSigningPlugin@2
     displayName: Install MicroBuild plugin for Signing

@@ -12,10 +12,17 @@ case "$opt" in
         ./build.sh libs.tests -restore
     ;;
 
+    android)
+        # prebuild the repo for Mono, so it is ready for development
+        ./build.sh mono+libs -os android
+        # restore libs tests so that the project is ready to be loaded by OmniSharp
+        ./build.sh libs.tests -restore
+    ;;
+
     wasm)
         # prebuild for WASM, so it is ready for wasm development
-        make -C src/mono/wasm provision-wasm
-        export EMSDK_PATH=$PWD/src/mono/wasm/emsdk
+        make -C src/mono/browser provision-wasm
+        export EMSDK_PATH=$PWD/src/mono/browser/emsdk
         ./build.sh mono+libs -os browser -c Release
 
         # install dotnet-serve for running wasm samples

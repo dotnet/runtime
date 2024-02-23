@@ -135,7 +135,7 @@ namespace System
         }
 
         [Intrinsic]
-        public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             return (T)((RuntimeType)typeof(T)).CreateInstanceOfT()!;
         }

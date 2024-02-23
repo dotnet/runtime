@@ -49,11 +49,13 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            return OffsetOfHelper(rtField);
+            nint offset = OffsetOf(rtField.GetFieldHandle());
+            GC.KeepAlive(rtField);
+            return offset;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr OffsetOfHelper(IRuntimeFieldInfo f);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOf")]
+        private static partial nint OffsetOf(IntPtr pFD);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
@@ -248,7 +250,7 @@ namespace System.Runtime.InteropServices
             if (pMT->HasInstantiation)
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub;
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
             nuint size;
             if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
@@ -257,10 +259,10 @@ namespace System.Runtime.InteropServices
             {
                 if (fDeleteOld)
                 {
-                    structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement>());
+                    structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
                 }
 
-                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Marshal, ref Unsafe.NullRef<CleanupWorkListElement>());
+                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Marshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
             else
             {
@@ -278,14 +280,14 @@ namespace System.Runtime.InteropServices
             if (!allowValueClasses && pMT->IsValueType)
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub;
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
             nuint size;
             if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
 
             if (structMarshalStub != null)
             {
-                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement>());
+                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
             else
             {
@@ -310,7 +312,7 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub;
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
             nuint size;
             if (!TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), &structMarshalStub, &size))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
@@ -319,13 +321,13 @@ namespace System.Runtime.InteropServices
 
             if (structMarshalStub != null)
             {
-                structMarshalStub(ref Unsafe.NullRef<byte>(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement>());
+                structMarshalStub(ref Unsafe.NullRef<byte>(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool TryGetStructMarshalStub(IntPtr th, delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void>* structMarshalStub, nuint* size);
+        internal static unsafe partial bool TryGetStructMarshalStub(IntPtr th, delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>* structMarshalStub, nuint* size);
 
         // Note: Callers are required to keep obj alive
         internal static unsafe bool IsPinnable(object? obj)
@@ -361,17 +363,26 @@ namespace System.Runtime.InteropServices
 
 #endif // TARGET_WINDOWS
 
+        internal static Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        {
+            Exception? exception = null;
+            GetExceptionForHRInternal(errorCode, errorInfo, ObjectHandleOnStack.Create(ref exception));
+            return exception!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetExceptionForHR")]
+        private static partial void GetExceptionForHRInternal(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception);
 
 #if FEATURE_COMINTEROP
         /// <summary>
         /// Converts the CLR exception to an HRESULT. This function also sets
         /// up an IErrorInfo for the exception.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHRForException(Exception? e);
+        public static int GetHRForException(Exception? e)
+            => GetHRForException(ObjectHandleOnStack.Create(ref e));
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHRForException")]
+        private static partial int GetHRForException(ObjectHandleOnStack exception);
 
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
@@ -959,11 +970,23 @@ namespace System.Runtime.InteropServices
         private static partial void ChangeWrapperHandleStrength(ObjectHandleOnStack otp, [MarshalAs(UnmanagedType.Bool)] bool fIsWeak);
 #endif // FEATURE_COMINTEROP
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t);
+        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
+        {
+            Delegate? retDelegate = null;
+            GetDelegateForFunctionPointerInternal(ptr, new QCallTypeHandle(ref t), ObjectHandleOnStack.Create(ref retDelegate));
+            return retDelegate!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetDelegateForFunctionPointerInternal")]
+        private static partial void GetDelegateForFunctionPointerInternal(IntPtr ptr, QCallTypeHandle t, ObjectHandleOnStack retDelegate);
+
+        internal static IntPtr GetFunctionPointerForDelegateInternal(Delegate d)
+        {
+            return GetFunctionPointerForDelegateInternal(ObjectHandleOnStack.Create(ref d));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetFunctionPointerForDelegateInternal")]
+        private static partial IntPtr GetFunctionPointerForDelegateInternal(ObjectHandleOnStack d);
 
 #if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]

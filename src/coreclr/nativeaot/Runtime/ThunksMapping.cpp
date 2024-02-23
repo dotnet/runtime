@@ -329,6 +329,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     int thunkBlockSize = RhpGetThunkBlockSize();
     int templateSize = thunkBlocksPerMapping * thunkBlockSize;
 
+#ifndef TARGET_APPLE // Apple platforms cannot use the initial template
     if (pThunksTemplateAddress == NULL)
     {
         // First, we use the thunks directly from the thunks template sections in the module until all
@@ -337,12 +338,13 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         pThunkMap = pThunksTemplateAddress;
     }
     else
+#endif
     {
         // We've already used the thunks template in the module for some previous thunks, and we
         // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have
         // more thunks
 
-        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
+        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(RhpGetThunksBase());
         int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
@@ -357,7 +359,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         thunkBlocksPerMapping))
     {
         if (pThunkMap != pThunksTemplateAddress)
-            PalFreeThunksFromTemplate(pThunkMap);
+            PalFreeThunksFromTemplate(pThunkMap, templateSize);
 
         return NULL;
     }

@@ -8,7 +8,7 @@
 
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
     <!-- force net8 to use the current targets until the SDK can target net9 -->
-    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">true</ForceNet8Current>
+    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">false</ForceNet8Current>
     <TargetsCurrent Condition="'$(ForceNet8Current)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
@@ -39,22 +39,12 @@
     <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
 
     <!-- Runtime feature defaults to trim unnecessary code -->
-    <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
-    <HybridGlobalization Condition="'$(HybridGlobalization)' == ''">false</HybridGlobalization>
-    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
-    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
-    <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">false</NullabilityInfoContextSupport>
-    <_AggressiveAttributeTrimming Condition="'$(_AggressiveAttributeTrimming)' == ''">true</_AggressiveAttributeTrimming>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
   </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Keep in sync with WasmApp.Native.targets -->
     <_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded Condition="
-        '$(WasmEnableLegacyJsInterop)' == 'false' or
         '$(WasmEnableSIMD)' == 'false' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
@@ -64,6 +54,7 @@
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
     <!-- FIXME: is the blazor condition here correct? -->
     <_WasmNativeWorkloadNeeded Condition="
+        '$(WasmEnableThreads)' == 'true' or
         '$(_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded)' == 'true' or
         '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or
@@ -239,6 +230,6 @@
         Importance="High" />
   </Target>
 
-  <Import Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')"
+  <Import Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'"
           Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>

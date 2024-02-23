@@ -3941,7 +3941,7 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StoreSelectedScalar(float* address, (Vector128<float> value1, Vector128<float> value2, Vector128<float> value3, Vector128<float> value4) value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
 
             /// <summary>
-            ///   A64: ST3 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]
+            ///   A64: ST4 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]
             /// </summary>
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2, Vector128<double> value3, Vector128<double> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 

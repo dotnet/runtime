@@ -13,7 +13,7 @@ namespace System.Configuration
     {
         public ConfigurationPermission(PermissionState state) { }
         public bool IsUnrestricted() => false;
-        public override IPermission Copy () { return default(IPermission); }
+        public override IPermission Copy() { return default(IPermission); }
         public override IPermission Union(IPermission target) { return default(IPermission); }
         public override IPermission Intersect(IPermission target) { return default(IPermission); }
         public override bool IsSubsetOf(IPermission target) => false;

@@ -12,29 +12,35 @@ namespace System.Reflection.Emit
     internal sealed class ILGeneratorImpl : ILGenerator
     {
         private const int DefaultSize = 16;
-        private readonly MethodBuilder _methodBuilder;
+        private readonly MethodBuilderImpl _methodBuilder;
+        private readonly ModuleBuilderImpl _moduleBuilder;
         private readonly BlobBuilder _builder;
         private readonly InstructionEncoder _il;
         private readonly ControlFlowBuilder _cfBuilder;
         private bool _hasDynamicStackAllocation;
-        private int _maxStackSize;
-        private int _currentStack;
+        private int _maxStackDepth;
+        private int _currentStackDepth; // Current stack labelStartDepth
+        private int _targetDepth;  // Stack labelStartDepth at a target of the previous instruction (when it is branching)
+        // Adjustment to add to _maxStackDepth for incorrect/invalid IL. For example, when branch
+        // instructions branches backward with non zero stack depths targeting the same label.
+        private int _depthAdjustment;
         private List<LocalBuilder> _locals = new();
-        private Dictionary<Label, LabelHandle> _labelTable = new(2);
-        private List<KeyValuePair<MemberInfo, BlobWriter>> _memberReferences = new();
+        private Dictionary<Label, LabelInfo> _labelTable = new(2);
+        private List<KeyValuePair<object, BlobWriter>> _memberReferences = new();
         private List<ExceptionBlock> _exceptionStack = new();
 
-        internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
+        internal ILGeneratorImpl(MethodBuilderImpl methodBuilder, int size)
         {
             _methodBuilder = methodBuilder;
+            _moduleBuilder = (ModuleBuilderImpl)methodBuilder.Module;
             // For compat, runtime implementation doesn't throw for negative or zero value.
             _builder = new BlobBuilder(Math.Max(size, DefaultSize));
             _cfBuilder = new ControlFlowBuilder();
             _il = new InstructionEncoder(_builder, _cfBuilder);
         }
 
-        internal int GetMaxStackSize() => _maxStackSize;
-        internal List<KeyValuePair<MemberInfo, BlobWriter>> GetMemberReferences() => _memberReferences;
+        internal int GetMaxStack() => Math.Min(ushort.MaxValue, _maxStackDepth + _depthAdjustment);
+        internal List<KeyValuePair<object, BlobWriter>> GetMemberReferences() => _memberReferences;
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
         internal List<LocalBuilder> Locals => _locals;
@@ -76,14 +82,17 @@ namespace System.Reflection.Emit
 
                 currentExBlock.HandleStart = DefineLabel();
                 currentExBlock.HandleEnd = DefineLabel();
-                ModuleBuilderImpl module = (ModuleBuilderImpl)_methodBuilder.Module;
-                _cfBuilder.AddCatchRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                    _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], module.GetTypeHandle(exceptionType));
+                _cfBuilder.AddCatchRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                    GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd), _moduleBuilder.GetTypeHandle(exceptionType));
                 MarkLabel(currentExBlock.HandleStart);
             }
 
+            // Stack depth for "catch" starts at one.
+            _currentStackDepth = 1;
             currentExBlock.State = ExceptionState.Catch;
         }
+
+        private LabelHandle GetMetaLabel(Label label) => _labelTable[label]._metaLabel;
 
         public override void BeginExceptFilterBlock()
         {
@@ -106,10 +115,12 @@ namespace System.Reflection.Emit
             currentExBlock.FilterStart = DefineLabel();
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
-            _cfBuilder.AddFilterRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], _labelTable[currentExBlock.FilterStart]);
+            _cfBuilder.AddFilterRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd), GetMetaLabel(currentExBlock.FilterStart));
             currentExBlock.State = ExceptionState.Filter;
             MarkLabel(currentExBlock.FilterStart);
+            // Stack depth for "filter" starts at one.
+            _currentStackDepth = 1;
         }
 
         public override Label BeginExceptionBlock()
@@ -121,6 +132,8 @@ namespace System.Reflection.Emit
             MarkLabel(currentExBlock.TryStart);
             currentExBlock.State = ExceptionState.Try;
             _exceptionStack.Add(currentExBlock);
+            // Stack depth for "try" starts at zero.
+            _currentStackDepth = 0;
             return currentExBlock.EndLabel;
         }
 
@@ -144,10 +157,12 @@ namespace System.Reflection.Emit
 
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
-            _cfBuilder.AddFaultRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                               _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd]);
+            _cfBuilder.AddFaultRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Fault;
             MarkLabel(currentExBlock.HandleStart);
+            // Stack depth for "fault" starts at zero.
+            _currentStackDepth = 0;
         }
 
         public override void BeginFinallyBlock()
@@ -173,22 +188,24 @@ namespace System.Reflection.Emit
             MarkLabel(currentExBlock.TryEnd);
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = finallyEndLabel;
-            _cfBuilder.AddFinallyRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                               _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd]);
+            _cfBuilder.AddFinallyRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Finally;
             MarkLabel(currentExBlock.HandleStart);
+            // Stack depth for "finally" starts at zero.
+            _currentStackDepth = 0;
         }
 
-        public override void BeginScope() => throw new NotImplementedException();
+        public override void BeginScope()
+        {
+            // TODO: No-op, will be implemented wit PDB support
+        }
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
-            if (_methodBuilder is not MethodBuilderImpl methodBuilder)
-                throw new NotSupportedException();
-
             ArgumentNullException.ThrowIfNull(localType);
 
-            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, methodBuilder, pinned);
+            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, _methodBuilder, pinned);
             _locals.Add(local);
 
             return local;
@@ -198,20 +215,29 @@ namespace System.Reflection.Emit
         {
             LabelHandle metadataLabel = _il.DefineLabel();
             Label emitLabel = CreateLabel(metadataLabel.Id);
-            _labelTable.Add(emitLabel, metadataLabel);
+            _labelTable.Add(emitLabel, new LabelInfo(metadataLabel));
             return emitLabel;
         }
+
         private void UpdateStackSize(OpCode opCode)
         {
-            _currentStack += opCode.EvaluationStackDelta;
-            _maxStackSize = Math.Max(_maxStackSize, _currentStack);
+            UpdateStackSize(opCode.EvaluationStackDelta);
+
+            if (UnconditionalJump(opCode))
+            {
+                _currentStackDepth = 0;
+            }
         }
 
-        private void UpdateStackSize(OpCode opCode, int stackChange)
+        private static bool UnconditionalJump(OpCode opCode) =>
+            opCode.FlowControl == FlowControl.Throw || opCode.FlowControl == FlowControl.Return || opCode == OpCodes.Jmp;
+
+        private void UpdateStackSize(int stackChange)
         {
-            _currentStack += opCode.EvaluationStackDelta;
-            _currentStack += stackChange;
-            _maxStackSize = Math.Max(_maxStackSize, _currentStack);
+            _currentStackDepth += stackChange;
+            _maxStackDepth = Math.Max(_maxStackDepth, _currentStackDepth);
+            // Record the "target" stack depth at this instruction.
+            _targetDepth = _currentStackDepth;
         }
 
         public void EmitOpcode(OpCode opcode)
@@ -348,12 +374,9 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, string str)
         {
-            // Puts the opcode onto the IL stream followed by the metadata token
-            // represented by str.
-            ModuleBuilder modBuilder = (ModuleBuilder)_methodBuilder.Module;
-            int tempVal = modBuilder.GetStringMetadataToken(str);
+            // Puts the opcode onto the IL stream followed by the metadata token represented by str.
             EmitOpcode(opcode);
-            _il.Token(tempVal);
+            _il.Token(_moduleBuilder.GetStringMetadataToken(str));
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
@@ -366,36 +389,90 @@ namespace System.Reflection.Emit
             }
 
             int stackChange = 0;
-            // Push the return value
-            stackChange++;
-            // Pop the parameters.
-            if (con is ConstructorBuilderImpl builder)
+            if (opcode.StackBehaviourPush == StackBehaviour.Varpush)
             {
-                stackChange -= builder._methodBuilder.ParameterCount;
+                // Instruction must be one of call or callvirt.
+                Debug.Assert(opcode.Equals(OpCodes.Call) ||
+                             opcode.Equals(OpCodes.Callvirt),
+                             "Unexpected opcode encountered for StackBehaviour of VarPush.");
+                stackChange++;
+            }
+
+            if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
+            {
+                // Instruction must be one of call, callvirt or newobj.
+                Debug.Assert(opcode.Equals(OpCodes.Call) ||
+                             opcode.Equals(OpCodes.Callvirt) ||
+                             opcode.Equals(OpCodes.Newobj),
+                             "Unexpected opcode encountered for StackBehaviour of VarPop.");
+
+                if (con is ConstructorBuilderImpl builder)
+                {
+                    stackChange -= builder._methodBuilder.ParameterCount;
+                }
+                else
+                {
+                    stackChange -= con.GetParameters().Length;
+                }
+            }
+
+            EmitOpcode(opcode);
+            UpdateStackSize(stackChange);
+            WriteOrReserveToken(_moduleBuilder.TryGetConstructorHandle(con), con);
+        }
+
+        private void WriteOrReserveToken(EntityHandle handle, object member)
+        {
+            if (handle.IsNil)
+            {
+                // The member is a `***BuilderImpl` and its token is not yet defined.
+                // Reserve the token bytes and write them later when its ready
+                _memberReferences.Add(new KeyValuePair<object, BlobWriter>
+                    (member, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
             }
             else
             {
-                stackChange -= con.GetParameters().Length;
+                _il.Token(MetadataTokens.GetToken(handle));
             }
-            // Pop the this parameter if the constructor is non-static and the
-            // instruction is not newobj.
-            if (!con.IsStatic && !opcode.Equals(OpCodes.Newobj))
+        }
+
+        private void AdjustDepth(OpCode opcode, LabelInfo label)
+        {
+            int labelStartDepth = label._startDepth;
+            int targetDepth = _targetDepth;
+            Debug.Assert(labelStartDepth >= -1);
+            Debug.Assert(targetDepth >= -1);
+            if (labelStartDepth < targetDepth)
             {
-                stackChange--;
+                // Either unknown depth for this label or this branch location has a larger depth than previously recorded.
+                // In the latter case, the IL is (likely) invalid, but we just compensate for it using _depthAdjustment.
+                if (labelStartDepth >= 0)
+                {
+                    _depthAdjustment += targetDepth - labelStartDepth;
+                }
+
+                // Keep the target depth, it will used as starting stack size from the marked location.
+                label._startDepth = targetDepth;
             }
 
-            UpdateStackSize(opcode, stackChange);
-            _il.OpCode((ILOpCode)opcode.Value);
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (con, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+            // If it is unconditionally branching to a new location, for the next instruction invocation stack should be empty.
+            // if this location is marked with a label, the starting stack size will be adjusted with label._startDepth.
+            if (UnconditionalBranching(opcode))
+            {
+                _currentStackDepth = 0;
+            }
         }
+
+        private static bool UnconditionalBranching(OpCode opcode) =>
+            opcode.FlowControl == FlowControl.Branch;
 
         public override void Emit(OpCode opcode, Label label)
         {
-            if (_labelTable.TryGetValue(label, out LabelHandle labelHandle))
+            if (_labelTable.TryGetValue(label, out LabelInfo? labelInfo))
             {
-                _il.Branch((ILOpCode)opcode.Value, labelHandle);
+                _il.Branch((ILOpCode)opcode.Value, labelInfo._metaLabel);
                 UpdateStackSize(opcode);
+                AdjustDepth(opcode, labelInfo);
             }
             else
             {
@@ -417,7 +494,9 @@ namespace System.Reflection.Emit
 
             foreach (Label label in labels)
             {
-                switchEncoder.Branch(_labelTable[label]);
+                LabelInfo labelInfo = _labelTable[label];
+                switchEncoder.Branch(labelInfo._metaLabel);
+                AdjustDepth(opcode, labelInfo);
             }
         }
 
@@ -449,13 +528,32 @@ namespace System.Reflection.Emit
             UpdateStackSize(opcode);
         }
 
-        public override void Emit(OpCode opcode, SignatureHelper signature) => throw new NotImplementedException();
+        public override void Emit(OpCode opcode, SignatureHelper signature)
+        {
+            ArgumentNullException.ThrowIfNull(signature);
+
+            EmitOpcode(opcode);
+            // The only IL instruction that has VarPop behaviour, that takes a Signature
+            // token as a parameter is Calli. Pop the parameters and the native function pointer.
+            if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
+            {
+                Debug.Assert(opcode.Equals(OpCodes.Calli), "Unexpected opcode encountered for StackBehaviour VarPop.");
+                // Pop the arguments. Used reflection since ArgumentCount property is not public.
+                PropertyInfo argCountProperty = typeof(SignatureHelper).GetProperty("ArgumentCount", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                int stackChange = -(int)argCountProperty.GetValue(signature)!;
+                // Pop native function pointer off the stack.
+                stackChange--;
+                UpdateStackSize(stackChange);
+            }
+            _il.Token(_moduleBuilder.GetSignatureMetadataToken(signature));
+        }
 
         public override void Emit(OpCode opcode, FieldInfo field)
         {
             ArgumentNullException.ThrowIfNull(field);
 
-            EmitMember(opcode, field);
+            EmitOpcode(opcode);
+            WriteOrReserveToken(_moduleBuilder.TryGetFieldHandle(field), field);
         }
 
         public override void Emit(OpCode opcode, MethodInfo meth)
@@ -468,15 +566,9 @@ namespace System.Reflection.Emit
             }
             else
             {
-                EmitMember(opcode, meth);
+                EmitOpcode(opcode);
+                WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(meth), meth);
             }
-        }
-
-        private void EmitMember(OpCode opcode, MemberInfo member)
-        {
-            EmitOpcode(opcode);
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (member, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
         }
 
         public override void Emit(OpCode opcode, Type cls)
@@ -484,8 +576,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(cls);
 
             EmitOpcode(opcode);
-            ModuleBuilder module = (ModuleBuilder)_methodBuilder.Module;
-            _il.Token(module.GetTypeMetadataToken(cls));
+            WriteOrReserveToken(_moduleBuilder.TryGetTypeHandle(cls), cls);
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -497,10 +588,17 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
             }
 
-            _il.OpCode((ILOpCode)opcode.Value);
-            UpdateStackSize(opcode, GetStackChange(opcode, methodInfo, optionalParameterTypes));
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (methodInfo, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+            EmitOpcode(opcode);
+            UpdateStackSize(GetStackChange(opcode, methodInfo, optionalParameterTypes));
+            if (optionalParameterTypes == null || optionalParameterTypes.Length == 0)
+            {
+                WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(methodInfo), methodInfo);
+            }
+            else
+            {
+                WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(methodInfo, optionalParameterTypes),
+                    new KeyValuePair<MethodInfo, Type[]>(methodInfo, optionalParameterTypes));
+            }
         }
 
         private static int GetStackChange(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -517,6 +615,10 @@ namespace System.Reflection.Emit
             if (methodInfo is MethodBuilderImpl builder)
             {
                 stackChange -= builder.ParameterCount;
+            }
+            else if (methodInfo is ArrayMethod sm)
+            {
+                stackChange -= sm.ParameterTypes.Length;
             }
             else
             {
@@ -539,8 +641,61 @@ namespace System.Reflection.Emit
             return stackChange;
         }
 
-        public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) => throw new NotImplementedException();
-        public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
+        public override void EmitCalli(OpCode opcode, CallingConventions callingConvention,
+            Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes)
+        {
+            if (optionalParameterTypes != null && optionalParameterTypes.Length > 0)
+            {
+                if ((callingConvention & CallingConventions.VarArgs) == 0)
+                {
+                    // Client should not supply optional parameter in default calling convention
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
+                }
+            }
+
+            int stackChange = GetStackChange(returnType, parameterTypes);
+
+            // Pop off VarArg arguments.
+            if (optionalParameterTypes != null)
+            {
+                stackChange -= optionalParameterTypes.Length;
+            }
+            // Pop the this parameter if the method has a this parameter.
+            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis)
+            {
+                stackChange--;
+            }
+
+            UpdateStackSize(stackChange);
+            EmitOpcode(OpCodes.Calli);
+            _il.Token(_moduleBuilder.GetSignatureToken(callingConvention, returnType, parameterTypes, optionalParameterTypes));
+        }
+
+        public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
+        {
+            int stackChange = GetStackChange(returnType, parameterTypes);
+            UpdateStackSize(stackChange);
+            Emit(OpCodes.Calli);
+            _il.Token(_moduleBuilder.GetSignatureToken(unmanagedCallConv, returnType, parameterTypes));
+        }
+
+        private static int GetStackChange(Type? returnType, Type[]? parameterTypes)
+        {
+            int stackChange = 0;
+            // If there is a non-void return type, push one.
+            if (returnType != typeof(void))
+            {
+                stackChange++;
+            }
+            // Pop off arguments if any.
+            if (parameterTypes != null)
+            {
+                stackChange -= parameterTypes.Length;
+            }
+            // Pop the native function pointer.
+            stackChange--;
+            return stackChange;
+        }
 
         public override void EndExceptionBlock()
         {
@@ -574,13 +729,47 @@ namespace System.Reflection.Emit
             _exceptionStack.Remove(currentExBlock);
         }
 
-        public override void EndScope() => throw new NotImplementedException();
+        public override void EndScope()
+        {
+            // TODO: No-op, will be implemented wit PDB support
+        }
 
         public override void MarkLabel(Label loc)
         {
-            if (_labelTable.TryGetValue(loc, out LabelHandle labelHandle))
+            if (_labelTable.TryGetValue(loc, out LabelInfo? labelInfo))
             {
-                _il.MarkLabel(labelHandle);
+                if (labelInfo._position != -1)
+                {
+                    throw new ArgumentException(SR.Argument_RedefinedLabel);
+                }
+
+                _il.MarkLabel(labelInfo._metaLabel);
+                labelInfo._position = _il.Offset;
+                int depth = labelInfo._startDepth;
+                if (depth < 0)
+                {
+                    // Unknown start depth for this label, indicating that it hasn't been used yet.
+                    // Or we're in the Backward branch constraint case mentioned in ECMA-335 III.1.7.5.
+                    // But the constraint is not enforced by any mainstream .NET runtime and they are not
+                    // respected by .NET compilers. The _depthAdjustment field will compensate for violations
+                    // of this constraint, as we discover them, check AdjustDepth method for detail. Here
+                    // we assume a depth of zero. If a (later) branch to this label has a positive stack
+                    // depth, we'll record that as the new depth and add the delta into _depthAdjustment.
+                    labelInfo._startDepth = _currentStackDepth;
+                }
+                else if (depth < _currentStackDepth)
+                {
+                    // A branch location with smaller stack targets this label. In this case, the IL is invalid
+                    // but we just compensate for it.
+                    _depthAdjustment += _currentStackDepth - depth;
+                    labelInfo._startDepth = _currentStackDepth;
+                }
+                else if (depth > _currentStackDepth)
+                {
+                    // A branch location with larger stack depth targets this label, can be invalid IL.
+                    // Either case adjust the current stack depth.
+                    _currentStackDepth = depth;
+                }
             }
             else
             {
@@ -588,7 +777,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
+        public override void UsingNamespace(string usingNamespace)
+        {
+            // TODO: No-op, will be implemented wit PDB support
+        }
     }
 
     internal sealed class ExceptionBlock
@@ -611,5 +803,18 @@ namespace System.Reflection.Emit
         Finally,
         Fault,
         Done
+    }
+
+    internal sealed class LabelInfo
+    {
+        internal LabelInfo(LabelHandle metaLabel)
+        {
+            _position = -1;
+            _startDepth = -1;
+            _metaLabel = metaLabel;
+        }
+        internal int _position; // Position in the il stream, with -1 meaning unknown.
+        internal int _startDepth; // Stack labelStartDepth, with -1 meaning unknown.
+        internal LabelHandle _metaLabel;
     }
 }

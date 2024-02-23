@@ -62,7 +62,7 @@ namespace System.Globalization
 
                 // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
-                saLeapYearMonthNames = (string[]) saMonthNames.Clone();
+                saLeapYearMonthNames = (string[])saMonthNames.Clone();
                 saLeapYearMonthNames[6] = leapHebrewMonthName;
 
                 // The returned data from ICU has 6th month name as 'Adar I' and 7th month name as 'Adar'

@@ -133,6 +133,11 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
                 return EVP_DigestFinalXOF(ctx, md, len);
             }
         }
+    #else
+        // Use each parameter to avoid unused parameter warnings.
+        (void)(ctx);
+        (void)(md);
+        (void)(len);
     #endif
 
     return 0;

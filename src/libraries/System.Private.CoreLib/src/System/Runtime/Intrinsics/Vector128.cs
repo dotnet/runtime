@@ -1348,6 +1348,15 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
 
+        /// <summary>Creates a new <see cref="Vector128{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> CreateSequence<T>(T start, T step) => (Vector128<T>.Indices * step) + Create(start);
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1424,6 +1433,40 @@ namespace System.Runtime.Intrinsics
         {
             return Vector64.EqualsAny(left._lower, right._lower)
                 || Vector64.EqualsAny(left._upper, right._upper);
+        }
+
+        /// <inheritdoc cref="Vector64.Exp(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Exp(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Exp(vector._lower),
+                    Vector64.Exp(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Exp(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Exp(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector128<float>, Vector128<uint>, Vector128<double>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Exp(vector._lower),
+                    Vector64.Exp(vector._upper)
+                );
+            }
         }
 
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
@@ -1780,6 +1823,74 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+
+        /// <inheritdoc cref="Vector64.Log(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Log(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Log(vector._lower),
+                    Vector64.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Log(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Log(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector128<float>, Vector128<int>, Vector128<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Log(vector._lower),
+                    Vector64.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Log2(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Log2(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Log2(vector._lower),
+                    Vector64.Log2(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Log2(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Log2(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector128<float>, Vector128<int>, Vector128<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Log2(vector._lower),
+                    Vector64.Log2(vector._upper)
+                );
+            }
+        }
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

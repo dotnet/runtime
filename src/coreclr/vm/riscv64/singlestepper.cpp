@@ -287,7 +287,10 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
         LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup hit exception pc = %lx ex = %x\n", pCtx->Pc, dwExceptionCode));
     }
 
-    _ASSERTE((pCtx->Pc & 0x3) == 0); // TODO change this after "C" Standard Extension support implemented
+    // Note, 2 bytes alignment assertion here, since during managed stepping we could step/return
+    // into `libcoreclr.so` code, that compiled with "C" Standard Extension.
+    _ASSERTE((pCtx->Pc & 0x1) == 0);
+
     return true;
 }
 
@@ -295,6 +298,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
 uint64_t RiscV64SingleStepper::GetReg(T_CONTEXT *pCtx, uint64_t reg)
 {
     _ASSERTE(reg <= 31);
+    _ASSERTE(pCtx->R0 == 0);
 
     return (&pCtx->R0)[reg];
 }

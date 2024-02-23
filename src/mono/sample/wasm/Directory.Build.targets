@@ -1,6 +1,6 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
@@ -39,11 +39,12 @@
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_HybridGlobalizationFlag Condition="'$(HybridGlobalization)' != ''">/p:HybridGlobalization=$(HybridGlobalization)</_HybridGlobalizationFlag>
+      <_WasmEnableThreadsFlag Condition="'$(WasmEnableThreads)' != ''">/p:WasmEnableThreads=$(WasmEnableThreads)</_WasmEnableThreadsFlag>
       <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
       <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
       <BuildAdditionalArgs Condition="'$(MonoDiagnosticsMock)' != ''">$(BuildAdditionalArgs) /p:MonoDiagnosticsMock=$(MonoDiagnosticsMock) </BuildAdditionalArgs>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_HybridGlobalizationFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
+    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_HybridGlobalizationFlag) $(_WasmEnableThreadsFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
   <Target Name="_ComputeMainJSFileName">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />

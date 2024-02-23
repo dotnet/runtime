@@ -54,7 +54,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>());
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

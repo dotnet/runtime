@@ -1864,4 +1864,54 @@ string lengthAttribute = "";
 #endif // NETCOREAPP
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task OptionsExtendingSystemClassTest()
+    {
+        string source = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+            using System.Collections.Generic;
+
+            #nullable enable
+
+            [OptionsValidator]
+            public sealed class RedisNamedClientOptions : Dictionary<string, RedisClientOptions>, IValidateOptions<RedisNamedClientOptions>
+            {
+                public const string Section = "RedisClients";
+
+                [Required]
+                [ValidateEnumeratedItems]
+                public IEnumerable<RedisClientOptions> RedisClientOptionsList => this.Values;
+            }
+
+            public sealed class RedisClientOptions
+            {
+                [Required]
+                [ValidateEnumeratedItems]
+                public required IList<EndPointsOptions> EndPoints { get; init; }
+            }
+
+            public sealed class EndPointsOptions
+            {
+                [Required]
+                public required string Host { get; init; }
+
+                [Required]
+                [Range(1_024, 65_535)]
+                public required int Port { get; init; }
+            }
+        """;
+
+        var (diagnostics, src) = await RunGenerator(source);
+        Assert.Empty(diagnostics);
+        Assert.Single(src);
+#if NETCOREAPP
+        string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netcore.g.cs");
+#else
+        string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netfx.g.cs");
+#endif // NETCOREAPP
+        Assert.Equal(generatedSource.Replace("\r\n", "\n"), src[0].SourceText.ToString().Replace("\r\n", "\n"));
+    }
 }

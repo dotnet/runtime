@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.General
             ConstantStringValueHandle currentNameHandle = currentNamespaceDefinition.Name;
             Handle currentNamespaceHandle;
             LowLevelList<string> names = new LowLevelList<string>();
-            for (;;)
+            for (; ; )
             {
                 string name = currentNameHandle.GetStringOrNull(reader);
                 names.Add(name);

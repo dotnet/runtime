@@ -97,8 +97,8 @@ namespace System.Reflection
         [DebuggerHidden]
         internal override void UnsafeSetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
-            bool domainInitialized = false;
-            RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref domainInitialized);
+            bool isClassInitialized = false;
+            RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref isClassInitialized);
         }
 
         [DebuggerStepThrough]
@@ -218,7 +218,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return $"{FieldType.FormatTypeName ()} {name}";
+            return $"{FieldType.FormatTypeName()} {name}";
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -1,0 +1,63 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "Libraries/Runtime Android development (prebuilt)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"VARIANT": "8.0-jammy"
+		}
+	},
+    // The container needs to run privileged in order to use Linux KVM to create Android emulators.
+    "runArgs": [
+        "--privileged",
+        "--security-opt",
+        "seccomp=unconfined"
+    ],
+	"hostRequirements": {
+		"cpus": 4,
+		"memory": "8gb",
+        "storage": "64gb"
+	},
+
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+
+	// Configure tool-specific properties.
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-dotnettools.csharp"
+			],
+			"settings": {
+				// Loading projects on demand is better for larger codebases
+				"omnisharp.enableMsBuildLoadProjectsOnDemand": true,
+				"omnisharp.enableRoslynAnalyzers": true,
+				"omnisharp.enableEditorConfigSupport": true,
+				"omnisharp.enableAsyncCompletion": true,
+				"omnisharp.testRunSettings": "${containerWorkspaceFolder}/artifacts/obj/vscode/.runsettings"
+			}
+		}
+	},
+
+	// Use 'onCreateCommand' to run pre-build commands inside the codespace
+	"onCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/onCreateCommand.sh android",
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh android",
+
+    "postStartCommand": "${containerWorkspaceFolder}/.devcontainer/android/postStartCommand.sh",
+
+	// Add the locally installed dotnet to the path to ensure that it is activated
+	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
+    // Add the Android SDK tooling and emulator to the path.
+	"remoteEnv": {
+		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerEnv:ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin:${containerEnv:ANDROID_SDK_ROOT}/emulator:${containerEnv:ANDROID_SDK_ROOT}/platform-tools:${containerEnv:PATH}",
+		"DOTNET_MULTILEVEL_LOOKUP": "0"
+	},
+
+	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "vscode"
+}

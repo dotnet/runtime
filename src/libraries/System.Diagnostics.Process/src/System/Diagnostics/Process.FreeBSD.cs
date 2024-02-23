@@ -92,7 +92,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal((IntPtr) processInfo);
+                    Marshal.FreeHGlobal((IntPtr)processInfo);
                 }
             }
         }

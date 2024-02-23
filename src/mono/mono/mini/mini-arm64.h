@@ -98,6 +98,8 @@ struct SeqPointInfo {
 
 #define PARAM_REGS 8
 #define FP_PARAM_REGS 8
+#define CTX_REGS 2
+#define CTX_REGS_OFFSET ARMREG_R20
 
 typedef struct {
 	host_mgreg_t res, res2;
@@ -119,6 +121,7 @@ typedef struct {
 	MonoInst *seq_point_info_var;
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
+	MonoInst *swift_error_var;
 	guint8 *thunks;
 	int thunks_size;
 } MonoCompileArch;
@@ -180,6 +183,7 @@ typedef struct {
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
 #define MONO_ARCH_HAVE_INIT_MRGCTX 1
+#define MONO_ARCH_HAVE_PATCH_JUMP_TRAMPOLINE 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-i64:64-i128:128-n32:64-S128"
 
 // Does the ABI have a volatile non-parameter register, so tailcall
@@ -202,6 +206,10 @@ typedef struct {
 
 #if defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
 #define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
+#endif
+
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#define MONO_ARCH_HAVE_SWIFTCALL 1
 #endif
 
 /* Relocations */
@@ -233,6 +241,7 @@ typedef enum {
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
 	ArgHFA,
+	ArgSwiftError,
 	ArgNone
 } ArgStorage;
 
@@ -267,8 +276,8 @@ struct CallInfo {
 };
 
 typedef struct {
-	/* General registers + ARMREG_R8 for indirect returns */
-	host_mgreg_t gregs [PARAM_REGS + 1];
+	/* General registers + ARMREG_R8 for indirect returns + context registers  */
+	host_mgreg_t gregs [PARAM_REGS + CTX_REGS + 1];
 	/* Floating registers */
 	double fregs [FP_PARAM_REGS];
 	/* Stack usage, used for passing params on stack */

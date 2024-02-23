@@ -470,14 +470,14 @@ internal static partial class Interop
         [LibraryImport(Libraries.HttpApi, SetLastError = true)]
         internal static partial uint HttpCloseUrlGroup(ulong urlGroupId);
 
-        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HttpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial uint HttpCreateRequestQueue(HTTPAPI_VERSION version, string pName,
             Interop.Kernel32.SECURITY_ATTRIBUTES* pSecurityAttributes, uint flags, out HttpRequestQueueV2Handle pReqQueueHandle);
 
-        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HttpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint HttpAddUrlToUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, ulong context, uint pReserved);
 
-        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HttpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint HttpRemoveUrlFromUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, uint flags);
 
         [LibraryImport(Libraries.HttpApi, SetLastError = true)]

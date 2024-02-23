@@ -29,6 +29,7 @@ namespace System.Net.Quic.Tests
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
+        public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
 
         private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
         public static bool IsIPv6Available => _isIPv6Available.Value;
@@ -42,29 +43,7 @@ namespace System.Net.Quic.Tests
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
-        static unsafe QuicTestBase()
-        {
-            // If any of the reflection bellow breaks due to changes in "System.Net.Quic.MsQuicApi", also check and fix HttpStress project as it uses the same hack.
-            Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
-
-            string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
-            Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}'.");
-
-            if (IsSupported)
-            {
-                object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
-                QUIC_API_TABLE* apiTable = (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
-                QUIC_SETTINGS settings = default(QUIC_SETTINGS);
-                settings.IsSet.MaxWorkerQueueDelayUs = 1;
-                settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
-                if (MsQuic.StatusFailed(apiTable->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
-                {
-                    Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
-                }
-            }
-        }
-
-        public unsafe QuicTestBase(ITestOutputHelper output)
+        public QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
         }

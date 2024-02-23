@@ -209,10 +209,8 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(CompAllocator alloc)
+    const char* ToString(Compiler* comp)
     {
-        unsigned size = 64;
-        char*    buf  = alloc.allocate<char>(size);
         switch (type)
         {
             case keUndef:
@@ -225,12 +223,10 @@ struct Limit
                 return "Dependent";
 
             case keBinOpArray:
-                sprintf_s(buf, size, FMT_VN " + %d", vn, cns);
-                return buf;
+                return comp->printfAlloc(FMT_VN " + %d", vn, cns);
 
             case keConstant:
-                sprintf_s(buf, size, "%d", cns);
-                return buf;
+                return comp->printfAlloc("%d", cns);
         }
         unreached();
     }
@@ -265,12 +261,9 @@ struct Range
     }
 
 #ifdef DEBUG
-    char* ToString(CompAllocator alloc)
+    const char* ToString(Compiler* comp)
     {
-        size_t size = 64;
-        char*  buf  = alloc.allocate<char>(size);
-        sprintf_s(buf, size, "<%s, %s>", lLimit.ToString(alloc), uLimit.ToString(alloc));
-        return buf;
+        return comp->printfAlloc("<%s, %s>", lLimit.ToString(comp), uLimit.ToString(comp));
     }
 #endif
 };
@@ -544,6 +537,30 @@ struct RangeOps
         Range result  = Limit(Limit::keConstant);
         result.lLimit = Limit(Limit::keConstant, 1 << r1loConstant);
         result.uLimit = Limit(Limit::keConstant, 1 << r1hiConstant);
+        return result;
+    }
+
+    static Range Negate(Range& range)
+    {
+        // Only constant ranges can be negated.
+        if (!range.LowerLimit().IsConstant() || !range.UpperLimit().IsConstant())
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        const int hi = range.UpperLimit().GetConstant();
+        const int lo = range.LowerLimit().GetConstant();
+
+        // Give up on edge cases
+        if ((hi == INT_MIN) || (lo == INT_MIN))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        // Example: [0..7] => [-7..0]
+        Range result  = Limit(Limit::keConstant);
+        result.lLimit = Limit(Limit::keConstant, -hi);
+        result.uLimit = Limit(Limit::keConstant, -lo);
         return result;
     }
 };

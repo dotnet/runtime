@@ -15,14 +15,13 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class WorkloadRequiredTests : BlazorWasmTestBase
 {
-    /* Keep in sync with settings in wasm.proj, and WasmApp.Native.targets .
+    /* Keep in sync with settings in browser.proj, and WasmApp.Native.targets .
      * The `triggerValue` here is opposite of the default used when building the runtime pack
-     * (see wasm.proj), and thus requiring a native build
+     * (see browser.proj), and thus requiring a native build
      */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
         ("RunAOTCompilation", true),
-        ("WasmEnableLegacyJsInterop", false),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),

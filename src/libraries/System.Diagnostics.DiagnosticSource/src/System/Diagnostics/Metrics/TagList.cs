@@ -410,7 +410,7 @@ namespace System.Diagnostics
         /// Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.TagList" />.
         /// </summary>
         /// <returns>Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.TagList" />.</returns>
-        readonly IEnumerator IEnumerable.GetEnumerator()  => new Enumerator(in this);
+        readonly IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
 
         /// <summary>
         /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:System.Diagnostics.TagList" />.

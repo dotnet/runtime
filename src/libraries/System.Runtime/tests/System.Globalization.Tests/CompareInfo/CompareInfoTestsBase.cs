@@ -45,6 +45,26 @@ namespace System.Globalization.Tests
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         protected static bool IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm() => !PlatformDetection.IsHybridGlobalizationOnBrowser && IsNotWindowsKanaRegressedVersion();
-        protected static bool IsNotWindowsKanaRegressedVersionAndNotHybridGlobalization() => IsNotWindowsKanaRegressedVersion() && PlatformDetection.IsNotHybridGlobalization;
+
+        public class CustomComparer : StringComparer
+        {
+            private readonly CompareInfo _compareInfo;
+            private readonly CompareOptions _compareOptions;
+
+            public CustomComparer(CompareInfo cmpInfo, CompareOptions cmpOptions)
+            {
+                _compareInfo = cmpInfo;
+                _compareOptions = cmpOptions;
+            }
+
+            public override int Compare(string x, string y) =>
+                _compareInfo.Compare(x, y, _compareOptions);
+
+            public override bool Equals(string x, string y) =>
+                _compareInfo.Compare(x, y, _compareOptions) == 0;
+
+            public override int GetHashCode(string obj) =>
+                _compareInfo.GetHashCode(obj, _compareOptions);
+        }
     }
 }

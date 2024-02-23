@@ -191,13 +191,8 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            object? obj = null;
-            GetUninitializedObject(new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref obj));
-            return obj!;
+            return rt.GetUninitializedObject();
         }
-
-        [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
-        private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
@@ -301,6 +296,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void Unbox_Nullable(ref byte destination, MethodTable* toTypeHnd, object? obj);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
@@ -319,7 +317,7 @@ namespace System.Runtime.CompilerServices
             // The body of this function will be replaced by the EE with unsafe code
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
 
-            return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
+            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
         }
 
 
@@ -444,8 +442,7 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
 
         // See additional native members in methodtable.h, not needed here yet.
-        // 0x8: m_wFlags2 (additional flags)
-        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
 
         /// <summary>
@@ -464,8 +461,14 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        // m_pLoaderModule
-        // m_pWriteableData
+        // m_pModule
+
+        /// <summary>
+        /// A pointer to auxiliary data that is cold for method table.
+        /// </summary>
+        [FieldOffset(AuxiliaryDataOffset)]
+        public MethodTableAuxiliaryData* AuxiliaryData;
+
         // union {
         //   m_pEEClass (pointer to the EE class)
         //   m_pCanonMT (pointer to the canonical method table)
@@ -480,7 +483,7 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
-        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
@@ -525,6 +528,12 @@ namespace System.Runtime.CompilerServices
             ;
 
         private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
+
+#if TARGET_64BIT
+        private const int AuxiliaryDataOffset = 0x20 + DebugClassNamePtr;
+#else
+        private const int AuxiliaryDataOffset = 0x18 + DebugClassNamePtr;
+#endif
 
 #if TARGET_64BIT
         private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
@@ -611,6 +620,28 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+    }
+
+    // Subset of src\vm\methodtable.h
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct MethodTableAuxiliaryData
+    {
+        [FieldOffset(0)]
+        private uint Flags;
+
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0001;     // Is any field type or sub field type overrode Equals or GetHashCode
+        private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+
+        public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
+
+        public bool CanCompareBitsOrUseFastGetHashCode
+        {
+            get
+            {
+                Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
+                return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
     }
 
     /// <summary>

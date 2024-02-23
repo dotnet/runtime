@@ -25,7 +25,7 @@ namespace Internal.Reflection.Execution
     {
         private AssemblyBinderImplementation()
         {
-            _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
+            _scopeGroups = Array.Empty<KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>>();
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 RegisterModule(module);

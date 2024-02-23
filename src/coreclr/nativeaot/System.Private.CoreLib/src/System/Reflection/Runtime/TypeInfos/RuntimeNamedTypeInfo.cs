@@ -128,7 +128,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                     case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                     case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
-                    default: layoutKind = LayoutKind.Auto;  break;
+                    default: layoutKind = LayoutKind.Auto; break;
                 }
 
                 CharSet charSet;
@@ -137,7 +137,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     case TypeAttributes.AnsiClass: charSet = CharSet.Ansi; break;
                     case TypeAttributes.AutoClass: charSet = CharSet.Auto; break;
                     case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
-                    default: charSet = CharSet.None;  break;
+                    default: charSet = CharSet.None; break;
                 }
 
                 GetPackSizeAndSize(out int pack, out int size);

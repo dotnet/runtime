@@ -124,7 +124,7 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
 // After initialization advance the next argument pointer to the first optional
 // argument.
 ////////////////////////////////////////////////////////////////////////////////
-void AdvanceArgPtr(VARARGS *data)
+static void AdvanceArgPtr(VARARGS *data)
 {
     CONTRACTL {
         THROWS;
@@ -167,16 +167,11 @@ void AdvanceArgPtr(VARARGS *data)
 // ArgIterator constructor that initializes the state to support iteration
 // of the args starting at the first optional argument.
 ////////////////////////////////////////////////////////////////////////////////
-FCIMPL2(void, VarArgsNative::Init, VARARGS* _this, LPVOID cookie)
+extern "C" void QCALLTYPE ArgIterator_Init(VARARGS* data, PVOID cookie)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    _ASSERTE(_this != NULL);
-    VARARGS* data = _this;
-    if (cookie == 0)
-        COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
+    BEGIN_QCALL;
 
     VASigCookie* pCookie = *(VASigCookie**)(cookie);
 
@@ -193,9 +188,8 @@ FCIMPL2(void, VarArgsNative::Init, VARARGS* _this, LPVOID cookie)
         AdvanceArgPtr(data);
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 ////////////////////////////////////////////////////////////////////////////////
 // ArgIterator constructor that initializes the state to support iteration
@@ -203,21 +197,11 @@ FCIMPLEND
 // Specifying NULL as the firstArg parameter causes it to start at the first
 // argument to the call.
 ////////////////////////////////////////////////////////////////////////////////
-FCIMPL3(
-void,
-VarArgsNative::Init2,
-    VARARGS * _this,
-    LPVOID    cookie,
-    LPVOID    firstArg)
+extern "C" void QCALLTYPE ArgIterator_Init2(VARARGS* data, PVOID cookie, PVOID firstArg)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    _ASSERTE(_this != NULL);
-    VARARGS* data = _this;
-    if (cookie == 0)
-        COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
+    BEGIN_QCALL;
 
     // Init most of the structure.
     InitCommon(data, (VASigCookie**)cookie);
@@ -294,187 +278,23 @@ VarArgsNative::Init2,
                 break;
         }
     }
-    HELPER_METHOD_FRAME_END();
-} // VarArgsNative::Init2
-FCIMPLEND
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Return the number of unprocessed args in the argument iterator.
-////////////////////////////////////////////////////////////////////////////////
-FCIMPL1(int, VarArgsNative::GetRemainingCount, VARARGS* _this)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    _ASSERTE(_this != NULL);
-    if (!(_this->ArgCookie))
-    {
-        // this argiterator was created by marshaling from an unmanaged va_list -
-        // can't do this operation
-        COMPlusThrow(kNotSupportedException);
-    }
-    HELPER_METHOD_FRAME_END();
-    return (_this->RemainingArgs);
+    END_QCALL;
 }
-FCIMPLEND
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Retrieve the type of the next argument without consuming it.
-////////////////////////////////////////////////////////////////////////////////
-FCIMPL1(void*, VarArgsNative::GetNextArgType, VARARGS* _this)
-{
-    FCALL_CONTRACT;
-
-    TypedByRef  value;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    PREFIX_ASSUME(_this != NULL);
-    VARARGS     data = *_this;
-
-    if (!(_this->ArgCookie))
-    {
-        // this argiterator was created by marshaling from an unmanaged va_list -
-        // can't do this operation
-        COMPlusThrow(kNotSupportedException);
-    }
-
-
-    // Make sure there are remaining args.
-    if (data.RemainingArgs == 0)
-        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EnumEnded"));
-
-    GetNextArgHelper(&data, &value, FALSE);
-    HELPER_METHOD_FRAME_END();
-    return value.type.AsPtr();
-}
-FCIMPLEND
-
-////////////////////////////////////////////////////////////////////////////////
-// Retrieve the next argument and return it in a TypedByRef and advance the
-// next argument pointer.
-////////////////////////////////////////////////////////////////////////////////
-FCIMPL2(void, VarArgsNative::DoGetNextArg, VARARGS* _this, void * value)
-{
-    FCALL_CONTRACT;
-
-    TypedByRef * result = (TypedByRef *)value;
-    HELPER_METHOD_FRAME_BEGIN_0();
-    GCPROTECT_BEGININTERIOR (result);
-
-    _ASSERTE(_this != NULL);
-    if (!(_this->ArgCookie))
-    {
-        // this argiterator was created by marshaling from an unmanaged va_list -
-        // can't do this operation
-        COMPlusThrow(kInvalidOperationException);
-    }
-
-    // Make sure there are remaining args.
-    if (_this->RemainingArgs == 0)
-        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EnumEnded"));
-
-    GetNextArgHelper(_this, result, TRUE);
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Retrieve the next argument and return it in a TypedByRef and advance the
-// next argument pointer.
-////////////////////////////////////////////////////////////////////////////////
-FCIMPL3(void, VarArgsNative::GetNextArg2, VARARGS* _this, void * value, ReflectClassBaseObject *pTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    TypedByRef * result = (TypedByRef *)value;
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowResVoid(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    HELPER_METHOD_FRAME_BEGIN_1(refType);
-    GCPROTECT_BEGININTERIOR (result);
-
-    // IJW
-
-    TypeHandle typehandle = refType->GetType();
-
-    _ASSERTE(_this != NULL);
-    unsigned size = 0;
-    bool isValueType = false;
-
-    CorElementType typ = typehandle.GetInternalCorElementType();
-    if (CorTypeInfo::IsPrimitiveType(typ))
-    {
-        size = CorTypeInfo::Size(typ);
-    }
-    else if (typ == ELEMENT_TYPE_PTR)
-    {
-        size = sizeof(LPVOID);
-    }
-    else if (typ == ELEMENT_TYPE_VALUETYPE)
-    {
-        isValueType = true;
-        size = typehandle.AsMethodTable()->GetNativeSize();
-    }
-    else
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
-    }
-    const bool isFloatHfa = false;
-    size = StackElemSize(size, isValueType, isFloatHfa);
-    AdjustArgPtrForAlignment(_this, size);
-
-#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
-    if (ArgIterator::IsVarArgPassedByRef(size))
-    {
-        result->data = *(void**)_this->ArgPtr;
-        size = sizeof(void*);
-    }
-    else
-#endif
-    {
-        result->data = (void*)_this->ArgPtr;
-    }
-
-    result->type = typehandle;
-    _this->ArgPtr += size;
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // This is a helper that uses a VARARGS tracking data structure to retrieve
 // the next argument out of a varargs function call.  This does not check if
 // there are any args remaining (it assumes it has been checked).
 ////////////////////////////////////////////////////////////////////////////////
-void
-VarArgsNative::GetNextArgHelper(
-    VARARGS *    data,
-    TypedByRef * value,
-    BOOL         fData)
+static void GetNextArgHelper(VARARGS* data, TypedByRef* value, BOOL fData)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(data));
         PRECONDITION(CheckPointer(value));
     } CONTRACTL_END;
-
-    GCPROTECT_BEGININTERIOR (value);
-    CorElementType elemType;
 
     _ASSERTE(data->RemainingArgs != 0);
 
@@ -501,7 +321,8 @@ VarArgsNative::GetNextArgHelper(
 
 
 TryAgain:
-    switch (elemType = data->SigPtr.PeekElemTypeClosed(data->ArgCookie->pModule, &typeContext))
+    CorElementType elemType = data->SigPtr.PeekElemTypeClosed(data->ArgCookie->pModule, &typeContext);
+    switch (elemType)
     {
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_I1:
@@ -643,5 +464,107 @@ TryAgain:
     // Update the tracking stuff to move past the argument.
     --data->RemainingArgs;
     IfFailThrow(data->SigPtr.SkipExactlyOne());
-    GCPROTECT_END ();
-} // VarArgsNative::GetNextArgHelper
+} // GetNextArgHelper
+
+////////////////////////////////////////////////////////////////////////////////
+// Retrieve the type of the next argument without consuming it.
+////////////////////////////////////////////////////////////////////////////////
+extern "C" void* QCALLTYPE ArgIterator_GetNextArgType(VARARGS* data)
+{
+    QCALL_CONTRACT;
+
+    TypedByRef value = { };
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERT(value.data == NULL);
+    GCPROTECT_BEGININTERIOR(value.data);
+
+    // ArgIterator.GetNextArgType does not update the iterator state. Call GetNextArgHelper on
+    // on throw away clone of the state.
+    VARARGS clone = *data;
+    GetNextArgHelper(&clone, &value, FALSE);
+
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return value.type.AsPtr();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Retrieve the next argument and return it in a TypedByRef and advance the
+// next argument pointer.
+////////////////////////////////////////////////////////////////////////////////
+extern "C" void QCALLTYPE ArgIterator_GetNextArg(VARARGS* data, TypedByRef* pResult)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    GetNextArgHelper(data, pResult, TRUE);
+
+    END_QCALL;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Retrieve the next argument and return it in a TypedByRef and advance the
+// next argument pointer.
+////////////////////////////////////////////////////////////////////////////////
+extern "C" void QCALLTYPE ArgIterator_GetNextArg2(VARARGS* data, QCall::TypeHandle pType, TypedByRef* pResult)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // IJW
+
+    TypeHandle typehandle = pType.AsTypeHandle();
+
+    unsigned size = 0;
+    bool isValueType = false;
+
+    CorElementType typ = typehandle.GetInternalCorElementType();
+    if (CorTypeInfo::IsPrimitiveType(typ))
+    {
+        size = CorTypeInfo::Size(typ);
+    }
+    else if (typ == ELEMENT_TYPE_PTR)
+    {
+        size = sizeof(LPVOID);
+    }
+    else if (typ == ELEMENT_TYPE_VALUETYPE)
+    {
+        isValueType = true;
+        size = typehandle.AsMethodTable()->GetNativeSize();
+    }
+    else
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+    const bool isFloatHfa = false;
+    size = StackElemSize(size, isValueType, isFloatHfa);
+    AdjustArgPtrForAlignment(data, size);
+
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
+    if (ArgIterator::IsVarArgPassedByRef(size))
+    {
+        pResult->data = *(void**)data->ArgPtr;
+        size = sizeof(void*);
+    }
+    else
+#endif
+    {
+        pResult->data = (void*)data->ArgPtr;
+    }
+
+    pResult->type = typehandle;
+    data->ArgPtr += size;
+
+    END_QCALL;
+}

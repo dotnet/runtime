@@ -2444,7 +2444,7 @@ namespace System.Xml
             }
         }
 
-        protected  sealed class XmlAtomicTextNode : XmlTextNode
+        protected sealed class XmlAtomicTextNode : XmlTextNode
         {
             public XmlAtomicTextNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.Text,

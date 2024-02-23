@@ -2578,7 +2578,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);
     assemblyData->ClassLoader = HOST_CDADDR(pAssembly->GetLoader());
-    assemblyData->ParentDomain = HOST_CDADDR(pAssembly->GetDomain());
+    assemblyData->ParentDomain = HOST_CDADDR(AppDomain::GetCurrentDomain());
     assemblyData->isDynamic = pAssembly->IsDynamic();
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;
@@ -3148,7 +3148,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     SOSDacEnter();
 
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker *pExData = PTR_ExceptionTracker(TO_TADDR(exception));
+    ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
 #else
     ExInfo *pExData = PTR_ExInfo(TO_TADDR(exception));
 #endif // FEATURE_EH_FUNCLETS

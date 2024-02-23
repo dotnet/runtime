@@ -20,9 +20,9 @@ namespace System.Collections.Tests
 
         protected override bool ResetImplemented => true;
 
-        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorThrows : (base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear));
+        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear);
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         protected override ISet<T> GenericISetFactory()
         {
@@ -212,12 +212,39 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
         }
 
-        [Fact]
-        public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
+        [Theory]
+        [InlineData(0, 20, 7)]
+        [InlineData(10, 20, 10)]
+        [InlineData(10, 20, 13)]
+        public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimReducesSize(int initialCount, int initialCapacity, int trimCapacity)
         {
-            var set = new HashSet<T>(20);
-            set.TrimExcess(7);
-            Assert.Equal(7, set.Capacity);
+            HashSet<T> set = CreateHashSetWithCapacity(initialCount, initialCapacity);
+            HashSet<T> clone = new(set, set.Comparer);
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+
+            set.TrimExcess(trimCapacity);
+
+            Assert.True(trimCapacity <= set.Capacity && set.Capacity < initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+            Assert.Equal(clone, set);
+        }
+
+        [Theory]
+        [InlineData(10, 20, 0)]
+        [InlineData(10, 20, 7)]
+        public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimCapacityIsLessThanCount_ThrowsArgumentOutOfRangeException(int initialCount, int initialCapacity, int trimCapacity)
+        {
+            HashSet<T> set = CreateHashSetWithCapacity(initialCount, initialCapacity);
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => set.TrimExcess(trimCapacity));
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
         }
 
         [Theory]

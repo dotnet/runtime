@@ -141,8 +141,10 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_contention_lock_created,
 	&ep_rt_write_event_contention_start,
 	&ep_rt_write_event_contention_stop,
+	&ep_rt_write_event_wait_handle_wait_start,
+	&ep_rt_write_event_wait_handle_wait_stop,
 	&event_pipe_signal_session,
-	&event_pipe_wait_for_session_signal
+	&event_pipe_wait_for_session_signal,
 };
 
 static bool

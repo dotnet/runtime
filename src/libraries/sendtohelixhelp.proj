@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-browser.targets" Condition="'$(TargetOS)' == 'browser'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-superpmi-collect.targets" Condition="'$(SuperPmiCollect)' == 'true'" />
 
@@ -31,9 +31,9 @@
         '$(Scenario)' == 'gcstress0x3' or
         '$(Scenario)' == 'gcstress0xc' or
         '$(Scenario)' == 'heapverify1' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable_jitstress2' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r_heapverify1' or
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
@@ -115,6 +115,14 @@
        setting up the per-scenario environment.
   -->
 
+  <ItemGroup Condition=" '$(TargetOS)' == 'windows' ">
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' != 'windows' ">
+    <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' == 'windows' ">
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />
@@ -175,7 +183,6 @@
     <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
   </ItemGroup>
 
-
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
     <!-- setting DotNetCliVersion here to ensure that it is set to the intended value -->
@@ -233,6 +240,10 @@
     </ItemGroup>
   </Target>
 
+  <ItemGroup Condition="Exists('$(XUnitLogCheckerLibrariesOutDir)')">
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />
+  </ItemGroup>  
+
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
     test assembly. All will have the same command line. Note that this target is listed in the
@@ -240,7 +251,6 @@
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
   <Target Name="BuildHelixWorkItems" DependsOnTargets="$(BuildHelixWorkItemsDependsOn)">
-
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
     <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />

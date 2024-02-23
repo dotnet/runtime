@@ -67,6 +67,11 @@ echo DOTNET_EnableExtraSuperPmiQueries=%DOTNET_EnableExtraSuperPmiQueries%
 echo DOTNET_JitPath=%DOTNET_JitPath%
 :skip_spmi_enable_collection
 
+echo ========================= Begin custom configuration settings ==============================
+[[SetCommandsEcho]]
+[[SetCommands]]
+echo ========================== End custom configuration settings ===============================
+
 :: ========================= BEGIN Test Execution =============================
 echo ----- start %DATE% %TIME% ===============  To repro directly: =====================================================
 echo pushd %EXECUTION_DIR%
@@ -92,6 +97,44 @@ if %_exit_code%==1 (
     )
   )
 )
+
+if "%HELIX_CORRELATION_PAYLOAD%"=="" (
+  GOTO SKIP_XUNITLOGCHECKER
+)
+if NOT "%__IsXUnitLogCheckerSupported%"=="1" (
+  echo XUnitLogChecker not supported for this test case. Skipping.
+  GOTO SKIP_XUNITLOGCHECKER
+)
+
+echo ----- start ===============  XUnitLogChecker Output =====================================================
+
+set DOTNET_EXE=%RUNTIME_PATH%\dotnet.exe
+set XUNITLOGCHECKER_DLL=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.dll
+set XUNITLOGCHECKER_COMMAND=%DOTNET_EXE% --roll-forward Major %XUNITLOGCHECKER_DLL% --dumps-path %HELIX_DUMP_FOLDER%
+set XUNITLOGCHECKER_EXIT_CODE=1
+
+if NOT EXIST %DOTNET_EXE% (
+  echo dotnet.exe does not exist in the expected location: %DOTNET_EXE%
+  GOTO XUNITLOGCHECKER_END
+) else if NOT EXIST %XUNITLOGCHECKER_DLL% (
+  echo XUnitLogChecker.dll does not exist in the expected location: %XUNITLOGCHECKER_DLL%
+  GOTO XUNITLOGCHECKER_END
+)
+
+echo %XUNITLOGCHECKER_COMMAND%
+%XUNITLOGCHECKER_COMMAND%
+set XUNITLOGCHECKER_EXIT_CODE=%ERRORLEVEL%
+
+:XUNITLOGCHECKER_END
+
+if %XUNITLOGCHECKER_EXIT_CODE% NEQ 0 (
+  set _exit_code=%XUNITLOGCHECKER_EXIT_CODE%
+)
+
+echo ----- end ===============  XUnitLogChecker Output - exit code %XUNITLOGCHECKER_EXIT_CODE% ===============
+
+:SKIP_XUNITLOGCHECKER
+
 exit /b %_exit_code%
 :: ========================= END Test Execution =================================
 

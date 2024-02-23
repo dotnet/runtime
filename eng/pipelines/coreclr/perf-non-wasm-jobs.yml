@@ -1,12 +1,5 @@
 jobs:
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-
-  # Build and run iOS Mono and NativeAOT scenarios with HybridGlobalization
-  - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
-    parameters:
-      hybridGlobalization: True
-
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
   # build coreclr and libraries
@@ -77,10 +70,10 @@ jobs:
       platforms:
       - linux_x64
 
-  # Build and run iOS Mono and NativeAOT scenarios without HybridGlobalization
+  # Build and run iOS Mono and NativeAOT scenarios
   - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
     parameters:
-      hybridGlobalization: False
+      hybridGlobalization: True
 
   # run android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -253,39 +246,6 @@ jobs:
         logicalmachine: 'perftiger'
         experimentName: 'memoryRandomization'
 
-  # run coreclr perftiger microbenchmarks CrossBlockLocalAssertionProp perf jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        experimentName: crossblocklocalassertionprop
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        experimentName: crossblocklocalassertionprop
-
   # run coreclr perfowl microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -302,6 +262,42 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
+
+  # run coreclr perfowl microbenchmarks perf gdv3 jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfowl'
+        experimentName: 'gdv3'
+
+  # run coreclr perfowl microbenchmarks perf rlcse jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfowl'
+        experimentName: 'rlcse'
 
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml

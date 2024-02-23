@@ -587,6 +587,7 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr);
 #define EXCEPTION_NESTED_CALL 0x10      // Nested exception handler call
 #define EXCEPTION_TARGET_UNWIND 0x20    // Target unwind in progress
 #define EXCEPTION_COLLIDED_UNWIND 0x40  // Collided exception handler call
+#define EXCEPTION_SOFTWARE_ORIGINATE 0x80 // Exception originated in software
 
 #define EXCEPTION_UNWIND (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND | \
                           EXCEPTION_TARGET_UNWIND | EXCEPTION_COLLIDED_UNWIND)
@@ -844,6 +845,10 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 #endif
 
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)
+
+#ifdef FEATURE_EH_FUNCLETS
+VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
+#endif // FEATURE_EH_FUNCLETS
 
 #endif // !DACCESS_COMPILE
 

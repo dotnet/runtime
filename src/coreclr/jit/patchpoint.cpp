@@ -46,7 +46,7 @@ public:
     int Run()
     {
         // If the first block is a patchpoint, insert a scratch block.
-        if (compiler->fgFirstBB->bbFlags & BBF_PATCHPOINT)
+        if (compiler->fgFirstBB->HasFlag(BBF_PATCHPOINT))
         {
             compiler->fgEnsureFirstBBisScratch();
         }
@@ -54,7 +54,7 @@ public:
         int count = 0;
         for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
-            if (block->bbFlags & BBF_PATCHPOINT)
+            if (block->HasFlag(BBF_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 //
@@ -62,13 +62,13 @@ public:
 
                 // Clear the patchpoint flag.
                 //
-                block->bbFlags &= ~BBF_PATCHPOINT;
+                block->RemoveFlags(BBF_PATCHPOINT);
 
                 JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
                 count++;
             }
-            else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
+            else if (block->HasFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 // Also, we don't import the IL for these blocks.
@@ -78,11 +78,11 @@ public:
                 // If we're instrumenting, we should not have decided to
                 // put class probes here, as that is driven by looking at IL.
                 //
-                assert((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0);
+                assert(!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE));
 
                 // Clear the partial comp flag.
                 //
-                block->bbFlags &= ~BBF_PARTIAL_COMPILATION_PATCHPOINT;
+                block->RemoveFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
 
                 JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformPartialCompilation(block);
@@ -105,10 +105,10 @@ private:
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
+    BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
         BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
-        block->bbFlags |= BBF_IMPORTED;
+        block->SetFlags(BBF_IMPORTED);
         return block;
     }
 
@@ -146,13 +146,18 @@ private:
         BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block, block->Next());
 
         // Update flow and flags
-        block->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
-        block->bbFlags |= BBF_INTERNAL;
+        block->SetCond(remainderBlock, helperBlock);
+        block->SetFlags(BBF_INTERNAL);
 
-        helperBlock->bbFlags |= (BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
+        helperBlock->SetFlags(BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
-        compiler->fgAddRefPred(helperBlock, block);
-        compiler->fgAddRefPred(remainderBlock, helperBlock);
+        FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
+        FlowEdge* const trueEdge  = compiler->fgGetPredForBlock(remainderBlock, block);
+        trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
+        falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
+
+        FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
+        newEdge->setLikelihood(1.0);
 
         // Update weights
         remainderBlock->inheritWeight(block);
@@ -190,7 +195,7 @@ private:
     //  ppCounter = <initial value>
     void TransformEntry(BasicBlock* block)
     {
-        assert((block->bbFlags & BBF_PATCHPOINT) == 0);
+        assert(!block->HasFlag(BBF_PATCHPOINT));
 
         int initialCounterValue = JitConfig.TC_OnStackReplacement_InitialCounter();
 
@@ -233,7 +238,7 @@ private:
         }
 
         // Update flow
-        block->SetJumpKindAndTarget(BBJ_THROW);
+        block->SetKindAndTarget(BBJ_THROW);
 
         // Add helper call
         //

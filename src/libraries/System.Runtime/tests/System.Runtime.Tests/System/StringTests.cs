@@ -232,7 +232,7 @@ namespace System.Tests
             yield return new object[] { "Hello", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.CurrentCulture, true };
 
             // CurrentCultureIgnoreCase
@@ -245,7 +245,7 @@ namespace System.Tests
             yield return new object[] { "", "hello", StringComparison.CurrentCultureIgnoreCase, false };
             yield return new object[] { "Hello", "", StringComparison.CurrentCultureIgnoreCase, true };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
                 yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
@@ -262,7 +262,7 @@ namespace System.Tests
             yield return new object[] { "Hello", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -275,7 +275,7 @@ namespace System.Tests
             yield return new object[] { "", "hello", StringComparison.InvariantCultureIgnoreCase, false };
             yield return new object[] { "Hello", "", StringComparison.InvariantCultureIgnoreCase, true };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
                 yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
@@ -308,6 +308,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Contains_String_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Contains_String_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
@@ -699,7 +700,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "d", StringComparison.CurrentCulture, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.CurrentCulture, "ac" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCulture, "def" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.CurrentCultureIgnoreCase, "def" };
@@ -709,7 +710,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "d", StringComparison.CurrentCultureIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.CurrentCultureIgnoreCase, "ac" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCultureIgnoreCase, "def" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.Ordinal, "def" };
@@ -719,7 +720,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "d", StringComparison.Ordinal, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.Ordinal, "ac" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.Ordinal, "abc" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.OrdinalIgnoreCase, "def" };
@@ -730,7 +731,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", null, StringComparison.OrdinalIgnoreCase, "ac" };
 
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCulture, "def" };
@@ -741,7 +742,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", null, StringComparison.InvariantCulture, "ac" };
 
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCulture, "def" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCultureIgnoreCase, "def" };
@@ -752,7 +753,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", null, StringComparison.InvariantCultureIgnoreCase, "ac" };
 
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCultureIgnoreCase, "def" };
 
@@ -777,6 +778,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
@@ -784,6 +787,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -821,7 +825,7 @@ namespace System.Tests
             yield return new object[] { "abc", "abc", "def", true, CultureInfo.InvariantCulture, "def" };
             yield return new object[] { "abc", "ABC", "def", true, CultureInfo.InvariantCulture, "def" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, null, "def" };
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, null, "def" };
@@ -843,6 +847,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, ignoreCase, culture));
@@ -906,7 +912,7 @@ namespace System.Tests
             Assert.NotEqual("abc".GetHashCode(), string.GetHashCode("ABC".AsSpan())); // case differences
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void GetHashCode_CompareInfo()
         {
             // ordinal

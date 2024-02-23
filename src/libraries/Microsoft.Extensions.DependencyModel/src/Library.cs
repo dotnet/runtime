@@ -81,6 +81,6 @@ namespace Microsoft.Extensions.DependencyModel
 
         public string? HashPath { get; }
 
-        public string? RuntimeStoreManifestName {get;}
+        public string? RuntimeStoreManifestName { get; }
     }
 }

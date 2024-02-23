@@ -36,7 +36,7 @@ namespace System.Threading
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the main thread, called from mono_wasm_execute_timer
-        private static void TimerHandler ()
+        private static void TimerHandler()
         {
             try
             {

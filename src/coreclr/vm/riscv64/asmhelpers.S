@@ -687,7 +687,7 @@ LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x88
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x90
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
@@ -724,7 +724,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   s7, s8, 64
     EPILOG_RESTORE_REG_PAIR   s9, s10, 80
     EPILOG_RESTORE_REG  s11, 96 
-    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x88
+    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x90
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -756,7 +756,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 120, 0
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 128, 0
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
@@ -796,7 +796,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   s11, gp, 96
     EPILOG_RESTORE_REG tp, 112
 
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 120 
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 128
     EPILOG_RETURN
 NESTED_END CallEHFunclet, _TEXT
 

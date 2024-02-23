@@ -446,11 +446,11 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            byte[]? message = CreateShutdownToken();
+            ProtocolToken token = CreateShutdownToken();
             _shutdown = true;
-            if (message != null)
+            if (token.Size > 0 && token.Payload != null)
             {
-                return InnerStream.WriteAsync(message, default).AsTask();
+                return InnerStream.WriteAsync(new ReadOnlyMemory<byte>(token.Payload, 0, token.Size), default).AsTask();
             }
 
             return Task.CompletedTask;

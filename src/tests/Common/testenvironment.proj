@@ -39,6 +39,7 @@
       DOTNET_EnableSSSE3;
       DOTNET_JitStressEvexEncoding;
       DOTNET_PreferredVectorBitWidth;
+      DOTNET_MaxVectorTBitWidth;
       DOTNET_ForceRelocs;
       DOTNET_GCStress;
       DOTNET_GCName;
@@ -52,7 +53,6 @@
       DOTNET_JitStressRegs;
       DOTNET_TailcallStress;
       DOTNET_ReadyToRun;
-      DOTNET_ZapDisable;
       DOTNET_TC_OnStackReplacement;
       DOTNET_TC_QuickJitForLoops;
       DOTNET_TC_OnStackReplacement_InitialCounter;
@@ -80,7 +80,7 @@
       RunningIlasmRoundTrip;
       DOTNET_JitSynthesizeCounts;
       DOTNET_JitCheckSynthesizedCounts;
-      DOTNET_JitEnableCrossBlockLocalAssertionProp
+      DOTNET_JitRLCSEGreedy;
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -130,6 +130,8 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_x86_vectort128" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
+    <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_1_x86_noaes" JitStress="1" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->
@@ -204,11 +206,11 @@
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
     <TestEnvironment Include="gcstress0xf" GCStress="0xF" />
-    <TestEnvironment Include="zapdisable" ZapDisable="1" ReadyToRun="0" />
+    <TestEnvironment Include="disabler2r" ReadyToRun="0" />
     <TestEnvironment Include="heapverify1" HeapVerify="1" />
-    <TestEnvironment Include="gcstress0xc_zapdisable" GCStress="0xC" ZapDisable="1" ReadyToRun="0" />
-    <TestEnvironment Include="gcstress0xc_zapdisable_jitstress2" GCStress="0xC" ZapDisable="1" ReadyToRun="0" JitStress="2" />
-    <TestEnvironment Include="gcstress0xc_zapdisable_heapverify1" GCStress="0xC" ZapDisable="1" ReadyToRun="0" HeapVerify="1" />
+    <TestEnvironment Include="gcstress0xc_disabler2r" GCStress="0xC" ReadyToRun="0" />
+    <TestEnvironment Include="gcstress0xc_disabler2r_jitstress2" GCStress="0xC" ReadyToRun="0" JitStress="2" />
+    <TestEnvironment Include="gcstress0xc_disabler2r_heapverify1" GCStress="0xC" ReadyToRun="0" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_jitstress1" GCStress="0xC" JitStress="1" />
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
     <TestEnvironment Include="gcstress0xc_tailcallstress" GCStress="0xC" TailcallStress="1" />
@@ -221,7 +223,6 @@
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_only" JitStressModeNames="STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
-    <TestEnvironment Include="jitcrossblocklocalassertionprop" JitEnableCrossBlockLocalAssertionProp="1" TieredCompilation="0" />
     <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
     <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
@@ -237,6 +238,7 @@
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="syntheticpgo" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="1" JitCheckSynthesizedProfile="1" />
     <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedProfile="1" />
+    <TestEnvironment Include="jitrlcse" JitRLCSEGreedy="1" />
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>

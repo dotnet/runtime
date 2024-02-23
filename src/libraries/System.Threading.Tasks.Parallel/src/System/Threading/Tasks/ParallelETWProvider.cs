@@ -43,7 +43,7 @@ namespace System.Threading.Tasks
         /// <summary>ETW tasks that have start/stop events.</summary>
         public static class Tasks
         {  // this name is important for EventSource
-           /// <summary>A parallel loop.</summary>
+            /// <summary>A parallel loop.</summary>
             public const EventTask Loop = (EventTask)1;
             /// <summary>A parallel invoke.</summary>
             public const EventTask Invoke = (EventTask)2;
