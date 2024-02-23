@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -106,9 +107,12 @@ namespace ILCompiler
             // The "seek backwards to find what feeds the comparison" only works for a couple known instructions
             // (load constant, call). It can't e.g. skip over arguments to the call.
             //
-            // Last step is a sweep - we replace the tail of all unreachable blocks with "br $-2"
-            // and nop out the rest. If the basic block is smaller than 2 bytes, we don't touch it.
-            // We also eliminate any EH records that correspond to the stubbed out basic block.
+            // We then do a pass to compute the offsets of instructions in a new instruction stream, where
+            // the unreachable basic blocks are replaced with an infinite loop (`br $-2`).
+            // Because of this rewriting, all the offsets will shift.
+            //
+            // Last step is the actual rewriting: we copy instructions from the source basic block, remapping
+            // offsets for jumps, and replacing parts that are unreachable with the infinite loop.
             //
             // We also attempt to rewrite calls to SR.SomeResourceString accessors with string
             // literals looked up from the managed resources.
@@ -224,9 +228,7 @@ namespace ILCompiler
             //
             // We also do another round of basic block marking to mark beginning of visible basic blocks
             // after dead branch elimination. This allows us to limit the number of potential small basic blocks
-            // that are not interesting (because no code jumps to them anymore), but could prevent us from
-            // finishing the process. Unreachable basic blocks smaller than 2 bytes abort the substitution
-            // inlining process because we can't neutralize them (turn them into an infinite loop).
+            // that are not interesting (because no code jumps to them anymore).
             offsetsToVisit.Push(0);
             while (offsetsToVisit.TryPop(out int offset))
             {
@@ -270,7 +272,7 @@ namespace ILCompiler
                             offsetsToVisit.Push(ehRegion.HandlerOffset);
 
                             // RyuJIT is going to look at this basic block even though it's unreachable.
-                            // Consider it visible so that we replace the tail with an endless loop.
+                            // Consider it visible so that we replace it with an endless loop.
                             int handlerEnd = ehRegion.HandlerOffset + ehRegion.HandlerLength;
                             if (handlerEnd < flags.Length)
                                 flags[handlerEnd] |= OpcodeFlags.VisibleBasicBlockStart;
@@ -398,7 +400,7 @@ namespace ILCompiler
                 }
             }
 
-            // Now sweep unreachable basic blocks by replacing them with nops
+            // Now sweep unreachable basic blocks
             bool hasUnmarkedInstruction = false;
             foreach (var flag in flags)
             {
@@ -412,54 +414,168 @@ namespace ILCompiler
             if (!hasUnmarkedInstruction && !hasGetResourceStringCall)
                 return method;
 
-            byte[] newBody = (byte[])methodBytes.Clone();
-            int position = 0;
-            while (position < newBody.Length)
+            // Maps instruction offsets in original method body to offsets in rewritten method body.
+            var offsetMap = new int[methodBytes.Length];
+#if DEBUG
+            Array.Fill(offsetMap, -1);
+#endif
+            int srcPos = 0;
+            int dstPos = 0;
+
+            // Compute a map from original instruction offset to new instruction offsets
+            while (srcPos < flags.Length)
             {
-                Debug.Assert((flags[position] & OpcodeFlags.InstructionStart) != 0);
-                Debug.Assert((flags[position] & OpcodeFlags.VisibleBasicBlockStart) != 0);
+                bool marked = (flags[srcPos] & OpcodeFlags.Mark) != 0;
 
-                bool erase = (flags[position] & OpcodeFlags.Mark) == 0;
-
-                int basicBlockStart = position;
+                // Go over all bytes in a single visible basic block
+                int lastInstructionPos = srcPos;
                 do
                 {
-                    if (erase)
-                        newBody[position] = (byte)ILOpCode.Nop;
-                    position++;
-                } while (position < newBody.Length && (flags[position] & OpcodeFlags.VisibleBasicBlockStart) == 0);
-
-                // If we had to nop out this basic block, we need to neutralize it by appending
-                // an infinite loop ("br $-2").
-                // We append instead of prepend because RyuJIT's importer has trouble with junk unreachable bytes.
-                if (erase)
-                {
-                    if (position - basicBlockStart < 2)
+                    if ((flags[srcPos] & OpcodeFlags.InstructionStart) != 0)
                     {
-                        // We cannot neutralize the basic block, so better leave the method alone.
-                        // The control would fall through to the next basic block.
-                        return method;
+                        lastInstructionPos = srcPos;
+                        offsetMap[srcPos] = dstPos;
                     }
 
-                    newBody[position - 2] = (byte)ILOpCode.Br_s;
-                    newBody[position - 1] = unchecked((byte)-2);
+                    if (marked)
+                    {
+                        dstPos++;
+                    }
+
+                    srcPos++;
+                } while (srcPos < flags.Length && (flags[srcPos] & OpcodeFlags.VisibleBasicBlockStart) == 0);
+
+                if (marked)
+                {
+                    // This was a marked visible basic block. If it ended in a short-form branch instruction,
+                    // we need to do a size adjustment because the rewritten code doesn't use short-form
+                    // instructions.
+                    var reader = new ILReader(methodBytes, lastInstructionPos);
+                    if (reader.HasNext)
+                    {
+                        ILOpcode opcode = reader.ReadILOpcode();
+                        int adjustment = opcode switch
+                        {
+                            >= ILOpcode.br_s and <= ILOpcode.blt_un_s => 3,
+                            ILOpcode.leave_s => 3,
+                            _ => 0,
+                        };
+                        dstPos += adjustment;
+                    }
+                }
+                else
+                {
+                    // This is a dead visible basic block. We're going to emit `br_s $-2`: reserve 2 bytes.
+                    dstPos += 2;
+                }
+            }
+
+            // Now generate the new body
+            var newBody = new byte[dstPos];
+            srcPos = 0;
+            dstPos = 0;
+            while (srcPos < flags.Length)
+            {
+                Debug.Assert((flags[srcPos] & OpcodeFlags.InstructionStart) != 0);
+                Debug.Assert((flags[srcPos] & OpcodeFlags.VisibleBasicBlockStart) != 0);
+
+                bool marked = (flags[srcPos] & OpcodeFlags.Mark) != 0;
+
+                if (!marked)
+                {
+                    // Dead basic block: emit endless loop and skip the rest of the original code.
+                    newBody[dstPos++] = (byte)ILOpCode.Br_s;
+                    newBody[dstPos++] = unchecked((byte)-2);
+
+                    do
+                    {
+                        srcPos++;
+                    }
+                    while (srcPos < flags.Length && (flags[srcPos] & OpcodeFlags.VisibleBasicBlockStart) == 0);
+                }
+                else
+                {
+                    // Live basic block: copy the original bytes
+                    int lastInstructionPos = srcPos;
+                    do
+                    {
+                        if ((flags[srcPos] & OpcodeFlags.InstructionStart) != 0)
+                            lastInstructionPos = srcPos;
+
+                        newBody[dstPos++] = methodBytes[srcPos++];
+                    }
+                    while (srcPos < flags.Length && (flags[srcPos] & OpcodeFlags.VisibleBasicBlockStart) == 0);
+
+                    // If the basic block ended in a branch, we need to map the target offset to new offset.
+                    // We'll also rewrite short-form instructions to their long forms.
+                    var reader = new ILReader(methodBytes, lastInstructionPos);
+                    if (reader.HasNext)
+                    {
+                        ILOpcode opcode = reader.ReadILOpcode();
+
+                        if (opcode == ILOpcode.switch_)
+                        {
+                            uint count = reader.ReadILUInt32();
+                            int srcJmpBase = reader.Offset + (int)(4 * count);
+                            int dstJmpBase = dstPos;
+                            dstPos -= (int)(sizeof(uint) * count);
+                            for (uint i = 0; i < count; i++)
+                            {
+                                int dest = offsetMap[(int)reader.ReadILUInt32() + srcJmpBase];
+                                BinaryPrimitives.WriteUInt32LittleEndian(new Span<byte>(newBody, dstPos, sizeof(uint)), (uint)(dest - dstJmpBase));
+                                dstPos += sizeof(uint);
+                            }
+                        }
+                        else if (opcode is >= ILOpcode.br_s and <= ILOpcode.blt_un || opcode is ILOpcode.leave or ILOpcode.leave_s)
+                        {
+                            int dest = offsetMap[reader.ReadBranchDestination(opcode)];
+
+                            if (opcode is >= ILOpcode.br_s and <= ILOpcode.blt_un_s || opcode == ILOpcode.leave_s)
+                            {
+                                dstPos -= 2;
+                                if (opcode == ILOpcode.leave_s)
+                                    opcode = ILOpcode.leave;
+                                else
+                                    opcode += ILOpcode.br - ILOpcode.br_s;
+                            }
+                            else
+                            {
+                                dstPos -= 5;
+                            }
+
+                            newBody[dstPos++] = (byte)opcode;
+                            BinaryPrimitives.WriteUInt32LittleEndian(new Span<byte>(newBody, dstPos, sizeof(uint)), (uint)(dest - (dstPos + sizeof(uint))));
+                            dstPos += sizeof(uint);
+                        }
+                    }
                 }
             }
 
             // EH regions with unmarked handlers belong to unmarked basic blocks
             // Need to eliminate them because they're not usable.
+            // The rest need to have their offsets and lengths remapped.
             ArrayBuilder<ILExceptionRegion> newEHRegions = default(ArrayBuilder<ILExceptionRegion>);
             foreach (ILExceptionRegion ehRegion in ehRegions)
             {
                 if ((flags[ehRegion.HandlerOffset] & OpcodeFlags.Mark) != 0)
                 {
-                    newEHRegions.Add(ehRegion);
+                    int tryOffset = offsetMap[ehRegion.TryOffset];
+                    int handlerOffset = offsetMap[ehRegion.HandlerOffset];
+
+                    var newEhRegion = new ILExceptionRegion(
+                        ehRegion.Kind,
+                        tryOffset,
+                        offsetMap[ehRegion.TryOffset + ehRegion.TryLength] - tryOffset,
+                        handlerOffset,
+                        offsetMap[ehRegion.HandlerOffset + ehRegion.HandlerLength] - handlerOffset,
+                        ehRegion.ClassToken,
+                        ehRegion.Kind == ILExceptionRegionKind.Filter ? offsetMap[ehRegion.FilterOffset] : -1);
+
+                    newEHRegions.Add(newEhRegion);
                 }
             }
 
-            // Existing debug information might not match new instruction boundaries (plus there's little point
-            // in generating debug information for NOPs) - generate new debug information by filtering
-            // out the sequence points associated with nopped out instructions.
+            // Remap debug information as well.
             MethodDebugInformation debugInfo = method.GetDebugInfo();
             IEnumerable<ILSequencePoint> oldSequencePoints = debugInfo?.GetSequencePoints();
             if (oldSequencePoints != null)
@@ -469,7 +585,9 @@ namespace ILCompiler
                 {
                     if (sequencePoint.Offset < flags.Length && (flags[sequencePoint.Offset] & OpcodeFlags.Mark) != 0)
                     {
-                        sequencePoints.Add(sequencePoint);
+                        ILSequencePoint newSequencePoint = new ILSequencePoint(
+                            offsetMap[sequencePoint.Offset], sequencePoint.Document, sequencePoint.LineNumber);
+                        sequencePoints.Add(newSequencePoint);
                     }
                 }
 
@@ -486,10 +604,12 @@ namespace ILCompiler
                 // of a MethodIL and we're making a new one here. It just has to be unique to the MethodIL.
                 int tokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
 
-                for (int offset = 0; offset < flags.Length; offset++)
+                for (int srcOffset = 0; srcOffset < flags.Length; srcOffset++)
                 {
-                    if ((flags[offset] & OpcodeFlags.GetResourceStringCall) == 0)
+                    if ((flags[srcOffset] & OpcodeFlags.GetResourceStringCall) == 0)
                         continue;
+
+                    int offset = offsetMap[srcOffset];
 
                     Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
                     var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
@@ -763,6 +883,10 @@ namespace ILCompiler
                 return false;
 
             if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            // No value in making this work for definitions
+            if (type1.IsGenericDefinition || type2.IsGenericDefinition)
                 return false;
 
             // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.

@@ -2916,6 +2916,13 @@ public:
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
+    // Report back some metadata about the compilation to the EE -- for
+    // example, metrics about the compilation.
+    virtual void reportMetadata(
+        const char* key,
+        const void* value,
+        size_t length) = 0;
+
     /*-------------------------- Misc ---------------------------------------*/
 
     // Used to allocate memory that needs to handed to the EE.
@@ -3372,7 +3379,17 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 #define IMAGE_REL_SECREL                0x104
+
+// Linux x64
+// GD model
 #define IMAGE_REL_TLSGD                 0x105
+
+// Linux arm64
+//    TLSDESC  (dynamic)
+#define IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21   0x107
+#define IMAGE_REL_AARCH64_TLSDESC_LD64_LO12    0x108
+#define IMAGE_REL_AARCH64_TLSDESC_ADD_LO12     0x109
+#define IMAGE_REL_AARCH64_TLSDESC_CALL         0x10A
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction

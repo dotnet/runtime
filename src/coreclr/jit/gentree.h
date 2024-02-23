@@ -507,9 +507,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
-    GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
-                                              //             castclass or instanceof?
-
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
@@ -2232,6 +2229,16 @@ public:
     GenTreeFlags GetIconHandleFlag() const
     {
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
+    }
+
+    bool IsTlsIconHandle()
+    {
+        if (IsIconHandle())
+        {
+            GenTreeFlags tlsFlags = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
+            return ((gtFlags & tlsFlags) == tlsFlags);
+        }
+        return false;
     }
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
@@ -5124,6 +5131,10 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
+#ifdef TARGET_XARCH
+    bool NeedsVzeroupper(Compiler* comp);
+#endif // TARGET_XARCH
+
     // Get reg mask of all the valid registers of gtOtherRegs array
     regMaskTP GetOtherRegMask() const;
 
@@ -6373,6 +6384,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBroadcastScalar() const;
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
+    bool OperIsEmbRoundingEnabled() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -7376,9 +7388,6 @@ public:
         BlkOpKindCpObjUnroll,
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
-#endif
-#ifndef TARGET_X86
-        BlkOpKindHelper,
 #endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,

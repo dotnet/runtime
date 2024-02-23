@@ -511,6 +511,8 @@ public:
         return nullptr;
     }
 
+    CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -687,6 +689,8 @@ public:
 
     // Skip all folding checks.
     ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
+    ValueNum VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN);
 
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
