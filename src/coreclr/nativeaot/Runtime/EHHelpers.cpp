@@ -382,9 +382,6 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
 }
 
 EXTERN_C CODE_LOCATION RhpInitialInterfaceDispatch;
-#ifdef HOST_X86
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation;
-#else
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation1;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation2;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation4;
@@ -392,7 +389,6 @@ EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation8;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation16;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation32;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation64;
-#endif
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
@@ -400,9 +396,6 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
     static uintptr_t interfaceDispatchAVLocations[] =
     {
         (uintptr_t)&RhpInitialInterfaceDispatch,
-#ifdef HOST_X86
-        (uintptr_t)&RhpInterfaceDispatchAVLocation,
-#else
         (uintptr_t)&RhpInterfaceDispatchAVLocation1,
         (uintptr_t)&RhpInterfaceDispatchAVLocation2,
         (uintptr_t)&RhpInterfaceDispatchAVLocation4,
@@ -410,7 +403,6 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpInterfaceDispatchAVLocation16,
         (uintptr_t)&RhpInterfaceDispatchAVLocation32,
         (uintptr_t)&RhpInterfaceDispatchAVLocation64,
-#endif
     };
 
     // compare the IP against the list of known possible AV locations in the interface dispatch helpers

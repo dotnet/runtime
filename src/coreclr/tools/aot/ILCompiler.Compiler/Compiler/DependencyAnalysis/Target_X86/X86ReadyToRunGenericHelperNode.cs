@@ -126,7 +126,44 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
-                        encoder.EmitINT3();
+                        MetadataType target = (MetadataType)_target;
+
+                        // Look up the index cell
+                        EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
+
+                        ISymbolNode helperEntrypoint;
+                        if (TriggersLazyStaticConstructor(factory))
+                        {
+                            // There is a lazy class constructor. We need the non-GC static base because that's where the
+                            // class constructor context lives.
+                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
+                            EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, nonGcRegionLookup, relocsOnly);
+                            int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
+                            AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Result, null, -cctorContextSize, 0, AddrModeSize.Int32);
+                            encoder.EmitLEA(encoder.TargetRegister.Result, ref loadCctor);
+
+                            AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
+                            encoder.EmitStackDup();
+                            encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+
+                            helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase);
+                        }
+                        else
+                        {
+                            helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
+                        }
+
+                        // First arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance (which is used
+                        // for initialization on first access).
+                        AddrMode loadFromArg1 = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int32);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg1);
+
+                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        AddrMode loadFromArg1AndDelta = new AddrMode(encoder.TargetRegister.Arg1, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg1AndDelta);
+
+                        encoder.EmitJMP(helperEntrypoint);
                     }
                     break;
 
