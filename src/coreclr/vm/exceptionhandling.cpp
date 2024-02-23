@@ -1471,8 +1471,8 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     CONTRACTL
     {
         MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -1638,12 +1638,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     }
 
     pcfThisFrame->pThread = pThread;
-    
-    if (pcfThisFrame->pFunc != NULL && pcfThisFrame->pFunc->HasClassOrMethodInstantiation() && pcfThisFrame->pFunc->IsSharedByGenericInstantiations())
-    {
-        GCX_COOP();
-        pcfThisFrame->InitializeExactGenericInstantiations();
-    }
 
     Frame* pTopFrame = pThread->GetFrame();
     if (pcfThisFrame->isFrameless && (pcfThisFrame->isIPadjusted == false) && (pcfThisFrame->GetRelOffset() == 0))
@@ -2552,7 +2546,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
     UINT_PTR        uControlPC  = (UINT_PTR)GetControlPC(pcfThisFrame->GetRegisterSet());
     CLRUnwindStatus ReturnStatus = UnwindPending;
-
+    
     MethodDesc*     pMD         = pcfThisFrame->GetFunction();
 
     bool fIsFirstPass = !(dwExceptionFlags & EXCEPTION_UNWINDING);
@@ -2561,6 +2555,15 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     CONSISTENCY_CHECK(IsValid());
     CONSISTENCY_CHECK(ThrowableIsValid() || !fIsFirstPass);
     CONSISTENCY_CHECK(pMD != 0);
+
+    // initialize exact generic context
+    GCX_COOP_NO_DTOR();
+    if (pMD->HasClassOrMethodInstantiation() && pMD->IsSharedByGenericInstantiations())
+    {
+        pcfThisFrame->InitializeExactGenericInstantiations();
+        pMD = pcfThisFrame->GetFunction();
+    }
+    GCX_COOP_NO_DTOR_END();
 
     EH_LOG((LL_INFO100, "  [ ProcessManagedCallFrame this=%p, %s PASS ]\n", this, (fIsFirstPass ? "FIRST" : "SECOND")));
 
