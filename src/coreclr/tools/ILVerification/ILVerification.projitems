@@ -150,6 +150,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ExplicitLayoutValidator.cs">
       <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldLayoutIntervalCalculator.cs">
+      <Link>TypeSystem\Common\FieldLayoutIntervalCalculator.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
