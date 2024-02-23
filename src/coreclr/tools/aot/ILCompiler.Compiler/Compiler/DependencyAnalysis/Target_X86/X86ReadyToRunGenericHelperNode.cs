@@ -13,11 +13,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     public partial class ReadyToRunGenericHelperNode
     {
-        protected Register GetContextRegister(ref /* readonly */ X86Emitter encoder)
-        {
-            return encoder.TargetRegister.Arg0;
-        }
-
         protected void EmitDictionaryLookup(NodeFactory factory, ref X86Emitter encoder, Register context, Register result, GenericLookupResult lookup, bool relocsOnly)
         {
             // INVARIANT: must not trash context register
@@ -57,14 +52,10 @@ namespace ILCompiler.DependencyAnalysis
             // First load the generic context into the context register.
             EmitLoadGenericContext(factory, ref encoder, relocsOnly);
 
-            Register contextRegister = GetContextRegister(ref encoder);
-
             switch (_id)
             {
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
-                        Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
-
                         if (!TriggersLazyStaticConstructor(factory))
                         {
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
@@ -91,8 +82,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetGCStaticBase:
                     {
-                        Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
-
                         MetadataType target = (MetadataType)_target;
 
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
@@ -176,10 +165,10 @@ namespace ILCompiler.DependencyAnalysis
 
                         var target = (DelegateCreationInfo)_target;
 
-                        AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref storeAtEspPlus4);
+                        // EmitLoadGenericContext loaded the context from stack into Result
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Result, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
 
+                        AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
                         if (target.Thunk != null)
                         {
                             Debug.Assert(target.Constructor.Method.Signature.Length == 3);
@@ -211,7 +200,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.TypeHandleForCasting:
                 case ReadyToRunHelperId.ConstrainedDirectCall:
                     {
-                        EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
+                        EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();
                     }
                     break;
@@ -223,6 +212,11 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual void EmitLoadGenericContext(NodeFactory factory, ref X86Emitter encoder, bool relocsOnly)
         {
             // Assume generic context is already loaded in the context register.
+            if (Id == ReadyToRunHelperId.DelegateCtor)
+            {
+                AddrMode loadAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
+                encoder.EmitMOV(encoder.TargetRegister.Result, ref loadAtEspPlus4);
+            }
         }
     }
 
@@ -231,7 +225,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override void EmitLoadGenericContext(NodeFactory factory, ref X86Emitter encoder, bool relocsOnly)
         {
             // We start with context register pointing to the MethodTable
-            Register contextRegister = GetContextRegister(ref encoder);
+            Register contextRegister = encoder.TargetRegister.Arg0;
 
             // Locate the VTable slot that points to the dictionary
             int vtableSlot = 0;
@@ -243,6 +237,14 @@ namespace ILCompiler.DependencyAnalysis
 
             int pointerSize = factory.Target.PointerSize;
             int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
+
+            // DelegateCtor is special, the context is on stack
+            if (Id == ReadyToRunHelperId.DelegateCtor)
+            {
+                AddrMode loadAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
+                encoder.EmitMOV(encoder.TargetRegister.Result, ref loadAtEspPlus4);
+                contextRegister = encoder.TargetRegister.Result;
+            }
 
             // Load the dictionary pointer from the VTable
             AddrMode loadDictionary = new AddrMode(contextRegister, null, slotOffset, 0, AddrModeSize.Int32);
