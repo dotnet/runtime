@@ -63,8 +63,19 @@ extends:
             - /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
 
       #
+      # CoreCLR Test build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: innerloop
+
+      #
       # CoreCLR Test executions using live libraries
-      # Only when CoreCLR is changed
       #
 
       - template: /eng/pipelines/common/platform-matrix.yml
