@@ -176,6 +176,18 @@ RhpDbl2ULng PROC public
     jmp @RhpDbl2ULng@8
 RhpDbl2ULng ENDP
 
+EXTERN @RhpFltRem@8 : PROC
+
+RhpFltRem PROC public
+    jmp @RhpFltRem@8
+RhpFltRem ENDP
+
+EXTERN @RhpDblRem@16 : PROC
+
+RhpDblRem PROC public
+    jmp @RhpDblRem@16
+RhpDblRem ENDP
+
 EXTERN __ltod3 : PROC
 
 RhpLng2Dbl PROC public
