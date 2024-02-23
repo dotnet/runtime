@@ -63,7 +63,7 @@ namespace System.Net
         private bool _hostHasPort;
         private Uri? _hostUri;
 
-        private RequestStream? _requestStream;
+        private Stream? _requestStream;
         private TaskCompletionSource<Stream>? _requestStreamOperation;
         private TaskCompletionSource<WebResponse>? _responseOperation;
         private AsyncCallback? _requestStreamCallback;
@@ -1070,9 +1070,6 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            // Create stream buffer for transferring data from RequestStream to the StreamContent.
-            StreamBuffer streamBuffer = new StreamBuffer(maxBufferSize: AllowWriteStreamBuffering ? int.MaxValue : StreamBuffer.DefaultMaxBufferSize);
-
             // If we aren't buffering we need to open the connection right away.
             // Because we need to send the data as soon as possible when it's available from the RequestStream.
             // Making this allows us to keep the sync send request path for buffering cases.
@@ -1080,12 +1077,17 @@ namespace System.Net
             {
                 // We're calling SendRequest with async, because we need to open the connection and send the request
                 // Otherwise, sync path will block the current thread until the request is sent.
-                _sendRequestTask = SendRequest(true, new RequestStreamContent(new HttpClientContentStream(streamBuffer)));
+                TaskCompletionSource<Stream> getStreamTcs = new();
+                TaskCompletionSource completeTcs = new();
+                _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
+                _requestStream = new RequestStream(getStreamTcs.Task.GetAwaiter().GetResult(), completeTcs);
+            }
+            else
+            {
+                _requestStream = new RequestBufferingStream();
             }
 
-            _requestStream = new RequestStream(streamBuffer);
-
-            return Task.FromResult((Stream)_requestStream);
+            return Task.FromResult(_requestStream);
         }
 
         public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext? context)
@@ -1155,12 +1157,6 @@ namespace System.Net
 
             if (content is not null)
             {
-                // Calculate Content-Length if we're buffering.
-                if (AllowWriteStreamBuffering && _requestStream is not null)
-                {
-                    content.Headers.ContentLength = _requestStream.GetBuffer().ReadBytesAvailable;
-                }
-
                 _sendRequestMessage.Content = content;
             }
 
@@ -1218,13 +1214,20 @@ namespace System.Net
 
         private async Task<WebResponse> HandleResponse(bool async)
         {
-            // If user code used requestStream and didn't dispose it (end write on StreamBuffer)
-            // We're ending it here.
-            _requestStream?.EndWriteOnStreamBuffer();
+            // If user code used requestStream and didn't dispose it
+            // We're completing it here.
+            if (_requestStream is RequestStream requestStream)
+            {
+                requestStream.Complete();
+            }
 
-            _sendRequestTask ??= _requestStream is not null ?
-                SendRequest(async, new StreamContent(new HttpClientContentStream(_requestStream.GetBuffer()))) :
-                SendRequest(async);
+            if (_sendRequestTask is null && _requestStream is RequestBufferingStream requestBufferingStream)
+            {
+                ArraySegment<byte> buffer = requestBufferingStream.GetBuffer();
+                _sendRequestTask = SendRequest(async, new ByteArrayContent(buffer.Array!, buffer.Offset, buffer.Count));
+            }
+
+            _sendRequestTask ??= SendRequest(async);
 
             try
             {
@@ -1246,6 +1249,10 @@ namespace System.Net
             finally
             {
                 _sendRequestMessage?.Dispose();
+                if (_requestStream is RequestBufferingStream bufferStream)
+                {
+                    bufferStream.GetMemoryStream().Dispose();
+                }
 
                 if (_disposeRequired)
                 {

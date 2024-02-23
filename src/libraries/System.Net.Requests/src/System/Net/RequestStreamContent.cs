@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal sealed class RequestStreamContent(HttpClientContentStream requestStream) : HttpContent
+    internal sealed class RequestStreamContent(TaskCompletionSource<Stream> getStreamTcs, TaskCompletionSource completeTcs) : HttpContent
     {
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
@@ -17,11 +17,10 @@ namespace System.Net
         }
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(requestStream is not null);
             Debug.Assert(stream is not null);
 
-            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            await requestStream.CopyToAsync(stream, requestStream.GetBuffer().ReadBytesAvailable, cancellationToken).ConfigureAwait(false);
+            getStreamTcs.TrySetResult(stream);
+            await completeTcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         protected override bool TryComputeLength(out long length)
         {

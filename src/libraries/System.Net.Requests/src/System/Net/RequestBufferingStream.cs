@@ -1,24 +1,21 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal sealed class RequestStream : Stream
+    // Cache the request stream into a MemoryStream.
+    internal sealed class RequestBufferingStream : Stream
     {
         private bool _disposed;
-        private readonly TaskCompletionSource _completeTcs;
-        private readonly Stream _internalStream;
+        private readonly MemoryStream _buffer = new MemoryStream();
 
-        public RequestStream(Stream internalStream, TaskCompletionSource completeTcs)
+        public RequestBufferingStream()
         {
-            _internalStream = internalStream;
-            _completeTcs = completeTcs;
         }
 
         public override bool CanRead
@@ -48,13 +45,16 @@ namespace System.Net
         public override void Flush()
         {
             ThrowIfDisposed();
-            _internalStream.Flush();
+            // Nothing to do.
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _internalStream.FlushAsync(cancellationToken);
+            // Nothing to do.
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
         }
 
         public override long Length
@@ -96,42 +96,49 @@ namespace System.Net
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            _internalStream.Write(new(buffer, offset, count));
-            Flush();
+            _buffer.Write(buffer, offset, count);
         }
 
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            await _internalStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
-            await FlushAsync(cancellationToken).ConfigureAwait(false);
+            return _buffer.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            await _internalStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-            await FlushAsync(cancellationToken).ConfigureAwait(false);
+            return _buffer.WriteAsync(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _internalStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
-        }
-
-        public void Complete()
-        {
-            _completeTcs.TrySetResult();
+            return _buffer.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-            _internalStream.EndWrite(asyncResult);
-            Flush();
+            _buffer.EndWrite(asyncResult);
+        }
+
+        public ArraySegment<byte> GetBuffer()
+        {
+            ArraySegment<byte> bytes;
+
+            bool success = _buffer.TryGetBuffer(out bytes);
+            Debug.Assert(success); // Buffer should always be visible since default MemoryStream constructor was used.
+
+            return bytes;
+        }
+
+        // We need this to dispose the MemoryStream.
+        public MemoryStream GetMemoryStream()
+        {
+            return _buffer;
         }
 
         protected override void Dispose(bool disposing)
@@ -140,16 +147,7 @@ namespace System.Net
             {
                 _disposed = true;
             }
-            _internalStream.Flush();
-            Complete();
             base.Dispose(disposing);
-        }
-
-        public override async ValueTask DisposeAsync()
-        {
-            await _internalStream.FlushAsync().ConfigureAwait(false);
-            Complete();
-            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         private void ThrowIfDisposed()

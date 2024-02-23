@@ -2173,7 +2173,6 @@ namespace System.Net.Tests
                     {
                         byte[] buffer = new byte[1024];
                         await connection.ReadRequestHeaderAsync();
-                        sem.Release();
                         if (isChunked)
                         {
                             // Discard chunk length and CRLF.
