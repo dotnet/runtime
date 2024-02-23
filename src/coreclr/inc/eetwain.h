@@ -214,6 +214,9 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
 virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
                       DWORD           dwRelOffset) = 0;
 
+virtual
+bool InterruptibleSafePointsEnabled() = 0;
+
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -456,6 +459,9 @@ void LightUnwindStackFrame(
 virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
+
+virtual
+bool InterruptibleSafePointsEnabled();
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 virtual
