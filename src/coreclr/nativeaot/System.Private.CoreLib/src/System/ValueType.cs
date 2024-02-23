@@ -95,21 +95,17 @@ namespace System
 
         public override unsafe int GetHashCode()
         {
-            int hashCode = (int)this.GetMethodTable()->HashCode;
+            HashCode hashCode = default;
+            hashCode.Add(this.GetMethodTable()->HashCode);
 
-            hashCode ^= GetHashCodeImpl();
-
-            return hashCode;
-        }
-
-        private unsafe int GetHashCodeImpl()
-        {
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
             if (numFields == UseFastHelper)
-                return FastGetValueTypeHashCodeHelper(this.GetMethodTable(), ref this.GetRawData());
+                hashCode.Add(FastGetValueTypeHashCodeHelper(this.GetMethodTable(), ref this.GetRawData()));
 
-            return RegularGetValueTypeHashCode(ref this.GetRawData(), numFields);
+            hashCode.Add(RegularGetValueTypeHashCode(ref this.GetRawData(), numFields));
+
+            return hashCode.ToHashCode();
         }
 
         private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* type, ref byte data)
@@ -164,7 +160,6 @@ namespace System
                     var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
                     if (fieldValue != null)
                     {
-                        // call virtual method to handle overriden case
                         hashCode = fieldValue.GetHashCode();
                     }
                     else
