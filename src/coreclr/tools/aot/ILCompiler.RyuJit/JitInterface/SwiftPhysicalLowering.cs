@@ -6,44 +6,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
     public static class SwiftPhysicalLowering
     {
-        public abstract record Lowering
-        {
-            private Lowering() { }
-
-            public sealed record InvalidType : Lowering;
-
-            public sealed record PassByRef : Lowering;
-
-            public sealed record PrimitiveSequence(ImmutableArray<CorInfoType> Sequence) : Lowering
-            {
-                public override string ToString()
-                {
-                    return $"PrimitiveSequence{{[{string.Join(", ", Sequence)}]}}";
-                }
-
-                public bool Equals(PrimitiveSequence other)
-                {
-                    return Sequence.SequenceEqual(other.Sequence);
-                }
-
-                public override int GetHashCode()
-                {
-                    HashCode code = default;
-                    foreach (CorInfoType corInfoType in Sequence)
-                    {
-                        code.Add(corInfoType);
-                    }
-                    return code.ToHashCode();
-                }
-            }
-        }
-
         private enum LoweredType
         {
             Empty,
@@ -177,11 +146,12 @@ namespace Internal.JitInterface
             }
         }
 
-        public static Lowering LowerTypeForSwiftSignature(TypeDesc type)
+        public static CORINFO_SWIFT_LOWERING LowerTypeForSwiftSignature(TypeDesc type)
         {
             if (!type.IsValueType || type is DefType { ContainsGCPointers: true })
             {
-                return new Lowering.InvalidType();
+                Debug.Fail("Non-unmanaged types should not be passed directly to a Swift function.");
+                return new() { byReference = true };
             }
 
             LoweringVisitor visitor = new(type.Context.Target.PointerSize);
@@ -190,7 +160,20 @@ namespace Internal.JitInterface
             List<CorInfoType> loweredTypes = visitor.GetLoweredTypeSequence();
 
             // If a type has a primitive sequence with more than 4 elements, Swift passes it by reference.
-            return loweredTypes.Count > 4 ? new Lowering.PassByRef() : new Lowering.PrimitiveSequence([.. loweredTypes]);
+            if (loweredTypes.Count > 4)
+            {
+                return new() { byReference = true };
+            }
+
+            CORINFO_SWIFT_LOWERING lowering = new()
+            {
+                byReference = false,
+                numLoweredElements = loweredTypes.Count
+            };
+
+            CollectionsMarshal.AsSpan(loweredTypes).CopyTo(lowering.LoweredElements);
+
+            return lowering;
         }
     }
 }

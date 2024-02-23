@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -59,11 +60,13 @@ namespace ILCompiler.Compiler.Tests
 
             if (expectedLoweringAttribute.Value.FixedArguments.Length == 0)
             {
-                Assert.Equal(new SwiftPhysicalLowering.Lowering.PassByRef(), SwiftPhysicalLowering.LowerTypeForSwiftSignature(type));
+                Assert.Equal(new CORINFO_SWIFT_LOWERING { byReference = true }, SwiftPhysicalLowering.LowerTypeForSwiftSignature(type), SwiftLoweringComparer.Instance);
             }
             else
             {
-                var expectedLowering = new SwiftPhysicalLowering.Lowering.PrimitiveSequence(expectedLoweringAttribute.Value.FixedArguments.Select(na => GetCorType((ExpectedLowering)(int)na.Value)).ToImmutableArray());
+                CORINFO_SWIFT_LOWERING expectedLowering = default;
+                expectedLowering.numLoweredElements = expectedLoweringAttribute.Value.FixedArguments.Length;
+                expectedLoweringAttribute.Value.FixedArguments.Select(na => GetCorType((ExpectedLowering)(int)na.Value)).ToArray().AsSpan().CopyTo(expectedLowering.LoweredElements);
                 Assert.Equal(expectedLowering, SwiftPhysicalLowering.LowerTypeForSwiftSignature(type));
             }
         }
@@ -80,6 +83,34 @@ namespace ILCompiler.Compiler.Tests
                 ExpectedLowering.Int64 => CorInfoType.CORINFO_TYPE_LONG,
                 _ => throw new ArgumentOutOfRangeException(nameof(expectedLowering))
             };
+        }
+
+        private sealed class SwiftLoweringComparer : IEqualityComparer<CORINFO_SWIFT_LOWERING>
+        {
+            public static SwiftLoweringComparer Instance { get; } = new SwiftLoweringComparer();
+
+            public bool Equals(CORINFO_SWIFT_LOWERING x, CORINFO_SWIFT_LOWERING y)
+            {
+                if (x.byReference != y.byReference)
+                    return false;
+
+                return x.LoweredElements.SequenceEqual(y.LoweredElements);
+            }
+
+            public int GetHashCode([DisallowNull] CORINFO_SWIFT_LOWERING obj)
+            {
+                HashCode code = default;
+                code.Add(obj.byReference);
+                if (obj.byReference)
+                {
+                    code.Add(obj.numLoweredElements);
+                    foreach (var type in obj.LoweredElements[0..(int)obj.numLoweredElements])
+                    {
+                        code.Add(type);
+                    }
+                }
+                return code.ToHashCode();
+            }
         }
     }
 }
