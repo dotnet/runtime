@@ -405,6 +405,7 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
+#ifdef USE_GC_INFO_DECODER
     if (!isActiveStackFrame)
     {
         // If we are not in the active method, we are currently pointing
@@ -415,6 +416,7 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         // revisit the GcInfoEncoder/Decoder
         codeOffset--;
     }
+#endif
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
     if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
@@ -792,7 +794,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                 PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                 GCRefKind *     pRetValueKind)      // out
 {
-#ifdef USE_GC_INFO_DECODER
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
@@ -817,6 +818,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
+#ifdef USE_GC_INFO_DECODER
     // Decode the GC info for the current method to determine its return type
     GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
 #if defined(TARGET_ARM64)
@@ -905,8 +907,22 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return false;
 #endif // defined(TARGET_AMD64)
 #else // defined(USE_GC_INFO_DECODER)
-    PORTABILITY_ASSERT("GetReturnAddressHijackInfo");
-    RhFailFast();
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+    REGDISPLAY registerSet = *pRegisterSet;
+    if (!::UnwindStackFrame(
+            &registerSet,
+            (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+            codeOffset,
+            GCInfoToken(gcInfo),
+            (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+            false))
+    {
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)registerSet.PCTAddr;
+    return true;
 #endif 
 }
 
