@@ -125,21 +125,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
-        public static int GetHashCode(object? o)
-        {
-            if (o is null)
-                return 0;
-
-            int hashCode = TryGetHashCode(o);
-            if (hashCode != 0)
-                return hashCode;
-
-            object objRef = o;
-            return GetHashCodeHelper(ObjectHandleOnStack.Create(ref objRef));
-        }
-
-        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeHelper")]
-        private static partial int GetHashCodeHelper(ObjectHandleOnStack objHandle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetHashCode(object? o);
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is

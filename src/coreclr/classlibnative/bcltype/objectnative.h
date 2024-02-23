@@ -25,13 +25,13 @@ class ObjectNative
 {
 public:
 
+    static FCDECL1(INT32, GetHashCode, Object* vThisRef);
     static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
     static FCDECL2(FC_BOOL_RET, SequenceEqualWithReferences, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(Object*, GetClass, Object* pThis);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
 };
 
-extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeHelper(QCall::ObjectHandleOnStack objHandle);
 extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle);
 extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout);
 extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis);
