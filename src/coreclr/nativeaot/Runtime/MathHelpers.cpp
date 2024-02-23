@@ -5,78 +5,13 @@
 #include "CommonMacros.h"
 #include "rhassert.h"
 
-//
-// Floating point and 64-bit integer math helpers.
-//
-
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
-{
-    const double two63  = 2147483648.0 * 4294967296.0;
-    uint64_t ret;
-    if (val < two63)
-    {
-        ret = (int64_t)(val);
-    }
-    else
-    {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = (int64_t)(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
-}
-
 #undef min
 #undef max
 #include <cmath>
 
-EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
-{
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nanf("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return fmodf(dividend,divisor);
-}
-
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
-{
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nan("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
-}
+//
+// Floating point and 64-bit integer math helpers.
+//
 
 #ifdef HOST_ARM
 EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpIDiv(int32_t i, int32_t j)
@@ -157,22 +92,7 @@ EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
     return (int64_t)val;
 }
 
-EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
-{
-    return (int32_t)val;
-}
-
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
-{
-    return (uint32_t)val;
-}
-
 EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpLng2Dbl(int64_t val)
-{
-    return (double)val;
-}
-
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpULng2Dbl(uint64_t val)
 {
     return (double)val;
 }

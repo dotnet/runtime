@@ -158,54 +158,66 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
                     break;
 
-                case ReadyToRunHelper.Lng2Dbl:
-                    mangledName = "RhpLng2Dbl";
+                case ReadyToRunHelper.LMulOfv:
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "LongMultiplyOverflow");
                     break;
-                case ReadyToRunHelper.ULng2Dbl:
-                    mangledName = "RhpULng2Dbl";
+                case ReadyToRunHelper.ULMulOvf:
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "ULongMultiplyOverflow");
                     break;
 
-                case ReadyToRunHelper.Dbl2Lng:
-                    mangledName = "RhpDbl2Lng";
+                case ReadyToRunHelper.ULng2Dbl:
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "ULongToDouble");
                     break;
                 case ReadyToRunHelper.Dbl2ULng:
-                    mangledName = "RhpDbl2ULng";
-                    break;
-                case ReadyToRunHelper.Dbl2Int:
-                    mangledName = "RhpDbl2Int";
-                    break;
-                case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2UInt";
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToULong");
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToIntOverflow");
                     break;
                 case ReadyToRunHelper.Dbl2UIntOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2UIntOvf");
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToUIntOverflow");
                     break;
                 case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToLongOverflow");
                     break;
                 case ReadyToRunHelper.Dbl2ULngOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToULongOverflow");
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "RhpDblRem";
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleReminder");
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "RhpFltRem";
+                    methodDesc = context.GetHelperEntryPoint("System", "MathF", "FloatReminder");
+                    break;
+
+                case ReadyToRunHelper.Dbl2Int:
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToInt");
+                    break;
+                case ReadyToRunHelper.Dbl2UInt:
+                    methodDesc = context.GetHelperEntryPoint("System", "MathF", "DoubleToUInt");
+                    break;
+                case ReadyToRunHelper.DblRound:
+                    DefType doubleType = context.GetWellKnownType(WellKnownType.Double);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("Round",
+                        new MethodSignature(MethodSignatureFlags.Static, 0, doubleType, [doubleType]));
+                    break;
+                case ReadyToRunHelper.FltRound:
+                    DefType floatType = context.GetWellKnownType(WellKnownType.Single);
+                    methodDesc = context.SystemModule.GetKnownType("System", "MathF").GetKnownMethod("Round",
+                        new MethodSignature(MethodSignatureFlags.Static, 0, floatType, [floatType]));
+                    break;
+
+                case ReadyToRunHelper.Lng2Dbl:
+                    mangledName = "RhpLng2Dbl";
+                    break;
+                case ReadyToRunHelper.Dbl2Lng:
+                    mangledName = "RhpDbl2Lng";
                     break;
 
                 case ReadyToRunHelper.LMul:
                     mangledName = "RhpLMul";
-                    break;
-                case ReadyToRunHelper.LMulOfv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMulOvf");
-                    break;
-                case ReadyToRunHelper.ULMulOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULMulOvf");
                     break;
 
                 case ReadyToRunHelper.Mod:

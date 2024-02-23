@@ -96,7 +96,7 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedCastHelpers()
+void ECall::PopulateManagedHelpers()
 {
 
     STANDARD_VM_CONTRACT;
@@ -144,6 +144,62 @@ void ECall::PopulateManagedCastHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__LONG_MULTIPLY_OVERFLOW));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ULONG_MULTIPLY_OVERFLOW));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ULONG_TO_DOUBLE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ULNG2DBL, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_ULONG));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_INT_OVERFLOW));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2INT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_UINT_OVERFLOW));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2UINT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_LONG_OVERFLOW));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2LNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_ULONG_OVERFLOW));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_REMINDER));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLREM, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__FLOAT_REMINDER));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTREM, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_INT));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2INT, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__DOUBLE_TO_UINT));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2UINT, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
 }
 
 static CrstStatic gFCallLock;

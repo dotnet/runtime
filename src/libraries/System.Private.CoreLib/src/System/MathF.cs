@@ -511,5 +511,28 @@ namespace System
             float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
             return y * u;
         }
+
+        private static float FloatReminder(float dividend, float divisor)
+        {
+            // From the ECMA standard:
+            //
+            // If [divisor] is zero or [dividend] is infinity
+            //   the result is NaN.
+            // If [divisor] is infinity,
+            //   the result is [dividend] (negated for -infinity***).
+            //
+            // ***"negated for -infinity" has been removed from the spec
+            if (divisor == 0 || !float.IsFinite(dividend))
+            {
+                return float.NaN;
+            }
+
+            if (!float.IsFinite(divisor) && !float.IsNaN(divisor))
+            {
+                return dividend;
+            }
+
+            return FMod(dividend, divisor);
+        }
     }
 }

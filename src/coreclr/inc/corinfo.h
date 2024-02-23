@@ -387,18 +387,18 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ULMOD,
     CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
     CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-    CORINFO_HELP_DBL2INT,
+    CORINFO_HELP_DBL2INT,               // unused
     CORINFO_HELP_DBL2INT_OVF,
     CORINFO_HELP_DBL2LNG,
     CORINFO_HELP_DBL2LNG_OVF,
-    CORINFO_HELP_DBL2UINT,
+    CORINFO_HELP_DBL2UINT,              // unused
     CORINFO_HELP_DBL2UINT_OVF,
     CORINFO_HELP_DBL2ULNG,
     CORINFO_HELP_DBL2ULNG_OVF,
     CORINFO_HELP_FLTREM,
     CORINFO_HELP_DBLREM,
-    CORINFO_HELP_FLTROUND,
-    CORINFO_HELP_DBLROUND,
+    CORINFO_HELP_FLTROUND,              // unused
+    CORINFO_HELP_DBLROUND,              // unused
 
     /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
        which is the right helper to use to allocate an object of a given type. */
@@ -2058,7 +2058,7 @@ public:
     // Example of a scenario addressed by notifyMethodInfoUsage:
     //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
     //     and realizes that the call always throws.
-    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
+    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is
     //     replaced with a breakpoint instruction that is expected to be unreachable.
     //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
     //     and the new version of the call no longer throws and does some work.

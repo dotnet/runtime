@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -9,6 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using System.Reflection.Emit;
 
 #pragma warning disable IDE0060
 
@@ -1259,6 +1261,51 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
+                    break;
+            }
+        }
+
+        private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
+        {
+            switch (wellKnownType)
+            {
+                case WellKnownType.SByte:
+                case WellKnownType.Int16:
+                case WellKnownType.Int32:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "conv_i4_ovf");
+                    }
+                    break;
+                case WellKnownType.Int64:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2LngOvf), "conv_i8_ovf");
+                    }
+                    break;
+                case WellKnownType.Byte:
+                case WellKnownType.UInt16:
+                case WellKnownType.UInt32:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u8_ovf");
+                    }
+                    break;
+                case WellKnownType.UInt64:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2ULngOvf), "conv_u8_ovf");
+                    }
+                    else
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2ULng), "conv_u8");
+                    }
+                    break;
+                case WellKnownType.Single:
+                case WellKnownType.Double:
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULng2Dbl), "conv_r");
                     break;
             }
         }
@@ -1388,7 +1435,6 @@ namespace Internal.IL
         private static void ImportStoreIndirect(TypeDesc type) { }
         private static void ImportShiftOperation(ILOpcode opcode) { }
         private static void ImportCompareOperation(ILOpcode opcode) { }
-        private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
         private static void ImportUnaryOperation(ILOpcode opCode) { }
         private static void ImportCpOpj(int token) { }
         private static void ImportCkFinite() { }

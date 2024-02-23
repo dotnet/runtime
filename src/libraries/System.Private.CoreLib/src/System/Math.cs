@@ -1481,5 +1481,245 @@ namespace System
             double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
             return y * u;
         }
+
+        [StackTraceHidden]
+        private static long LongMultiplyOverflow(long i, long j)
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static uint Hi32Bits(ulong a)
+            {
+                return (uint)(a >> 32);
+            }
+
+            // Remember the sign of the result
+            int sign = (int)(Hi32Bits((ulong)i) ^ Hi32Bits((ulong)j));
+
+            // Convert to unsigned multiplication
+            if (i < 0) i = -i;
+            if (j < 0) j = -j;
+
+            // Get the upper 32 bits of the numbers
+            uint val1High = Hi32Bits((ulong)i);
+            uint val2High = Hi32Bits((ulong)j);
+
+            ulong valMid;
+
+            if (val1High == 0)
+            {
+                // Compute the 'middle' bits of the long multiplication
+                valMid = BigMul(val2High, (uint)i);
+            }
+            else
+            {
+                if (val2High != 0)
+                    goto Overflow;
+                // Compute the 'middle' bits of the long multiplication
+                valMid = BigMul(val1High, (uint)j);
+            }
+
+            // See if any bits after bit 32 are set
+            if (Hi32Bits(valMid) != 0)
+                goto Overflow;
+
+            long ret = (long)(BigMul((uint)i, (uint)j) + (valMid << 32));
+
+            // check for overflow
+            if (Hi32Bits((ulong)ret) < (uint)valMid)
+                goto Overflow;
+
+            if (sign >= 0)
+            {
+                // have we spilled into the sign bit?
+                if (ret < 0)
+                    goto Overflow;
+            }
+            else
+            {
+                ret = -ret;
+                // have we spilled into the sign bit?
+                if (ret > 0)
+                    goto Overflow;
+            }
+
+            Debug.Assert(ret == i * j);
+            return ret;
+
+        Overflow:
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [StackTraceHidden]
+        private static ulong ULongMultiplyOverflow(ulong i, ulong j)
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static uint Hi32Bits(ulong a)
+            {
+                return (uint)(a >> 32);
+            }
+
+            // Get the upper 32 bits of the numbers
+            uint val1High = Hi32Bits(i);
+            uint val2High = Hi32Bits(j);
+
+            ulong valMid;
+
+            if (val1High == 0)
+            {
+                if (val2High == 0)
+                    return BigMul((uint)i, (uint)j);
+                // Compute the 'middle' bits of the long multiplication
+                valMid = BigMul(val2High, (uint)i);
+            }
+            else
+            {
+                if (val2High != 0)
+                    goto Overflow;
+                // Compute the 'middle' bits of the long multiplication
+                valMid = BigMul(val1High, (uint)j);
+            }
+
+            // See if any bits after bit 32 are set
+            if (Hi32Bits(valMid) != 0)
+                goto Overflow;
+
+            ulong ret = BigMul((uint)i, (uint)j) + (valMid << 32);
+
+            // check for overflow
+            if (Hi32Bits(ret) < (uint)valMid)
+                goto Overflow;
+
+            Debug.Assert(ret == i * j);
+            return ret;
+
+        Overflow:
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        private static double ULongToDouble(ulong val)
+        {
+            double conv = (long)val;
+            if (conv < 0)
+                conv += 4294967296.0 * 4294967296.0;  // add 2^64
+            Debug.Assert(conv >= 0);
+            return conv;
+        }
+
+        private static ulong DoubleToULong(double val)
+        {
+            const double two63 = 2147483648.0 * 4294967296.0;
+            ulong ret;
+            if (val < two63)
+            {
+                ret = (ulong)(long)val;
+            }
+            else
+            {
+                // subtract 0x8000000000000000, do the convert then add it back again
+                ret = (ulong)(long)(val - two63) + 0x8000000000000000UL;
+            }
+            return ret;
+        }
+
+        [StackTraceHidden]
+        private static int DoubleToIntOverflow(double val)
+        {
+            const double two31 = 2147483648.0;
+
+            // Note that this expression also works properly for val = NaN case
+            if (val is > -two31 - 1 and < two31)
+            {
+                int ret = (int)val;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(val - 1.0 <= ret);
+                Debug.Assert(ret <= val + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [StackTraceHidden]
+        private static uint DoubleToUIntOverflow(double val)
+        {
+            // Note that this expression also works properly for val = NaN case
+            if (val is > -1.0 and < 4294967296.0)
+            {
+                uint ret = (uint)(long)val;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(val - 1.0 <= ret);
+                Debug.Assert(ret <= val + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [StackTraceHidden]
+        private static long DoubleToLongOverflow(double val)
+        {
+            const double two63 = 2147483648.0 * 4294967296.0;
+
+            // Note that this expression also works properly for val = NaN case
+            // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
+            if (val is > -two63 - 0x402 and < two63)
+            {
+                long ret = (long)val;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(val - 1.0 <= ret);
+                Debug.Assert(ret <= val + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [StackTraceHidden]
+        private static ulong DoubleToULongOverflow(double val)
+        {
+            const double two64 = 4294967296.0 * 4294967296.0;
+            // Note that this expression also works properly for val = NaN case
+            if (val is > -1.0 and < two64)
+            {
+                ulong ret = (ulong)val;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(val - 1.0 <= ret);
+                Debug.Assert(ret <= val + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        private static double DoubleReminder(double dividend, double divisor)
+        {
+            // From the ECMA standard:
+            //
+            // If [divisor] is zero or [dividend] is infinity
+            //   the result is NaN.
+            // If [divisor] is infinity,
+            //   the result is [dividend] (negated for -infinity***).
+            //
+            // ***"negated for -infinity" has been removed from the spec
+            if (divisor == 0 || !double.IsFinite(dividend))
+            {
+                return double.NaN;
+            }
+
+            if (!double.IsFinite(divisor) && !double.IsNaN(divisor))
+            {
+                return dividend;
+            }
+
+            return FMod(dividend, divisor);
+        }
+
+        private static int DoubleToInt(double val) => (int)(long)val;
+        private static uint DoubleToUInt(double val) => (uint)(long)val;
     }
 }

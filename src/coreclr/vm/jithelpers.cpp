@@ -91,6 +91,32 @@
 
 #include <optsmallperfcritical.h>
 
+#if !defined(HOST_64BIT) && !defined(TARGET_X86)
+/*********************************************************************/
+HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
+{
+    FCALL_CONTRACT;
+    return num << (shift & 0x3F);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(INT64, JIT_LRsh, INT64 num, int shift)
+{
+    FCALL_CONTRACT;
+    return num >> (shift & 0x3F);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
+{
+    FCALL_CONTRACT;
+    return num >> (shift & 0x3F);
+}
+HCIMPLEND
+#endif // !HOST_64BIT && !TARGET_X86
+
 //
 // helper macro to multiply two 32-bit uints
 //
@@ -136,117 +162,6 @@ HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
 }
 HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMulOvf, INT64 val1, INT64 val2)
-{
-    FCALL_CONTRACT;
-
-    // This short-cut does not actually help since the multiplication
-    // of two 32-bit signed ints compiles into the call to a slow helper
-    // if (Is32BitSigned(val1) && Is32BitSigned(val2))
-    //     return (INT64)(INT32)val1 * (INT64)(INT32)val2;
-
-    INDEBUG(INT64 expected = val1 * val2;)
-    INT64 ret;
-
-        // Remember the sign of the result
-    INT32 sign = Hi32Bits(val1) ^ Hi32Bits(val2);
-
-        // Convert to unsigned multiplication
-    if (val1 < 0) val1 = -val1;
-    if (val2 < 0) val2 = -val2;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    if (sign >= 0) {
-        // have we spilled into the sign bit?
-        if (ret < 0)
-            goto ThrowExcep;
-    }
-    else {
-        ret = -ret;
-        // have we spilled into the sign bit?
-        if (ret > 0)
-            goto ThrowExcep;
-    }
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMulOvf, UINT64 val1, UINT64 val2)
-{
-    FCALL_CONTRACT;
-
-    INDEBUG(UINT64 expected = val1 * val2;)
-    UINT64 ret;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        if (val2High == 0)
-            return Mul32x32To64(val1, val2);
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-        FCThrow(kOverflowException);
-    }
-HCIMPLEND
 
 /*********************************************************************/
 HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
@@ -450,32 +365,6 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
 }
 HCIMPLEND
 
-#if !defined(HOST_64BIT) && !defined(TARGET_X86)
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num << (shift & 0x3F);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LRsh, INT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num >> (shift & 0x3F);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num >> (shift & 0x3F);
-}
-HCIMPLEND
-#endif // !HOST_64BIT && !TARGET_X86
-
 #include <optdefault.h>
 
 
@@ -488,281 +377,21 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
-//
-HCIMPL1_V(double, JIT_ULng2Dbl, UINT64 val)
-{
-    FCALL_CONTRACT;
-
-    double conv = (double) ((INT64) val);
-    if (conv < 0)
-        conv += (4294967296.0 * 4294967296.0);  // add 2^64
-    _ASSERTE(conv >= 0);
-    return(conv);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// needed for ARM and RyuJIT-x86
+// needed for ARM and x86
 HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
 {
     FCALL_CONTRACT;
-    return double(val);
+    return (double)val;
 }
 HCIMPLEND
-
-//--------------------------------------------------------------------------
-template <class ftype>
-ftype modftype(ftype value, ftype *iptr);
-template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
-template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
-
-// round to nearest, round to even if tied
-template <class ftype>
-ftype BankersRound(ftype value)
-{
-    if (value < 0.0) return -BankersRound <ftype> (-value);
-
-    ftype integerPart;
-    modftype( value, &integerPart );
-
-    // if decimal part is exactly .5
-    if ((value -(integerPart +0.5)) == 0.0)
-    {
-        // round to even
-        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
-            return integerPart;
-
-        // Else return the nearest even integer
-        return (ftype)copysign(ceil(fabs(value+0.5)),
-                         value);
-    }
-
-    // Otherwise round to closest
-    return (ftype)copysign(floor(fabs(value)+0.5),
-                     value);
-}
-
-
-/*********************************************************************/
-// round double to nearest int (as double)
-HCIMPL1_V(double, JIT_DoubleRound, double val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// round float to nearest int (as float)
-HCIMPL1_V(float, JIT_FloatRound, float val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// Call fast Dbl2Lng conversion - used by functions below
-FORCEINLINE INT64 FastDbl2Lng(double val)
-{
-#ifdef TARGET_X86
-    FCALL_CONTRACT;
-    return HCCALL1_V(JIT_Dbl2Lng, val);
-#else
-    FCALL_CONTRACT;
-    return((__int64) val);
-#endif
-}
-
-/*********************************************************************/
-HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < 4294967296.0)
-        return((UINT32)FastDbl2Lng(val));
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-    UINT64 ret;
-    if (val < two63) {
-        ret = FastDbl2Lng(val);
-    }
-    else {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two64  = 4294967296.0 * 4294967296.0;
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64) {
-        const double two63  = 2147483648.0 * 4294967296.0;
-        UINT64 ret;
-        if (val < two63) {
-            ret = FastDbl2Lng(val);
-        }
-        else {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-        }
-#ifdef _DEBUG
-        // since no overflow can occur, the value always has to be within 1
-        double roundTripVal = HCCALL1_V(JIT_ULng2Dbl, ret);
-        _ASSERTE(val - 1.0 <= roundTripVal && roundTripVal <= val + 1.0);
-#endif // _DEBUG
-        return ret;
-    }
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
 
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
 
-    return((INT64)val);
+    return (INT64)val;
 }
 HCIMPLEND
-
-HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two31 = 2147483648.0;
-
-        // Note that this expression also works properly for val = NaN case
-    if (val > -two31 - 1 && val < two31)
-        return((INT32)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-
-    // Note that this expression also works properly for val = NaN case
-    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-    if (val > -two63 - 0x402 && val < two63)
-        return((INT64)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-#ifndef TARGET_WINDOWS
-namespace
-{
-    bool isnan(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-    bool isnan(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
-    }
-    bool isfinite(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (~bits & 0x7F800000U) != 0;
-    }
-    bool isfinite(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (~bits & 0x7FF0000000000000ULL) != 0;
-    }
-}
-#endif
-
-HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
-{
-    FCALL_CONTRACT;
-
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !isfinite(dividend))
-    {
-        UINT32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
-    }
-    else if (!isfinite(divisor) && !isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
-    return fmodf(dividend,divisor);
-#else
-    return (float)fmod((double)dividend,(double)divisor);
-#endif
-}
-HCIMPLEND
-
-HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
-{
-    FCALL_CONTRACT;
-
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !isfinite(dividend))
-    {
-        UINT64 NaN = CLR_NAN_64;
-        return *(double *)(&NaN);
-    }
-    else if (!isfinite(divisor) && !isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
-}
-HCIMPLEND
-
-#endif // !TARGET_X86 || TARGET_UNIX
 
 #include <optdefault.h>
 
