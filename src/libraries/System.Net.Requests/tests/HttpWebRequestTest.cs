@@ -2111,11 +2111,6 @@ namespace System.Net.Tests
                 {
                     int size = text.Length * 128 * 1024;
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ContentType = "application/text";
-                    if (!buffering)
-                    {
-                        request.ContentLength = size;
-                    }
                     request.Method = "POST";
                     request.AllowWriteStreamBuffering = buffering;
                     using var stream = await request.GetRequestStreamAsync();
