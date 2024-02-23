@@ -76,7 +76,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<string>().Select((s, i) => s.Length + i));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void EnumerateFromDifferentThread()
         {
             var selected = Enumerable.Range(0, 100).Where(i => i > 3).Select(i => i.ToString());

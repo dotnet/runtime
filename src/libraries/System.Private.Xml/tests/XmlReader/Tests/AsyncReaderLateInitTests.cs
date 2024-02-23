@@ -68,7 +68,7 @@ namespace System.Xml.XmlReaderTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void ReadAsyncAfterInitializationWithUriThrows()
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
@@ -77,7 +77,7 @@ namespace System.Xml.XmlReaderTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void ReadAfterInitializationWithUriOnAsyncReaderTrows()
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
@@ -86,13 +86,13 @@ namespace System.Xml.XmlReaderTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void InitializationWithUriOnNonAsyncReaderThrows()
         {
             Assert.Throws<System.Net.Http.HttpRequestException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53987", TestRuntimes.Mono)]
         public static void SynchronizationContextCurrent_NotUsedForAsyncOperations()
         {

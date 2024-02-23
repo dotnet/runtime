@@ -67,7 +67,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal("Hello", Encoding.UTF8.GetString(buffer.Span));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task SendHelloWithContextTakeover()
         {
             WebSocketTestStream stream = new();
@@ -164,7 +164,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task SendHelloWithoutContextTakeover()
         {
             WebSocketTestStream stream = new();

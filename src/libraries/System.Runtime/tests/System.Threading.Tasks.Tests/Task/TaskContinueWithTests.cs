@@ -1239,6 +1239,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
         public static void LongContinuationChain_Unwrap_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
@@ -1255,6 +1256,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
         public static void LongContinuationChain_Await_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;

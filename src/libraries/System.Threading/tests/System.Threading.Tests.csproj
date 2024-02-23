@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CA2252: Opt in to preview features before using them (Lock) -->
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
