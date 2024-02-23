@@ -96,32 +96,23 @@ namespace System
         public override unsafe int GetHashCode()
         {
             HashCode hashCode = default;
-            hashCode.Add(this.GetMethodTable()->HashCode);
+            hashCode.Add((IntPtr)this.GetMethodTable());
 
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
             if (numFields == UseFastHelper)
-                hashCode.Add(FastGetValueTypeHashCodeHelper(this.GetMethodTable(), ref this.GetRawData()));
-
-            hashCode.Add(RegularGetValueTypeHashCode(ref this.GetRawData(), numFields));
+                hashCode.AddBytes(GetSpanForField(this.GetMethodTable(), ref this.GetRawData()));
+            else
+                hashCode.Add(RegularGetValueTypeHashCode(ref this.GetRawData(), numFields));
 
             return hashCode.ToHashCode();
         }
 
-        private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* type, ref byte data)
+        private static unsafe ReadOnlySpan<byte> GetSpanForField(MethodTable* type, ref byte data)
         {
             // Sanity check - if there are GC references, we should not be hashing bytes
             Debug.Assert(!type->ContainsGCPointers);
-
-            int size = (int)type->ValueTypeSize;
-            int hashCode = 0;
-
-            for (int i = 0; i < size / 4; i++)
-            {
-                hashCode ^= Unsafe.As<byte, int>(ref Unsafe.Add(ref data, i * 4));
-            }
-
-            return hashCode;
+            return new ReadOnlySpan<byte>(ref data, (int)type->ValueTypeSize);
         }
 
         private unsafe int RegularGetValueTypeHashCode(ref byte data, int numFields)
@@ -146,7 +137,9 @@ namespace System
                 }
                 else if (fieldType->IsPrimitive)
                 {
-                    hashCode = FastGetValueTypeHashCodeHelper(fieldType, ref fieldData);
+                    HashCode hash = default;
+                    hash.AddBytes(GetSpanForField(fieldType, ref fieldData));
+                    hashCode = hash.ToHashCode();
                 }
                 else if (fieldType->IsValueType)
                 {
