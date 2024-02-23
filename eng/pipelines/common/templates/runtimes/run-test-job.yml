@@ -214,8 +214,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-          artifactFileName: '$(unifiedArtifactsName)$(archiveExtension)'
-          artifactName: '$(unifiedArtifactsName)'
+          artifactFileName: '${{ parameters.unifiedArtifactsName }} $(archiveExtension)'
+          artifactName: '${{ parameters.unifiedArtifactsName }}'
           displayName: 'unified artifacts'
 
     - ${{ else }}:
