@@ -59,8 +59,8 @@
   </ItemGroup>
 
   <!-- 
-    Set metadata for all assets that will get pushed to the Azure DevOps artifacts.
-    It will get overwritten for nonshipping assets.
+    Set metadata for assets that are not marked as NonShipping. 
+    This is used to determine if the asset should be shipped as part of .NET release.
   -->
   <ItemDefinitionGroup>
     <ItemsToPush>
