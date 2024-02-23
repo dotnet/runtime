@@ -24,9 +24,9 @@ namespace System.Tests
                 "System.Tests.EnvironmentStackTrace.StaticFrame(Object obj)",
                 "System.Tests.EnvironmentStackTrace.TestClass..ctor()",
 #if DEBUG
-                "System.Tests.EnvironmentStackTrace.GenericFrame[DateTime,StringBuilder](DateTime t1, StringBuilder t2)",
+                "System.Tests.EnvironmentStackTrace.GenericFrame[System.DateTime,System.Text.StringBuilder](DateTime t1, StringBuilder t2)",
 #else
-                "System.Tests.EnvironmentStackTrace.GenericFrame[DateTime,__Canon](DateTime t1, __Canon t2)",
+                "System.Tests.EnvironmentStackTrace.GenericFrame[System.DateTime,System.__Canon](DateTime t1, __Canon t2)",
 #endif
                 "System.Tests.EnvironmentStackTrace.TestFrame()"
             };

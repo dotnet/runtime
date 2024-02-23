@@ -310,12 +310,8 @@ namespace System.Diagnostics
 
                             string typeName = "<UnknownType>";
                             if (pi[j].ParameterType != null)
-                                typeName = pi[j].ParameterType.ToString();
-                            for (int i = 0; i < typeName.Length; i++)
-                            {
-                                char ch = typeName[i];
-                                sb.Append(ch == '+' ? '.' : ch);
-                            }
+                                typeName = pi[j].ParameterType.Name;
+                            sb.Append(typeName);
                             string? parameterName = pi[j].Name;
                             if (parameterName != null)
                             {
