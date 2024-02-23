@@ -9029,6 +9029,20 @@ CordbReJitILCode* CordbJITILFrame::GetReJitILCode()
     return m_pReJitCode;
 }
 
+void CordbJITILFrame::AdjustIPAfterException()
+{
+    CordbNativeFrame* nativeFrameToAdjustIP = m_nativeFrame;
+    if (!m_adjustedIP)
+    {
+        DWORD nativeOffsetToMap = (DWORD)nativeFrameToAdjustIP->m_ip - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+        CorDebugMappingResult mappingType;
+        ULONG uILOffset = nativeFrameToAdjustIP->m_nativeCode->GetSequencePoints()->MapNativeOffsetToIL(
+                nativeOffsetToMap,
+                &mappingType);
+        m_ip= uILOffset;
+    }
+}
+
 /* ------------------------------------------------------------------------- *
  * Eval class
  * ------------------------------------------------------------------------- */

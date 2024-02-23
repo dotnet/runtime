@@ -7437,6 +7437,7 @@ public:
 
     CordbILCode* GetOriginalILCode();
     CordbReJitILCode* GetReJitILCode();
+    void AdjustIPAfterException();
 
 private:
     void    RefreshCachedVarArgSigParserIfNeeded();
