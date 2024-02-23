@@ -147,18 +147,6 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::SequenceEqualWithReferences, Object *pThisRef
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ObjectNative_GetClassHelper(MethodTable* pMT, QCall::ObjectHandleOnStack ret)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    ret.Set(pMT->GetManagedClassObject());
-
-    END_QCALL;
-}
-
 NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
 {
     FC_INNER_PROLOG(ObjectNative::GetClass);
