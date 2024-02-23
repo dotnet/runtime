@@ -96,11 +96,8 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
-                {
-                    (_enumerator as IDisposable)?.Dispose();
-                    _enumerator = null;
-                }
+                (_enumerator as IDisposable)?.Dispose();
+                _enumerator = null;
 
                 base.Dispose();
             }

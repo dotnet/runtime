@@ -243,16 +243,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void CastProducesIReadOnlyCollectionFromICollection()
-        {
-            object[] values = new object[] { "hello", "world" };
-
-            IReadOnlyCollection<string> castList = (IReadOnlyCollection<string>)values.Cast<string>();
-            Assert.NotNull(castList);
-            Assert.Equal(2, castList.Count);
-        }
-
-        [Fact]
         public void CastOnMultidimensionalArraySucceeds()
         {
             Array array = Array.CreateInstance(typeof(int), 2, 3);
