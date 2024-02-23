@@ -76,12 +76,18 @@ namespace Internal.TypeSystem
 
             protected override bool NeedsRecursiveLayout(int offset, TypeDesc fieldType)
             {
+                if (!fieldType.IsValueType || !((MetadataType)fieldType).ContainsGCPointers && !fieldType.IsByRefLike)
+                {
+                    return false;
+                }
+
                 if (offset % PointerSize != 0)
                 {
                     // Misaligned struct with GC pointers or ByRef
                     ThrowFieldLayoutError(offset);
                 }
-                return fieldType.IsValueType && (((MetadataType)fieldType).ContainsGCPointers || fieldType.IsByRefLike);
+
+                return true;
             }
 
             private void ThrowFieldLayoutError(int offset)
