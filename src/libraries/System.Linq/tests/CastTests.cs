@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -234,6 +233,102 @@ namespace System.Linq.Tests
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<string>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void TargetTypeIsSourceType_Nop()
+        {
+            object[] values = new string[] { "hello", "world" };
+            Assert.Same(values, values.Cast<string>());
+        }
+
+        [Fact]
+        public void CastOnMultidimensionalArraySucceeds()
+        {
+            Array array = Array.CreateInstance(typeof(int), 2, 3);
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    array.SetValue(i * 3 + j, i, j);
+                }
+            }
+
+            int[] result = array.Cast<int>().ToArray();
+            for (int i = 0; i < 6; i++)
+            {
+                Assert.Equal(i, result[i]);
+            }
+        }
+
+        [Fact]
+        public void CastCountReturnsExpectedLength()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal(2, objects.Cast<string>().Count());
+        }
+
+        [Fact]
+        public void CastFirstReturnsFirstElement()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal("hello", objects.Cast<string>().First());
+        }
+
+        [Fact]
+        public void CastFirstOnEmptySequenceThrows()
+        {
+            object[] objects = Array.Empty<object>();
+            Assert.Throws<InvalidOperationException>(() => objects.Cast<string>().First());
+        }
+
+        [Fact]
+        public void CastLastReturnsLastElement()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal("world", objects.Cast<string>().Last());
+        }
+
+        [Fact]
+        public void CastElementAtReturnsExpectedElement()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal("world", objects.Cast<string>().ElementAt(1));
+        }
+
+        [Fact]
+        public void CastElementAtOutOfRangeThrows()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Throws<ArgumentOutOfRangeException>(() => objects.Cast<string>().ElementAt(2));
+        }
+
+        [Fact]
+        public void CastLastOnEmptySequenceThrows()
+        {
+            object[] objects = Array.Empty<object>();
+            Assert.Throws<InvalidOperationException>(() => objects.Cast<string>().Last());
+        }
+
+        [Fact]
+        public void CastSelectProcessesEachElement()
+        {
+            object[] objects = new object[] { "hello", "world!" };
+            Assert.Equal(new[] { 5, 6 }, objects.Cast<string>().Select(s => s.Length));
+        }
+
+        [Fact]
+        public void CastSkipSkipsElements()
+        {
+            object[] objects = new object[] { "hello", "there", "world" };
+            Assert.Equal(new[] { "world" }, objects.Cast<string>().Skip(2));
+        }
+
+        [Fact]
+        public void CastTakeTakesElements()
+        {
+            object[] objects = new object[] { "hello", "there", "world" };
+            Assert.Equal(new[] { "hello", "there" }, objects.Cast<string>().Take(2));
         }
     }
 }
