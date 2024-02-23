@@ -181,6 +181,65 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void GetService_DoesNotThrow_WhenGetServiceForServiceWithMultipleImplementationScopesWhereLastIsNotScoped()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            serviceCollection.AddSingleton<IBar, Bar2>();
+            serviceCollection.AddSingleton<IBaz, Baz>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+
+            // Act + Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IEnumerable<IBar>)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IEnumerable<IBar>)}' from root provider.", exception.Message);
+
+            var result = serviceProvider.GetService(typeof(IBar));
+            Assert.NotNull(result);
+        }
+
+
+        [Fact]
+        public void GetService_Throws_WhenGetServiceForServiceWithMultipleImplementationScopesWhereLastIsScoped()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBar, Bar>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddSingleton<IBaz, Baz>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+
+            // Act + Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IEnumerable<IBar>)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IEnumerable<IBar>)}' from root provider.", exception.Message);
+
+            exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IBar)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IBar)}' from root provider.", exception.Message);
+        }
+
+        [Fact]
+        public void GetService_DoesNotThrow_WhenGetServiceForNonScopedImplementationWithMultipleImplementationScopesWhereLastIsScoped()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBar, Bar>();
+            serviceCollection.AddSingleton<Bar>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddSingleton<IBaz, Baz>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+
+            // Act + Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IEnumerable<IBar>)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IEnumerable<IBar>)}' from root provider.", exception.Message);
+
+            var result = serviceProvider.GetService(typeof(Bar));
+            Assert.NotNull(result);
+        }
+
+        [Fact]
         public void BuildServiceProvider_ValidateOnBuild_ThrowsForUnresolvableServices()
         {
             // Arrange

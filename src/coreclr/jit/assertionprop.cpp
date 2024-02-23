@@ -856,12 +856,28 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
             case O2K_IND_CNS_INT:
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
-                    printf("Exact Type MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
-                    assert(curAssertion->op2.HasIconFlag());
+                    ssize_t iconVal = curAssertion->op2.u1.iconVal;
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    {
+                        printf("Exact Type MT(0x%p)", dspPtr(iconVal));
+                    }
+                    else
+                    {
+                        printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
+                               eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    }
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
-                    printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
+                    ssize_t iconVal = curAssertion->op2.u1.iconVal;
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    {
+                        printf("MT(0x%p)", dspPtr(iconVal));
+                    }
+                    else
+                    {
+                        printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    }
                     assert(curAssertion->op2.HasIconFlag());
                 }
                 else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
@@ -1368,7 +1384,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
-                        if (_isnan(op2->AsDblCon()->DconValue()))
+                        if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
@@ -1691,8 +1707,8 @@ bool Compiler::optAssertionVnInvolvesNan(AssertionDsc* assertion)
         if (vnStore->IsVNConstant(vns[i]))
         {
             var_types type = vnStore->TypeOfVN(vns[i]);
-            if ((type == TYP_FLOAT && _isnan(vnStore->ConstantValue<float>(vns[i])) != 0) ||
-                (type == TYP_DOUBLE && _isnan(vnStore->ConstantValue<double>(vns[i])) != 0))
+            if ((type == TYP_FLOAT && FloatingPointUtils::isNaN(vnStore->ConstantValue<float>(vns[i])) != 0) ||
+                (type == TYP_DOUBLE && FloatingPointUtils::isNaN(vnStore->ConstantValue<double>(vns[i])) != 0))
             {
                 return true;
             }
@@ -2663,7 +2679,107 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNConstantPropOnTree: Substitutes tree with an evaluated constant while
+// optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    call   -  The call to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
+{
+    switch (call->GetHelperNum())
+    {
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        {
+            GenTree* castClsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* castObjArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
+            {
+                // It won't be trivial to properly extract side-effects from the call node.
+                // Ideally, we only need side effects from the castClsArg argument as the call itself
+                // won't throw any exceptions. But we should not forget about the EarlyNode (setup args)
+                return nullptr;
+            }
+
+            // If object has the same VN as the cast, then the cast is effectively a no-op.
+            //
+            if (((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0) && (castObjArg->gtVNPair == call->gtVNPair))
+            {
+                return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+            }
+
+            // Let's see if gtGetClassHandle may help us to fold the cast (since VNForCast did not).
+            if (castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                bool                 isExact;
+                bool                 isNonNull;
+                CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull);
+                if (castFrom != NO_CLASS_HANDLE)
+                {
+                    CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
+                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    {
+                        return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    }
+                }
+            }
+        }
+        break;
+
+        default:
+            break;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr: Folds given tree using VN to a constant or a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree to fold.
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
+{
+    // First, attempt to fold it to a constant if possible.
+    GenTree* foldedToCns = optVNBasedFoldConstExpr(block, parent, tree);
+    if (foldedToCns != nullptr)
+    {
+        return foldedToCns;
+    }
+
+    switch (tree->OperGet())
+    {
+        case GT_CALL:
+            return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
+
+        // We can add more VN-based foldings here.
+
+        default:
+            break;
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldConstExpr: Substitutes tree with an evaluated constant while
 //                          managing side-effects.
 //
 // Arguments:
@@ -2690,7 +2806,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
 //
-GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
+GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
     if (tree->OperGet() == GT_JTRUE)
     {
@@ -3825,40 +3941,62 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp_ModDiv: Convert DIV/MOD to UDIV/UMOD if both operands
-//    can be proven to be non-negative, e.g.:
-//
-//    if (x > 0)         // creates "x > 0" assertion
-//        return x / 8;  // DIV can be converted to UDIV
+// optAssertionProp_RangeProperties: Obtains range properties for an arbitrary tree
 //
 // Arguments:
-//    assertions - set of live assertions
-//    tree       - the DIV/MOD node to optimize
-//    stmt       - statement containing DIV/MOD
+//    assertions         - set of live assertions
+//    tree               - the integral tree to analyze
+//    isKnownNonZero     - [OUT] set to true if the tree is known to be non-zero
+//    isKnownNonNegative - [OUT] set to true if the tree is known to be non-negative
 //
-// Returns:
-//    Updated UDIV/UMOD node, or "nullptr"
-//
-GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
+                                                GenTree*         tree,
+                                                bool*            isKnownNonZero,
+                                                bool*            isKnownNonNegative)
 {
-    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    *isKnownNonZero     = false;
+    *isKnownNonNegative = false;
+
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::MayBeUninit(assertions) ||
+        BitVecOps::IsEmpty(apTraits, assertions))
     {
-        return nullptr;
+        return;
     }
 
-    // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
-    // Technically, we can check assertions for both operands, but it's not clear if it's worth it.
-    if (!tree->gtGetOp2()->IsNeverNegative(this))
+    // First, check simple properties without assertions.
+    *isKnownNonNegative = tree->IsNeverNegative(this);
+    *isKnownNonZero     = tree->IsNeverZero();
+
+    if (*isKnownNonZero && *isKnownNonNegative)
     {
-        return nullptr;
+        // TP: We already have both properties, no need to check assertions.
+        return;
     }
 
-    const ValueNum  dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+
+        // First, analyze possible X ==/!= CNS assertions.
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
+        {
+            if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
+            {
+                // X != 0 --> definitely non-zero
+                // We can't say anything about X's non-negativity
+                *isKnownNonZero = true;
+            }
+            else if (curAssertion->assertionKind != OAK_NOT_EQUAL)
+            {
+                // X == CNS --> definitely non-negative if CNS >= 0
+                // and definitely non-zero if CNS != 0
+                *isKnownNonNegative = curAssertion->op2.u1.iconVal >= 0;
+                *isKnownNonZero     = curAssertion->op2.u1.iconVal != 0;
+            }
+        }
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
@@ -3870,7 +4008,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         ValueNumStore::ConstantBoundInfo info;
         vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
 
-        if (info.cmpOpVN != dividendVN)
+        if (info.cmpOpVN != treeVN)
         {
             continue;
         }
@@ -3893,27 +4031,70 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         if ((info.constVal >= 0))
         {
-            bool isNotNegative = false;
             if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
             {
                 // (uint)X <= CNS means X is [0..CNS]
-                isNotNegative = true;
+                *isKnownNonNegative = true;
             }
             else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
             {
                 // X >= CNS means X is [CNS..unknown]
-                isNotNegative = true;
-            }
-
-            if (isNotNegative)
-            {
-                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-                return optAssertionProp_Update(tree, tree, stmt);
+                *isKnownNonNegative = true;
+                *isKnownNonZero     = (cmpOper == GT_GT) || (info.constVal > 0);
             }
         }
     }
-    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp_ModDiv: Optimizes DIV/UDIV/MOD/UMOD via assertions
+//    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
+//    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
+//    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the DIV/UDIV/MOD/UMOD node to optimize
+//    stmt       - statement containing DIV/UDIV/MOD/UMOD
+//
+// Returns:
+//    Updated DIV/UDIV/MOD/UMOD node, or nullptr
+//
+GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    bool op1IsNotZero;
+    bool op2IsNotZero;
+    bool op1IsNotNegative;
+    bool op2IsNotNegative;
+    optAssertionProp_RangeProperties(assertions, op1, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, &op2IsNotZero, &op2IsNotNegative);
+
+    bool changed = false;
+    if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
+    {
+        JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+        tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+        changed = true;
+    }
+
+    if (op2IsNotZero)
+    {
+        JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
+        tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+        changed = true;
+    }
+
+    if (op1IsNotNegative || op2IsNotNegative)
+    {
+        JITDUMP("DIV/MOD is proven to never overflow...\n")
+        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+        changed = true;
+    }
+
+    return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -4112,8 +4293,7 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     //
     // Currently only GT_EQ or GT_NE are supported Relops for local AssertionProp
     //
-
-    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE))
+    if (!tree->OperIs(GT_EQ, GT_NE))
     {
         return nullptr;
     }
@@ -4287,7 +4467,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // which will yield a false correctly. Instead if IL had "op1 != NaN", then we already
             // made op1 NaN which will yield a true correctly. Note that this is irrespective of the
             // assertion we have made.
-            allowReverse = (_isnan(constant) == 0);
+            allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeGet() == TYP_FLOAT)
         {
@@ -4295,7 +4475,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             op1->BashToConst(constant);
 
             // See comments for TYP_DOUBLE.
-            allowReverse = (_isnan(constant) == 0);
+            allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeGet() == TYP_REF)
         {
@@ -4904,6 +5084,11 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
             // Pointer to a local
             return GCInfo::WriteBarrierForm::WBF_NoBarrier;
         }
+        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+        {
+            // Boxed static - always on the heap
+            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+        }
         if (funcApp.m_func == VNFunc(GT_ADD))
         {
             // Check arguments of the GT_ADD
@@ -5039,21 +5224,10 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
             if (index != NO_ASSERTION_INDEX)
             {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                    gtDispTree(call, nullptr, nullptr, true);
-                }
-#endif
-                GenTree* list = nullptr;
-                gtExtractSideEffList(call, &list, GTF_SIDE_EFFECT, true);
-                if (list != nullptr)
-                {
-                    arg1 = gtNewOperNode(GT_COMMA, call->TypeGet(), list, arg1);
-                    fgSetTreeSeq(arg1);
-                }
+                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                DISPTREE(call);
 
+                arg1 = gtWrapWithSideEffects(arg1, call, GTF_SIDE_EFFECT, true);
                 return optAssertionProp_Update(arg1, call, stmt);
             }
 
@@ -5311,6 +5485,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_MOD:
         case GT_DIV:
+        case GT_UMOD:
+        case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
 
         case GT_BLK:
@@ -6229,8 +6405,8 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 }
 
 //------------------------------------------------------------------------------
-// optVNConstantPropCurStmt
-//    Performs constant prop on the current statement's tree nodes.
+// optVNBasedFoldCurStmt: Performs VN-based folding
+//    on the current statement's tree nodes using VN.
 //
 // Assumption:
 //    This function is called as part of a post-order tree walk.
@@ -6244,17 +6420,12 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 // Return Value:
 //    Returns the standard visitor walk result.
 //
-// Description:
-//    Checks if a node is an R-value and evaluates to a constant. If the node
-//    evaluates to constant, then the tree is replaced by its side effects and
-//    the constant node.
-//
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
-                                                          Statement*  stmt,
-                                                          GenTree*    parent,
-                                                          GenTree*    tree)
+Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
+                                                       Statement*  stmt,
+                                                       GenTree*    parent,
+                                                       GenTree*    tree)
 {
-    // Don't perform const prop on expressions marked with GTF_DONT_CSE
+    // Don't try and fold expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
     if (!tree->CanCSE())
     {
@@ -6342,8 +6513,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
             return WALK_CONTINUE;
     }
 
-    // Perform the constant propagation
-    GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
+    // Perform the VN-based folding:
+    GenTree* newTree = optVNBasedFoldExpr(block, parent, tree);
 
     if (newTree == nullptr)
     {
@@ -6356,7 +6527,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
 
     optAssertionProp_Update(newTree, tree, stmt);
 
-    JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);
+    JITDUMP("After VN-based fold of [%06u]:\n", tree->gtTreeID);
     DBEXEC(VERBOSE, gtDispStmt(stmt));
 
     return WALK_CONTINUE;
@@ -6424,7 +6595,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
+    return pThis->optVNBasedFoldCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************

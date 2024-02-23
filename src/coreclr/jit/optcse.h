@@ -142,14 +142,13 @@ public:
 #endif
 };
 
-// Reinforcement Learning CSE heuristic
-//
-// Uses a "linear" feature model with
-// softmax policy.
-//
-class CSE_HeuristicRL : public CSE_HeuristicCommon
+#endif // DEBUG
+
+// Parameterized Policy
+
+class CSE_HeuristicParameterized : public CSE_HeuristicCommon
 {
-private:
+protected:
     struct Choice
     {
         Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0)
@@ -162,37 +161,75 @@ private:
 
     enum
     {
-        numParameters = 19,
+        numParameters = 25,
         booleanScale  = 5,
         maxSteps      = 65, // MAX_CSE_CNT + 1 (for stopping)
     };
 
+    static double           s_defaultParameters[numParameters];
     double                  m_parameters[numParameters];
-    double                  m_alpha;
-    double                  m_rewards[maxSteps];
-    CLRRandom               m_cseRNG;
-    bool                    m_updateParameters;
-    bool                    m_greedy;
-    bool                    m_verbose;
     unsigned                m_registerPressure;
     jitstd::vector<double>* m_localWeights;
+    bool                    m_verbose;
 
+public:
+    CSE_HeuristicParameterized(Compiler*);
+    void ConsiderCandidates();
+    bool ConsiderTree(GenTree* tree, bool isReturn);
     void CaptureLocalWeights();
+    void GreedyPolicy();
+
     void GetFeatures(CSEdsc* dsc, double* features);
     double Preference(CSEdsc* dsc);
     void GetStoppingFeatures(double* features);
     double StoppingPreference();
-    void DumpFeatures(CSEdsc* dsc, double* features);
-    Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
-    Choice& ChooseGreedy(ArrayStack<Choice>& choices);
     void BuildChoices(ArrayStack<Choice>& choices);
-    void Softmax(ArrayStack<Choice>& choices);
+
+    Choice& ChooseGreedy(ArrayStack<Choice>& choices);
+
+    virtual const char* Name() const
+    {
+        return "Parameterized CSE Heuristic";
+    }
+
+#ifdef DEBUG
+    void DumpFeatures(CSEdsc* dsc, double* features);
     void DumpChoices(ArrayStack<Choice>& choices, int higlight = -1);
     void DumpChoices(ArrayStack<Choice>& choices, CSEdsc* higlight);
-    void UpdateParameters();
-    void GreedyPolicy();
+    void DumpMetrics();
+    void Announce();
+
+    // Likelihood of each choice made in the sequence
+    jitstd::vector<double>* m_likelihoods;
+    // Likelihood of each action from starting state
+    jitstd::vector<double>* m_baseLikelihoods;
+    // Features of each candidate
+    jitstd::vector<char*>* m_features;
+
+#endif
+};
+
+#ifdef DEBUG
+
+// Reinforcement Learning CSE heuristic
+//
+// Uses a "linear" feature model with
+// softmax policy.
+//
+class CSE_HeuristicRL : public CSE_HeuristicParameterized
+{
+private:
+    double    m_alpha;
+    double    m_rewards[maxSteps];
+    CLRRandom m_cseRNG;
+    bool      m_updateParameters;
+    bool      m_greedy;
+
+    Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
+    void Softmax(ArrayStack<Choice>& choices);
     void SoftmaxPolicy();
     void UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
+    void    UpdateParameters();
     Choice* FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
     const char* Name() const;
 
@@ -203,11 +240,6 @@ public:
 #ifdef DEBUG
     virtual void DumpMetrics();
     virtual void Announce();
-    // Likelihood of each choice made in the sequence
-    jitstd::vector<double>* m_likelihoods;
-    // Likelihood of each action from starting state
-    jitstd::vector<double>* m_baseLikelihoods;
-    jitstd::vector<char*>*  m_features;
 #endif
 };
 

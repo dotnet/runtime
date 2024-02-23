@@ -51,8 +51,8 @@ PhaseStatus Compiler::optSwitchRecognition()
 //
 // Arguments:
 //    block        - The block to check
-//    blockIfTrue  - [out] The block that will be jumped to if X == CNS
-//    blockIfFalse - [out] The block that will be jumped to if X != CNS
+//    trueEdge     - [out] The successor edge taken if X == CNS
+//    falseEdge    - [out] The successor edge taken if X != CNS
 //    isReversed   - [out] True if the condition is reversed (GT_NE)
 //    variableNode - [out] The variable node (X in the example above)
 //    cns          - [out] The constant value (CNS in the example above)
@@ -61,8 +61,8 @@ PhaseStatus Compiler::optSwitchRecognition()
 //    True if the block represents a constant test, false otherwise
 //
 bool IsConstantTestCondBlock(const BasicBlock* block,
-                             BasicBlock**      blockIfTrue,
-                             BasicBlock**      blockIfFalse,
+                             BasicBlock**      trueTarget,
+                             BasicBlock**      falseTarget,
                              bool*             isReversed,
                              GenTree**         variableNode = nullptr,
                              ssize_t*          cns          = nullptr)
@@ -94,9 +94,9 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                     return false;
                 }
 
-                *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
-                *blockIfFalse = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
+                *isReversed  = rootNode->gtGetOp1()->OperIs(GT_NE);
+                *trueTarget  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
+                *falseTarget = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
 
                 if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
@@ -141,14 +141,14 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 
     GenTree*    variableNode = nullptr;
     ssize_t     cns          = 0;
-    BasicBlock* blockIfTrue  = nullptr;
-    BasicBlock* blockIfFalse = nullptr;
+    BasicBlock* trueTarget   = nullptr;
+    BasicBlock* falseTarget  = nullptr;
 
     // The algorithm is simple - we check that the given block is a constant test block
     // and then try to accumulate as many constant test blocks as possible. Once we hit
     // a block that doesn't match the pattern, we start processing the accumulated blocks.
     bool isReversed = false;
-    if (IsConstantTestCondBlock(firstBlock, &blockIfTrue, &blockIfFalse, &isReversed, &variableNode, &cns))
+    if (IsConstantTestCondBlock(firstBlock, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
     {
         if (isReversed)
         {
@@ -170,8 +170,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
         {
             GenTree*    currVariableNode = nullptr;
             ssize_t     currCns          = 0;
-            BasicBlock* currBlockIfTrue  = nullptr;
-            BasicBlock* currBlockIfFalse = nullptr;
+            BasicBlock* currTrueTarget   = nullptr;
+            BasicBlock* currFalseTarget  = nullptr;
 
             if (!currBb->hasSingleStmt())
             {
@@ -181,10 +181,10 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             }
 
             // Inspect secondary blocks
-            if (IsConstantTestCondBlock(currBb, &currBlockIfTrue, &currBlockIfFalse, &isReversed, &currVariableNode,
+            if (IsConstantTestCondBlock(currBb, &currTrueTarget, &currFalseTarget, &isReversed, &currVariableNode,
                                         &currCns))
             {
-                if (currBlockIfTrue != blockIfTrue)
+                if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
@@ -345,9 +345,9 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         blockToRemove = fgRemoveBlock(blockToRemove, true);
     }
 
-    const auto jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
+    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
-    const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
+    FlowEdge** jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jumpCount + 1 /*default case*/];
 
     // Quirk: lastBlock's false target may have diverged from bbNext. If the false target is behind firstBlock,
     // we may create a cycle in the BasicBlock list by setting firstBlock->bbNext to it.
@@ -362,15 +362,17 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         {
             assert(lastBlock->FalseTargetIs(blockIfTrue));
             fgRemoveRefPred(blockIfTrue, firstBlock);
-            blockIfTrue = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, blockIfTrue);
-            fgAddRefPred(blockIfTrue->GetTarget(), blockIfTrue);
-            skipPredRemoval = true;
+            BasicBlock* targetBlock = blockIfTrue;
+            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfTrue);
+            skipPredRemoval         = true;
         }
         else
         {
             assert(lastBlock->FalseTargetIs(blockIfFalse));
-            blockIfFalse = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, blockIfFalse);
-            fgAddRefPred(blockIfFalse->GetTarget(), blockIfFalse);
+            BasicBlock* targetBlock = blockIfFalse;
+            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfFalse);
         }
     }
 
@@ -402,14 +404,14 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     {
         // value exists in the testValues array (via bitVector) - 'true' case.
         const bool isTrue = (bitVector & static_cast<ssize_t>(1ULL << i)) != 0;
-        jmpTab[i]         = isTrue ? blockIfTrue : blockIfFalse;
 
-        fgAddRefPred(jmpTab[i], firstBlock);
+        FlowEdge* const newEdge = fgAddRefPred((isTrue ? blockIfTrue : blockIfFalse), firstBlock);
+        jmpTab[i]               = newEdge;
     }
 
     // Link the 'default' case
-    jmpTab[jumpCount] = blockIfFalse;
-    fgAddRefPred(blockIfFalse, firstBlock);
+    FlowEdge* const defaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
+    jmpTab[jumpCount]           = defaultEdge;
 
     return true;
 }
