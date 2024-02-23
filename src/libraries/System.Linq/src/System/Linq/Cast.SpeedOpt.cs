@@ -10,11 +10,11 @@ namespace System.Linq
     {
         private sealed partial class CastICollectionIterator<TResult> : IPartition<TResult>
         {
-            public int GetCount(bool onlyIfCheap) => Count;
+            public int GetCount(bool onlyIfCheap) => _source.Count;
 
             public TResult[] ToArray()
             {
-                TResult[] array = new TResult[Count];
+                TResult[] array = new TResult[_source.Count];
 
                 int index = 0;
                 foreach (TResult item in _source)
@@ -27,7 +27,7 @@ namespace System.Linq
 
             public List<TResult> ToList()
             {
-                List<TResult> list = new(Count);
+                List<TResult> list = new(_source.Count);
 
                 foreach (TResult item in _source)
                 {

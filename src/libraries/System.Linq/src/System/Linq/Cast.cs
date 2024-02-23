@@ -63,12 +63,10 @@ namespace System.Linq
         }
 
         [DebuggerDisplay("Count = {Count}")]
-        private sealed partial class CastICollectionIterator<TResult>(ICollection source) : Iterator<TResult>, IReadOnlyCollection<TResult>
+        private sealed partial class CastICollectionIterator<TResult>(ICollection source) : Iterator<TResult>
         {
             private readonly ICollection _source = source;
             private IEnumerator? _enumerator;
-
-            public int Count => _source.Count;
 
             public override Iterator<TResult> Clone() => new CastICollectionIterator<TResult>(_source);
 
