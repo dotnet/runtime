@@ -1054,6 +1054,21 @@ namespace System.Text.RegularExpressions
 #endif
         }
 
+        /// <summary>Gets whether the set description string is for two ASCII letters that case to each other under OrdinalIgnoreCase rules.</summary>
+        public static bool SetContainsAsciiOrdinalIgnoreCaseCharacter(string set, Span<char> twoChars)
+        {
+            Debug.Assert(twoChars.Length >= 2);
+            return
+                !IsNegated(set) &&
+                GetSetChars(set, twoChars) == 2 &&
+                twoChars[0] < 128 &&
+                twoChars[1] < 128 &&
+                twoChars[0] != twoChars[1] &&
+                char.IsLetter(twoChars[0]) &&
+                char.IsLetter(twoChars[1]) &&
+                (twoChars[0] | 0x20) == (twoChars[1] | 0x20);
+        }
+
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         /// <remarks>This may enumerate negated characters if the set is negated.  This will return false if the set has subtraction.</remarks>
         private static bool CanEasilyEnumerateSetContents(string set) =>
