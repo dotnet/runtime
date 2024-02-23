@@ -183,6 +183,9 @@ inline void CheckObjectSize(size_t alloc_size)
     }
 }
 
+// TODO: how to define default sampling distribution mean?
+#define g_SamplingDistributionMean (100 * 1024)
+
 // TODO: what are the call sites other than the fast path helpers?
 // if there is not,
 //      isSampled =
@@ -244,7 +247,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         bool wasInPlaceAllocation = isSampled && (size <= availableSpace);
         if (!wasInPlaceAllocation)
         {
-            pEEAllocContext->ComputeSamplingLimit();
+            pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom(), g_SamplingDistributionMean);
         }
     }
 

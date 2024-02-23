@@ -5,6 +5,7 @@
 #define _GCHEAPUTILITIES_H_
 
 #include "gcinterface.h"
+#include "math.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -24,6 +25,13 @@ typedef struct _ee_alloc_context
     uint8_t* alloc_sampling;
     gc_alloc_context gc_alloc_context;
 
+    // TODO: how to get a random number?
+    // - have a dedicated CLRRandom instance: seems like a waste because the related Thread already has its CLRRandom instance
+    // - share the CLRRandom instance of the related thread but the Init() method of the allocation context runs BEFORE the thread's m_random.Init() is called
+    // Do we want to inject the Thread's CLRRandom instance into the allocation context?  Could be done in the Init() method of the Thread.InitThread() method
+    // CLRRandom* m_pRandom;
+    // Another solution would be to pass the CLRRandom instance as a parameter to the ComputeSamplingLimit() method
+
  public:
     void init()
     {
@@ -32,12 +40,10 @@ typedef struct _ee_alloc_context
         // we can't compute a sampling limit
         // because we don't know the size of the allocation context yet
         alloc_sampling = nullptr;
-
         gc_alloc_context.init();
     }
 
-    // TODO: rename it to GenerateAllocSampling()
-    inline void ComputeSamplingLimit()
+    inline void ComputeSamplingLimit(CLRRandom* pRandomizer, size_t mean)
     {
         // TODO: maybe it is easier to assume that the caller of this function will check if sampling is on/off
         // If sampling is off this is just setting alloc_sampling = alloc_limit
@@ -45,7 +51,16 @@ typedef struct _ee_alloc_context
         // the next sampled byte in the gc_alloc_context, if any.
 
         //TODO: implement sampling limit placement strategy
-        alloc_sampling = gc_alloc_context.alloc_limit;
+        double probability = pRandomizer->NextDouble();
+        size_t threshold = (size_t)(-log((1-probability) * mean) + 1);
+        if (threshold < (size_t)(gc_alloc_context.alloc_limit - gc_alloc_context.alloc_ptr))
+        {
+            alloc_sampling = gc_alloc_context.alloc_ptr + threshold;
+        }
+        else
+        {
+            alloc_sampling = gc_alloc_context.alloc_limit;
+        }
     }
 } ee_alloc_context;
 

@@ -39,7 +39,6 @@ The payload should contain the following information:
 ```xml  <template tid="AllocationSampling">
     <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
     <data name="ClrInstanceID" inType="win:UInt16" />
-    <data name="AllocationAmount64" inType="win:UInt64" outType="win:HexInt64" />
     <data name="TypeID" inType="win:Pointer" />
     <data name="TypeName" inType="win:UnicodeString" />
     <data name="HeapIndex" inType="win:UInt32" />
