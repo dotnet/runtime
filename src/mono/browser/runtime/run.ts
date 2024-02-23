@@ -8,7 +8,7 @@ import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
 import { mono_log_info } from "./logging";
-import { cancelThreads } from "./pthreads/browser";
+import { cancelThreads } from "./pthreads";
 import { call_entry_point } from "./managed-exports";
 
 /**

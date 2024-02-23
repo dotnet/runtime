@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free } from "./marshal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid } from "./marshal";
 import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
@@ -96,7 +96,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     const res_marshaler_type = get_signature_type(res_sig);
     const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
 
-    const is_oneway = res_marshaler_type == MarshalerType.OneWay;
+    const is_discard_no_wait = res_marshaler_type == MarshalerType.DiscardNoWait;
     const is_async = res_marshaler_type == MarshalerType.Task || res_marshaler_type == MarshalerType.TaskPreCreated;
 
     const closure: BindingClosure = {
@@ -107,12 +107,12 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         res_converter,
         has_cleanup,
         arg_cleanup,
-        is_oneway,
+        is_discard_no_wait,
         is_async,
         isDisposed: false,
     };
     let bound_fn: WrappedJSFunction;
-    if (is_async || is_oneway || has_cleanup) {
+    if (is_async || is_discard_no_wait || has_cleanup) {
         bound_fn = bind_fn(closure);
     }
     else {
@@ -132,31 +132,17 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         }
     }
 
-    // this is just to make debugging easier by naming the function in the stack trace.
-    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
-    // in Release configuration, it would be a trimmed by rollup
-    if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
-        try {
-            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
-        }
-        catch (ex) {
-            runtimeHelpers.cspPolicy = true;
-        }
-    }
-
     function async_bound_fn(args: JSMarshalerArguments): void {
-        if (WasmEnableThreads) {
-            forceThreadMemoryViewRefresh();
-        }
+        forceThreadMemoryViewRefresh();
         bound_fn(args);
     }
+
     function sync_bound_fn(args: JSMarshalerArguments): void {
         const previous = runtimeHelpers.isPendingSynchronousCall;
         try {
-            runtimeHelpers.isPendingSynchronousCall = true;
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
+            forceThreadMemoryViewRefresh();
+            const caller_tid = get_caller_native_tid(args);
+            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.currentThreadTID === caller_tid;
             bound_fn(args);
         }
         finally {
@@ -164,12 +150,29 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         }
     }
 
-    let wrapped_fn: WrappedJSFunction;
-    if (is_async || is_oneway) {
-        wrapped_fn = async_bound_fn;
+    let wrapped_fn: WrappedJSFunction = bound_fn;
+    if (WasmEnableThreads) {
+        if (is_async || is_discard_no_wait) {
+            wrapped_fn = async_bound_fn;
+        }
+        else {
+            wrapped_fn = sync_bound_fn;
+        }
     }
-    else {
-        wrapped_fn = sync_bound_fn;
+
+    // this is just to make debugging easier by naming the function in the stack trace.
+    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+    // in Release configuration, it would be a trimmed by rollup
+    if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+        try {
+            const fname = js_function_name.replaceAll(".", "_");
+            const url = `//# sourceURL=https://dotnet/JSImport/${fname}`;
+            const body = `return (function JSImport_${fname}(){ return fn.apply(this, arguments)});`;
+            wrapped_fn = new Function("fn", url + "\r\n" + body)(wrapped_fn);
+        }
+        catch (ex) {
+            runtimeHelpers.cspPolicy = true;
+        }
     }
 
     (<any>wrapped_fn)[imported_js_function_symbol] = closure;
@@ -279,7 +282,7 @@ function bind_fn(closure: BindingClosure) {
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
-        const is_async = WasmEnableThreads && is_receiver_should_free(args);
+        const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -309,7 +312,7 @@ function bind_fn(closure: BindingClosure) {
             marshal_exception_to_cs(<any>args, ex);
         }
         finally {
-            if (is_async) {
+            if (receiver_should_free) {
                 Module._free(args as any);
             }
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -327,7 +330,7 @@ type BindingClosure = {
     arg_marshalers: (BoundMarshalerToJs)[],
     res_converter: BoundMarshalerToCs | undefined,
     has_cleanup: boolean,
-    is_oneway: boolean,
+    is_discard_no_wait: boolean,
     is_async: boolean,
     arg_cleanup: (Function | undefined)[]
 }
