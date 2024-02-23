@@ -218,6 +218,9 @@ namespace ILCompiler
 
                 bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
 
+                // Load "this"
+                codeStream.EmitLdArg(0);
+
                 if (isX86)
                 {
                     for (int i = 0; i < _targetMethod.Signature.Length; i++)
@@ -225,9 +228,6 @@ namespace ILCompiler
                         codeStream.EmitLdArg(i + 1);
                     }
                 }
-
-                // Load "this"
-                codeStream.EmitLdArg(0);
 
                 // Load the instantiating argument.
                 if (_interfaceIndex == UseContextFromRuntime)
