@@ -16,7 +16,6 @@ extern "C" {
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
 typedef struct _ee_alloc_context
 {
-    // TODO: rename it to alloc_sampling for consistency sake with alloc_ptr and alloc_limit
     // This is the address where the next allocation sampling should occur:
     //  - if sampling is off, this is the same as alloc_limit
     //  - if sampling is on, this is the next sampled byte in the gc_alloc_context
