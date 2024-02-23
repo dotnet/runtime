@@ -137,10 +137,10 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
