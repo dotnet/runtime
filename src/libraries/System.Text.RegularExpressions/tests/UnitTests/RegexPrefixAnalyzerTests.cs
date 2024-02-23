@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a[act]ggtaaa|tttacc[agt]t", new[] { "aaggtaaa", "acggtaaa", "atggtaaa", "tttaccat", "tttaccgt", "tttacctt" }, false)]
         [InlineData("ag[act]gtaaa|tttac[agt]ct", new[] { "agagtaaa", "agcgtaaa", "agtgtaaa", "tttacact", "tttacgct", "tttactct" }, false)]
         [InlineData("agg[act]taaa|ttta[agt]cct", new[] { "aggataaa", "aggctaaa", "aggttaaa", "tttaacct", "tttagcct", "tttatcct" }, false)]
-        [InlineData("\b(abc|def)\b", new[] { "abc", "def" }, false)]
+        [InlineData(@"\b(abc|def)\b", new[] { "abc", "def" }, false)]
         [InlineData("^(abc|def)$", new[] { "abc", "def" }, false)]
         [InlineData("abcdefg|h", null, false)]
         [InlineData("abc[def]ghi|[jkl]", null, false)]
