@@ -330,6 +330,7 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
 {
     m_StackTraceInfo.AllocateStackTrace();
     pThread->GetExceptionState()->m_pCurrentTracker = this;
+    m_pInitialFrame = pThread->GetFrame();
     if (exceptionKind == ExKind::HardwareFault)
     {
         // Hardware exception handling needs to start on the FaultingExceptionFrame, so we are
@@ -383,8 +384,36 @@ void ExInfo::ReleaseResources()
 void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
 {
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+#if defined(DEBUGGING_SUPPORTED)
+    DWORD_PTR dwInterceptStackFrame = 0;
+
+    // This method may be called on an unmanaged thread, in which case no interception can be done.
+    if (pExInfo)
+    {
+        ThreadExceptionState* pExState = pThread->GetExceptionState();
+
+        // If the exception is intercepted, then pop trackers according to the stack frame at which
+        // the exception is intercepted.  We must retrieve the frame pointer before we start popping trackers.
+        if (pExState->GetFlags()->DebuggerInterceptInfo())
+        {
+            pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL, (PBYTE*)&dwInterceptStackFrame,
+                                                                   NULL, NULL);
+        }
+    }
+#endif // DEBUGGING_SUPPORTED
+
     while (pExInfo && pExInfo < (void*)targetSp)
     {
+#if defined(DEBUGGING_SUPPORTED)
+        if (g_pDebugInterface != NULL)
+        {
+            if (pExInfo->m_ScannedStackRange.GetUpperBound().SP < dwInterceptStackFrame)
+            {
+                g_pDebugInterface->DeleteInterceptContext(pExInfo->m_DebuggerExState.GetDebuggerInterceptContext());
+            }
+        }
+#endif // DEBUGGING_SUPPORTED
+
         pExInfo->ReleaseResources();
         pExInfo = (PTR_ExInfo)pExInfo->m_pPrevNestedInfo;
     }
