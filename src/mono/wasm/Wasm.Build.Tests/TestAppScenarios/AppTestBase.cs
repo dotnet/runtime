@@ -101,7 +101,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         void OnConsoleMessage(IConsoleMessage msg)
         {
             consoleOutput.Add(msg.Text);
-            Console.WriteLine($"console: {msg.Text}");
 
             OnTestOutput(msg.Text);
 
@@ -124,13 +123,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         {
             serverOutput.Add(msg);
             OnTestOutput(msg);
-
-            if (msg.StartsWith("fail:"))
-            {
-                foreach (var line in serverOutput)
-                    Console.WriteLine(line);
-                // throw new Exception("Server failed");
-            }
 
             if (options.OnServerMessage != null)
                 options.OnServerMessage(msg);
