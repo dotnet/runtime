@@ -598,11 +598,13 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                // If the recorded time is zero, a time has not been recorded yet
+                // If the recorded time is zero, a time has not been recorded yet. The stored waiter start time (ms as a ushort)
+                // excludes the upper bit since the field is also used for a flag, so also mask off the upper bits from the
+                // current tick count for comparison.
                 ushort waiterStartTimeMs = WaiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
-                    (ushort)Environment.TickCount - waiterStartTimeMs >= MaxDurationMsForPreemptingWaiters;
+                    (Environment.TickCount & 0x7fff) - waiterStartTimeMs >= MaxDurationMsForPreemptingWaiters;
             }
         }
 
