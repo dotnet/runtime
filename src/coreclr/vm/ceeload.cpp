@@ -4680,7 +4680,7 @@ PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
-VASigCookie *Module::GetVASigCookie(Signature vaSignature)
+VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
 {
     CONTRACT(VASigCookie*)
     {
@@ -4693,6 +4693,24 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
     }
     CONTRACT_END;
 
+    Module* pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
+
+    RETURN pCookie;
+}
+
+VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext)
+{
+    CONTRACT(VASigCookie*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        POSTCONDITION(CheckPointer(RETVAL));
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACT_END;
+    
     VASigCookieBlock *pBlock;
     VASigCookie      *pCookie;
 
@@ -4700,39 +4718,70 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
 
     // First, see if we already enregistered this sig.
     // Note that we're outside the lock here, so be a bit careful with our logic
-    for (pBlock = m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
+    for (pBlock = pLoaderModule->m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
     {
         for (UINT i = 0; i < pBlock->m_numcookies; i++)
         {
             if (pBlock->m_cookies[i].signature.GetRawSig() == vaSignature.GetRawSig())
             {
-                pCookie = &(pBlock->m_cookies[i]);
-                break;
+                _ASSERTE(pBlock->m_cookies[i].classInst.GetNumArgs() == typeContext->m_classInst.GetNumArgs());
+                _ASSERTE(pBlock->m_cookies[i].methodInst.GetNumArgs() == typeContext->m_methodInst.GetNumArgs());
+
+                bool instMatch = true;
+
+                for (DWORD j = 0; j < pBlock->m_cookies[i].classInst.GetNumArgs(); j++)
+                {
+                    if (pBlock->m_cookies[i].classInst[j] != typeContext->m_classInst[j])
+                    {
+                        instMatch = false;
+                        break;
+                    }
+                }
+
+                if (instMatch)
+                {
+                    for (DWORD j = 0; j < pBlock->m_cookies[i].methodInst.GetNumArgs(); j++)
+                    {
+                        if (pBlock->m_cookies[i].methodInst[j] != typeContext->m_methodInst[j])
+                        {
+                            instMatch = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (instMatch)
+                {
+                    pCookie = &(pBlock->m_cookies[i]);
+                    break;
+                }
             }
         }
     }
-
+    
     if (!pCookie)
     {
         // If not, time to make a new one.
 
         // Compute the size of args first, outside of the lock.
 
-        // @TODO GENERICS: We may be calling a varargs method from a
-        // generic type/method. Using an empty context will make such a
-        // case cause an unexpected exception. To make this work,
-        // we need to create a specialized signature for every instantiation
-        SigTypeContext typeContext;
-
-        MetaSig metasig(vaSignature, this, &typeContext);
+        MetaSig metasig(vaSignature, pDefiningModule, typeContext);
         ArgIterator argit(&metasig);
 
         // Upper estimate of the vararg size
         DWORD sizeOfArgs = argit.SizeOfArgStack();
 
+        // Prepare instantiation
+        LoaderAllocator  *pLoaderAllocator = pLoaderModule->GetLoaderAllocator();
+
+        DWORD classInstCount = typeContext->m_classInst.GetNumArgs();
+        DWORD methodInstCount = typeContext->m_methodInst.GetNumArgs();
+        pLoaderAllocator->EnsureInstantiation(pDefiningModule, typeContext->m_classInst);
+        pLoaderAllocator->EnsureInstantiation(pDefiningModule, typeContext->m_methodInst);
+
         // enable gc before taking lock
         {
-            CrstHolder ch(&m_Crst);
+            CrstHolder ch(&pLoaderModule->m_Crst);
 
             // Note that we were possibly racing to create the cookie, and another thread
             // may have already created it.  We could put another check
@@ -4740,32 +4789,57 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
             // occasional duplicate cookie instead.
 
             // Is the first block in the list full?
-            if (m_pVASigCookieBlock && m_pVASigCookieBlock->m_numcookies
+            if (pLoaderModule->m_pVASigCookieBlock && pLoaderModule->m_pVASigCookieBlock->m_numcookies
                 < VASigCookieBlock::kVASigCookieBlockSize)
             {
                 // Nope, reserve a new slot in the existing block.
-                pCookie = &(m_pVASigCookieBlock->m_cookies[m_pVASigCookieBlock->m_numcookies]);
+                pCookie = &(pLoaderModule->m_pVASigCookieBlock->m_cookies[pLoaderModule->m_pVASigCookieBlock->m_numcookies]);
             }
             else
             {
                 // Yes, create a new block.
                 VASigCookieBlock *pNewBlock = new VASigCookieBlock();
 
-                pNewBlock->m_Next = m_pVASigCookieBlock;
+                pNewBlock->m_Next = pLoaderModule->m_pVASigCookieBlock;
                 pNewBlock->m_numcookies = 0;
-                m_pVASigCookieBlock = pNewBlock;
+                pLoaderModule->m_pVASigCookieBlock = pNewBlock;
                 pCookie = &(pNewBlock->m_cookies[0]);
             }
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
-            pCookie->pModule = this;
+            pCookie->pModule = pDefiningModule;
             pCookie->pNDirectILStub = NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
+            pCookie->pLoaderModule = pLoaderModule;
+
+            AllocMemTracker amt;
+        
+            if (classInstCount != 0)
+            {
+                TypeHandle* pClassInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount) * S_SIZE_T(sizeof(TypeHandle))));
+                for (DWORD i = 0; i < classInstCount; i++)
+                {
+                    pClassInst[i] = typeContext->m_classInst[i];
+                }
+                pCookie->classInst = Instantiation(pClassInst, classInstCount);
+            }
+
+            if (methodInstCount != 0)
+            {
+                TypeHandle* pMethodInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount) * S_SIZE_T(sizeof(TypeHandle))));
+                for (DWORD i = 0; i < methodInstCount; i++)
+                {
+                    pMethodInst[i] = typeContext->m_methodInst[i];
+                }
+                pCookie->methodInst = Instantiation(pMethodInst, methodInstCount);
+            }
+        
+            amt.SuppressRelease();
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.
-            m_pVASigCookieBlock->m_numcookies++;
+            pLoaderModule->m_pVASigCookieBlock->m_numcookies++;
         }
     }
 

@@ -1329,6 +1329,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
+                            case NI_System_SpanHelpers_ClearWithoutReferences:
+                            case NI_System_SpanHelpers_Fill:
                             case NI_System_SpanHelpers_SequenceEqual:
                             case NI_System_Buffer_Memmove:
                             {
