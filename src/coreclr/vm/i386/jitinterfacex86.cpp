@@ -96,25 +96,6 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
 #endif // _DEBUG
 
-#ifndef TARGET_UNIX
-
-HCIMPL1_V(INT32, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    INT64 ret = HCCALL1_V(JIT_Dbl2Lng, val);
-
-    if (ret != (INT32) ret)
-        goto THROW;
-
-    return (INT32) ret;
-
-THROW:
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-#endif // TARGET_UNIX
-
 
 FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
@@ -960,32 +941,6 @@ void InitJITHelpers1()
 
     JIT_TrialAlloc::Flags flags = GCHeapUtilities::UseThreadAllocationContexts() ?
         JIT_TrialAlloc::MP_ALLOCATOR : JIT_TrialAlloc::NORMAL;
-
-    // Get CPU features and check for SSE2 support.
-    // This code should eventually probably be moved into codeman.cpp,
-    // where we set the cpu feature flags for the JIT based on CPU type and features.
-    int cpuFeatures[4];
-    __cpuid(cpuFeatures, 1);
-
-    DWORD dwCPUFeaturesECX = cpuFeatures[2];
-    DWORD dwCPUFeaturesEDX = cpuFeatures[3];
-
-    //  If bit 26 (SSE2) is set, then we can use the SSE2 flavors
-    //  and faster x87 implementation for the P4 of Dbl2Lng.
-    if (dwCPUFeaturesEDX & (1<<26))
-    {
-        SetJitHelperFunction(CORINFO_HELP_DBL2INT, JIT_Dbl2IntSSE2);
-        if (dwCPUFeaturesECX & 1)  // check SSE3
-        {
-            SetJitHelperFunction(CORINFO_HELP_DBL2UINT, JIT_Dbl2LngSSE3);
-            SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngSSE3);
-	}
-        else
-        {
-            SetJitHelperFunction(CORINFO_HELP_DBL2UINT, JIT_Dbl2LngP4x87);   // SSE2 only for signed
-            SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngP4x87);
-        }
-    }
 
     if (!(TrackAllocationsEnabled()
         || LoggingOn(LF_GCALLOC, LL_INFO10)

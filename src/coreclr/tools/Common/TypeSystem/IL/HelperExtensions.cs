@@ -7,6 +7,7 @@ using Internal.TypeSystem;
 using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
+using System.Xml.Linq;
 
 namespace Internal.IL
 {
@@ -37,6 +38,13 @@ namespace Internal.IL
         {
             MetadataType helperType = context.GetOptionalHelperType(typeName);
             MethodDesc helperMethod = helperType?.GetMethod(methodName, null);
+            return helperMethod;
+        }
+
+        public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeNamespace, string typeName, string methodName)
+        {
+            MetadataType helperType = context.SystemModule.GetKnownType(typeNamespace, typeName);
+            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
             return helperMethod;
         }
 
