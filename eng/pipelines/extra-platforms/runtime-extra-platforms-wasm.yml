@@ -290,17 +290,18 @@ jobs:
       # ff tests are unstable currently
       shouldContinueOnError: true
 
-  - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      nameSuffix: DebuggerTests_MultiThreaded
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      runOnlyOnWasmOnlyPipelines: true
+  # Active Issue https://github.com/dotnet/runtime/issues/98771
+  # - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  #   parameters:
+  #     platforms:
+  #       - Browser_wasm
+  #       - Browser_wasm_win
+  #     extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+  #     nameSuffix: DebuggerTests_MultiThreaded
+  #     alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  #     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+  #     isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+  #     runOnlyOnWasmOnlyPipelines: true
 
   # Disable for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
