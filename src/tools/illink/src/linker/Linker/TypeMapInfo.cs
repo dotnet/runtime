@@ -29,9 +29,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -222,21 +224,13 @@ namespace Mono.Linker
 				MethodDefinition? baseMethod = context.TryResolve (baseMethodRef);
 				if (baseMethod == null)
 					continue;
-				if (baseMethod.DeclaringType.IsInterface)
+				if (!baseMethod.DeclaringType.IsInterface)
 				{
-					// Find the matching interface implementation if the base is an interface method
-					foreach (var iface in method.DeclaringType.Interfaces)
-					{
-						if (context.TryResolve (iface.InterfaceType) == baseMethod.DeclaringType)
-						{
-							AnnotateMethods (baseMethod, method, new InterfaceImplementor (method.DeclaringType, iface, baseMethod.DeclaringType));
-							break;
-						}
-					}
+					AnnotateMethods (baseMethod, method);
 				}
 				else
 				{
-					AnnotateMethods (baseMethod, method);
+					AnnotateMethods (baseMethod, method, InterfaceImplementor.Create (method.DeclaringType, baseMethod.DeclaringType, context));
 				}
 			}
 		}
