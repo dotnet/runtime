@@ -57,7 +57,7 @@ extends:
                 archiveType: $(archiveType)
                 archiveExtension: $(archiveExtension)
                 tarCompression: $(tarCompression)
-                artifactName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
                 displayName: Build Assets
           extraVariablesTemplates:
             - /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
@@ -79,7 +79,4 @@ extends:
             testGroup: innerloop
             liveLibrariesBuildConfig: release
             useCodeFlowEnforcement: true
-            dependsOn:
-              - build_$(osGroup)$(osSubgroup)_$(archType)_checked_
-              - coreclr_common_test_build_pri0_AnyOS_AnyCPU_checked
-            unifiedArtifactsName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
