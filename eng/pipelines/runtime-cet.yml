@@ -48,17 +48,17 @@ extends:
           - windows_x64
           jobParameters:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
-          postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
-                includeRootFolder: false
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
-                artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-                displayName: Build Assets
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
           extraVariablesTemplates:
             - /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
 
