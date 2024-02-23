@@ -72,7 +72,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
           - linux_x64
@@ -87,8 +87,6 @@ extends:
           - windows_arm64
           jobParameters:
             testGroup: innerloop
-            nameSuffix: CoreCLR_With_Libs
-            buildArgs: -s clr+libs -c $(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
