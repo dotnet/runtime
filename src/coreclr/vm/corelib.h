@@ -259,11 +259,28 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
-DEFINE_CLASS(INT128,               System,                 Int128)
-DEFINE_CLASS(UINT128,              System,                 UInt128)
+DEFINE_CLASS(INT128,                System,                 Int128)
+DEFINE_CLASS(UINT128,               System,                 UInt128)
+
+DEFINE_CLASS(MATH,                  System,                 Math)
+DEFINE_METHOD(MATH,                 LONG_MULTIPLY_OVERFLOW, LongMultiplyOverflow,       NoSig)
+DEFINE_METHOD(MATH,                 ULONG_MULTIPLY_OVERFLOW,ULongMultiplyOverflow,      NoSig)
+DEFINE_METHOD(MATH,                 ULONG_TO_DOUBLE,        ULongToDouble,              NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_ULONG,        DoubleToULong,              NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_INT_OVERFLOW, DoubleToIntOverflow,        NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_UINT_OVERFLOW,DoubleToUIntOverflow,       NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_LONG_OVERFLOW,DoubleToLongOverflow,       NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_ULONG_OVERFLOW,DoubleToULongOverflow,     NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_REMINDER,        DoubleReminder,             NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_INT,          DoubleToInt,                NoSig)
+DEFINE_METHOD(MATH,                 DOUBLE_TO_UINT,         DoubleToUInt,               NoSig)
+DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+
+DEFINE_CLASS(MATHF,                 System,                 MathF)
+DEFINE_METHOD(MATHF,                FLOAT_REMINDER,         FloatReminder,              NoSig)
+DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
-
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
 DEFINE_FIELD(DYNAMICRESOLVER,       DYNAMIC_METHOD,         m_method)
 
