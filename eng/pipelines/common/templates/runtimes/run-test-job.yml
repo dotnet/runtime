@@ -9,6 +9,7 @@ parameters:
   readyToRun: false
   hotColdSplitting: false
   liveLibrariesBuildConfig: ''
+  unifiedArtifactsName: ''
   compositeBuildMode: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
@@ -199,62 +200,71 @@ jobs:
 
     steps:
 
-    # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - ${{ if ne(parameters.unifiedArtifactsName, '') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
+          unpackFolder: $(Build.SourcesDirectory)/artifacts
+          artifactFileName: '$(unifiedArtifactsName)$(archiveExtension)'
+          artifactName: '$(unifiedArtifactsName)'
+          displayName: 'unified artifacts'
+
+    - ${{ else }}:
+
+      # Optionally download live-built libraries
+      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)
+            cleanUnpackFolder: false
+            artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+            artifactName: '$(librariesBuildArtifactName)'
+            displayName: 'live-built libraries'
 
 
-    # Download and unzip managed test artifacts
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: '$(managedTestArtifactRootFolderPath)'
-        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-        artifactName: '$(managedGenericTestArtifactName)'
-        displayName: 'generic managed test artifacts'
-
-
-    # Download product binaries directory
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'product build'
-
-
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      # We need to explicitly download CoreCLR for Mono
+      # Download and unzip managed test artifacts
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(coreClrProductRootFolderPath)
-          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-          artifactName: '$(coreClrProductArtifactName)'
-          displayName: 'CoreCLR product download for Mono'
-
-    # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
-    # ilproj test projects during copynativeonly.
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-        artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
-        artifactName: '$(microsoftNetSdkIlArtifactName)'
-        displayName: 'Microsoft.NET.Sdk.IL package'
+          unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
 
 
-    # Download and unzip native test artifacts
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: '$(nativeTestArtifactRootFolderPath)'
-        artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
-        artifactName: '$(nativeTestArtifactName)'
-        displayName: 'native test artifacts'
+      # Download product binaries directory
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(buildProductRootFolderPath)
+          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+          artifactName: '$(buildProductArtifactName)'
+          displayName: 'product build'
 
+
+      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+        # We need to explicitly download CoreCLR for Mono
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(coreClrProductRootFolderPath)
+            artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+            artifactName: '$(coreClrProductArtifactName)'
+            displayName: 'CoreCLR product download for Mono'
+
+      # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
+      # ilproj test projects during copynativeonly.
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
+          artifactName: '$(microsoftNetSdkIlArtifactName)'
+          displayName: 'Microsoft.NET.Sdk.IL package'
+
+
+      # Download and unzip native test artifacts
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(nativeTestArtifactRootFolderPath)'
+          artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
+          artifactName: '$(nativeTestArtifactName)'
+          displayName: 'native test artifacts'
 
     # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe)
     - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:

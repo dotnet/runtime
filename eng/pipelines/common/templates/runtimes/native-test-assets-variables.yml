@@ -3,6 +3,7 @@
 parameters:
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
+  liveLibrariesBuildConfig: ''
 
 variables:
   - name: binTestsPath
@@ -59,3 +60,12 @@ variables:
 
   - name: microsoftNetSdkIlArtifactName
     value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'
+
+  - librariesBuildArtifactName: ''
+  - librariesOverrideArg: ''
+  - librariesDownloadDir: ''
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
+    - librariesOverrideArg: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
