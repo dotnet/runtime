@@ -4,13 +4,13 @@
 @using Microsoft.AspNetCore.Http.Connections;
 @using System.Web;
 @inject NavigationManager NavigationManager
-@implements IDisposable
+@inject IJSRuntime JSRuntime
 
 <h1>Chat Room</h1>
 <button id="connectButton" @onclick="Connect">Connect SignalR</button>
 <button id="subscribeButton" @onclick="Subscribe">Subscribe to server messages</button>
 <button id="sendMessageButton" @onclick="SignalRPassMessages">Send message from query</button>
-<button id="killServerButton" @onclick="SendExitSignal">Send exit signal to server</button>
+<button id="exitProgramButton" @onclick="SendExitSignal">Send exit signal to server</button>
 <button id="disconnectButton" @onclick="DisposeHubConnection">Disconnect SignalR</button>
 <div>
     @foreach (var chatMessage in chatMessages)
@@ -84,9 +84,12 @@
 
     private async Task SendExitSignal()
     {
-        Helper.TestOutputWriteLine($"WASM EXIT 0");
+        // exit the server
         await _hubConnection.SendAsync("Exit", 0);
+        await DisposeHubConnection();
         Helper.TestOutputWriteLine($"Exit signal was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+        // exit the client
+        await JSRuntime.InvokeVoidAsync("eval", "import { dotnet, exit } from './_framework/dotnet.js'; exit(0);");
     }
 
     private async Task DisposeHubConnection()
@@ -99,6 +102,4 @@
         }
         Helper.TestOutputWriteLine($"SignalR disconnected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
-
-    public void Dispose() => DisposeHubConnection().GetAwaiter().GetResult();
 }

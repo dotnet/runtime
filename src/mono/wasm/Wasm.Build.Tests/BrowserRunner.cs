@@ -96,7 +96,7 @@ internal class BrowserRunner : IAsyncDisposable
     ) {
         var url = new Uri(browserUrl);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-        string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}"};
+        string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}" };
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
         return Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
             ExecutablePath = s_chromePath.Value,
