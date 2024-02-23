@@ -86,7 +86,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
         /// </summary>
-        public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
+        public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion, ushort minorVersion)
         {
             Offset = offset;
             _gcInfoTypes = new GcInfoTypes(machine);
@@ -101,7 +101,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             SizeOfEditAndContinuePreservedArea = 0xffffffff;
             ReversePInvokeFrameStackSlot = -1;
 
-            Version = ReadyToRunVersionToGcInfoVersion(majorVersion);
+            Version = ReadyToRunVersionToGcInfoVersion(majorVersion, minorVersion);
             int bitOffset = offset * 8;
 
             ParseHeaderFlags(image, ref bitOffset);
@@ -380,9 +380,17 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// GcInfo version is 1 up to ReadyTorun version 1.x.
         /// GcInfo version is current from  ReadyToRun version 2.0
         /// </summary>
-        private int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion)
+        private int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion, int readyToRunMinorVersion)
         {
-            return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
+            if (readyToRunMajorVersion == 1)
+                return 1;
+
+            // R2R 9.0 and 9.1 use GCInfo v2
+            // R2R 9.2 uses GCInfo v3
+            if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
+                return 2;
+
+            return GCINFO_VERSION;
         }
 
         private List<List<BaseGcSlot>> GetLiveSlotsAtSafepoints(byte[] image, ref int bitOffset)

@@ -488,12 +488,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
                     if (_readyToRunReader.Machine == Machine.I386)
                     {
-                        _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset);
                     }
                     else
                     {
                         // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
-                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        _gcInfo = new Amd64.GcInfo(
+                            _readyToRunReader.Image,
+                            gcInfoOffset,
+                            _readyToRunReader.Machine,
+                            _readyToRunReader.ReadyToRunHeader.MajorVersion,
+                            _readyToRunReader.ReadyToRunHeader.MinorVersion);
                     }
                 }
             }
