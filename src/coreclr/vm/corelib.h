@@ -633,6 +633,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgB
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      MEMSET,                 MemSet, SM_RefByte_Byte_UIntPtr_RetVoid)
+DEFINE_METHOD(RUNTIME_HELPERS,      MEMZERO,                MemZero, SM_RefByte_UIntPtr_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      MEMCOPY,                MemCopy, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)

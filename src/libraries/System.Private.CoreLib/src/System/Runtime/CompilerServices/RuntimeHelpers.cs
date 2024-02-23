@@ -129,32 +129,5 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsKnownConstant(int t) => false;
 #pragma warning restore IDE0060
-
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
-#endif
-        private static unsafe void MemSet(ref byte dest, byte value, nuint size)
-        {
-            if (size > 0)
-            {
-                // Implicit nullcheck
-                _ = Unsafe.ReadUnaligned<byte>(ref dest);
-                SpanHelpers.Fill(ref dest, size, value);
-            }
-        }
-
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemCopy")]
-#endif
-        private static unsafe void MemCopy(ref byte dest, ref byte src, nuint size)
-        {
-            if (size > 0)
-            {
-                // Implicit nullchecks
-                _ = Unsafe.ReadUnaligned<byte>(ref dest);
-                _ = Unsafe.ReadUnaligned<byte>(ref src);
-                Buffer.Memmove(ref dest, ref src, size);
-            }
-        }
     }
 }

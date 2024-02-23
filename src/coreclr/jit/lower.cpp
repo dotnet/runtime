@@ -8125,7 +8125,18 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
 
-    GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    const bool isMemzero = helper == CORINFO_HELP_MEMSET ? data->IsIntegralConst(0) : false;
+
+    GenTreeCall* call;
+    if (isMemzero)
+    {
+        BlockRange().Remove(data);
+        call = comp->gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, destPlaceholder, sizePlaceholder);
+    }
+    else
+    {
+        call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    }
     comp->fgMorphArgs(call);
 
     LIR::Range range      = LIR::SeqTree(comp, call);
@@ -8136,17 +8147,21 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     blkNode->gtBashToNOP();
 
     LIR::Use destUse;
-    LIR::Use dataUse;
     LIR::Use sizeUse;
     BlockRange().TryGetUse(destPlaceholder, &destUse);
-    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
     BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
     destUse.ReplaceWith(dest);
-    dataUse.ReplaceWith(data);
     sizeUse.ReplaceWith(size);
     destPlaceholder->SetUnusedValue();
-    dataPlaceholder->SetUnusedValue();
     sizePlaceholder->SetUnusedValue();
+
+    if (!isMemzero)
+    {
+        LIR::Use dataUse;
+        BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+        dataUse.ReplaceWith(data);
+        dataPlaceholder->SetUnusedValue();
+    }
 
     LowerRange(rangeStart, rangeEnd);
 
@@ -8155,8 +8170,11 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     MoveCFGCallArgs(call);
 
     BlockRange().Remove(destPlaceholder);
-    BlockRange().Remove(dataPlaceholder);
     BlockRange().Remove(sizePlaceholder);
+    if (!isMemzero)
+    {
+        BlockRange().Remove(dataPlaceholder);
+    }
 
 // Wrap with memory barriers on weak memory models
 // if the block store was volatile

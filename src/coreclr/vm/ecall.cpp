@@ -149,6 +149,10 @@ void ECall::PopulateManagedHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_MEMSET, pDest);
 
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__RUNTIME_HELPERS__MEMZERO));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMZERO, pDest);
+
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__RUNTIME_HELPERS__MEMCOPY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);

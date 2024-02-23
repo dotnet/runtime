@@ -8,9 +8,9 @@ namespace System
 #if TARGET_ARM64
         // Determine optimal value for Windows.
         // https://github.com/dotnet/runtime/issues/8896
-        private static nuint MemmoveNativeThreshold => nuint.MaxValue;
+        internal static nuint MemmoveNativeThreshold => nuint.MaxValue;
 #else
-        private const nuint MemmoveNativeThreshold = 2048;
+        internal const nuint MemmoveNativeThreshold = 2048;
 #endif
         // TODO: Determine optimal value
         internal const nuint ZeroMemoryNativeThreshold = 1024;

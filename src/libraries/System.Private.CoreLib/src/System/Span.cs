@@ -300,7 +300,19 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Fill(T value)
         {
-            SpanHelpers.Fill(ref _reference, (uint)_length, value);
+            if (sizeof(T) == 1)
+            {
+                // Special-case single-byte types like byte / sbyte / bool.
+                // The runtime eventually calls memset, which can efficiently support large buffers.
+                // We don't need to check IsReferenceOrContainsReferences because no references
+                // can ever be stored in types this small.
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), *(byte*)&value, (uint)_length);
+            }
+            else
+            {
+                // Call our optimized workhorse method for all other types.
+                SpanHelpers.Fill(ref _reference, (uint)_length, value);
+            }
         }
 
         /// <summary>

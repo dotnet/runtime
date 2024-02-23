@@ -33,7 +33,7 @@
 // R2R Version 8.0 Changes the alignment of the Int128 type
 // R2R Version 9.0 adds support for the Vector512 type
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
-// R2R Version 9.2 adds new helper to perform native memset
+// R2R Version 9.2 adds MemZero and NativeMemSet helpers
 
 
 struct READYTORUN_CORE_HEADER
@@ -327,6 +327,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
     READYTORUN_HELPER_Ldelema_Ref               = 0x39,
 
+    READYTORUN_HELPER_MemZero                   = 0x3E,
     READYTORUN_HELPER_MemSet                    = 0x3F,
     READYTORUN_HELPER_NativeMemSet              = 0x40,
     READYTORUN_HELPER_MemCpy                    = 0x41,

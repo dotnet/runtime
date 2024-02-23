@@ -144,6 +144,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.MemSet:
                     mangledName = "RhRuntimeHelpers_MemSet";
                     break;
+                case ReadyToRunHelper.MemZero:
+                    mangledName = "RhRuntimeHelpers_MemZero";
+                    break;
                 case ReadyToRunHelper.NativeMemSet:
                     mangledName = "memset";
                     break;
