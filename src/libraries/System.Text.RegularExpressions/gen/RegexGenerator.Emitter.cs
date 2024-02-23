@@ -1455,7 +1455,8 @@ namespace System.Text.RegularExpressions.Generator
 
             // In debug builds, additional code is emitted to validate that the backtracking stack is being maintained appropriately.
             // When state is pushed onto the backtracking stack, an additional known value is pushed, and when it's popped, it's
-            // the popped value is checked against that known value, throwing an exception if they don't match.
+            // the popped value is checked against that known value, throwing an exception if they don't match. This validation code
+            // is currently not part of RegexCompiler, though it could be added there in the future if desired.
 #if DEBUG
 #pragma warning disable RS1035 // Random isn't always deterministic, but this is only for debug builds, and we've seeded the Random with a constant
             Random stackCookieGenerator = new(12345); // seed for deterministic behavior
@@ -2013,7 +2014,8 @@ namespace System.Text.RegularExpressions.Generator
                         string switchClause;
                         if (currentBranch is null)
                         {
-                            // We're in a loop, so we use the backtracking stack to persist our state. Pop it off.
+                            // We're in a loop, so we use the backtracking stack to persist our state.
+                            // Pop it off and validate the stack position.
                             EmitStackPop(0, startingCapturePos is not null ?
                                 [startingCapturePos, startingPos] :
                                 [startingPos]);
