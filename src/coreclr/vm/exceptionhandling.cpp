@@ -2554,14 +2554,14 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     CLRUnwindStatus ReturnStatus = UnwindPending;
 
     MethodDesc*     pMD         = pcfThisFrame->GetFunction();
-    
+
     bool fIsFirstPass = !(dwExceptionFlags & EXCEPTION_UNWINDING);
     bool fIsFunclet   = pcfThisFrame->IsFunclet();
 
     CONSISTENCY_CHECK(IsValid());
     CONSISTENCY_CHECK(ThrowableIsValid() || !fIsFirstPass);
     CONSISTENCY_CHECK(pMD != 0);
-    
+
     EH_LOG((LL_INFO100, "  [ ProcessManagedCallFrame this=%p, %s PASS ]\n", this, (fIsFirstPass ? "FIRST" : "SECOND")));
 
     EH_LOG((LL_INFO100, "  [ method: %s%s, %s ]\n",

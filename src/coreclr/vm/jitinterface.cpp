@@ -7684,7 +7684,6 @@ static void getMethodInfoHelper(
                              (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
                              (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0)));
 
-
     // EEJitManager::ResolveEHClause and CrawlFrame::GetExactGenericInstantiations
     // need to be able to get to CORINFO_GENERICS_CTXT_MASK if there are any
     // catch clauses like "try {} catch(MyException<T> e) {}".

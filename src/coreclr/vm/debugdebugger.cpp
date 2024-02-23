@@ -1159,7 +1159,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 {
                     dwNativeOffset = 0;
                 }
-                
+
                 pData->pElements[i].InitPass1(
                     dwNativeOffset,
                     pMD,
