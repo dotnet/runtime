@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -34,7 +35,6 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x) => T.TrailingZeroCount(x);
 
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x)
             {
@@ -43,12 +43,8 @@ namespace System.Numerics.Tensors
                     return AdvSimd.LeadingZeroCount(AdvSimd.Arm64.ReverseElementBits(x.AsByte())).As<byte, T>();
                 }
 
-                if (PopCountOperator<T>.Vectorizable)
-                {
-                    return PopCountOperator<T>.Invoke(~x & (x - Vector128<T>.One));
-                }
-
-                throw new NotSupportedException();
+                Debug.Assert(PopCountOperator<T>.Vectorizable);
+                return PopCountOperator<T>.Invoke(~x & (x - Vector128<T>.One));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,7 +52,7 @@ namespace System.Numerics.Tensors
             {
                 if (PopCountOperator<T>.Vectorizable)
                 {
-                    PopCountOperator<T>.Invoke(~x & (x - Vector256<T>.One));
+                    return PopCountOperator<T>.Invoke(~x & (x - Vector256<T>.One));
                 }
 
                 return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
@@ -67,7 +63,7 @@ namespace System.Numerics.Tensors
             {
                 if (PopCountOperator<T>.Vectorizable)
                 {
-                    PopCountOperator<T>.Invoke(~x & (x - Vector512<T>.One));
+                    return PopCountOperator<T>.Invoke(~x & (x - Vector512<T>.One));
                 }
 
                 return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));

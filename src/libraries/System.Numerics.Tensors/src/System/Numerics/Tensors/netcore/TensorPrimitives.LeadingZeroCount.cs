@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -44,14 +45,14 @@ namespace System.Numerics.Tensors
                     if (sizeof(T) == 8) return Avx512CD.VL.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
                 }
 
-                if (AdvSimd.IsSupported)
+                Debug.Assert(AdvSimd.IsSupported);
                 {
                     if (sizeof(T) == 1) return AdvSimd.LeadingZeroCount(x.AsByte()).As<byte, T>();
                     if (sizeof(T) == 2) return AdvSimd.LeadingZeroCount(x.AsUInt16()).As<ushort, T>();
                     if (sizeof(T) == 4) return AdvSimd.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
-                }
 
-                throw new NotSupportedException();
+                    throw new NotSupportedException();
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
