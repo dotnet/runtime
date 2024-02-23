@@ -21,11 +21,12 @@
 
 //JS funcs
 extern void mono_wasm_release_cs_owned_object (int js_handle);
-extern void mono_wasm_resolve_or_reject_promise (void *data);
+extern void mono_wasm_resolve_or_reject_promise (void *args);
 extern void mono_wasm_cancel_promise (int task_holder_gc_handle);
 extern void mono_wasm_console_clear ();
 extern void mono_wasm_set_entrypoint_breakpoint (int entry_point_metadata_token);
 extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
+extern void mono_wasm_invoke_js_function (int function_js_handle, void *args);
 
 extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
@@ -37,24 +38,22 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 
 #ifndef DISABLE_THREADS
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle);
-void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void *data);
+void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void *args);
 void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_handle);
 
 extern void mono_wasm_install_js_worker_interop (int context_gc_handle);
+void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport);
 extern void mono_wasm_uninstall_js_worker_interop ();
-extern void mono_wasm_invoke_import_async (void* args, void* signature);
-void mono_wasm_invoke_import_async_post (pthread_t target_tid, void* args, void* signature);
-extern void mono_wasm_invoke_import_sync (void* args, void* signature);
-void mono_wasm_invoke_import_sync_send (pthread_t target_tid, void* args, void* signature);
-extern void mono_wasm_invoke_js_function (int function_js_handle, void *args);
+extern void mono_wasm_invoke_jsimport (void* signature, void* args);
+void mono_wasm_invoke_jsimport_async_post (pthread_t target_tid, void* signature, void* args);
+void mono_wasm_invoke_jsimport_sync_send (pthread_t target_tid, void* signature, void* args);
 void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_handle, void *args);
 extern void mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data1);
 extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 #else
 extern void mono_wasm_bind_js_import (void *signature, int *is_exception, MonoObject **result);
-extern void mono_wasm_invoke_js_import (int function_handle, void *args);
-extern void mono_wasm_invoke_js_function (int function_js_handle, void *args);
+extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
 // HybridGlobalization
@@ -77,33 +76,27 @@ void bindings_initialize_internals (void)
 #endif /* ENABLE_JS_INTEROP_BY_VALUE */
 
 #ifndef DISABLE_THREADS
-	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObjectPost", mono_wasm_release_cs_owned_object_post);
-	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
 	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromisePost", mono_wasm_resolve_or_reject_promise_post);
-	mono_add_internal_call ("Interop/Runtime::InstallWebWorkerInterop", mono_wasm_install_js_worker_interop);
+	mono_add_internal_call ("Interop/Runtime::InstallWebWorkerInterop", mono_wasm_install_js_worker_interop_wrapper);
 	mono_add_internal_call ("Interop/Runtime::UninstallWebWorkerInterop", mono_wasm_uninstall_js_worker_interop);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSImportSync", mono_wasm_invoke_import_sync);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSImportSyncSend", mono_wasm_invoke_import_sync_send);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSImportAsyncPost", mono_wasm_invoke_import_async_post);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportSync", mono_wasm_invoke_jsimport);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportSyncSend", mono_wasm_invoke_jsimport_sync_send);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportAsyncPost", mono_wasm_invoke_jsimport_async_post);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunctionSend", mono_wasm_invoke_js_function_send);
-	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
 	mono_add_internal_call ("Interop/Runtime::CancelPromisePost", mono_wasm_cancel_promise_post);
-	mono_add_internal_call ("Interop/Runtime::AssemblyGetEntryPoint", mono_wasm_assembly_get_entry_point);
-	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", mono_wasm_bind_assembly_exports);
-	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
 #else
+	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportST", mono_wasm_invoke_jsimport_ST);
+#endif /* DISABLE_THREADS */
+
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
-	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSImport", mono_wasm_invoke_js_import);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
 	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
 	mono_add_internal_call ("Interop/Runtime::AssemblyGetEntryPoint", mono_wasm_assembly_get_entry_point);
 	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", mono_wasm_bind_assembly_exports);
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
-#endif /* DISABLE_THREADS */
 
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
@@ -261,31 +254,47 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 
 #ifndef DISABLE_THREADS
 
+void* before_sync_js_import;
+void* after_sync_js_import;
+
+void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport)
+{
+	before_sync_js_import = beforeSyncJSImport;
+	after_sync_js_import = afterSyncJSImport;
+	mono_wasm_install_js_worker_interop (context_gc_handle);
+}
+
+// async
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle)
 {
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_release_cs_owned_object, (gpointer)js_handle);
 }
 
+// async
 void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void* args)
 {
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_resolve_or_reject_promise, (gpointer)args);
 }
 
+// async
 void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_handle)
 {
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_cancel_promise, (gpointer)task_holder_gc_handle);
 }
 
-void mono_wasm_invoke_import_async_post (pthread_t target_tid, void* args, void* signature)
+// async
+void mono_wasm_invoke_jsimport_async_post (pthread_t target_tid, void* signature, void* args)
 {
-	mono_threads_wasm_async_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_import_async, (gpointer)args, (gpointer)signature);
+	mono_threads_wasm_async_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport, (gpointer)signature, (gpointer)args);
 }
 
-void mono_wasm_invoke_import_sync_send (pthread_t target_tid, void* args, void* signature)
+// sync
+void mono_wasm_invoke_jsimport_sync_send (pthread_t target_tid, void* signature, void* args)
 {
-	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_import_sync, (gpointer)args, (gpointer)signature);
+	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport, (gpointer)signature, (gpointer)args);
 }
 
+// sync
 void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_handle, void *args)
 {
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_js_function, (gpointer)function_js_handle, (gpointer)args);

@@ -3774,9 +3774,6 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePairScalarNonTemporal(address, value1, value2);
 
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
             /// <summary>
             /// void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)
             ///   A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]
@@ -4247,7 +4244,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe void StoreVector128x4(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) value) => StoreVector128x4(address, value);
-#endif
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -15929,9 +15925,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
         /// <summary>
         ///   A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]
         /// </summary>
@@ -16246,7 +16239,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe void StoreVector64x4(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) value) => StoreVector64x4(address, value);
-#endif
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)

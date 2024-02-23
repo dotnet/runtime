@@ -1472,14 +1472,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
-#ifdef TARGET_AMD64
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
-                break;
-#endif
-
             default:
                 unreached();
         }
@@ -1599,14 +1591,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 srcRegMask     = RBM_RSI;
                 sizeRegMask    = RBM_RCX;
                 break;
-
-#ifdef TARGET_AMD64
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
-                break;
-#endif
 
             default:
                 unreached();

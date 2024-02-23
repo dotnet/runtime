@@ -53,7 +53,6 @@
       DOTNET_JitStressRegs;
       DOTNET_TailcallStress;
       DOTNET_ReadyToRun;
-      DOTNET_ZapDisable;
       DOTNET_TC_OnStackReplacement;
       DOTNET_TC_QuickJitForLoops;
       DOTNET_TC_OnStackReplacement_InitialCounter;
@@ -207,11 +206,11 @@
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
     <TestEnvironment Include="gcstress0xf" GCStress="0xF" />
-    <TestEnvironment Include="zapdisable" ZapDisable="1" ReadyToRun="0" />
+    <TestEnvironment Include="disabler2r" ReadyToRun="0" />
     <TestEnvironment Include="heapverify1" HeapVerify="1" />
-    <TestEnvironment Include="gcstress0xc_zapdisable" GCStress="0xC" ZapDisable="1" ReadyToRun="0" />
-    <TestEnvironment Include="gcstress0xc_zapdisable_jitstress2" GCStress="0xC" ZapDisable="1" ReadyToRun="0" JitStress="2" />
-    <TestEnvironment Include="gcstress0xc_zapdisable_heapverify1" GCStress="0xC" ZapDisable="1" ReadyToRun="0" HeapVerify="1" />
+    <TestEnvironment Include="gcstress0xc_disabler2r" GCStress="0xC" ReadyToRun="0" />
+    <TestEnvironment Include="gcstress0xc_disabler2r_jitstress2" GCStress="0xC" ReadyToRun="0" JitStress="2" />
+    <TestEnvironment Include="gcstress0xc_disabler2r_heapverify1" GCStress="0xC" ReadyToRun="0" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_jitstress1" GCStress="0xC" JitStress="1" />
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
     <TestEnvironment Include="gcstress0xc_tailcallstress" GCStress="0xC" TailcallStress="1" />

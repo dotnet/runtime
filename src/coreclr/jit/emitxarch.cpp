@@ -12475,9 +12475,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
             assert(paddingToAdd == paddingNeeded);
         }
     }
-
-    emitComp->loopsAligned++;
 #endif
+
+    emitComp->Metrics.LoopsAligned++;
 
 #ifdef DEBUG
     // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
