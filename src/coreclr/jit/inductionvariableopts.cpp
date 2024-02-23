@@ -432,6 +432,7 @@ Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
 // Parameters:
 //   block - Block containing the tree
 //   tree  - Tree node
+//   depth - Current analysis depth
 //
 // Returns:
 //   SCEV node if the tree was analyzable; otherwise nullptr if the value is
@@ -708,7 +709,7 @@ const int SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH = 64;
 // Parameters:
 //   block - Block containing the tree
 //   tree  - Tree node
-//   depth - Current analysis depth.
+//   depth - Current analysis depth
 //
 // Returns:
 //   SCEV node if the tree was analyzable; otherwise nullptr if the value is
@@ -963,19 +964,16 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     return result != BasicBlockVisit::Abort;
 }
 
-struct IVUse
-{
-    BasicBlock* Block;
-    Statement*  Statement;
-};
-
 //------------------------------------------------------------------------
 // optIsIVWideningProfitable: Check to see if IV widening is profitable.
 //
 // Parameters:
-//   lclNum              - The primary induction variable
-//   needsInitialization - Whether or not the widened IV will need explicit initialization
-//   loop                - The loop
+//   lclNum           - The primary induction variable
+//   initBlock        - The block in where the new IV would be initialized
+//   initedToConstant - Whether or not the new IV will be initialized to a constant
+//   loop             - The loop
+//   ivUses           - Statements in which "lclNum" appears will be added to this list
+//
 //
 // Returns:
 //   True if IV widening is profitable.
