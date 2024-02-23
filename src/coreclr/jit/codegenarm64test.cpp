@@ -8192,6 +8192,21 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_BI_2A
     // MOVPRFX <Zd>, <Zn>
     theEmitter->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V3, REG_V5);
+
+    // IF_SVE_BH_3A
+    // ADR <Zd>.<T>, [<Zn>.<T>, <Zm>.<T>{, <mod><amount>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V0, REG_V2, REG_V3, 0,
+                              INS_OPTS_SCALABLE_B);
+
+    // IF_SVE_BH_3B
+    // ADR <Zd>.D, [<Zn>.D, <Zm>.D, SXTW{<amount>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V1, REG_V2, REG_V5, 0,
+                              INS_OPTS_SCALABLE_D);
+
+    // IF_SVE_BH_3B_A
+    // ADR <Zd>.D, [<Zn>.D, <Zm>.D, UXTW{<amount>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V5, REG_V3, REG_V9, 0,
+                              INS_OPTS_SCALABLE_D);
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)
