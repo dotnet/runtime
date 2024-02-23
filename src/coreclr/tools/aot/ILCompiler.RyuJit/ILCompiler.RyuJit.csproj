@@ -91,6 +91,9 @@
     <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
       <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
+      <Link>JitInterface\SwiftPhysicalLowering.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>
     </Compile>
@@ -100,8 +103,6 @@
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="Pgo\MIbcProfileParser.cs" />
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />
-
-    <Compile Include="JitInterface\SwiftPhysicalLowering.cs" />
 
   </ItemGroup>
 </Project>
