@@ -38,45 +38,29 @@ extends:
       jobs:
 
       #
-      # Build CoreCLR checked
-      # Only when CoreCLR is changed
+      # Build CoreCLR and Libraries
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - windows_x64
           jobParameters:
-            testGroup: innerloop
-
-      #
-      # Build CoreCLR release
-      # Always as they are needed by Installer and we always build and test the Installer.
-      #
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          jobParameters:
-            testScope: innerloop
-
-      #
-      # CoreCLR Test builds using live libraries release build
-      # Only when CoreCLR is changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: innerloop
-
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+          postBuildSteps:
+            - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                displayName: Build Assets
+          extraVariablesTemplates:
+            - /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
 
       #
       # CoreCLR Test executions using live libraries
@@ -95,3 +79,7 @@ extends:
             testGroup: innerloop
             liveLibrariesBuildConfig: release
             useCodeFlowEnforcement: true
+            dependsOn:
+              - build_$(osGroup)$(osSubgroup)_$(archType)_checked_
+              - CoreCLR_common_test_build_pri0_AnyOS_AnyCPU_checked
+            unifiedArtifactsName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
