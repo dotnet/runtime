@@ -756,14 +756,14 @@ namespace System.Collections
 
             if (array is int[] intArray)
             {
-                int fullInts = Div32Rem(m_length, out int extraBits);
+                int quotient = Div32Rem(m_length, out int extraBits);
 
-                Array.Copy(m_array, 0, intArray, index, fullInts);
+                Array.Copy(m_array, 0, intArray, index, quotient);
 
                 if (extraBits > 0)
                 {
                     // the last int needs to be masked
-                    intArray[index + fullInts] = m_array[fullInts] & unchecked((1 << extraBits) - 1);
+                    intArray[index + quotient] = m_array[quotient] & unchecked((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[] byteArray)
@@ -784,8 +784,8 @@ namespace System.Collections
 
                 Span<byte> span = byteArray.AsSpan(index);
 
-                int fullInts = Div4Rem(arrayLength, out int extraBytes);
-                for (int i = 0; i < fullInts; i++)
+                int quotient = Div4Rem(arrayLength, out int remainder);
+                for (int i = 0; i < quotient; i++)
                 {
                     BinaryPrimitives.WriteInt32LittleEndian(span, m_array[i]);
                     span = span.Slice(4);
@@ -794,23 +794,23 @@ namespace System.Collections
                 if (extraBits > 0)
                 {
                     Debug.Assert(span.Length > 0);
-                    Debug.Assert(m_array.Length > fullInts);
+                    Debug.Assert(m_array.Length > quotient);
                     // mask the final byte
-                    span[extraBytes] = (byte)((m_array[fullInts] >> (extraBytes * 8)) & ((1 << (int)extraBits) - 1));
+                    span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
                 }
 
-                switch (extraBytes)
+                switch (remainder)
                 {
                     case 3:
-                        span[2] = (byte)(m_array[fullInts] >> 16);
+                        span[2] = (byte)(m_array[quotient] >> 16);
                         goto case 2;
                     // fall through
                     case 2:
-                        span[1] = (byte)(m_array[fullInts] >> 8);
+                        span[1] = (byte)(m_array[quotient] >> 8);
                         goto case 1;
                     // fall through
                     case 1:
-                        span[0] = (byte)m_array[fullInts];
+                        span[0] = (byte)m_array[quotient];
                         break;
                 }
             }
