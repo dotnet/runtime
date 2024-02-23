@@ -9,29 +9,16 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal abstract partial class OrderedEnumerable<TElement> : IOrderedEnumerable<TElement>
+        internal abstract partial class OrderedEnumerable<TElement> : Iterator<TElement>, IOrderedEnumerable<TElement>
         {
-            internal IEnumerable<TElement> _source;
+            internal readonly IEnumerable<TElement> _source;
 
             protected OrderedEnumerable(IEnumerable<TElement> source) => _source = source;
 
-            private int[] SortedMap(TElement[] buffer) => GetEnumerableSorter().Sort(buffer, buffer.Length);
+            private protected int[] SortedMap(TElement[] buffer) => GetEnumerableSorter().Sort(buffer, buffer.Length);
 
             private int[] SortedMap(TElement[] buffer, int minIdx, int maxIdx) =>
                 GetEnumerableSorter().Sort(buffer, buffer.Length, minIdx, maxIdx);
-
-            public virtual IEnumerator<TElement> GetEnumerator()
-            {
-                TElement[] buffer = _source.ToArray();
-                if (buffer.Length > 0)
-                {
-                    int[] map = SortedMap(buffer);
-                    for (int i = 0; i < buffer.Length; i++)
-                    {
-                        yield return buffer[map[i]];
-                    }
-                }
-            }
 
             internal IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
             {
@@ -111,6 +98,8 @@ namespace System.Linq
             private readonly Func<TElement, TKey> _keySelector;
             private readonly IComparer<TKey> _comparer;
             private readonly bool _descending;
+            private TElement[]? _buffer;
+            private int[]? _map;
 
             internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending, OrderedEnumerable<TElement>? parent) :
                 base(source)
@@ -129,6 +118,8 @@ namespace System.Linq
                 _comparer = comparer ?? Comparer<TKey>.Default;
                 _descending = descending;
             }
+
+            public override Iterator<TElement> Clone() => new OrderedEnumerable<TElement, TKey>(_source, _keySelector, _comparer, _descending, _parent);
 
             internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next)
             {
@@ -157,12 +148,56 @@ namespace System.Linq
                     : new CachingComparerWithChild<TElement, TKey>(_keySelector, _comparer, _descending, childComparer);
                 return _parent != null ? _parent.GetComparer(cmp) : cmp;
             }
+
+            public override bool MoveNext()
+            {
+                int state = _state;
+
+                Initialized:
+                if (state > 1)
+                {
+                    Debug.Assert(_buffer is not null);
+                    Debug.Assert(_map is not null);
+                    Debug.Assert(_map.Length == _buffer.Length);
+
+                    int[] map = _map;
+                    int i = state - 2;
+                    if ((uint)i < (uint)map.Length)
+                    {
+                        _current = _buffer[map[i]];
+                        _state++;
+                        return true;
+                    }
+                }
+                else if (state == 1)
+                {
+                    TElement[] buffer = _source.ToArray();
+                    if (buffer.Length != 0)
+                    {
+                        _map = SortedMap(buffer);
+                        _buffer = buffer;
+                        _state = state = 2;
+                        goto Initialized;
+                    }
+                }
+
+                Dispose();
+                return false;
+            }
+
+            public override void Dispose()
+            {
+                _buffer = null;
+                _map = null;
+                base.Dispose();
+            }
         }
 
         /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
         internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
         {
             private readonly bool _descending;
+            private TElement[]? _buffer;
 
             public OrderedImplicitlyStableEnumerable(IEnumerable<TElement> source, bool descending) : base(source)
             {
@@ -176,6 +211,8 @@ namespace System.Linq
                 _descending = descending;
             }
 
+            public override Iterator<TElement> Clone() => new OrderedImplicitlyStableEnumerable<TElement>(_source, _descending);
+
             internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
                 childComparer == null ?
                     new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending) :
@@ -184,17 +221,45 @@ namespace System.Linq
             internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next) =>
                 new EnumerableSorter<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, next);
 
-            public override IEnumerator<TElement> GetEnumerator()
+            public override bool MoveNext()
             {
-                TElement[] buffer = _source.ToArray();
-                if (buffer.Length > 0)
+                int state = _state;
+                TElement[]? buffer;
+
+                Initialized:
+                if (state > 1)
                 {
-                    Sort(buffer, _descending);
-                    for (int i = 0; i < buffer.Length; i++)
+                    buffer = _buffer;
+                    Debug.Assert(buffer is not null);
+
+                    int i = state - 2;
+                    if ((uint)i < (uint)buffer.Length)
                     {
-                        yield return buffer[i];
+                        _current = buffer[i];
+                        _state++;
+                        return true;
                     }
                 }
+                else if (state == 1)
+                {
+                    buffer = _source.ToArray();
+                    if (buffer.Length != 0)
+                    {
+                        Sort(buffer, _descending);
+                        _buffer = buffer;
+                        _state = state = 2;
+                        goto Initialized;
+                    }
+                }
+
+                Dispose();
+                return false;
+            }
+
+            public override void Dispose()
+            {
+                _buffer = null;
+                base.Dispose();
             }
 
             private static void Sort(Span<TElement> span, bool descending)
