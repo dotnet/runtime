@@ -33,8 +33,8 @@
 // R2R Version 8.0 Changes the alignment of the Int128 type
 // R2R Version 9.0 adds support for the Vector512 type
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
-// R2R Version 9.2 adds MemZero and NativeMemSet helpers
-
+// R2R Version 9.2 adds MemZero and NativeMemSet helpers,
+//                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
 
 struct READYTORUN_CORE_HEADER
 {
