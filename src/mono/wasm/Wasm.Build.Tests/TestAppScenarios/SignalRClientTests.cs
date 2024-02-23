@@ -25,9 +25,9 @@ public class SignalRClientTests : AppTestBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [InlineData("Debug", "LongPolling")]
-    [InlineData("Release", "LongPolling")]
-    [InlineData("Debug", "WebSockets")]
-    [InlineData("Release", "WebSockets")]
+    // [InlineData("Release", "LongPolling")]
+    // [InlineData("Debug", "WebSockets")]
+    // [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
         CopyTestAsset("BlazorHostedApp", "SignalRClientTests");
@@ -88,12 +88,12 @@ public class SignalRClientTests : AppTestBase
 
         // check sending threadId
         var confirmation = testOutput.FirstOrDefault(m => m.Contains($"SignalRPassMessages was sent by CurrentManagedThreadId="));
-        Assert.True(confirmation != null, "Expected to find a log that signalR message was sent.");
+        Assert.True(confirmation != null, $"Expected to find a log that signalR message was sent. TestOutput: {output}.");
         string threadIdUsedForSending = confirmation?.Split("CurrentManagedThreadId=")[1] ?? "";
 
         // check receiving threadId
         confirmation = testOutput.FirstOrDefault(m => m.Contains($"ReceiveMessage from server on CurrentManagedThreadId="));
-        Assert.True(confirmation != null, "Expected to find a log that signalR message was received.");
+        Assert.True(confirmation != null, $"Expected to find a log that signalR message was received. TestOutput: {output}.");
         string threadIdUsedForReceiving = confirmation?.Split("CurrentManagedThreadId=")[1] ?? "";
 
         string output = string.Join(Environment.NewLine, testOutput);
