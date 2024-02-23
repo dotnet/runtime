@@ -320,7 +320,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->Next(), true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, true);
 
     assert(fallbackBb->JumpsToNext());
     fallbackBb->SetFlags(BBF_NONE_QUIRK);
@@ -330,7 +330,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
-    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo, block);
+    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo);
 
     // Set nullcheckBb's false jump target
     nullcheckBb->SetFalseTarget(fastPathBb);
@@ -375,16 +375,24 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
         GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
         // sizeCheckBb fails - jump to fallbackBb
-        sizeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo, fallbackBb);
-        sizeCheckBb->SetFalseTarget(nullcheckBb);
+        sizeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
     }
 
     //
     // Update preds in all new blocks
     //
     fgRemoveRefPred(block, prevBb);
-    fgAddRefPred(block, fastPathBb);
-    fgAddRefPred(block, fallbackBb);
+    
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
+        fasthPathBb->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
+        fallbackBb->SetTargetEdge(newEdge);
+    }
+
     assert(prevBb->KindIs(BBJ_ALWAYS));
 
     if (needsSizeCheck)
@@ -394,10 +402,15 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         prevBb->SetTargetEdge(newEdge);
 
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
-        fgAddRefPred(nullcheckBb, sizeCheckBb);
+        {
+            FlowEdge* const trueEdge = fgAddRefPred(fallbackBb, sizeCheckBb);
+            FlowEdge* const falseEdge = fgAddRefPred(nullcheckBb, sizeCheckBb);
+            sizeCheckBb->SetTrueEdge(trueEdge);
+            sizeCheckBb->SetFalseEdge(falseEdge);
+        }
+        
         // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
         fgAddRefPred(fallbackBb, nullcheckBb);
-        fgAddRefPred(fallbackBb, sizeCheckBb);
         // fastPathBb is only reachable from successful nullcheckBb
         fgAddRefPred(fastPathBb, nullcheckBb);
     }
@@ -702,10 +715,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     // fallbackBb
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, block, true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, true);
 
     GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
 
     *callUse = finalLcl;
 
@@ -718,8 +731,15 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     fgAddRefPred(fallbackBb, tlsRootNullCondBB);
     fgAddRefPred(fastPathBb, tlsRootNullCondBB);
 
-    fgAddRefPred(block, fallbackBb);
-    fgAddRefPred(block, fastPathBb);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
+        fallbackBb->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
+        fastPathBb->SetTargetEdge(newEdge);
+    }
 
     tlsRootNullCondBB->SetTrueTarget(fastPathBb);
     tlsRootNullCondBB->SetFalseTarget(fallbackBb);
@@ -1058,7 +1078,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // fallbackBb
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(threadStaticBlockLclNum, call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, block, true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
 
     // fastPathBb
     if (isGCThreadStatic)
@@ -1073,7 +1093,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     GenTree* fastPathValueDef =
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
 
     // Set maxThreadStaticBlocksCondBB's jump targets
     maxThreadStaticBlocksCondBB->SetTrueTarget(fallbackBb);
@@ -1097,8 +1117,15 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     fgAddRefPred(fastPathBb, threadStaticBlockNullCondBB);
     fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
 
-    fgAddRefPred(block, fastPathBb);
-    fgAddRefPred(block, fallbackBb);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
+        fasthPathBb->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
+        fallbackBb->SetTargetEdge(newEdge);
+    }
 
     // Inherit the weights
     block->inheritWeight(prevBb);
@@ -1378,12 +1405,12 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitedActualValueNode, isInitedExpectedValue);
     isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
     BasicBlock* isInitedBb =
-        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo, block);
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
 
     // Fallback basic block
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
-    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->Next(), true);
+    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, true);
     assert(helperCallBb->JumpsToNext());
     helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
@@ -1448,8 +1475,15 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     fgRemoveRefPred(prevBb->GetTargetEdge());
 
     // Block has two preds now: either isInitedBb or helperCallBb
-    fgAddRefPred(block, isInitedBb);
-    fgAddRefPred(block, helperCallBb);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, isInitedBb);
+        isInitedBb->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(block, helperCallBb);
+        helperCallBb->SetTargetEdge(newEdge);
+    }
 
     // prevBb always flows into isInitedBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
@@ -1689,7 +1723,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
-    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true, block);
+    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
     lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
@@ -1711,7 +1745,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // In theory, we could just emit the const U8 data to the data section and use GT_BLK here
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
-    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->Next());
+    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true);
     assert(fastpathBb->JumpsToNext());
     fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
@@ -1770,8 +1804,12 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     // prevBb flows into lengthCheckBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    FlowEdge* const newEdge = fgAddRefPred(lengthCheckBb, prevBb);
-    prevBb->SetTargetEdge(newEdge);
+    
+    {
+        FlowEdge* const newEdge = fgAddRefPred(lengthCheckBb, prevBb);
+        prevBb->SetTargetEdge(newEdge);
+    }
+
     prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
 
@@ -1779,8 +1817,12 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     lengthCheckBb->SetFalseTarget(fastpathBb);
     fgAddRefPred(fastpathBb, lengthCheckBb);
     fgAddRefPred(block, lengthCheckBb);
-    // fastpathBb flows into block
-    fgAddRefPred(block, fastpathBb);
+    
+    {
+        // fastpathBb flows into block
+        FlowEdge* const newEdge = fgAddRefPred(block, fastpathBb);
+        fastPathBb->SetTargetEdge(newEdge);
+    }
 
     //
     // Re-distribute weights
@@ -2349,7 +2391,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, tmpNode, gtNewNull());
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
     BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
-                                                   debugInfo, lastBb, true);
+                                                   debugInfo, true);
 
     // The very first statement in the whole expansion is to assign obj to tmp.
     // We assume it's the value we're going to return in most cases.
@@ -2389,7 +2431,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), expectedClsNode);
         mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
         GenTree* jtrue             = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
-        typeChecksBbs[candidateId] = fgNewBBFromTreeAfter(BBJ_COND, lastTypeCheckBb, jtrue, debugInfo, lastBb, true);
+        typeChecksBbs[candidateId] = fgNewBBFromTreeAfter(BBJ_COND, lastTypeCheckBb, jtrue, debugInfo, true);
         lastTypeCheckBb            = typeChecksBbs[candidateId];
 
         // Insert the CSE node as the first statement in the block
@@ -2411,13 +2453,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     {
         // fallback call is used only to throw InvalidCastException
         call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, nullptr, true);
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, true);
     }
     else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)
     {
         // if fallback call is not needed, we just assign null to tmp
         GenTree* fallbackTree = gtNewTempStore(tmpNum, gtNewNull());
-        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, lastBb, true);
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, true);
     }
     else
     {
@@ -2428,7 +2470,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL);
         }
         GenTree* fallbackTree = gtNewTempStore(tmpNum, call);
-        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, lastBb, true);
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, true);
     }
 
     // Block 4: typeCheckSucceedBb
@@ -2444,7 +2486,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     BasicBlock* typeCheckSucceedBb =
         typeCheckNotNeeded ? nullptr
-                           : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
+                           : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
 
     //
     // Wire up the blocks
@@ -2488,13 +2530,15 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     else
     {
         fgAddRefPred(typeChecksBbs[0], nullcheckBb);
-        fgAddRefPred(lastBb, typeCheckSucceedBb);
+        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
+        typeCheckSucceedBb->SetTargetEdge(newEdge);
     }
 
     if (!fallbackBb->KindIs(BBJ_THROW))
     {
         // if fallbackBb is BBJ_THROW then it has no successors
-        fgAddRefPred(lastBb, fallbackBb);
+        FlowEdge* const newEdge = fgAddRefPred(lastBb, fallbackBb);
+        fallbackBb->SetTargetEdge(newEdge);
     }
 
     //

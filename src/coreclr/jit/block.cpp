@@ -1585,15 +1585,10 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-
-    // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
-    // yet.
-    // The checks will be done any time the jump kind/target is read or written to after initialization.
     block->bbKind   = kind;
-    block->bbTarget = target;
 
     if (block->KindIs(BBJ_THROW))
     {

@@ -2020,13 +2020,14 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     {
         // Create extra basic block for the spill
         //
-        BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true, /* jumpDest */ hndBlk);
+        BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true);
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         FlowEdge* const newEdge = fgAddRefPred(hndBlk, newBlk);
         newEdge->setLikelihood(1.0);
+        newBlk->SetTargetEdge(newEdge);
 
         // Spill into a temp.
         unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
@@ -4531,7 +4532,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         // Insert a new BB either in the try region indicated by tryIndex or
         // the handler region indicated by leaveTarget->bbHndIndex,
         // depending on which is the inner region.
-        BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step, leaveTarget);
+        BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step);
         finalStep->SetFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // step's jump target shouldn't be set yet
@@ -4573,6 +4574,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         {
             FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
             newEdge->setLikelihood(1.0);
+            finalStep->SetTargetEdge(newEdge);
         }
 
         // Queue up the jump target for importing
@@ -5070,10 +5072,11 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // will be treated as pair and handled correctly.
     if (block->KindIs(BBJ_CALLFINALLY))
     {
-        BasicBlock* dupBlock = BasicBlock::New(this, BBJ_CALLFINALLY, block->GetTarget());
+        BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
-        FlowEdge* const newEdge = fgAddRefPred(dupBlock->GetTarget(), dupBlock);
+        FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
         newEdge->setLikelihood(1.0);
+        dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
 

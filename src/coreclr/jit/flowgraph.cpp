@@ -2758,13 +2758,11 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS);
-    newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
+    BasicBlock* newHead = BasicBlock::New(this);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
     fgInsertBBbefore(block, newHead); // insert the new block in the block list
-    assert(newHead->JumpsToNext());
     fgExtendEHRegionBefore(block); // Update the EH table to make the prolog block the first block in the block's EH
                                    // block.
 
@@ -2797,11 +2795,12 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
         }
     }
 
-    assert(nullptr == fgGetPredForBlock(block, newHead));
+    assert(fgGetPredForBlock(block, newHead) == nullptr);
     FlowEdge* const newEdge = fgAddRefPred(block, newHead);
-    newHead->SetTargetEdge(newEdge);
+    newHead->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
-    assert(newHead->HasFlag(BBF_INTERNAL));
+    assert(newHead->JumpsToNext());
+    newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 }
 
 //------------------------------------------------------------------------
@@ -3375,7 +3374,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
         assert(add->acdKind != SCK_NONE);
 
-        BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* jumpDest */ nullptr,
+        BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk,
                                                    /* runRarely */ true, /* insertAtEnd */ true);
 
         // Update the descriptor

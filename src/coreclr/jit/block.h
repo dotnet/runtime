@@ -537,7 +537,7 @@ private:
 
 public:
     static BasicBlock* New(Compiler* compiler);
-    static BasicBlock* New(Compiler* compiler, BBKinds kind, BasicBlock* target = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBKinds kind);
     static BasicBlock* New(Compiler* compiler, BBehfDesc* ehfTargets);
     static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTargets);
     static BasicBlock* New(Compiler* compiler, BBKinds kind, unsigned targetOffs);

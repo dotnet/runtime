@@ -14668,7 +14668,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //
         gtReverseCond(condExpr);
 
-        thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
+        thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->SetFlags(propagateFlagsToAll);
         condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
@@ -14678,7 +14678,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
 
         fgAddRefPred(thenBlock, condBlock);
-        fgAddRefPred(remainderBlock, thenBlock);
+        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
+        thenBlock->SetTargetEdge(newEdge);
 
         thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());

@@ -1054,7 +1054,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            comp->fgRemoveRefPred(jumpTab[i]);
+            FlowEdge* const oldEdge = comp->fgRemoveRefPred(jumpTab[i]);
 
             if (targetBlock == followingBB)
             {
@@ -1067,10 +1067,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // If we haven't used the afterDefaultCondBlock yet, then use that.
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true, currentBlock->Next());
+                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
                 newBlock->SetFlags(BBF_NONE_QUIRK);
-                currentBlock->SetFalseTarget(newBlock);
-                comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+                currentBlock->SetFalseEdge(falseEdge);
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
             }
@@ -1081,7 +1081,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             }
 
             // Wire up the predecessor list for the "branch" case.
-            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
+            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1096,7 +1096,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetCond(targetBlock, currentBlock->Next());
+                FlowEdge* const edgeToNext = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+                currentBlock->SetCond(newEdge, edgeToNext);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:

@@ -222,9 +222,9 @@ private:
         //
         // Return Value:
         //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
+        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter)
         {
-            BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
+            BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
             block->SetFlags(BBF_IMPORTED);
             return block;
         }
@@ -376,7 +376,7 @@ private:
         {
             assert(checkIdx == 0);
 
-            checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock->Next());
+            checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
@@ -395,7 +395,7 @@ private:
         virtual void CreateThen(uint8_t checkIdx)
         {
             assert(remainderBlock != nullptr);
-            thenBlock                     = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
+            thenBlock                     = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             Statement* copyOfOriginalStmt = compiler->gtCloneStmt(stmt);
             compiler->fgInsertStmtAtEnd(thenBlock, copyOfOriginalStmt);
         }
@@ -405,7 +405,7 @@ private:
         //
         virtual void CreateElse()
         {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
+            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
             elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             GenTree* fixedFptrAddress  = GetFixedFptrAddress();
@@ -1021,7 +1021,7 @@ private:
             weight_t       elseLikelihoodWt = max(1.0 - thenLikelihoodWt, 0.0);
 
             // thenBlock always jumps to remainderBlock
-            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
+            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
             thenBlock->inheritWeightPercentage(currBlock, thenLikelihood);
 
@@ -1029,11 +1029,13 @@ private:
             assert(checkBlock->KindIs(BBJ_ALWAYS));
             FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
             thenEdge->setLikelihood(thenLikelihoodWt);
-            FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-            elseEdge->setLikelihood(elseLikelihoodWt);
             checkBlock->SetTargetEdge(thenEdge);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
+            
+            FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
+            elseEdge->setLikelihood(elseLikelihoodWt);
+            thenBlock->SetTargetEdge(elseEdge);
 
             DevirtualizeCall(thenBlock, checkIdx);
         }
@@ -1054,7 +1056,7 @@ private:
             assert(elseLikelihood <= 100);
             weight_t elseLikelihoodDbl = ((weight_t)elseLikelihood) / 100.0;
 
-            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
+            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
             elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
             elseBlock->SetFlags(BBF_NONE_QUIRK);
 
@@ -1077,6 +1079,7 @@ private:
             // elseBlock always flows into remainderBlock
             FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
             elseEdge->setLikelihood(1.0);
+            elseBlock->SetTargetEdge(elseEdge);
 
             // Remove everything related to inlining from the original call
             origCall->ClearInlineInfo();

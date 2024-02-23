@@ -1984,10 +1984,11 @@ bool Compiler::fgNormalizeEHCase1()
         {
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
-            BasicBlock* newHndStart = BasicBlock::New(this, BBJ_ALWAYS, handlerStart);
+            BasicBlock* newHndStart = BasicBlock::New(this);
             fgInsertBBbefore(handlerStart, newHndStart);
             FlowEdge* newEdge = fgAddRefPred(handlerStart, newHndStart);
             newEdge->setLikelihood(1.0);
+            newHndStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
             // Handler begins have an extra implicit ref count.
             // BasicBlock::New has already handled this for newHndStart.
@@ -2154,11 +2155,12 @@ bool Compiler::fgNormalizeEHCase2()
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
-                        BasicBlock* newTryStart = BasicBlock::New(this, BBJ_ALWAYS, insertBeforeBlk);
+                        BasicBlock* newTryStart = BasicBlock::New(this);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
                         FlowEdge* const newEdge = fgAddRefPred(insertBeforeBlk, newTryStart);
                         newEdge->setLikelihood(1.0);
+                        newTryStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                         // It's possible for a try to start at the beginning of a method. If so, we need
                         // to adjust the implicit ref counts as we've just created a new first bb
@@ -2346,7 +2348,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Create a new bb for the fake filter
             BasicBlock* handlerBb = eh->ebdHndBeg;
-            BasicBlock* filterBb  = BasicBlock::New(this, BBJ_EHFILTERRET, handlerBb);
+            BasicBlock* filterBb  = BasicBlock::New(this);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2376,6 +2378,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             fgInsertBBbefore(handlerBb, filterBb);
             FlowEdge* const newEdge = fgAddRefPred(handlerBb, filterBb);
             newEdge->setLikelihood(1.0);
+            filterBb->SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
             filterBb->bbCatchTyp = BBCT_FILTER;
@@ -2632,7 +2635,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
                     // shares a 'last' pointer
 
-                    BasicBlock* newLast = BasicBlock::New(this, BBJ_ALWAYS, insertAfterBlk->Next());
+                    BasicBlock* newLast = BasicBlock::New(this);
                     newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);
@@ -2683,6 +2686,7 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
                     FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
                     newEdge->setLikelihood(1.0);
+                    insertAfterBlk->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
                     insertAfterBlk = newLast;

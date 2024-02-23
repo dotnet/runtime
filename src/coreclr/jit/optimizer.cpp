@@ -2145,7 +2145,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
+    BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
 
     // Clone each statement in bTest and append to bNewCond.
     for (Statement* const stmt : bTest->Statements())
@@ -2204,9 +2204,10 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Update pred info
     //
-    bNewCond->SetFalseTarget(bTop);
-    fgAddRefPred(bJoin, bNewCond);
-    fgAddRefPred(bTop, bNewCond);
+    FlowEdge* const trueEdge = fgAddRefPred(bJoin, bNewCond);
+    FlowEdge* const falseEdge = fgAddRefPred(bTop, bNewCond);
+    bNewCond->SetTrueEdge(trueEdge);
+    bNewCond->SetFalseEdge(falseEdge);
 
     fgRemoveRefPred(block->GetTargetEdge());
     FlowEdge* const newEdge = fgAddRefPred(bNewCond, block);
@@ -2987,7 +2988,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         insertBefore = header;
     }
 
-    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
+    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false);
     preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheaderOrExit(preheader);
 
@@ -3000,7 +3001,8 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 
     JITDUMP("Created new preheader " FMT_BB " for " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
 
-    fgAddRefPred(header, preheader);
+    FlowEdge* const newEdge = fgAddRefPred(header, preheader);
+    preheader->SetTargetEdge(newEdge);
 
     for (FlowEdge* enterEdge : loop->EntryEdges())
     {
@@ -3103,26 +3105,27 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
         if (bottom->hasTryIndex() && (bottom->getTryIndex() == finallyBlock->getHndIndex()) && !bottom->hasHndIndex())
         {
-            newExit = fgNewBBafter(BBJ_ALWAYS, bottom, true, exit);
+            newExit = fgNewBBafter(BBJ_ALWAYS, bottom, true);
         }
         else
         {
             // Otherwise just do the heavy-handed thing and insert it anywhere in the right region.
-            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, exit, /* putInFilter */ false,
+            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, /* putInFilter */ false,
                                       /* runRarely */ false, /* insertAtEnd */ true);
         }
     }
     else
 #endif
     {
-        newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false, exit);
+        newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
         newExit->SetFlags(BBF_NONE_QUIRK);
         fgSetEHRegionForNewPreheaderOrExit(newExit);
     }
 
     newExit->SetFlags(BBF_INTERNAL);
 
-    fgAddRefPred(exit, newExit);
+    FlowEdge* const newEdge = fgAddRefPred(exit, newExit);
+    newExit->SetTargetEdge(newEdge);
 
     newExit->bbCodeOffs = exit->bbCodeOffs;
 

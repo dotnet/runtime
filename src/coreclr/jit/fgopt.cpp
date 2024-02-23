@@ -623,8 +623,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
-                        newTryEntry = BasicBlock::New(this, BBJ_ALWAYS, tryEntryPrev->Next());
-                        newTryEntry->SetFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_NONE_QUIRK);
+                        newTryEntry = BasicBlock::New(this);
+                        newTryEntry->SetFlags(BBF_IMPORTED | BBF_INTERNAL);
                         newTryEntry->bbRefs = 0;
 
                         // Set the right EH region indices on this new block.
@@ -649,6 +649,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         {
                             FlowEdge* const newEdge = fgAddRefPred(newTryEntry->Next(), newTryEntry);
                             newEdge->setLikelihood(1.0);
+                            newTryEntry->SetFlags(BBF_NONE_QUIRK);
+                            newTryEntry->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                         }
 
                         JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
@@ -2470,7 +2472,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // add an unconditional block after this block to jump to the target block's fallthrough block
     //
     assert(!target->IsLast());
-    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
+    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true);
 
     // Fix up block's flow
     //
@@ -2482,7 +2484,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     next->inheritWeight(block);
     fgAddRefPred(next, block);
-    fgAddRefPred(next->GetTarget(), next);
+    FlowEdge* const newEdge = fgAddRefPred(target->GetFalseTarget(), next);
+    next->SetTargetEdge(newEdge);
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
@@ -4981,13 +4984,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
                             {
                                 BasicBlock* const bDestFalseTarget = bDest->GetFalseTarget();
-                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestFalseTarget);
+                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bDest->SetFalseTarget(bFixup);
                                 bFixup->inheritWeight(bDestFalseTarget);
 
                                 fgRemoveRefPred(bDestFalseTarget, bDest);
                                 fgAddRefPred(bFixup, bDest);
-                                fgAddRefPred(bDestFalseTarget, bFixup);
+                                FlowEdge* const newEdge = fgAddRefPred(bDestFalseTarget, bFixup);
+                                bFixup->SetTargetEdge(newEdge);
                             }
                         }
                     }

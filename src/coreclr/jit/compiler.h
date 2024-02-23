@@ -5076,34 +5076,31 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion);
 
-    BasicBlock* fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
 
     BasicBlock* fgNewBBinRegion(BBKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
-                                BasicBlock* jumpDest    = nullptr,
                                 bool        putInFilter = false,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
     BasicBlock* fgNewBBinRegion(BBKinds jumpKind,
                                 BasicBlock* srcBlk,
-                                BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind);
 
     BasicBlock* fgNewBBinRegionWorker(BBKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
-                                      bool        putInTryRegion,
-                                      BasicBlock* jumpDest = nullptr);
+                                      bool        putInTryRegion);
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
