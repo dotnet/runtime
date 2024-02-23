@@ -2053,16 +2053,9 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
             BlockRange().Remove(lengthArg);
-            BlockRange().Remove(call);
-
-            // Remove all non-user args (e.g. r2r cell)
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                if (arg.IsArgAddedLate())
-                {
-                    arg.GetNode()->SetUnusedValue();
-                }
-            }
+            BlockRange().Remove(call, true);
+            dstAddr->ClearUnusedValue();
+            srcAddr->ClearUnusedValue();
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
@@ -2070,10 +2063,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             *next = storeBlk->gtNext;
             return true;
         }
-        else
-        {
-            JITDUMP("Size is either 0 or too big to unroll.\n")
-        }
+        JITDUMP("Size is either 0 or too big to unroll.\n")
     }
     else
     {

@@ -1289,22 +1289,28 @@ DONE_CALL:
             assert(verCurrentState.esStackDepth > 0);
             impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
         }
-        else if (JitConfig.JitProfileValues() && call->IsCall() &&
-                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+        else if (JitConfig.JitProfileValues() && call->IsCall() && call->AsCall()->IsSpecialIntrinsic())
         {
-            if (opts.IsOptimizedWithProfile())
+            switch (lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd))
             {
-                call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
-            }
-            else if (opts.IsInstrumented())
-            {
-                // We might want to instrument it for optimized versions too, but we don't currently.
-                HandleHistogramProfileCandidateInfo* pInfo =
-                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                pInfo->ilOffset                                       = rawILOffset;
-                pInfo->probeIndex                                     = 0;
-                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+                case NI_System_SpanHelpers_Fill:
+                case NI_System_Buffer_Memmove:
+                    if (opts.IsOptimizedWithProfile())
+                    {
+                        call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
+                    }
+                    else if (opts.IsInstrumented())
+                    {
+                        // We might want to instrument it for optimized versions too, but we don't currently.
+                        HandleHistogramProfileCandidateInfo* pInfo =
+                            new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                        pInfo->ilOffset                                       = rawILOffset;
+                        pInfo->probeIndex                                     = 0;
+                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+                    }
+                default:
+                    break;
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
@@ -1552,9 +1558,9 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
     {
         const ssize_t profiledValue = likelyValue.value;
 
-        unsigned argNum   = 0;
-        ssize_t  minValue = 0;
-        ssize_t  maxValue = 0;
+        unsigned argNum;
+        ssize_t  minValue;
+        ssize_t  maxValue;
         if (call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
         {
             // dst(0), src(1), len(2)
@@ -1571,10 +1577,33 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             minValue = 1; // TODO: enable for 0 as well.
             maxValue = (ssize_t)getUnrollThreshold(ProfiledMemcmp);
         }
+        else if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
+        {
+            // dst(0), len(1), val(2)
+            argNum = 1;
+
+            // Fill<T> is generic, so extract the T type from "T value" argument (2).
+            CallArg*        valArg    = call->gtArgs.GetUserArgByIndex(2);
+            const var_types scaleType = valArg->GetSignatureType();
+            if (!varTypeIsIntegral(scaleType))
+            {
+                JITDUMP("Unsupported type for Fill<T> - bail out.\n")
+                return call;
+            }
+
+            if (!valArg->GetNode()->IsIntegralConst(0))
+            {
+                JITDUMP("Unsupported value for Fill<T> - bail out.\n")
+                return call;
+            }
+
+            assert(genTypeSize(scaleType) > 0);
+
+            minValue = 1;
+            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemcmp) / genTypeSize(scaleType);
+        }
         else
         {
-            // only Memmove is expected at the moment.
-            // Possible future extensions: Memset, Memcpy
             unreached();
         }
 
@@ -2763,6 +2792,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Buffer_Memmove:
             case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_SpanHelpers_Fill:
                 // We're going to instrument these
                 betterToExpand = opts.IsInstrumented();
                 break;
