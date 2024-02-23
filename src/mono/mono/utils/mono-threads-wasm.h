@@ -28,6 +28,18 @@ mono_threads_wasm_ui_thread_tid (void);
 
 #ifndef DISABLE_THREADS
 
+gboolean
+mono_threads_wasm_is_deputy_thread (void);
+
+MonoNativeThreadId
+mono_threads_wasm_deputy_thread_tid (void);
+
+MonoNativeThreadId
+mono_wasm_create_deputy_thread (void);
+
+void
+mono_wasm_register_ui_thread (void);
+
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
 

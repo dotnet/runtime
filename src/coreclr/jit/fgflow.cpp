@@ -526,87 +526,6 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     }
 }
 
-void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
-                                                 BasicBlock*   switchBlk,
-                                                 BasicBlock*   from,
-                                                 BasicBlock*   to)
-{
-    assert(switchBlk->KindIs(BBJ_SWITCH)); // Precondition.
-
-    // Is "from" still in the switch table (because it had more than one entry before?)
-    bool fromStillPresent = false;
-    for (BasicBlock* const bTarget : switchBlk->SwitchTargets())
-    {
-        if (bTarget == from)
-        {
-            fromStillPresent = true;
-            break;
-        }
-    }
-
-    // Is "to" already in "this"?
-    bool toAlreadyPresent = false;
-    for (unsigned i = 0; i < numDistinctSuccs; i++)
-    {
-        if (nonDuplicates[i] == to)
-        {
-            toAlreadyPresent = true;
-            break;
-        }
-    }
-
-    // Four cases:
-    //   If "from" is still present, and "to" is already present, do nothing
-    //   If "from" is still present, and "to" is not, must reallocate to add an entry.
-    //   If "from" is not still present, and "to" is not present, write "to" where "from" was.
-    //   If "from" is not still present, but "to" is present, remove "from".
-    if (fromStillPresent && toAlreadyPresent)
-    {
-        return;
-    }
-    else if (fromStillPresent && !toAlreadyPresent)
-    {
-        // reallocate to add an entry
-        BasicBlock** newNonDups = new (alloc) BasicBlock*[numDistinctSuccs + 1];
-        memcpy(newNonDups, nonDuplicates, numDistinctSuccs * sizeof(BasicBlock*));
-        newNonDups[numDistinctSuccs] = to;
-        numDistinctSuccs++;
-        nonDuplicates = newNonDups;
-    }
-    else if (!fromStillPresent && !toAlreadyPresent)
-    {
-        // write "to" where "from" was
-        INDEBUG(bool foundFrom = false);
-        for (unsigned i = 0; i < numDistinctSuccs; i++)
-        {
-            if (nonDuplicates[i] == from)
-            {
-                nonDuplicates[i] = to;
-                INDEBUG(foundFrom = true);
-                break;
-            }
-        }
-        assert(foundFrom);
-    }
-    else
-    {
-        assert(!fromStillPresent && toAlreadyPresent);
-        // remove "from".
-        INDEBUG(bool foundFrom = false);
-        for (unsigned i = 0; i < numDistinctSuccs; i++)
-        {
-            if (nonDuplicates[i] == from)
-            {
-                nonDuplicates[i] = nonDuplicates[numDistinctSuccs - 1];
-                numDistinctSuccs--;
-                INDEBUG(foundFrom = true);
-                break;
-            }
-        }
-        assert(foundFrom);
-    }
-}
-
 /*****************************************************************************
  *
  *  Simple utility function to remove an entry for a block in the switch desc
@@ -619,22 +538,5 @@ void Compiler::fgInvalidateSwitchDescMapEntry(BasicBlock* block)
     if (m_switchDescMap != nullptr)
     {
         m_switchDescMap->Remove(block);
-    }
-}
-
-void Compiler::UpdateSwitchTableTarget(BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to)
-{
-    if (m_switchDescMap == nullptr)
-    {
-        return; // No mappings, nothing to do.
-    }
-
-    // Otherwise...
-    BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
-    SwitchUniqueSuccSet*  res       = switchMap->LookupPointer(switchBlk);
-    if (res != nullptr)
-    {
-        // If no result, nothing to do. Otherwise, update it.
-        res->UpdateTarget(getAllocator(), switchBlk, from, to);
     }
 }

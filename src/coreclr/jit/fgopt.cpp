@@ -1811,7 +1811,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     FlowEdge**  jmpTab = block->GetSwitchTargets()->bbsDstTab;
     BasicBlock* bNewDest; // the new jump target for the current switch case
     BasicBlock* bDest;
-    bool        returnvalue = false;
+    bool        modified = false;
 
     do
     {
@@ -1871,19 +1871,22 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                 }
             }
 
-            // Update the switch jump table (this has to happen before calling UpdateSwitchTableTarget)
+            // Update the switch jump table
             FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, fgRemoveRefPred(bDest, block));
             *jmpTab                 = newEdge;
 
-            // Maintain, if necessary, the set of unique targets of "block."
-            UpdateSwitchTableTarget(block, bDest, bNewDest);
-
             // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
-            returnvalue = true;
+            modified = true;
 
             goto REPEAT_SWITCH;
         }
     } while (++jmpTab, --jmpCnt);
+
+    if (modified)
+    {
+        // Invalidate the set of unique targets for block, since we modified the targets
+        fgInvalidateSwitchDescMapEntry(block);
+    }
 
     Statement*  switchStmt = nullptr;
     LIR::Range* blockRange = nullptr;
@@ -2066,7 +2069,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
-    return returnvalue;
+    return modified;
 }
 
 //-------------------------------------------------------------
