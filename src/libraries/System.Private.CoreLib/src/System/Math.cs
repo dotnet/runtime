@@ -1491,6 +1491,10 @@ namespace System
                 return (uint)(a >> 32);
             }
 
+#if DEBUG
+            long result = i * j;
+#endif
+
             // Remember the sign of the result
             int sign = (int)(Hi32Bits((ulong)i) ^ Hi32Bits((ulong)j));
 
@@ -1541,7 +1545,9 @@ namespace System
                     goto Overflow;
             }
 
-            Debug.Assert(ret == i * j);
+#if DEBUG
+            Debug.Assert(ret == result, $"Multiply overflow got: {ret}, expected: {result}");
+#endif
             return ret;
 
         Overflow:
@@ -1589,7 +1595,7 @@ namespace System
             if (Hi32Bits(ret) < (uint)valMid)
                 goto Overflow;
 
-            Debug.Assert(ret == i * j);
+            Debug.Assert(ret == i * j, $"Multiply overflow got: {ret}, expected: {i * j}");
             return ret;
 
         Overflow:

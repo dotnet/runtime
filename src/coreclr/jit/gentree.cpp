@@ -5980,6 +5980,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 switch (tree->AsIntrinsic()->gtIntrinsicName)
                 {
                     case NI_System_Math_Atan2:
+                    case NI_System_Math_FMod:
                     case NI_System_Math_Pow:
                         // These math intrinsics are actually implemented by user calls. Increase the
                         // Sethi 'complexity' by two to reflect the argument register requirement.
