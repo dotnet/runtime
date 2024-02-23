@@ -58,6 +58,16 @@
     <ManifestBuildData Include="AzureDevOpsBranch=$(BUILD_SOURCEBRANCH)" />
   </ItemGroup>
 
+  <!-- 
+    Set metadata for all assets that will get pushed to the Azure DevOps artifacts.
+    It will get overwritten for nonshipping assets.
+  -->
+  <ItemDefinitionGroup>
+    <ItemsToPush>
+      <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
+    </ItemsToPush>
+  </ItemDefinitionGroup>
+
   <!--
     Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
     if '$(<StageName>)' == 'true' and points Arcade to the correct files.
