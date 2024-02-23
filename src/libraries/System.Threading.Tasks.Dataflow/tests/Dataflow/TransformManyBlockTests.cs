@@ -313,7 +313,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void TestInputCount()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -343,7 +343,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [OuterLoop] // spins waiting for a condition to be true, though it should happen very quickly
         public async Task TestCount()
         {
@@ -753,7 +753,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TestOrdering_Sync_OrderedDisabled(bool trustedEnumeration)
@@ -781,7 +781,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task TestOrdering_Sync_BlockingEnumeration_NoDeadlock(bool ensureOrdered)

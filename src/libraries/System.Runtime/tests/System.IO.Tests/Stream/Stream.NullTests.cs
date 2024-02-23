@@ -194,7 +194,7 @@ namespace System.IO.Tests
             input.Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(NullWriters))]
         public static void TextNullTextWriter(TextWriter output)
         {

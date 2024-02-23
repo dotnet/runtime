@@ -29,7 +29,7 @@ namespace System.Threading.Tests
         }
 
         // Uses 3 events to coordinate between two threads. Very little validation.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunManualResetEventSlimTest1_SimpleWait()
         {
             ManualResetEventSlim ev1 = new ManualResetEventSlim(false);

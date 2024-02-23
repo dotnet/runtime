@@ -67,7 +67,7 @@ namespace System.Threading.Tests
             Assert.False(lockObj.IsHeldByCurrentThread);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void IsHeldByCurrentThread_WhenHeldBySomeoneElse()
         {
             Lock lockObj = new();
@@ -98,7 +98,7 @@ namespace System.Threading.Tests
             default(Lock.Scope).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
         {
             Lock lockObj = new();
@@ -155,7 +155,7 @@ namespace System.Threading.Tests
                 () => lockObj.TryEnter(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Enter_HasToWait()
         {
             Lock lockObj = new();
@@ -257,7 +257,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Enter_HasToWait_LockContentionCountTest()
         {
             long initialLockContentionCount = Monitor.LockContentionCount;
@@ -265,7 +265,7 @@ namespace System.Threading.Tests
             Assert.True(Monitor.LockContentionCount - initialLockContentionCount >= 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void InterruptWaitTest()

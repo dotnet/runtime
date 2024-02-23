@@ -1148,7 +1148,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunLazyCancellationTests_Negative()
         {
             for (int i = 0; i < 2; i++)
@@ -1238,7 +1238,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void LongContinuationChain_Unwrap_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
@@ -1254,7 +1254,7 @@ namespace System.Threading.Tasks.Tests
             func(DiveDepth).Wait();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void LongContinuationChain_Await_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
@@ -1269,7 +1269,7 @@ namespace System.Threading.Tasks.Tests
             func(0).Wait();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(false)]
         [InlineData(true)]
         public static void TestNoDeadlockOnContinueWithExecuteSynchronously(bool useWaitAll)

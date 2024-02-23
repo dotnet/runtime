@@ -8,7 +8,7 @@ namespace System.Threading.Tests
 {
     public static class SynchronizationContextTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void WaitTest()
         {
             var tsc = new TestSynchronizationContext();

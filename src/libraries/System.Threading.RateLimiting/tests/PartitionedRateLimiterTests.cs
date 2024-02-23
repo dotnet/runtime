@@ -157,7 +157,7 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         // Uses Task.Wait in a Task.Run to purposefully test a blocking scenario, this doesn't work on WASM currently
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task Create_BlockingFactoryDoesNotBlockOtherPartitions()
         {
             var limiterFactory = new TrackingRateLimiterFactory<int>();

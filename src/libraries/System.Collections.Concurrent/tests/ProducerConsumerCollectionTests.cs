@@ -878,7 +878,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(0, c.Count);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(ConcurrencyTestSeconds)]
         public void ManyConcurrentAddsTakes_ForceContentionWithToArray(double seconds)
         {

@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await wob.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task TestReceiveThenPost()
         {
             var wob = new WriteOnceBlock<int>(null);

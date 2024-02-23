@@ -570,7 +570,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await Assert.ThrowsAsync<FormatException>(() => bb.Completion);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task TestSynchronousWaitForCompletionDoesNotDeadlock()
         {
             SynchronizationContext origContext = SynchronizationContext.Current;

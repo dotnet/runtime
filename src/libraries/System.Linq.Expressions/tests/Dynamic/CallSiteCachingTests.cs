@@ -223,7 +223,7 @@ namespace System.Runtime.CompilerServices.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void ConcurrentAdds()
         {
             for (int i = 0; i < 10; i++)

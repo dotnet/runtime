@@ -196,7 +196,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task TestInputCount()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -253,7 +253,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task TestNonGreedy()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -419,7 +419,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 actual: sumOfOdds);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task TestParallelExecution()
         {
             int dop = 2;
@@ -439,7 +439,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task TestReleasingOfPostponedMessages()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
