@@ -1378,6 +1378,7 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
         g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+        g_pRuntimeHelpers = CoreLibBinder::GetClass(CLASS__RUNTIME_HELPERS);
 
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
