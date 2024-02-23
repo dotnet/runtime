@@ -74,5 +74,5 @@ extends:
             liveLibrariesBuildConfig: Release
             dependsOn:
               - build_$(osGroup)$(osSubgroup)_$(archType)_checked_
-              - CoreCLR_common_test_build_pri0_AnyOS_AnyCPU_checked
+              - coreclr_common_test_build_pri0_AnyOS_AnyCPU_checked
             unifiedArtifactsName: CoreCLRInterpreterBuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
