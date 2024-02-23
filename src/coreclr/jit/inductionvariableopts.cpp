@@ -187,7 +187,7 @@ class ScalarEvolutionContext
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
 
 public:
-    ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
+    ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts))
     {
     }
 
@@ -214,7 +214,7 @@ public:
     //
     ScevConstant* NewConstant(var_types type, int64_t value)
     {
-        ScevConstant* constant = new (m_comp, CMK_LoopScalarEvolution) ScevConstant(type, value);
+        ScevConstant* constant = new (m_comp, CMK_LoopIVOpts) ScevConstant(type, value);
         return constant;
     }
 
@@ -232,7 +232,7 @@ public:
     ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum)
     {
         var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
-        ScevLocal* invariantLocal = new (m_comp, CMK_LoopScalarEvolution) ScevLocal(type, lclNum, ssaNum);
+        ScevLocal* invariantLocal = new (m_comp, CMK_LoopIVOpts) ScevLocal(type, lclNum, ssaNum);
         return invariantLocal;
     }
 
@@ -250,7 +250,7 @@ public:
     ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op)
     {
         assert(op != nullptr);
-        ScevUnop* ext = new (m_comp, CMK_LoopScalarEvolution) ScevUnop(oper, targetType, op);
+        ScevUnop* ext = new (m_comp, CMK_LoopIVOpts) ScevUnop(oper, targetType, op);
         return ext;
     }
 
@@ -268,7 +268,7 @@ public:
     ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2)
     {
         assert((op1 != nullptr) && (op2 != nullptr));
-        ScevBinop* binop = new (m_comp, CMK_LoopScalarEvolution) ScevBinop(oper, op1->Type, op1, op2);
+        ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, op1->Type, op1, op2);
         return binop;
     }
 
@@ -285,7 +285,7 @@ public:
     ScevAddRec* NewAddRec(Scev* start, Scev* step)
     {
         assert((start != nullptr) && (step != nullptr));
-        ScevAddRec* addRec = new (m_comp, CMK_LoopScalarEvolution) ScevAddRec(start->Type, start, step);
+        ScevAddRec* addRec = new (m_comp, CMK_LoopIVOpts) ScevAddRec(start->Type, start, step);
         return addRec;
     }
 
@@ -963,6 +963,12 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     return result != BasicBlockVisit::Abort;
 }
 
+struct IVUse
+{
+    BasicBlock* Block;
+    Statement*  Statement;
+};
+
 //------------------------------------------------------------------------
 // optIsIVWideningProfitable: Check to see if IV widening is profitable.
 //
@@ -984,10 +990,11 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //     2. We need to store the wide IV back into the narrow one in each of
 //     the exits where the narrow IV is live-in.
 //
-bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
-                                         BasicBlock*           initBlock,
-                                         bool                  initedToConstant,
-                                         FlowGraphNaturalLoop* loop)
+bool Compiler::optIsIVWideningProfitable(unsigned                lclNum,
+                                         BasicBlock*             initBlock,
+                                         bool                    initedToConstant,
+                                         FlowGraphNaturalLoop*   loop,
+                                         ArrayStack<Statement*>& ivUses)
 {
     for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
     {
@@ -1011,75 +1018,59 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
         }
     }
 
-    struct CountZeroExtensionsVisitor : GenTreeVisitor<CountZeroExtensionsVisitor>
-    {
-    private:
-        unsigned m_lclNum;
-
-    public:
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        unsigned NumExtensions = 0;
-
-        CountZeroExtensionsVisitor(Compiler* comp, unsigned lclNum) : GenTreeVisitor(comp), m_lclNum(lclNum)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* parent)
-        {
-            GenTree* node = *use;
-
-            if (!node->OperIs(GT_CAST))
-            {
-                return WALK_CONTINUE;
-            }
-
-            GenTreeCast* cast = node->AsCast();
-            if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned() || cast->gtOverflow())
-            {
-                return WALK_CONTINUE;
-            }
-
-            GenTree* op = cast->CastOp();
-            if (!op->OperIs(GT_LCL_VAR) || (op->AsLclVarCommon()->GetLclNum() != m_lclNum))
-            {
-                return WALK_CONTINUE;
-            }
-
-            // If this is already the source of a store then it is going to be
-            // free in our backends regardless.
-            if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR))
-            {
-                return WALK_CONTINUE;
-            }
-
-            NumExtensions++;
-            return WALK_SKIP_SUBTREES;
-        }
-    };
-
     const weight_t ExtensionCost = 2;
     const int      ExtensionSize = 3;
 
-    CountZeroExtensionsVisitor visitor(this, lclNum);
-    weight_t                   savedCost = 0;
-    int                        savedSize = 0;
+    weight_t savedCost = 0;
+    int      savedSize = 0;
 
     loop->VisitLoopBlocks([&](BasicBlock* block) {
         for (Statement* stmt : block->NonPhiStatements())
         {
-            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-
-            if (visitor.NumExtensions > 0)
+            bool hasUse        = false;
+            int  numExtensions = 0;
+            for (GenTree* node : stmt->TreeList())
             {
-                JITDUMP("  Found %u zero extensions in " FMT_STMT "\n", visitor.NumExtensions, stmt->GetID());
+                if (!node->OperIs(GT_CAST))
+                {
+                    hasUse |= node->OperIsLocal() && (node->AsLclVarCommon()->GetLclNum() == lclNum);
+                    continue;
+                }
 
-                savedSize += (int)visitor.NumExtensions * ExtensionSize;
-                savedCost += visitor.NumExtensions * block->getBBWeight(this) * ExtensionCost;
-                visitor.NumExtensions = 0;
+                GenTreeCast* cast = node->AsCast();
+                if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned() || cast->gtOverflow())
+                {
+                    continue;
+                }
+
+                GenTree* op = cast->CastOp();
+                if (!op->OperIs(GT_LCL_VAR) || (op->AsLclVarCommon()->GetLclNum() != lclNum))
+                {
+                    continue;
+                }
+
+                // If this is already the source of a store then it is going to be
+                // free in our backends regardless.
+                GenTree* parent = node->gtGetParent(nullptr);
+                if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR))
+                {
+                    continue;
+                }
+
+                numExtensions++;
+            }
+
+            if (hasUse)
+            {
+                ivUses.Push(stmt);
+            }
+
+            if (numExtensions > 0)
+            {
+                JITDUMP("  Found %d zero extensions in " FMT_STMT "\n", numExtensions, stmt->GetID());
+
+                savedSize += numExtensions * ExtensionSize;
+                savedCost += numExtensions * block->getBBWeight(this) * ExtensionCost;
             }
         }
 
@@ -1144,11 +1135,10 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
 // Returns:
 //   True if any store was created in any exit block.
 //
-bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
+void Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
 {
-    bool       anySunk = false;
-    LclVarDsc* dsc     = lvaGetDesc(lclNum);
-    loop->VisitRegularExitBlocks([=, &anySunk](BasicBlock* exit) {
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
             return BasicBlockVisit::Continue;
@@ -1160,12 +1150,9 @@ bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNa
         JITDUMP("Narrow IV local V%02u live into exit block " FMT_BB "; sinking a narrowing\n", lclNum, exit->bbNum);
         DISPSTMT(newStmt);
         fgInsertStmtAtBeg(exit, newStmt);
-        anySunk = true;
 
         return BasicBlockVisit::Continue;
     });
-
-    return anySunk;
 }
 
 //------------------------------------------------------------------------
@@ -1344,6 +1331,7 @@ PhaseStatus Compiler::optInductionVariables()
 
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Widening primary induction variables:\n");
+    ArrayStack<Statement*> ivUses(getAllocator(CMK_LoopIVOpts));
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         JITDUMP("Processing ");
@@ -1419,7 +1407,8 @@ PhaseStatus Compiler::optInductionVariables()
                 initBlock = startSsaDsc->GetBlock();
             }
 
-            if (!optIsIVWideningProfitable(lcl->GetLclNum(), initBlock, initToConstant, loop))
+            ivUses.Reset();
+            if (!optIsIVWideningProfitable(lcl->GetLclNum(), initBlock, initToConstant, loop, ivUses))
             {
                 continue;
             }
@@ -1504,25 +1493,23 @@ PhaseStatus Compiler::optInductionVariables()
 
             if (initStmt != nullptr)
             {
+                JITDUMP("    Replacing on the way to the loop\n");
                 optBestEffortReplaceNarrowIVUsesWith(lcl->GetLclNum(), startLocal->SsaNum, newLclNum, initBlock,
                                                      initStmt->GetNextStmt());
             }
 
-            loop->VisitLoopBlocks([=](BasicBlock* block) {
+            JITDUMP("    Replacing in the loop; %d statements with appearences\n", ivUses.Height());
+            for (int i = 0; i < ivUses.Height(); i++)
+            {
+                Statement* stmt = ivUses.Bottom(i);
+                JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum,
+                        dspTreeID(stmt->GetRootNode()));
+                DISPSTMT(stmt);
+                JITDUMP("\n");
+                optReplaceWidenedIV(lcl->GetLclNum(), SsaConfig::RESERVED_SSA_NUM, newLclNum, stmt);
+            }
 
-                for (Statement* stmt : block->NonPhiStatements())
-                {
-                    JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum,
-                            dspTreeID(stmt->GetRootNode()));
-                    DISPSTMT(stmt);
-                    JITDUMP("\n");
-                    optReplaceWidenedIV(lcl->GetLclNum(), SsaConfig::RESERVED_SSA_NUM, newLclNum, stmt);
-                }
-
-                return BasicBlockVisit::Continue;
-            });
-
-            changed |= optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
+            optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
         }
     }
 
