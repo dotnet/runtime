@@ -88,6 +88,13 @@ jobs:
 
     variables:
 
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+    - name: archType
+      value: ${{ parameters.archType }}
+
     - name: monoAotBuildshCommand
       value: ''
 
