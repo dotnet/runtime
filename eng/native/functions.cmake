@@ -366,9 +366,78 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-function (get_symbol_file_name targetName outputSymbolFilename)
-  get_target_property(targetImportedNativeAotLib "${targetName}" CLR_IMPORTED_NATIVEAOT_LIBRARY)
-  if (NOT "${targetImportedNativeAotLib}")
+define_property(TARGET PROPERTY CLR_IMPORTED_COPY_TARGET
+  BRIEF_DOCS "set to the COPY_TARGET option that was used to define the target using add_imported_library_clr"
+  FULL_DOCS "set to the COPY_TARGET option that was used to define the target using add_imported_library_clr"
+  "Since imported targets don't have build events, the COPY_TARGET's POST_BUILD event can be used instead")
+
+# add_imported_library_clr(targetName COPY_TARGET copyTargetName IMPORTED_LOCATION importLocation)
+#
+# same as add_library(targetName SHARED IMPORTED GLOBAL) but it will first copy the library from
+# importLocation into our build tree using the target copyTargetName.  We do this so that we can
+# strip the symbols from the library and place them into a separate symbol file.
+#
+# Incidentally this also makes cmake dependency analysis work correctly: if the imported library
+# changes (for example, if it is built during an earlier stage of our build that cmake can't see,
+# the dependencies of targetName will be rebuilt)
+function(add_imported_library_clr targetName)
+  set(options)
+  set(oneValueArgs COPY_TARGET IMPORTED_LOCATION)
+  set(multiValueArgs)
+  cmake_parse_arguments(PARSE_ARGV 1 opt "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  if ("${opt_COPY_TARGET}" STREQUAL "" OR "${opt_KEYWORDS_MISSING_VALUES}" MATCHES "COPY_TARGET")
+    message(FATAL_ERROR "add_imported_library_clr requires COPY_TARGET option")
+  endif()
+  if ("${opt_IMPORTED_LOCATION}" STREQUAL "" OR "${opt_KEYWORDS_MISSING_VALUES}" MATCHES "IMPORTED_LOCATION")
+    message(FATAL_ERROR "add_imported_library_clr requires IMPORTED_LOCATION option")
+  endif()
+  if (NOT "${opt_UNPARSED_ARGUMENTS}" STREQUAL "")
+    message(FATAL_ERROR "add_imported_library_clr called with unrecognized options ${opt_UNPARSED_ARGUMENTS}")
+  endif()
+
+  # Copy the imported library into our binary dir.
+  # We do this so that we may strip it and also so that cmake dependency tracking will be aware if the file changes
+
+  set(src "${opt_IMPORTED_LOCATION}")
+  cmake_path(GET src FILENAME srcFilename)
+
+  # for namespaced targets replace :: by _ - otherwise the make generator produces a Makefile rule that make doesn't like
+  string(REPLACE "::" "_" destSubdir "${targetName}")
+  set(dest "${CMAKE_CURRENT_BINARY_DIR}/imported_library/${destSubdir}/${srcFilename}")
+  
+  add_custom_command(OUTPUT "${dest}"
+    DEPENDS "${src}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${src}" "${dest}"
+  )
+
+  if (CLR_CMAKE_HOST_WIN32)
+    cmake_path(REPLACE_EXTENSION opt_IMPORTED_LOCATION ".pdb" OUTPUT_VARIABLE srcPdb)
+    cmake_path(GET srcPdb FILENAME srcPdbFilename)
+    set(destPdb "${CMAKE_CURRENT_BINARY_DIR}/imported_library/${destSubdir}/${srcPdbFilename}")
+
+    add_custom_command(OUTPUT "${destPdb}"
+      DEPENDS "${srcPdb}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${srcPdb}" "${destPdb}"
+    )
+  endif()
+
+  if (CLR_CMAKE_HOST_WIN32)
+    add_custom_target("${opt_COPY_TARGET}" DEPENDS "${dest}" "${destPdb}")
+  else()
+    add_custom_target("${opt_COPY_TARGET}" DEPENDS "${dest}")
+  endif()
+
+  add_library(${targetName} SHARED IMPORTED GLOBAL)
+  add_dependencies(${targetName} "${opt_COPY_TARGET}")
+  set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${dest}")
+  set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_COPY_TARGET "${opt_COPY_TARGET}")
+
+  strip_symbols(${targetName} symbolFile)
+endfunction()
+
+function(get_symbol_file_name targetName outputSymbolFilename)
+  get_target_property(importedCopyTarget "${targetName}" CLR_IMPORTED_COPY_TARGET) # see add_imported_library_clr
+  if ("${importedCopyTarget}" STREQUAL "importedCopyTarget-NOTFOUND")
     if (CLR_CMAKE_HOST_UNIX)
       if (CLR_CMAKE_TARGET_APPLE)
         set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
@@ -383,7 +452,7 @@ function (get_symbol_file_name targetName outputSymbolFilename)
       set(${outputSymbolFilename} $<TARGET_FILE_DIR:${targetName}>/$<TARGET_FILE_PREFIX:${targetName}>$<TARGET_FILE_BASE_NAME:${targetName}>.pdb PARENT_SCOPE)
     endif()
   else()
-    get_property(libraryType TARGET ${targetName} PROPERTY TYPE)
+    get_target_property(libraryType "${targetName}" TYPE)
     message(TRACE "Target ${targetName} is imported of type ${libraryType}")
     if ("${libraryType}" STREQUAL "SHARED_LIBRARY")
       get_property(importedLocation TARGET ${targetName} PROPERTY IMPORTED_LOCATION)
@@ -407,8 +476,8 @@ function(strip_symbols targetName outputFilename)
   get_symbol_file_name(${targetName} strip_destination_file)
   set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   if (CLR_CMAKE_HOST_UNIX)
-    get_property(copy_target TARGET ${targetName} PROPERTY CLR_IMPORTED_COPY_TARGET)
-    if (NOT "${copy_target}")
+    get_target_property(copy_target "${targetName}" CLR_IMPORTED_COPY_TARGET)
+    if ("${copy_target}" STREQUAL "copy_target-NOTFOUND")
       # normal target, we will add the post-build event to it
       set(strip_source_file $<TARGET_FILE:${targetName}>)
       set(post_build_target "${targetName}")
@@ -450,12 +519,6 @@ function(strip_symbols targetName outputFilename)
       if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
         list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
-
-      if (NOT "${targetImportedNativeAotLib}")
-        set(post_build_target "${targetName}")
-      else()
-        set(post_build_target "${copy_target}")
-      endif()
 
       add_custom_command(
         TARGET ${post_build_target}
@@ -569,7 +632,7 @@ function(install_clr)
       endif()
       add_dependencies(${INSTALL_CLR_COMPONENT} ${targetName})
     endif()
-    get_target_property(targetImportedNativeAotLib "${targetName}" CLR_IMPORTED_NATIVEAOT_LIBRARY)
+    get_property(hasCopyTarget TARGET "${targetName}" PROPERTY CLR_IMPORTED_COPY_TARGET SET)
     get_target_property(targetType "${targetName}" TYPE)
     if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC_LIBRARY")
       get_symbol_file_name(${targetName} symbolFile)
@@ -578,22 +641,19 @@ function(install_clr)
     foreach(destination ${destinations})
       # We don't need to install the export libraries for our DLLs
       # since they won't be directly linked against.
-      if (NOT "${targetImportedNativeAotLib}")
+      if (NOT "${hasCopyTarget}")
         install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-        if (NOT "${symbolFile}" STREQUAL "")
-          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-        endif()
       elseif("${targetType}" STREQUAL "SHARED_LIBRARY")
-        #imported shared lib - install the imported artifacts
+        # for shared libraries added with add_imported_library_clr install the imported artifacts
 
         if ("${CMAKE_VERSION}" VERSION_LESS "3.21")
           install(PROGRAMS $<TARGET_PROPERTY:${targetName},IMPORTED_LOCATION> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
         else()
           install(IMPORTED_RUNTIME_ARTIFACTS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
         endif()
-        if (NOT "${symbolFile}" STREQUAL "")
-          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-        endif()
+      endif()
+      if (NOT "${symbolFile}" STREQUAL "")
+        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)

@@ -28,37 +28,10 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
     # windows import library
     set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/native/<libName>.lib
 
-    # Copy the imported library into our binary dir.
-    # We do this so that we may strip it and also so that cmake dependency tracking will be aware if the file changes
-    set(importedFullPath "${CMAKE_CURRENT_BINARY_DIR}/imported_nativeaot_library/${targetNameIn}/${libFilename}")
-
-    add_custom_command(OUTPUT "${importedFullPath}"
-      DEPENDS "${libFullPath}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libFullPath}" "${importedFullPath}"
-    )
-
-    if(CLR_CMAKE_HOST_WIN32)
-      set(importedPdbFullPath "${CMAKE_CURRENT_BINARY_DIR}/imported_nativeaot_library/${targetNameIn}/${libName}.pdb")
-      message(STATUS "Copying ${libPdbFullPath} to ${importedPdbFullPath} for ${targetName}")
-      add_custom_command(OUTPUT "${importedPdbFullPath}"
-        DEPENDS "${libPdbFullPath}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libPdbFullPath}" "${importedPdbFullPath}")
-    endif()
-
-    # now make a custom target that other targets can depend on
     set(copy_target_name "${targetNameIn}_copy_imported_library")
 
-    if(CLR_CMAKE_HOST_WIN32)
-      add_custom_target("${copy_target_name}" DEPENDS "${importedFullPath}" "${importedPdbFullPath}")
-    else()
-      add_custom_target("${copy_target_name}" DEPENDS "${importedFullPath}")
-    endif()
-
-    add_library(${targetName} SHARED IMPORTED GLOBAL)
-    add_dependencies(${targetName} "${copy_target_name}")
-    set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${importedFullPath}")
+    add_imported_library_clr(${targetName} COPY_TARGET ${copy_target_name} IMPORTED_LOCATION "${libFullPath}")
     set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY 1)
-    set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_COPY_TARGET "${copy_target_name}")
 
     if("${CLR_CMAKE_HOST_WIN32}")
       set_property(TARGET ${targetName} PROPERTY IMPORTED_IMPLIB "${libImpLibFullPath}")
@@ -66,9 +39,6 @@ function(add_imported_nativeaot_library targetNameIn symbolPrefix)
 
     set(libIncludePath "${${symbolPrefix}_INCLUDE}")
     target_include_directories(${targetName} INTERFACE "${libIncludePath}")
-
-    strip_symbols(${targetName} symbolFile)
-
   else()
     message(FATAL_ERROR "${symbolPrefix}_MODE must be SHARED")
   endif()
