@@ -250,7 +250,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
-    <SosPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%;%HELIX_CORRELATION_PAYLOAD%\shared\Microsoft.NETCore.App\9.0.0" />
+    <SosPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%;%HELIX_CORRELATION_PAYLOAD%\PDB;%HELIX_CORRELATION_PAYLOAD%\shared\$(MicrosoftNetCoreAppFrameworkName)\$(ProductVersion)" />
     <SosPreCommand Include="%HELIX_CORRELATION_PAYLOAD%\dotnet %HELIX_CORRELATION_PAYLOAD%\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)" />
   </ItemGroup>
 
