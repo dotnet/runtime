@@ -7578,15 +7578,8 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
         _ASSERTE(pMD == codeInfo.GetMethodDesc());
 #endif // _DEBUG
 
-        // Compensate for a bug in the old EH that doesn't mark faulting instructions as faulting. The VS expects that behavior.
-        bool hasFaulted = pExInfo->m_frameIter.m_crawl.HasFaulted();
-        if (hasFaulted)
-        {
-            pExInfo->m_frameIter.m_crawl.hasFaulted = false;
-        }
         pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
         pExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
-        pExInfo->m_frameIter.m_crawl.hasFaulted = hasFaulted;
     }
 
     // Notify the debugger that we are on the first pass for a managed exception.

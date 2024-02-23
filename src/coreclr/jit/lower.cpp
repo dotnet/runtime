@@ -1839,6 +1839,157 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+// LowerCallMemset: Replaces the following memset-like special intrinsics:
+//
+//    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
+//    CORINFO_HELP_MEMSET(ref dstRef, CNS_VALUE, CNS_SIZE)
+//    SpanHelpers.ClearWithoutReferences(ref dstRef, CNS_SIZE)
+//
+//  with a GT_STORE_BLK node:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (init) (Unroll)
+//    +--*  LCL_VAR   byref  dstRef
+//    \--*  CNS_INT   int    0
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
+{
+    assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill) ||
+           call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences) ||
+           call->IsHelperCall(comp, CORINFO_HELP_MEMSET));
+
+    JITDUMP("Considering Memset-like call [%06d] for unrolling.. ", comp->dspTreeID(call))
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n");
+        return false;
+    }
+
+    GenTree* dstRefArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* lengthArg;
+    GenTree* valueArg;
+
+    // Fill<T>'s length is not in bytes, so we need to scale it depending on the signature
+    unsigned lengthScale;
+
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill))
+    {
+        // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg             = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        CallArg* valueCallArg = call->gtArgs.GetUserArgByIndex(2);
+        valueArg              = valueCallArg->GetNode();
+
+        // Get that <T> from the signature
+        lengthScale = genTypeSize(valueCallArg->GetSignatureType());
+        // NOTE: structs and TYP_REF will be ignored by the "Value is not a constant" check
+        // Some of those cases can be enabled in future, e.g. s
+    }
+    else if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET))
+    {
+        // void CORINFO_HELP_MEMSET(ref T refData, byte value, nuint numElements)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg   = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        valueArg    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        lengthScale = 1; // it's always in bytes
+    }
+    else
+    {
+        // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
+        //
+        assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences));
+        assert(call->gtArgs.CountUserArgs() == 2);
+
+        // Simple zeroing
+        lengthArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        valueArg    = comp->gtNewZeroConNode(TYP_INT);
+        lengthScale = 1; // it's always in bytes
+    }
+
+    if (!lengthArg->IsIntegralConst())
+    {
+        JITDUMP("Length is not a constant - bail out.\n");
+        return false;
+    }
+
+    if (!valueArg->IsCnsIntOrI() || !valueArg->TypeIs(TYP_INT))
+    {
+        JITDUMP("Value is not a constant - bail out.\n");
+        return false;
+    }
+
+    // If value is not zero, we can only unroll for single-byte values
+    if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
+    {
+        JITDUMP("Value is not unroll-friendly - bail out.\n");
+        return false;
+    }
+
+    // Convert lenCns to bytes
+    ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
+    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale, CheckedOps::Signed))
+    {
+        // lenCns overflows
+        JITDUMP("lenCns * lengthScale overflows - bail out.\n")
+        return false;
+    }
+    lenCns *= (ssize_t)lengthScale;
+
+    // TODO-CQ: drop the whole thing in case of lenCns = 0
+    if ((lenCns <= 0) || (lenCns > (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
+    {
+        JITDUMP("Size is either 0 or too big to unroll - bail out.\n")
+        return false;
+    }
+
+    JITDUMP("Accepted for unrolling!\nOld tree:\n");
+    DISPTREERANGE(BlockRange(), call);
+
+    if (!valueArg->IsIntegralConst(0))
+    {
+        // Non-zero (byte) value, wrap value with GT_INIT_VAL
+        GenTree* initVal = valueArg;
+        valueArg         = comp->gtNewOperNode(GT_INIT_VAL, TYP_INT, initVal);
+        BlockRange().InsertAfter(initVal, valueArg);
+    }
+
+    GenTreeBlk* storeBlk =
+        comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, valueArg, GTF_IND_UNALIGNED);
+    storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+    // Insert/Remove trees into LIR
+    BlockRange().InsertBefore(call, storeBlk);
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences))
+    {
+        // Value didn't exist in LIR previously
+        BlockRange().InsertBefore(storeBlk, valueArg);
+    }
+
+    // Remove the call and mark everything as unused ...
+    BlockRange().Remove(call, true);
+    // ... except the args we're going to re-use
+    dstRefArg->ClearUnusedValue();
+    valueArg->ClearUnusedValue();
+    if (valueArg->OperIs(GT_INIT_VAL))
+    {
+        valueArg->gtGetOp1()->ClearUnusedValue();
+    }
+
+    JITDUMP("\nNew tree:\n");
+    DISPTREERANGE(BlockRange(), storeBlk);
+    *next = storeBlk;
+    return true;
+}
+
 //------------------------------------------------------------------------
 // LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
 //    Do the same for CORINFO_HELP_MEMCPY(DST, SRC, CNS_SIZE)
@@ -2218,16 +2369,43 @@ GenTree* Lowering::LowerCall(GenTree* node)
     GenTree* nextNode = nullptr;
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        NamedIntrinsic ni = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
-        if (((ni == NI_System_Buffer_Memmove) && LowerCallMemmove(call, &nextNode)) ||
-            ((ni == NI_System_SpanHelpers_SequenceEqual) && LowerCallMemcmp(call, &nextNode)))
+        switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
-            return nextNode;
+            case NI_System_Buffer_Memmove:
+                if (LowerCallMemmove(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_SequenceEqual:
+                if (LowerCallMemcmp(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
+                if (LowerCallMemset(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            default:
+                break;
         }
     }
 
     // Try to lower CORINFO_HELP_MEMCPY to unrollable STORE_BLK
     if (call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
+    {
+        return nextNode;
+    }
+
+    // Try to lower CORINFO_HELP_MEMSET to unrollable STORE_BLK
+    if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET) && LowerCallMemset(call, &nextNode))
     {
         return nextNode;
     }
