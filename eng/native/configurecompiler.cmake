@@ -30,6 +30,7 @@ if (CLR_CMAKE_HOST_UNIX)
         add_compile_options(-glldb)
     else()
         add_compile_options(-g)
+        add_compile_options(-Wno-error=conversion-null)
     endif()
 endif()
 
