@@ -72,7 +72,6 @@ class CrawlFrame
 {
 public:
     friend class AsmOffsetsAsserts::AsmOffsets;
-    friend class DebugStackTrace;
 #ifdef TARGET_X86
     friend StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data);
 #endif // TARGET_X86
@@ -152,6 +151,8 @@ public:
        These together carry the exact instantiation information.
      */
     PTR_VOID GetExactGenericArgsToken();
+
+    void InitializeExactGenericInstantiations();
 
     inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*

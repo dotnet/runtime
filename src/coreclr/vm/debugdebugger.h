@@ -99,7 +99,6 @@ private:
         MethodDesc *pFunc;
         PCODE ip;
         INT flags;          // StackStackElementFlags
-        PTR_VOID pExactGenericArgsToken;
 
         // Initialization done under TSL.
         // This is used when first collecting the stack frame data.
@@ -107,8 +106,7 @@ private:
             DWORD dwNativeOffset,
             MethodDesc *pFunc,
             PCODE ip,
-            INT flags,       // StackStackElementFlags
-            PTR_VOID pExactGenericArgsToken
+            INT flags       // StackStackElementFlags
         );
 
         // Initialization done outside the TSL.

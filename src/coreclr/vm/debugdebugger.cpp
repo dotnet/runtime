@@ -461,16 +461,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         for (int i = 0; i < data.cElements; i++)
         {
             MethodDesc* pFunc = data.pElements[i].pFunc;
-            PTR_VOID pExactGenericArgsToken = data.pElements[i].pExactGenericArgsToken;
-            if (pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
-            {
-                TypeHandle th;
-                MethodDesc* pConstructedFunc = NULL;
-                if (pExactGenericArgsToken != NULL && Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pConstructedFunc))
-                {
-                    pFunc = pConstructedFunc;
-                }
-            }
 
             // Method handle
             size_t *pElem = (size_t*)pStackFrameHelper->rgMethodHandle->GetDataPtr();
@@ -1019,6 +1009,11 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
+    if (pFunc != NULL && pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
+    {
+        pCf->InitializeExactGenericInstantiations();
+        pFunc = pCf->GetFunction();
+    }
 
     if (pData->cElements >= pData->cElementsAllocated)
     {
@@ -1060,8 +1055,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
             dwNativeOffset,
             pFunc,
             ip,
-            flags,
-            pCf->GetExactGenericArgsToken());
+            flags);
 
     // We'll init the IL offsets outside the TSL lock.
 
@@ -1155,26 +1149,11 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // Currently such methods always return an IP of 0, so they're easy
                 // to spot.
                 DWORD dwNativeOffset;
-                PTR_VOID pExactGenericArgsToken = NULL;
 
                 if (cur.ip)
                 {
                     EECodeInfo codeInfo(cur.ip);
-                    REGDISPLAY pRD;
-                    T_CONTEXT ctx;
-                    memset(&ctx, 0x00, sizeof(T_CONTEXT));
-                    SetIP(&ctx, cur.ip);
-                    SetSP(&ctx, cur.sp);
-                    FillRegDisplay(&pRD, &ctx);
-                    
-                    CrawlFrame frame;
-                    frame.codeInfo = codeInfo;
-                    frame.isFrameless = true;
-                    frame.pFunc = cur.pFunc;
-                    frame.pRD = &pRD;
-
-                    pExactGenericArgsToken = frame.GetExactGenericArgsToken();
-                    dwNativeOffset = frame.GetRelOffset();
+                    dwNativeOffset = codeInfo.GetRelOffset();
                 }
                 else
                 {
@@ -1185,8 +1164,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     dwNativeOffset,
                     pMD,
                     (PCODE)cur.ip,
-                    cur.flags,
-                    pExactGenericArgsToken);
+                    cur.flags);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
 #endif
@@ -1207,8 +1185,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip,
-    INT flags,
-    PTR_VOID pExactGenericArgsToken
+    INT flags
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1221,7 +1198,6 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
     this->flags = flags;
-    this->pExactGenericArgsToken = pExactGenericArgsToken;
 }
 
 #ifndef DACCESS_COMPILE

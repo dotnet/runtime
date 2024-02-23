@@ -1471,8 +1471,8 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     CONTRACTL
     {
         MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -1638,6 +1638,12 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     }
 
     pcfThisFrame->pThread = pThread;
+    
+    if (pcfThisFrame->pFunc != NULL && pcfThisFrame->pFunc->HasClassOrMethodInstantiation() && pcfThisFrame->pFunc->IsSharedByGenericInstantiations())
+    {
+        GCX_COOP();
+        pcfThisFrame->InitializeExactGenericInstantiations();
+    }
 
     Frame* pTopFrame = pThread->GetFrame();
     if (pcfThisFrame->isFrameless && (pcfThisFrame->isIPadjusted == false) && (pcfThisFrame->GetRelOffset() == 0))
@@ -2548,14 +2554,14 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     CLRUnwindStatus ReturnStatus = UnwindPending;
 
     MethodDesc*     pMD         = pcfThisFrame->GetFunction();
-
+    
     bool fIsFirstPass = !(dwExceptionFlags & EXCEPTION_UNWINDING);
     bool fIsFunclet   = pcfThisFrame->IsFunclet();
 
     CONSISTENCY_CHECK(IsValid());
     CONSISTENCY_CHECK(ThrowableIsValid() || !fIsFirstPass);
     CONSISTENCY_CHECK(pMD != 0);
-
+    
     EH_LOG((LL_INFO100, "  [ ProcessManagedCallFrame this=%p, %s PASS ]\n", this, (fIsFirstPass ? "FIRST" : "SECOND")));
 
     EH_LOG((LL_INFO100, "  [ method: %s%s, %s ]\n",

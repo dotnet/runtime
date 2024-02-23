@@ -291,6 +291,37 @@ PTR_VOID CrawlFrame::GetExactGenericArgsToken()
     }
 }
 
+#ifndef DACCESS_COMPILE
+void CrawlFrame::InitializeExactGenericInstantiations()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(pFunc != NULL);
+        PRECONDITION(pFunc->HasClassOrMethodInstantiation());
+        PRECONDITION(pFunc->IsSharedByGenericInstantiations());
+    } CONTRACTL_END;
+
+    // Get exact instantiations for shared generics where possible
+    PTR_VOID pExactGenericArgsToken = GetExactGenericArgsToken();
+
+    if (pExactGenericArgsToken != NULL)
+    {
+        TypeHandle th;
+        MethodDesc* pConstructedFunc = NULL;
+        if (Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pConstructedFunc))
+        {
+            if (pConstructedFunc->IsSharedByGenericInstantiations())
+            {
+                pConstructedFunc = InstantiatedMethodDesc::FindOrCreateExactClassMethod(th.GetMethodTable(), pConstructedFunc);
+            }
+            pFunc = pConstructedFunc;
+        }
+    }
+}
+#endif
+
     /* Is this frame at a safe spot for GC?
      */
 bool CrawlFrame::IsGcSafe()
