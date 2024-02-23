@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/chat"
 @using Microsoft.AspNetCore.SignalR
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Http.Connections;
@@ -7,6 +7,11 @@
 @implements IDisposable
 
 <h1>Chat Room</h1>
+<button id="connectButton" @onclick="Connect">Connect SignalR</button>
+<button id="subscribeButton" @onclick="Subscribe">Subscribe to server messages</button>
+<button id="sendMessageButton" @onclick="SignalRPassMessages">Send message from query</button>
+<button id="killServerButton" @onclick="SendExitSignal">Send exit signal to server</button>
+<button id="disconnectButton" @onclick="DisposeHubConnection">Disconnect SignalR</button>
 <div>
     @foreach (var chatMessage in chatMessages)
     {
@@ -19,56 +24,30 @@
     private HubConnection? _hubConnection;
     private string message = string.Empty;
     private string transport = string.Empty;
-    private string scenario = string.Empty;
     private List<string> chatMessages = new List<string>();
+    private string wrongQueryError = "Query string with parameters 'message' and 'transport' are required";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
+        Helper.TestOutputWriteLine($"OnInitialized on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         GetQueryParameters();
-        await Connect();
-        if (_hubConnection == null)
-        {
-            throw new Exception($"Hub connection is not initialized for transport={transport}");
-        }
-
-        // wait one second before activating the test scenario
-        await Task.Delay(1000);
-        switch (scenario.ToLower())
-        {
-            case "signalrpassmessages":
-                await SignalRPassMessages();
-                break;
-            default:
-                await FailAndExit($"{scenario} is invalid test scenario name");
-                break;
-        }
     }
-
-    private async Task SignalRPassMessages() =>
-        await Task.Run(async () =>
-            {
-                Helper.TestOutputWriteLine($"Client: sends message={message} with CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
-                await _hubConnection.SendAsync(
-                    "SendMessage",
-                    message,
-                    Environment.CurrentManagedThreadId);
-            });
 
     private void GetQueryParameters()
     {
         var uri = new Uri(NavigationManager.Uri);
         if (string.IsNullOrEmpty(uri.Query))
         {
-            throw new Exception("Query string with parameters 'test', 'message' and 'transport' are required");
+            throw new Exception(wrongQueryError);
         }
         var parameters = HttpUtility.ParseQueryString(uri.Query);
         if (parameters == null)
         {
-            throw new Exception("Query string with parameters  'test', 'message' and 'transport' are required");
+            throw new Exception(wrongQueryError);
         }
-        scenario = Helper.GetValue(parameters, "test");
         transport = Helper.GetValue(parameters, "transport");
-        message = $"[{transport} {Helper.GetValue(parameters, "message")}]" ;
+        message = $"{transport} {Helper.GetValue(parameters, "message")}" ;
+        Helper.TestOutputWriteLine($"GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId} finished");
     }
 
     private async Task Connect()
@@ -82,43 +61,44 @@
                 })
             .Build();
 
-        _hubConnection.On<string>("ReceiveMessage", async (message) =>
-        {
-            chatMessages.Add(message);
-            await SucceedAndExit(message);
-        });
-
         await _hubConnection.StartAsync();
+        Helper.TestOutputWriteLine($"SignalR connected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
 
-    private async Task SucceedAndExit(string message)
+    private void Subscribe()
     {
-        Helper.TestOutputWriteLine($"Client: sends confirmation of receiving the reply from server = {message}, tread receiving the reply = {Environment.CurrentManagedThreadId}");
-        // on this message server calls "Environment.Exit(0)"
-        await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExitWithSuccess", message);
-        await DisposeHubConnection();
-        Console.WriteLine($"WASM EXIT 0");
+        _hubConnection.On<string>("ReceiveMessage", (message) =>
+        {
+            Helper.TestOutputWriteLine($"Message = [{message}]. ReceiveMessage from server on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            chatMessages.Add(message);
+        });
+        Helper.TestOutputWriteLine($"Subscribed to ReceiveMessage by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
 
-    private async Task FailAndExit(string message)
+    private async Task SignalRPassMessages() =>
+        await Task.Run(async () =>
+            {
+                await _hubConnection.SendAsync( "SendMessage", message, Environment.CurrentManagedThreadId);
+                Helper.TestOutputWriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            });
+
+    private async Task SendExitSignal()
     {
-        int code = 1;
-        await _hubConnection.SendAsync("Exit", code);
-        await DisposeHubConnection();
-        Console.WriteLine($"WASM EXIT {code}");
-        throw new Exception(message);
+        Helper.TestOutputWriteLine($"WASM EXIT 0");
+        await _hubConnection.SendAsync("Exit", 0);
+        Helper.TestOutputWriteLine($"Exit signal was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
-
-    public void Dispose() => DisposeHubConnection().GetAwaiter().GetResult();
 
     private async Task DisposeHubConnection()
     {
-        Console.WriteLine("DisposeHubConnection");
         if (_hubConnection != null)
         {
             _hubConnection.Remove("ReceiveMessage");
             await _hubConnection.DisposeAsync();
             _hubConnection = null;
         }
+        Helper.TestOutputWriteLine($"SignalR disconnected by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
+
+    public void Dispose() => DisposeHubConnection().GetAwaiter().GetResult();
 }

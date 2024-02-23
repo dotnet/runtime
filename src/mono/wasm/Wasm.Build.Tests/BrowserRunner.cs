@@ -49,7 +49,6 @@ internal class BrowserRunner : IAsyncDisposable
 
             lock (OutputLines)
             {
-                Console.WriteLine($"Server: {msg}");
                 OutputLines.Add(msg);
             }
 

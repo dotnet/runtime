@@ -5,14 +5,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <WasmEnableThreads>true</WasmEnableThreads>
-    <!-- nullablility warnings -->
-    <NoWarn>CS8604</NoWarn>
+    <!-- nullablility warning, async warning -->
+    <NoWarn>CS8604;CS4014</NoWarn>
   </PropertyGroup>
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0-alpha.1.23614.6" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0-alpha.1.23614.6" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0-preview.1.24081.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0-preview.1.24081.5" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
     <PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
   </ItemGroup>
