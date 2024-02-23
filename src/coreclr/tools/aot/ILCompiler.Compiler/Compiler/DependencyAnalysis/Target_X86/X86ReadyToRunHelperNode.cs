@@ -147,20 +147,6 @@ namespace ILCompiler.DependencyAnalysis
 
                         encoder.EmitStackDup();
 
-                        if (target.Thunk != null)
-                        {
-                            Debug.Assert(target.Constructor.Method.Signature.Length == 3);
-                            encoder.EmitStackDup();
-                            // TODO: Is it possible to fold this into one MOV?
-                            encoder.EmitMOV(encoder.TargetRegister.Result, target.Thunk);
-                            AddrMode storeAtEspPlus8 = new AddrMode(Register.ESP, null, 8, 0, AddrModeSize.Int32);
-                            encoder.EmitMOV(ref storeAtEspPlus8, encoder.TargetRegister.Result);
-                        }
-                        else
-                        {
-                            Debug.Assert(target.Constructor.Method.Signature.Length == 2);
-                        }
-
                         if (target.TargetNeedsVTableLookup)
                         {
                             Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable(factory));
@@ -182,7 +168,22 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         AddrMode storeAtEspPlus4 = new AddrMode(Register.ESP, null, 4, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                        if (target.Thunk != null)
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 3);
+                            AddrMode storeAtEspPlus8 = new AddrMode(Register.ESP, null, 8, 0, AddrModeSize.Int32);
+                            encoder.EmitStackDup();
+                            encoder.EmitMOV(ref storeAtEspPlus8, encoder.TargetRegister.Result);
+                            // TODO: Is it possible to fold this into one MOV?
+                            encoder.EmitMOV(encoder.TargetRegister.Result, target.Thunk);
+                            encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                        }
+                        else
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 2);
+                            encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                        }
+
                         encoder.EmitJMP(target.Constructor);
                     }
                     break;
