@@ -889,10 +889,6 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
-                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
-                {
-                    // not needed
-                }
                 case IMAGE_REL_AARCH64_TLSDESC_CALL:
                 case IMAGE_REL_TLSGD:
                 {
@@ -907,6 +903,13 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     }
                     wasRelocHandled = true;
                 }
+                break;
+
+                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                {
+                    // not needed
+                }
+                break;
 
                 default:
                     break;
