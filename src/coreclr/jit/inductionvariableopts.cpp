@@ -664,6 +664,7 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStor
     }
     else
     {
+        // Not a simple IV shape (i.e. more complex than "i = i + k")
         return nullptr;
     }
 
