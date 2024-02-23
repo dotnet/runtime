@@ -1,0 +1,61 @@
+# Variables to resolve the paths and artifact names for the test assets used and produced to run the tests
+# in the src/tests tree.
+parameters:
+  runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
+
+variables:
+  - name: binTestsPath
+    value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
+
+  # Build product defines what we are trying to build, either coreclr or mono
+  - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+    - name: buildProductArtifactName
+      value: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: buildProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+  - ${{ else }}:
+    - name: buildProductArtifactName
+      value: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    # minijit and monointerpreter do not use separate product builds.
+    - ${{ if or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }}:
+      - name : buildProductArtifactName
+        value : 'MonoProduct__$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+      - name : buildProductArtifactName
+        value : 'MonoProduct_llvmaot_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: buildProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  # We need this because both mono and coreclr build currently depends on CoreClr
+  - name: coreClrProductArtifactName
+    value: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+  - name: coreClrProductRootFolderPath
+    value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+    - name: managedGenericTestArtifactName
+      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+  - ${{ else }}:
+    - name: managedGenericTestArtifactName
+      value: 'MonoManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+
+  - name: managedTestArtifactRootFolderPath
+    value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  - name: nativeTestArtifactName
+    value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+  - name: nativeTestArtifactRootFolderPath
+    value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  - name: microsoftNetSdkIlFolderPath
+    value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
+
+  - name: microsoftNetSdkIlArtifactName
+    value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'

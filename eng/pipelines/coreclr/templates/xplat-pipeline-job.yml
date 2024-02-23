@@ -51,51 +51,9 @@ jobs:
     disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     variables:
-    - ${{ if ne(parameters.testGroup, '') }}:
-      - name: testArtifactRootName
-        value: ${{ parameters.Group }}${{ parameters.Subgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
-
-    - ${{ if eq(parameters.testGroup, '') }}:
-      - name: testArtifactRootName
-        value: ${{ parameters.Group }}${{ parameters.Subgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
-
-    - name: binTestsPath
-      value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
-
-    # Build product defines what we are trying to build, either coreclr or mono
-    - name: buildProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: buildProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    # We need this because both mono and coreclr build currently depends on CoreClr
-    - name: coreClrProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: coreClrProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: corelibProductArtifactName
-      value: 'CoreLib_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: managedGenericTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
-
-    - name: managedTestArtifactRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: nativeTestArtifactName
-      value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: nativeTestArtifactRootFolderPath
-      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: microsoftNetSdkIlFolderPath
-      value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
-
-    - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
 
     - name: priorityArg
       value: ''

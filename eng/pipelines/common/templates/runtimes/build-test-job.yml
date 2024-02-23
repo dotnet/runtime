@@ -18,12 +18,6 @@ parameters:
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
 
-### TODO: As of today, build of managed test components requires the product build
-### as a prerequisite due to dependency on System.Private.Corelib. After switching
-### over to its reference assembly we should be able to remove this dependency and
-### run managed test builds in parallel with the product build job.
-
-
 jobs:
 - template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
   parameters:

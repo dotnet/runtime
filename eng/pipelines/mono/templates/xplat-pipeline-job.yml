@@ -11,7 +11,6 @@ parameters:
   strategy: ''
   pool: ''
   runtimeVariant: ''
-  liveRuntimeBuildConfig: 'release'
 
   # arcade-specific parameters
   condition: true
@@ -51,64 +50,10 @@ jobs:
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
 
     variables:
-    - name: coreClrProductArtifactName
-      value: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
-
-    - name: coreClrProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(liveRuntimeBuildConfigUpper)'
-
-    - name: buildProductArtifactName
-      value: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    # minijit and monointerpreter do not use separate product builds.
-    - ${{ if or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }}:
-      - name : buildProductArtifactName
-        value : 'MonoProduct__$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-      - name : buildProductArtifactName
-        value : 'MonoProduct_llvmaot_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: binTestsPath
-      value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
-
-    - name: buildProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: managedTestArtifactRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: managedGenericTestArtifactName
-      value: 'MonoManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
-
-    - name: microsoftNetSdkIlFolderPath
-      value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
-
-    - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'
-
-    - name: monoRepoRoot
-      value: '$(Build.SourcesDirectory)/src/mono'
-
-    - name: nativeTestArtifactName
-      value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: nativeTestArtifactRootFolderPath
-      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: workloadPackagesPath
-      value: $(Build.SourcesDirectory)/artifacts/workloadPackages
-
-    - name: workloadArtifactsPath
-      value: $(Build.SourcesDirectory)/artifacts/workloads
-
-    - name: liveRuntimeBuildConfigUpper
-      ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
-        value: 'Release'
-      ${{ if eq(parameters.liveRuntimeBuildConfig, 'checked') }}:
-        value: 'Checked'
-      ${{ if eq(parameters.liveRuntimeBuildConfig, 'debug') }}:
-        value: 'Debug'
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: mono
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
     - name: priorityArg
       value: ''
