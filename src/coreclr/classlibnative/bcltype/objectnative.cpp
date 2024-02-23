@@ -32,6 +32,8 @@ extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeHelper(QCall::ObjectHandleOnS
     ret = objHandle.Get()->GetHashCodeEx();
 
     END_QCALL;
+
+    return ret;
 }
 
 FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
