@@ -6546,7 +6546,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // For certain indirect calls we may introduce helper calls before that we need to skip:
     // - CFG may introduce a call to the validator first
     // - Generic virtual methods may compute the target dynamically through a separate helper call
-    // - memset/memcpy helper calls emitted for GT_STORE_DYN_BLK/GT_STORE_BLK
+    // - memset/memcpy helper calls emitted for GT_STORE_BLK
     if (call->IsHelperCall())
     {
         switch (compiler->eeGetHelperNum(call->gtCallMethHnd))

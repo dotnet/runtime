@@ -12785,10 +12785,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             gtUpdateNodeSideEffects(tree);
             break;
 
-        case GT_STORE_DYN_BLK:
-            tree = fgMorphStoreDynBlock(tree->AsStoreDynBlk());
-            break;
-
         case GT_SELECT:
             tree->AsConditional()->gtCond = fgMorphTree(tree->AsConditional()->gtCond);
             tree->AsConditional()->gtOp1  = fgMorphTree(tree->AsConditional()->gtOp1);
@@ -13561,11 +13557,7 @@ void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
         {
             if ((*use)->OperIsBlkOp())
             {
-                if ((*use)->OperIs(GT_STORE_DYN_BLK))
-                {
-                    *use = m_compiler->fgMorphStoreDynBlock((*use)->AsStoreDynBlk());
-                }
-                else if ((*use)->OperIsInitBlkOp())
+                if ((*use)->OperIsInitBlkOp())
                 {
                     *use = m_compiler->fgMorphInitBlock(*use);
                 }

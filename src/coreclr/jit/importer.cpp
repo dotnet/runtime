@@ -10340,9 +10340,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op3 = gtNewCastNode(TYP_LONG, op3, /* fromUnsigned */ true, TYP_LONG);
                     }
 
-// TODO: enable for X86 as well, it currently doesn't support memset/memcpy helpers
-// Then, get rid of GT_STORE_DYN_BLK entirely.
-#ifndef TARGET_X86
                     const unsigned helper = opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
                     if (isVolatile)
                     {
@@ -10356,20 +10353,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1 = gtNewHelperCallNode(helper, TYP_VOID, op1, op2, op3);
                     }
-#else
-                    if (opcode == CEE_INITBLK)
-                    {
-                        if (!op2->IsIntegralConst(0))
-                        {
-                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
-                        }
-                    }
-                    else
-                    {
-                        op2 = gtNewIndir(TYP_STRUCT, op2);
-                    }
-                    op1 = gtNewStoreDynBlkNode(op1, op2, op3, indirFlags);
-#endif
                 }
                 goto SPILL_APPEND;
             }
