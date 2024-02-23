@@ -69,9 +69,6 @@ ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass 
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
-ValueNumFuncDef(FltRound, 1, false, false, false, false)
-ValueNumFuncDef(DblRound, 1, false, false, false, false)
-
 ValueNumFuncDef(Abs, 1, false, false, false, false)
 ValueNumFuncDef(Acos, 1, false, false, false, false)
 ValueNumFuncDef(Acosh, 1, false, false, false, false)

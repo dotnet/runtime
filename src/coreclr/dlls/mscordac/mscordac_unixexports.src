@@ -25,14 +25,12 @@ nativeStringResourceTable_mscorrc
 #PAL_bsearch
 #PAL_CopyModuleData
 #PAL_errno
-#PAL_fflush
-#PAL__flushall
 #PAL_free
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
 #PAL_GetUnwindInfoSize
-#PAL_get_stdout
-#PAL_get_stderr
+#PAL_stdout
+#PAL_stderr
 #PAL_GetApplicationGroupId
 #PAL_GetTransportName
 #PAL_GetCurrentThread
@@ -52,7 +50,6 @@ nativeStringResourceTable_mscorrc
 #PAL_malloc
 #PAL_realloc
 #PAL_qsort
-#PAL_fprintf
 #PAL__wcstoui64
 #PAL_wcstoul
 #PAL_wcstod
@@ -65,12 +62,8 @@ nativeStringResourceTable_mscorrc
 #PAL_wcschr
 #PAL_wcscat
 #PAL_wcsstr
-#PAL__open
-#PAL__pread
-#PAL__close
 
 #_wcsicmp
-#_stricmp
 #sprintf_s
 #vsprintf_s
 #_snprintf_s

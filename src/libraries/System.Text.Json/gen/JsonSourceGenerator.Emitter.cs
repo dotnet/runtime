@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators;
 
@@ -638,16 +638,16 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($$"""
                         var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
                         {
-                            IsProperty = {{FormatBool(property.IsProperty)}},
-                            IsPublic = {{FormatBool(property.IsPublic)}},
-                            IsVirtual = {{FormatBool(property.IsVirtual)}},
+                            IsProperty = {{FormatBoolLiteral(property.IsProperty)}},
+                            IsPublic = {{FormatBoolLiteral(property.IsPublic)}},
+                            IsVirtual = {{FormatBoolLiteral(property.IsVirtual)}},
                             DeclaringType = typeof({{property.DeclaringType.FullyQualifiedName}}),
                             Converter = {{converterInstantiationExpr ?? "null"}},
                             Getter = {{getterValue}},
                             Setter = {{setterValue}},
                             IgnoreCondition = {{ignoreConditionNamedArg}},
-                            HasJsonInclude = {{FormatBool(property.HasJsonInclude)}},
-                            IsExtensionData = {{FormatBool(property.IsExtensionData)}},
+                            HasJsonInclude = {{FormatBoolLiteral(property.HasJsonInclude)}},
+                            IsExtensionData = {{FormatBoolLiteral(property.IsExtensionData)}},
                             NumberHandling = {{FormatNumberHandling(property.NumberHandling)}},
                             PropertyName = {{FormatStringLiteral(property.MemberName)}},
                             JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}}
@@ -701,10 +701,10 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($$"""
                         {{parametersVarName}}[{{spec.ParameterIndex}}] = new()
                         {
-                            Name = "{{spec.Name}}",
+                            Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
-                            HasDefaultValue = {{FormatBool(spec.HasDefaultValue)}},
+                            HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
                             DefaultValue = {{CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType)}}
                         };
 
@@ -721,7 +721,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($$"""
                         {{parametersVarName}}[{{spec.ParameterIndex}}] = new()
                         {
-                            Name = "{{spec.Name}}",
+                            Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
                         };
@@ -796,7 +796,7 @@ namespace System.Text.Json.SourceGeneration
                     if (defaultCheckType != DefaultCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
                         propValueExpr = localVariableName;
                     }
@@ -1106,10 +1106,10 @@ namespace System.Text.Json.SourceGeneration
                 writer.Indentation++;
 
                 if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
-                    writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBool(allowOutOfOrderMetadataProperties)},");
+                    writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBoolLiteral(allowOutOfOrderMetadataProperties)},");
 
                 if (optionsSpec.AllowTrailingCommas is bool allowTrailingCommas)
-                    writer.WriteLine($"AllowTrailingCommas = {FormatBool(allowTrailingCommas)},");
+                    writer.WriteLine($"AllowTrailingCommas = {FormatBoolLiteral(allowTrailingCommas)},");
 
                 if (optionsSpec.Converters is { Count: > 0 } converters)
                 {
@@ -1136,13 +1136,13 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"DictionaryKeyPolicy = {FormatNamingPolicy(dictionaryKeyPolicy)},");
 
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
-                    writer.WriteLine($"IgnoreReadOnlyFields = {FormatBool(ignoreReadOnlyFields)},");
+                    writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");
 
                 if (optionsSpec.IgnoreReadOnlyProperties is bool ignoreReadOnlyProperties)
-                    writer.WriteLine($"IgnoreReadOnlyProperties = {FormatBool(ignoreReadOnlyProperties)},");
+                    writer.WriteLine($"IgnoreReadOnlyProperties = {FormatBoolLiteral(ignoreReadOnlyProperties)},");
 
                 if (optionsSpec.IncludeFields is bool includeFields)
-                    writer.WriteLine($"IncludeFields = {FormatBool(includeFields)},");
+                    writer.WriteLine($"IncludeFields = {FormatBoolLiteral(includeFields)},");
 
                 if (optionsSpec.MaxDepth is int maxDepth)
                     writer.WriteLine($"MaxDepth = {maxDepth},");
@@ -1154,7 +1154,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"PreferredObjectCreationHandling = {FormatObjectCreationHandling(preferredObjectCreationHandling)},");
 
                 if (optionsSpec.PropertyNameCaseInsensitive is bool propertyNameCaseInsensitive)
-                    writer.WriteLine($"PropertyNameCaseInsensitive = {FormatBool(propertyNameCaseInsensitive)},");
+                    writer.WriteLine($"PropertyNameCaseInsensitive = {FormatBoolLiteral(propertyNameCaseInsensitive)},");
 
                 if (optionsSpec.PropertyNamingPolicy is JsonKnownNamingPolicy propertyNamingPolicy)
                     writer.WriteLine($"PropertyNamingPolicy = {FormatNamingPolicy(propertyNamingPolicy)},");
@@ -1169,10 +1169,10 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"UnmappedMemberHandling = {FormatUnmappedMemberHandling(unmappedMemberHandling)},");
 
                 if (optionsSpec.WriteIndented is bool writeIndented)
-                    writer.WriteLine($"WriteIndented = {FormatBool(writeIndented)},");
+                    writer.WriteLine($"WriteIndented = {FormatBoolLiteral(writeIndented)},");
 
                 if (optionsSpec.IndentCharacter is char indentCharacter)
-                    writer.WriteLine($"IndentCharacter = {FormatIndentChar(indentCharacter)},");
+                    writer.WriteLine($"IndentCharacter = {FormatCharLiteral(indentCharacter)},");
 
                 if (optionsSpec.IndentSize is int indentSize)
                     writer.WriteLine($"IndentSize = {indentSize},");
@@ -1238,7 +1238,7 @@ namespace System.Text.Json.SourceGeneration
                         {
                             throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.IncompatibleConverterType}}", converter.GetType(), type));
                         }
-                    
+
                         if (converter is {{JsonConverterFactoryTypeRef}} factory)
                         {
                             converter = factory.CreateConverter(type, options);
@@ -1247,7 +1247,7 @@ namespace System.Text.Json.SourceGeneration
                                 throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.InvalidJsonConverterFactoryOutput}}", factory.GetType()));
                             }
                         }
-                    
+
                         return converter;
                     }
                     """);
@@ -1263,7 +1263,7 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 return ({{JsonConverterTypeRef}}<{{TypeParameter}}?>){{ExpandConverterMethodName}}(typeof({{TypeParameter}}?), converter, options, validateCanConvert: false);
                             }
-                    
+
                             converter = {{ExpandConverterMethodName}}(typeof({{TypeParameter}}), converter, options);
                             {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> typeInfo = {{JsonMetadataServicesTypeRef}}.{{CreateValueInfoMethodName}}<{{TypeParameter}}>(options, converter);
                             return {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{TypeParameter}}>(typeInfo);
@@ -1320,7 +1320,7 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (KeyValuePair<string, string> name_varName_pair in _propertyNames)
                 {
-                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode("{{name_varName_pair.Key}}");""");
+                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode({{FormatStringLiteral(name_varName_pair.Key)}});""");
                 }
 
                 return CompleteSourceFileAndReturnText(writer);
@@ -1351,9 +1351,9 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
-            private static string FormatBool(bool value) => value ? "true" : "false";
-            private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
-            private static string FormatIndentChar(char value) => value is '\t' ? "'\\t'" : $"'{value}'";
+            private static string FormatBoolLiteral(bool value) => value ? "true" : "false";
+            private static string FormatStringLiteral(string? value) => value is null ? "null" : SymbolDisplay.FormatLiteral(value, quote: true);
+            private static string FormatCharLiteral(char value) => SymbolDisplay.FormatLiteral(value, quote: true);
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance

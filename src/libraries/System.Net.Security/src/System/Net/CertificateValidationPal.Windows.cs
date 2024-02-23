@@ -111,10 +111,9 @@ namespace System.Net
             SafeFreeCertContext? localContext = null;
             try
             {
-                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext) &&
-                    localContext != null)
+                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext))
                 {
-                    return !localContext.IsInvalid;
+                    return localContext != null ? !localContext.IsInvalid : false;
                 }
             }
             finally

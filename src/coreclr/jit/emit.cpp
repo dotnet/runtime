@@ -4393,7 +4393,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     float insExeCost = insEvaluateExecutionCost(id);
     // All compPerfScore calculations must be performed using doubles
     double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
-    emitComp->info.compPerfScore += insPerfScore;
+    emitComp->Metrics.PerfScore += insPerfScore;
     ig->igPerfScore += insPerfScore;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

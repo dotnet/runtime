@@ -89,11 +89,10 @@
 
     <_XUnitBackgroundExec Condition="'$(_XUnitBackgroundExec)' == '' and '$(WasmEnableThreads)' == 'true'">true</_XUnitBackgroundExec>
     <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
+    <WasmXHarnessMonoArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsWasmBackgroundExec=true</WasmXHarnessMonoArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
-    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
-    <!-- snapshots are not yet supported with threads -->
-    <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
     <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
     <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
@@ -110,9 +109,11 @@
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_WasmBrowserPathForTests)' != ''" >$(_XHarnessArgs) &quot;--browser-path=$(_WasmBrowserPathForTests)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessVerbosity)' != ''"    >$(_XHarnessArgs) --verbosity=$(WasmXHarnessVerbosity)</_XHarnessArgs><!-- Trace, Debug, Information (default), Warning, Error, Critical -->
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
-    <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
+    <_AppArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_AppArgs) -threads</_AppArgs>
+    <!-- There are two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
     <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
@@ -148,6 +149,12 @@
     <PublishTestAsSelfContainedDependsOn />
     <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
+
+  <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp">
+    <ItemGroup>
+      <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" Exclude="@(WasmFilesToIncludeFromPublishDir)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
@@ -199,7 +206,7 @@
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem
               Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
-              TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+              TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
