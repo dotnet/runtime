@@ -316,15 +316,15 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void StructWithNestedOverriddenNotBitwiseComparableNext()
+        public static void StructWithNestedOverriddenNotBitwiseComparableTest()
         {
             StructWithNestedOverriddenNotBitwiseComparable obj1 = new StructWithNestedOverriddenNotBitwiseComparable();
             obj1.value1.value = 0.0;
             obj1.value2.value = 1.0;
 
             StructWithNestedOverriddenNotBitwiseComparable obj2 = new StructWithNestedOverriddenNotBitwiseComparable();
-            obj1.value1.value = -0.0;
-            obj1.value2.value = 1.0;
+            obj2.value1.value = -0.0;
+            obj2.value2.value = 1.0;
 
             Assert.True(obj1.Equals(obj2));
             Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
