@@ -368,10 +368,12 @@ typedef struct MonoAotCompile {
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
 	char *tmpbasename;
-	char *tmpfname;
+	char *asm_fname;
 	char *temp_dir_to_delete;
 	char *llvm_sfile;
 	char *llvm_ofile;
+	char *bc_fname;
+	char *optbc_fname;
 	GSList *cie_program;
 	GHashTable *unwind_info_offsets;
 	GPtrArray *unwind_ops;
@@ -484,8 +486,14 @@ get_patch_name (int info)
 static int
 aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options);
 
+static void
+set_paths (MonoAotCompile *acfg);
+
 static int
 emit_aot_image (MonoAotCompile *acfg);
+
+static int
+assemble_link (MonoAotCompile *acfg);
 
 static guint32
 get_unwind_info_offset (MonoAotCompile *acfg, guint8 *encoded, guint32 encoded_len);
@@ -10654,31 +10662,20 @@ execute_system (const char * command)
 #endif
 
 /*
- * emit_llvm_file:
+ * compile_llvm_file:
  *
- *   Emit the LLVM code into an LLVM bytecode file, and compile it using the LLVM
- * tools.
+ *  Compile the llvm bitcode file using the LLVM tools.
  */
 static gboolean
-emit_llvm_file (MonoAotCompile *acfg)
+compile_llvm_file (MonoAotCompile *acfg)
 {
 	char *command, *opts, *tempbc, *optbc, *output_fname;
 
-	if (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only) {
-		if (acfg->aot_opts.no_opt)
-			tempbc = g_strdup (acfg->aot_opts.llvm_outfile);
-		else
-			tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
-		optbc = g_strdup (acfg->aot_opts.llvm_outfile);
-	} else {
-		tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
-		optbc = g_strdup_printf ("%s.opt.bc", acfg->tmpbasename);
-	}
-
-	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name));
-
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
+
+	tempbc = acfg->bc_fname;
+	optbc = acfg->optbc_fname;
 
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
 	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
@@ -10802,7 +10799,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC) || defined(TARGET_ANDROID)
 	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
 #else
-	if (llvm_acfg->aot_opts.static_link)
+	if (acfg->aot_opts.static_link)
 		g_string_append_printf (acfg->llc_args, " -relocation-model=static");
 	else
 		g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
@@ -13185,7 +13182,7 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	if (acfg->aot_opts.asm_only) {
-		aot_printf (acfg, "Output file: '%s'.\n", acfg->tmpfname);
+		aot_printf (acfg, "Output file: '%s'.\n", acfg->asm_fname);
 		if (acfg->aot_opts.static_link)
 			aot_printf (acfg, "Linking symbol: '%s'.\n", acfg->static_linking_symbol);
 		if (acfg->llvm)
@@ -13199,7 +13196,7 @@ compile_asm (MonoAotCompile *acfg)
 		else
 			objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->image->name);
 	} else {
-		objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname);
+		objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->asm_fname);
 	}
 
 #ifdef TARGET_OSX
@@ -13208,7 +13205,7 @@ compile_asm (MonoAotCompile *acfg)
 
 	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
-			wrap_path (objfile), wrap_path (acfg->tmpfname));
+			wrap_path (objfile), wrap_path (acfg->asm_fname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
 	if (execute_system (command) != 0) {
 		g_free (command);
@@ -13293,7 +13290,7 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",
 							wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
-							wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname)), ld_flags);
+							wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->asm_fname)), ld_flags);
 
 #if defined(TARGET_MACH)
 	g_string_append_printf (str, " \"-Wl,-install_name,%s%s\"", g_path_get_basename (acfg->image->name), MONO_SOLIB_EXT);
@@ -13360,7 +13357,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->aot_opts.save_temps)
 		aot_printf (acfg, "Retained input file.\n");
 	else
-		g_unlink (acfg->tmpfname);
+		g_unlink (acfg->asm_fname);
 
 	return 0;
 }
@@ -15055,6 +15052,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	arch_init (acfg);
 
 	if (mono_use_llvm || acfg->aot_opts.llvm) {
+		acfg->llvm = TRUE;
 		/*
 		 * Emit all LLVM code into a separate assembly/object file and link with it
 		 * normally.
@@ -15068,6 +15066,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 				acfg->llvm_owriter = TRUE;
 		}
 	}
+
+	set_paths (acfg);
 
 	if (acfg->llvm && acfg->thumb_mixed)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_THUMB);
@@ -15290,24 +15290,18 @@ create_depfile (MonoAotCompile *acfg)
 	fclose (depfile);
 }
 
-static int
-emit_aot_image (MonoAotCompile *acfg)
+static void
+set_paths (MonoAotCompile *acfg)
 {
-	int res;
-	TV_DECLARE (atv);
-	TV_DECLARE (btv);
-
-	TV_GETTIME (atv);
-
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		if (acfg->aot_opts.asm_only) {
 			if (acfg->aot_opts.outfile) {
-				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
-				acfg->tmpbasename = g_strdup (acfg->tmpfname);
+				acfg->asm_fname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+				acfg->tmpbasename = g_strdup (acfg->asm_fname);
 			} else {
 				acfg->tmpbasename = g_strdup_printf ("%s", acfg->image->name);
-				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+				acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			}
 			g_assert (acfg->aot_opts.llvm_outfile);
 			acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
@@ -15326,7 +15320,7 @@ emit_aot_image (MonoAotCompile *acfg)
 			}
 
 			acfg->tmpbasename = g_build_filename (temp_path, "temp", (const char*)NULL);
-			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
 
 			if (acfg->aot_opts.static_link)
@@ -15336,26 +15330,88 @@ emit_aot_image (MonoAotCompile *acfg)
 
 			g_free (temp_path);
 		}
+
+		if (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only) {
+			if (acfg->aot_opts.no_opt)
+				acfg->bc_fname = g_strdup (acfg->aot_opts.llvm_outfile);
+			else
+				acfg->bc_fname = g_strdup_printf ("%s.bc", acfg->tmpbasename);
+			acfg->optbc_fname = g_strdup (acfg->aot_opts.llvm_outfile);
+		} else {
+			acfg->bc_fname = g_strdup_printf ("%s.bc", acfg->tmpbasename);
+			acfg->optbc_fname = g_strdup_printf ("%s.opt.bc", acfg->tmpbasename);
+		}
 	}
 #endif
 
 	if (acfg->aot_opts.asm_only && !acfg->aot_opts.llvm_only) {
 		if (acfg->aot_opts.outfile)
-			acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+			acfg->asm_fname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
-			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
-		acfg->fp = g_fopen (acfg->tmpfname, "w+");
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->image->name);
 	} else {
 		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
-			acfg->fp = fdopen (g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL), "w+");
+			/* Done later */
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
-			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
-			acfg->fp = g_fopen (acfg->tmpfname, "w+");
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+		}
+	}
+}
+
+/* Run external tools to assemble/link the aot image */
+static int
+assemble_link (MonoAotCompile *acfg)
+{
+	int res;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
+
+	TV_GETTIME (atv);
+
+#ifdef ENABLE_LLVM
+	if (acfg->llvm) {
+		gboolean emit_res;
+
+		emit_res = compile_llvm_file (acfg);
+		if (!emit_res)
+			return 1;
+	}
+#endif
+
+	if (!acfg->aot_opts.llvm_only) {
+		res = compile_asm (acfg);
+		if (res != 0) {
+			acfg_free (acfg);
+			return res;
+		}
+	}
+	TV_GETTIME (btv);
+	acfg->stats.link_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
+
+	return 0;
+}
+
+static int
+emit_aot_image (MonoAotCompile *acfg)
+{
+	int res;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
+
+	TV_GETTIME (atv);
+
+	if (acfg->aot_opts.asm_only && !acfg->aot_opts.llvm_only) {
+		acfg->fp = g_fopen (acfg->asm_fname, "w+");
+	} else {
+		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
+			acfg->fp = fdopen (g_file_open_tmp ("mono_aot_XXXXXX", &acfg->asm_fname, NULL), "w+");
+		} else {
+			acfg->fp = g_fopen (acfg->asm_fname, "w+");
 		}
 	}
 	if (acfg->fp == 0 && !acfg->aot_opts.llvm_only) {
-		aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
+		aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->asm_fname, strerror (errno));
 		return 1;
 	}
 	if (acfg->fp)
@@ -15473,13 +15529,8 @@ emit_aot_image (MonoAotCompile *acfg)
 		fclose (acfg->data_outfile);
 
 #ifdef ENABLE_LLVM
-	if (acfg->llvm) {
-		gboolean emit_res;
-
-		emit_res = emit_llvm_file (acfg);
-		if (!emit_res)
-			return 1;
-	}
+	if (acfg->llvm)
+		mono_llvm_emit_aot_module (acfg->bc_fname, g_path_get_basename (acfg->image->name));
 #endif
 
 	emit_library_info (acfg);
@@ -15491,32 +15542,28 @@ emit_aot_image (MonoAotCompile *acfg)
 	if (!acfg->aot_opts.stats)
 		aot_printf (acfg, "Compiled: %d/%d\n", acfg->stats.ccount, acfg->stats.mcount);
 
-	TV_GETTIME (atv);
 	if (acfg->w) {
 		res = mono_img_writer_emit_writeout (acfg->w);
 		if (res != 0) {
 			acfg_free (acfg);
 			return res;
 		}
-		res = compile_asm (acfg);
-		if (res != 0) {
-			acfg_free (acfg);
-			return res;
-		}
 	}
-	TV_GETTIME (btv);
-	acfg->stats.link_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
-
-	if (acfg->aot_opts.stats)
-		print_stats (acfg);
-
-	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
 	if (acfg->aot_opts.depfile)
 		create_depfile (acfg);
 
 	if (acfg->aot_opts.dump_json)
 		aot_dump (acfg);
+
+	res = assemble_link (acfg);
+	if (res)
+		return res;
+
+	if (acfg->aot_opts.stats)
+		print_stats (acfg);
+
+	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
 	if (!acfg->aot_opts.save_temps && acfg->temp_dir_to_delete) {
 		char *command = g_strdup_printf ("rm -r %s", acfg->temp_dir_to_delete);

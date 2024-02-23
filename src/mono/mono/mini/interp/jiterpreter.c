@@ -999,7 +999,7 @@ mono_jiterp_parse_option (const char *option)
 
 	const char *arr[2] = { option, NULL };
 	int temp;
-	mono_options_parse_options (arr, 1, &temp, NULL);
+	mono_options_parse_options (arr, 1, &temp, NULL, NULL);
 	return TRUE;
 }
 
