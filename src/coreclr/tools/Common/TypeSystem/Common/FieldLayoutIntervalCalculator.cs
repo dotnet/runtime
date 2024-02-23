@@ -108,7 +108,7 @@ namespace Internal.TypeSystem
 
                 if (addTrailingEmptyInterval && nestedIntervals.Count > 0)
                 {
-                    int trailingRegionStart = nestedIntervals[^1].EndSentinel;
+                    int trailingRegionStart = nestedIntervals[nestedIntervals.Count - 1].EndSentinel;
                     int trailingRegionSize = GetFieldSize(fieldType) - trailingRegionStart;
                     SetFieldLayout(offset + trailingRegionStart, trailingRegionSize, EmptyIntervalData);
                 }
