@@ -706,12 +706,13 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
+    void SetCond(FlowEdge* trueEdge, FlowEdge* falseEdge)
     {
-        assert(trueTarget != nullptr);
-        bbKind        = BBJ_COND;
-        bbTrueTarget  = trueTarget;
-        bbFalseTarget = falseTarget;
+        assert(trueEdge != nullptr);
+        assert(falseEdge != nullptr);
+        bbKind      = BBJ_COND;
+        bbTrueEdge  = trueEdge;
+        bbFalseEdge = falseEdge;
     }
 
     // Set both the block kind and target edge. This can clear `bbTargetEdge` when setting

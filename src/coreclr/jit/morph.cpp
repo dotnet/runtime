@@ -14670,16 +14670,18 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->SetFlags(propagateFlagsToAll);
-        condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
             thenBlock->SetFlags(BBF_IMPORTED);
         }
 
-        fgAddRefPred(thenBlock, condBlock);
         FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
         thenBlock->SetTargetEdge(newEdge);
+        
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
+        condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);
 
         thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
@@ -14693,8 +14695,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(remainderBlock, elseBlock);
-        fgAddRefPred(remainderBlock, condBlock);
+
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
+        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
@@ -14709,8 +14714,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetCond(remainderBlock, elseBlock);
-        fgAddRefPred(remainderBlock, condBlock);
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
+        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
 
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
     }

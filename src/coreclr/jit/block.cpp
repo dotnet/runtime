@@ -858,7 +858,7 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
         case BBJ_COND:
-            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
+            SetCond(from->GetTrueEdge(), from->GetFalseEdge());
             break;
         case BBJ_ALWAYS:
             SetKindAndTargetEdge(BBJ_ALWAYS, from->GetTargetEdge());

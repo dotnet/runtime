@@ -281,11 +281,11 @@ private:
             // Todo: get likelihoods right
             //
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetCond(elseBlock, thenBlock);
             FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
             thenEdge->setLikelihood(0.5);
             FlowEdge* const elseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
             elseEdge->setLikelihood(0.5);
+            checkBlock->SetCond(elseEdge, thenEdge);
 
             // thenBlock
             assert(thenBlock->TargetIs(remainderBlock));
@@ -614,10 +614,10 @@ private:
                 weight_t checkLikelihoodWt = ((weight_t)checkLikelihood) / 100.0;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetCond(checkBlock, prevCheckBlock->Next());
                 FlowEdge* const checkEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
                 checkEdge->setLikelihood(checkLikelihoodWt);
                 checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
+                prevCheckBlock->SetCond(checkEdge, prevCheckBlock->GetFalseEdge());
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -1064,9 +1064,9 @@ private:
             // where we know the last check is always true (in case of "exact" GDV)
             if (!checkFallsThrough)
             {
-                checkBlock->SetCond(elseBlock, checkBlock->Next());
                 FlowEdge* const checkEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
                 checkEdge->setLikelihood(elseLikelihoodDbl);
+                checkBlock->SetCond(checkEdge, checkBlock->GetFalseEdge());
             }
             else
             {

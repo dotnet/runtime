@@ -951,7 +951,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // originalSwitchBB is now a BBJ_ALWAYS, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
     assert(originalSwitchBB->KindIs(BBJ_ALWAYS));
-    assert(originalSwitchBB->NextIs(afterDefaultCondBlock));
+    assert(originalSwitchBB->TargetEdgeIs(afterDefaultCondBlock));
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
     assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
@@ -962,10 +962,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
     comp->fgRemoveRefPred(jumpTab[jumpCnt - 1]);
-    comp->fgAddRefPred(defaultBB, originalSwitchBB, jumpTab[jumpCnt - 1]);
+    FlowEdge* const trueEdge = comp->fgAddRefPred(defaultBB, originalSwitchBB, jumpTab[jumpCnt - 1]);
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetCond(defaultBB, afterDefaultCondBlock);
+    originalSwitchBB->SetCond(trueEdge, originalSwitchBB->GetTargetEdge());
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
 
@@ -1309,11 +1309,15 @@ bool Lowering::TryLowerSwitchToBitTest(
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
+    // TODO: Use old edges to influence new edge likelihoods?
+    FlowEdge* const case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch);
+    FlowEdge* const case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch);
+
     if (bbSwitch->NextIs(bbCase0))
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetCond(bbCase1, bbCase0);
+        bbSwitch->SetCond(case1Edge, case0Edge);
     }
     else
     {
@@ -1321,12 +1325,8 @@ bool Lowering::TryLowerSwitchToBitTest(
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetCond(bbCase0, bbCase1);
+        bbSwitch->SetCond(case0Edge, case1Edge);
     }
-
-    // TODO: Use old edges to influence new edge likelihoods?
-    comp->fgAddRefPred(bbCase0, bbSwitch);
-    comp->fgAddRefPred(bbCase1, bbSwitch);
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);

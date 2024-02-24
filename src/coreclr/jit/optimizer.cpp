@@ -636,9 +636,9 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
                 falseTarget = blk->GetFalseTarget();
             }
 
-            fgAddRefPred(trueTarget, newBlk);
-            fgAddRefPred(falseTarget, newBlk);
-            newBlk->SetCond(trueTarget, falseTarget);
+            FlowEdge* const trueEdge  = fgAddRefPred(trueTarget, newBlk);
+            FlowEdge* const falseEdge = fgAddRefPred(falseTarget, newBlk);
+            newBlk->SetCond(trueEdge, falseEdge);
             break;
         }
 
