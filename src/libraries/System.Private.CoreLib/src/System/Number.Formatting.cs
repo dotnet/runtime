@@ -2869,5 +2869,38 @@ namespace System
 
             return fraction;
         }
+
+        private static ulong ExtractFractionAndBiasedExponent<TNumber>(TNumber value, out int exponent)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+        {
+            ulong bits = TNumber.FloatToBits(value);
+            ulong fraction = (bits & TNumber.DenormalMantissaMask);
+            exponent = ((int)(bits >> TNumber.DenormalMantissaBits) & TNumber.InfinityExponent);
+
+            if (exponent != 0)
+            {
+                // For normalized value,
+                // value = 1.fraction * 2^(exp - ExponentBias)
+                //       = (1 + mantissa / 2^TrailingSignificandLength) * 2^(exp - ExponentBias)
+                //       = (2^TrailingSignificandLength + mantissa) * 2^(exp - ExponentBias - TrailingSignificandLength)
+                //
+                // So f = (2^TrailingSignificandLength + mantissa), e = exp - ExponentBias - TrailingSignificandLength;
+
+                fraction |= (1UL << TNumber.DenormalMantissaBits);
+                exponent -= TNumber.ExponentBias - TNumber.DenormalMantissaBits;
+            }
+            else
+            {
+                // For denormalized value,
+                // value = 0.fraction * 2^(MinBinaryExponent)
+                //       = (mantissa / 2^TrailingSignificandLength) * 2^(MinBinaryExponent)
+                //       = mantissa * 2^(MinBinaryExponent - TrailingSignificandLength)
+                //       = mantissa * 2^(MinBinaryExponent - TrailingSignificandLength)
+                // So f = mantissa, e = MinBinaryExponent - TrailingSignificandLength
+                exponent = TNumber.MinBinaryExponent - TNumber.DenormalMantissaBits;
+            }
+
+            return fraction;
+        }
     }
 }
