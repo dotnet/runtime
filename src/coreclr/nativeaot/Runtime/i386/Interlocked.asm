@@ -11,8 +11,8 @@ include AsmMacros.inc
 
 FASTCALL_FUNC  RhpLockCmpXchg64, 20
 
-_value$ = 8
-_comparand$ = 16
+_value$ = 16
+_comparand$ = 8
 
         mov     eax, DWORD PTR _comparand$[esp-4]
         mov     edx, DWORD PTR _comparand$[esp]
