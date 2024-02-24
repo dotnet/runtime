@@ -32,6 +32,13 @@ public unsafe class MemsetMemcpyNullref
             Assert.Throws<NullReferenceException>(() => MemoryInitByref(ref Unsafe.NullRef<byte>(), length));
             Assert.Throws<NullReferenceException>(() => MemoryCopyByref(ref Unsafe.NullRef<byte>(), ref Unsafe.NullRef<byte>(), length));
         }
+
+        // These APIs are not expected to fail/throw on zero length, even if pointers are not valid
+        byte valid = 0;
+        MemoryInitByref(ref Unsafe.NullRef<byte>(), 0);
+        MemoryCopyByref(ref Unsafe.NullRef<byte>(), ref valid, 0);
+        MemoryCopyByref(ref valid, ref Unsafe.NullRef<byte>(), 0);
+        MemoryCopyByref(ref Unsafe.NullRef<byte>(), ref Unsafe.NullRef<byte>(), 0);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
