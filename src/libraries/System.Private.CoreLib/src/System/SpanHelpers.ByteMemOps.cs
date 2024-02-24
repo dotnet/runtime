@@ -35,7 +35,7 @@ namespace System
 #endif // HAS_CUSTOM_BLOCKS
 
 #if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+        [System.Runtime.RuntimeExport("RhSpanHelpers_MemSet")]
 #endif
         [Intrinsic] // Unrolled for small constant lengths
         internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
@@ -247,7 +247,7 @@ namespace System
         }
 
 #if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+        [System.Runtime.RuntimeExport("RhSpanHelpers_MemSet")]
 #endif
         [Intrinsic] // Unrolled for small sizes
         public static unsafe void ClearWithoutReferences(ref byte dest, nuint len)
@@ -436,7 +436,7 @@ namespace System
         }
 
 #if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+        [System.Runtime.RuntimeExport("RhSpanHelpers_MemSet")]
 #endif
         public static void Fill(ref byte dest, byte value, nuint len)
         {

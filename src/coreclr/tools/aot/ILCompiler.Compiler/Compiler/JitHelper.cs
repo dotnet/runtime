@@ -139,13 +139,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.MemCpy:
-                    mangledName = "RhRuntimeHelpers_MemCopy";
+                    mangledName = "RhSpanHelpers_MemCopy";
                     break;
                 case ReadyToRunHelper.MemSet:
-                    mangledName = "RhRuntimeHelpers_MemSet";
+                    mangledName = "RhSpanHelpers_MemSet";
                     break;
                 case ReadyToRunHelper.MemZero:
-                    mangledName = "RhRuntimeHelpers_MemZero";
+                    mangledName = "RhSpanHelpers_MemZero";
                     break;
                 case ReadyToRunHelper.NativeMemSet:
                     mangledName = "memset";
