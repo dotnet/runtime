@@ -2955,19 +2955,19 @@ PhaseStatus Compiler::optCloneLoops()
 #endif
 #endif
 
-    assert(optLoopsCloned == 0); // It should be initialized, but not yet changed.
+    assert(Metrics.LoopsCloned == 0); // It should be initialized, but not yet changed.
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
-            optLoopsCloned++;
+            Metrics.LoopsCloned++;
             context.OptimizeConditions(loop->GetIndex() DEBUGARG(verbose));
             context.OptimizeBlockConditions(loop->GetIndex() DEBUGARG(verbose));
             optCloneLoop(loop, &context);
         }
     }
 
-    if (optLoopsCloned > 0)
+    if (Metrics.LoopsCloned > 0)
     {
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
@@ -2986,7 +2986,7 @@ PhaseStatus Compiler::optCloneLoops()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Loops cloned: %d\n", optLoopsCloned);
+        printf("Loops cloned: %d\n", Metrics.LoopsCloned);
         printf("Loops statically optimized: %d\n", optStaticallyOptimizedLoops);
         printf("After loop cloning:\n");
         fgDispBasicBlocks(/*dumpTrees*/ true);
