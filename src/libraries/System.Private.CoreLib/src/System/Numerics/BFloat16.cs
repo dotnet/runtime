@@ -292,9 +292,9 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out BFloat16 result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
-        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its BFloat16-precision floating-point number equivalent.</summary>
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its <see cref="BFloat16"/> number equivalent.</summary>
         /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
-        /// <param name="result">When this method returns, contains a BFloat16-precision floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <param name="result">When this method returns, contains a <see cref="BFloat16"/> number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
         /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BFloat16 result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
@@ -441,6 +441,46 @@ namespace System.Numerics
         // Explicit Convert To BFloat16
         //
 
+        /// <summary>Explicitly converts a <see cref="char" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(char value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(decimal value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="short" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(short value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="Half" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(Half value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="int" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(int value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="long" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(long value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(nint value) => (BFloat16)(float)value;
+
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
@@ -463,10 +503,29 @@ namespace System.Numerics
             return new BFloat16((ushort)upper);
         }
 
-        /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(ushort value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="uint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(uint value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="ulong" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(ulong value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(nuint value) => (BFloat16)(float)value;
 
         //
         // Explicit Convert From BFloat16
