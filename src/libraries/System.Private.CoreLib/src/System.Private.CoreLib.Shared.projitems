@@ -593,6 +593,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.Impl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)system\Numerics\Number.BFloat16.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.Extensions.cs" />

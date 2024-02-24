@@ -16,7 +16,7 @@ namespace System
         // The general idea behind Grisu3 is to leverage additional bits and cached powers of ten to generate the correct digits.
         // The algorithm is imprecise for some numbers. Fortunately, the algorithm itself can determine this scenario and gives us
         // a result indicating success or failure. We must fallback to a different algorithm for the failing scenario.
-        internal static class Grisu3
+        internal static partial class Grisu3
         {
             private const int CachedPowersDecimalExponentDistance = 8;
             private const int CachedPowersMinDecimalExponent = -348;
