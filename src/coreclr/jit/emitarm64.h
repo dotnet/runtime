@@ -56,6 +56,8 @@ void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts
 void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
+void emitDispSveLslIndexShift(regNumber reg1, regNumber reg2, insOpts opt, ssize_t amount);
+void emitDispSveModIndexShift(regNumber reg1, regNumber reg2, insOpts opt, ssize_t amount);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -535,6 +537,10 @@ static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the field 'sz' at bit location '22'.
 static code_t insEncodeSveElemsize_sz_22(emitAttr size);
+
+// Returns the encoding to select the shift index for formats with '<mod> <amount>'.
+// This specifically encodes the field 'msz' at bit locations '11-10'.
+static code_t insEncodeSveIndexShift_msz_11_to_10(ssize_t amount);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.

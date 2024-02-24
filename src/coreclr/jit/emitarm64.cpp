@@ -2540,18 +2540,24 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+            imm      = emitGetInsSC(id);
             elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
+            assert(isValidUimm2(imm));
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
         case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(insOptsScalableDoubleWord32bitExtends(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
+            assert(isValidUimm2(imm));
             break;
 
         default:
@@ -18513,6 +18519,36 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding to select the shift index for formats with '<mod> <amount>'.
+ *  This specifically encodes the field 'msz' at bit locations '11-10'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveIndexShift_msz_11_to_10(ssize_t amount)
+{
+    switch (amount)
+    {
+        case 0:
+            return 0;
+
+        case 1:
+            return (1 << 10);
+
+        case 2:
+            return (1 << 11);
+
+        case 3:
+            return (1 << 11) | (1 << 10);
+
+        default:
+            break;
+
+    }
+    assert(!"Invalid <mod> <amount>");
+    return 0;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
  *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
  */
@@ -24417,21 +24453,18 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_9_to_5(id->idReg2());                           // nnnnn
             code |= insEncodeReg_V_20_to_16(id->idReg3());                         // mmmmm
             code |= insEncodeSveElemsize_sz_22(optGetSveElemsize(id->idInsOpt())); // x
-
-            if (imm != 0)
-            {
-                code |= (1 << 11) | (1 << 10); // hh
-            }
-
+            code |= insEncodeSveIndexShift_msz_11_to_10(imm);                      // hh
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
         case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
-            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
+            code |= insEncodeReg_V_4_to_0(id->idReg1());      // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());      // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());    // mmmmm
+            code |= insEncodeSveIndexShift_msz_11_to_10(imm); // hh
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -24889,6 +24922,35 @@ void emitter::emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm)
         // We could not modify capstone without affecting other cases.
         emitDispImm(imm, false, /* alwaysHex */ (imm > 31));
     }
+    printf("]");
+}
+
+/*****************************************************************************
+ *
+ *  Prints the encoding for format [<Zn>.<T>, <Zm>.<T>{, <mod><amount>}]
+ */
+void emitter::emitDispSveLslIndexShift(regNumber reg1, regNumber reg2, insOpts opt, ssize_t amount)
+{
+    printf("[");
+    emitDispSveReg(reg1, opt, true);
+    emitDispSveReg(reg2, opt, amount != 0);
+    if (amount != 0)
+    {
+        printf("LSL #%u", amount);
+    }
+    printf("]");
+}
+
+/*****************************************************************************
+ *
+ *  Prints the encoding for format [<Zn>.D, <Zm>.D, SXTW{<amount>}] and [<Zn>.D, <Zm>.D, UXTW{<amount>}]
+ */
+void emitter::emitDispSveModIndexShift(regNumber reg1, regNumber reg2, insOpts opt, ssize_t amount)
+{
+    printf("[");
+    emitDispSveReg(reg1, opt, true);
+    emitDispSveReg(reg2, opt, true);
+    emitDispSveExtendOptsModN(opt, (int)amount);
     printf("]");
 }
 
@@ -28270,21 +28332,16 @@ void emitter::emitDispInsHelp(
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
             imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-
-            // TODO: clean this up.
-            printf("[");
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), imm != 0);
-            if (imm != 0)
-            {
-                emitDispImm(imm, false);
-            }
-            printf("]");
+            emitDispSveLslIndexShift(id->idReg1(), id->idReg2(), id->idInsOpt(), imm);
             break;
 
         // <Zd>.D, [<Zn>.D, <Zm>.D, SXTW{<amount>}]
-        case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3B: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
         // <Zd>.D, [<Zn>.D, <Zm>.D, UXTW{<amount>}]
         case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveModIndexShift(id->idReg2(), id->idReg3(), id->idInsOpt(), imm);
             break;
 
         default:
