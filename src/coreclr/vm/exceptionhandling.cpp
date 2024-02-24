@@ -19,6 +19,7 @@
 #include "corinfo.h"
 #include "exceptionhandlingqcalls.h"
 #include "exinfo.h"
+#include "configuration.h"
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -236,7 +237,7 @@ void InitializeExceptionHandling()
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
     g_StackTraceArrayLock.Init(LOCK_TYPE_DEFAULT, TRUE);
 
-    g_isNewExceptionHandlingEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableNewExceptionHandling) != 0;
+    g_isNewExceptionHandlingEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.LegacyExceptionHandling"), CLRConfig::EXTERNAL_LegacyExceptionHandling ) == 0;
 
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
@@ -939,7 +940,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord);
+            DispatchManagedException(oref, pContextRecord, /* preserveStackTrace */ false);
         }
     }
 #endif // !HOST_UNIX
