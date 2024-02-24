@@ -438,7 +438,7 @@ namespace System
 #if NATIVEAOT
         [System.Runtime.RuntimeExport("RhSpanHelpers_MemSet")]
 #endif
-        public static void Fill(ref byte dest, byte value, nuint len)
+        internal static void Fill(ref byte dest, byte value, nuint len)
         {
             if (!Vector.IsHardwareAccelerated)
             {

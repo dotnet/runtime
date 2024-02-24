@@ -1332,7 +1332,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_SpanHelpers_ClearWithoutReferences:
                             case NI_System_SpanHelpers_Fill:
                             case NI_System_SpanHelpers_SequenceEqual:
-                            case NI_System_Buffer_Memmove:
+                            case NI_System_SpanHelpers_Memmove:
                             {
                                 if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
                                 {

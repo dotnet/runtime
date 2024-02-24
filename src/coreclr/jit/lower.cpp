@@ -2013,7 +2013,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
     assert(call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ||
-           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove));
+           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_SpanHelpers_Memmove));
 
     assert(call->gtArgs.CountUserArgs() == 3);
 
@@ -2374,7 +2374,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     {
         switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
                 if (LowerCallMemmove(call, &nextNode))
                 {
                     return nextNode;
