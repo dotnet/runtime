@@ -1946,10 +1946,16 @@ public:
         GenTree* const node = *use;
         if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
         {
-            const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
-            if ((ni == NI_System_Buffer_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+            switch (m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd))
             {
-                m_functor(m_compiler, node);
+                case NI_System_Buffer_Memmove:
+                case NI_System_SpanHelpers_SequenceEqual:
+                case NI_System_SpanHelpers_Fill:
+                    m_functor(m_compiler, node);
+                    break;
+
+                default:
+                    break;
             }
         }
         return Compiler::WALK_CONTINUE;
@@ -2275,7 +2281,8 @@ public:
         }
 
         assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_Buffer_Memmove) ||
-               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
+               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual) ||
+               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Fill));
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
         if (countEntry.ILOffset !=
@@ -2299,8 +2306,6 @@ public:
 
         *m_currentSchemaIndex += 2;
 
-        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
-
         // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for the len:
         //
         //  \--*  COMMA     long
@@ -2312,6 +2317,21 @@ public:
         //     |  \--*  CNS_INT   long   <hist>
         //     \--*  LCL_VAR   long   tmp
         //
+
+        int lenArgIndex;
+        if (node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Fill))
+        {
+            // Fill(dest, len, value)
+            lenArgIndex = 1;
+        }
+        else
+        {
+            // Memmove(dst, src, len)
+            // SequenceEqual(a, b, len)
+            lenArgIndex = 2;
+        }
+
+        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(lenArgIndex)->EarlyNodeRef();
 
         const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
