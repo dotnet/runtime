@@ -39,6 +39,59 @@ body:
         - label: My issue is not solved by following these recommendations.
           required: true
   - type: textarea
+    id: background
+    attributes:
+      label: Description
+      description: Please share a clear and concise description of the problem.
+      placeholder: Description
+    validations:
+      required: true
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Reproduction Steps
+      description: |
+        Please include minimal steps to reproduce the problem if possible. E.g.: the smallest possible code snippet; or a small project, with steps to run it. If possible include text as text rather than screenshots (so it shows up in searches).
+      placeholder: Minimal Reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: |
+        Provide a description of the expected behavior.
+      placeholder: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: |
+        Provide a description of the actual behavior observed. If applicable please include any error messages, exception stacktraces or memory dumps.
+      placeholder: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression?
+      description: |
+        Did this work in a previous build or release of .NET Core, or from .NET Framework? If you can try a previous release or build to find out, that can help us narrow down the problem. If you don't know, that's OK.
+      placeholder: Regression?
+    validations:
+      required: false
+  - type: textarea
+    id: known-workarounds
+    attributes:
+      label: Known Workarounds
+      description: |
+        Please provide a description of any known workarounds.
+      placeholder: Known Workarounds
+    validations:
+      required: false
+  - type: textarea
     id: configuration
     attributes:
       label: Configuration
