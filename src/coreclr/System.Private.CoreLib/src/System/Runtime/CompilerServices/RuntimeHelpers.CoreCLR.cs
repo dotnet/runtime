@@ -149,12 +149,14 @@ namespace System.Runtime.CompilerServices
             if (o1 is null || o2 is null)
                 return false;
 
+            MethodTable* pMT = GetMethodTable(o1);
+
             // If it's not a value class, don't compare by value
-            if (!o1.GetType().IsValueType)
+            if (!pMT->IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (o1.GetType() != o2.GetType())
+            if (pMT != GetMethodTable(o2))
                 return false;
 
             // Compare the contents

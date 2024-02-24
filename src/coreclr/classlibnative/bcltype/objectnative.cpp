@@ -134,12 +134,11 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::SequenceEqualWithReferences, Object *pThisRef
 
     MethodTable *pThisMT = pThisRef->GetMethodTable();
 
-    // Compare the contents (size - vtable - sync block index).
-    DWORD dwBaseSize = pThisMT->GetBaseSize();
+    // Compare the contents
     BOOL ret = memcmp(
-        (void *) (pThisRef+1),
-        (void *) (pCompareRef+1),
-        dwBaseSize - sizeof(Object) - sizeof(int)) == 0;
+        pThisRef->GetData(),
+        pCompareRef->GetData(),
+        pThisMT->GetNumInstanceFieldBytes()) == 0;
 
     FC_GC_POLL_RET();
 
