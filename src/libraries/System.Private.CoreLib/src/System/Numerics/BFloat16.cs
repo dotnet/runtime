@@ -476,6 +476,11 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         public static explicit operator BFloat16(long value) => (BFloat16)(float)value;
 
+        /// <summary>Explicitly converts a <see cref="Int128" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        public static explicit operator BFloat16(Int128 value) => (BFloat16)(float)value;
+
         /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
@@ -526,6 +531,12 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         [CLSCompliant(false)]
         public static explicit operator BFloat16(nuint value) => (BFloat16)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="UInt128" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(UInt128 value) => (BFloat16)(float)value;
 
         //
         // Explicit Convert From BFloat16
@@ -1546,15 +1557,45 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<BFloat16>.TryConvertToChecked<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the one that handles unsigned will also
-            // handle `Decimal`.
-            //
-            // That is, `ConvertFrom` for `BFloat16` will handle the other signed types and
-            // `ConvertTo` will handle the unsigned types.
+            // `BFloat16` is non-first class type in System.Numerics namespace.
+            // It should handle all conversions from/to types under System namespace.
 
+            if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
             if (typeof(TOther) == typeof(byte))
             {
                 byte actualResult = checked((byte)value);
@@ -1627,56 +1668,91 @@ namespace System.Numerics
         private static bool TryConvertTo<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the one that handles unsigned will also
-            // handle `Decimal`.
-            //
-            // That is, `ConvertFrom` for `BFloat16` will handle the other signed types and
-            // `ConvertTo` will handle the unsigned types
+            // `BFloat16` is non-first class type in System.Numerics namespace.
+            // It should handle all conversions from/to types under System namespace.
 
-            if (typeof(TOther) == typeof(byte))
+            if (typeof(TOther) == typeof(sbyte))
             {
-                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
-                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                sbyte actualResult = (value >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                     (value <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = ((float)value >= short.MaxValue) ? short.MaxValue :
+                                     ((float)value <= short.MinValue) ? short.MinValue : (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = ((float)value >= int.MaxValue) ? int.MaxValue :
+                                   ((float)value <= int.MinValue) ? int.MinValue : (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = ((float)value >= long.MaxValue) ? long.MaxValue :
+                                    ((float)value <= long.MinValue) ? long.MinValue : (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = ((float)value >= +170141183460469231731687303715884105727.0f) ? Int128.MaxValue :
+                                      ((float)value <= -170141183460469231731687303715884105728.0f) ? Int128.MinValue : (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = ((float)value >= nint.MaxValue) ? nint.MaxValue :
+                                    ((float)value <= nint.MinValue) ? nint.MinValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = ((float)value >= byte.MaxValue) ? byte.MaxValue :
+                                   ((float)value <= byte.MinValue) ? byte.MinValue : (byte)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualResult = (value == PositiveInfinity) ? char.MaxValue :
+                char actualResult = ((float)value >= char.MaxValue) ? char.MaxValue :
                                     (value <= Zero) ? char.MinValue : (char)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult = (value == PositiveInfinity) ? decimal.MaxValue :
-                                       (value == NegativeInfinity) ? decimal.MinValue :
+                decimal actualResult = ((float)value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
+                                       ((float)value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
                                        IsNaN(value) ? 0.0m : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualResult = (value == PositiveInfinity) ? ushort.MaxValue :
+                ushort actualResult = ((float)value >= ushort.MaxValue) ? ushort.MaxValue :
                                       (value <= Zero) ? ushort.MinValue : (ushort)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualResult = (value == PositiveInfinity) ? uint.MaxValue :
+                uint actualResult = ((float)value >= uint.MaxValue) ? uint.MaxValue :
                                     (value <= Zero) ? uint.MinValue : (uint)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualResult = (value == PositiveInfinity) ? ulong.MaxValue :
-                                     (value <= Zero) ? ulong.MinValue :
-                                     IsNaN(value) ? 0 : (ulong)value;
+                ulong actualResult = ((float)value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= Zero) ? ulong.MinValue : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1689,7 +1765,7 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualResult = (value == PositiveInfinity) ? nuint.MaxValue :
+                nuint actualResult = ((float)value >= nuint.MaxValue) ? nuint.MaxValue :
                                      (value <= Zero) ? nuint.MinValue : (nuint)value;
                 result = (TOther)(object)actualResult;
                 return true;
