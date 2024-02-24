@@ -98,5 +98,5 @@ private:
 
     // Prototypes for the callouts.
     typedef void (REDHAWK_CALLCONV * GcRestrictedCallbackFunction)(uint32_t uiCondemnedGeneration);
-    typedef CLR_BOOL (REDHAWK_CALLCONV * HandleTableRestrictedCallbackFunction)(Object * pObject);
+    typedef CLR_BOOL (__stdcall * HandleTableRestrictedCallbackFunction)(Object * pObject);
 };
