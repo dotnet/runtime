@@ -1324,8 +1324,6 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
-
 public:
 
     // Debugger stuff
