@@ -13761,6 +13761,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 assert(isValidUimm2(imm)); // ii i
                 fmt = IF_SVE_GG_3A;
             }
+            unreached();
             break;
 
         case INS_sve_luti4:
@@ -13789,6 +13790,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 assert(isValidImm1(imm)); // i
                 fmt = IF_SVE_GH_3A;
             }
+            unreached();
             break;
 
         default:
