@@ -1,0 +1,6 @@
+EXPORTS
+	BuildComPointer
+	CaptureComPointer
+	IsNULL
+	ReleaseComPointer
+	RetrieveCapturedComPointer
