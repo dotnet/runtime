@@ -1969,7 +1969,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
             // If both fall-through and branch successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-            if (block->TrueTargetIs(block->GetFalseTarget()))
+            if (block->TrueEdgeIs(block->GetFalseEdge()))
             {
                 m_end = &m_succs[1];
             }

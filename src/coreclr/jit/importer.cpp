@@ -7341,7 +7341,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
                     bool jumpToNextOptimization = false;
-                    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
+                    if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
@@ -7603,7 +7603,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
                     bool jumpToNextOptimization = false;
-                    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
+                    if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);

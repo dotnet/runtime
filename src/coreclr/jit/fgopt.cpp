@@ -2505,7 +2505,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_COND));
-    assert(block->TrueTargetIs(block->GetFalseTarget()));
+    assert(block->TrueEdgeIs(block->GetFalseEdge()));
 
     BasicBlock* target = block->GetTrueTarget();
 
@@ -2625,7 +2625,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         * block are counted twice so we have to remove one of them */
 
     noway_assert(target->countOfInEdges() > 1);
-    fgRemoveRefPred(target, block);
+    fgRemoveRefPred(block->GetTargetEdge());
 }
 
 //-------------------------------------------------------------
@@ -5841,7 +5841,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     // ternaries in C#).
     // The logic below could be generalized to BBJ_SWITCH, but this currently
     // has almost no CQ benefit but does have a TP impact.
-    if (!block->KindIs(BBJ_COND) || block->TrueTargetIs(block->GetFalseTarget()))
+    if (!block->KindIs(BBJ_COND) || block->TrueEdgeIs(block->GetFalseEdge()))
     {
         return false;
     }

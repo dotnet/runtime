@@ -151,7 +151,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
                     // their successor edge should never have a duplicate count over 1.
                     //
                     assert(blockPred->KindIs(BBJ_COND));
-                    assert(blockPred->TrueTargetIs(blockPred->GetFalseTarget()));
+                    assert(blockPred->TrueEdgeIs(blockPred->GetFalseEdge()));
                     flow->setLikelihood(1.0);
                 }
                 else

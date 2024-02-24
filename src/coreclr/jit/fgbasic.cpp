@@ -5379,7 +5379,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 assert(!bPrev->FalseTargetIs(block));
 
                 /* Check if both sides of the BBJ_COND now jump to the same block */
-                if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
+                if (bPrev->TrueEdgeIs(bPrev->GetFalseEdge()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
