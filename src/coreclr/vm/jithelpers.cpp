@@ -615,19 +615,6 @@ HCIMPL1_V(INT32, JIT_Dbl2Int, double val)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(INT32, JIT_Dbl2Int, double val)
-{
-    FCALL_CONTRACT;
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    double int_max_plus_1 = (double)INT32_MAX;
-    return (val != val) ? 0 : (val >= int_max_plus_1) ? INT32_MAX : (INT32)val;
-#else
-    return((INT32)val);
-#endif // TARGET_X86 || TARGET_AMD64
-}
-HCIMPLEND
-
-/*********************************************************************/
 HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
 {
     FCALL_CONTRACT;

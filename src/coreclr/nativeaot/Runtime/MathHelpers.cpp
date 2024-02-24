@@ -31,7 +31,7 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 }
 FCIMPLEND
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int64_min_minus_1 = (double)INT64_MIN - 1.0;
@@ -42,7 +42,7 @@ EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
 #endif //TARGET_X86 || TARGET_AMD64
 }
 
-EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
+EXTERN_C int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int32_min_minus_1 = (double)INT32_MIN - 1.0;
@@ -53,7 +53,7 @@ EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
 #endif //TARGET_X86 || TARGET_AMD64
 }
 
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
+EXTERN_C uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double uint32_max_plus_1 = -2.0 * (double)INT32_MIN;
@@ -63,7 +63,7 @@ EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
 #endif //TARGET_X86 || TARGET_AMD64
 }
 
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpFlt2UInt(float val)
+EXTERN_C uint32_t REDHAWK_CALLCONV RhpFlt2UInt(float val)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const float uint32_max_plus_1 = -2.0 * (float)INT32_MIN;
