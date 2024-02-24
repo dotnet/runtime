@@ -4743,10 +4743,10 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             /// <summary>Emits validation for a debug stack cookie.</summary>
-            void EmitStackCookieValidate(int stackCookie, [CallerLineNumber] int? lineNumber = null)
+            void EmitStackCookieValidate(int stackCookie)
             {
 #if DEBUG
-                writer.WriteLine($"{StackCookieValidate(stackCookie, lineNumber)};");
+                writer.WriteLine($"{StackCookieValidate(stackCookie)};");
 #endif
             }
 
@@ -4755,7 +4755,7 @@ namespace System.Text.RegularExpressions.Generator
             /// In debug, pops item 1 from the backtracking stack, pops item 2 and validates it against the cookie, then evaluates to item1.
             /// In release, pops and evaluates to an item from the backtracking stack.
             /// </summary>
-            string ValidateStackCookieWithAdditionAndReturnPoppedStack(int stackCookie, [CallerLineNumber] int? lineNumber = null)
+            string ValidateStackCookieWithAdditionAndReturnPoppedStack(int stackCookie)
             {
 #if DEBUG
                 const string MethodName = "ValidateStackCookieWithAdditionAndReturnPoppedStack";
@@ -4769,7 +4769,7 @@ namespace System.Text.RegularExpressions.Generator
                         $"    expectedCookie += poppedStack;",
                         $"    if (expectedCookie != actualCookie)",
                         $"    {{",
-                        $"          throw new Exception($\"Backtracking stack imbalance detected (L{lineNumber}). Expected {{expectedCookie}}. Actual {{actualCookie}}.\");",
+                        $"          throw new Exception($\"Backtracking stack imbalance detected. Expected {{expectedCookie}}. Actual {{actualCookie}}.\");",
                         $"    }}",
                         $"    return poppedStack;",
                         $"}}",
@@ -4784,7 +4784,7 @@ namespace System.Text.RegularExpressions.Generator
 
 #if DEBUG
             /// <summary>Returns an expression that validates and returns a debug stack cookie.</summary>
-            string StackCookieValidate(int stackCookie, [CallerLineNumber] int? lineNumber = null)
+            string StackCookieValidate(int stackCookie)
             {
                 const string MethodName = "ValidateStackCookie";
                 if (!requiredHelpers.ContainsKey(MethodName))
@@ -4796,7 +4796,7 @@ namespace System.Text.RegularExpressions.Generator
                         $"{{",
                         $"    if (expected != actual)",
                         $"    {{",
-                        $"        throw new Exception($\"Backtracking stack imbalance detected (L{lineNumber}). Expected {{expected}}. Actual {{actual}}.\");",
+                        $"        throw new Exception($\"Backtracking stack imbalance detected. Expected {{expected}}. Actual {{actual}}.\");",
                         $"    }}",
                         $"    return actual;",
                         $"}}",

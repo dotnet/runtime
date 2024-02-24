@@ -450,7 +450,7 @@ namespace System.Text.RegularExpressions.Tests
                         {
                             if (expected != actual)
                             {
-                                throw new Exception($"Backtracking stack imbalance detected (L4423). Expected {expected}. Actual {actual}.");
+                                throw new Exception($"Backtracking stack imbalance detected. Expected {expected}. Actual {actual}.");
                             }
                             return actual;
                         }
