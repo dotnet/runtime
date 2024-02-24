@@ -238,6 +238,8 @@ typedef struct MonoAotOptions {
 	gboolean verbose;
 	gboolean deterministic;
 	gboolean allow_errors;
+	gboolean driver;
+	gboolean child;
 	char *tool_prefix;
 	char *as_prefix;
 	char *ld_flags;
@@ -518,6 +520,9 @@ is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method
 
 static inline const char*
 lookup_direct_pinvoke_symbol_name_aot (MonoAotCompile *acfg, MonoMethod *method);
+
+static int
+compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options);
 
 static gboolean
 mono_aot_mode_is_full (MonoAotOptions *opts)
@@ -9083,6 +9088,10 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		// direct pinvokes (managed-to-native wrappers) and fallbacks to JIT for majority of managed methods.
 		} else if (str_begins_with (arg, "wrappers-only")) {
 			opts->wrappers_only = TRUE;
+		} else if (!strcmp (arg, "compile-in-child")) {
+			opts->driver = TRUE;
+		} else if (!strcmp (arg, "_child")) {
+			opts->child = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly                              - \n");
@@ -9133,6 +9142,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    verbose                              - \n");
 			printf ("    allow-errors                         - \n");
 			printf ("    no-opt                               - \n");
+			printf ("    compile-in-child                     - \n");
 			printf ("    llvmopts=<value>                     - \n");
 			printf ("    llvmllc=<value>                      - \n");
 			printf ("    clangxx=<value>                      - \n");
@@ -14890,14 +14900,14 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
-	if (acfg->dedup_phase != DEDUP_COLLECT)
+	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.child)
 		aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 	if (!acfg->aot_opts.deterministic)
 		generate_aotid ((guint8*) &acfg->image->aotid);
 
 	char *aotid = mono_guid_to_string (acfg->image->aotid);
-	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.deterministic)
+	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.deterministic && !acfg->aot_opts.child)
 		aot_printf (acfg, "AOTID %s\n", aotid);
 	g_free (aotid);
 
@@ -15087,6 +15097,15 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
  	if (acfg->llvm) {
 		acfg->llvm_got_symbol = g_strdup_printf ("%s_llvm_got", acfg->global_prefix);
 		acfg->llvm_eh_frame_symbol = g_strdup_printf ("%s_eh_frame", acfg->global_prefix);
+	}
+
+	if (acfg->aot_opts.driver) {
+		/* Run the compilation part in a child process */
+		res = compile_assemblies_in_child (&acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
+		if (res)
+			return res;
+
+		return assemble_link (acfg);
 	}
 
 	acfg->method_index = 1;
@@ -15556,6 +15575,10 @@ emit_aot_image (MonoAotCompile *acfg)
 	if (acfg->aot_opts.dump_json)
 		aot_dump (acfg);
 
+	if (acfg->aot_opts.child)
+		/* The rest is done in the parent */
+		return 0;
+
 	res = assemble_link (acfg);
 	if (res)
 		return res;
@@ -15574,6 +15597,61 @@ emit_aot_image (MonoAotCompile *acfg)
 	acfg_free (acfg);
 
 	return 0;
+}
+
+static int
+compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options)
+{
+	/* Find --aot argument */
+	int aot_index = -1;
+	for (guint32 i = 1; i < runtime_args->len; ++i) {
+		const char *arg = (const char*)g_ptr_array_index (runtime_args, i);
+		if (strncmp (arg, "--aot=", strlen ("--aot=")) == 0) {
+			aot_index = i;
+			break;
+		}
+	}
+	g_assert (aot_index != -1);
+
+	GString *command;
+
+	command = g_string_new ("");
+
+	g_string_append_printf (command, "%s", (const char*)g_ptr_array_index (runtime_args, 0));
+
+	for (guint32 i = 1; i < runtime_args->len; ++i) {
+		const char *arg = (const char*)g_ptr_array_index (runtime_args, i);
+		if (strncmp (arg, "--response=", strlen ("--response=")) == 0)
+			/* Already expanded */
+			continue;
+		if (i != aot_index)
+			g_string_append_printf (command, " %s", arg);
+	}
+
+	/* Pass '_child' instead of 'compile-in-child' */
+	GPtrArray *aot_split_args = mono_aot_split_options (aot_options);
+	GString *new_aot_args = g_string_new ("");
+	for (guint32 i = 0; i < aot_split_args->len; ++i) {
+		const char *aot_arg = (const char*)g_ptr_array_index (aot_split_args, i);
+		if (i > 0)
+			g_string_append_printf (new_aot_args, ",");
+		if (!strcmp (aot_arg, "compile-in-child"))
+			g_string_append_printf (new_aot_args, "%s", "_child");
+		else
+			g_string_append_printf (new_aot_args, "%s", aot_arg);
+	}
+
+	g_string_append_printf (command, " --aot=%s", g_string_free (new_aot_args, FALSE));
+
+	for (int i = 0; i < nassemblies; ++i)
+		g_string_append_printf (command, " %s", assemblies [i]->image->name);
+
+	char *cmd = g_string_free (command, FALSE);
+	printf ("Executing: %s\n", cmd);
+	int res = execute_system (cmd);
+	g_free (cmd);
+
+	return res;
 }
 
 int
@@ -15596,6 +15674,17 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		fprintf (stderr, "The 'runtime-init-callback' option requires the 'static' option.\n");
 		res = 1;
 		goto early_exit;
+	}
+
+	if (aot_opts.driver) {
+		if (aot_opts.temp_path [0] == '\0') {
+			fprintf (stderr, "The 'compile-in-child' option requires the 'temp-path=' option.\n");
+			res = 1;
+			goto early_exit;
+		}
+		// FIXME:
+		if (nassemblies > 1)
+			aot_opts.driver = FALSE;
 	}
 
 	if (aot_opts.dedup_include) {
