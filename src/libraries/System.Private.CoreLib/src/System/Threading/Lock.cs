@@ -22,7 +22,7 @@ namespace System.Threading
         private const short DefaultMaxSpinCount = 22;
         private const short DefaultAdaptiveSpinPeriod = 100;
         private const short SpinSleep0Threshold = 10;
-        private const ushort MaxDurationMsForPreemptingWaiters = 100;
+        private const int MaxDurationMsForPreemptingWaiters = 100;
 
         private static long s_contentionCount;
 
@@ -573,10 +573,20 @@ namespace System.Threading
         // - Not forwarded to SynchronizationContext wait overrides
         private bool UseTrivialWaits => (_waiterStartTimeMsAndFlags & 1) != 0;
 
-        private ushort WaiterStartTimeMs
+        // The stored waiter start time (ms) only includes the lower 15 bits since the field is also used for a flag. This mask
+        // should be used when recording and comparing waiter times.
+        private const int WaiterTimeMsMask = 0x7fff;
+
+        // Only the lower 15 bits are stored/retrieved. Callers should use WaiterTimeMsMask when recording and comparing waiter
+        // times.
+        private int WaiterStartTimeMs
         {
-            get => (ushort)(_waiterStartTimeMsAndFlags >> 1);
-            set => _waiterStartTimeMsAndFlags = (ushort)((value << 1) | (_waiterStartTimeMsAndFlags & 1));
+            get => _waiterStartTimeMsAndFlags >> 1;
+            set
+            {
+                Debug.Assert((value & WaiterTimeMsMask) == value);
+                _waiterStartTimeMsAndFlags = (ushort)((value << 1) | (_waiterStartTimeMsAndFlags & 1));
+            }
         }
 
         private void ResetWaiterStartTime() => WaiterStartTimeMs = 0;
@@ -584,12 +594,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecordWaiterStartTime()
         {
-            ushort currentTimeMs = (ushort)Environment.TickCount;
+            int currentTimeMs = Environment.TickCount & WaiterTimeMsMask;
+
+            // Don't record zero, that value is reserved for indicating that a time is not recorded
             if (currentTimeMs == 0)
             {
-                // Don't record zero, that value is reserved for indicating that a time is not recorded
-                currentTimeMs--;
+                currentTimeMs = (currentTimeMs - 1) & WaiterTimeMsMask;
             }
+
+            Debug.Assert(currentTimeMs != 0);
             WaiterStartTimeMs = currentTimeMs;
         }
 
@@ -598,13 +611,11 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                // If the recorded time is zero, a time has not been recorded yet. The stored waiter start time (ms as a ushort)
-                // excludes the upper bit since the field is also used for a flag, so also mask off the upper bits from the
-                // comparison with the current tick count.
-                ushort waiterStartTimeMs = WaiterStartTimeMs;
+                // If the recorded time is zero, a time has not been recorded yet
+                int waiterStartTimeMs = WaiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
-                    (ushort)((Environment.TickCount - waiterStartTimeMs) & 0x7fff) >= MaxDurationMsForPreemptingWaiters;
+                    ((Environment.TickCount - waiterStartTimeMs) & WaiterTimeMsMask) >= MaxDurationMsForPreemptingWaiters;
             }
         }
 
