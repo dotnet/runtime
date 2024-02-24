@@ -531,6 +531,185 @@ namespace System.Numerics
         // Explicit Convert From BFloat16
         //
 
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="byte" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        public static explicit operator byte(BFloat16 value) => (byte)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="byte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="byte" />.</exception>
+        public static explicit operator checked byte(BFloat16 value) => checked((byte)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="char" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        public static explicit operator char(BFloat16 value) => (char)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="char" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="char" />.</exception>
+        public static explicit operator checked char(BFloat16 value) => checked((char)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="decimal" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="decimal" /> value.</returns>
+        public static explicit operator decimal(BFloat16 value) => (decimal)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="short" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        public static explicit operator short(BFloat16 value) => (short)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="short" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="short" />.</exception>
+        public static explicit operator checked short(BFloat16 value) => checked((short)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="int" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        public static explicit operator int(BFloat16 value) => (int)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="int" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="int" />.</exception>
+        public static explicit operator checked int(BFloat16 value) => checked((int)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="long" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        public static explicit operator long(BFloat16 value) => (long)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="long" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="long" />.</exception>
+        public static explicit operator checked long(BFloat16 value) => checked((long)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="Int128"/>.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        public static explicit operator Int128(BFloat16 value) => (Int128)(double)(value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="Int128"/>, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
+        public static explicit operator checked Int128(BFloat16 value) => checked((Int128)(double)(value));
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="IntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        public static explicit operator nint(BFloat16 value) => (nint)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="IntPtr" />.</exception>
+        public static explicit operator checked nint(BFloat16 value) => checked((nint)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="sbyte" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator sbyte(BFloat16 value) => (sbyte)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="sbyte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="sbyte" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked sbyte(BFloat16 value) => checked((sbyte)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="ushort" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator ushort(BFloat16 value) => (ushort)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="ushort" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ushort" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked ushort(BFloat16 value) => checked((ushort)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="uint" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator uint(BFloat16 value) => (uint)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="uint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="uint" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked uint(BFloat16 value) => checked((uint)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="ulong" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator ulong(BFloat16 value) => (ulong)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="ulong" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ulong" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked ulong(BFloat16 value) => checked((ulong)(float)value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="UInt128"/>.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator UInt128(BFloat16 value) => (UInt128)(double)(value);
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="UInt128"/>, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked UInt128(BFloat16 value) => checked((UInt128)(double)(value));
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="UIntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator nuint(BFloat16 value) => (nuint)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UIntPtr" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked nuint(BFloat16 value) => checked((nuint)(float)value);
+
+        //
+        // Implicit Convert To BFloat16
+        //
+
+        /// <summary>Implicitly converts a <see cref="byte" /> value to its nearest representable <see cref="BFloat16" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16" /> value.</returns>
+        public static implicit operator BFloat16(byte value) => (BFloat16)(float)value;
+
+        /// <summary>Implicitly converts a <see cref="sbyte" /> value to its nearest representable <see cref="BFloat16" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16" /> value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator BFloat16(sbyte value) => (BFloat16)(float)value;
+
+        //
+        // Implicit Convert From Half (actually explicit)
+        //
+
         /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="float"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float"/> value.</returns>
