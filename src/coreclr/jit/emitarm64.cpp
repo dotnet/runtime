@@ -24936,7 +24936,7 @@ void emitter::emitDispSveLslIndexShift(regNumber reg1, regNumber reg2, insOpts o
     emitDispSveReg(reg2, opt, amount != 0);
     if (amount != 0)
     {
-        printf("LSL #%u", amount);
+        printf("lsl #%u", amount);
     }
     printf("]");
 }
