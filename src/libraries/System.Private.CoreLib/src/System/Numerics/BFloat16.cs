@@ -1654,7 +1654,7 @@ namespace System.Numerics
         static ushort IBinaryFloatParseAndFormatInfo<BFloat16>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<BFloat16>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinFastFloatDecimalExponent => -41;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinFastFloatDecimalExponent => -59;
         static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxFastFloatDecimalExponent => 38;
 
         static int IBinaryFloatParseAndFormatInfo<BFloat16>.MinExponentRoundToEven => -24;

@@ -73,7 +73,7 @@ namespace System
         static abstract ushort NormalMantissaBits { get; }
         static abstract ushort DenormalMantissaBits { get; }
 
-        static abstract int MinFastFloatDecimalExponent { get; } // Floor(Log10(2^(MinBinaryExponent-DenormalMantissaBits-64)))
+        static abstract int MinFastFloatDecimalExponent { get; } // Ceiling(Log10(2^(MinBinaryExponent - 1 - DenormalMantissaBits - 64)))
         static abstract int MaxFastFloatDecimalExponent { get; } // MaxDecimalExponent - 1
 
         static abstract int MinExponentRoundToEven { get; } // -Floor(Log5(2^(64 - NormalMantissaBits)))
