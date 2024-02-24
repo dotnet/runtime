@@ -237,10 +237,13 @@ namespace System
             }
 
         PInvoke:
-            // Implicit nullchecks
-            _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer._Memmove(ref dest, ref src, len);
+            if (len > 0)
+            {
+                // Implicit nullchecks
+                _ = Unsafe.ReadUnaligned<byte>(ref dest);
+                _ = Unsafe.ReadUnaligned<byte>(ref src);
+                Buffer._Memmove(ref dest, ref src, len);
+            }
         }
 
 #if NATIVEAOT
