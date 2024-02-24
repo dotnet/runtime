@@ -15625,7 +15625,7 @@ compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArr
 			/* Already expanded */
 			continue;
 		if (i != aot_index)
-			g_string_append_printf (command, " %s", arg);
+			g_string_append_printf (command, " \"%s\"", arg);
 	}
 
 	/* Pass '_child' instead of 'compile-in-child' */
@@ -15641,10 +15641,10 @@ compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArr
 			g_string_append_printf (new_aot_args, "%s", aot_arg);
 	}
 
-	g_string_append_printf (command, " --aot=%s", g_string_free (new_aot_args, FALSE));
+	g_string_append_printf (command, " \"--aot=%s\"", g_string_free (new_aot_args, FALSE));
 
 	for (int i = 0; i < nassemblies; ++i)
-		g_string_append_printf (command, " %s", assemblies [i]->image->name);
+		g_string_append_printf (command, " \"%s\"", assemblies [i]->image->name);
 
 	char *cmd = g_string_free (command, FALSE);
 	printf ("Executing: %s\n", cmd);
