@@ -1309,6 +1309,7 @@ DONE_CALL:
                         call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
                         compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
                     }
+                    break;
                 default:
                     break;
             }
