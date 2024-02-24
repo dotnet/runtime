@@ -314,22 +314,10 @@ public:
 //
 class BBArrayIterator
 {
-    // Quirk: Some BasicBlock kinds refer to their successors with BasicBlock pointers,
-    // while others use FlowEdge pointers. Eventually, every type will use FlowEdge pointers.
-    // For now, support iterating with both types.
-    union {
-        BasicBlock* const* m_bbEntry;
-        FlowEdge* const*   m_edgeEntry;
-    };
-
-    bool iterateEdges;
+    FlowEdge* const* m_edgeEntry;
 
 public:
-    BBArrayIterator(BasicBlock* const* bbEntry) : m_bbEntry(bbEntry), iterateEdges(false)
-    {
-    }
-
-    BBArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry), iterateEdges(true)
+    BBArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry)
     {
     }
 
@@ -337,14 +325,14 @@ public:
 
     BBArrayIterator& operator++()
     {
-        assert(m_bbEntry != nullptr);
-        ++m_bbEntry;
+        assert(m_edgeEntry != nullptr);
+        ++m_edgeEntry;
         return *this;
     }
 
     bool operator!=(const BBArrayIterator& i) const
     {
-        return m_bbEntry != i.m_bbEntry;
+        return m_edgeEntry != i.m_edgeEntry;
     }
 };
 
@@ -1585,21 +1573,8 @@ public:
         // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
         // `m_succs` or at the switch table successor array.
         BasicBlock* m_succs[2];
-
-        // Quirk: Some BasicBlock kinds refer to their successors with BasicBlock pointers,
-        // while others use FlowEdge pointers. Eventually, every type will use FlowEdge pointers.
-        // For now, support iterating with both types.
-        union {
-            BasicBlock* const* m_begin;
-            FlowEdge* const*   m_beginEdge;
-        };
-
-        union {
-            BasicBlock* const* m_end;
-            FlowEdge* const*   m_endEdge;
-        };
-
-        bool iterateEdges;
+        FlowEdge* const* m_begin;
+        FlowEdge* const* m_end;
 
     public:
         BBSuccList(const BasicBlock* block);
@@ -1940,7 +1915,6 @@ inline BBArrayIterator BBEhfSuccList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    iterateEdges = false;
 
     switch (block->bbKind)
     {
@@ -1958,13 +1932,13 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->GetTarget();
+            m_succs[0] = block->GetTargetEdge();
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->bbFalseTarget;
+            m_succs[0] = block->GetFalseEdge();
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include
@@ -1975,7 +1949,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             }
             else
             {
-                m_succs[1] = block->bbTrueTarget;
+                m_succs[1] = block->GetTrueEdge();
                 m_end      = &m_succs[2];
             }
             break;
@@ -1986,26 +1960,22 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             // been computed.
             if (block->GetEhfTargets() == nullptr)
             {
-                m_beginEdge = nullptr;
-                m_endEdge   = nullptr;
+                m_begin = nullptr;
+                m_end   = nullptr;
             }
             else
             {
-                m_beginEdge = block->GetEhfTargets()->bbeSuccs;
-                m_endEdge   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
+                m_begin = block->GetEhfTargets()->bbeSuccs;
+                m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
             }
-
-            iterateEdges = true;
             break;
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
             assert(block->bbSwtTargets != nullptr);
             assert(block->bbSwtTargets->bbsDstTab != nullptr);
-            m_beginEdge = block->bbSwtTargets->bbsDstTab;
-            m_endEdge   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
-
-            iterateEdges = true;
+            m_begin = block->bbSwtTargets->bbsDstTab;
+            m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
             break;
 
         default:
@@ -2017,12 +1987,12 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
 inline BBArrayIterator BasicBlock::BBSuccList::begin() const
 {
-    return (iterateEdges ? BBArrayIterator(m_beginEdge) : BBArrayIterator(m_begin));
+    return BBArrayIterator(m_begin);
 }
 
 inline BBArrayIterator BasicBlock::BBSuccList::end() const
 {
-    return (iterateEdges ? BBArrayIterator(m_endEdge) : BBArrayIterator(m_end));
+    return BBArrayIterator(m_end);
 }
 
 // We have a simpler struct, BasicBlockList, which is simply a singly-linked
@@ -2229,19 +2199,11 @@ public:
 
 inline BasicBlock* BBArrayIterator::operator*() const
 {
-    if (iterateEdges)
-    {
-        assert(m_edgeEntry != nullptr);
-        FlowEdge* edgeTarget = *m_edgeEntry;
-        assert(edgeTarget != nullptr);
-        assert(edgeTarget->getDestinationBlock() != nullptr);
-        return edgeTarget->getDestinationBlock();
-    }
-
-    assert(m_bbEntry != nullptr);
-    BasicBlock* bTarget = *m_bbEntry;
-    assert(bTarget != nullptr);
-    return bTarget;
+    assert(m_edgeEntry != nullptr);
+    FlowEdge* edgeTarget = *m_edgeEntry;
+    assert(edgeTarget != nullptr);
+    assert(edgeTarget->getDestinationBlock() != nullptr);
+    return edgeTarget->getDestinationBlock();
 }
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and FlowEdge)
