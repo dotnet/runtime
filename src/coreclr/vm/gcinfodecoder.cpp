@@ -413,7 +413,7 @@ bool GcInfoDecoder::IsSafePoint()
 
 bool GcInfoDecoder::AreSafePointsInterruptible()
 {
-    return   m_Version >= 3;
+    return m_Version >= 3;
 }
 
 bool GcInfoDecoder::IsInterruptibleSafePoint()
