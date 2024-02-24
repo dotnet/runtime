@@ -50,7 +50,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // In either case, the newly-allocated array is the exact same type as the
-            // original incoming array. It's safe for us to Buffer.Memmove the contents
+            // original incoming array. It's safe for us to SpanHelpers.Memmove the contents
             // from the source array to the destination array, otherwise the contents
             // wouldn't have been valid for the source array in the first place.
 
@@ -135,8 +135,6 @@ namespace System.Runtime.CompilerServices
             if (size > 0)
             {
                 // Implicit nullchecks
-                _ = Unsafe.ReadUnaligned<byte>(ref dest);
-                _ = Unsafe.ReadUnaligned<byte>(ref src);
                 SpanHelpers.Memmove(ref dest, ref src, size);
             }
         }
@@ -159,12 +157,7 @@ namespace System.Runtime.CompilerServices
 #endif
         private static void MemSet(ref byte dest, byte value, nuint size)
         {
-            if (size > 0)
-            {
-                // Implicit nullcheck
-                _ = Unsafe.ReadUnaligned<byte>(ref dest);
-                SpanHelpers.Fill(ref dest, size, value);
-            }
+            SpanHelpers.Fill(ref dest, size, value);
         }
     }
 }

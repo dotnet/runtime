@@ -7,6 +7,7 @@
 #endif
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -420,6 +421,104 @@ namespace System
 
         PInvoke:
             Buffer._ZeroMemory(ref b, byteLength);
+        }
+
+        // TODO: This implementation is suboptimal
+        public static unsafe void Fill(ref byte refData, nuint numElements, byte value)
+        {
+            if (!Vector.IsHardwareAccelerated)
+            {
+                goto CannotVectorize;
+            }
+
+            if (numElements >= (nuint)Vector<byte>.Count)
+            {
+                // We have enough data for at least one vectorized write.
+                Vector<byte> vector = new (value);
+                nuint stopLoopAtOffset = numElements & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
+                nuint offset = 0;
+
+                // Loop, writing 2 vectors at a time.
+                // Compare 'numElements' rather than 'stopLoopAtOffset' because we don't want a dependency
+                // on the very recently calculated 'stopLoopAtOffset' value.
+                if (numElements >= (uint)(2 * Vector<byte>.Count))
+                {
+                    do
+                    {
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, offset), vector);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, offset + (nuint)Vector<byte>.Count), vector);
+                        offset += (uint)(2 * Vector<byte>.Count);
+                    } while (offset < stopLoopAtOffset);
+                }
+
+                // At this point, if any data remains to be written, it's strictly less than
+                // 2 * sizeof(Vector) bytes. The loop above had us write an even number of vectors.
+                // If the total byte length instead involves us writing an odd number of vectors, write
+                // one additional vector now. The bit check below tells us if we're in an "odd vector
+                // count" situation.
+                if ((numElements & (nuint)Vector<byte>.Count) != 0)
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, offset), vector);
+                }
+
+                // It's possible that some small buffer remains to be populated - something that won't
+                // fit an entire vector's worth of data. Instead of falling back to a loop, we'll write
+                // a vector at the very end of the buffer. This may involve overwriting previously
+                // populated data, which is fine since we're splatting the same value for all entries.
+                // There's no need to perform a length check here because we already performed this
+                // check before entering the vectorized code path.
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, numElements - (nuint)Vector<byte>.Count), vector);
+
+                // And we're done!
+                return;
+            }
+
+        CannotVectorize:
+
+            // If we reached this point, we cannot vectorize this T, or there are too few
+            // elements for us to vectorize. Fall back to an unrolled loop.
+            nuint i = 0;
+
+            // Write 8 elements at a time
+            if (numElements >= 8)
+            {
+                nuint stopLoopAtOffset = numElements & ~(nuint)7;
+                do
+                {
+                    Unsafe.Add(ref refData, (nint)i + 0) = value;
+                    Unsafe.Add(ref refData, (nint)i + 1) = value;
+                    Unsafe.Add(ref refData, (nint)i + 2) = value;
+                    Unsafe.Add(ref refData, (nint)i + 3) = value;
+                    Unsafe.Add(ref refData, (nint)i + 4) = value;
+                    Unsafe.Add(ref refData, (nint)i + 5) = value;
+                    Unsafe.Add(ref refData, (nint)i + 6) = value;
+                    Unsafe.Add(ref refData, (nint)i + 7) = value;
+                } while ((i += 8) < stopLoopAtOffset);
+            }
+
+            // Write next 4 elements if needed
+            if ((numElements & 4) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i + 0) = value;
+                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                Unsafe.Add(ref refData, (nint)i + 2) = value;
+                Unsafe.Add(ref refData, (nint)i + 3) = value;
+                i += 4;
+            }
+
+            // Write next 2 elements if needed
+            if ((numElements & 2) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i + 0) = value;
+                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                i += 2;
+            }
+
+            // Write final element if needed
+            if ((numElements & 1) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i) = value;
+            }
         }
     }
 }
