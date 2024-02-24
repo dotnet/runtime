@@ -28332,7 +28332,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
             imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispSveLslIndexShift(id->idReg1(), id->idReg2(), id->idInsOpt(), imm);
+            emitDispSveLslIndexShift(id->idReg2(), id->idReg3(), id->idInsOpt(), imm);
             break;
 
         // <Zd>.D, [<Zn>.D, <Zm>.D, SXTW{<amount>}]
