@@ -101,18 +101,18 @@ namespace System
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
             if (numFields == UseFastHelper)
-                hashCode.AddBytes(GetSpanForField(this.GetMethodTable(), ref this.GetRawData()));
+                AddHashCodeForField(ref hashCode, this.GetMethodTable(), ref this.GetRawData());
             else
                 hashCode.Add(RegularGetValueTypeHashCode(ref this.GetRawData(), numFields));
 
             return hashCode.ToHashCode();
         }
 
-        private static unsafe ReadOnlySpan<byte> GetSpanForField(MethodTable* type, ref byte data)
+        private static unsafe void AddHashCodeForField(ref HashCode hashCode, MethodTable* type, ref byte data)
         {
             // Sanity check - if there are GC references, we should not be hashing bytes
             Debug.Assert(!type->ContainsGCPointers);
-            return new ReadOnlySpan<byte>(ref data, (int)type->ValueTypeSize);
+            hashCode.AddBytes(new ReadOnlySpan<byte>(ref data, (int)type->ValueTypeSize));
         }
 
         private unsafe int RegularGetValueTypeHashCode(ref byte data, int numFields)
@@ -138,7 +138,7 @@ namespace System
                 else if (fieldType->IsPrimitive)
                 {
                     HashCode hash = default;
-                    hash.AddBytes(GetSpanForField(fieldType, ref fieldData));
+                    AddHashCodeForField(ref hash, fieldType, ref fieldData);
                     hashCode = hash.ToHashCode();
                 }
                 else if (fieldType->IsValueType)
