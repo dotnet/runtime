@@ -100,6 +100,37 @@ namespace System
             number.DigitsCount = length;
         }
 
+        public static unsafe void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+        {
+            TNumber v = TNumber.IsNegative(value) ? -value : value;
+
+            Debug.Assert(v > TNumber.Zero);
+            Debug.Assert(TNumber.IsFinite(v));
+
+            ulong mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            uint mantissaHighBitIdx;
+            bool hasUnequalMargins = false;
+
+            if ((mantissa >> TNumber.DenormalMantissaBits) != 0)
+            {
+                mantissaHighBitIdx = TNumber.DenormalMantissaBits;
+                hasUnequalMargins = (mantissa == (1U << TNumber.DenormalMantissaBits));
+            }
+            else
+            {
+                Debug.Assert(mantissa != 0);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
+            }
+
+            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
+
+            number.Scale = decimalExponent + 1;
+            number.Digits[length] = (byte)('\0');
+            number.DigitsCount = length;
+        }
+
         // This is an implementation of the Dragon4 algorithm to convert a binary number in floating-point format to a decimal number in string format.
         // The function returns the number of digits written to the output buffer and the output is not NUL terminated.
         //
