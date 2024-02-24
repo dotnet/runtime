@@ -600,11 +600,11 @@ namespace System.Threading
             {
                 // If the recorded time is zero, a time has not been recorded yet. The stored waiter start time (ms as a ushort)
                 // excludes the upper bit since the field is also used for a flag, so also mask off the upper bits from the
-                // current tick count for comparison.
+                // comparison with the current tick count.
                 ushort waiterStartTimeMs = WaiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
-                    (Environment.TickCount & 0x7fff) - waiterStartTimeMs >= MaxDurationMsForPreemptingWaiters;
+                    (ushort)((Environment.TickCount - waiterStartTimeMs) & 0x7fff) >= MaxDurationMsForPreemptingWaiters;
             }
         }
 
