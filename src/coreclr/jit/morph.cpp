@@ -327,9 +327,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // This if check needs to be changed to make sure we only 
     // block casts which are already Fixed UP.
     do {
-        if (!tree->gtOverflow() && varTypeIsFloating(srcType) &&  varTypeIsIntegral(dstType))
+        if (!tree->gtOverflow() && varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType))
         {
-            if (varTypeIsLong(dstType) && (srcType == TYP_FLOAT))
+            if ((dstType == TYP_LONG) && (srcType == TYP_FLOAT))
             {
                 oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
                 srcType = TYP_DOUBLE;
@@ -344,10 +344,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             {
                 if (varTypeIsUnsigned(dstType))
                 {
-                    if ((dstType != TYP_UINT) && (dstType != TYP_ULONG))
-                    {
-                        break;
-                    }
                     // Generate the control table for VFIXUPIMMSD
                     // The behavior we want is to saturate negative values to 0.
                     GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
@@ -382,10 +378,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 }
                 else
                 {
-                    if ((dstType != TYP_INT) && (dstType != TYP_LONG))
-                    {
-                        break;
-                    }
                     CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT 
                                               :                        CORINFO_TYPE_LONG;
                     

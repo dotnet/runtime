@@ -1474,9 +1474,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // the output to be in the same xmm register
                 // Hence we clone the first operand
                 GenTree* op2Clone = fgMakeMultiUse(&op1);
-                // GenTree* op2Clone;
-                // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
-                //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
                 
                 //run vfixupimmsd base on table and no flags reporting
                 GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
@@ -1571,8 +1568,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // The behavior we want is to saturate negative values to 0.
                 GenTreeVecCon* tbl = gtNewVconNode(simdType);
 
-                // QNAN: 0b0000:
-                // SNAN: 0b0000
+                // QNAN: 0b1000:
+                // SNAN: 0b1000
                 // ZERO: 0b0000:
                 // +ONE: 0b0000
                 // -INF: 0b0000

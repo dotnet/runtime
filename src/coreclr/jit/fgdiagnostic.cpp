@@ -3292,7 +3292,7 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
 
             if (varTypeIsSmall(node))
             {
-                if (node->OperIs(GT_COMMA) || node->OperIs(GT_CAST))
+                if (node->OperIs(GT_COMMA))
                 {
                     // TODO: it's only allowed if its underlying effective node is also a small type.
                     return WALK_CONTINUE;

@@ -11,9 +11,9 @@
 
 FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
-#ifdef TARGET_X86
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double uint64_max_plus_1 = -2.0 * (double)INT64_MIN;
-    return (val < 0) ? 0 : (val != val || val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val;
+    return (val != val || val < 0) ? 0 : (val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val;
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
@@ -27,40 +27,50 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
         ret = (int64_t)(val - two63) + I64(0x8000000000000000);
     }
     return ret;
-#endif //TARGET_X86
+#endif //TARGET_X86 || TARGET_AMD64
 }
 FCIMPLEND
 
 EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
 {
-#ifdef TARGET_X86
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int64_min_minus_1 = (double)INT64_MIN - 1.0;
     const double int64_max_plus_1 = -2.0 * (double)INT64_MIN;
     return (val!= val) ? 0 : (val <= int64_min_minus_1) ? INT64_MIN : (val >= int64_max_plus_1) ? INT64_MAX : (int64_t)val;
 #else
     return (int64_t)val;
-#endif //TARGET_X86
+#endif //TARGET_X86 || TARGET_AMD64
 }
 
 EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
 {
-#ifdef TARGET_X86
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int32_min_minus_1 = (double)INT32_MIN - 1.0;
     const double int32_max_plus_1 = -2.0 * (double)INT32_MIN;
     return (val!= val) ? 0 : (val <= int32_min_minus_1) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
 #else
     return (int32_t)val;
-#endif //TARGET_X86
+#endif //TARGET_X86 || TARGET_AMD64
 }
 
 EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
 {
-#ifdef TARGET_X86
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double uint32_max_plus_1 = -2.0 * (double)INT32_MIN;
     return (val < 0) ? 0 : (val != val || val >= uint32_max_plus_1) ? UINT32_MAX : (uint32_t)val;
 #else
     return (uint32_t)val;
-#endif //TARGET_X86
+#endif //TARGET_X86 || TARGET_AMD64
+}
+
+EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpFlt2UInt(float val)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const float uint32_max_plus_1 = -2.0 * (float)INT32_MIN;
+    return (val != val || val < 0) ? 0 : (val >= uint32_max_plus_1) ? UINT32_MAX : (uint32_t)val;
+#else
+    return (uint32_t)val;
+#endif //TARGET_X86 || TARGET_AMD64
 }
 
 #undef min
