@@ -55,24 +55,25 @@ extends:
             jobParameters:
               testGroup: perf
 
-        # run arm64 interpreter jobs for mono
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            platforms:
-            - linux_arm64
-            jobParameters:
-              testGroup: perf
-              liveLibrariesBuildConfig: Release
-              runtimeType: mono
-              codeGenType: 'Interpreter'
-              projectFile: microbenchmarks.proj
-              runKind: micro_mono
-              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfampere'
-              timeoutInMinutes: 720
+        # disabled because of: https://github.com/dotnet/performance/issues/3565
+        # # run arm64 interpreter jobs for mono
+        # - template: /eng/pipelines/common/platform-matrix.yml
+        #   parameters:
+        #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        #     buildConfig: release
+        #     runtimeFlavor: mono
+        #     platforms:
+        #     - linux_arm64
+        #     jobParameters:
+        #       testGroup: perf
+        #       liveLibrariesBuildConfig: Release
+        #       runtimeType: mono
+        #       codeGenType: 'Interpreter'
+        #       projectFile: microbenchmarks.proj
+        #       runKind: micro_mono
+        #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        #       logicalmachine: 'perfampere'
+        #       timeoutInMinutes: 720
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
