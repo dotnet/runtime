@@ -356,6 +356,13 @@ enum StructFloatFieldInfoFlags
     STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
 };
 
+struct CORINFO_SWIFT_LOWERING
+{
+    bool byReference;
+    CorInfoType loweredElements[4];
+    size_t numLoweredElements;
+};
+
 #include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
@@ -2061,7 +2068,7 @@ public:
     // Example of a scenario addressed by notifyMethodInfoUsage:
     //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
     //     and realizes that the call always throws.
-    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
+    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is
     //     replaced with a breakpoint instruction that is expected to be unreachable.
     //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
     //     and the new version of the call no longer throws and does some work.

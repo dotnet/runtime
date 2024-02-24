@@ -4026,6 +4026,45 @@ _End_arg:
 }
 #endif
 
+#if defined(TARGET_APPLE)
+void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering)
+{
+    enum class SwiftIntervalTag : uint8_t
+    {
+        Empty,
+        Opaque,
+        Int64,
+        Float,
+        Double
+    };
+    struct Interval
+    {
+        uint32_t m_offset;
+        uint32_t m_size;
+        SwiftIntervalTag m_tag;
+    };
+
+    // TODO: Reimplement the algorithm from SwiftPhysicalLowering in the managed type system here.
+    // Abstracting between out from the two field representations is too hard,
+    // so we'll just duplicate the code for now, especially as we aren't reusing it anywhere else.
+
+    CQuickArray<Interval> intervals;
+    // We'll have up to as many intervals as there are fields.
+    intervals.AllocThrows(GetNumInstanceFields());
+    uint32_t numIntervals = 0;
+
+    if (IsBlittable())
+    {
+        // Use FieldDescs to calculate the layout
+    }
+    else
+    {
+        // Use NativeLayout to calculate the layout
+        EEClassNativeLayoutInfo* pNativeLayoutInfo = GetNativeLayoutInfo();
+    }
+}
+#endif
+
 #if !defined(DACCESS_COMPILE)
 //==========================================================================================
 void MethodTable::AllocateRegularStaticBoxes()
