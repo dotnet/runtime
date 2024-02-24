@@ -10346,6 +10346,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTreeCall* call;
                     if (opcode == CEE_INITBLK)
                     {
+                        // value is zero -> memzero, otherwise -> memset
                         if (op2->IsIntegralConst(0))
                         {
                             call = gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, op1, op3);

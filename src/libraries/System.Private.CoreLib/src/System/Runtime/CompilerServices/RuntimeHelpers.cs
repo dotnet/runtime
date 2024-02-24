@@ -126,38 +126,5 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsKnownConstant(char t) => false;
 #pragma warning restore IDE0060
-
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemCopy")]
-#endif
-        private static void MemCopy(ref byte dest, ref byte src, nuint size)
-        {
-            if (size > 0)
-            {
-                // Implicit nullchecks
-                SpanHelpers.Memmove(ref dest, ref src, size);
-            }
-        }
-
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemZero")]
-#endif
-        private static void MemZero(ref byte dest, nuint size)
-        {
-            if (size > 0)
-            {
-                // Implicit nullcheck
-                _ = Unsafe.ReadUnaligned<byte>(ref dest);
-                SpanHelpers.ClearWithoutReferences(ref dest, size);
-            }
-        }
-
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
-#endif
-        private static void MemSet(ref byte dest, byte value, nuint size)
-        {
-            SpanHelpers.Fill(ref dest, size, value);
-        }
     }
 }

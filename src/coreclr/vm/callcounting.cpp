@@ -662,8 +662,7 @@ bool CallCountingManager::SetCodeEntryPoint(
 
             // Let's tier up all cast and runtime helpers faster than other methods. This is because we want to import them as
             // direct calls in codegen and they need to be promoted earlier than their callers.
-            PTR_MethodTable mt = methodDesc->GetMethodTable();
-            if (mt == g_pCastHelpers || mt == g_pRuntimeHelpers)
+            if (methodDesc->GetMethodTable() == g_pCastHelpers)
             {
                 callCountThreshold = max(1, (CallCount)(callCountThreshold / 2));
             }

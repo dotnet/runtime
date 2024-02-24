@@ -412,7 +412,6 @@ EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
 
 EXTERN MethodTable*         g_pCastHelpers;
-EXTERN MethodTable*         g_pRuntimeHelpers;
 
 GPTR_DECL(Thread,g_pFinalizerThread);
 GPTR_DECL(Thread,g_pSuspensionThread);

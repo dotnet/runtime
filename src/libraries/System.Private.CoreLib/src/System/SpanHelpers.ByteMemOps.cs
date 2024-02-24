@@ -16,10 +16,7 @@ namespace System
     internal static partial class SpanHelpers // .ByteMemOps
     {
 #if TARGET_ARM64 || TARGET_LOONGARCH64
-        // TODO: Determine optimal value
-        // https://github.com/dotnet/runtime/issues/8897 (Linux)
-        // https://github.com/dotnet/runtime/issues/8896 (Windows)
-        private static nuint MemmoveNativeThreshold => nuint.MaxValue;
+        private const ulong MemmoveNativeThreshold = ulong.MaxValue;
 #elif TARGET_ARM
         private const nuint MemmoveNativeThreshold = 512;
 #else
@@ -27,6 +24,7 @@ namespace System
 #endif
         // TODO: Determine optimal value
         private const nuint ZeroMemoryNativeThreshold = 1024;
+
 
 #if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
@@ -36,6 +34,9 @@ namespace System
         private struct Block64 {}
 #endif // HAS_CUSTOM_BLOCKS
 
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+#endif
         [Intrinsic] // Unrolled for small constant lengths
         internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
         {
@@ -236,217 +237,227 @@ namespace System
             }
 
         PInvoke:
+            // Implicit nullchecks
+            _ = Unsafe.ReadUnaligned<byte>(ref dest);
+            _ = Unsafe.ReadUnaligned<byte>(ref src);
             Buffer._Memmove(ref dest, ref src, len);
         }
 
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+#endif
         [Intrinsic] // Unrolled for small sizes
-        public static unsafe void ClearWithoutReferences(ref byte b, nuint byteLength)
+        public static unsafe void ClearWithoutReferences(ref byte dest, nuint len)
         {
-            if (byteLength == 0)
+            if (len == 0)
                 return;
 
-            ref byte bEnd = ref Unsafe.Add(ref b, byteLength);
+            ref byte destEnd = ref Unsafe.Add(ref dest, len);
 
-            if (byteLength <= 16)
+            if (len <= 16)
                 goto MZER02;
-            if (byteLength > 64)
+            if (len > 64)
                 goto MZER05;
 
         MZER00:
             // Clear bytes which are multiples of 16 and leave the remainder for MZER01 to handle.
-            Debug.Assert(byteLength > 16 && byteLength <= 64);
+            Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.WriteUnaligned<Block16>(ref b, default);
+            Unsafe.WriteUnaligned<Block16>(ref dest, default);
 #elif TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref b, 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 8), 0);
+            Unsafe.WriteUnaligned<long>(ref dest, 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 8), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref b, 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 4), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 8), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 12), 0);
+            Unsafe.WriteUnaligned<int>(ref dest, 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 4), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 8), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 12), 0);
 #endif
-            if (byteLength <= 32)
+            if (len <= 32)
                 goto MZER01;
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref b, 16), default);
+            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref dest, 16), default);
 #elif TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 16), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 24), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 16), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 24), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 16), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 20), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 24), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 28), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 16), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 20), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 24), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 28), 0);
 #endif
-            if (byteLength <= 48)
+            if (len <= 48)
                 goto MZER01;
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref b, 32), default);
+            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref dest, 32), default);
 #elif TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 32), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 40), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 32), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 40), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 32), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 36), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 40), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 44), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 32), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 36), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 40), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 44), 0);
 #endif
 
         MZER01:
-            // Unconditionally clear the last 16 bytes using bEnd and return.
-            Debug.Assert(byteLength > 16 && byteLength <= 64);
+            // Unconditionally clear the last 16 bytes using destEnd and return.
+            Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref bEnd, -16), default);
+            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref destEnd, -16), default);
 #elif TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref bEnd, -16), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref bEnd, -8), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref destEnd, -16), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref destEnd, -8), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -16), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -12), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -8), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -4), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -16), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -12), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -8), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -4), 0);
 #endif
             return;
 
         MZER02:
             // Clear the first 8 bytes and then unconditionally clear the last 8 bytes and return.
-            if ((byteLength & 24) == 0)
+            if ((len & 24) == 0)
                 goto MZER03;
-            Debug.Assert(byteLength >= 8 && byteLength <= 16);
+            Debug.Assert(len >= 8 && len <= 16);
 #if TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref b, 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref bEnd, -8), 0);
+            Unsafe.WriteUnaligned<long>(ref dest, 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref destEnd, -8), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref b, 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 4), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -8), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -4), 0);
+            Unsafe.WriteUnaligned<int>(ref dest, 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 4), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -8), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -4), 0);
 #endif
             return;
 
         MZER03:
             // Clear the first 4 bytes and then unconditionally clear the last 4 bytes and return.
-            if ((byteLength & 4) == 0)
+            if ((len & 4) == 0)
                 goto MZER04;
-            Debug.Assert(byteLength >= 4 && byteLength < 8);
-            Unsafe.WriteUnaligned<int>(ref b, 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -4), 0);
+            Debug.Assert(len >= 4 && len < 8);
+            Unsafe.WriteUnaligned<int>(ref dest, 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -4), 0);
             return;
 
         MZER04:
             // Clear the first byte. For pending bytes, do an unconditionally clear of the last 2 bytes and return.
-            Debug.Assert(byteLength < 4);
-            if (byteLength == 0)
+            Debug.Assert(len < 4);
+            if (len == 0)
                 return;
-            b = 0;
-            if ((byteLength & 2) == 0)
+            dest = 0;
+            if ((len & 2) == 0)
                 return;
-            Unsafe.WriteUnaligned<short>(ref Unsafe.Add(ref bEnd, -2), 0);
+            Unsafe.WriteUnaligned<short>(ref Unsafe.Add(ref destEnd, -2), 0);
             return;
 
         MZER05:
             // PInvoke to the native version when the clear length exceeds the threshold.
-            if (byteLength > ZeroMemoryNativeThreshold)
+            if (len > ZeroMemoryNativeThreshold)
             {
                 goto PInvoke;
             }
 
 #if HAS_CUSTOM_BLOCKS
-            if (byteLength >= 256)
+            if (len >= 256)
             {
                 // Try to opportunistically align the destination below. The input isn't pinned, so the GC
                 // is free to move the references. We're therefore assuming that reads may still be unaligned.
-                nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref b) & 63;
-                Unsafe.WriteUnaligned<Block64>(ref b, default);
-                b = ref Unsafe.Add(ref b, misalignedElements);
-                byteLength -= misalignedElements;
+                nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref dest) & 63;
+                Unsafe.WriteUnaligned<Block64>(ref dest, default);
+                dest = ref Unsafe.Add(ref dest, misalignedElements);
+                len -= misalignedElements;
             }
 #endif
             // Clear 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MZER00. Otherwise, unconditionally clear the last 16 bytes and return.
-            Debug.Assert(byteLength > 64 && byteLength <= ZeroMemoryNativeThreshold);
-            nuint n = byteLength >> 6;
+            Debug.Assert(len > 64 && len <= ZeroMemoryNativeThreshold);
+            nuint n = len >> 6;
 
         MZER06:
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.WriteUnaligned<Block64>(ref b, default);
+            Unsafe.WriteUnaligned<Block64>(ref dest, default);
 #elif TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref b, 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 8), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 16), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 24), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 32), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 40), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 48), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 56), 0);
+            Unsafe.WriteUnaligned<long>(ref dest, 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 8), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 16), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 24), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 32), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 40), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 48), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref dest, 56), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref b, 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 4), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 8), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 12), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 16), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 20), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 24), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 28), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 32), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 36), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 40), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 44), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 48), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 52), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 56), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 60), 0);
+            Unsafe.WriteUnaligned<int>(ref dest, 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 4), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 8), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 12), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 16), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 20), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 24), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 28), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 32), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 36), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 40), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 44), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 48), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 52), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 56), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref dest, 60), 0);
 #endif
-            b = ref Unsafe.Add(ref b, 64);
+            dest = ref Unsafe.Add(ref dest, 64);
             n--;
             if (n != 0)
                 goto MZER06;
 
-            byteLength %= 64;
-            if (byteLength > 16)
+            len %= 64;
+            if (len > 16)
                 goto MZER00;
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref bEnd, -16), default);
+            Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref destEnd, -16), default);
 #elif TARGET_64BIT
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref bEnd, -16), 0);
-            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref bEnd, -8), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref destEnd, -16), 0);
+            Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref destEnd, -8), 0);
 #else
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -16), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -12), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -8), 0);
-            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref bEnd, -4), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -16), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -12), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -8), 0);
+            Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -4), 0);
 #endif
             return;
 
         PInvoke:
-            Buffer._ZeroMemory(ref b, byteLength);
+            // Implicit nullchecks
+            _ = Unsafe.ReadUnaligned<byte>(ref dest);
+            Buffer._ZeroMemory(ref dest, len);
         }
 
-        // TODO: This implementation is suboptimal
-        public static unsafe void Fill(ref byte refData, nuint numElements, byte value)
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+#endif
+        public static void Fill(ref byte dest, byte value, nuint len)
         {
             if (!Vector.IsHardwareAccelerated)
             {
                 goto CannotVectorize;
             }
 
-            if (numElements >= (nuint)Vector<byte>.Count)
+            if (len >= (nuint)Vector<byte>.Count)
             {
                 // We have enough data for at least one vectorized write.
                 Vector<byte> vector = new (value);
-                nuint stopLoopAtOffset = numElements & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
+                nuint stopLoopAtOffset = len & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 
                 // Loop, writing 2 vectors at a time.
                 // Compare 'numElements' rather than 'stopLoopAtOffset' because we don't want a dependency
                 // on the very recently calculated 'stopLoopAtOffset' value.
-                if (numElements >= (uint)(2 * Vector<byte>.Count))
+                if (len >= (uint)(2 * Vector<byte>.Count))
                 {
                     do
                     {
-                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, offset), vector);
-                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, offset + (nuint)Vector<byte>.Count), vector);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest, offset), vector);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest, offset + (nuint)Vector<byte>.Count), vector);
                         offset += (uint)(2 * Vector<byte>.Count);
                     } while (offset < stopLoopAtOffset);
                 }
@@ -456,9 +467,9 @@ namespace System
                 // If the total byte length instead involves us writing an odd number of vectors, write
                 // one additional vector now. The bit check below tells us if we're in an "odd vector
                 // count" situation.
-                if ((numElements & (nuint)Vector<byte>.Count) != 0)
+                if ((len & (nuint)Vector<byte>.Count) != 0)
                 {
-                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, offset), vector);
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest, offset), vector);
                 }
 
                 // It's possible that some small buffer remains to be populated - something that won't
@@ -467,7 +478,7 @@ namespace System
                 // populated data, which is fine since we're splatting the same value for all entries.
                 // There's no need to perform a length check here because we already performed this
                 // check before entering the vectorized code path.
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refData, numElements - (nuint)Vector<byte>.Count), vector);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest, len - (nuint)Vector<byte>.Count), vector);
 
                 // And we're done!
                 return;
@@ -480,44 +491,44 @@ namespace System
             nuint i = 0;
 
             // Write 8 elements at a time
-            if (numElements >= 8)
+            if (len >= 8)
             {
-                nuint stopLoopAtOffset = numElements & ~(nuint)7;
+                nuint stopLoopAtOffset = len & ~(nuint)7;
                 do
                 {
-                    Unsafe.Add(ref refData, (nint)i + 0) = value;
-                    Unsafe.Add(ref refData, (nint)i + 1) = value;
-                    Unsafe.Add(ref refData, (nint)i + 2) = value;
-                    Unsafe.Add(ref refData, (nint)i + 3) = value;
-                    Unsafe.Add(ref refData, (nint)i + 4) = value;
-                    Unsafe.Add(ref refData, (nint)i + 5) = value;
-                    Unsafe.Add(ref refData, (nint)i + 6) = value;
-                    Unsafe.Add(ref refData, (nint)i + 7) = value;
+                    Unsafe.Add(ref dest, (nint)i + 0) = value;
+                    Unsafe.Add(ref dest, (nint)i + 1) = value;
+                    Unsafe.Add(ref dest, (nint)i + 2) = value;
+                    Unsafe.Add(ref dest, (nint)i + 3) = value;
+                    Unsafe.Add(ref dest, (nint)i + 4) = value;
+                    Unsafe.Add(ref dest, (nint)i + 5) = value;
+                    Unsafe.Add(ref dest, (nint)i + 6) = value;
+                    Unsafe.Add(ref dest, (nint)i + 7) = value;
                 } while ((i += 8) < stopLoopAtOffset);
             }
 
             // Write next 4 elements if needed
-            if ((numElements & 4) != 0)
+            if ((len & 4) != 0)
             {
-                Unsafe.Add(ref refData, (nint)i + 0) = value;
-                Unsafe.Add(ref refData, (nint)i + 1) = value;
-                Unsafe.Add(ref refData, (nint)i + 2) = value;
-                Unsafe.Add(ref refData, (nint)i + 3) = value;
+                Unsafe.Add(ref dest, (nint)i + 0) = value;
+                Unsafe.Add(ref dest, (nint)i + 1) = value;
+                Unsafe.Add(ref dest, (nint)i + 2) = value;
+                Unsafe.Add(ref dest, (nint)i + 3) = value;
                 i += 4;
             }
 
             // Write next 2 elements if needed
-            if ((numElements & 2) != 0)
+            if ((len & 2) != 0)
             {
-                Unsafe.Add(ref refData, (nint)i + 0) = value;
-                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                Unsafe.Add(ref dest, (nint)i + 0) = value;
+                Unsafe.Add(ref dest, (nint)i + 1) = value;
                 i += 2;
             }
 
             // Write final element if needed
-            if ((numElements & 1) != 0)
+            if ((len & 1) != 0)
             {
-                Unsafe.Add(ref refData, (nint)i) = value;
+                Unsafe.Add(ref dest, (nint)i) = value;
             }
         }
     }

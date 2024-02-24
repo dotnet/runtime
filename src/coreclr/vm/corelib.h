@@ -632,9 +632,11 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      MEMSET,                 MemSet, SM_RefByte_Byte_UIntPtr_RetVoid)
-DEFINE_METHOD(RUNTIME_HELPERS,      MEMZERO,                MemZero, SM_RefByte_UIntPtr_RetVoid)
-DEFINE_METHOD(RUNTIME_HELPERS,      MEMCOPY,                MemCopy, SM_RefByte_RefByte_UIntPtr_RetVoid)
+
+DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
+DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
+DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
+DEFINE_METHOD(SPAN_HELPERS,         MEMCOPY,                Memmove, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
