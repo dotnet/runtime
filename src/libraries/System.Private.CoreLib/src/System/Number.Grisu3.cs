@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System
 {
@@ -408,6 +409,41 @@ namespace System
                 else
                 {
                     DiyFp w = new DiyFp(v).Normalize();
+                    result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
+                }
+
+                if (result)
+                {
+                    Debug.Assert((requestedDigits == -1) || (length == requestedDigits));
+
+                    number.Scale = length + decimalExponent;
+                    number.Digits[length] = (byte)('\0');
+                    number.DigitsCount = length;
+                }
+
+                return result;
+            }
+
+            public static bool TryRun<TNumber>(TNumber value, int requestedDigits, ref NumberBuffer number)
+                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            {
+                TNumber v = TNumber.IsNegative(value) ? -value : value;
+
+                Debug.Assert(v > TNumber.Zero);
+                Debug.Assert(TNumber.IsFinite(v));
+
+                int length;
+                int decimalExponent;
+                bool result;
+
+                if (requestedDigits == -1)
+                {
+                    DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
+                    result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
+                }
+                else
+                {
+                    DiyFp w = DiyFp.Create(v).Normalize();
                     result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
                 }
 
