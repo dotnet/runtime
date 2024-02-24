@@ -44,7 +44,7 @@
 
     // C#:
     // byte* data = stackalloc byte[64]; // to trigger slow helper-based tail calls
-    // Buffer.Memmove(ref Unsafe.AsRef<byte>(data), ref src, 64);
+    // SpanHelpers.Memmove(ref Unsafe.AsRef<byte>(data), ref src, 64);
 
     ldc.i4.s 64
     conv.u
@@ -53,7 +53,7 @@
     ldarg.0
     ldc.i4.s 64
     conv.i
-    tail. call void [System.Runtime]System.Buffer::Memmove(uint8&, uint8&, native uint)
+    tail. call void [System.Runtime]System.SpanHelpers::Memmove(uint8&, uint8&, native uint)
     ret
   }
 }
