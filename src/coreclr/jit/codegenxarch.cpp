@@ -332,7 +332,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #endif // !FEATURE_EH_FUNCLETS
 
     // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTarget - that is already used to point
+    // jump target using bbTargetEdge - that is already used to point
     // to the finally block. So just skip past the BBJ_CALLFINALLYRET unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))

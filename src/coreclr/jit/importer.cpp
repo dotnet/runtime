@@ -7348,7 +7348,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetFalseTarget(), block);
                         block->SetKind(BBJ_ALWAYS);
 
-                        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
+                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
 
@@ -7425,13 +7425,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            // TODO-NoFallThrough: Update once bbFalseTarget can diverge from bbNext
+                            // TODO-NoFallThrough: Update once false target can diverge from bbNext
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetTrueEdge());
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
 
-                            // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense
+                            // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense
                             // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
@@ -7610,7 +7610,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetFalseTarget(), block);
                         block->SetKind(BBJ_ALWAYS);
 
-                        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
+                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
 

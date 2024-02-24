@@ -4032,7 +4032,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
+    // to just yet (specially, in WalkSpanningTree, we may not add the target of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit

@@ -4821,7 +4821,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     bDest    = block->GetTrueTarget();
                     bNext    = block->GetFalseTarget();
 
-                    // TODO-NoFallThrough: Adjust the above logic once bbFalseTarget can diverge from bbNext
+                    // TODO-NoFallThrough: Adjust the above logic once false target can diverge from bbNext
                     assert(block->NextIs(bNext));
                 }
             }

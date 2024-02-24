@@ -4329,8 +4329,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // FEATURE_EH_FUNCLETS
 
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EHFILTERRET block that has a bbTarget that jumps to the first block of
-            // its handler. So we need to update it to keep things in sync.
+            // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
+            // So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
             {
@@ -4341,11 +4341,11 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating bbTarget for filter ret block: " FMT_BB " => " FMT_BB "\n",
+                    printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n",
                            ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
-                // Change the bbTarget for bFilterLast from the old first 'block' to the new first 'bPrev'
+                // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
                 fgRemoveRefPred(bFilterLast->GetTargetEdge());
                 FlowEdge* const newEdge = fgAddRefPred(bPrev, bFilterLast);
                 newEdge->setLikelihood(1.0);

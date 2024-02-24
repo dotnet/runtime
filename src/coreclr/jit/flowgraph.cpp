@@ -3438,7 +3438,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 #endif // DEBUG
 
         //  Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no bbTarget points to these blocks.
+        // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 

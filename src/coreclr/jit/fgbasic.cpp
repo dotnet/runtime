@@ -3576,7 +3576,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     noway_assert(codeAddr == codeEndp);
 
-    /* Finally link up the bbTarget of the blocks together */
+    /* Finally link up the targets of the blocks together */
 
     fgLinkBasicBlocks();
 
@@ -4821,7 +4821,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     curr->RemoveFlags(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
     // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
-    // above code (and so newBlock->bbNext is valid, so SetCond() can initialize bbFalseTarget if newBlock is a
+    // above code (and so newBlock->bbNext is valid, so SetCond() can initialize the false target if newBlock is a
     // BBJ_COND).
     newBlock->TransferTarget(curr);
 
@@ -5055,7 +5055,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // an immediately following block of a BBJ_SWITCH (which has
         // no fall-through path). For this case, simply insert a new
         // fall-through block after 'curr'.
-        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, this will be unnecessary for BBJ_COND
+        // TODO-NoFallThrough: Once false target can diverge from bbNext, this will be unnecessary for BBJ_COND
         newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
         newBlock->SetFlags(BBF_NONE_QUIRK);
         assert(newBlock->JumpsToNext());

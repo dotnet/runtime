@@ -194,7 +194,7 @@ inline AssertionIndex GetAssertionIndex(unsigned index)
 
 class AssertionInfo
 {
-    // true if the assertion holds on the bbNext edge instead of the bbTarget edge (for GT_JTRUE nodes)
+    // true if the assertion holds on the false edge instead of the true edge (for GT_JTRUE nodes)
     unsigned short m_isNextEdgeAssertion : 1;
     // 1-based index of the assertion
     unsigned short m_assertionIndex : 15;

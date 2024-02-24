@@ -89,7 +89,7 @@ private:
 //  Notes:
 //      m_b1 and m_b2 are set on entry.
 //
-//      Case 1: if b1.bbTarget == b2.bbTarget, it transforms
+//      Case 1: if b1->TargetIs(b2->GetTarget()), it transforms
 //          B1 : brtrue(t1, Bx)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -107,7 +107,7 @@ private:
 //              B3: GT_RETURN (BBJ_RETURN)
 //              B4: GT_RETURN (BBJ_RETURN)
 //
-//      Case 2: if B2->FalseTargetIs(B1.bbTarget), it transforms
+//      Case 2: if B2->FalseTargetIs(B1->GetTarget()), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -123,7 +123,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     m_t3 = nullptr;
 
-    // Check if m_b1 and m_b2 have the same bbTarget
+    // Check if m_b1 and m_b2 have the same target
 
     if (m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
@@ -1325,11 +1325,12 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
-        m_comp->fgReplacePred(m_b2->GetFalseEdge(), m_b1);
+        // Replace pred 'm_b2' for m_b2's false target with 'm_b1'
+        // Remove  pred 'm_b2' for m_b2's true target
+        FlowEdge* falseEdge = m_b2->GetFalseEdge();
+        m_comp->fgReplacePred(falseEdge, m_b1);
         m_comp->fgRemoveRefPred(m_b2->GetTrueEdge());
-        m_b1->SetFalseEdge(m_b2->GetFalseEdge());
+        m_b1->SetFalseEdge(falseEdge);
     }
 
     // Get rid of the second block
@@ -1364,7 +1365,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //  Notes:
 //      m_b1, m_b2 and m_b3 of OptBoolsDsc are set on entry.
 //
-//      if B1.bbTarget == b3, it transforms
+//      if B1->TargetIs(b3), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : ret(t2)
 //          B3 : ret(0)

@@ -715,7 +715,7 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_COND:
-            printf(" -> %s,%s (cond)", dspBlockNum(bbTrueTarget), dspBlockNum(bbFalseTarget));
+            printf(" -> %s,%s (cond)", dspBlockNum(GetTrueTarget()), dspBlockNum(GetFalseTarget()));
             break;
 
         case BBJ_SWITCH:
@@ -1145,7 +1145,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTrueTarget == bbFalseTarget)
+            if (TrueEdgeIs(GetFalseEdge()))
             {
                 return 1;
             }
@@ -1204,13 +1204,13 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseTarget();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(!TrueEdgeIs(GetFalseEdge()));
+                return GetTrueTarget();
             }
 
         case BBJ_EHFINALLYRET:
@@ -1270,7 +1270,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTrueTarget == bbFalseTarget)
+            if (TrueEdgeIs(GetFalseEdge()))
             {
                 return 1;
             }
@@ -1327,13 +1327,13 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseTarget();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(!TrueEdgeIs(GetFalseEdge()));
+                return GetTrueTarget();
             }
 
         case BBJ_SWITCH:

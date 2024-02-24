@@ -21,7 +21,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="BasicBlock">
-    <DisplayString Condition="bbKind==BBJ_COND || bbKind==BBJ_ALWAYS || bbKind==BBJ_LEAVE || bbKind==BBJ_EHCATCHRET || bbKind==BBJ_CALLFINALLY || bbKind==BBJ_CALLFINALLYRET || bbKind==BBJ_EHFILTERRET">BB{bbNum,d}->BB{bbTarget->bbNum,d}; {bbKind,en}</DisplayString>
+    <DisplayString Condition="bbKind==BBJ_COND || bbKind==BBJ_ALWAYS || bbKind==BBJ_LEAVE || bbKind==BBJ_EHCATCHRET || bbKind==BBJ_CALLFINALLY || bbKind==BBJ_CALLFINALLYRET || bbKind==BBJ_EHFILTERRET">BB{bbNum,d}->BB{bbTargetEdge->getDestinationBlock()->bbNum,d}; {bbKind,en}</DisplayString>
     <DisplayString Condition="bbKind==BBJ_SWITCH">BB{bbNum,d}; {bbKind,en}; {bbSwtTargets->bbsCount} cases</DisplayString>
     <DisplayString Condition="bbKind==BBJ_EHFINALLYRET">BB{bbNum,d}; {bbKind,en}; {bbEhfTargets->bbeCount} succs</DisplayString>
     <DisplayString>BB{bbNum,d}; {bbKind,en}</DisplayString>

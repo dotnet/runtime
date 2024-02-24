@@ -1933,7 +1933,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return false;
     }
 
-    // Since bTest is a BBJ_COND it will have a bbFalseTarget
+    // Since bTest is a BBJ_COND it will have a false target
     //
     BasicBlock* const bJoin = bTest->GetFalseTarget();
     noway_assert(bJoin != nullptr);
@@ -1955,7 +1955,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // It has to be a forward jump. Defer this check until after all the cheap checks
-    // are done, since it iterates forward in the block list looking for bbTarget.
+    // are done, since it iterates forward in the block list looking for block's target.
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
     if (!fgIsForwardBranch(block, block->GetTarget()))
