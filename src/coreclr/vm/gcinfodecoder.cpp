@@ -543,7 +543,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         offset--;
 #endif
 
-        pCallback(offset, hCallback);
+        pCallback(this, offset, hCallback);
     }
 }
 #endif
