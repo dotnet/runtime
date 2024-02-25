@@ -73,6 +73,7 @@
       <_Crossgen2SymbolFilesToPackage Include="@(_CrossgenPublishFiles)" Condition="'%(Extension)' == '.pdb'" />
       <!-- Symbol files for JIT libraries are placed in a different location for Windows builds -->
       <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPdbDir)%(FileName).pdb')" Condition="'$(TargetOS)' == 'windows' and '%(FileName)' != 'crossgen2'" />
+      <!-- TODO: handle .dSYM -->
       <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPath)%(FileName)%(Extension)$(SymbolsSuffix)')" Condition="'$(TargetOS)' != 'windows' and '%(FileName)' != 'crossgen2'" />
       <_Crossgen2SymbolFilesToPackage Remove="@(_Crossgen2SymbolFilesToPackage)" Condition="!Exists('%(Identity)')" />
 

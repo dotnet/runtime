@@ -47,25 +47,23 @@
     <NativeRuntimeAsset Include="@(_SymbolsToIncludeAlways)" IncludeAlways="true" />
   </ItemGroup>
 
-  <ItemGroup>
-    <_SymbolFiles Condition="'$(TargetOS)' == 'windows'"
-                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename).pdb')"
-                    IsSymbolFile="true"
-                    IsNative="true" />
-    <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
-                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)$(SymbolsSuffix)')"
-                    IsSymbolFile="true"
-                    IsNative="true" />
-
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <_SymbolFilesBase Condition="'$(TargetOS)' == 'windows'"
+                      Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename).pdb')" />
+    <_SymbolFilesBase Condition="'$(TargetOS)' != 'windows'"
+                      Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)$(SymbolsSuffixPath)')" />
+    
     <!-- dotnet doesn't have its own package, so it uses this one as a means to publish to symbol servers -->
-    <_SymbolFiles Condition="'$(TargetOS)' == 'windows'"
-                    Include="$(DotNetHostBinDir)PDB/dotnet.pdb"
-                    IsSymbolFile="true"
-                    IsNative="true" />
-    <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
-                    Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)$(SymbolsSuffix)"
-                    IsSymbolFile="true"
-                    IsNative="true" />
+    <_SymbolFilesBase Condition="'$(TargetOS)' == 'windows'"
+                      Include="$(DotNetHostBinDir)PDB/dotnet.pdb" />
+    <_SymbolFilesBase Condition="'$(TargetOS)' != 'windows'"
+                      Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)$(SymbolsSuffixPath)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_SymbolFiles Include="@(_SymbolFilesBase)"
+                  IsSymbolFile="true"
+                  IsNative="true" />
 
     <!-- Remove symbols that are explicitly shipped with implementation package -->
     <_SymbolFiles Remove="@(_SymbolsToIncludeAlways)" />

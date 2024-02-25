@@ -24,7 +24,9 @@
 
   <!-- Set up artifact subpaths. -->
   <PropertyGroup>
+    <CoreCLRArtifactsPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'PDB'))</CoreCLRArtifactsPdbDir>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
+    <CoreCLRSharedFrameworkPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRSharedFrameworkDir)', 'PDB'))</CoreCLRSharedFrameworkPdbDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
     <CoreCLRCrossILCompilerDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
@@ -67,20 +69,8 @@
            Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The 'mono' subset must be built before building this project. Configuration: '$(MonoConfiguration)'. To use a different configuration, specify the 'RuntimeConfiguration' property." />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-      <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
-      <CoreCLRArtifactsPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','PDB'))</CoreCLRArtifactsPdbDir>
-      <!--
-        Even though CoreCLRSharedFrameworkDir is statically initialized, set it again in case the
-        value is different after CoreCLRArtifactsPath is normalized.
-      -->
-      <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
-      <CoreCLRSharedFrameworkPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRSharedFrameworkDir)','PDB'))</CoreCLRSharedFrameworkPdbDir>
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)'))</MonoArtifactsPath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
@@ -97,18 +87,22 @@
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>
+      
+      <!-- Include System.Private.CoreLib.dll if it exists; get the one in the 'IL' subdirectory if the one in the root directory is missing. -->
       <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
                              Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
       <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
                              Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
       <RuntimeFiles Include="@(_systemPrivateCoreLib)" />
+
+      <!-- Include debugging symbols -->
       <RuntimeFiles
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf;
-          $(CoreCLRSharedFrameworkPdbDir)*.dSYM"
-          IsNative="true" />
+          $(CoreCLRSharedFrameworkPdbDir)*.dSYM/**"
+        IsNative="true" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
@@ -119,7 +113,7 @@
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf;
-          $(CoreCLRSharedFrameworkPdbDir)*.dSYM" />
+          $(CoreCLRSharedFrameworkPdbDir)*.dSYM/**" />
 
       <CoreCLRCrossTargetFiles>
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -195,7 +189,7 @@
         $(LibrariesNativeArtifactsPath)*.so;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
-        $(LibrariesNativeArtifactsPath)*.dSYM;
+        $(LibrariesNativeArtifactsPath)*.dSYM/**;
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />

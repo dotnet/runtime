@@ -72,6 +72,7 @@
     <_HostFiles Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" PackOnly="true" />
     <NativeRuntimeAsset Include="@(_HostFiles)" />
 
+    <!-- TODO: handle .dSYM -->
     <_HostSymbolFiles Include="@(_HostFiles->'%(RootDir)%(Directory)PDB/%(Filename)$(SymbolsSuffix)')" Condition="'$(TargetOS)' == 'windows'" />
     <_HostSymbolFiles Include="@(_HostFiles->'%(RootDir)%(Directory)%(Filename)%(Extension)$(SymbolsSuffix)')" Condition="'$(TargetOS)' != 'windows'" />
     <_SymbolFilesToPackage Include="@(_HostSymbolFiles->Exists())" IsNative="true" />
@@ -80,9 +81,12 @@
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
     </ItemGroup>
+    <Message Text="RuntimeFiles START =====================================================================================" Importance="High"/>
+    <Message Text="RuntimeFiles %(Identity) RecursiveDir: %(RuntimeFiles.RecursiveDir) TargetPath: %(RuntimeFiles.TargetPath)" Importance="High"/>
+    <Message Text="RuntimeFiles END =====================================================================================" Importance="High"/>
     <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true'">
       <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools</TargetPath>
@@ -121,11 +125,25 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
+
       <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
                                 Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
         <TargetPath>tools</TargetPath>
       </CoreCLROptimizationFiles>
     </ItemGroup>
+
+    <Message Text="RuntimeFiles START =====================================================================================" Importance="High"/>
+    <Message Text="RuntimeFiles %(Identity) RecursiveDir: %(RuntimeFiles.RecursiveDir) TargetPath: %(RuntimeFiles.TargetPath)" Importance="High"/>
+    <Message Text="RuntimeFiles END =====================================================================================" Importance="High"/>
+
+    <Message Text="CoreCLRCrossTargetFiles START =====================================================================================" Importance="High"/>
+    <Message Text="CoreCLRCrossTargetFiles %(Identity) RecursiveDir: %(CoreCLRCrossTargetFiles.RecursiveDir) TargetPath: %(CoreCLRCrossTargetFiles.TargetPath)" Importance="High"/>
+    <Message Text="CoreCLRCrossTargetFiles END =====================================================================================" Importance="High"/>
+
+    <Message Text="CoreCLROptimizationFiles START =====================================================================================" Importance="High"/>
+    <Message Text="CoreCLROptimizationFiles %(Identity) RecursiveDir: %(CoreCLROptimizationFiles.RecursiveDir) TargetPath: %(CoreCLROptimizationFiles.TargetPath)" Importance="High"/>
+    <Message Text="CoreCLROptimizationFiles END =====================================================================================" Importance="High"/>
+
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);@(CoreCLROptimizationFiles)" />
     </ItemGroup>

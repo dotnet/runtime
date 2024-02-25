@@ -9,8 +9,8 @@
 
     <!--
       Explicitly re-set the symbol package output path. The pkgproj files here end up importing the targets from
-      Microsoft.DotNet.Build.Tasks.Packaging (based on a PackageReference) before importing the Arcade targets hat
-      set defaults for project output paths. This means the value set by the packaging targets does not accountfor
+      Microsoft.DotNet.Build.Tasks.Packaging (based on a PackageReference) before importing the Arcade targets that
+      set defaults for project output paths. This means the value set by the packaging targets does not account for
       the updated defaults from the Arcade targets.
     -->
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
@@ -95,8 +95,7 @@
       -->
       <NonWindowsNativeFile Include="@(NativeWithSymbolFile)"
                             Exclude="@(WindowsNativeFile)" />
-
-      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)')" />
+      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)')</NonWindowsSymbolFile>
 
       <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
       <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') AND '$(SkipPackagingXplatSymbols)'!='true'" />
