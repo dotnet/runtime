@@ -14,7 +14,6 @@
 
 #include "daccess.h"
 #include "windef.h"     // For BYTE
-#include "readytorun.h"
 
 // Some declarations in this file are used on non-x86 platforms, but most are x86-specific.
 
@@ -62,13 +61,13 @@ struct GCInfoToken
 
     static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion, UINT32 readyToRunMinorVersion)
     {
-// Delete once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
-#if MINIMUM_READYTORUN_MAJOR_VERSION < 10
+        // Once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
+        // delete the following and just return GCINFO_VERSION
+        //
         // R2R 9.0 and 9.1 use GCInfo v2
         // R2R 9.2 uses GCInfo v3
         if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
             return 2;
-#endif            
 
         return GCINFO_VERSION;
     }
