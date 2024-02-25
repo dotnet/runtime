@@ -1,23 +1,23 @@
-name: Localization Data Error
-description: Error in localization data.
+name: Globalization Data Error
+description: Error in globalization data.
 labels: []
 body:
   - type: markdown
     attributes:
       value: |
-        We're sorry you're experiencing issues with localization data.  There's some things you should be aware of when submitting the report that may help resolve your issue immediately, or will help us to troubleshoot the actual cause.
+        We're sorry you're experiencing issues with globalization data.  There's some things you should be aware of when submitting the report that may help resolve your issue immediately, or will help us to troubleshoot the actual cause.
         ## Quick Troubleshooting
         To cover some commonly reported scenarios, there's some simple and quick troubleshooting that should be done.
 
-        Note that by default all localization and culture data comes from the host operating system.  The runtime SDK does not distribute its own set of data, and normally applications should not distribute their own copy either.  While there are occasionally errors when or how we retrieve this data, in most cases this means that any differences between what you expect and what you see are by design.
-        #### "Did nothing" (or only updated the computer) and localization has changed.
+        Note that by default all globalization and culture data, including time zone information, comes from the host operating system.  The runtime SDK does not distribute its own set of data, and normally applications should not distribute their own copy either.  While there are occasionally errors when or how we retrieve this data, in most cases this means that any differences between what you expect and what you see are by design.
+        #### "Did nothing" (or only updated the computer) and something has changed.
         Culture data [is not stable](https://learn.microsoft.com/en-us/archive/blogs/shawnste/culture-data-shouldnt-be-considered-stable-except-for-invariant).  It is updated several times a year through host OS channels on all supported platforms.  This includes things like [spaces in time formats](https://github.com/dotnet/runtime/issues/95620).
         #### Porting an application from .NET Framework or .NET Core < 5 to .NET Core 5+ on Windows.
-        Beginning with .NET Core 5, .NET Core on Windows now uses the [ICU (International Components for Unicode) libraries for localization](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu).  While is is possible to [revert to the previous NLS datasource](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu#use-nls-instead-of-icu), this is not recommended.
+        Beginning with .NET Core 5, .NET Core on Windows now uses the [ICU (International Components for Unicode) libraries](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu).  While is is possible to [revert to the previous NLS datasource](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu#use-nls-instead-of-icu), this is not recommended.
         #### "The data for a culture isn't what it should be!"
         The ICU libraries use the [Unicode Common Locale Data Repository (CLDR)](https://cldr.unicode.org/) as a datasource.  This data is not maintained by the runtime SDK, nor (outside of legacy Windows applications) by the host OS.  If you believe there is an error in the data, please follow [the CLDR directions on submitting a ticket](https://github.com/unicode-org/cldr/blob/main/docs/requesting_changes.md).
         ## Some recommended best practices.
-        Due to how localization data is handled, there are some best practices you should keep in mind while designing applications and writing tests;
+        Due to how globalization data is handled, there are some best practices you should keep in mind while designing applications and writing tests;
         * For any server application (and extending to most persistent backend local services), you _SHOULD_ run the process with an invariant-like culture set (eg, `LC_ALL=C.UTF-8` on Linux), and in the UTC timezone.  For resiliency, such applications _SHOULD_ still explicitly provide the [`InvariantCulture`](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.invariantculture?view=net-8.0) when internally formatting data, and _SHOULD_ also still use UTC-sourced data (such as [`TimeProvider.GetUtcNow()`](https://learn.microsoft.com/en-us/dotnet/api/system.timeprovider.getutcnow?view=net-8.0#system-timeprovider-getutcnow)).
         * For any local user-facing (most often GUI-based) application, you **MUST** respect and use the culture of the user.
         * When practicable, you _SHOULD_ consider using and enabling format overrides.  On Windows this can be achieved just by calling the proper [`CultureInfo()` constructor](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.-ctor?view=net-8.0#system-globalization-cultureinfo-ctor(system-string-system-boolean)).  Other operating systems or web applications may require custom code.
