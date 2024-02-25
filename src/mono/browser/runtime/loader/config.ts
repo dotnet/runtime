@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
+import { MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
@@ -12,6 +12,7 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
+import { mono_log_warn } from "./logging";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -187,9 +188,47 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
-    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        // ActiveIssue https://github.com/dotnet/runtime/issues/75602
-        config.pthreadPoolSize = 7;
+    // ActiveIssue https://github.com/dotnet/runtime/issues/75602
+    if (WasmEnableThreads) {
+
+        if (!Number.isInteger(config.pthreadPoolInitialSize)) {
+            config.pthreadPoolInitialSize = 7;
+        }
+        if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
+            config.pthreadPoolUnusedSize = 3;
+        }
+        if (!Number.isInteger(config.finalizerThreadStartDelayMs)) {
+            config.finalizerThreadStartDelayMs = 200;
+        }
+        if (config.mainThreadingMode == undefined) {
+            config.mainThreadingMode = MainThreadingMode.DeputyThread;
+        }
+        if (config.jsThreadBlockingMode == undefined) {
+            config.jsThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
+        }
+        if (config.jsThreadInteropMode == undefined) {
+            config.jsThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
+        }
+        let validModes = false;
+        if (config.mainThreadingMode == MainThreadingMode.DeputyThread
+            && config.jsThreadBlockingMode == JSThreadBlockingMode.NoBlockingWait
+            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
+        ) {
+            validModes = true;
+        }
+        else if (config.mainThreadingMode == MainThreadingMode.DeputyThread
+            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWait
+            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
+        ) {
+            validModes = true;
+        }
+        if (!validModes) {
+            mono_log_warn("Unsupported threading configuration", {
+                mainThreadingMode: config.mainThreadingMode,
+                jsThreadBlockingMode: config.jsThreadBlockingMode,
+                jsThreadInteropMode: config.jsThreadInteropMode
+            });
+        }
     }
 
     // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process

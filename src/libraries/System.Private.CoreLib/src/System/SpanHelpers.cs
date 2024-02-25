@@ -12,6 +12,7 @@ namespace System
 {
     internal static partial class SpanHelpers
     {
+        [Intrinsic] // Unrolled for small sizes
         public static unsafe void ClearWithoutReferences(ref byte b, nuint byteLength)
         {
             if (byteLength == 0)

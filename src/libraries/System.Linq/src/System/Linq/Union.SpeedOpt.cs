@@ -24,7 +24,7 @@ namespace System.Linq
                 }
             }
 
-            public TSource[] ToArray() => Enumerable.HashSetToArray(FillSet());
+            public TSource[] ToArray() => HashSetToArray(FillSet());
 
             public List<TSource> ToList() => new List<TSource>(FillSet());
 

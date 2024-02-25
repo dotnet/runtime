@@ -294,6 +294,7 @@ namespace System
         /// <param name="span">The source span.</param>
         /// <param name="value">The sequence to compare to the end of the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
