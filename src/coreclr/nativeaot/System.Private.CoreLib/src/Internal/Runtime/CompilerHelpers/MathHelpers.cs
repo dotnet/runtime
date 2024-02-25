@@ -4,7 +4,6 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -14,7 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// Math helpers for generated code. The helpers marked with [RuntimeExport] and the type
     /// itself need to be public because they constitute a public contract with the .NET Native toolchain.
     /// </summary>
-    internal static partial class MathHelpers
+    internal static class MathHelpers
     {
 #if !TARGET_64BIT
         //
