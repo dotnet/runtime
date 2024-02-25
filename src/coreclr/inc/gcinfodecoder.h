@@ -31,7 +31,17 @@
 
 #ifdef FEATURE_NATIVEAOT
 
+#include "gcinfo.h"
+
 typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
+#ifdef TARGET_X86
+// Bridge few additional pointer types used in x86 unwinding code
+typedef DPTR(DWORD) PTR_DWORD;
+typedef DPTR(WORD) PTR_WORD;
+typedef DPTR(BYTE) PTR_BYTE;
+typedef DPTR(signed char) PTR_SBYTE;
+typedef DPTR(INT32) PTR_INT32;
+#endif
 
 #define LIMITED_METHOD_CONTRACT
 #define SUPPORTS_DAC
@@ -50,21 +60,11 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 #define SSIZE_T intptr_t
 #define LPVOID void*
 
+#define CHECK_APP_DOMAIN    0
+
 typedef void * OBJECTREF;
 
 #define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)
-
-struct GCInfoToken
-{
-    PTR_VOID Info;
-    UINT32 Version;
-
-    GCInfoToken(PTR_VOID info)
-    {
-        Info = info;
-        Version = 2;
-    }
-};
 
 #else // FEATURE_NATIVEAOT
 

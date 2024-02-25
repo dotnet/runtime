@@ -59,6 +59,14 @@ struct GCInfoToken
     PTR_VOID Info;
     UINT32 Version;
 
+#ifdef FEATURE_NATIVEAOT
+    GCInfoToken(PTR_VOID info)
+    {
+        Info = info;
+        Version = GCINFO_VERSION;
+    }
+#endif
+
     static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion)
     {
         // GcInfo version is current from  ReadyToRun version 2.0

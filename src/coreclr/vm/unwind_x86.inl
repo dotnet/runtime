@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//#include "common.h"
-//#include "argdestination.h"
-
 #define RETURN_ADDR_OFFS        1       // in DWORDS
 
 #define X86_INSTR_TEST_ESP_SIB          0x24
@@ -716,7 +713,7 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
     _ASSERTE(*castto(table, unsigned short *) == 0xBABE);
 #endif
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(CONSISTENCY_CHECK_MSGF)
     if (info.argTabOffset != INVALID_ARGTAB_OFFSET)
     {
         CONSISTENCY_CHECK_MSGF((info.argTabOffset == (unsigned) (table - tableStart)),
@@ -2710,8 +2707,9 @@ void UnwindEspFrameProlog(
     //
 
     // Poison the value, we don't set it properly at the end of the prolog
-    INDEBUG(offset = 0xCCCCCCCC);
-
+#ifdef _DEBUG
+    offset = 0xCCCCCCCC;
+#endif
 
     // Always restore EBP
     if (regsMask & RM_EBP)
@@ -3200,29 +3198,6 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
     return true;
 }
-
-#ifndef CHECK_APP_DOMAIN
-#define CHECK_APP_DOMAIN    0
-#endif
-
-#ifdef FEATURE_NATIVEAOT
-// Use the lower 2 bits of the offsets stored in the tables
-// to encode properties
-
-const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
-
-//
-//  Note for untracked locals the flags allowed are "pinned" and "byref"
-//   and for tracked locals the flags allowed are "this" and "byref"
-//  Note that these definitions should also match the definitions of
-//   GC_CALL_INTERIOR and GC_CALL_PINNED in VM/gc.h
-//
-const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
-const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
-#if !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
-const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
-#endif
-#endif
 
 bool EnumGcRefs(PREGDISPLAY     pContext,
                 PTR_CBYTE       methodStart,
@@ -3920,8 +3895,9 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
        were statically declared */
 
     if (info.varargs) {
-        _ASSERTE("NOT IMPLEMENTED");
-        /*
+#ifdef FEATURE_NATIVEAOT
+        PORTABILITY_ASSERT("EnumGCRefs: VarArgs");
+#else
         LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));
 
         PTR_BYTE argsStart;
@@ -3941,7 +3917,8 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
         // For varargs, look up the signature using the varArgSig token passed on the stack
         PTR_VASigCookie varArgSig = *PTR_PTR_VASigCookie(argsStart);
 
-        promoteVarArgs(argsStart, varArgSig, pCtx);*/
+        promoteVarArgs(argsStart, varArgSig, pCtx);
+#endif
     }
 
     return true;

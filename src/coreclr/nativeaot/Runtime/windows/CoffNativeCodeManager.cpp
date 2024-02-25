@@ -23,19 +23,7 @@
 #define FEATURE_EH_FUNCLETS
 #include "../../inc/gcdecoder.cpp"
 #include "../../inc/unwind_x86.h"
-typedef DWORD* PTR_DWORD;
-typedef WORD* PTR_WORD;
-typedef BYTE* PTR_BYTE;
-typedef signed char* PTR_SBYTE;
-typedef INT32* PTR_INT32;
-#define LCL_FINALLY_MARK 0xFC // FIXME: Move to a better place
-#define CONSISTENCY_CHECK_MSGF(...)
-#define INDEBUG(...)
 #include "../../vm/unwind_x86.inl"
-#endif
-
-#ifndef GCINFO_VERSION
-#define GCINFO_VERSION 2
 #endif
 
 #define UBF_FUNC_KIND_MASK      0x03
@@ -402,22 +390,6 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        GCEnumContext * hCallback,
                                        bool            isActiveStackFrame)
 {
-    PTR_uint8_t gcInfo;
-    uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
-
-#ifdef USE_GC_INFO_DECODER
-    if (!isActiveStackFrame)
-    {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
-        codeOffset--;
-    }
-#endif
-
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
     if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
@@ -429,6 +401,20 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
 
 #ifdef USE_GC_INFO_DECODER
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
+
+    if (!isActiveStackFrame)
+    {
+        // If we are not in the active method, we are currently pointing
+        // to the return address. That may not be reachable after a call (if call does not return)
+        // or reachable via a jump and thus have a different live set.
+        // Therefore we simply adjust the offset to inside of call instruction.
+        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
+        // revisit the GcInfoEncoder/Decoder
+        codeOffset--;
+    }
+
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
@@ -449,17 +435,20 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     size_t unwindDataBlobSize;
     CoffNativeMethodInfo* pNativeMethodInfo = (CoffNativeMethodInfo *) pMethodInfo;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+    PTR_CBYTE methodStartAddress = (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress);
     PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
     uint8_t unwindBlockFlags = *p++;
 
-    // x86 has custom GC info, see EnumGcRefs in eetwain.cpp
-    //PORTABILITY_ASSERT("EnumGcRefs");
-    //RhFailFast();
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
     ::EnumGcRefs(
         pRegisterSet,
-        (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
-        codeOffset,
-        GCInfoToken(gcInfo),
+        methodStartAddress,
+        (PTR_CBYTE)safePointAddress - methodStartAddress,
+        GCInfoToken(p),
         (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
         (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER,
         flags,
@@ -579,7 +568,6 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
                         NULL);
 
         upperBound = dac_cast<TADDR>(context.Sp);
-
 #else
         PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
         upperBound = NULL;
