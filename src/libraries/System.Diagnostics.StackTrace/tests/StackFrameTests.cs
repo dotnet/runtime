@@ -116,8 +116,16 @@ namespace System.Diagnostics.Tests
             yield return new object[] { new StackFrame(), "MoveNext at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new StackFrame("FileName", 1, 2), "MoveNext at offset {offset} in file:line:column FileName:1:2" + Environment.NewLine };
             yield return new object[] { new StackFrame(int.MaxValue), "<null>" + Environment.NewLine };
-            yield return new object[] { GenericMethod<string>(), "GenericMethod<System.String> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
-            yield return new object[] { GenericMethod<string, int>(), "GenericMethod<System.String,System.Int32> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+            if (AppContext.TryGetSwitch("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", out var showGenericInstantiations) && showGenericInstantiations)
+            {
+                yield return new object[] { GenericMethod<string>(), "GenericMethod<System.String> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+                yield return new object[] { GenericMethod<string, int>(), "GenericMethod<System.String,System.Int32> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+            }
+            else
+            {
+                yield return new object[] { GenericMethod<string>(), "GenericMethod<T> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+                yield return new object[] { GenericMethod<string, int>(), "GenericMethod<T,U> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+            }
             yield return new object[] { new ClassWithConstructor().StackFrame, ".ctor at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
         }
 

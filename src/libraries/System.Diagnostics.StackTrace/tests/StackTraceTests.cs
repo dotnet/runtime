@@ -285,8 +285,16 @@ namespace System.Diagnostics.Tests
             yield return new object[] { NoParameters(), "System.Diagnostics.Tests.StackTraceTests.NoParameters()" };
             yield return new object[] { OneParameter(1), "System.Diagnostics.Tests.StackTraceTests.OneParameter(Int32 x)" };
             yield return new object[] { TwoParameters(1, null), "System.Diagnostics.Tests.StackTraceTests.TwoParameters(Int32 x, String y)" };
-            yield return new object[] { Generic<int>(), "System.Diagnostics.Tests.StackTraceTests.Generic[System.Int32]()" };
-            yield return new object[] { Generic<int, string>(), "System.Diagnostics.Tests.StackTraceTests.Generic[System.Int32,System.String]()" };
+            if (AppContext.TryGetSwitch("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", out var showGenericInstantiations) && showGenericInstantiations)
+            {
+                yield return new object[] { Generic<int>(), "System.Diagnostics.Tests.StackTraceTests.Generic[System.Int32]()" };
+                yield return new object[] { Generic<int, string>(), "System.Diagnostics.Tests.StackTraceTests.Generic[System.Int32,System.String]()" };
+            }
+            else
+            {
+                yield return new object[] { Generic<int>(), "System.Diagnostics.Tests.StackTraceTests.Generic[T]()" };
+                yield return new object[] { Generic<int, string>(), "System.Diagnostics.Tests.StackTraceTests.Generic[T,U]()" };
+            }
             yield return new object[] { new ClassWithConstructor().StackTrace, "System.Diagnostics.Tests.StackTraceTests.ClassWithConstructor..ctor()" };
 
             // Methods belonging to the System.Diagnostics namespace are ignored.

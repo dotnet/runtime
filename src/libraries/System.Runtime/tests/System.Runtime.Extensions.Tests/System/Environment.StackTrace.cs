@@ -23,7 +23,13 @@ namespace System.Tests
             {
                 "System.Tests.EnvironmentStackTrace.StaticFrame(Object obj)",
                 "System.Tests.EnvironmentStackTrace.TestClass..ctor()",
-                "System.Tests.EnvironmentStackTrace.GenericFrame[System.DateTime,System.Text.StringBuilder](DateTime t1, StringBuilder t2)",
+                AppContext.TryGetSwitch("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", out var showGenericInstantiations)
+                ?
+                    showGenericInstantiations
+                    ? "System.Tests.EnvironmentStackTrace.GenericFrame[System.DateTime,System.Text.StringBuilder](DateTime t1, StringBuilder t2)"
+                    : "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)"
+                : "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)"
+                ,
                 "System.Tests.EnvironmentStackTrace.TestFrame()"
             };
 
