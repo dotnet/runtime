@@ -570,7 +570,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            FALLTHROUGH;
+            LowerBlockStoreCommon(node->AsBlk());
+            break;
 
         case GT_LCLHEAP:
             LowerLclHeap(node);
