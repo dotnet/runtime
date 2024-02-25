@@ -103,7 +103,7 @@ namespace System
             if (numFields == UseFastHelper)
                 AddHashCodeForField(ref hashCode, this.GetMethodTable(), ref this.GetRawData());
             else
-                hashCode.Add(RegularGetValueTypeHashCode(ref this.GetRawData(), numFields));
+                RegularGetValueTypeHashCode(ref hashCode, ref this.GetRawData(), numFields);
 
             return hashCode.ToHashCode();
         }
@@ -115,10 +115,8 @@ namespace System
             hashCode.AddBytes(new ReadOnlySpan<byte>(ref data, (int)type->ValueTypeSize));
         }
 
-        private unsafe int RegularGetValueTypeHashCode(ref byte data, int numFields)
+        private unsafe void RegularGetValueTypeHashCode(ref HashCode hashCode, ref byte data, int numFields)
         {
-            int hashCode = 0;
-
             // We only take the hashcode for the first non-null field. That's what the CLR does.
             for (int i = 0; i < numFields; i++)
             {
@@ -129,17 +127,15 @@ namespace System
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {
-                    hashCode = Unsafe.As<byte, float>(ref fieldData).GetHashCode();
+                    hashCode.Add(Unsafe.As<byte, float>(ref fieldData));
                 }
                 else if (fieldType->ElementType == EETypeElementType.Double)
                 {
-                    hashCode = Unsafe.As<byte, double>(ref fieldData).GetHashCode();
+                    hashCode.Add(Unsafe.As<byte, double>(ref fieldData));
                 }
                 else if (fieldType->IsPrimitive)
                 {
-                    HashCode hash = default;
-                    AddHashCodeForField(ref hash, fieldType, ref fieldData);
-                    hashCode = hash.ToHashCode();
+                    AddHashCodeForField(ref hashCode, fieldType, ref fieldData);
                 }
                 else if (fieldType->IsValueType)
                 {
@@ -153,7 +149,7 @@ namespace System
                     var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCode();
+                        hashCode.Add(fieldValue);
                     }
                     else
                     {
@@ -166,7 +162,7 @@ namespace System
                     object fieldValue = Unsafe.As<byte, object>(ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCode();
+                        hashCode.Add(fieldValue);
                     }
                     else
                     {
@@ -176,8 +172,6 @@ namespace System
                 }
                 break;
             }
-
-            return hashCode;
         }
     }
 }
