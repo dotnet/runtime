@@ -1650,13 +1650,6 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return (info.interruptible);
 }
 
-bool EECodeManager::InterruptibleSafePointsEnabled()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return false;
-}
-
 /*****************************************************************************/
 static
 PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
