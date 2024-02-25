@@ -293,7 +293,7 @@ namespace System.Buffers
             Debug.Assert(values.Length > 1);
             Debug.Assert(n is 2 or 3);
 
-            if (values.Length > 8)
+            if (values.Length > TeddyBucketCount)
             {
                 string[][] buckets = TeddyBucketizer.Bucketize(values, TeddyBucketCount, n);
 
