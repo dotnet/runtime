@@ -6292,9 +6292,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifdef FEATURE_EH_FUNCLETS
 
 #ifndef TARGET_X86
-EXTERN_C void JIT_MemSet_End();
-EXTERN_C void JIT_MemCpy_End();
-
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
 EXTERN_C void JIT_ByRefWriteBarrier_End();
@@ -6345,9 +6342,6 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifndef TARGET_X86
-    CHECK_RANGE(JIT_MemSet)
-    CHECK_RANGE(JIT_MemCpy)
-
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
