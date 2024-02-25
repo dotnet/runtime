@@ -188,6 +188,7 @@ namespace System.Buffers
                 where TValueLength : struct, IValueLength
             {
                 Debug.Assert(candidate.Length > 1);
+                Debug.Assert(Ascii.IsValid(candidate));
                 Debug.Assert(candidate.ToUpperInvariant() == candidate);
 
                 if (TValueLength.AtLeast8CharsOrUnknown)
@@ -262,6 +263,10 @@ namespace System.Buffers
             public static bool Equals<TValueLength>(ref char matchStart, string candidate)
                 where TValueLength : struct, IValueLength
             {
+                Debug.Assert(candidate.Length > 1);
+                Debug.Assert(Ascii.IsValid(candidate));
+                Debug.Assert(candidate.ToUpperInvariant() == candidate);
+
                 if (TValueLength.AtLeast8CharsOrUnknown)
                 {
                     return Ascii.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), (uint)candidate.Length);

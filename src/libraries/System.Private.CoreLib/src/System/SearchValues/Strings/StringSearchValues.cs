@@ -34,7 +34,7 @@ namespace System.Buffers
                 ArgumentNullException.ThrowIfNull(value, nameof(values));
                 string normalizedValue = NormalizeIfNeeded(value, ignoreCase);
 
-                AnalyzeValues(new ReadOnlySpan<string>(ref normalizedValue), ref ignoreCase, out bool ascii, out bool asciiLettersOnly, out _, out _);
+                AnalyzeValues(new ReadOnlySpan<string>(ref normalizedValue), ref ignoreCase, out bool ascii, out bool asciiLettersOnly, out _);
                 return CreateForSingleValue(normalizedValue, uniqueValues: null, ignoreCase, ascii, asciiLettersOnly);
             }
 
@@ -116,7 +116,7 @@ namespace System.Buffers
             bool ignoreCase,
             ref AhoCorasickBuilder ahoCorasickBuilder)
         {
-            AnalyzeValues(values, ref ignoreCase, out bool allAscii, out bool asciiLettersOnly, out bool nonAsciiAffectedByCaseConversion, out int minLength);
+            AnalyzeValues(values, ref ignoreCase, out bool allAscii, out bool asciiLettersOnly, out int minLength);
 
             if (values.Length == 1)
             {
@@ -125,7 +125,7 @@ namespace System.Buffers
             }
 
             if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
-                TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion, minLength) is { } searchValues)
+                TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, minLength) is { } searchValues)
             {
                 return searchValues;
             }
@@ -138,7 +138,7 @@ namespace System.Buffers
                 return PickAhoCorasickImplementation<CaseSensitive>(ahoCorasick, uniqueValues);
             }
 
-            if (nonAsciiAffectedByCaseConversion)
+            if (!allAscii)
             {
                 if (ContainsIncompleteSurrogatePairs(values))
                 {
@@ -172,7 +172,6 @@ namespace System.Buffers
             bool ignoreCase,
             bool allAscii,
             bool asciiLettersOnly,
-            bool nonAsciiAffectedByCaseConversion,
             int minLength)
         {
             if (minLength == 1)
@@ -250,21 +249,21 @@ namespace System.Buffers
 
             if (asciiStartUnaffectedByCaseConversion)
             {
-                return nonAsciiAffectedByCaseConversion
-                    ? PickTeddyImplementation<CaseSensitive, CaseInsensitiveUnicode>(values, uniqueValues, n)
-                    : PickTeddyImplementation<CaseSensitive, CaseInsensitiveAscii>(values, uniqueValues, n);
+                return allAscii
+                    ? PickTeddyImplementation<CaseSensitive, CaseInsensitiveAscii>(values, uniqueValues, n)
+                    : PickTeddyImplementation<CaseSensitive, CaseInsensitiveUnicode>(values, uniqueValues, n);
             }
 
-            if (nonAsciiAffectedByCaseConversion)
+            if (allAscii)
             {
                 return asciiStartLettersOnly
-                    ? PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveUnicode>(values, uniqueValues, n)
-                    : PickTeddyImplementation<CaseInsensitiveAscii, CaseInsensitiveUnicode>(values, uniqueValues, n);
+                    ? PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveAscii>(values, uniqueValues, n)
+                    : PickTeddyImplementation<CaseInsensitiveAscii, CaseInsensitiveAscii>(values, uniqueValues, n);
             }
 
             return asciiStartLettersOnly
-                ? PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveAscii>(values, uniqueValues, n)
-                : PickTeddyImplementation<CaseInsensitiveAscii, CaseInsensitiveAscii>(values, uniqueValues, n);
+                ? PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveUnicode>(values, uniqueValues, n)
+                : PickTeddyImplementation<CaseInsensitiveAscii, CaseInsensitiveUnicode>(values, uniqueValues, n);
         }
 
         private static SearchValues<string> PickTeddyImplementation<TStartCaseSensitivity, TCaseSensitivity>(
@@ -367,7 +366,6 @@ namespace System.Buffers
             ref bool ignoreCase,
             out bool allAscii,
             out bool asciiLettersOnly,
-            out bool nonAsciiAffectedByCaseConversion,
             out int minLength)
         {
             allAscii = true;
@@ -381,25 +379,91 @@ namespace System.Buffers
                 minLength = Math.Min(minLength, value.Length);
             }
 
-            // Potential optimization: Not all characters participate in Unicode case conversion.
-            // If we can determine that none of the non-ASCII characters do, we can make searching faster
-            // by using the same paths as we do for ASCII-only values.
-            nonAsciiAffectedByCaseConversion = ignoreCase && !allAscii;
-
+            // Not all characters participate in Unicode case conversion.
             // If all the characters in values are unaffected by casing, we can avoid the ignoreCase overhead.
-            if (ignoreCase && !nonAsciiAffectedByCaseConversion && !asciiLettersOnly)
+            if (ignoreCase && !asciiLettersOnly && !ParticipatesInOrdinalCaseConversion(values))
             {
                 ignoreCase = false;
+            }
+        }
 
-                foreach (string value in values)
+        private static bool ParticipatesInOrdinalCaseConversion(ReadOnlySpan<string> values)
+        {
+            foreach (string value in values)
+            {
+                if (ParticipatesInOrdinalCaseConversion(value))
                 {
-                    if (value.AsSpan().ContainsAny(s_asciiLetters))
-                    {
-                        ignoreCase = true;
-                        break;
-                    }
+                    return true;
                 }
             }
+
+            return false;
+        }
+
+        private static bool ParticipatesInOrdinalCaseConversion(ReadOnlySpan<char> value)
+        {
+            if (Ascii.IsValid(value))
+            {
+                return value.ContainsAny(s_asciiLetters);
+            }
+
+            foreach (char c in value)
+            {
+                if (ParticipatesInOrdinalCaseConversion(c))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // May return false positives, but never false negatives.
+        // Returns false positives for ~6% of characters while remaining relatively cheap.
+        private static bool ParticipatesInOrdinalCaseConversion(char c)
+        {
+            if (char.IsAscii(c))
+            {
+                return char.IsAsciiLetter(c);
+            }
+
+            switch (char.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.Surrogate:
+                    return true;
+
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.LetterNumber:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.OtherSymbol:
+                    // We don't know for sure (without testing against every other character), so assume it does.
+                    return true;
+
+                default:
+                    Debug.Assert(!ParticipatesInOrdinalCaseConversionExact(c));
+                    return false;
+            }
+        }
+
+        private static bool ParticipatesInOrdinalCaseConversionExact(char c)
+        {
+            Debug.Assert(!char.IsAscii(c));
+            Debug.Assert(!char.IsSurrogate(c));
+            Debug.Assert(c == TextInfo.ToUpperOrdinal(c));
+
+            for (int i = 128; i < 65536; i++)
+            {
+                if (!UnicodeUtility.IsSurrogateCodePoint((uint)i) &&
+                    c == TextInfo.ToUpperOrdinal((char)i) &&
+                    i != c)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool ContainsIncompleteSurrogatePairs(ReadOnlySpan<string> values)
