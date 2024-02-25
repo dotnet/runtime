@@ -130,12 +130,6 @@ namespace Internal.JitInterface
 
         private static string GetTargetSpec(TargetDetails target)
         {
-            string targetOSComponent = target.OperatingSystem switch
-            {
-                TargetOS.Windows when target.Architecture == TargetArchitecture.X86 => "win_aot",
-                TargetOS.Windows => "win",
-                _ => "unix"
-            };
             string targetArchComponent = target.Architecture switch
             {
                 TargetArchitecture.X86 => "x86",
@@ -147,9 +141,18 @@ namespace Internal.JitInterface
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 
-            if ((target.Architecture == TargetArchitecture.ARM64) || (target.Architecture == TargetArchitecture.ARM))
+            string targetOSComponent;
+            if (target.Architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
                 targetOSComponent = "universal";
+            }
+            else if (target.OperatingSystem == TargetOS.Windows && target.Architecture == TargetArchitecture.X86 && target.Abi == TargetAbi.NativeAot)
+            {
+                targetOSComponent = "win_aot";
+            }
+            else
+            {
+                targetOSComponent = target.OperatingSystem == TargetOS.Windows ? "win" : "unix";
             }
 
             return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
