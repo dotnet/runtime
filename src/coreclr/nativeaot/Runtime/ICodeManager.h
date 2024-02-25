@@ -266,13 +266,4 @@ public:
     //      AssociatedDataFlags        // 1 byte. Flags describing the data stored
     //      Data (stream of bytes)     // Variable size (depending on flags). Custom data associated with method
     virtual PTR_VOID GetAssociatedData(PTR_VOID ControlPC) PURE_VIRTUAL
-
-#ifdef TARGET_X86
-    enum
-    {
-        SHADOW_SP_IN_FILTER = 0x1,
-        SHADOW_SP_FILTER_DONE = 0x2,
-        SHADOW_SP_BITS = 0x3
-    };
-#endif
 };
