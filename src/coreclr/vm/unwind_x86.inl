@@ -43,6 +43,14 @@ static  bool  trEnumGCRefs          = false;
 static  bool  dspPtr                = false; // prints the live ptrs as reported
 #endif
 
+#ifdef FEATURE_NATIVEAOT
+struct StackwalkCacheUnwindInfo
+{
+    BOOL fUseEbp;                   // Is EBP modified by the method - either for a frame-pointer or for a scratch-register?
+    BOOL fUseEbpAsFrameReg;         // use EBP as the frame pointer?
+};
+#endif
+
 // NOTE: enabling compiler optimizations, even for debug builds.
 // Comment this out in order to be able to fully debug methods here.
 #if defined(_MSC_VER)
@@ -2919,16 +2927,6 @@ void UnwindEbpDoubleAlignFrameProlog(
 
 /*****************************************************************************/
 
-#ifdef FEATURE_NATIVEAOT
-bool UnwindEbpDoubleAlignFrame(
-        PREGDISPLAY     pContext,
-        hdrInfo        *info,
-        PTR_CBYTE       table,
-        PTR_CBYTE       methodStart,
-        DWORD           curOffs,
-        bool            isFunclet,
-        bool            updateAllRegs)
-#else
 bool UnwindEbpDoubleAlignFrame(
         PREGDISPLAY     pContext,
         hdrInfo        *info,
@@ -2938,7 +2936,6 @@ bool UnwindEbpDoubleAlignFrame(
         bool            isFunclet,
         bool            updateAllRegs,
         StackwalkCacheUnwindInfo  *pUnwindInfo) // out-only, perf improvement
-#endif
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -3028,14 +3025,12 @@ bool UnwindEbpDoubleAlignFrame(
             }
 #endif
 
-#ifndef FEATURE_NATIVEAOT
             if (pUnwindInfo)
             {
                 // The filter funclet is like an ESP-framed-method.
                 pUnwindInfo->fUseEbp = FALSE;
                 pUnwindInfo->fUseEbpAsFrameReg = FALSE;
             }
-#endif
 
             return true;
         }
@@ -3088,6 +3083,56 @@ bool UnwindEbpDoubleAlignFrame(
     return true;
 }
 
+bool UnwindStackFrameWorker(PREGDISPLAY     pContext,
+                            PTR_CBYTE       methodStart,
+                            DWORD           curOffs,
+                            hdrInfo *       info,
+                            PTR_CBYTE       table,
+                            bool            isFunclet,
+                            bool            updateAllRegs,
+                            StackwalkCacheUnwindInfo  *pUnwindInfo)
+{
+    if  (info->epilogOffs != hdrInfo::NOT_IN_EPILOG)
+    {
+        /*---------------------------------------------------------------------
+         *  First, handle the epilog
+         */
+
+        PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
+        UnwindEpilog(pContext, info, epilogBase, updateAllRegs);
+    }
+    else if (!info->ebpFrame && !info->doubleAlign)
+    {
+        /*---------------------------------------------------------------------
+         *  Now handle ESP frames
+         */
+
+        UnwindEspFrame(pContext, info, table, methodStart, curOffs, updateAllRegs);
+        return true;
+    }
+    else
+    {
+        /*---------------------------------------------------------------------
+         *  Now we know that have an EBP frame
+         */
+
+        if (!UnwindEbpDoubleAlignFrame(pContext, info, table, methodStart, curOffs, isFunclet, updateAllRegs, pUnwindInfo))
+            return false;
+    }
+
+    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
+    // may be uncommented once isLegalManagedCodeCaller works properly
+    // with non-return address inputs, and with non-DEBUG builds
+    /*
+    // Ensure isLegalManagedCodeCaller succeeds for speculative stackwalks.
+    // (We just assert this below for non-speculative stackwalks.)
+    //
+    FAIL_IF_SPECULATIVE_WALK(isLegalManagedCodeCaller(GetControlPC(pContext)));
+    */
+
+    return true;
+}
+
 #ifdef FEATURE_NATIVEAOT
 bool UnwindStackFrame(PREGDISPLAY     pContext,
                       PTR_CBYTE       methodStart,
@@ -3095,27 +3140,29 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
                       GCInfoToken     gcInfoToken,
                       bool            isFunclet,
                       bool            updateAllRegs)
+{
+    hdrInfo infoBuf;
+    hdrInfo *info = &infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(gcInfoToken, curOffs, &infoBuf);
+    PTR_CBYTE table = dac_cast<PTR_CBYTE>(gcInfoToken.Info) + infoSize;
+    StackwalkCacheUnwindInfo unwindInfo;
+
+    return UnwindStackFrameWorker(pContext,
+                                  methodStart,
+                                  curOffs,
+                                  info,
+                                  table,
+                                  isFunclet,
+                                  updateAllRegs,
+                                  &unwindInfo);
+}
 #else
 bool UnwindStackFrame(PREGDISPLAY     pContext,
                       EECodeInfo     *pCodeInfo,
                       unsigned        flags,
                       CodeManState   *pState,
                       StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
-#endif
 {
-#ifdef FEATURE_NATIVEAOT
-    hdrInfo infoBuf;
-    hdrInfo *info = &infoBuf;
-    size_t infoSize = DecodeGCHdrInfo(gcInfoToken, curOffs, &infoBuf);
-    PTR_CBYTE table = dac_cast<PTR_CBYTE>(gcInfoToken.Info) + infoSize;
-#else
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        HOST_NOCALLS;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
     bool updateAllRegs = flags & UpdateAllRegs;
 
     // Address where the method has been interrupted
@@ -3151,53 +3198,23 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
         pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
         pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
     }
-#endif
 
-    if  (info->epilogOffs != hdrInfo::NOT_IN_EPILOG)
-    {
-        /*---------------------------------------------------------------------
-         *  First, handle the epilog
-         */
-
-        PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
-        UnwindEpilog(pContext, info, epilogBase, updateAllRegs);
-    }
-    else if (!info->ebpFrame && !info->doubleAlign)
-    {
-        /*---------------------------------------------------------------------
-         *  Now handle ESP frames
-         */
-
-        UnwindEspFrame(pContext, info, table, methodStart, curOffs, updateAllRegs);
-        return true;
-    }
-    else
-    {
-        /*---------------------------------------------------------------------
-         *  Now we know that have an EBP frame
-         */
-
-#ifdef FEATURE_NATIVEAOT
-        if (!UnwindEbpDoubleAlignFrame(pContext, info, table, methodStart, curOffs, isFunclet, updateAllRegs))
-            return false;
+#ifdef FEATURE_EH_FUNCLETS
+    bool isFunclet = pCodeInfo->IsFunclet();
 #else
-        if (!UnwindEbpDoubleAlignFrame(pContext, info, table, methodStart, curOffs, pCodeInfo->IsFunclet(), updateAllRegs, pUnwindInfo))
-            return false;
+    bool isFunclet = false;
 #endif
-    }
 
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    /*
-    // Ensure isLegalManagedCodeCaller succeeds for speculative stackwalks.
-    // (We just assert this below for non-speculative stackwalks.)
-    //
-    FAIL_IF_SPECULATIVE_WALK(isLegalManagedCodeCaller(GetControlPC(pContext)));
-    */
-
-    return true;
+    return UnwindStackFrameWorker(pContext,
+                                  methodStart,
+                                  curOffs,
+                                  info,
+                                  table,
+                                  isFunclet,
+                                  updateAllRegs,
+                                  pUnwindInfo);
 }
+#endif // FEATURE_NATIVEAOT
 
 bool EnumGcRefs(PREGDISPLAY     pContext,
                 PTR_CBYTE       methodStart,
@@ -3347,6 +3364,14 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
     }
 #endif
 
+    // Only synchronized methods and generic code that accesses
+    // the type context via "this" need to report "this".
+    // If its reported for other methods, its probably
+    // done incorrectly. So flag such cases.
+    /*_ASSERTE(info.thisPtrResult == REGI_NA ||
+             pCodeInfo->GetMethodDesc()->IsSynchronized()   ||
+             pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis());*/
+
     bool        willContinueExecution = !(flags & ExecutionAborted);
     unsigned    pushedSize = 0;
 
@@ -3394,15 +3419,8 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
 
         _ASSERTE((isZero(args) || pushedSize != 0) || info.ebpFrame);
         _ASSERTE((args & iargs) == iargs);
-        // Only synchronized methods and generic code that accesses
-        // the type context via "this" need to report "this".
-        // If its reported for other methods, its probably
-        // done incorrectly. So flag such cases.
-        _ASSERTE(info.thisPtrResult == REGI_NA /*||
-                 pCodeInfo->GetMethodDesc()->IsSynchronized() ||
-                 pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()*/);
 
-            /* now report registers and arguments if we are not interrupted */
+        /* now report registers and arguments if we are not interrupted */
 
         if  (willContinueExecution)
         {
@@ -3549,15 +3567,6 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
         unsigned   argHnum = info.argHnumResult;
         PTR_CBYTE   argTab = info.argTabResult;
 
-        // Only synchronized methods and generic code that accesses
-        // the type context via "this" need to report "this".
-        // If its reported for other methods, its probably
-        // done incorrectly. So flag such cases.
-        _ASSERTE(info.thisPtrResult == REGI_NA /*||
-                 pCodeInfo->GetMethodDesc()->IsSynchronized()   ||
-                 pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()*/);
-
-
         /* now report registers and arguments if we are not interrupted */
 
         if  (willContinueExecution)
@@ -3688,7 +3697,6 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
-    //if (!pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
     if (!isFilterFunclet)
 #endif // FEATURE_EH_FUNCLETS
     {
@@ -3882,7 +3890,6 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
     // taken care of by the parent method and the funclet should access those arguments
     // by way of the parent method's stack frame.
     //
-    //if(pCodeInfo->IsFunclet())
     if (isFunclet)
     {
         return true;
