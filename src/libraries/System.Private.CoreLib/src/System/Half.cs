@@ -2362,5 +2362,9 @@ namespace System
         static Half IBinaryFloatParseAndFormatInfo<Half>.BitsToFloat(ulong bits) => BitConverter.UInt16BitsToHalf((ushort)(bits));
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.FloatToBits(Half value) => BitConverter.HalfToUInt16Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxRoundTripDigits => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxPrecisionCustomFormat => 5;
     }
 }

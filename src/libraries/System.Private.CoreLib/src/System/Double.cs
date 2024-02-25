@@ -2300,6 +2300,10 @@ namespace System
 
         static ulong IBinaryFloatParseAndFormatInfo<double>.FloatToBits(double value) => BitConverter.DoubleToUInt64Bits(value);
 
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxRoundTripDigits => 17;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxPrecisionCustomFormat => 15;
+
         //
         // Helpers
         //
