@@ -961,9 +961,7 @@ bool GcInfoEncoder::DoNotTrackInPartiallyInterruptible(GcSlotDesc &slotDesc)
 
         return (regNum <= 17 || regNum >= 29) // X0 through X17 are scratch, FP/LR can't be used for objects around calls
             && regNum != 0                    // X0 can contain return value
-#ifdef UNIX_AMD64_ABI
             && regNum != 1                    // X1 can contain return value
-#endif
             ;
     }
     else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&

@@ -37,7 +37,7 @@
 MethodDesc* AsMethodDesc(size_t addr);
 static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE*nextInstr);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-static void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID codeStart);
+static void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID codeStart);
 static bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID codeStart);
 #endif
 
@@ -684,7 +684,7 @@ enum
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID pGCCover)
+void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID pGCCover)
 {
     PCODE pCode = NULL;
     IJitManager::MethodRegionInfo *ptr = &(((GCCoverageInfo*)pGCCover)->methodRegion);
@@ -706,6 +706,28 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     }
 
     PBYTE instrPtr = (BYTE*)PCODEToPINSTR(pCode);
+
+    // if this is an interruptible safe point, just replace it with an interrupt instr and we are done.
+    if (((GCCoverageInfo*)pGCCover)->codeMan->InterruptibleSafePointsEnabled() && decoder->AreSafePointsInterruptible())
+    {
+        // The instruction about to be replaced cannot already be a gcstress instruction
+        _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
+
+        ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr, sizeof(DWORD));
+#if defined(TARGET_ARM)
+        size_t instrLen = GetARMInstructionLength(instrPtr);
+
+        if (instrLen == 2)
+            *((WORD*)instrPtrWriterHolder.GetRW())  = INTERRUPT_INSTR;
+        else
+        {
+            *((DWORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR_32;
+        }
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        *((DWORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR;
+#endif // TARGET_XXXX_
+        return;
+    }
 
     // For code sequences of the type
     // BL func1
