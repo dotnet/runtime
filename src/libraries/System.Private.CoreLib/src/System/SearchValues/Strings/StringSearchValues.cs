@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -14,6 +15,8 @@ namespace System.Buffers
 {
     internal static class StringSearchValues
     {
+        private const int TeddyBucketCount = 8;
+
         private static readonly SearchValues<char> s_asciiLetters =
             SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
@@ -248,6 +251,18 @@ namespace System.Buffers
 
             Debug.Assert(!(asciiStartLettersOnly && asciiStartUnaffectedByCaseConversion));
 
+            // If we still have empty buckets we could use and we're ignoring case, we may be able to
+            // generate all possible permutations of the first N characters and switch to case-sensitive searching.
+            // E.g. ["ab", "c!"] => ["ab", "Ab" "aB", "AB", "c!", "C!"].
+            // This won't apply to inputs with many letters (e.g. "abc" => 8 permutations on its own).
+            if (!asciiStartUnaffectedByCaseConversion &&
+                values.Length < TeddyBucketCount &&
+                TryGenerateAllCasePermutationsForPrefixes(values, n, TeddyBucketCount, out string[]? newValues))
+            {
+                asciiStartUnaffectedByCaseConversion = true;
+                values = newValues;
+            }
+
             if (asciiStartUnaffectedByCaseConversion)
             {
                 return nonAsciiAffectedByCaseConversion
@@ -280,7 +295,7 @@ namespace System.Buffers
 
             if (values.Length > 8)
             {
-                string[][] buckets = TeddyBucketizer.Bucketize(values, bucketCount: 8, n);
+                string[][] buckets = TeddyBucketizer.Bucketize(values, TeddyBucketCount, n);
 
                 // Potential optimization: We don't have to pick the first N characters for the fingerprint.
                 // Different offset selection can noticeably improve throughput (e.g. 2x).
@@ -295,6 +310,68 @@ namespace System.Buffers
                     ? new AsciiStringSearchValuesTeddyNonBucketizedN2<TStartCaseSensitivity, TCaseSensitivity>(values, uniqueValues)
                     : new AsciiStringSearchValuesTeddyNonBucketizedN3<TStartCaseSensitivity, TCaseSensitivity>(values, uniqueValues);
             }
+        }
+
+        private static bool TryGenerateAllCasePermutationsForPrefixes(ReadOnlySpan<string> values, int n, int maxValues, [NotNullWhen(true)] out string[]? newValues)
+        {
+            Debug.Assert(n is 2 or 3);
+            Debug.Assert(values.Length < maxValues);
+
+            // Count how many possible permutations there are.
+            int newValuesCount = 0;
+
+            foreach (string value in values)
+            {
+                int permutations = 1;
+
+                foreach (char c in value.AsSpan(0, n))
+                {
+                    Debug.Assert(char.IsAscii(c));
+
+                    if (char.IsAsciiLetter(c))
+                    {
+                        permutations *= 2;
+                    }
+                }
+
+                newValuesCount += permutations;
+            }
+
+            Debug.Assert(newValuesCount > values.Length, "Shouldn't have been called if there were no letters present");
+
+            if (newValuesCount > maxValues)
+            {
+                newValues = null;
+                return false;
+            }
+
+            // Generate the permutations.
+            newValues = new string[newValuesCount];
+            newValuesCount = 0;
+
+            foreach (string value in values)
+            {
+                int start = newValuesCount;
+
+                newValues[newValuesCount++] = value;
+
+                for (int i = 0; i < n; i++)
+                {
+                    char c = value[i];
+
+                    if (char.IsAsciiLetter(c))
+                    {
+                        // Copy all the previous permutations of this value but change the casing of the i-th character.
+                        foreach (string previous in newValues.AsSpan(start, newValuesCount - start))
+                        {
+                            newValues[newValuesCount++] = $"{previous.AsSpan(0, i)}{(char)(c ^ 0x20)}{previous.AsSpan(i + 1)}";
+                        }
+                    }
+                }
+            }
+
+            Debug.Assert(newValuesCount == newValues.Length);
+            return true;
         }
 
         private static SearchValues<string> CreateForSingleValue(
