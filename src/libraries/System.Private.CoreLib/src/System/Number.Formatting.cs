@@ -848,6 +848,122 @@ namespace System
             return success;
         }
 
+        public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+        {
+            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
+            string result = FormatFloat(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
+        }
+
+        /// <summary>Formats the specified value according to the specified format and info.</summary>
+        /// <returns>
+        /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
+        /// Null if no existing string was returned, in which case the formatted output is in the builder.
+        /// </returns>
+        private static unsafe string? FormatFloat<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (!TNumber.IsFinite(value))
+            {
+                if (TNumber.IsNaN(value))
+                {
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        return info.NaNSymbol;
+                    }
+                    else
+                    {
+                        vlb.Append(info.NaNSymbolTChar<TChar>());
+                        return null;
+                    }
+                }
+
+                if (typeof(TChar) == typeof(char))
+                {
+                    return TNumber.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                }
+                else
+                {
+                    vlb.Append(TNumber.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    return null;
+                }
+            }
+
+            char fmt = ParseFormatSpecifier(format, out int precision);
+            byte* pDigits = stackalloc byte[TNumber.NumberBufferLength];
+
+            if (fmt == '\0')
+            {
+                precision = TNumber.MaxPrecisionCustomFormat;
+            }
+
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, TNumber.NumberBufferLength);
+            number.IsNegative = TNumber.IsNegative(value);
+
+            // We need to track the original precision requested since some formats
+            // accept values like 0 and others may require additional fixups.
+            int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
+
+            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRun(value, precision, ref number)))
+            {
+                Dragon4(value, precision, isSignificantDigits, ref number);
+            }
+
+            number.CheckConsistency();
+
+            // When the number is known to be roundtrippable (either because we requested it be, or
+            // because we know we have enough digits to satisfy roundtrippability), we should validate
+            // that the number actually roundtrips back to the original result.
+
+            Debug.Assert(((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
+
+            if (fmt != 0)
+            {
+                if (precision == -1)
+                {
+                    Debug.Assert((fmt == 'G') || (fmt == 'g') || (fmt == 'R') || (fmt == 'r'));
+
+                    // For the roundtrip and general format specifiers, when returning the shortest roundtrippable
+                    // string, we need to update the maximum number of digits to be the greater of number.DigitsCount
+                    // or SinglePrecision. This ensures that we continue returning "pretty" strings for values with
+                    // less digits. One example this fixes is "-60", which would otherwise be formatted as "-6E+01"
+                    // since DigitsCount would be 1 and the formatter would almost immediately switch to scientific notation.
+
+                    nMaxDigits = Math.Max(number.DigitsCount, TNumber.MaxRoundTripDigits);
+                }
+                NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
+            }
+            else
+            {
+                Debug.Assert(precision == TNumber.MaxPrecisionCustomFormat);
+                NumberToStringFormat(ref vlb, ref number, format, info);
+            }
+            return null;
+        }
+
+        public static bool TryFormatFloat<TNumber, TChar>(TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
+            string? s = FormatFloat(ref vlb, value, format, info);
+
+            Debug.Assert(s is null || typeof(TChar) == typeof(char));
+            bool success = s != null ?
+                TryCopyTo(s, destination, out charsWritten) :
+                vlb.TryCopyTo(destination, out charsWritten);
+
+            vlb.Dispose();
+            return success;
+        }
+
         private static bool TryCopyTo<TChar>(string source, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
