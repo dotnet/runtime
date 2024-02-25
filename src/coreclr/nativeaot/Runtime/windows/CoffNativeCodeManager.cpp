@@ -907,6 +907,15 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return false;
 #endif // defined(TARGET_AMD64)
 #else // defined(USE_GC_INFO_DECODER)
+    hdrInfo info;
+    DecodeGCHdrInfo(GCInfoToken(p), 0, &info);
+
+    // TODO: Hijack with saving the return value in FP stack
+    if (info.returnKind == RT_Float)
+    {
+        return false;
+    }
+
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
     REGDISPLAY registerSet = *pRegisterSet;
@@ -922,6 +931,8 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)registerSet.PCTAddr;
+    *pRetValueKind = GetGcRefKind(info.returnKind);
+
     return true;
 #endif 
 }

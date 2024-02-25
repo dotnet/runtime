@@ -11,8 +11,6 @@
 include AsmMacros.inc
 
 DEFAULT_PROBE_SAVE_FLAGS        equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
-PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH
-PROBE_SAVE_FLAGS_RAX_IS_GCREF   equ DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
 
 ;;
 ;; The prolog for all GC suspension hijackes (normal and stress). Sets up an EBP frame,
@@ -25,7 +23,7 @@ PROBE_SAVE_FLAGS_RAX_IS_GCREF   equ DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + P
 ;;  EAX: not trashed or saved
 ;;  EBP: new EBP frame with correct return address
 ;;  ESP: points to saved scratch registers (ECX & EDX)
-;;  ECX: trashed
+;;  ECX: return value flags
 ;;  EDX: thread pointer
 ;;
 HijackFixupProlog macro
@@ -44,11 +42,15 @@ HijackFixupProlog macro
         mov         ecx, [edx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         mov         [ebp + 4], ecx
 
+        ;; Fetch the return address flags
+        mov         ecx, [edx + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
+
         ;;
         ;; Clear hijack state
         ;;
         mov         dword ptr [edx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], 0
         mov         dword ptr [edx + OFFSETOF__Thread__m_pvHijackedReturnAddress], 0
+        mov         dword ptr [edx + OFFSETOF__Thread__m_uHijackedReturnValueFlags], 0
 
 endm
 
@@ -253,7 +255,7 @@ FASTCALL_FUNC RhpGcProbeHijack, 0
         HijackFixupEpilog
 
 WaitForGC:
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
+        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpWaitForGC
 
 FASTCALL_ENDFUNC
@@ -262,7 +264,7 @@ ifdef FEATURE_GC_STRESS
 FASTCALL_FUNC RhpGcStressHijack, 0
 
         HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
+        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpGcStressProbe
 
 FASTCALL_ENDFUNC
