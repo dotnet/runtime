@@ -8403,7 +8403,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
             instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_2, size);
-            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+
+            // Call non-managed memset
+            genEmitHelperCall(CORINFO_HELP_NATIVE_MEMSET, 0, EA_UNKNOWN);
             // May kill REG_SCRATCH, so we need to reload it.
             hasPoisonImm = false;
 #endif

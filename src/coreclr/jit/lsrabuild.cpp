@@ -2480,7 +2480,7 @@ void           LinearScan::buildIntervals()
             killed = RBM_EDI | RBM_ECX | RBM_EAX;
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
-            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
 #endif
             addRefsForPhysRegMask(killed, currentLoc + 1, RefTypeKill, true);
             currentLoc += 2;

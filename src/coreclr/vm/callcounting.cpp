@@ -660,7 +660,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
             _ASSERTE(callCountThreshold != 0);
 
-            // Let's tier up all cast helpers faster than other methods. This is because we want to import them as
+            // Let's tier up all cast and runtime helpers faster than other methods. This is because we want to import them as
             // direct calls in codegen and they need to be promoted earlier than their callers.
             if (methodDesc->GetMethodTable() == g_pCastHelpers)
             {

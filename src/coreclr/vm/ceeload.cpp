@@ -3402,24 +3402,6 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
     RETURN pMDRet;
 }
 
-//
-// GetPropertyInfoForMethodDef wraps the metadata function of the same name.
-//
-
-HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return GetMDImport()->GetPropertyInfoForMethodDef(md, ppd, pName, pSemantic);
-}
-
 // Return true if this module has any live (jitted) JMC functions.
 // If a module has no jitted JMC functions, then it's as if it's a
 // non-user module.
