@@ -193,12 +193,12 @@ extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectH
 {
     QCALL_CONTRACT;
 
-    _ASSERTE(objHandle.Get() != NULL); // Should be handled at managed side
-
     BEGIN_QCALL;
 
     GCX_COOP();
+
     OBJECTREF refClone = objHandle.Get();
+    _ASSERTE(refClone != NULL); // Should be handled at managed side
     MethodTable* pMT = refClone->GetMethodTable();
     
     // assert that String has overloaded the Clone() method
