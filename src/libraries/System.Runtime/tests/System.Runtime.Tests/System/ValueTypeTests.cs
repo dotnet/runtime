@@ -319,12 +319,12 @@ namespace System.Tests
         public static void StructWithNestedOverriddenNotBitwiseComparableTest()
         {
             StructWithNestedOverriddenNotBitwiseComparable obj1 = new StructWithNestedOverriddenNotBitwiseComparable();
-            obj1.value1.value = 0.0;
-            obj1.value2.value = 1.0;
+            obj1.value1.value = 1;
+            obj1.value2.value = 0;
 
             StructWithNestedOverriddenNotBitwiseComparable obj2 = new StructWithNestedOverriddenNotBitwiseComparable();
-            obj2.value1.value = -0.0;
-            obj2.value2.value = 1.0;
+            obj2.value1.value = -1;
+            obj2.value2.value = 0;
 
             Assert.True(obj1.Equals(obj2));
             Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
@@ -431,11 +431,11 @@ namespace System.Tests
 
         public struct StructOverriddenNotBitwiseComparable
         {
-            public double value;
+            public int value;
 
-            public override bool Equals(object obj) => obj is StructOverriddenNotBitwiseComparable other && value.Equals(other.value);
+            public override bool Equals(object obj) => obj is StructOverriddenNotBitwiseComparable other && (value == other.value || value == -other.value);
 
-            public override int GetHashCode() => value.GetHashCode();
+            public override int GetHashCode() => value < 0 ? -value : value;
         }
 
         public struct StructWithNestedOverriddenNotBitwiseComparable
