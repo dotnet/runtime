@@ -69,6 +69,15 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void EqualsTest()
+        {
+            // Boolean RuntimeHelpers.Equals(Object, Object)
+
+            Assert.True(RuntimeHelpers.Equals(Guid.Empty, Guid.Empty));
+            Assert.False(RuntimeHelpers.Equals(Guid.Empty, Guid.NewGuid()));
+        }
+
+        [Fact]
         public static void InitializeArray()
         {
             // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)
