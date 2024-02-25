@@ -80,5 +80,25 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetDefaultShowILOffsetSetting();
         }
+
+        private static int s_showGenericInstantiations;
+        private static bool GetDefaultShowGenericInstantiationsSetting()
+        {
+            if (s_showGenericInstantiations < 0) return false;
+            if (s_showGenericInstantiations > 0) return true;
+
+            // Enabled by default for now.
+            // Will flip the default value after updating tests to be aware of AppContext switch.
+            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", true);
+            s_showGenericInstantiations = isSwitchEnabled ? 1 : -1;
+
+            return isSwitchEnabled;
+        }
+
+        public static bool ShowGenericInstantiations
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetDefaultShowGenericInstantiationsSetting();
+        }
     }
 }
