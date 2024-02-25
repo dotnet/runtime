@@ -17,56 +17,10 @@ namespace System
         // DiyFp are not designed to contain special doubles (NaN and Infinity).
         internal readonly ref struct DiyFp
         {
-            public const int DoubleImplicitBitIndex = 52;
-            public const int SingleImplicitBitIndex = 23;
-            public const int HalfImplicitBitIndex = 10;
-
             public const int SignificandSize = 64;
 
             public readonly ulong f;
             public readonly int e;
-
-            // Computes the two boundaries of value.
-            //
-            // The bigger boundary (mPlus) is normalized.
-            // The lower boundary has the same exponent as mPlus.
-            //
-            // Precondition:
-            //  The value encoded by value must be greater than 0.
-            public static DiyFp CreateAndGetBoundaries(double value, out DiyFp mMinus, out DiyFp mPlus)
-            {
-                var result = new DiyFp(value);
-                result.GetBoundaries(DoubleImplicitBitIndex, out mMinus, out mPlus);
-                return result;
-            }
-
-            // Computes the two boundaries of value.
-            //
-            // The bigger boundary (mPlus) is normalized.
-            // The lower boundary has the same exponent as mPlus.
-            //
-            // Precondition:
-            //  The value encoded by value must be greater than 0.
-            public static DiyFp CreateAndGetBoundaries(float value, out DiyFp mMinus, out DiyFp mPlus)
-            {
-                var result = new DiyFp(value);
-                result.GetBoundaries(SingleImplicitBitIndex, out mMinus, out mPlus);
-                return result;
-            }
-
-            // Computes the two boundaries of value.
-            //
-            // The bigger boundary (mPlus) is normalized.
-            // The lower boundary has the same exponent as mPlus.
-            //
-            // Precondition:
-            //  The value encoded by value must be greater than 0.
-            public static DiyFp CreateAndGetBoundaries(Half value, out DiyFp mMinus, out DiyFp mPlus)
-            {
-                var result = new DiyFp(value);
-                result.GetBoundaries(HalfImplicitBitIndex, out mMinus, out mPlus);
-                return result;
-            }
 
             // Computes the two boundaries of value.
             //
@@ -81,27 +35,6 @@ namespace System
                 var result = Create(value);
                 result.GetBoundaries(TNumber.DenormalMantissaBits, out mMinus, out mPlus);
                 return result;
-            }
-
-            public DiyFp(double value)
-            {
-                Debug.Assert(double.IsFinite(value));
-                Debug.Assert(value > 0.0);
-                f = ExtractFractionAndBiasedExponent(value, out e);
-            }
-
-            public DiyFp(float value)
-            {
-                Debug.Assert(float.IsFinite(value));
-                Debug.Assert(value > 0.0f);
-                f = ExtractFractionAndBiasedExponent(value, out e);
-            }
-
-            public DiyFp(Half value)
-            {
-                Debug.Assert(Half.IsFinite(value));
-                Debug.Assert((float)value > 0.0f);
-                f = ExtractFractionAndBiasedExponent(value, out e);
             }
 
             public static DiyFp Create<TNumber>(TNumber value)
