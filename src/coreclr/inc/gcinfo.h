@@ -67,15 +67,13 @@ struct GCInfoToken
 
     static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion))
     {
-        static_assert(MINIMUM_READYTORUN_MAJOR_VERSION == 9,
-            "when min version moves ahead, revisit the following logic, also check https://github.com/dotnet/runtime/issues/98871");
-
-        _ASSERT(readyToRunMajorVersion >= MINIMUM_READYTORUN_MAJOR_VERSION);
-
+// Delete once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
+#if MINIMUM_READYTORUN_MAJOR_VERSION < 10
         // R2R 9.0 and 9.1 use GCInfo v2
         // R2R 9.2 uses GCInfo v3
         if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
             return 2;
+#endif            
 
         return GCINFO_VERSION;
     }
