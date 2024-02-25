@@ -7353,13 +7353,8 @@ private:
 public:
     ClassLayout* GetLayout() const
     {
+        assert(m_layout != nullptr);
         return m_layout;
-    }
-
-    void SetLayout(ClassLayout* layout)
-    {
-        assert(layout != nullptr);
-        m_layout = layout;
     }
 
     // The data to be stored (null for GT_BLK)
@@ -7375,8 +7370,7 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        assert((m_layout != nullptr));
-        return (m_layout != nullptr) ? m_layout->GetSize() : 0;
+        return m_layout->GetSize();
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using
@@ -7402,7 +7396,7 @@ public:
 
     bool ContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr();
+        return m_layout->HasGCPtr();
     }
 
     bool IsOnHeapAndContainsReferences()
@@ -7433,8 +7427,8 @@ public:
 
     void Initialize(ClassLayout* layout)
     {
-        assert(OperIsBlk(OperGet()) && ((layout != nullptr)));
-        assert((layout == nullptr) || (layout->GetSize() != 0));
+        assert(layout != nullptr);
+        assert(layout->GetSize() != 0);
 
         m_layout    = layout;
         gtBlkOpKind = BlkOpKindInvalid;
