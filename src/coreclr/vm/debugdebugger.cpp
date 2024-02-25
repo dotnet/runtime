@@ -462,6 +462,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         {
             MethodDesc* pFunc = data.pElements[i].pFunc;
 
+            // We need to strip the instantiations if the method desc is shared by generic instantiations
+            // to make sure the reflection never gets a bad method desc back.
+            // i.e. a method desc has System.__Canon in its instantiations
+            if (pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
+            {
+                pFunc = pFunc->StripMethodInstantiation();
+            }
+            _ASSERTE(pFunc->IsRuntimeMethodHandle());
+
             // Method handle
             size_t *pElem = (size_t*)pStackFrameHelper->rgMethodHandle->GetDataPtr();
             pElem[iNumValidFrames] = (size_t)pFunc;

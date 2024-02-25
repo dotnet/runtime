@@ -2546,7 +2546,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
     UINT_PTR        uControlPC  = (UINT_PTR)GetControlPC(pcfThisFrame->GetRegisterSet());
     CLRUnwindStatus ReturnStatus = UnwindPending;
-    
+
     MethodDesc*     pMD         = pcfThisFrame->GetFunction();
 
     bool fIsFirstPass = !(dwExceptionFlags & EXCEPTION_UNWINDING);
