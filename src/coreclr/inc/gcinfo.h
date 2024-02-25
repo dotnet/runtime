@@ -67,13 +67,13 @@ struct GCInfoToken
 
     static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion))
     {
-// Delete once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
-#if MINIMUM_READYTORUN_MAJOR_VERSION < 10
+        // Once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
+        // delete the following and just return GCINFO_VERSION
+        //
         // R2R 9.0 and 9.1 use GCInfo v2
         // R2R 9.2 uses GCInfo v3
         if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
             return 2;
-#endif            
 
         return GCINFO_VERSION;
     }
