@@ -41,15 +41,14 @@ namespace System
         internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
-            if (((nuint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len))
+            if ((nuint)Unsafe.ByteOffset(ref src, ref dest) < len ||
+                (nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
             {
                 goto BuffersOverlap;
             }
 
-            // Use "(IntPtr)(nint)len" to avoid overflow checking on the explicit cast to IntPtr
-
-            ref byte srcEnd = ref Unsafe.Add(ref src, (IntPtr)(nint)len);
-            ref byte destEnd = ref Unsafe.Add(ref dest, (IntPtr)(nint)len);
+            ref byte srcEnd = ref Unsafe.Add(ref src, len);
+            ref byte destEnd = ref Unsafe.Add(ref dest, len);
 
             if (len <= 16)
                 goto MCPY02;
@@ -230,20 +229,21 @@ namespace System
             return;
 
         BuffersOverlap:
+            Debug.Assert(len > 0);
             // If the buffers overlap perfectly, there's no point to copying the data.
             if (Unsafe.AreSame(ref dest, ref src))
             {
+                // Both could be null with a non-zero length, perform an implicit null check.
+                _ = Unsafe.ReadUnaligned<byte>(ref dest);
                 return;
             }
 
         PInvoke:
-            if (len > 0)
-            {
-                // Implicit nullchecks
-                _ = Unsafe.ReadUnaligned<byte>(ref dest);
-                _ = Unsafe.ReadUnaligned<byte>(ref src);
-                Buffer._Memmove(ref dest, ref src, len);
-            }
+            // Implicit nullchecks
+            Debug.Assert(len > 0);
+            _ = Unsafe.ReadUnaligned<byte>(ref dest);
+            _ = Unsafe.ReadUnaligned<byte>(ref src);
+            Buffer._Memmove(ref dest, ref src, len);
         }
 
 #if NATIVEAOT
