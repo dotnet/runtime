@@ -87,9 +87,8 @@ namespace System
             if (s_showGenericInstantiations < 0) return false;
             if (s_showGenericInstantiations > 0) return true;
 
-            // Enabled by default for now.
-            // Will flip the default value after updating tests to be aware of AppContext switch.
-            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", true);
+            // Disabled by default.
+            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", false);
             s_showGenericInstantiations = isSwitchEnabled ? 1 : -1;
 
             return isSwitchEnabled;
