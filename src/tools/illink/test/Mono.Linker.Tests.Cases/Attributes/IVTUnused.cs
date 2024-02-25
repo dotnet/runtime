@@ -1,15 +1,16 @@
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 #if IVT
-[assembly: InternalsVisibleTo ("missing")]
-[assembly: InternalsVisibleTo ("test-with-key, PublicKey=00240000")]
-
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo ("missing")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo ("test-with-key, PublicKey=00240000")]
 #endif
+
+[assembly: KeptAttributeAttribute ("System.Runtime.CompilerServices.InternalsVisibleToAttribute")]
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
+	[SetupLinkerArgument("--used-attrs-only", "true")]
 	[Define ("IVT")]
 	class IVTUnused
 	{
