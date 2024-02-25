@@ -460,6 +460,8 @@ namespace System.Text.RegularExpressions
             {
                 case FindNextStartingPositionMode.LeadingString_LeftToRight:
                 case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
                 case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
                     EmitIndexOfString_LeftToRight();
                     break;
@@ -745,15 +747,19 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // Emits a case-sensitive left-to-right search for a substring.
+            // Emits a case-sensitive left-to-right search for a substring or substrings.
             void EmitIndexOfString_LeftToRight()
             {
                 RegexFindOptimizations opts = _regexTree.FindOptimizations;
-                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or FindNextStartingPositionMode.FixedDistanceString_LeftToRight);
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or
+                                              FindNextStartingPositionMode.FixedDistanceString_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingStrings_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight);
 
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = inputSpan.Slice(pos).IndexOf(prefix);
+                // int i = inputSpan.Slice(pos)...
                 Ldloca(inputSpan);
                 Ldloc(pos);
                 if (opts.FindMode is FindNextStartingPositionMode.FixedDistanceString_LeftToRight &&
@@ -763,11 +769,21 @@ namespace System.Text.RegularExpressions
                     Add();
                 }
                 Call(s_spanSliceIntMethod);
-                string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
-                    opts.LeadingPrefix :
-                    opts.FixedDistanceLiteral.String!;
-                LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-                Call(s_spanIndexOfAnySearchValuesString);
+
+                // ...IndexOf(prefix);
+                if (opts.FindMode is FindNextStartingPositionMode.LeadingStrings_LeftToRight or FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight)
+                {
+                    LoadSearchValues(opts.LeadingPrefixes, opts.FindMode is FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    Call(s_spanIndexOfAnySearchValuesString);
+                }
+                else
+                {
+                    string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
+                        opts.LeadingPrefix :
+                        opts.FixedDistanceLiteral.String!;
+                    LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    Call(s_spanIndexOfAnySearchValuesString);
+                }
                 Stloc(i);
 
                 // if (i < 0) goto ReturnFalse;
@@ -2223,9 +2239,18 @@ namespace System.Text.RegularExpressions
                 Stloc(startingPos);
                 int startingSliceStaticPos = sliceStaticPos;
 
-                // Emit the child. The condition expression is a zero-width assertion, which is atomic,
+                // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
-                EmitNode(condition);
+                if (analysis.MayBacktrack(condition))
+                {
+                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                    // so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(condition);
+                }
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
@@ -2793,8 +2818,8 @@ namespace System.Text.RegularExpressions
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
-                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
 
                 RegexNode child = node.Child(0);
 

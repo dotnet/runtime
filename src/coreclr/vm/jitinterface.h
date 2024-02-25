@@ -389,9 +389,6 @@ extern "C"
 
 #endif // TARGET_AMD64 || TARGET_ARM
 
-    void STDCALL JIT_MemSet(void *dest, int c, SIZE_T count);
-    void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count);
-
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     void STDCALL JIT_StackProbe();
