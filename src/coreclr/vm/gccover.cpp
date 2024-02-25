@@ -543,7 +543,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         {
         case InstructionType::Call_IndirectUnconditional:
 #ifdef TARGET_AMD64
-            if(!(codeMan->InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) && 
+            if(!(EECodeManager::InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) && 
                 safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
             {
@@ -555,7 +555,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
             if(fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
             {
 #ifdef TARGET_AMD64
-                if(!(codeMan->InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) &&
+                if(!(EECodeManager::InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) &&
                    safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
                 {
@@ -708,7 +708,7 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
     PBYTE instrPtr = (BYTE*)PCODEToPINSTR(pCode);
 
     // if this is an interruptible safe point, just replace it with an interrupt instr and we are done.
-    if (((GCCoverageInfo*)pGCCover)->codeMan->InterruptibleSafePointsEnabled() && decoder->AreSafePointsInterruptible())
+    if (EECodeManager::InterruptibleSafePointsEnabled() && decoder->AreSafePointsInterruptible())
     {
         // The instruction about to be replaced cannot already be a gcstress instruction
         _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
