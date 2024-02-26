@@ -104,10 +104,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
             OnTestOutput(msg.Text);
 
-            const string testOutputPrefix = "TestOutput -> ";
-            if (msg.Text.StartsWith(testOutputPrefix))
-                testOutput.Add(msg.Text.Substring(testOutputPrefix.Length));
-
             var exitMatch = exitRegex.Match(msg.Text);
             if (exitMatch.Success)
                 tcs.TrySetResult(int.Parse(exitMatch.Groups["exitCode"].Value));
