@@ -400,6 +400,20 @@ namespace System
                 throw new XunitException(AddOptionalUserMessage($"Expected: {actual} to be greater than or equal to {greaterThanOrEqualTo}", userMessage));
         }
 
+        /// <summary>
+        /// Validate that a given enum value has the expected flag set.
+        /// </summary>
+        /// <typeparam name="T">The enum type.</typeparam>
+        /// <param name="expected">The flag which should be present in <paramref name="actual"/>.</param>
+        /// <param name="actual">The value which should contain the flag <paramref name="expected"/>.</param>
+        public static void HasFlag<T>(T expected, T actual, string userMessage = null) where T : Enum
+        {
+            if (!actual.HasFlag(expected))
+            {
+                throw new XunitException(AddOptionalUserMessage($"Expected: Value {actual} (of enum type {typeof(T).FullName}) to have the flag {expected} set.", userMessage));
+            }
+        }
+
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what
         // the actual differences are, especially for large arrays/spans.
         /// <summary>
@@ -487,6 +501,19 @@ namespace System
                 }
 
                 countInfo.Remain--;
+            }
+        }
+
+        /// <summary>
+        /// Validates that the actual span is not equal to the expected span.
+        /// </summary>
+        /// <param name="expected">The sequence that <paramref name="actual"/> should be not be equal to.</param>
+        /// <param name="actual">The actual sequence.</param>
+        public static void SequenceNotEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual) where T : IEquatable<T>
+        {
+            if (expected.SequenceEqual(actual))
+            {
+                throw new XunitException($"Expected: Contents of expected to differ from actual but were the same.");
             }
         }
 

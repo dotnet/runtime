@@ -511,6 +511,8 @@ public:
         return nullptr;
     }
 
+    CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -687,6 +689,8 @@ public:
 
     // Skip all folding checks.
     ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
+    ValueNum VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN);
 
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
@@ -1025,6 +1029,9 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a specific handle constant.
+    bool IsVNHandle(ValueNum vn, GenTreeFlags flag);
+
     // Returns true iff the VN represents an object handle constant.
     bool IsVNObjHandle(ValueNum vn);
 
@@ -1099,7 +1106,8 @@ private:
 
 #ifdef _MSC_VER
 
-                assert(&typeid(T) == &typeid(size_t)); // We represent ref/byref constants as size_t's.
+                assert((&typeid(T) == &typeid(size_t)) ||
+                       (&typeid(T) == &typeid(ssize_t))); // We represent ref/byref constants as size_t/ssize_t
 
 #endif // _MSC_VER
 

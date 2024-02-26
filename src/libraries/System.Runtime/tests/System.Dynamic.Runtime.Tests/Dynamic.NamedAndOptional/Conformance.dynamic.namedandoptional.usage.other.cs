@@ -2394,56 +2394,58 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 }
 
 
+// This test is failing to compile now due to this C# breaking change:
+// https://github.com/dotnet/roslyn/blob/291255bc40c2ccd8ef1ca12ed580820c79f527cc/docs/compilers/CSharp/Compiler%20Breaking%20Changes%20-%20DotNet%208.md#ref-modifiers-of-dynamic-arguments-should-be-compatible-with-ref-modifiers-of-corresponding-parameters
 
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.other.ref03a.ref03a
-{
-    // <Area>Declaration of Methods with Optional Parameters</Area>
-    // <Title>calling with a ref parameter </Title>
-    // <Description>Should be able to call a ref parameter</Description>
-    // <Expects status=success></Expects>
-    // <Code>
-    using System.Runtime.InteropServices;
+// namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.other.ref03a.ref03a
+// {
+//     // <Area>Declaration of Methods with Optional Parameters</Area>
+//     // <Title>calling with a ref parameter </Title>
+//     // <Description>Should be able to call a ref parameter</Description>
+//     // <Expects status=success></Expects>
+//     // <Code>
+//     using System.Runtime.InteropServices;
 
-    public class Parent
-    {
-        public int Foo(
-        [Optional]
-        ref int x)
-        {
-            if (x == 2)
-                return 1;
-            return 1;
-        }
-    }
+//     public class Parent
+//     {
+//         public int Foo(
+//         [Optional]
+//         ref int x)
+//         {
+//             if (x == 2)
+//                 return 1;
+//             return 1;
+//         }
+//     }
 
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
+//     public class Test
+//     {
+//         [Fact]
+//         public static void DynamicCSharpRunTest()
+//         {
+//             Assert.Equal(0, MainMethod());
+//         }
 
-        public static int MainMethod()
-        {
-            Parent p = new Parent();
-            dynamic i = 2;
-            try
-            {
-                p.Foo(x: i);
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException e)
-            {
-                bool ret = ErrorVerifier.Verify(ErrorMessageId.BadArgTypes, e.Message, "Parent.Foo(ref int)");
-                if (ret)
-                    return 0;
-            }
+//         public static int MainMethod()
+//         {
+//             Parent p = new Parent();
+//             dynamic i = 2;
+//             try
+//             {
+//                 p.Foo(x: i);
+//             }
+//             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException e)
+//             {
+//                 bool ret = ErrorVerifier.Verify(ErrorMessageId.BadArgTypes, e.Message, "Parent.Foo(ref int)");
+//                 if (ret)
+//                     return 0;
+//             }
 
-            return 1;
-        }
-    }
-    //</Code>
-}
+//             return 1;
+//         }
+//     }
+//     //</Code>
+// }
 
 
 
@@ -2498,56 +2500,58 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 }
 
 
+// This test is failing to compile now due to this C# breaking change:
+// https://github.com/dotnet/roslyn/blob/291255bc40c2ccd8ef1ca12ed580820c79f527cc/docs/compilers/CSharp/Compiler%20Breaking%20Changes%20-%20DotNet%208.md#ref-modifiers-of-dynamic-arguments-should-be-compatible-with-ref-modifiers-of-corresponding-parameters
 
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.other.ref03c.ref03c
-{
-    // <Area>Declaration of Methods with Optional Parameters</Area>
-    // <Title>calling with a ref parameter </Title>
-    // <Description>Should be able to call a ref parameter</Description>
-    // <Expects status=success></Expects>
-    // <Code>
-    using System.Runtime.InteropServices;
+// namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.other.ref03c.ref03c
+// {
+//     // <Area>Declaration of Methods with Optional Parameters</Area>
+//     // <Title>calling with a ref parameter </Title>
+//     // <Description>Should be able to call a ref parameter</Description>
+//     // <Expects status=success></Expects>
+//     // <Code>
+//     using System.Runtime.InteropServices;
 
-    public class Parent
-    {
-        public int Foo(
-        [Optional]
-        ref dynamic x)
-        {
-            if (x == 2)
-                return 1;
-            return 1;
-        }
-    }
+//     public class Parent
+//     {
+//         public int Foo(
+//         [Optional]
+//         ref dynamic x)
+//         {
+//             if (x == 2)
+//                 return 1;
+//             return 1;
+//         }
+//     }
 
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod());
-        }
+//     public class Test
+//     {
+//         [Fact]
+//         public static void DynamicCSharpRunTest()
+//         {
+//             Assert.Equal(0, MainMethod());
+//         }
 
-        public static int MainMethod()
-        {
-            Parent p = new Parent();
-            dynamic i = 2;
-            try
-            {
-                p.Foo(x: i);
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException e)
-            {
-                bool ret = ErrorVerifier.Verify(ErrorMessageId.BadArgTypes, e.Message, "Parent.Foo(ref object)");
-                if (ret)
-                    return 0;
-            }
+//         public static int MainMethod()
+//         {
+//             Parent p = new Parent();
+//             dynamic i = 2;
+//             try
+//             {
+//                 p.Foo(x: i);
+//             }
+//             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException e)
+//             {
+//                 bool ret = ErrorVerifier.Verify(ErrorMessageId.BadArgTypes, e.Message, "Parent.Foo(ref object)");
+//                 if (ret)
+//                     return 0;
+//             }
 
-            return 1;
-        }
-    }
-    //</Code>
-}
+//             return 1;
+//         }
+//     }
+//     //</Code>
+// }
 
 
 

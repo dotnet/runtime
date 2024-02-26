@@ -365,7 +365,7 @@ protected:
 
         // Convert the loaded local containing a native address
         // into a non-GC type for the byref case.
-        pslILEmit->EmitCONV_I();
+        pslILEmit->EmitCONV_U();
     }
 
     void EmitLoadManagedValue(ILCodeStream* pslILEmit)
@@ -399,7 +399,7 @@ protected:
 
         // Convert the loaded value containing a native address
         // into a non-GC type for the byref case.
-        pslILEmit->EmitCONV_I();
+        pslILEmit->EmitCONV_U();
     }
 
     void EmitStoreManagedValue(ILCodeStream* pslILEmit)
@@ -1814,6 +1814,40 @@ public:
     }
 };
 
+class ILPointerMarshaler final : public ILCopyMarshalerBase
+{
+public:
+    enum
+    {
+        c_fInOnly               = TRUE,
+        c_nativeSize            = TARGET_POINTER_SIZE,
+    };
+protected:
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        LocalDesc native(m_pargs->m_pMT);
+        native.MakePointer();
+        return native;
+    }
+
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        LocalDesc native(m_pargs->m_pMT);
+        native.MakePointer();
+        return native;
+    }
+
+    virtual void EmitReInitNative(ILCodeStream* pslILEmit) override
+    {
+        STANDARD_VM_CONTRACT;
+
+        pslILEmit->EmitLDC(0);
+        pslILEmit->EmitCONV_U();
+        EmitStoreNativeValue(pslILEmit);
+    }
+};
 
 class ILDelegateMarshaler : public ILMarshaler
 {
@@ -3235,23 +3269,8 @@ private :
     DWORD m_dwSavedSizeArg;
 };
 
-class MngdNativeArrayMarshaler
+struct MngdNativeArrayMarshaler
 {
-public:
-    static FCDECL4(void, CreateMarshaler,           MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler);
-    static FCDECL3(void, ConvertSpaceToNative,      MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ConvertContentsToNative,   MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL4(void, ConvertSpaceToManaged,     MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL4(void, ClearNative,               MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-    static FCDECL4(void, ClearNativeContents,       MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-
-    static void DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-    enum
-    {
-        FLAG_NATIVE_DATA_VALID = 0x40000000
-    };
-
     MethodTable*            m_pElementMT;
     TypeHandle              m_Array;
     PCODE                   m_pManagedMarshaler;
@@ -3260,6 +3279,12 @@ public:
     BOOL                    m_ThrowOnUnmappableChar;
     VARTYPE                 m_vt;
 };
+
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements);
 
 class ILFixedArrayMarshaler : public ILMngdMarshaler
 {
@@ -3301,30 +3326,21 @@ protected:
     void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
 };
 
-class MngdFixedArrayMarshaler
+struct MngdFixedArrayMarshaler
 {
-public:
-    static FCDECL5(void, CreateMarshaler,           MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler);
-    static FCDECL3(void, ConvertSpaceToNative,      MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ConvertContentsToNative,   MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ConvertSpaceToManaged,     MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ClearNativeContents,       MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-
-    enum
-    {
-        FLAG_NATIVE_DATA_VALID = 0x40000000
-    };
-
     MethodTable* m_pElementMT;
     PCODE        m_pManagedElementMarshaler;
     TypeHandle   m_Array;
-    BOOL         m_NativeDataValid;
     BOOL         m_BestFitMap;
     BOOL         m_ThrowOnUnmappableChar;
     VARTYPE      m_vt;
     UINT32       m_cElements;
 };
+
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, void* pNativeHome);
 
 #ifdef FEATURE_COMINTEROP
 class ILSafeArrayMarshaler : public ILMngdMarshaler
@@ -3390,12 +3406,6 @@ protected:
 class MngdSafeArrayMarshaler
 {
 public:
-    static FCDECL5(void, CreateMarshaler,           MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler);
-    static FCDECL3(void, ConvertSpaceToNative,      MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL4(void, ConvertContentsToNative,   MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, Object* pOriginalManagedUNSAFE);
-    static FCDECL3(void, ConvertSpaceToManaged,     MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ClearNative,               MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
 
     enum StaticCheckStateFlags
     {
@@ -3411,6 +3421,13 @@ public:
     BYTE            m_fStatic;     // StaticCheckStateFlags
     BYTE            m_nolowerbounds;
 };
+
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome);
 #endif // FEATURE_COMINTEROP
 
 class ILReferenceCustomMarshaler : public ILMngdMarshaler
@@ -3437,16 +3454,4 @@ public:
 
 protected:
     void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
-};
-
-class MngdRefCustomMarshaler
-{
-public:
-    static FCDECL2(void, CreateMarshaler,           MngdRefCustomMarshaler* pThis, void* pCMHelper);
-    static FCDECL3(void, ConvertContentsToNative,   MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ClearNative,               MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ClearManaged,              MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-
-    CustomMarshalerHelper*  m_pCMHelper;
 };
