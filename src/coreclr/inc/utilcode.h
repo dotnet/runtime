@@ -1894,7 +1894,7 @@ public:
     ~CHashTableAndData()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pcEntries != NULL)
+        if ((PTR_VOID)m_pcEntries != NULL)
             MemMgr::Free((BYTE*)m_pcEntries, MemMgr::RoundSize(m_iEntries * m_iEntrySize));
     }
 

@@ -16239,7 +16239,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
