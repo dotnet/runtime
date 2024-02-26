@@ -18,7 +18,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out object? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -110,7 +112,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public void ToJS(object? value)
         {
             if (value == null)
@@ -327,7 +331,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out object?[]? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -356,7 +362,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToJS(object?[] value)
         {
             if (value == null)

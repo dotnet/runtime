@@ -7066,6 +7066,9 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
             return true;
 
+        case GT_SWIFT_ERROR:
+            return true;
+
         case GT_INTRINSIC:
             return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicName);
 
@@ -7362,6 +7365,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
+        case GT_SWIFT_ERROR:
             return true;
 
         case GT_CALL:
@@ -7420,6 +7424,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
+        case GT_SWIFT_ERROR:
             return true;
         default:
             return false;
@@ -8651,6 +8656,26 @@ GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeF
     return blkNode;
 }
 
+//------------------------------------------------------------------------
+// gtNewMemoryBarrier: Create a memory barrier node
+//
+// Arguments:
+//    loadOnly - relaxes the full memory barrier to be load-only
+//
+// Return Value:
+//    The created GT_MEMORYBARRIER node.
+//
+GenTree* Compiler::gtNewMemoryBarrier(bool loadOnly)
+{
+    GenTree* tree = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
+    tree->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+    if (loadOnly)
+    {
+        tree->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+    }
+    return tree;
+}
+
 //------------------------------------------------------------------------------
 // gtNewIndir : Create an indirection node.
 //
@@ -8758,7 +8783,7 @@ GenTreeStoreDynBlk* Compiler::gtNewStoreDynBlkNode(GenTree*     addr,
 //
 // Arguments:
 //    type       - Type of the store
-//    addr       - Destionation address
+//    addr       - Destination address
 //    data       - Value to store
 //    indirFlags - Indirection flags
 //
@@ -10304,6 +10329,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+        case GT_SWIFT_ERROR:
             m_state = -1;
             return;
 
@@ -12152,13 +12178,34 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            {
+                                printf(" class");
+                            }
+                            else
+                            {
+                                printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                            }
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
+                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            {
+                                printf(" method");
+                            }
+                            else
+                            {
+                                printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
+                            }
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
+                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            {
+                                printf(" field");
+                            }
+                            else
+                            {
+                                printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
+                            }
                             break;
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
@@ -12410,6 +12457,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_MEMORYBARRIER:
         case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
+        case GT_SWIFT_ERROR:
             break;
 
         case GT_RET_EXPR:
@@ -12703,11 +12751,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreeBlk::BlkOpKindUnrollMemmove:
                         printf(" (Memmove)");
                         break;
-#ifndef TARGET_X86
-                    case GenTreeBlk::BlkOpKindHelper:
-                        printf(" (Helper)");
-                        break;
-#endif
 
                     case GenTreeBlk::BlkOpKindLoop:
                         printf(" (Loop)");
@@ -17318,7 +17361,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
             // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
             //
-            if (m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
+            if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
             {
                 // The result of a GT_COMMA node is op2, the normal value number is op2vnp
                 // But we also need to include the union of side effects from op1 and op2.
@@ -18785,6 +18828,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             break;
         }
+    }
+
+    if ((objClass == NO_CLASS_HANDLE) && (vnStore != nullptr))
+    {
+        // Try VN if we haven't found a class handle yet
+        objClass = vnStore->GetObjectType(tree->gtVNPair.GetConservative(), pIsExact, pIsNonNull);
     }
 
     if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && JitConfig.JitEnableExactDevirtualization())

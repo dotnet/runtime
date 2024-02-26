@@ -75,7 +75,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftInvalidCallConv/*">
+            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftSelfContext/*">
             <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -1160,6 +1163,16 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- NativeAOT arm32 specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/castclassvaluetype_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
@@ -1869,6 +1882,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>https://github.com/dotnet/runtime/issues/90374</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
+            <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
     </ItemGroup>
 

@@ -217,6 +217,18 @@ namespace System
         /// </summary>
         public static ReadOnlySpan<T> Empty => default;
 
+        /// <summary>
+        /// Casts a read-only span of <typeparamref name="TDerived"/> to a read-only span of <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="TDerived">The element type of the source read-only span, which must be derived from <typeparamref name="T"/>.</typeparam>
+        /// <param name="items">The source read-only span. No copy is made.</param>
+        /// <returns>A read-only span with elements cast to the new type.</returns>
+        /// <remarks>This method uses a covariant cast, producing a read-only span that shares the same memory as the source. The relationships expressed in the type constraints ensure that the cast is a safe operation.</remarks>
+        public static ReadOnlySpan<T> CastUp<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : class?, T
+        {
+            return new ReadOnlySpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items.Length);
+        }
+
         /// <summary>Gets an enumerator for this span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);
 

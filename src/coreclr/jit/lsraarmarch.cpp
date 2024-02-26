@@ -393,6 +393,30 @@ int LinearScan::BuildCall(GenTreeCall* call)
     regMaskTP killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
+#ifdef SWIFT_SUPPORT
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        // Tree is a Swift call with error handling; error register should have been killed
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        assert((killMask & RBM_SWIFT_ERROR) != 0);
+
+        // After a Swift call that might throw returns, we expect the error register to be consumed
+        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
+        // before GT_SWIFT_ERROR can consume it.
+        // (For example, the PInvoke epilog comes before the error register store.)
+        // To do so, delay the freeing of the error register until the next node.
+        // This only works if the next node after the call is the GT_SWIFT_ERROR node.
+        // (InsertPInvokeCallEpilog should have moved the GT_SWIFT_ERROR node during lowering.)
+        assert(call->gtNext != nullptr);
+        assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
+
+        // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
+        // during register allocation should be cheaper in terms of TP.
+        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
+        setDelayFree(pos);
+    }
+#endif // SWIFT_SUPPORT
+
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
     numPlacedArgLocals = 0;
@@ -644,13 +668,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                assert(!src->isContained());
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
-                break;
-
             default:
                 unreached();
         }
@@ -782,16 +799,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
             }
             break;
-
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_ARG_1;
-                }
-                sizeRegMask = RBM_ARG_2;
-                break;
 
             default:
                 unreached();

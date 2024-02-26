@@ -275,7 +275,7 @@ namespace System.Runtime.CompilerServices
 #if TARGET_WASM
                 if (s_cctorGlobalLock == null)
                 {
-                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(useTrivialWaits: true), null);
+                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(), null);
                 }
                 if (s_cctorArrays == null)
                 {
@@ -342,7 +342,7 @@ namespace System.Runtime.CompilerServices
 
                         Debug.Assert(resultArray[resultIndex]._pContext == default(StaticClassConstructionContext*));
                         resultArray[resultIndex]._pContext = pContext;
-                        resultArray[resultIndex].Lock = new Lock(useTrivialWaits: true);
+                        resultArray[resultIndex].Lock = new Lock();
                         s_count++;
                     }
 
@@ -489,7 +489,7 @@ namespace System.Runtime.CompilerServices
         internal static void Initialize()
         {
             s_cctorArrays = new Cctor[10][];
-            s_cctorGlobalLock = new Lock(useTrivialWaits: true);
+            s_cctorGlobalLock = new Lock();
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
