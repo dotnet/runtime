@@ -66,7 +66,7 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
-        internal unsafe void StartAsyncCertificateValidation(void* certificatePtr, void* chainPtr)
+        internal async void StartAsyncCertificateValidation(IntPtr certificatePtr, IntPtr chainPtr)
         {
             //
             // The provided data pointers are valid only while still inside this function, so they need to be
@@ -80,96 +80,90 @@ public partial class QuicConnection
             byte[]? chainDataRented = null;
             Memory<byte> chainData = default;
 
-            if (certificatePtr != null)
+            if (certificatePtr != IntPtr.Zero)
             {
                 if (MsQuicApi.UsesSChannelBackend)
                 {
-                    certificate = new X509Certificate2((IntPtr)certificatePtr);
+                    // provided data is a pointer to a CERT_CONTEXT
+                    certificate = new X509Certificate2(certificatePtr);
                     // TODO: what about chainPtr?
                 }
                 else
                 {
-                    // On non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the content is buffers
-                    // with DER encoded cert and chain.
-                    QUIC_BUFFER* certificateBuffer = (QUIC_BUFFER*)certificatePtr;
-                    QUIC_BUFFER* chainBuffer = (QUIC_BUFFER*)chainPtr;
-
-                    if (certificateBuffer->Length > 0)
+                    unsafe
                     {
-                        certDataRented = ArrayPool<byte>.Shared.Rent((int)certificateBuffer->Length);
-                        certData = certDataRented.AsMemory(0, (int)certificateBuffer->Length);
-                        certificateBuffer->Span.CopyTo(certData.Span);
-                    }
+                        // On non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the contents are buffers
+                        // with DER encoded cert and chain.
+                        QUIC_BUFFER* certificateBuffer = (QUIC_BUFFER*)certificatePtr;
+                        QUIC_BUFFER* chainBuffer = (QUIC_BUFFER*)chainPtr;
 
-                    if (chainBuffer->Length > 0)
-                    {
-                        chainDataRented = ArrayPool<byte>.Shared.Rent((int)chainBuffer->Length);
-                        chainData = chainDataRented.AsMemory(0, (int)chainBuffer->Length);
-                        chainBuffer->Span.CopyTo(chainData.Span);
+                        if (certificateBuffer->Length > 0)
+                        {
+                            certDataRented = ArrayPool<byte>.Shared.Rent((int)certificateBuffer->Length);
+                            certData = certDataRented.AsMemory(0, (int)certificateBuffer->Length);
+                            certificateBuffer->Span.CopyTo(certData.Span);
+                        }
+
+                        if (chainBuffer->Length > 0)
+                        {
+                            chainDataRented = ArrayPool<byte>.Shared.Rent((int)chainBuffer->Length);
+                            chainData = chainDataRented.AsMemory(0, (int)chainBuffer->Length);
+                            chainBuffer->Span.CopyTo(chainData.Span);
+                        }
                     }
                 }
             }
 
-            QuicConnection connection = _connection;
+            // We wan't to do the certificate validation asynchronously, but due to a bug in MsQuic, we need to call the callback synchronously on some versions
             if (MsQuicApi.SupportsAsyncCertValidation)
             {
-                // hand-off rest of the work to the thread pool, certificatePtr and chainPtr are invalid beyond this point
-                _ = Task.Run(() =>
-                {
-                    StartAsyncCertificateValidationCore(connection, certificate, certData, chainData, certDataRented, chainDataRented);
-                });
-            }
-            else
-            {
-                // due to a bug in MsQuic, we need to call the callback synchronously to close the connection properly when
-                // we reject the certificate
-                StartAsyncCertificateValidationCore(connection, certificate, certData, chainData, certDataRented, chainDataRented);
+                // force yield to the thread pool to free up MsQuic worker thread.
+                await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
             }
 
-            static void StartAsyncCertificateValidationCore(QuicConnection thisConnection, X509Certificate2? certificate, Memory<byte> certData, Memory<byte> chainData, byte[]? certDataRented, byte[]? chainDataRented)
+            // certificatePtr and chainPtr are invalid beyond this point
+
+            QUIC_TLS_ALERT_CODES result;
+            try
             {
-                QUIC_TLS_ALERT_CODES result;
-                try
+                if (certData.Length > 0)
                 {
-                    if (certData.Length > 0)
-                    {
-                        Debug.Assert(certificate == null);
-                        certificate = new X509Certificate2(certData.Span);
-                    }
-
-                    result = thisConnection._sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
-                    thisConnection._remoteCertificate = certificate;
-                }
-                catch (Exception ex)
-                {
-                    certificate?.Dispose();
-                    thisConnection._connectedTcs.TrySetException(ex);
-                    result = QUIC_TLS_ALERT_CODES.USER_CANCELED;
-                }
-                finally
-                {
-                    if (certDataRented != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(certDataRented);
-                    }
-
-                    if (chainDataRented != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(chainDataRented);
-                    }
+                    Debug.Assert(certificate == null);
+                    certificate = new X509Certificate2(certData.Span);
                 }
 
-                int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
-                    thisConnection._handle,
-                    result == QUIC_TLS_ALERT_CODES.SUCCESS ? (byte)1 : (byte)0,
-                    result);
-
-                if (MsQuic.StatusFailed(status))
+                result = _connection._sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
+                _connection._remoteCertificate = certificate;
+            }
+            catch (Exception ex)
+            {
+                certificate?.Dispose();
+                _connection._connectedTcs.TrySetException(ex);
+                result = QUIC_TLS_ALERT_CODES.USER_CANCELED;
+            }
+            finally
+            {
+                if (certDataRented != null)
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Error(thisConnection, $"{thisConnection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
-                    }
+                    ArrayPool<byte>.Shared.Return(certDataRented);
+                }
+
+                if (chainDataRented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(chainDataRented);
+                }
+            }
+
+            int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
+                _connection._handle,
+                result == QUIC_TLS_ALERT_CODES.SUCCESS ? (byte)1 : (byte)0,
+                result);
+
+            if (MsQuic.StatusFailed(status))
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(_connection, $"{_connection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
                 }
             }
         }

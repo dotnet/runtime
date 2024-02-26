@@ -578,7 +578,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // worker threads.
         //
 
-        _sslConnectionOptions.StartAsyncCertificateValidation(data.Certificate, data.Chain);
+        _sslConnectionOptions.StartAsyncCertificateValidation((IntPtr)data.Certificate, (IntPtr)data.Chain);
         return QUIC_STATUS_PENDING;
     }
 
