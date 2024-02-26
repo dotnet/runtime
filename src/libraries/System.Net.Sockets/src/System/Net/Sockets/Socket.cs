@@ -3103,11 +3103,10 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
-            if (e._socketAddress != null && endPointSnapshot is IPEndPoint && e._socketAddress.Family == endPointSnapshot?.AddressFamily)
+            if (e._socketAddress != null && endPointSnapshot is IPEndPoint ipep && e._socketAddress.Family == endPointSnapshot?.AddressFamily)
             {
-                // we have matching SocketAddress. Since this is only used internally, it should be ok to override it without
-                // allocating new one.
-                ((IPEndPoint)endPointSnapshot).Serialize(e._socketAddress.Buffer.Span);
+                // we have matching SocketAddress. Since this is only used internally, it is ok to overwrite it without
+                ipep.Serialize(e._socketAddress.Buffer.Span);
             }
             else if (endPointSnapshot != null)
             {
