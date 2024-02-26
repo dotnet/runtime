@@ -2547,6 +2547,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
             assert(isValidUimm2(imm));
+            assert(isScalableVectorSize(elemsize));
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
@@ -2558,6 +2559,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
             assert(isValidUimm2(imm));
+            assert(isScalableVectorSize(elemsize));
             break;
 
         default:
