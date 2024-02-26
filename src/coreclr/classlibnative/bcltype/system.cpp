@@ -133,6 +133,38 @@ extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
     return processorCount;
 }
 
+struct FindFailFastCallerStruct {
+    StackCrawlMark* pStackMark;
+    UINT_PTR        retAddress;
+};
+
+// This method is called by the GetMethod function and will crawl backward
+//  up the stack for integer methods.
+static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data) {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    FindFailFastCallerStruct* pFindCaller = (FindFailFastCallerStruct*) data;
+
+    // The check here is between the address of a local variable
+    // (the stack mark) and a pointer to the EIP for a frame
+    // (which is actually the pointer to the return address to the
+    // function from the previous frame). So we'll actually notice
+    // which frame the stack mark was in one frame later. This is
+    // fine since we only implement LookForMyCaller.
+    _ASSERTE(*pFindCaller->pStackMark == LookForMyCaller);
+    if (!frame->IsInCalleesFrames(pFindCaller->pStackMark))
+        return SWA_CONTINUE;
+
+    pFindCaller->retAddress = GetControlPC(frame->GetRegisterSet());
+    return SWA_ABORT;
+}
+
 // FailFast is supported in BCL.small as internal to support failing fast in places where EEE used to be thrown.
 //
 // Static message buffer used by SystemNative::FailFast to avoid reliance on a
@@ -143,9 +175,10 @@ WCHAR *g_pFailFastBuffer = g_szFailFastBuffer;
 
 #define FAIL_FAST_STATIC_BUFFER_LENGTH (sizeof(g_szFailFastBuffer) / sizeof(WCHAR))
 
-// This is the common code for FailFast processing that is wrapped by the two
+
+// This is the common code for FailFast processing that is wrapped by the
 // FailFast FCalls below.
-void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, STRINGREF refErrorSourceString)
+void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, StackCrawlMark* stackMark, STRINGREF refErrorSourceString)
 {
     CONTRACTL
     {
@@ -165,6 +198,11 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     gc.refErrorSourceString = refErrorSourceString;
 
     GCPROTECT_BEGIN(gc);
+
+    FindFailFastCallerStruct findCallerData;
+    findCallerData.pStackMark = stackMark;
+    findCallerData.retAddress = 0;
+    StackWalkFunctions(GetThread(), FindFailFastCallerCallback, &findCallerData);
 
     // Managed code injected FailFast maps onto the unmanaged version
     // (EEPolicy::HandleFatalError) in the following manner: the exit code is
@@ -267,7 +305,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         {
             PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
             _ASSERTE(pUEWatsonBucketTracker != NULL);
-            pUEWatsonBucketTracker->SaveIpForWatsonBucket(retAddress);
+            pUEWatsonBucketTracker->SaveIpForWatsonBucket(findCallerData.retAddress);
             pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::FatalError, pThread, NULL);
             if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
             {
@@ -282,69 +320,85 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     if (gc.refExceptionForWatsonBucketing != NULL)
         pThread->SetLastThrownObject(gc.refExceptionForWatsonBucketing);
 
-    EEPolicy::HandleFatalError(COR_E_FAILFAST, retAddress, pszMessage, NULL, errorSourceString, argExceptionString);
+    EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, pszMessage, NULL, errorSourceString, argExceptionString);
 
     GCPROTECT_END();
 }
 
 // Note: Do not merge this FCALL method with any other FailFast overloads.
 // Watson uses the managed FailFast method with one String for crash dump bucketization.
-FCIMPL1(VOID, SystemNative::FailFast, StringObject* refMessageUNSAFE)
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    STRINGREF refMessage = (STRINGREF)refMessageUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_1(refMessage);
+    GCX_COOP();
 
-    // The HelperMethodFrame knows how to get the return address.
-    UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
+    STRINGREF refMessage = message.Get();
+    GCPROTECT_BEGIN(refMessage);
 
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, NULL, retaddr, NULL);
+    SystemNative::GenericFailFast(refMessage, NULL, mark, NULL);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(VOID, SystemNative::FailFastWithException, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE)
+extern "C" void QCALLTYPE Environment_FailFastWithException(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    STRINGREF refMessage = (STRINGREF)refMessageUNSAFE;
-    EXCEPTIONREF refException = (EXCEPTIONREF)refExceptionUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_2(refMessage, refException);
+    GCX_COOP();
 
-    // The HelperMethodFrame knows how to get the return address.
-    UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
+    struct
+    {
+        STRINGREF refMessage;
+        EXCEPTIONREF refException;
+    } gc;
+    gc.refMessage = message.Get();
+    gc.refException = (EXCEPTIONREF)exception.Get();
+
+    GCPROTECT_BEGIN(gc);
 
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, refException, retaddr, NULL);
+    SystemNative::GenericFailFast(gc.refMessage, gc.refException, mark, NULL);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(VOID, SystemNative::FailFastWithExceptionAndSource, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE, StringObject* errorSourceUNSAFE)
+extern "C" void QCALLTYPE Environment_FailFastWithExceptionAndSource(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception, QCall::StringHandleOnStack errorSource)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    STRINGREF refMessage = (STRINGREF)refMessageUNSAFE;
-    EXCEPTIONREF refException = (EXCEPTIONREF)refExceptionUNSAFE;
-    STRINGREF errorSource = (STRINGREF)errorSourceUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_3(refMessage, refException, errorSource);
+    GCX_COOP();
+    
+    struct
+    {
+        STRINGREF refMessage;
+        EXCEPTIONREF refException;
+        STRINGREF refErrorSource;
+    } gc;
+    gc.refMessage = message.Get();
+    gc.refException = (EXCEPTIONREF)exception.Get();
+    gc.refErrorSource = errorSource.Get();
 
-    // The HelperMethodFrame knows how to get the return address.
-    UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
+    GCPROTECT_BEGIN(gc);
 
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, refException, retaddr, errorSource);
+    SystemNative::GenericFailFast(gc.refMessage, gc.refException, mark, gc.refErrorSource);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(FC_BOOL_RET, SystemNative::IsServerGC)
 {
