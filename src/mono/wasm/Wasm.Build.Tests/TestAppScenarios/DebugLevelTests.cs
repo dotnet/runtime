@@ -51,7 +51,7 @@ public class DebugLevelTests : AppTestBase
     public async Task BuildWithExplicitValue(string configuration, int debugLevel)
     {
         CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_BuildWithExplicitValue_{configuration}");
-        BuildProject(configuration, $"-p:WasmDebugLevel={debugLevel}");
+        BuildProject(configuration: configuration, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: configuration,
