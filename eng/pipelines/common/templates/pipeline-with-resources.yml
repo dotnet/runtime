@@ -101,7 +101,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/x64
 
     - container: tizen_armel
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-armel-tizen
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen
       env:
         ROOTFS_DIR: /crossrootfs/armel
 

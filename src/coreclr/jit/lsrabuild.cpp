@@ -880,6 +880,19 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     assert(!call->IsVirtualStub() ||
            ((killMask & compiler->virtualStubParamInfo->GetRegMask()) == compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
+
+#ifdef SWIFT_SUPPORT
+    // Swift calls that throw may trash the callee-saved error register,
+    // so don't use the register post-call until it is consumed by SwiftError.
+    // GTF_CALL_M_SWIFT_ERROR_HANDLING indicates the call has a SwiftError* argument,
+    // so the error register value will eventually be consumed post-call.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        killMask |= RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
+
     return killMask;
 }
 
@@ -907,18 +920,6 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
             break;
 
-#ifndef TARGET_X86
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
-            }
-            else
-            {
-                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
-            }
-            break;
-#endif
 #ifdef TARGET_XARCH
         case GenTreeBlk::BlkOpKindRepInstr:
             if (isCopyBlk)
@@ -2493,7 +2494,7 @@ void           LinearScan::buildIntervals()
             killed = RBM_EDI | RBM_ECX | RBM_EAX;
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
-            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
 #endif
             addRefsForPhysRegMask(killed, currentLoc + 1, RefTypeKill, true);
             currentLoc += 2;

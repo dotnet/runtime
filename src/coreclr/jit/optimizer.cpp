@@ -21,13 +21,7 @@ void Compiler::optInit()
 {
     fgHasLoops = false;
 
-    optLoopsCanonical       = false;
-    optNumNaturalLoopsFound = 0;
-
-#ifdef DEBUG
-    loopAlignCandidates = 0;
-    loopsAligned        = 0;
-#endif
+    optLoopsCanonical = false;
 
     /* Keep track of the number of calls and indirect calls made by this method */
     optCallCount         = 0;
@@ -40,6 +34,7 @@ void Compiler::optInit()
     optCSECandidateCount = 0;
     optCSEattempt        = 0;
     optCSEheuristic      = nullptr;
+    optCSEunmarks        = 0;
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
@@ -553,7 +548,7 @@ void Compiler::optCheckPreds()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// optRedirectBlock: Initialize the branch successors of a block based on a block map.
+// optSetMappedBlockTargets: Initialize the branch successors of a block based on a block map.
 //
 // Updates the successors of `newBlk`, a copy of `blk`:
 // If `blk2` is a branch successor of `blk`, and there is a mapping
@@ -570,7 +565,7 @@ void Compiler::optCheckPreds()
 //     Upon returning, `newBlk` should have all of its successors initialized.
 //     `blk` must have its successors set upon entry; these won't be changed.
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
+void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
 {
     // Caller should not have initialized newBlk's target yet
     assert(newBlk->KindIs(BBJ_ALWAYS));
@@ -643,23 +638,25 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
             BBehfDesc* currEhfDesc = blk->GetEhfTargets();
             BBehfDesc* newEhfDesc  = new (this, CMK_BasicBlock) BBehfDesc;
             newEhfDesc->bbeCount   = currEhfDesc->bbeCount;
-            newEhfDesc->bbeSuccs   = new (this, CMK_BasicBlock) BasicBlock*[newEhfDesc->bbeCount];
-            BasicBlock** jumpPtr   = newEhfDesc->bbeSuccs;
+            newEhfDesc->bbeSuccs   = new (this, CMK_FlowEdge) FlowEdge*[newEhfDesc->bbeCount];
 
-            for (BasicBlock* const ehfTarget : blk->EHFinallyRetSuccs())
+            for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
             {
+                FlowEdge* const   inspiringEdge = currEhfDesc->bbeSuccs[i];
+                BasicBlock* const ehfTarget     = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
+
                 // Determine if newBlk should target ehfTarget, or be redirected
                 if (redirectMap->Lookup(ehfTarget, &newTarget))
                 {
-                    *jumpPtr = newTarget;
+                    newEdge = fgAddRefPred(newTarget, newBlk, inspiringEdge);
                 }
                 else
                 {
-                    *jumpPtr = ehfTarget;
+                    newEdge = fgAddRefPred(ehfTarget, newBlk, inspiringEdge);
                 }
 
-                fgAddRefPred(*jumpPtr, newBlk);
-                jumpPtr++;
+                newEhfDesc->bbeSuccs[i] = newEdge;
             }
 
             newBlk->SetEhf(newEhfDesc);
@@ -670,23 +667,27 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
         {
             BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
             BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
-            newSwtDesc->bbsDstTab  = new (this, CMK_BasicBlock) BasicBlock*[newSwtDesc->bbsCount];
-            BasicBlock** jumpPtr   = newSwtDesc->bbsDstTab;
+            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
 
-            for (BasicBlock* const switchTarget : blk->SwitchTargets())
+            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
             {
+                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
+
                 // Determine if newBlk should target switchTarget, or be redirected
                 if (redirectMap->Lookup(switchTarget, &newTarget))
                 {
-                    *jumpPtr = newTarget;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(newTarget, newBlk);
                 }
                 else
                 {
-                    *jumpPtr = switchTarget;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(switchTarget, newBlk);
                 }
 
-                fgAddRefPred(*jumpPtr, newBlk);
-                jumpPtr++;
+                newSwtDesc->bbsDstTab[i] = newEdge;
             }
 
             newBlk->SetSwitch(newSwtDesc);
@@ -1297,6 +1298,8 @@ PhaseStatus Compiler::optUnrollLoops()
     if (unrollCount > 0)
     {
         assert(anyIRchange);
+
+        Metrics.LoopsUnrolled += unrollCount;
 
 #ifdef DEBUG
         if (verbose)
@@ -2668,7 +2671,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    optNumNaturalLoopsFound = (unsigned)m_loops->NumLoops();
+    Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -5145,6 +5148,8 @@ void Compiler::optHoistCandidate(GenTree*              tree,
 
     // Record the hoisted expression in hoistCtxt
     hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
+
+    Metrics.HoistedExpressions++;
 }
 
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)

@@ -22,7 +22,12 @@ export function assert_runtime_running() {
             mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
         }
     } else {
-        mono_assert(!loaderHelpers.assertAfterExit, () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+        const message = `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`;
+        if (loaderHelpers.assertAfterExit) {
+            mono_assert(false, message);
+        } else {
+            mono_log_warn(message);
+        }
     }
 }
 

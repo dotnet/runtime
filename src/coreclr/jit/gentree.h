@@ -507,9 +507,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
-    GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
-                                              //             castclass or instanceof?
-
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
@@ -4116,6 +4113,10 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
+
+#ifdef SWIFT_SUPPORT
+    GTF_CALL_M_SWIFT_ERROR_HANDLING    = 0x10000000, // call uses the Swift calling convention, and error register will be checked after it returns.
+#endif // SWIFT_SUPPORT
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -7391,9 +7392,6 @@ public:
         BlkOpKindCpObjUnroll,
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
-#endif
-#ifndef TARGET_X86
-        BlkOpKindHelper,
 #endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,

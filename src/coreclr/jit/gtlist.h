@@ -37,6 +37,7 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -76,7 +77,7 @@ GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
 GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
 GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
 GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)
+GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)            // atomic CAS, small types need the comparand to be zero extended
 
 GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                                 // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
