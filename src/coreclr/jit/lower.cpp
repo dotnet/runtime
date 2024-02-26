@@ -951,7 +951,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // originalSwitchBB is now a BBJ_ALWAYS, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
     assert(originalSwitchBB->KindIs(BBJ_ALWAYS));
-    assert(originalSwitchBB->TargetEdgeIs(afterDefaultCondBlock));
+    assert(originalSwitchBB->TargetIs(afterDefaultCondBlock));
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
     assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
@@ -1054,7 +1054,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            FlowEdge* const oldEdge = comp->fgRemoveRefPred(jumpTab[i]);
+            comp->fgRemoveRefPred(jumpTab[i]);
 
             if (targetBlock == followingBB)
             {
@@ -1081,7 +1081,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             }
 
             // Wire up the predecessor list for the "branch" case.
-            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
+            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1310,8 +1310,8 @@ bool Lowering::TryLowerSwitchToBitTest(
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
     // TODO: Use old edges to influence new edge likelihoods?
-    FlowEdge* const case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch);
-    FlowEdge* const case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch);
+    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch);
+    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch);
 
     if (bbSwitch->NextIs(bbCase0))
     {

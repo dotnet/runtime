@@ -2114,7 +2114,6 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
     // Wire up the new flow
     FlowEdge* const falseEdge = fgAddRefPred(newBlock, predBlock, predEdge);
     predBlock->SetFalseEdge(falseEdge);
-    assert(predBlock->FalseTargetIs(canonicalBlock));
 
     FlowEdge* const newEdge = fgAddRefPred(canonicalBlock, newBlock, predEdge);
     newBlock->SetTargetEdge(newEdge);

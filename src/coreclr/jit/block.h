@@ -494,6 +494,185 @@ enum class BasicBlockVisit
 
 // clang-format on
 
+//-------------------------------------------------------------------------
+// FlowEdge -- control flow edge
+//
+// In compiler terminology the control flow between two BasicBlocks
+// is typically referred to as an "edge".  Most well known are the
+// backward branches for loops, which are often called "back-edges".
+//
+// "struct FlowEdge" is the type that represents our control flow edges.
+// This type is a linked list of zero or more "edges".
+// (The list of zero edges is represented by NULL.)
+// Every BasicBlock has a field called bbPreds of this type.  This field
+// represents the list of "edges" that flow into this BasicBlock.
+// The FlowEdge type only stores the BasicBlock* of the source for the
+// control flow edge.  The destination block for the control flow edge
+// is implied to be the block which contained the bbPreds field.
+//
+// For a switch branch target there may be multiple "edges" that have
+// the same source block (and destination block).  We need to count the
+// number of these edges so that during optimization we will know when
+// we have zero of them.  Rather than have extra FlowEdge entries we
+// track this via the DupCount property.
+//
+// When we have Profile weight for the BasicBlocks we can usually compute
+// the number of times each edge was executed by examining the adjacent
+// BasicBlock weights.  As we are doing for BasicBlocks, we call the number
+// of times that a control flow edge was executed the "edge weight".
+// In order to compute the edge weights we need to use a bounded range
+// for every edge weight. These two fields, 'flEdgeWeightMin' and 'flEdgeWeightMax'
+// are used to hold a bounded range.  Most often these will converge such
+// that both values are the same and that value is the exact edge weight.
+// Sometimes we are left with a rage of possible values between [Min..Max]
+// which represents an inexact edge weight.
+//
+// The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
+// and is incrementally kept up to date.
+//
+// The edge weight are computed by Compiler::fgComputeEdgeWeights()
+// the edge weights are used to straighten conditional branches
+// by Compiler::fgReorderBlocks()
+//
+struct FlowEdge
+{
+private:
+    // The next predecessor edge in the list, nullptr for end of list.
+    FlowEdge* m_nextPredEdge;
+
+    // The source of the control flow
+    BasicBlock* m_sourceBlock;
+
+    // The destination of the control flow
+    BasicBlock* m_destBlock;
+
+    // Edge weights
+    weight_t m_edgeWeightMin;
+    weight_t m_edgeWeightMax;
+
+    // Likelihood that m_sourceBlock transfers control along this edge.
+    // Values in range [0..1]
+    weight_t m_likelihood;
+
+    // The count of duplicate "edges" (used for switch stmts or degenerate branches)
+    unsigned m_dupCount;
+
+    // True if likelihood has been set
+    bool m_likelihoodSet;
+
+public:
+    FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
+        : m_nextPredEdge(rest)
+        , m_sourceBlock(sourceBlock)
+        , m_destBlock(destBlock)
+        , m_edgeWeightMin(0)
+        , m_edgeWeightMax(0)
+        , m_likelihood(0)
+        , m_dupCount(0)
+        , m_likelihoodSet(false)
+    {
+    }
+
+    FlowEdge* getNextPredEdge() const
+    {
+        return m_nextPredEdge;
+    }
+
+    FlowEdge** getNextPredEdgeRef()
+    {
+        return &m_nextPredEdge;
+    }
+
+    void setNextPredEdge(FlowEdge* newEdge)
+    {
+        m_nextPredEdge = newEdge;
+    }
+
+    BasicBlock* getSourceBlock() const
+    {
+        assert(m_sourceBlock != nullptr);
+        return m_sourceBlock;
+    }
+
+    void setSourceBlock(BasicBlock* newBlock)
+    {
+        assert(newBlock != nullptr);
+        m_sourceBlock = newBlock;
+    }
+
+    BasicBlock* getDestinationBlock() const
+    {
+        assert(m_destBlock != nullptr);
+        return m_destBlock;
+    }
+
+    void setDestinationBlock(BasicBlock* newBlock)
+    {
+        assert(newBlock != nullptr);
+        m_destBlock = newBlock;
+    }
+
+    weight_t edgeWeightMin() const
+    {
+        return m_edgeWeightMin;
+    }
+
+    weight_t edgeWeightMax() const
+    {
+        return m_edgeWeightMax;
+    }
+
+    // These two methods are used to set new values for edge weights.
+    // They return false if the newWeight is not between the current [min..max]
+    // when slop is non-zero we allow for the case where our weights might be off by 'slop'
+    //
+    bool setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    bool setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
+
+    weight_t getLikelihood() const
+    {
+        return m_likelihood;
+    }
+
+    void setLikelihood(weight_t likelihood)
+    {
+        assert(likelihood >= 0.0);
+        assert(likelihood <= 1.0);
+        m_likelihoodSet = true;
+        m_likelihood    = likelihood;
+    }
+
+    void clearLikelihood()
+    {
+        m_likelihood    = 0.0;
+        m_likelihoodSet = false;
+    }
+
+    bool hasLikelihood() const
+    {
+        return m_likelihoodSet;
+    }
+
+    weight_t getLikelyWeight() const;
+
+    unsigned getDupCount() const
+    {
+        return m_dupCount;
+    }
+
+    void incrementDupCount()
+    {
+        m_dupCount++;
+    }
+
+    void decrementDupCount()
+    {
+        assert(m_dupCount >= 1);
+        m_dupCount--;
+    }
+};
+
 //------------------------------------------------------------------------
 // BasicBlock: describes a basic block in the flowgraph.
 //
@@ -702,6 +881,11 @@ public:
         return (GetFalseTarget() == target);
     }
 
+    bool FalseEdgeIs(const FlowEdge* targetEdge) const
+    {
+        return (GetFalseEdge() == targetEdge);
+    }
+
     void SetCond(FlowEdge* trueEdge, FlowEdge* falseEdge)
     {
         assert(trueEdge != nullptr);
@@ -778,7 +962,7 @@ public:
     BasicBlock* GetFinallyContinuation() const
     {
         assert(KindIs(BBJ_CALLFINALLYRET));
-        return ;
+        return GetTarget();
     }
 
 #ifdef DEBUG
@@ -1580,7 +1764,7 @@ public:
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
         // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
         // `m_succs` or at the switch table successor array.
-        BasicBlock* m_succs[2];
+        FlowEdge* m_succs[2];
         FlowEdge* const* m_begin;
         FlowEdge* const* m_end;
 
@@ -2020,188 +2204,13 @@ struct BasicBlockList
     }
 };
 
-//-------------------------------------------------------------------------
-// FlowEdge -- control flow edge
-//
-// In compiler terminology the control flow between two BasicBlocks
-// is typically referred to as an "edge".  Most well known are the
-// backward branches for loops, which are often called "back-edges".
-//
-// "struct FlowEdge" is the type that represents our control flow edges.
-// This type is a linked list of zero or more "edges".
-// (The list of zero edges is represented by NULL.)
-// Every BasicBlock has a field called bbPreds of this type.  This field
-// represents the list of "edges" that flow into this BasicBlock.
-// The FlowEdge type only stores the BasicBlock* of the source for the
-// control flow edge.  The destination block for the control flow edge
-// is implied to be the block which contained the bbPreds field.
-//
-// For a switch branch target there may be multiple "edges" that have
-// the same source block (and destination block).  We need to count the
-// number of these edges so that during optimization we will know when
-// we have zero of them.  Rather than have extra FlowEdge entries we
-// track this via the DupCount property.
-//
-// When we have Profile weight for the BasicBlocks we can usually compute
-// the number of times each edge was executed by examining the adjacent
-// BasicBlock weights.  As we are doing for BasicBlocks, we call the number
-// of times that a control flow edge was executed the "edge weight".
-// In order to compute the edge weights we need to use a bounded range
-// for every edge weight. These two fields, 'flEdgeWeightMin' and 'flEdgeWeightMax'
-// are used to hold a bounded range.  Most often these will converge such
-// that both values are the same and that value is the exact edge weight.
-// Sometimes we are left with a rage of possible values between [Min..Max]
-// which represents an inexact edge weight.
-//
-// The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
-// and is incrementally kept up to date.
-//
-// The edge weight are computed by Compiler::fgComputeEdgeWeights()
-// the edge weights are used to straighten conditional branches
-// by Compiler::fgReorderBlocks()
-//
-struct FlowEdge
+// FlowEdge implementations (that are required to be defined after the declaration of BasicBlock)
+
+inline weight_t FlowEdge::getLikelyWeight() const
 {
-private:
-    // The next predecessor edge in the list, nullptr for end of list.
-    FlowEdge* m_nextPredEdge;
-
-    // The source of the control flow
-    BasicBlock* m_sourceBlock;
-
-    // The destination of the control flow
-    BasicBlock* m_destBlock;
-
-    // Edge weights
-    weight_t m_edgeWeightMin;
-    weight_t m_edgeWeightMax;
-
-    // Likelihood that m_sourceBlock transfers control along this edge.
-    // Values in range [0..1]
-    weight_t m_likelihood;
-
-    // The count of duplicate "edges" (used for switch stmts or degenerate branches)
-    unsigned m_dupCount;
-
-    // True if likelihood has been set
-    bool m_likelihoodSet;
-
-public:
-    FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
-        : m_nextPredEdge(rest)
-        , m_sourceBlock(sourceBlock)
-        , m_destBlock(destBlock)
-        , m_edgeWeightMin(0)
-        , m_edgeWeightMax(0)
-        , m_likelihood(0)
-        , m_dupCount(0)
-        , m_likelihoodSet(false)
-    {
-    }
-
-    FlowEdge* getNextPredEdge() const
-    {
-        return m_nextPredEdge;
-    }
-
-    FlowEdge** getNextPredEdgeRef()
-    {
-        return &m_nextPredEdge;
-    }
-
-    void setNextPredEdge(FlowEdge* newEdge)
-    {
-        m_nextPredEdge = newEdge;
-    }
-
-    BasicBlock* getSourceBlock() const
-    {
-        assert(m_sourceBlock != nullptr);
-        return m_sourceBlock;
-    }
-
-    void setSourceBlock(BasicBlock* newBlock)
-    {
-        assert(newBlock != nullptr);
-        m_sourceBlock = newBlock;
-    }
-
-    BasicBlock* getDestinationBlock() const
-    {
-        assert(m_destBlock != nullptr);
-        return m_destBlock;
-    }
-
-    void setDestinationBlock(BasicBlock* newBlock)
-    {
-        assert(newBlock != nullptr);
-        m_destBlock = newBlock;
-    }
-
-    weight_t edgeWeightMin() const
-    {
-        return m_edgeWeightMin;
-    }
-
-    weight_t edgeWeightMax() const
-    {
-        return m_edgeWeightMax;
-    }
-
-    // These two methods are used to set new values for edge weights.
-    // They return false if the newWeight is not between the current [min..max]
-    // when slop is non-zero we allow for the case where our weights might be off by 'slop'
-    //
-    bool setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
-    bool setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
-    void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
-
-    weight_t getLikelihood() const
-    {
-        return m_likelihood;
-    }
-
-    void setLikelihood(weight_t likelihood)
-    {
-        assert(likelihood >= 0.0);
-        assert(likelihood <= 1.0);
-        m_likelihoodSet = true;
-        m_likelihood    = likelihood;
-    }
-
-    void clearLikelihood()
-    {
-        m_likelihood    = 0.0;
-        m_likelihoodSet = false;
-    }
-
-    bool hasLikelihood() const
-    {
-        return m_likelihoodSet;
-    }
-
-    weight_t getLikelyWeight() const
-    {
-        assert(m_likelihoodSet);
-        return m_likelihood * m_sourceBlock->bbWeight;
-    }
-
-    unsigned getDupCount() const
-    {
-        return m_dupCount;
-    }
-
-    void incrementDupCount()
-    {
-        m_dupCount++;
-    }
-
-    void decrementDupCount()
-    {
-        assert(m_dupCount >= 1);
-        m_dupCount--;
-    }
-};
+    assert(m_likelihoodSet);
+    return m_likelihood * m_sourceBlock->bbWeight;
+}
 
 // BasicBlock iterator implementations (that are required to be defined after the declaration of FlowEdge)
 

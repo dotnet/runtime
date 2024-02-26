@@ -322,9 +322,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     BasicBlock* fallbackBb =
         fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, true);
 
-    assert(fallbackBb->JumpsToNext());
-    fallbackBb->SetFlags(BBF_NONE_QUIRK);
-
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
     BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo);
@@ -379,12 +376,14 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
-        fasthPathBb->SetTargetEdge(newEdge);
+        fastPathBb->SetTargetEdge(newEdge);
     }
 
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
+        assert(fallbackBb->JumpsToNext());
+        fallbackBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     assert(prevBb->KindIs(BBJ_ALWAYS));
@@ -404,12 +403,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         }
         
         // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
-        FlowEdge* const trueEdge = fgAddRefPred(fallbackBb, nullcheckBb);
-        nullcheckBb->SetTrueEdge(trueEdge);
-
         // fastPathBb is only reachable from successful nullcheckBb
-        FlowEdge* const falseEdge = fgAddRefPred(fastPathBb, nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
     }
     else
     {
@@ -418,10 +412,13 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         prevBb->SetTargetEdge(newEdge);
 
         // No size check, nullcheckBb jumps to fast path
-        fgAddRefPred(fastPathBb, nullcheckBb);
         // fallbackBb is only reachable from nullcheckBb (jump destination)
-        fgAddRefPred(fallbackBb, nullcheckBb);
     }
+
+    FlowEdge* const trueEdge = fgAddRefPred(fallbackBb, nullcheckBb);
+    FlowEdge* const falseEdge = fgAddRefPred(fastPathBb, nullcheckBb);
+    nullcheckBb->SetTrueEdge(trueEdge);
+    nullcheckBb->SetFalseEdge(falseEdge);
 
     //
     // Re-distribute weights (see '[weight: X]' on the diagrams above)
@@ -725,8 +722,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     //
     // Update preds in all new blocks
     //
-    FlowEdge* const trueEdge = fgAddRefPred(fallbackBb, tlsRootNullCondBB);
-    FlowEdge* const trueEdge = fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+    FlowEdge* const trueEdge  = fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+    FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, tlsRootNullCondBB);
     tlsRootNullCondBB->SetTrueEdge(trueEdge);
     tlsRootNullCondBB->SetFalseEdge(falseEdge);
 
@@ -1118,7 +1115,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
-        fasthPathBb->SetTargetEdge(newEdge);
+        fastPathBb->SetTargetEdge(newEdge);
     }
 
     {
@@ -1410,8 +1407,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
     BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, true);
-    assert(helperCallBb->JumpsToNext());
-    helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
     GenTree* replacementNode = nullptr;
     if (retValKind == SHRV_STATIC_BASE_PTR)
@@ -1473,27 +1468,30 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // Unlink block and prevBb
     fgRemoveRefPred(prevBb->GetTargetEdge());
 
-    // Block has two preds now: either isInitedBb or helperCallBb
     {
-        FlowEdge* const newEdge = fgAddRefPred(block, isInitedBb);
-        isInitedBb->SetTargetEdge(newEdge);
-    }
-
-    {
+        // Block has two preds now: either isInitedBb or helperCallBb
         FlowEdge* const newEdge = fgAddRefPred(block, helperCallBb);
         helperCallBb->SetTargetEdge(newEdge);
+        assert(helperCallBb->JumpsToNext());
+        helperCallBb->SetFlags(BBF_NONE_QUIRK);
     }
 
-    // prevBb always flows into isInitedBb
-    assert(prevBb->KindIs(BBJ_ALWAYS));
-    FlowEdge* const newEdge = fgAddRefPred(isInitedBb, prevBb);
-    prevBb->SetTargetEdge(newEdge);
-    prevBb->SetFlags(BBF_NONE_QUIRK);
-    assert(prevBb->JumpsToNext());
+    {
+        // prevBb always flows into isInitedBb
+        assert(prevBb->KindIs(BBJ_ALWAYS));
+        FlowEdge* const newEdge = fgAddRefPred(isInitedBb, prevBb);
+        prevBb->SetTargetEdge(newEdge);
+        prevBb->SetFlags(BBF_NONE_QUIRK);
+        assert(prevBb->JumpsToNext());
+    }
 
-    // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
-    FlowEdge* const falseEdge = fgAddRefPred(helperCallBb, isInitedBb);
-    isInitedBb->SetFalseEdge(falseEdge);
+    {
+        // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
+        FlowEdge* const trueEdge  = fgAddRefPred(block, isInitedBb);
+        FlowEdge* const falseEdge = fgAddRefPred(helperCallBb, isInitedBb);
+        isInitedBb->SetTrueEdge(trueEdge);
+        isInitedBb->SetFalseEdge(falseEdge);
+    }
 
     //
     // Re-distribute weights
@@ -1745,8 +1743,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
     BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true);
-    assert(fastpathBb->JumpsToNext());
-    fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
+    fastpathBb->SetFlags(BBF_INTERNAL);
 
     // The widest type we can use for loads
     const var_types maxLoadType = roundDownMaxType(srcLenU8);
@@ -1801,16 +1798,14 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // block is no longer a predecessor of prevBb
     fgRemoveRefPred(prevBb->GetTargetEdge());
 
-    // prevBb flows into lengthCheckBb
-    assert(prevBb->KindIs(BBJ_ALWAYS));
-    
     {
+        // prevBb flows into lengthCheckBb
+        assert(prevBb->KindIs(BBJ_ALWAYS));
         FlowEdge* const newEdge = fgAddRefPred(lengthCheckBb, prevBb);
         prevBb->SetTargetEdge(newEdge);
+        prevBb->SetFlags(BBF_NONE_QUIRK);
+        assert(prevBb->JumpsToNext());
     }
-
-    prevBb->SetFlags(BBF_NONE_QUIRK);
-    assert(prevBb->JumpsToNext());
 
     {
         // lengthCheckBb has two successors: block and fastpathBb
@@ -1823,7 +1818,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     {
         // fastpathBb flows into block
         FlowEdge* const newEdge = fgAddRefPred(block, fastpathBb);
-        fastPathBb->SetTargetEdge(newEdge);
+        fastpathBb->SetTargetEdge(newEdge);
+        assert(fastpathBb->JumpsToNext());
+        fastpathBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     //

@@ -218,7 +218,6 @@ private:
         // Arguments:
         //    jumpKind - jump kind for the new basic block
         //    insertAfter - basic block, after which compiler has to insert the new one.
-        //    jumpDest - jump target for the new basic block. Defaults to nullptr.
         //
         // Return Value:
         //    new basic block.
@@ -288,16 +287,19 @@ private:
             checkBlock->SetCond(elseEdge, thenEdge);
 
             // thenBlock
-            assert(thenBlock->TargetIs(remainderBlock));
             {
+                assert(thenBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
                 newEdge->setLikelihood(1.0);
+                thenBlock->SetTargetEdge(newEdge);
             }
 
             // elseBlock
             {
+                assert(elseBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
                 newEdge->setLikelihood(1.0);
+                elseBlock->SetTargetEdge(newEdge);
             }
         }
 
@@ -614,10 +616,12 @@ private:
                 weight_t checkLikelihoodWt = ((weight_t)checkLikelihood) / 100.0;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
+                assert(prevCheckBlock->KindIs(BBJ_ALWAYS));
+                assert(prevCheckBlock->JumpsToNext());
                 FlowEdge* const checkEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
                 checkEdge->setLikelihood(checkLikelihoodWt);
                 checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
-                prevCheckBlock->SetCond(checkEdge, prevCheckBlock->GetFalseEdge());
+                prevCheckBlock->SetCond(checkEdge, prevCheckBlock->GetTargetEdge());
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -1064,9 +1068,11 @@ private:
             // where we know the last check is always true (in case of "exact" GDV)
             if (!checkFallsThrough)
             {
+                assert(checkBlock->KindIs(BBJ_ALWAYS));
+                assert(checkBlock->JumpsToNext());
                 FlowEdge* const checkEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
                 checkEdge->setLikelihood(elseLikelihoodDbl);
-                checkBlock->SetCond(checkEdge, checkBlock->GetFalseEdge());
+                checkBlock->SetCond(checkEdge, checkBlock->GetTargetEdge());
             }
             else
             {

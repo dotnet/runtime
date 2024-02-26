@@ -858,10 +858,10 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
         case BBJ_COND:
-            SetCond(from->GetTrueEdge(), from->GetFalseEdge());
+            SetCond(from->bbTrueEdge, from->bbFalseEdge);
             break;
         case BBJ_ALWAYS:
-            SetKindAndTargetEdge(BBJ_ALWAYS, from->GetTargetEdge());
+            SetKindAndTargetEdge(BBJ_ALWAYS, from->bbTargetEdge);
             CopyFlags(from, BBF_NONE_QUIRK);
             break;
         case BBJ_CALLFINALLY:
@@ -869,7 +869,7 @@ void BasicBlock::TransferTarget(BasicBlock* from)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            SetKindAndTargetEdge(from->GetKind(), from->GetTargetEdge());
+            SetKindAndTargetEdge(from->GetKind(), from->bbTargetEdge);
             break;
         default:
             SetKindAndTargetEdge(from->GetKind()); // Clear the target
@@ -1145,7 +1145,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (TrueEdgeIs(GetFalseEdge()))
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1209,7 +1209,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             else
             {
                 assert(i == 1);
-                assert(!TrueEdgeIs(GetFalseEdge()));
+                assert(bbTrueEdge != bbFalseEdge);
                 return GetTrueTarget();
             }
 
@@ -1270,7 +1270,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (TrueEdgeIs(GetFalseEdge()))
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1332,7 +1332,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             else
             {
                 assert(i == 1);
-                assert(!TrueEdgeIs(GetFalseEdge()));
+                assert(bbTrueEdge != bbFalseEdge);
                 return GetTrueTarget();
             }
 

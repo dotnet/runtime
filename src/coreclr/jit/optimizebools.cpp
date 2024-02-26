@@ -806,14 +806,10 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     {
         return false;
     }
-
-    // Remove the 2nd condition block as we no longer need it
-    m_comp->fgRemoveRefPred(m_b1->GetFalseEdge());
-    m_comp->fgRemoveBlock(m_b2, true);
     
     // Re-direct firstBlock to jump to inRangeBb
     FlowEdge* const newEdge = m_comp->fgAddRefPred(inRangeBb, m_b1);
-    
+
     if (!cmp2IsReversed)
     {
         m_b1->SetFalseEdge(m_b1->GetTrueEdge());
@@ -824,10 +820,13 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     else
     {
         m_b1->SetFalseEdge(newEdge);
-        m_b1->SetTrueEdge(m_b1->GetFalseEdge());
         assert(m_b1->TrueTargetIs(notInRangeBb));
         assert(m_b1->FalseTargetIs(inRangeBb));
     }
+
+    // Remove the 2nd condition block as we no longer need it
+    m_comp->fgRemoveRefPred(m_b2, m_b1);
+    m_comp->fgRemoveBlock(m_b2, true);
 
     Statement* stmt = m_b1->lastStmt();
     m_comp->gtSetStmtInfo(stmt);

@@ -211,12 +211,6 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
     if (fgFirstBB != nullptr)
     {
-        // If we have profile data the new block will inherit fgFirstBlock's weight
-        if (fgFirstBB->hasProfileWeight())
-        {
-            block->inheritWeight(fgFirstBB);
-        }
-
         // The first block has an implicit ref count which we must
         // remove. Note the ref count could be greater than one, if
         // the first block is not scratch and is targeted by a
@@ -224,8 +218,15 @@ bool Compiler::fgEnsureFirstBBisScratch()
         assert(fgFirstBB->bbRefs >= 1);
         fgFirstBB->bbRefs--;
 
-        // The new scratch bb will fall through to the old first bb
         block = BasicBlock::New(this);
+        
+        // If we have profile data the new block will inherit fgFirstBlock's weight
+        if (fgFirstBB->hasProfileWeight())
+        {
+            block->inheritWeight(fgFirstBB);
+        }
+        
+        // The new scratch bb will fall through to the old first bb
         FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
         edge->setLikelihood(1.0);
         block->SetKindAndTargetEdge(BBJ_ALWAYS, edge);
@@ -660,7 +661,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
             {
                 FlowEdge* const oldEdge = block->GetTrueEdge();
 
-                if (block->TrueEdgeIs(oldEdge))
+                if (block->FalseEdgeIs(oldEdge))
                 {
                     // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
                     fgRemoveConditionalJump(block);
@@ -4820,14 +4821,14 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Remove flags from the old block that are no longer possible.
     curr->RemoveFlags(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
+    // Default to fallthrough, and add the arc for that.
+    FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
+    newEdge->setLikelihood(1.0);
+    
     // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
     // above code (and so newBlock->bbNext is valid, so SetCond() can initialize the false target if newBlock is a
     // BBJ_COND).
     newBlock->TransferTarget(curr);
-
-    // Default to fallthrough, and add the arc for that.
-    FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
-    newEdge->setLikelihood(1.0);
     
     curr->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     curr->SetFlags(BBF_NONE_QUIRK);
@@ -5058,7 +5059,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // TODO-NoFallThrough: Once false target can diverge from bbNext, this will be unnecessary for BBJ_COND
         newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
         newBlock->SetFlags(BBF_NONE_QUIRK);
-        assert(newBlock->JumpsToNext());
     }
     else
     {
@@ -5458,6 +5458,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
         FlowEdge* oldEdge = bSrc->GetFalseEdge();
         fgReplacePred(oldEdge, jmpBlk);
+        jmpBlk->SetTargetEdge(oldEdge);
         assert(jmpBlk->TargetIs(bDst));
 
         FlowEdge* newEdge = fgAddRefPred(jmpBlk, bSrc, oldEdge);

@@ -597,7 +597,7 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
             if (redirectMap->Lookup(blk->GetTarget(), &newTarget))
             {
                 // newBlk needs to be redirected to a new target
-                newEdge = fgAddRefPred(newTarget, newblk);
+                newEdge = fgAddRefPred(newTarget, newBlk);
             }
             else
             {

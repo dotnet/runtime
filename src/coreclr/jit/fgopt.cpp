@@ -776,7 +776,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fromBlock->SetFlags(BBF_INTERNAL);
                     newBlock->RemoveFlags(BBF_DONT_REMOVE);
                     addedBlocks++;
-                    FlowEdge* const normalTryEntryEdge = fromBlock->GetFalseEdge();
+                    FlowEdge* const normalTryEntryEdge = fromBlock->GetTargetEdge();
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
                     GenTree* const compareEntryStateToZero =
@@ -1288,24 +1288,31 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
+        {
             /* Update the predecessor list for bNext's target */
-            fgReplacePred(bNext->GetTargetEdge(), block);
+            FlowEdge* const targetEdge = bNext->GetTargetEdge();
+            fgReplacePred(targetEdge, block);
             
-            block->SetKindAndTargetEdge(bNext->GetKind(), bNext->GetTargetEdge());
+            block->SetKindAndTargetEdge(bNext->GetKind(), targetEdge);
             break;
+        }
 
         case BBJ_COND:
+        {
             /* Update the predecessor list for bNext's true target */
-            fgReplacePred(bNext->GetTrueEdge(), block);
+            FlowEdge* const trueEdge  = bNext->GetTrueEdge();
+            FlowEdge* const falseEdge = bNext->GetFalseEdge();
+            fgReplacePred(trueEdge, block);
 
             /* Update the predecessor list for bNext's false target if it is different from the true target */
-            if (!bNext->TrueEdgeIs(bNext->GetFalseEdge()))
+            if (trueEdge != falseEdge)
             {
-                fgReplacePred(bNext->GetFalseEdge(), block);
+                fgReplacePred(falseEdge, block);
             }
             
-            block->SetCond(bNext->GetTrueEdge(), bNext->GetFalseEdge());
+            block->SetCond(trueEdge, falseEdge);
             break;
+        }
 
         case BBJ_EHFINALLYRET:
             block->SetEhf(bNext->GetEhfTargets());
@@ -5020,8 +5027,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                         // Optimize the Conditional JUMP to go to the new target
                         fgRemoveRefPred(block->GetFalseEdge());
+                        fgRemoveRefPred(bNext->GetTargetEdge());
                         block->SetFalseEdge(block->GetTrueEdge());
-                        FlowEdge* const newEdge = fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTargetEdge()));
+                        FlowEdge* const newEdge = fgAddRefPred(bNext->GetTarget(), block, bNext->GetTargetEdge());
                         block->SetTrueEdge(newEdge);
 
                         /*
