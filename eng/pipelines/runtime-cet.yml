@@ -52,7 +52,7 @@ extends:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
-                  rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
                   includeRootFolder: false
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
