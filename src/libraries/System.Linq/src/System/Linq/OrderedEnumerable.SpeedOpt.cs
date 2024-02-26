@@ -434,5 +434,113 @@ namespace System.Linq
                 return default;
             }
         }
+
+        internal sealed class OrderedPartition<TElement> : Iterator<TElement>, IPartition<TElement>
+        {
+            private readonly OrderedEnumerable<TElement> _source;
+            private readonly int _minIndexInclusive;
+            private readonly int _maxIndexInclusive;
+
+            private TElement[]? _buffer;
+            private int[]? _map;
+            private int _maxIdx;
+
+            public OrderedPartition(OrderedEnumerable<TElement> source, int minIdxInclusive, int maxIdxInclusive)
+            {
+                _source = source;
+                _minIndexInclusive = minIdxInclusive;
+                _maxIndexInclusive = maxIdxInclusive;
+            }
+
+            public override Iterator<TElement> Clone() => new OrderedPartition<TElement>(_source, _minIndexInclusive, _maxIndexInclusive);
+
+            public override bool MoveNext()
+            {
+                int state = _state;
+
+            Initialized:
+                if (state > 1)
+                {
+                    Debug.Assert(_buffer is not null);
+                    Debug.Assert(_map is not null);
+
+                    int[] map = _map;
+                    int i = state - 2 + _minIndexInclusive;
+                    if (i <= _maxIdx)
+                    {
+                        _current = _buffer[map[i]];
+                        _state++;
+                        return true;
+                    }
+                }
+                else if (state == 1)
+                {
+                    TElement[] buffer = _source.ToArray();
+                    int count = buffer.Length;
+                    if (count > _minIndexInclusive)
+                    {
+                        _maxIdx = _maxIndexInclusive;
+                        if (count <= _maxIdx)
+                        {
+                            _maxIdx = count - 1;
+                        }
+
+                        if (_minIndexInclusive == _maxIdx)
+                        {
+                            _current = _source.GetEnumerableSorter().ElementAt(buffer, count, _minIndexInclusive);
+                            _state = -1;
+                            return true;
+                        }
+
+                        _map = _source.SortedMap(buffer, _minIndexInclusive, _maxIdx);
+                        _buffer = buffer;
+                        _state = state = 2;
+                        goto Initialized;
+                    }
+                }
+
+                Dispose();
+                return false;
+            }
+
+            public IPartition<TElement>? Skip(int count)
+            {
+                int minIndex = _minIndexInclusive + count;
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
+            }
+
+            public IPartition<TElement> Take(int count)
+            {
+                int maxIndex = _minIndexInclusive + count - 1;
+                if ((uint)maxIndex >= (uint)_maxIndexInclusive)
+                {
+                    return this;
+                }
+
+                return new OrderedPartition<TElement>(_source, _minIndexInclusive, maxIndex);
+            }
+
+            public TElement? TryGetElementAt(int index, out bool found)
+            {
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive))
+                {
+                    return _source.TryGetElementAt(index + _minIndexInclusive, out found);
+                }
+
+                found = false;
+                return default;
+            }
+
+            public TElement? TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
+
+            public TElement? TryGetLast(out bool found) =>
+                _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
+
+            public TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
+
+            public List<TElement> ToList() => _source.ToList(_minIndexInclusive, _maxIndexInclusive);
+
+            public int GetCount(bool onlyIfCheap) => _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
+        }
     }
 }

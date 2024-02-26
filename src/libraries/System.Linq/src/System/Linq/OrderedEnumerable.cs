@@ -17,39 +17,10 @@ namespace System.Linq
 
             private protected int[] SortedMap(TElement[] buffer) => GetEnumerableSorter().Sort(buffer, buffer.Length);
 
-            private int[] SortedMap(TElement[] buffer, int minIdx, int maxIdx) =>
+            internal int[] SortedMap(TElement[] buffer, int minIdx, int maxIdx) =>
                 GetEnumerableSorter().Sort(buffer, buffer.Length, minIdx, maxIdx);
 
-            internal IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
-            {
-                TElement[] buffer = _source.ToArray();
-                int count = buffer.Length;
-                if (count > minIdx)
-                {
-                    if (count <= maxIdx)
-                    {
-                        maxIdx = count - 1;
-                    }
-
-                    if (minIdx == maxIdx)
-                    {
-                        yield return GetEnumerableSorter().ElementAt(buffer, count, minIdx);
-                    }
-                    else
-                    {
-                        int[] map = SortedMap(buffer, minIdx, maxIdx);
-                        while (minIdx <= maxIdx)
-                        {
-                            yield return buffer[map[minIdx]];
-                            ++minIdx;
-                        }
-                    }
-                }
-            }
-
-            private EnumerableSorter<TElement> GetEnumerableSorter() => GetEnumerableSorter(null);
-
-            internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next);
+            internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next = null);
 
             internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer = null);
 
