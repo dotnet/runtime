@@ -4578,6 +4578,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
 #endif // _DEBUG
 
+#ifndef FEATURE_EH_FUNCLETS
     /* What kind of a frame is this ? */
 
     FrameType   frameType = FR_NORMAL;
@@ -4622,6 +4623,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                                      &info);
         }
     }
+#endif
 
     bool        willContinueExecution = !(flags & ExecutionAborted);
     unsigned    pushedSize = 0;
@@ -4712,16 +4714,41 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
             {
                 _ASSERTE(willContinueExecution);
 
+#ifdef FEATURE_EH_FUNCLETS
+                // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
+                // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
+                // See UnwindStackFrame for details.
+                if (pCodeInfo->IsFunclet())
+                {
+                    PTR_CBYTE methodStart = PTR_CBYTE(pCodeInfo->GetSavedMethodCode());
+                    TADDR baseSP = ESP;
+                    // Set baseSP as initial SP
+                    baseSP += GetPushedArgSize(&info, table, curOffs);
+                    // 16-byte stack alignment padding (allocated in genFuncletProlog)
+                    // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
+                    //   prolog: sub esp, 12
+                    //   epilog: add esp, 12
+                    //           ret
+                    // SP alignment padding should be added for all instructions except the first one and the last one.
+                    // Epilog may not exist (unreachable), so we need to check the instruction code.
+                    if (curOffs != 0 && methodStart[curOffs] != X86_INSTR_RETN)
+                        baseSP += 12;
+
+                    // -sizeof(void*) because we want to point *AT* first parameter
+                    pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
+                }
+#else // FEATURE_EH_FUNCLETS
                 if (info.handlers)
                 {
                     // -sizeof(void*) because we want to point *AT* first parameter
                     pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
                 }
+#endif
                 else if (info.localloc)
                 {
-                    baseSP = *(DWORD *)(size_t)(EBP - GetLocallocSPOffset(&info));
+                    TADDR locallocBaseSP = *(DWORD *)(size_t)(EBP - GetLocallocSPOffset(&info));
                     // -sizeof(void*) because we want to point *AT* first parameter
-                    pPendingArgFirst = (DWORD *)(size_t) (baseSP - sizeof(void*));
+                    pPendingArgFirst = (DWORD *)(size_t) (locallocBaseSP - sizeof(void*));
                 }
                 else
                 {
