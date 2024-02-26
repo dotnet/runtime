@@ -298,25 +298,25 @@ void CrawlFrame::InitializeExactGenericInstantiations()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pFunc != NULL);
-        PRECONDITION(pFunc->HasClassOrMethodInstantiation());
-        PRECONDITION(pFunc->IsSharedByGenericInstantiations());
     } CONTRACTL_END;
 
-    // Get exact instantiations for shared generics where possible
-    PTR_VOID pExactGenericArgsToken = GetExactGenericArgsToken();
-
-    if (pExactGenericArgsToken != NULL)
+    if (pFunc != NULL && pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
     {
-        TypeHandle th;
-        MethodDesc* pConstructedFunc = NULL;
-        if (Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pConstructedFunc))
+        // Get exact instantiations for shared generics where possible
+        PTR_VOID pExactGenericArgsToken = GetExactGenericArgsToken();
+
+        if (pExactGenericArgsToken != NULL)
         {
-            if (pConstructedFunc->IsSharedByGenericInstantiations())
+            TypeHandle th;
+            MethodDesc* pConstructedFunc = NULL;
+            if (Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pConstructedFunc))
             {
-                pConstructedFunc = InstantiatedMethodDesc::FindOrCreateExactClassMethod(th.GetMethodTable(), pConstructedFunc);
+                if (pConstructedFunc->IsSharedByGenericInstantiations())
+                {
+                    pConstructedFunc = InstantiatedMethodDesc::FindOrCreateExactClassMethod(th.GetMethodTable(), pConstructedFunc);
+                }
+                pFunc = pConstructedFunc;
             }
-            pFunc = pConstructedFunc;
         }
     }
 }

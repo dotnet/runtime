@@ -1017,12 +1017,8 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     //        Can we always assume FramedMethodFrame?
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
+    pCf->InitializeExactGenericInstantiations();
     MethodDesc* pFunc = pCf->GetFunction();
-    if (pFunc != NULL && pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
-    {
-        pCf->InitializeExactGenericInstantiations();
-        pFunc = pCf->GetFunction();
-    }
 
     if (pData->cElements >= pData->cElementsAllocated)
     {

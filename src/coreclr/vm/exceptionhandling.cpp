@@ -1838,6 +1838,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         // the stack range can also be accessed during GC stackwalk.
         fProcessThisFrame = UpdateScannedStackRange(sf, fIsFirstPass);
 
+        cfThisFrame.InitializeExactGenericInstantiations();
         MethodDesc *pMD = cfThisFrame.GetFunction();
 
         Frame*  pFrame = GetLimitFrame(); // next frame to process
@@ -1985,6 +1986,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
             // If crawlframe is dirty, it implies that it got modified as part of explicit frame processing. Thus, we shall
             // reinitialize it here.
             ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
+            cfThisFrame.InitializeExactGenericInstantiations();
         }
 
         if (fIsFrameLess)
@@ -2027,7 +2029,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 
         // GCX_COOP_THREAD_EXISTS ends here and we may switch to preemp mode now (if applicable).
     }
-
+    
     //
     // now process managed call frame if needed
     //
@@ -2555,15 +2557,6 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     CONSISTENCY_CHECK(IsValid());
     CONSISTENCY_CHECK(ThrowableIsValid() || !fIsFirstPass);
     CONSISTENCY_CHECK(pMD != 0);
-
-    // initialize exact generic context
-    GCX_COOP_NO_DTOR();
-    if (pMD->HasClassOrMethodInstantiation() && pMD->IsSharedByGenericInstantiations())
-    {
-        pcfThisFrame->InitializeExactGenericInstantiations();
-        pMD = pcfThisFrame->GetFunction();
-    }
-    GCX_COOP_NO_DTOR_END();
 
     EH_LOG((LL_INFO100, "  [ ProcessManagedCallFrame this=%p, %s PASS ]\n", this, (fIsFirstPass ? "FIRST" : "SECOND")));
 
