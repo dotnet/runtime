@@ -2105,18 +2105,19 @@ namespace System.Net.Tests
         [InlineData(false)]
         public async Task SendHttpPostRequest_WhenBufferingChanges_Success(bool buffering)
         {
-            const string text = "Hello World!!!!\n";
+            byte[] randomData = new byte[16 * 1024];
+            new Random().NextBytes(randomData);
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
-                    int size = text.Length * 128 * 1024;
+                    int size = randomData.Length * 128;
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
                     request.AllowWriteStreamBuffering = buffering;
                     using var stream = await request.GetRequestStreamAsync();
-                    for (int i = 0; i < size / text.Length; i++)
+                    for (int i = 0; i < size / randomData.Length; i++)
                     {
-                        await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
+                        await stream.WriteAsync(new ReadOnlyMemory<byte>(randomData));
                     }
                     await request.GetResponseAsync();
                 },
@@ -2125,9 +2126,9 @@ namespace System.Net.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         var data = await connection.ReadRequestDataAsync();
-                        for (int i = 0; i < data.Body.Length; i += text.Length)
+                        for (int i = 0; i < data.Body.Length; i += randomData.Length)
                         {
-                            Assert.Equal(text, Encoding.UTF8.GetString(data.Body[i..(i + text.Length)]));
+                            Assert.Equal(randomData, data.Body[i..(i + randomData.Length)]);
                         }
                         await connection.SendResponseAsync();
                     });
