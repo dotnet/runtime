@@ -31,7 +31,7 @@ namespace System.Threading
         private Exception? _startException;
 
         // Protects starting the thread and setting its priority
-        private Lock _lock = new Lock(useTrivialWaits: true);
+        private Lock _lock = new Lock();
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
