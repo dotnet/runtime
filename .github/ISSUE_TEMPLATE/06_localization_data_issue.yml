@@ -46,7 +46,7 @@ body:
     attributes:
       label: Reproduction Steps
       description: |
-        Please include minimal steps to reproduce the problem if possible. E.g.: the smallest possible code snippet; or a small project, with steps to run it. If possible include text as text rather than screenshots (so it shows up in searches).
+        Please include minimal steps to reproduce the problem if possible. E.g.: the smallest possible code snippet; or a small project, with steps to run it. If feasible, incorporate text directly instead of relying on screenshots (so it shows up in searches).
       placeholder: Minimal Reproduction
     validations:
       required: true
