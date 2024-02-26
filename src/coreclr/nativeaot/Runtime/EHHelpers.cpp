@@ -246,7 +246,7 @@ EXTERN_C int32_t RhpPInvokeExceptionGuard()
 #endif
 
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhpThrowHwEx(int, int);
+COOP_PINVOKE_HELPER(void, RhpThrowHwEx, (int exceptionCode, TADDR faultingIP));
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
 {
