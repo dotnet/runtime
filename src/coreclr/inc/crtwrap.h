@@ -16,7 +16,7 @@
 #include <objbase.h>
 #include "debugmacros.h"
 #include <stdlib.h>
-#if !defined(CLR_CMAKE_HOST_APPLE)
+#if !defined(HOST_APPLE)
 #include <malloc.h>
 #endif
 #include <wchar.h>

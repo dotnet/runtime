@@ -33,6 +33,10 @@
 
 #include <type_traits>
 
+#ifdef FEATURE_PAL
+#include "pal_mstypes.h"
+#endif // FEATURE_PAL
+
 //==================================================================
 // Semantics: if val can be represented as the exact same value
 // when cast to Dst type, then FitsIn<Dst>(val) will return true;
