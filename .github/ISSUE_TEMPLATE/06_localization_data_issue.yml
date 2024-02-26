@@ -98,8 +98,8 @@ body:
             * On Linux and other platforms, what version of ICU are you using (eg via `uconv --version`)?
           * What is the architecture (x64, x86, ARM, ARM64)?
           * Do you know whether it is specific to that configuration?
+          * Are you using [Invariant Globalization](https://learn.microsoft.com/en-US/dotnet/core/runtime-config/globalization#invariant-mode)?
           * If you're using Blazor, which web browser(s) do you see this issue in?
-            * Are you using [Invariant Globalization](https://learn.microsoft.com/en-us/aspnet/core/blazor/globalization-localization?view=aspnetcore-8.0#invariant-globalization)?
             * If you aren't using Invariant Globalization, what [data file](https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-icu-wasm.md#wasm-globalization-icu) are you using?
       placeholder: Configuration
     validations:
