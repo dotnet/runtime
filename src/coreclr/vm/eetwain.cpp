@@ -1946,8 +1946,6 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
-
     GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned       relOffset = pCodeInfo->GetRelOffset();
 
@@ -1959,6 +1957,8 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 #endif
 
 #ifndef USE_GC_INFO_DECODER
+    _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
+
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
 
     /* Extract the necessary information from the info block header */
