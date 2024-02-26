@@ -27,13 +27,13 @@
     <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
     <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Partition.SpeedOpt.cs" />
     <Compile Include="System\Linq\Range.SpeedOpt.cs" />
     <Compile Include="System\Linq\Repeat.SpeedOpt.cs" />
     <Compile Include="System\Linq\Reverse.SpeedOpt.cs" />
     <Compile Include="System\Linq\Select.SpeedOpt.cs" />
     <Compile Include="System\Linq\SelectMany.SpeedOpt.cs" />
     <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
+    <Compile Include="System\Linq\SkipTake.SpeedOpt.cs" />
     <Compile Include="System\Linq\Take.SpeedOpt.cs" />
     <Compile Include="System\Linq\Union.SpeedOpt.cs" />
     <Compile Include="System\Linq\Where.SpeedOpt.cs" />
