@@ -13,6 +13,9 @@
 /*****************************************************************************/
 
 #include "daccess.h"
+#ifndef FEATURE_NATIVEAOT
+#include "windef.h"     // For UINT32
+#endif
 
 // Some declarations in this file are used on non-x86 platforms, but most are x86-specific.
 
