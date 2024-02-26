@@ -8202,7 +8202,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V0, REG_V2, REG_V3, 2, INS_OPTS_SCALABLE_S);
     theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V0, REG_V2, REG_V3, 2, INS_OPTS_SCALABLE_D);
     theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V0, REG_V2, REG_V3, 3, INS_OPTS_SCALABLE_S);
-    theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V0, REG_V2, REG_V3, 3, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V0, REG_V2, REG_V31, 3, INS_OPTS_SCALABLE_D);
 
     // IF_SVE_BH_3B
     // ADR <Zd>.D, [<Zn>.D, <Zm>.D, SXTW{<amount>}]
