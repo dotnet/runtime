@@ -11745,8 +11745,7 @@ void LinearScan::verifyFinalAllocation()
             }
         }
 
-        LsraLocation newLocation = currentRefPosition.nodeLocation;
-        currentLocation          = newLocation;
+        currentLocation = currentRefPosition.nodeLocation;
 
         switch (currentRefPosition.refType)
         {

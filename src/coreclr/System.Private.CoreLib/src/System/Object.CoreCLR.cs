@@ -30,7 +30,7 @@ namespace System
             if (RuntimeHelpers.GetMethodTable(clone)->ContainsGCPointers)
                 Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
             else
-                Buffer.Memmove(ref dst, ref src, byteCount);
+                SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
             return clone;
         }

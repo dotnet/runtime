@@ -4118,6 +4118,9 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
                     Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
+
+                    if ((_compilation.InstructionSetSupport.Flags & InstructionSetSupportFlags.Vector512Throttling) != 0)
+                        flags.Set(CorJitFlag.CORJIT_FLAG_VECTOR512_THROTTLING);
                     break;
 
                 case TargetArchitecture.ARM64:
