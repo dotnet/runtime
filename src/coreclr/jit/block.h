@@ -521,7 +521,7 @@ private:
     };
 
     // Successor edge of a BBJ_COND block if bbTrueEdge is not taken
-    BasicBlock* bbFalseTarget;
+    FlowEdge* bbFalseEdge;
 
 public:
     static BasicBlock* New(Compiler* compiler);
@@ -666,16 +666,26 @@ public:
 
     bool TrueTargetIs(const BasicBlock* target) const
     {
-        assert(KindIs(BBJ_COND));
-        assert(bbTrueTarget != nullptr);
-        return (bbTrueTarget == target);
+        return (GetTrueTarget() == target);
+    }
+
+    bool TrueEdgeIs(const FlowEdge* targetEdge) const
+    {
+        return (GetTrueEdge() == targetEdge);
     }
 
     BasicBlock* GetFalseTarget() const
     {
+        return GetFalseEdge()->getDestinationBlock();
+    }
+
+    FlowEdge* GetFalseEdge() const
+    {
         assert(KindIs(BBJ_COND));
-        assert(bbFalseTarget != nullptr);
-        return bbFalseTarget;
+        assert(bbFalseEdge != nullptr);
+        assert(bbFalseEdge->getSourceBlock() == this);
+        assert(bbFalseEdge->getDestinationBlock() != nullptr);
+        return bbFalseEdge;
     }
 
     void SetFalseEdge(FlowEdge* falseEdge)
@@ -689,9 +699,7 @@ public:
 
     bool FalseTargetIs(const BasicBlock* target) const
     {
-        assert(KindIs(BBJ_COND));
-        assert(bbFalseTarget != nullptr);
-        return (bbFalseTarget == target);
+        return (GetFalseTarget() == target);
     }
 
     void SetCond(FlowEdge* trueEdge, FlowEdge* falseEdge)
@@ -786,14 +794,14 @@ public:
     BasicBlock* GetTrueTargetRaw() const
     {
         assert(KindIs(BBJ_COND));
-        return bbTrueTarget;
+        return (bbTrueEdge == nullptr) ? nullptr : bbTrueEdge->getDestinationBlock();
     }
 
     // Return the BBJ_COND false target; it might be null. Only used during dumping.
     BasicBlock* GetFalseTargetRaw() const
     {
         assert(KindIs(BBJ_COND));
-        return bbFalseTarget;
+        return (bbFalseEdge == nullptr) ? nullptr : bbFalseEdge->getDestinationBlock();
     }
 
 #endif // DEBUG
