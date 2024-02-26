@@ -80,27 +80,32 @@ namespace ILCompiler
                     mangledName = "RhpAssignRefECX";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EDI:
-                    mangledName = "RhpAssignRefECX";
+                    mangledName = "RhpAssignRefEDI";
                     break;
                 case ReadyToRunHelper.WriteBarrier_ESI:
-                    mangledName = "RhpAssignRefECX";
+                    mangledName = "RhpAssignRefESI";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_EBP:
+                    mangledName = "RhpAssignRefEBP";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     mangledName = "RhpCheckedAssignRefEAX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    mangledName = "RhpCheckedAssignRefEAX";
+                    mangledName = "RhpCheckedAssignRefEBX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ECX:
                     mangledName = "RhpCheckedAssignRefECX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    mangledName = "RhpCheckedAssignRefECX";
+                    mangledName = "RhpCheckedAssignRefEDI";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    mangledName = "RhpCheckedAssignRefECX";
+                    mangledName = "RhpCheckedAssignRefESI";
                     break;
-
+                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
+                    mangledName = "RhpCheckedAssignRefEBP";
+                    break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
                     mangledName = "RhBox";
@@ -134,10 +139,16 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.MemCpy:
-                    mangledName = "memcpy"; // TODO: Null reference handling
+                    mangledName = "RhSpanHelpers_MemCopy";
                     break;
                 case ReadyToRunHelper.MemSet:
-                    mangledName = "memset"; // TODO: Null reference handling
+                    mangledName = "RhSpanHelpers_MemSet";
+                    break;
+                case ReadyToRunHelper.MemZero:
+                    mangledName = "RhSpanHelpers_MemZero";
+                    break;
+                case ReadyToRunHelper.NativeMemSet:
+                    mangledName = "memset";
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:

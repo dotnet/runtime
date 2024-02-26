@@ -24,7 +24,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // To keep the synchronization simple, we execute all dynamic generic type registration/lookups under a global lock
-        private Lock _dynamicGenericsLock = new Lock(useTrivialWaits: true);
+        private Lock _dynamicGenericsLock = new Lock();
 
         internal void RegisterDynamicGenericTypesAndMethods(DynamicGenericsRegistrationData registrationData)
         {

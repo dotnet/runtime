@@ -281,6 +281,12 @@ mono_threads_end_global_suspend (void)
 static void
 dump_threads (void)
 {
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+	mono_wasm_dump_threads_async ();
+#endif
+#endif
+
 	MonoThreadInfo *cur = mono_thread_info_current ();
 
 	g_async_safe_printf ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
