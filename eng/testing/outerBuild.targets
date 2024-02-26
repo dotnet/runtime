@@ -9,7 +9,7 @@
              Targets="VSTest">
     </MSBuild>
   </Target>
-  <Target Name="RemoveNetFrameworkProjectsOnNonWindows" Condition="'$(OS)' != 'Windows_NT'">
+  <Target Name="RemoveNetFrameworkProjectsOnNonWindows" Condition="'$(TargetOS)' != 'windows'">
     <ItemGroup>
       <!-- we'd try to run tests with Mono for netfx projects which doesn't work so filter them out -->
       <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="$([System.String]::Copy('%(AdditionalProperties)').Contains('TargetFramework=$(NetFrameworkCurrent)'))" />
