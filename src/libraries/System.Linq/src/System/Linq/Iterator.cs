@@ -28,19 +28,12 @@ namespace System.Linq
         /// </description></item>
         /// </list>
         /// </remarks>
-        internal abstract class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
+        internal abstract partial class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
         {
-            private readonly int _threadId;
+            private readonly int _threadId = Environment.CurrentManagedThreadId;
+
             internal int _state;
             internal TSource _current = default!;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Iterator{TSource}"/> class.
-            /// </summary>
-            protected Iterator()
-            {
-                _threadId = Environment.CurrentManagedThreadId;
-            }
 
             /// <summary>
             /// The item currently yielded by this iterator.
@@ -94,19 +87,21 @@ namespace System.Linq
             /// </summary>
             /// <typeparam name="TResult">The type of the mapped items.</typeparam>
             /// <param name="selector">The selector used to map each item.</param>
-            public virtual IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
-            {
-                return new SelectEnumerableIterator<TSource, TResult>(this, selector);
-            }
+            public virtual IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
+                new
+#if OPTIMIZE_FOR_SIZE
+                IEnumerableSelectIterator
+#else
+                IteratorSelectIterator
+#endif
+                <TSource, TResult>(this, selector);
 
             /// <summary>
             /// Returns an enumerable that filters each item in this iterator based on a predicate.
             /// </summary>
             /// <param name="predicate">The predicate used to filter each item.</param>
-            public virtual IEnumerable<TSource> Where(Func<TSource, bool> predicate)
-            {
-                return new WhereEnumerableIterator<TSource>(this, predicate);
-            }
+            public virtual IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
+                new IEnumerableWhereIterator<TSource>(this, predicate);
 
             object? IEnumerator.Current => Current;
 

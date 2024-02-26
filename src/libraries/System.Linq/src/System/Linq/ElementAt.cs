@@ -16,25 +16,13 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IPartition<TSource> partition)
+            TSource? element = TryGetElementAt(source, index, out bool found);
+            if (!found)
             {
-                TSource? element = partition.TryGetElementAt(index, out bool found);
-                if (found)
-                {
-                    return element!;
-                }
-            }
-            else if (source is IList<TSource> list)
-            {
-                return list[index];
-            }
-            else if (TryGetElement(source, index, out TSource? element))
-            {
-                return element;
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            return default;
+            return element!;
         }
 
         /// <summary>Returns the element at a specified index in a sequence.</summary>
@@ -80,18 +68,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IPartition<TSource> partition)
-            {
-                return partition.TryGetElementAt(index, out bool _);
-            }
-
-            if (source is IList<TSource> list)
-            {
-                return (uint)index < (uint)list.Count ? list[index] : default;
-            }
-
-            TryGetElement(source, index, out TSource? element);
-            return element;
+            return TryGetElementAt(source, index, out _);
         }
 
         /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
@@ -125,27 +102,44 @@ namespace System.Linq
             return element;
         }
 
-        private static bool TryGetElement<TSource>(IEnumerable<TSource> source, int index, [MaybeNullWhen(false)] out TSource element)
+        private static TSource? TryGetElementAt<TSource>(this IEnumerable<TSource> source, int index, out bool found) =>
+#if !OPTIMIZE_FOR_SIZE
+            source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
+#endif
+            TryGetElementAtNonIterator(source, index, out found);
+
+        private static TSource? TryGetElementAtNonIterator<TSource>(IEnumerable<TSource> source, int index, out bool found)
         {
             Debug.Assert(source != null);
 
-            if (index >= 0)
+            if (source is IList<TSource> list)
             {
-                using IEnumerator<TSource> e = source.GetEnumerator();
-                while (e.MoveNext())
+                if ((uint)index < (uint)list.Count)
                 {
-                    if (index == 0)
+                    found = true;
+                    return list[index];
+                }
+            }
+            else
+            {
+                if (index >= 0)
+                {
+                    using IEnumerator<TSource> e = source.GetEnumerator();
+                    while (e.MoveNext())
                     {
-                        element = e.Current;
-                        return true;
-                    }
+                        if (index == 0)
+                        {
+                            found = true;
+                            return e.Current;
+                        }
 
-                    index--;
+                        index--;
+                    }
                 }
             }
 
-            element = default;
-            return false;
+            found = false;
+            return default;
         }
 
         private static bool TryGetElementFromEnd<TSource>(IEnumerable<TSource> source, int indexFromEnd, [MaybeNullWhen(false)] out TSource element)

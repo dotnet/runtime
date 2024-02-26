@@ -16,10 +16,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IIListProvider<TSource> arrayProvider)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                return arrayProvider.ToArray();
+                return iterator.ToArray();
             }
+#endif
 
             if (source is ICollection<TSource> collection)
             {
@@ -57,10 +59,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IIListProvider<TSource> listProvider)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                return listProvider.ToList();
+                return iterator.ToList();
             }
+#endif
 
             return new List<TSource>(source);
         }

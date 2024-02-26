@@ -10,9 +10,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal abstract partial class OrderedEnumerable<TElement> : IPartition<TElement>
+        internal abstract partial class OrderedIterator<TElement>
         {
-            public virtual TElement[] ToArray()
+            public override TElement[] ToArray()
             {
                 TElement[] buffer = _source.ToArray();
                 if (buffer.Length == 0)
@@ -25,7 +25,7 @@ namespace System.Linq
                 return array;
             }
 
-            public virtual List<TElement> ToList()
+            public override List<TElement> ToList()
             {
                 TElement[] buffer = _source.ToArray();
 
@@ -47,11 +47,11 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is IIListProvider<TElement> listProv)
+                if (_source is Iterator<TElement> iterator)
                 {
-                    return listProv.GetCount(onlyIfCheap);
+                    return iterator.GetCount(onlyIfCheap);
                 }
 
                 return !onlyIfCheap || _source is ICollection<TElement> || _source is ICollection ? _source.Count() : -1;
@@ -133,11 +133,11 @@ namespace System.Linq
                 return (count <= maxIdx ? count : maxIdx + 1) - minIdx;
             }
 
-            public IPartition<TElement> Skip(int count) => new OrderedPartition<TElement>(this, count, int.MaxValue);
+            public override Iterator<TElement> Skip(int count) => new SkipTakeOrderedIterator<TElement>(this, count, int.MaxValue);
 
-            public IPartition<TElement> Take(int count) => new OrderedPartition<TElement>(this, 0, count - 1);
+            public override Iterator<TElement> Take(int count) => new SkipTakeOrderedIterator<TElement>(this, 0, count - 1);
 
-            public TElement? TryGetElementAt(int index, out bool found)
+            public override TElement? TryGetElementAt(int index, out bool found)
             {
                 if (index == 0)
                 {
@@ -158,7 +158,7 @@ namespace System.Linq
                 return default;
             }
 
-            public virtual TElement? TryGetFirst(out bool found)
+            public override TElement? TryGetFirst(out bool found)
             {
                 CachingComparer<TElement> comparer = GetComparer();
                 using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -185,7 +185,7 @@ namespace System.Linq
                 }
             }
 
-            public virtual TElement? TryGetLast(out bool found)
+            public override TElement? TryGetLast(out bool found)
             {
                 using (IEnumerator<TElement> e = _source.GetEnumerator())
                 {
@@ -247,7 +247,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
+        internal sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
         {
             // For complicated cases, rely on the base implementation that's more comprehensive.
             // For the simple case of OrderBy(...).First() or OrderByDescending(...).First() (i.e. where
@@ -358,7 +358,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+        internal sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
         {
             public override TElement[] ToArray()
             {
@@ -435,9 +435,9 @@ namespace System.Linq
             }
         }
 
-        internal sealed class OrderedPartition<TElement> : Iterator<TElement>, IPartition<TElement>
+        internal sealed class SkipTakeOrderedIterator<TElement> : Iterator<TElement>
         {
-            private readonly OrderedEnumerable<TElement> _source;
+            private readonly OrderedIterator<TElement> _source;
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
 
@@ -445,20 +445,20 @@ namespace System.Linq
             private int[]? _map;
             private int _maxIdx;
 
-            public OrderedPartition(OrderedEnumerable<TElement> source, int minIdxInclusive, int maxIdxInclusive)
+            public SkipTakeOrderedIterator(OrderedIterator<TElement> source, int minIdxInclusive, int maxIdxInclusive)
             {
                 _source = source;
                 _minIndexInclusive = minIdxInclusive;
                 _maxIndexInclusive = maxIdxInclusive;
             }
 
-            public override Iterator<TElement> Clone() => new OrderedPartition<TElement>(_source, _minIndexInclusive, _maxIndexInclusive);
+            public override Iterator<TElement> Clone() => new SkipTakeOrderedIterator<TElement>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()
             {
                 int state = _state;
 
-            Initialized:
+                Initialized:
                 if (state > 1)
                 {
                     Debug.Assert(_buffer is not null);
@@ -503,13 +503,13 @@ namespace System.Linq
                 return false;
             }
 
-            public IPartition<TElement>? Skip(int count)
+            public override Iterator<TElement>? Skip(int count)
             {
                 int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new SkipTakeOrderedIterator<TElement>(_source, minIndex, _maxIndexInclusive);
             }
 
-            public IPartition<TElement> Take(int count)
+            public override Iterator<TElement> Take(int count)
             {
                 int maxIndex = _minIndexInclusive + count - 1;
                 if ((uint)maxIndex >= (uint)_maxIndexInclusive)
@@ -517,10 +517,10 @@ namespace System.Linq
                     return this;
                 }
 
-                return new OrderedPartition<TElement>(_source, _minIndexInclusive, maxIndex);
+                return new SkipTakeOrderedIterator<TElement>(_source, _minIndexInclusive, maxIndex);
             }
 
-            public TElement? TryGetElementAt(int index, out bool found)
+            public override TElement? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive))
                 {
@@ -531,16 +531,16 @@ namespace System.Linq
                 return default;
             }
 
-            public TElement? TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
+            public override TElement? TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
 
-            public TElement? TryGetLast(out bool found) =>
+            public override TElement? TryGetLast(out bool found) =>
                 _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
 
-            public TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
+            public override TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
 
-            public List<TElement> ToList() => _source.ToList(_minIndexInclusive, _maxIndexInclusive);
+            public override List<TElement> ToList() => _source.ToList(_minIndexInclusive, _maxIndexInclusive);
 
-            public int GetCount(bool onlyIfCheap) => _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
+            public override int GetCount(bool onlyIfCheap) => _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
         }
     }
 }
