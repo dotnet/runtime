@@ -49,9 +49,9 @@ namespace System.Numerics.Tensors
                 {
                     if (sizeof(T) == 1) return AdvSimd.LeadingZeroCount(x.AsByte()).As<byte, T>();
                     if (sizeof(T) == 2) return AdvSimd.LeadingZeroCount(x.AsUInt16()).As<ushort, T>();
-                    if (sizeof(T) == 4) return AdvSimd.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
 
-                    throw new NotSupportedException();
+                    Debug.Assert(sizeof(T) == 4);
+                    return AdvSimd.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
                 }
             }
 
