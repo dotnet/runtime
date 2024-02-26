@@ -160,11 +160,11 @@ namespace System.Runtime.CompilerServices
                 return false;
 
             // Compare the contents
-            return SequenceEqualWithReferences(o1, o2);
+            return ContentEquals(o1, o2);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool SequenceEqualWithReferences(object o1, object o2);
+        private static extern unsafe bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData

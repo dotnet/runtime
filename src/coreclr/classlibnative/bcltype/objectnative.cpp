@@ -123,7 +123,7 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ObjectNative::SequenceEqualWithReferences, Object *pThisRef, Object *pCompareRef)
+FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
 {
     FCALL_CONTRACT;
 
