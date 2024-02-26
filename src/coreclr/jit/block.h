@@ -309,7 +309,7 @@ public:
 
 // BBArrayIterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
 // It is an error (with assert) to yield a nullptr BasicBlock* in this array.
-// `m_bbEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
+// `m_edgeEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
 // (meaning, no actual iteration will happen).
 //
 class BBArrayIterator
