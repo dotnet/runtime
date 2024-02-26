@@ -38,8 +38,8 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
     mono_assert(!runtimeHelpers.proxyGCHandle, "JS interop should not be already installed on this worker.");
     runtimeHelpers.proxyGCHandle = context_gc_handle;
     if (ENVIRONMENT_IS_PTHREAD) {
-        runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
-        runtimeHelpers.isCurrentThread = true;
+        runtimeHelpers.managedThreadTID = runtimeHelpers.currentThreadTID;
+        runtimeHelpers.isManagedRunningOnCurrentThread = true;
     }
     Module.runtimeKeepalivePush();
     monoThreadInfo.isDirtyBecauseOfInterop = true;
@@ -70,14 +70,15 @@ export function update_thread_info(): void {
     if (!WasmEnableThreads) return;
     const threadType = !monoThreadInfo.isRegistered ? "emsc"
         : monoThreadInfo.isUI ? "-UI-"
-            : monoThreadInfo.isTimer ? "timr"
-                : monoThreadInfo.isLongRunning ? "long"
-                    : monoThreadInfo.isThreadPoolGate ? "gate"
-                        : monoThreadInfo.isDebugger ? "dbgr"
-                            : monoThreadInfo.isThreadPoolWorker ? "pool"
-                                : monoThreadInfo.isExternalEventLoop ? "jsww"
-                                    : monoThreadInfo.isBackground ? "back"
-                                        : "norm";
+            : monoThreadInfo.isDeputy ? "dpty"
+                : monoThreadInfo.isTimer ? "timr"
+                    : monoThreadInfo.isLongRunning ? "long"
+                        : monoThreadInfo.isThreadPoolGate ? "gate"
+                            : monoThreadInfo.isDebugger ? "dbgr"
+                                : monoThreadInfo.isThreadPoolWorker ? "pool"
+                                    : monoThreadInfo.isExternalEventLoop ? "jsww"
+                                        : monoThreadInfo.isBackground ? "back"
+                                            : "norm";
     const hexPtr = (monoThreadInfo.pthreadId as any).toString(16).padStart(8, "0");
     const hexPrefix = monoThreadInfo.isRegistered ? "0x" : "--";
     monoThreadInfo.threadPrefix = `${hexPrefix}${hexPtr}-${threadType}`;
@@ -87,11 +88,16 @@ export function update_thread_info(): void {
         set_thread_prefix(monoThreadInfo.threadPrefix!);
     }
 
-    (globalThis as any).monoThreadInfo = monoThreadInfo;
+    // this is just to make debugging easier by naming the thread debugger window.
+    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+    // in Release configuration, it would be a trimmed by rollup
     if (WasmEnableThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         monoThreadInfo.updateCount++;
         try {
-            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadPrefix : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
+            const url = `//# sourceURL=https://dotnet/thread/${monoThreadInfo.updateCount}-${monoThreadInfo.threadPrefix}`;
+            const infoJson = JSON.stringify(monoThreadInfo, null, 2);
+            const body = `const monoThreadInfo=${infoJson};\r\nconsole.log(monoThreadInfo);`;
+            (globalThis as any).monoThreadInfoFn = new Function(body + "\r\n" + url);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;
@@ -119,6 +125,8 @@ export interface MonoWorkerToMainMessage {
     monoCmd: WorkerToMainMessageType;
     info: PThreadInfo;
     port?: MessagePort;
+    error?: string;
+    deputyProxyGCHandle?: GCHandle;
 }
 
 /// Identification of the current thread executing on a worker

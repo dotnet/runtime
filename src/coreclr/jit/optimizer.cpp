@@ -21,13 +21,7 @@ void Compiler::optInit()
 {
     fgHasLoops = false;
 
-    optLoopsCanonical       = false;
-    optNumNaturalLoopsFound = 0;
-
-#ifdef DEBUG
-    loopAlignCandidates = 0;
-    loopsAligned        = 0;
-#endif
+    optLoopsCanonical = false;
 
     /* Keep track of the number of calls and indirect calls made by this method */
     optCallCount         = 0;
@@ -40,6 +34,7 @@ void Compiler::optInit()
     optCSECandidateCount = 0;
     optCSEattempt        = 0;
     optCSEheuristic      = nullptr;
+    optCSEunmarks        = 0;
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
@@ -1309,6 +1304,8 @@ PhaseStatus Compiler::optUnrollLoops()
     if (unrollCount > 0)
     {
         assert(anyIRchange);
+
+        Metrics.LoopsUnrolled += unrollCount;
 
 #ifdef DEBUG
         if (verbose)
@@ -2682,7 +2679,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    optNumNaturalLoopsFound = (unsigned)m_loops->NumLoops();
+    Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -5161,6 +5158,8 @@ void Compiler::optHoistCandidate(GenTree*              tree,
 
     // Record the hoisted expression in hoistCtxt
     hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
+
+    Metrics.HoistedExpressions++;
 }
 
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)

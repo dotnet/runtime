@@ -127,15 +127,9 @@ namespace System.Linq
         TKey Key { get; }
     }
 
-    // It is (unfortunately) common to databind directly to Grouping.Key.
-    // Because of this, we have to declare this internal type public so that we
-    // can mark the Key property for public reflection.
-    //
-    // To limit the damage, the toolchain makes this type appear in a hidden assembly.
-    // (This is also why it is no longer a nested type of Lookup<,>).
     [DebuggerDisplay("Key = {Key}")]
     [DebuggerTypeProxy(typeof(SystemLinq_GroupingDebugView<,>))]
-    public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
+    internal sealed class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
     {
         internal readonly TKey _key;
         internal readonly int _hashCode;
@@ -180,8 +174,6 @@ namespace System.Linq
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        // DDB195907: implement IGrouping<>.Key implicitly
-        // so that WPF binding works on this property.
         public TKey Key => _key;
 
         int ICollection<TElement>.Count => _count;

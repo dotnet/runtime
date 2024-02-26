@@ -1290,7 +1290,7 @@ DONE_CALL:
             impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
         }
         else if (JitConfig.JitProfileValues() && call->IsCall() &&
-                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
             if (opts.IsOptimizedWithProfile())
             {
@@ -1555,7 +1555,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
         unsigned argNum   = 0;
         ssize_t  minValue = 0;
         ssize_t  maxValue = 0;
-        if (call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+        if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
             // dst(0), src(1), len(2)
             argNum = 2;
@@ -2761,7 +2761,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 betterToExpand = true;
                 break;
 
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
             case NI_System_SpanHelpers_SequenceEqual:
                 // We're going to instrument these
                 betterToExpand = opts.IsInstrumented();
@@ -3543,18 +3543,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
             {
                 assert(sig->numArgs == 0);
-
-                GenTree* op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
-                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-
                 // On XARCH `NI_System_Threading_Interlocked_ReadMemoryBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
-                if (ni == NI_System_Threading_Interlocked_ReadMemoryBarrier)
-                {
-                    op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
-                }
-
-                retNode = op1;
+                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Interlocked_ReadMemoryBarrier);
                 break;
             }
 
@@ -3991,7 +3982,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8:
             case NI_System_SpanHelpers_SequenceEqual:
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
+            case NI_System_SpanHelpers_Memmove:
             {
                 if (sig->sigInst.methInstCount == 0)
                 {
@@ -3999,6 +3991,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     isSpecial = true;
                 }
                 // The generic version is also marked as [Intrinsic] just as a hint for the inliner
+                break;
+            }
+
+            case NI_System_SpanHelpers_Fill:
+            {
+                if (sig->sigInst.methInstCount == 1)
+                {
+                    // We'll try to unroll this in lower for constant input.
+                    isSpecial = true;
+                }
                 break;
             }
 
@@ -8872,13 +8874,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_BitConverter_Int64BitsToDouble;
                         }
                     }
-                    else if (strcmp(className, "Buffer") == 0)
-                    {
-                        if (strcmp(methodName, "Memmove") == 0)
-                        {
-                            result = NI_System_Buffer_Memmove;
-                        }
-                    }
                     break;
                 }
 
@@ -9029,6 +9024,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "SequenceEqual") == 0)
                         {
                             result = NI_System_SpanHelpers_SequenceEqual;
+                        }
+                        else if (strcmp(methodName, "Fill") == 0)
+                        {
+                            result = NI_System_SpanHelpers_Fill;
+                        }
+                        else if (strcmp(methodName, "ClearWithoutReferences") == 0)
+                        {
+                            result = NI_System_SpanHelpers_ClearWithoutReferences;
+                        }
+                        else if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_SpanHelpers_Memmove;
                         }
                     }
                     else if (strcmp(className, "String") == 0)

@@ -7389,9 +7389,6 @@ public:
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
 #endif
-#ifndef TARGET_X86
-        BlkOpKindHelper,
-#endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
 #endif
