@@ -34,6 +34,7 @@ void Compiler::optInit()
     optCSECandidateCount = 0;
     optCSEattempt        = 0;
     optCSEheuristic      = nullptr;
+    optCSEunmarks        = 0;
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)

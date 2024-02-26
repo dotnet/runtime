@@ -31,6 +31,7 @@ import {
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
     mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop
 } from "./pthreads";
+import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
@@ -45,6 +46,8 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
 
     // threads.c
     mono_wasm_eventloop_has_unsettled_interop_promises,
+    // mono-threads.c
+    mono_wasm_dump_threads,
     // diagnostics_server.c
     mono_wasm_diagnostic_server_on_server_thread_created,
     mono_wasm_diagnostic_server_on_runtime_server_init,

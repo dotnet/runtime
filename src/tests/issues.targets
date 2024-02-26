@@ -75,7 +75,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftInvalidCallConv/*">
+            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftSelfContext/*">
             <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -1879,6 +1882,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>https://github.com/dotnet/runtime/issues/90374</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
+            <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
     </ItemGroup>
 
