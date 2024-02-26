@@ -10285,9 +10285,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_CPBLK:
             {
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                op3                     = impPopStack().val; // Size
-                op2                     = impPopStack().val; // Value / Src addr
-                op1                     = impPopStack().val; // Dst addr
+                const bool   isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+#ifndef TARGET_X86
+                if (isVolatile && !impStackTop(0).val->IsCnsIntOrI())
+                {
+                    // We're going to emit a helper call surrounded by memory barriers, so we need to spill any side
+                    // effects.
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                }
+#endif
+
+                op3 = gtFoldExpr(impPopStack().val); // Size
+                op2 = gtFoldExpr(impPopStack().val); // Value / Src addr
+                op1 = impPopStack().val;             // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
@@ -10324,6 +10334,45 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
+                    if (TARGET_POINTER_SIZE == 8)
+                    {
+                        // Cast size to TYP_LONG on 64-bit targets
+                        op3 = gtNewCastNode(TYP_LONG, op3, /* fromUnsigned */ true, TYP_LONG);
+                    }
+
+// TODO: enable for X86 as well, it currently doesn't support memset/memcpy helpers
+// Then, get rid of GT_STORE_DYN_BLK entirely.
+#ifndef TARGET_X86
+                    GenTreeCall* call;
+                    if (opcode == CEE_INITBLK)
+                    {
+                        // value is zero -> memzero, otherwise -> memset
+                        if (op2->IsIntegralConst(0))
+                        {
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, op1, op3);
+                        }
+                        else
+                        {
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMSET, TYP_VOID, op1, op2, op3);
+                        }
+                    }
+                    else
+                    {
+                        call = gtNewHelperCallNode(CORINFO_HELP_MEMCPY, TYP_VOID, op1, op2, op3);
+                    }
+
+                    if (isVolatile)
+                    {
+                        // Wrap with memory barriers: full-barrier + call + load-barrier
+                        impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+                        op1 = gtNewMemoryBarrier(true);
+                    }
+                    else
+                    {
+                        op1 = call;
+                    }
+#else
                     if (opcode == CEE_INITBLK)
                     {
                         if (!op2->IsIntegralConst(0))
@@ -10335,13 +10384,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op2 = gtNewIndir(TYP_STRUCT, op2);
                     }
-
-#ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
-#endif
-
                     op1 = gtNewStoreDynBlkNode(op1, op2, op3, indirFlags);
+#endif
                 }
                 goto SPILL_APPEND;
             }

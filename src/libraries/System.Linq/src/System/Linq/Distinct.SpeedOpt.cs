@@ -9,7 +9,7 @@ namespace System.Linq
     {
         private sealed partial class DistinctIterator<TSource> : IIListProvider<TSource>
         {
-            public TSource[] ToArray() => Enumerable.HashSetToArray(new HashSet<TSource>(_source, _comparer));
+            public TSource[] ToArray() => HashSetToArray(new HashSet<TSource>(_source, _comparer));
 
             public List<TSource> ToList() => new List<TSource>(new HashSet<TSource>(_source, _comparer));
 
