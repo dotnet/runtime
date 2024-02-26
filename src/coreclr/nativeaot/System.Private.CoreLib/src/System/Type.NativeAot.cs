@@ -31,14 +31,15 @@ namespace System
 
         private static class AllocationLockHolder
         {
-            public static Lock AllocationLock = new Lock(useTrivialWaits: true);
+            public static LowLevelLock AllocationLock = new LowLevelLock();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
             // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
-            using (AllocationLockHolder.AllocationLock.EnterScope())
+            AllocationLockHolder.AllocationLock.Acquire();
+            try
             {
                 ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
                 if (runtimeTypeCache != null)
@@ -53,6 +54,10 @@ namespace System
                 runtimeTypeCache = type;
 
                 return type;
+            }
+            finally
+            {
+                AllocationLockHolder.AllocationLock.Release();
             }
         }
 

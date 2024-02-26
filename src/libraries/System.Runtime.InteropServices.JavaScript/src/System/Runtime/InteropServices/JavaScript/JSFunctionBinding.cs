@@ -151,7 +151,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="signature">Generated metadata about the method signature used for marshaling.</param>
         /// <param name="arguments">The intermediate buffer with marshalled arguments.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
             InvokeJSImportImpl(signature, arguments);
@@ -204,6 +206,9 @@ namespace System.Runtime.InteropServices.JavaScript
             jsFunction.AssertNotDisposed();
 
 #if FEATURE_WASM_MANAGED_THREADS
+            ref JSMarshalerArgument exc = ref arguments[0];
+            exc.slot.CallerNativeTID = jsFunction.ProxyContext.NativeTID;
+
             // if we are on correct thread already, just call it
             if (jsFunction.ProxyContext.IsCurrentThread())
             {
@@ -224,6 +229,17 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void InvokeJSFunctionCurrent(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
+#if FEATURE_WASM_MANAGED_THREADS
+            if (JSProxyContext.ThreadInteropMode == JSHostImplementation.JSThreadInteropMode.NoSyncJSInterop)
+            {
+                throw new PlatformNotSupportedException("Cannot call synchronous JS functions.");
+            }
+            else if (jsFunction.ProxyContext.IsPendingSynchronousCall)
+            {
+                throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
+            }
+#endif
+
             var functionHandle = (int)jsFunction.JSHandle;
             fixed (JSMarshalerArgument* ptr = arguments)
             {
@@ -243,6 +259,16 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void DispatchJSFunctionSync(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
+#if FEATURE_WASM_MANAGED_THREADS
+            if (JSProxyContext.ThreadInteropMode == JSHostImplementation.JSThreadInteropMode.NoSyncJSInterop)
+            {
+                throw new PlatformNotSupportedException("Cannot call synchronous JS functions.");
+            }
+            else if (jsFunction.ProxyContext.IsPendingSynchronousCall)
+            {
+                throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
+            }
+#endif
             var args = (nint)Unsafe.AsPointer(ref arguments[0]);
             var functionHandle = jsFunction.JSHandle;
 
@@ -267,10 +293,13 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
+            ref JSMarshalerArgument exc = ref arguments[0];
+            ref JSMarshalerArgument res = ref arguments[1];
 #if FEATURE_WASM_MANAGED_THREADS
             var targetContext = JSProxyContext.SealJSImportCapturing();
-            arguments[0].slot.ContextHandle = targetContext.ContextHandle;
-            arguments[1].slot.ContextHandle = targetContext.ContextHandle;
+            exc.slot.CallerNativeTID = targetContext.NativeTID;
+            exc.slot.ContextHandle = targetContext.ContextHandle;
+            res.slot.ContextHandle = targetContext.ContextHandle;
 #else
             var targetContext = JSProxyContext.MainThreadContext;
 #endif
@@ -279,9 +308,22 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 // pre-allocate the result handle and Task
                 var holder = targetContext.CreatePromiseHolder();
-                arguments[1].slot.Type = MarshalerType.TaskPreCreated;
-                arguments[1].slot.GCHandle = holder.GCHandle;
+                res.slot.Type = MarshalerType.TaskPreCreated;
+                res.slot.GCHandle = holder.GCHandle;
             }
+#if FEATURE_WASM_MANAGED_THREADS
+            else
+            {
+                if (JSProxyContext.ThreadInteropMode == JSHostImplementation.JSThreadInteropMode.NoSyncJSInterop)
+                {
+                    throw new PlatformNotSupportedException("Cannot call synchronous JS functions.");
+                }
+                else if (targetContext.IsPendingSynchronousCall)
+                {
+                    throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
+                }
+            }
+#endif
 
             if (signature.IsDiscardNoWait)
             {
@@ -358,6 +400,8 @@ namespace System.Runtime.InteropServices.JavaScript
             var args = (nint)Unsafe.AsPointer(ref arguments[0]);
             var sig = (nint)signature.Header;
 
+            ref JSMarshalerArgument exc = ref arguments[0];
+
             // we already know that we are not on the right thread
             // this will be blocking until resolved by that thread
             // we don't have to disable ThrowOnBlockingWaitOnJSInteropThread, because this is lock in native code
@@ -366,10 +410,9 @@ namespace System.Runtime.InteropServices.JavaScript
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
             Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, sig, args);
 
-            ref JSMarshalerArgument exceptionArg = ref arguments[0];
-            if (exceptionArg.slot.Type != MarshalerType.None)
+            if (exc.slot.Type != MarshalerType.None)
             {
-                JSHostImplementation.ThrowException(ref exceptionArg);
+                JSHostImplementation.ThrowException(ref exc);
             }
         }
 
@@ -419,17 +462,19 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void ResolveOrRejectPromise(JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
+            ref JSMarshalerArgument exc = ref arguments[0];
 #if FEATURE_WASM_MANAGED_THREADS
+            exc.slot.CallerNativeTID = targetContext.NativeTID;
+
             if (targetContext.IsCurrentThread())
 #endif
             {
                 fixed (JSMarshalerArgument* ptr = arguments)
                 {
                     Interop.Runtime.ResolveOrRejectPromise((nint)ptr);
-                    ref JSMarshalerArgument exceptionArg = ref arguments[0];
-                    if (exceptionArg.slot.Type != MarshalerType.None)
+                    if (exc.slot.Type != MarshalerType.None)
                     {
-                        JSHostImplementation.ThrowException(ref exceptionArg);
+                        JSHostImplementation.ThrowException(ref exc);
                     }
                 }
             }
@@ -437,7 +482,6 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 // meaning JS side needs to dispose it
-                ref JSMarshalerArgument exc = ref arguments[0];
                 exc.slot.ReceiverShouldFree = true;
 
                 // this copy is freed in mono_wasm_resolve_or_reject_promise
