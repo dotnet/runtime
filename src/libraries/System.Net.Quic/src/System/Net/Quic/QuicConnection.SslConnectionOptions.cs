@@ -110,11 +110,24 @@ public partial class QuicConnection
                 }
             }
 
-            // Hand-off rest of the work to the threadpool, certificatePtr and chainPtr are invalid inside the lambda.
-            QuicConnection thisConnection = _connection; // cannot use "this" inside lambda since SslConnectionOptions is struct
-            _ = Task.Run(() =>
+            QuicConnection connection = _connection;
+            if (MsQuicApi.SupportsAsyncCertValidation)
             {
+                // hand-off rest of the work to the thread pool, certificatePtr and chainPtr are invalid beyond this point
+                _ = Task.Run(() =>
+                {
+                    StartAsyncCertificateValidationCore(connection, certificate, certData, chainData, certDataRented, chainDataRented);
+                });
+            }
+            else
+            {
+                // due to a bug in MsQuic, we need to call the callback synchronously to close the connection properly when
+                // we reject the certificate
+                StartAsyncCertificateValidationCore(connection, certificate, certData, chainData, certDataRented, chainDataRented);
+            }
 
+            static void StartAsyncCertificateValidationCore(QuicConnection thisConnection, X509Certificate2? certificate, Memory<byte> certData, Memory<byte> chainData, byte[]? certDataRented, byte[]? chainDataRented)
+            {
                 QUIC_TLS_ALERT_CODES result;
                 try
                 {
@@ -158,7 +171,7 @@ public partial class QuicConnection
                         NetEventSource.Error(thisConnection, $"{thisConnection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
                     }
                 }
-            });
+            }
         }
 
         private QUIC_TLS_ALERT_CODES ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
