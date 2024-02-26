@@ -50,7 +50,7 @@ variables:
     value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
   - name: nativeTestArtifactName
-    value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+    value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)'
 
   - name: nativeTestArtifactRootFolderPath
     value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
