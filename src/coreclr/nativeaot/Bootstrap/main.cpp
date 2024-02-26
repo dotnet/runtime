@@ -110,10 +110,12 @@ extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
     __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
     extern "C" void __cdecl _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
+#define CDECL __cdecl
 #else
 #define MANAGED_RUNTIME_EXPORT(_name) \
-    extern "C" void __cdecl _name();
+    extern "C" void _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
+#define CDECL
 #endif
 
 MANAGED_RUNTIME_EXPORT(GetRuntimeException)
@@ -131,7 +133,7 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 #endif
 
-typedef void (__cdecl *pfn)();
+typedef void (CDECL *pfn)();
 
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
@@ -161,18 +163,18 @@ static const pfn c_classlibFunctions[] = {
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 #endif
 
-extern "C" void __cdecl InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
+extern "C" void CDECL InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
 #ifndef NATIVEAOT_DLL
 #define NATIVEAOT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
-extern "C" int __cdecl __managed__Main(int argc, wchar_t* argv[]);
+extern "C" int CDECL __managed__Main(int argc, wchar_t* argv[]);
 #else
-extern "C" int __cdecl __managed__Main(int argc, char* argv[]);
+extern "C" int CDECL __managed__Main(int argc, char* argv[]);
 #endif
 #else
 #define NATIVEAOT_ENTRYPOINT __managed__Startup
-extern "C" void __cdecl __managed__Startup();
+extern "C" void CDECL __managed__Startup();
 #endif // !NATIVEAOT_DLL
 
 static int InitializeRuntime()
@@ -211,7 +213,7 @@ static int InitializeRuntime()
 #ifndef NATIVEAOT_DLL
 
 #if defined(_WIN32)
-int __cdecl wmain(int argc, wchar_t* argv[])
+int CDECL wmain(int argc, wchar_t* argv[])
 #else
 int main(int argc, char* argv[])
 #endif
