@@ -150,6 +150,11 @@ LRszMORE32:
     ret
 RhpLRsz ENDP
 
+;;
+;; Following helpers are unoptimized, forward to C library, and should
+;; eventually be revisited.
+;;
+
 EXTERN __dtol3 : PROC
 
 RhpDbl2Lng PROC public
@@ -170,32 +175,15 @@ RhpDbl2UInt PROC public
     ret 8
 RhpDbl2UInt ENDP
 
-EXTERN @RhpDbl2ULng@8 : PROC
-
-RhpDbl2ULng PROC public
-    jmp @RhpDbl2ULng@8
-RhpDbl2ULng ENDP
-
-EXTERN @RhpFltRem@8 : PROC
-
-RhpFltRem PROC public
-    jmp @RhpFltRem@8
-RhpFltRem ENDP
-
-EXTERN @RhpDblRem@16 : PROC
-
-RhpDblRem PROC public
-    jmp @RhpDblRem@16
-RhpDblRem ENDP
-
-EXTERN __ltod3 : PROC
+;EXTERN __ltod3 : PROC
 
 RhpLng2Dbl PROC public
-    mov     edx, dword ptr [esp+8]
-    mov     ecx, dword ptr [esp+4]
-    call    __ltod3
-    movsd   qword ptr [esp+4], xmm0
-    fld     qword ptr [esp+4]
+    fild    qword ptr [esp+4]
+    ;mov     edx, dword ptr [esp+8]
+    ;mov     ecx, dword ptr [esp+4]
+    ;call    __ltod3
+    ;movsd   qword ptr [esp+4], xmm0
+    ;fld     qword ptr [esp+4]
     ret     8
 RhpLng2Dbl ENDP
 
@@ -264,5 +252,23 @@ RhpLMul PROC public
     call    __allmul
     ret     16
 RhpLMul ENDP
+
+;;
+;; https://github.com/dotnet/runtime/pull/98858 moves the following helpers to
+;; managed code, so no need to optimize this
+;;
+
+REDIRECT_FUNC macro ExportName, ImportName
+    EXTERN ImportName : PROC
+
+    public  ExportName
+    ExportName    proc
+        jmp ImportName
+    ExportName    endp
+endm
+
+REDIRECT_FUNC RhpDbl2ULng, @RhpDbl2ULng@8
+REDIRECT_FUNC RhpFltRem, @RhpFltRem@8
+REDIRECT_FUNC RhpDblRem, @RhpDblRem@16
 
 end
