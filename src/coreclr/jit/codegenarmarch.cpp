@@ -441,6 +441,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // TARGET_ARM64
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            genCodeForSwiftErrorReg(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
+
         case GT_RELOAD:
             // do nothing - reload is just a marker.
             // The parent node will call genConsumeReg on this which will trigger the unspill of this node's child
@@ -3368,6 +3374,17 @@ void CodeGen::genCall(GenTreeCall* call)
     {
         genDefineTempLabel(genCreateTempLabel());
     }
+
+#ifdef SWIFT_SUPPORT
+    // Clear the Swift error register before calling a Swift method,
+    // so we can check if it set the error register after returning.
+    // (Flag is only set if we know we need to check the error register)
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
+    }
+#endif // SWIFT_SUPPORT
 
     genCallInstruction(call);
 

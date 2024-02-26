@@ -4368,7 +4368,11 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg);
+
+#ifdef SWIFT_SUPPORT
+    void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
+#endif // SWIFT_SUPPORT
 
     void impInsertHelperCall(CORINFO_HELPER_DESC* helperCall);
     void impHandleAccessAllowed(CorInfoIsAccessAllowedResult result, CORINFO_HELPER_DESC* helperCall);
@@ -11315,6 +11319,7 @@ public:
             case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
             case GT_NOP:
+            case GT_SWIFT_ERROR:
                 break;
 
             // Lclvar unary operators
