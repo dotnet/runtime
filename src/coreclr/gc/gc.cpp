@@ -20839,6 +20839,11 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         }
     }
 
+    if (settings.reason == reason_induced_aggressive)
+    {
+        settings.loh_compaction = TRUE;
+    }
+
 #ifdef BGC_SERVO_TUNING
     if (bgc_tuning::should_trigger_ngc2())
     {
@@ -31159,7 +31164,7 @@ BOOL gc_heap::plan_loh()
 
 void gc_heap::compact_loh()
 {
-    assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting);
+    assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting || (settings.reason == reason_induced_aggressive));
 
 #ifdef FEATURE_EVENT_TRACE
     uint64_t start_time = 0, end_time;
