@@ -400,6 +400,9 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/95795 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/98406 -->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/98101 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true' and '$(RunDisabledWasmTests)' != 'true'">
