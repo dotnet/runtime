@@ -4507,12 +4507,6 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
     {
         // See if we can form a complex addressing mode.
         bool doAddrMode = true;
-
-        // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
-        if (node->TypeGet() == TYP_STRUCT)
-        {
-            doAddrMode = false;
-        }
 #ifdef TARGET_ARM64
         if (node->IsVolatile())
         {
