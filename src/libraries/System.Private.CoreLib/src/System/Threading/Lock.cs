@@ -22,7 +22,7 @@ namespace System.Threading
         private const short DefaultMaxSpinCount = 22;
         private const short DefaultAdaptiveSpinPeriod = 100;
         private const short SpinSleep0Threshold = 10;
-        private const int MaxDurationMsForPreemptingWaiters = 100;
+        private const ushort MaxDurationMsForPreemptingWaiters = 100;
 
         private static long s_contentionCount;
 
@@ -38,10 +38,7 @@ namespace System.Threading
         private uint _state; // see State for layout
         private uint _recursionCount;
         private short _spinCount;
-
-        // The lowest bit is a flag, when set it indicates that the lock should use trivial waits
-        private ushort _waiterStartTimeMsAndFlags;
-
+        private ushort _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
 
 #if NATIVEAOT // The method needs to be public in NativeAOT so that other private libraries can access it
@@ -51,10 +48,7 @@ namespace System.Threading
 #endif
             : this()
         {
-            if (useTrivialWaits)
-            {
-                _waiterStartTimeMsAndFlags = 1;
-            }
+            State.InitializeUseTrivialWaits(this, useTrivialWaits);
         }
 
         /// <summary>
@@ -488,7 +482,7 @@ namespace System.Threading
                 int remainingTimeoutMs = timeoutMs;
                 while (true)
                 {
-                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, UseTrivialWaits))
+                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, new State(this).UseTrivialWaits))
                     {
                         break;
                     }
@@ -567,43 +561,18 @@ namespace System.Threading
             return new ThreadId(0);
         }
 
-        // Trivial waits are:
-        // - Not interruptible by Thread.Interrupt
-        // - Don't allow reentrance through APCs or message pumping
-        // - Not forwarded to SynchronizationContext wait overrides
-        private bool UseTrivialWaits => (_waiterStartTimeMsAndFlags & 1) != 0;
-
-        // The stored waiter start time (ms) only includes the lower 15 bits since the field is also used for a flag. This mask
-        // should be used when recording and comparing waiter times.
-        private const int WaiterTimeMsMask = 0x7fff;
-
-        // Only the lower 15 bits are stored/retrieved. Callers should use WaiterTimeMsMask when recording and comparing waiter
-        // times.
-        private int WaiterStartTimeMs
-        {
-            get => _waiterStartTimeMsAndFlags >> 1;
-            set
-            {
-                Debug.Assert((value & WaiterTimeMsMask) == value);
-                _waiterStartTimeMsAndFlags = (ushort)((value << 1) | (_waiterStartTimeMsAndFlags & 1));
-            }
-        }
-
-        private void ResetWaiterStartTime() => WaiterStartTimeMs = 0;
+        private void ResetWaiterStartTime() => _waiterStartTimeMs = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecordWaiterStartTime()
         {
-            int currentTimeMs = Environment.TickCount & WaiterTimeMsMask;
-
-            // Don't record zero, that value is reserved for indicating that a time is not recorded
+            ushort currentTimeMs = (ushort)Environment.TickCount;
             if (currentTimeMs == 0)
             {
-                currentTimeMs = (currentTimeMs - 1) & WaiterTimeMsMask;
+                // Don't record zero, that value is reserved for indicating that a time is not recorded
+                currentTimeMs--;
             }
-
-            Debug.Assert(currentTimeMs != 0);
-            WaiterStartTimeMs = currentTimeMs;
+            _waiterStartTimeMs = currentTimeMs;
         }
 
         private bool ShouldStopPreemptingWaiters
@@ -612,10 +581,10 @@ namespace System.Threading
             get
             {
                 // If the recorded time is zero, a time has not been recorded yet
-                int waiterStartTimeMs = WaiterStartTimeMs;
+                ushort waiterStartTimeMs = _waiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
-                    ((Environment.TickCount - waiterStartTimeMs) & WaiterTimeMsMask) >= MaxDurationMsForPreemptingWaiters;
+                    (ushort)(Environment.TickCount - waiterStartTimeMs) >= MaxDurationMsForPreemptingWaiters;
             }
         }
 
@@ -720,8 +689,8 @@ namespace System.Threading
             private const uint SpinnerCountIncrement = (uint)1 << 2; // bits 2-4
             private const uint SpinnerCountMask = (uint)0x7 << 2;
             private const uint IsWaiterSignaledToWakeMask = (uint)1 << 5; // bit 5
-            private const byte WaiterCountShift = 6;
-            private const uint WaiterCountIncrement = (uint)1 << WaiterCountShift; // bits 6-31
+            private const uint UseTrivialWaitsMask = (uint)1 << 6; // bit 6
+            private const uint WaiterCountIncrement = (uint)1 << 7; // bits 7-31
 
             private uint _state;
 
@@ -798,6 +767,22 @@ namespace System.Threading
             {
                 Debug.Assert(IsWaiterSignaledToWake);
                 _state -= IsWaiterSignaledToWakeMask;
+            }
+
+            // Trivial waits are:
+            // - Not interruptible by Thread.Interrupt
+            // - Don't allow reentrance through APCs or message pumping
+            // - Not forwarded to SynchronizationContext wait overrides
+            public bool UseTrivialWaits => (_state & UseTrivialWaitsMask) != 0;
+
+            public static void InitializeUseTrivialWaits(Lock lockObj, bool useTrivialWaits)
+            {
+                Debug.Assert(lockObj._state == 0);
+
+                if (useTrivialWaits)
+                {
+                    lockObj._state = UseTrivialWaitsMask;
+                }
             }
 
             public bool HasAnyWaiters => _state >= WaiterCountIncrement;

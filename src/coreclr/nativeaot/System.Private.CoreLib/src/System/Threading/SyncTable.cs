@@ -274,7 +274,7 @@ namespace System.Threading
             Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
-            s_entries[syncIndex].Lock.InitializeLocked(threadId, recursionLevel);
+            s_entries[syncIndex].Lock.ResetForMonitor(threadId, recursionLevel);
         }
 
         /// <summary>

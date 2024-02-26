@@ -207,14 +207,18 @@ namespace System.Threading
         // Returns false until the static variable is lazy-initialized
         internal static bool IsSingleProcessor => s_isSingleProcessor;
 
-        // Used to transfer the state when inflating thin locks
-        internal void InitializeLocked(int managedThreadId, uint recursionCount)
+        // Used to transfer the state when inflating thin locks. The lock is considered unlocked if managedThreadId is zero, and
+        // locked otherwise.
+        internal void ResetForMonitor(int managedThreadId, uint recursionCount)
         {
             Debug.Assert(recursionCount == 0 || managedThreadId != 0);
+            Debug.Assert(!new State(this).UseTrivialWaits);
 
             _state = managedThreadId == 0 ? State.InitialStateValue : State.LockedStateValue;
             _owningThreadId = (uint)managedThreadId;
             _recursionCount = recursionCount;
+
+            Debug.Assert(!new State(this).UseTrivialWaits);
         }
 
         internal struct ThreadId
