@@ -18,35 +18,11 @@ namespace System.Net
         {
         }
 
-        public override bool CanRead
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override void Flush()
-        {
-            ThrowIfDisposed();
-            // Nothing to do.
-        }
+        public override void Flush() => ThrowIfDisposed(); // Nothing to do.
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
