@@ -67,7 +67,7 @@ namespace System.Net
 
         private static unsafe bool TryParseIPv6(ReadOnlySpan<char> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
         {
-            Debug.Assert(numbers != null);
+            Debug.Assert(numbers != default);
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
             int end = ipSpan.Length;

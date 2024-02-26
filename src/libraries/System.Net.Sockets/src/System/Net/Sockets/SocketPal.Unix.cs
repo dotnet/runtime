@@ -528,7 +528,7 @@ namespace System.Net.Sockets
             out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddress != default, "Expected non-default socketAddress");
 
             int buffersCount = buffers.Count;
             bool allocOnStack = buffersCount <= IovStackThreshold;
@@ -810,7 +810,7 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert(flags == SocketFlags.None);
                     Debug.Assert(buffers == null);
-                    Debug.Assert(socketAddress == null);
+                    Debug.Assert(socketAddress == default);
 
                     receivedFlags = default;
                     received = SysRead(socket, buffer, out errno);
@@ -956,7 +956,7 @@ namespace System.Net.Sockets
                     {
                         sent = buffers != null ?
                             SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, out errno) :
-                            socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
+                            socketAddress.IsEmpty ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
                                                     SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, out errno);
                     }
                 }

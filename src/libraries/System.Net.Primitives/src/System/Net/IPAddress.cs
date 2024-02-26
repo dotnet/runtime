@@ -142,7 +142,7 @@ namespace System.Net
 
         internal IPAddress(ReadOnlySpan<ushort> numbers, uint scopeid)
         {
-            Debug.Assert(numbers != null);
+            Debug.Assert(numbers != default);
             Debug.Assert(numbers.Length == NumberOfLabels);
 
             _numbers = numbers.ToArray();
