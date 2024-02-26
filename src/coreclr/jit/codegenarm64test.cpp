@@ -7893,13 +7893,13 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // luti4   z21.h, {z10.h, z11.h}, z21[1]  // 01000101-01110101-10110101-01010101
     // CHECK-INST: luti4   z21.h, { z10.h, z11.h }, z21[1]
     // CHECK-ENCODING: [0x55,0xb5,0x75,0x45]
-    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V21, REG_V10, REG_V21, 1, INS_OPTS_SCALABLE_H, EA_UNKNOWN,
-                                INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V21, REG_V10, REG_V21, 1, INS_OPTS_SCALABLE_H,
+                                EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
     // luti4   z31.h, {z31.h, z0.h}, z31[3]  // 01000101-11111111-10110111-11111111
     // CHECK-INST: luti4   z31.h, { z31.h, z0.h }, z31[3]
     // CHECK-ENCODING: [0xff,0xb7,0xff,0x45]
-    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V31, REG_V31, REG_V31, 3, INS_OPTS_SCALABLE_H, EA_UNKNOWN,
-                                INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V31, REG_V31, REG_V31, 3, INS_OPTS_SCALABLE_H,
+                                EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
 
     // IF_SVE_GH_3B_B
     // LUTI4 <Zd>.H, {<Zn>.H }, <Zm>[<index>]

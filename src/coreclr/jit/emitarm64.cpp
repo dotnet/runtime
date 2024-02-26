@@ -24328,7 +24328,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeUimm1_23(imm);                // i
             dst += emitOutput_Instr(dst, code);
             break;
-            
+
         case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
                            // offsets)
         case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
@@ -28321,7 +28321,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
             emitDispElementIndex(imm, false);
             break;
-            
+
         // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
         // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]
         // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]
