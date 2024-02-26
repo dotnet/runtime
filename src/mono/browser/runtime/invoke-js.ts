@@ -5,19 +5,18 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name } from "./marshal";
-import { setI32_unchecked, receiveWorkerHeapViews } from "./memory";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid } from "./marshal";
+import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
@@ -36,7 +35,7 @@ export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exce
     }
 }
 
-export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signature: JSFunctionSignature) {
+export function mono_wasm_invoke_jsimport(signature: JSFunctionSignature, args: JSMarshalerArguments) {
     if (!WasmEnableThreads) return;
     assert_js_interop();
 
@@ -49,41 +48,13 @@ export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signat
     }
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
 
-    let max_postpone_count = 10;
-    function postpone_invoke_import_async() {
-        if (max_postpone_count < 0 || is_thread_available()) {
-            bound_fn(args);
-            Module._free(args as any);
-        } else {
-            max_postpone_count--;
-            Module.safeSetTimeout(postpone_invoke_import_async, 10);
-        }
-    }
-
-    if (WasmEnableThreads && !ENVIRONMENT_IS_WORKER) {
-        // give thread chance to load before we run more synchronous code on UI thread
-        postpone_invoke_import_async();
-    }
-    else {
-        bound_fn(args);
-        // this works together with AllocHGlobal in JSFunctionBinding.DispatchJSImportAsync
-        Module._free(args as any);
-    }
+    bound_fn(args);
 }
 
-export function mono_wasm_invoke_import_sync(args: JSMarshalerArguments, signature: JSFunctionSignature) {
-    if (!WasmEnableThreads) return;
-    assert_js_interop();
-
-    const function_handle = get_signature_handle(signature);
-
-    let bound_fn = js_import_wrapper_by_fn_handle[function_handle];
-    if (bound_fn == undefined) {
-        // it was not bound yet, let's do it now
-        bound_fn = bind_js_import(signature);
-    }
+export function mono_wasm_invoke_jsimport_ST(function_handle: JSFnHandle, args: JSMarshalerArguments): void {
+    if (WasmEnableThreads) return;
+    const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
-
     bound_fn(args);
 }
 
@@ -125,6 +96,9 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     const res_marshaler_type = get_signature_type(res_sig);
     const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
 
+    const is_discard_no_wait = res_marshaler_type == MarshalerType.DiscardNoWait;
+    const is_async = res_marshaler_type == MarshalerType.Task || res_marshaler_type == MarshalerType.TaskPreCreated;
+
     const closure: BindingClosure = {
         fn,
         fqn: js_module_name + ":" + js_function_name,
@@ -133,44 +107,81 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         res_converter,
         has_cleanup,
         arg_cleanup,
+        is_discard_no_wait,
+        is_async,
         isDisposed: false,
     };
-    let bound_fn: Function;
-    if (args_count == 0 && !res_converter) {
-        bound_fn = bind_fn_0V(closure);
-    }
-    else if (args_count == 1 && !has_cleanup && !res_converter) {
-        bound_fn = bind_fn_1V(closure);
-    }
-    else if (args_count == 1 && !has_cleanup && res_converter) {
-        bound_fn = bind_fn_1R(closure);
-    }
-    else if (args_count == 2 && !has_cleanup && res_converter) {
-        bound_fn = bind_fn_2R(closure);
-    }
-    else {
+    let bound_fn: WrappedJSFunction;
+    if (is_async || is_discard_no_wait || has_cleanup) {
         bound_fn = bind_fn(closure);
     }
+    else {
+        if (args_count == 0 && !res_converter) {
+            bound_fn = bind_fn_0V(closure);
+        }
+        else if (args_count == 1 && !res_converter) {
+            bound_fn = bind_fn_1V(closure);
+        }
+        else if (args_count == 1 && res_converter) {
+            bound_fn = bind_fn_1R(closure);
+        }
+        else if (args_count == 2 && res_converter) {
+            bound_fn = bind_fn_2R(closure);
+        } else {
+            bound_fn = bind_fn(closure);
+        }
+    }
 
-    // this is just to make debugging easier. 
+    function async_bound_fn(args: JSMarshalerArguments): void {
+        forceThreadMemoryViewRefresh();
+        bound_fn(args);
+    }
+
+    function sync_bound_fn(args: JSMarshalerArguments): void {
+        const previous = runtimeHelpers.isPendingSynchronousCall;
+        try {
+            forceThreadMemoryViewRefresh();
+            const caller_tid = get_caller_native_tid(args);
+            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.currentThreadTID === caller_tid;
+            bound_fn(args);
+        }
+        finally {
+            runtimeHelpers.isPendingSynchronousCall = previous;
+        }
+    }
+
+    let wrapped_fn: WrappedJSFunction = bound_fn;
+    if (WasmEnableThreads) {
+        if (is_async || is_discard_no_wait) {
+            wrapped_fn = async_bound_fn;
+        }
+        else {
+            wrapped_fn = sync_bound_fn;
+        }
+    }
+
+    // this is just to make debugging easier by naming the function in the stack trace.
     // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
     // in Release configuration, it would be a trimmed by rollup
     if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         try {
-            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
+            const fname = js_function_name.replaceAll(".", "_");
+            const url = `//# sourceURL=https://dotnet/JSImport/${fname}`;
+            const body = `return (function JSImport_${fname}(){ return fn.apply(this, arguments)});`;
+            wrapped_fn = new Function("fn", url + "\r\n" + body)(wrapped_fn);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;
         }
     }
 
-    (<any>bound_fn)[imported_js_function_symbol] = closure;
+    (<any>wrapped_fn)[imported_js_function_symbol] = closure;
 
-    js_import_wrapper_by_fn_handle[function_handle] = bound_fn;
+    js_import_wrapper_by_fn_handle[function_handle] = wrapped_fn;
 
     endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
 
-    return bound_fn;
+    return wrapped_fn;
 }
 
 function bind_fn_0V(closure: BindingClosure) {
@@ -271,6 +282,7 @@ function bind_fn(closure: BindingClosure) {
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
+        const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -300,10 +312,15 @@ function bind_fn(closure: BindingClosure) {
             marshal_exception_to_cs(<any>args, ex);
         }
         finally {
+            if (receiver_should_free) {
+                Module._free(args as any);
+            }
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
+
+type WrappedJSFunction = (args: JSMarshalerArguments) => void;
 
 type BindingClosure = {
     fn: Function,
@@ -313,18 +330,14 @@ type BindingClosure = {
     arg_marshalers: (BoundMarshalerToJs)[],
     res_converter: BoundMarshalerToCs | undefined,
     has_cleanup: boolean,
+    is_discard_no_wait: boolean,
+    is_async: boolean,
     arg_cleanup: (Function | undefined)[]
 }
 
 export function mono_wasm_invoke_js_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
-    bound_fn(args);
-}
-
-export function mono_wasm_invoke_js_import(function_handle: JSFnHandle, args: JSMarshalerArguments): void {
-    const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
-    mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
     bound_fn(args);
 }
 
@@ -449,6 +462,8 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
 }
 
 // to set out parameters of icalls
+// TODO replace it with replace it with UTF8 char*, no GC root needed
+// https://github.com/dotnet/runtime/issues/98365
 export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
     if (is_exception) {
         receiveWorkerHeapViews();
@@ -462,7 +477,7 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
 export function assert_js_interop(): void {
     loaderHelpers.assert_runtime_running();
     if (WasmEnableThreads) {
-        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready && runtimeHelpers.proxy_context_gc_handle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready && runtimeHelpers.proxyGCHandle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     }

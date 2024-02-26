@@ -907,18 +907,6 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
             break;
 
-#ifndef TARGET_X86
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
-            }
-            else
-            {
-                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
-            }
-            break;
-#endif
 #ifdef TARGET_XARCH
         case GenTreeBlk::BlkOpKindRepInstr:
             if (isCopyBlk)
@@ -2493,7 +2481,7 @@ void           LinearScan::buildIntervals()
             killed = RBM_EDI | RBM_ECX | RBM_EAX;
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
-            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
 #endif
             addRefsForPhysRegMask(killed, currentLoc + 1, RefTypeKill, true);
             currentLoc += 2;

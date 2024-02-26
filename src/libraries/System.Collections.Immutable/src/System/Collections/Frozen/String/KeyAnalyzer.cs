@@ -37,7 +37,7 @@ namespace System.Collections.Frozen
             AnalysisResults results;
             if (minLength == 0 || !TryUseSubstring(uniqueStrings, ignoreCase, minLength, maxLength, out results))
             {
-                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, isSubstring: false, static (s, _, _) => s.AsSpan());
+                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, static (s, _, _) => s.AsSpan());
             }
 
             return results;
@@ -77,7 +77,7 @@ namespace System.Collections.Frozen
                     if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                     {
                         results = CreateAnalysisResults(
-                            uniqueStrings, ignoreCase, minLength, maxLength, index, count, isSubstring: true,
+                            uniqueStrings, ignoreCase, minLength, maxLength, index, count,
                             static (string s, int index, int count) => s.AsSpan(index, count));
                         return true;
                     }
@@ -101,7 +101,7 @@ namespace System.Collections.Frozen
                         if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count, isSubstring: true,
+                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
                                 static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
                             return true;
                         }
@@ -115,7 +115,7 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, bool isSubstring, GetSpan getSubstringSpan)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getHashString)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -125,30 +125,42 @@ namespace System.Collections.Frozen
             // substrings are ASCII, so we check each.
             if (ignoreCase)
             {
-                // Further, if the ASCII keys (in their entirety) don't contain any letters, then we can
-                // actually perform the comparison as case-sensitive even if case-insensitive
-                // was requested, as there's nothing that would compare equally to the substring
-                // other than the substring itself.
-                bool canSwitchIgnoreCaseHashToCaseSensitive = !isSubstring;
+                // Further, if the ASCII keys (in their entirety) don't contain any letters,
+                // then we can actually perform the comparison as case-sensitive even if
+                // case-insensitive was requested, as there's nothing that would compare
+                // equally to the key other than the key itself.
+                bool canSwitchIgnoreCaseHashToCaseSensitive = true;
 
-                foreach (string s in uniqueStrings)
+                foreach (string uniqueString in uniqueStrings)
                 {
-                    // Get the span for the substring.
-                    ReadOnlySpan<char> substring = getSubstringSpan(s, index, count);
+                    // Get a span representing the slice of the uniqueString which will be hashed.
+                    ReadOnlySpan<char> hashString = getHashString(uniqueString, index, count);
 
-                    // If the substring isn't ASCII, bail out to return the results.
-                    if (!IsAllAscii(substring))
+                    // If the slice isn't ASCII, bail out to return the results.
+                    if (!IsAllAscii(hashString))
                     {
                         allAsciiIfIgnoreCase = false;
                         canSwitchIgnoreCaseHashToCaseSensitive = false;
                         break;
                     }
 
-                    // All substrings so far are still ASCII only.  If this one contains any ASCII
-                    // letters, mark that we can't switch to case-sensitive.
-                    if (canSwitchIgnoreCaseHashToCaseSensitive && ContainsAnyLetters(substring))
+                    // The hash string is ASCII only.  We disable the switch to
+                    // case sensitive if by examining the entire uniqueString we
+                    // find that it is not ASCII, or that it contains ASCII letters.
+                    if (canSwitchIgnoreCaseHashToCaseSensitive)
                     {
-                        canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        // If count is 0 then uniqueString equals hashString,
+                        // and as we have just checked that IsAllAscii(hashString) is true
+                        // then we know IsAllAscii(uniqueString) must be true,
+                        // so we can skip the check.
+                        if (count > 0 && !IsAllAscii(uniqueString.AsSpan()))
+                        {
+                            canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        }
+                        else if (ContainsAnyAsciiLetters(uniqueString.AsSpan()))
+                        {
+                            canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        }
                     }
                 }
 
@@ -207,7 +219,7 @@ namespace System.Collections.Frozen
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 #endif
-        internal static bool ContainsAnyLetters(ReadOnlySpan<char> s)
+        internal static bool ContainsAnyAsciiLetters(ReadOnlySpan<char> s)
         {
             Debug.Assert(IsAllAscii(s));
 

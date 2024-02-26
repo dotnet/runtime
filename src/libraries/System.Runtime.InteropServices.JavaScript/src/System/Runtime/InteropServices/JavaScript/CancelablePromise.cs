@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     // FIXME: race condition
                     // we know that holder.GCHandle is still valid because we hold the ProxyContext lock
                     // but the message may arrive to the target thread after it was resolved, making GCHandle invalid
-                    Interop.Runtime.CancelPromisePost(holder.ProxyContext.NativeTID, holder.GCHandle);
+                    Interop.Runtime.CancelPromisePost(holder.ProxyContext.JSNativeTID, holder.GCHandle);
                 }
             }
 #endif

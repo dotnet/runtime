@@ -22,9 +22,9 @@ namespace Xunit
         JitMinOpts = 1 << 3, // DOTNET_JITMinOpts is set.
         TailcallStress = 1 << 4, // DOTNET_TailcallStress is set.
 
-        // ZapDisable says to not use NGEN or ReadyToRun images.
+        // DisableR2R says to not use ReadyToRun images.
         // This means we JIT everything.
-        ZapDisable = 1 << 5, // DOTNET_ZapDisable is set.
+        DisableR2R = 1 << 5, // DOTNET_ReadyToRun=0
 
         // GCStress3 forces a GC at various locations, typically transitions
         // to/from the VM from managed code.

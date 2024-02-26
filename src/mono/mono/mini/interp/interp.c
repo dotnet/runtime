@@ -1340,7 +1340,10 @@ typedef enum {
 	PINVOKE_ARG_R8 = 3,
 	PINVOKE_ARG_R4 = 4,
 	PINVOKE_ARG_VTYPE = 5,
-	PINVOKE_ARG_SCALAR_VTYPE = 6
+	PINVOKE_ARG_SCALAR_VTYPE = 6,
+	// This isn't ifdefed so it's easier to write code that handles it without sprinkling
+	//  800 ifdefs in this file
+	PINVOKE_ARG_WASM_VALUETYPE_RESULT = 7,
 } PInvokeArgType;
 
 typedef struct {
@@ -1436,6 +1439,7 @@ retry:
 			ilen++;
 			break;
 		case MONO_TYPE_GENERICINST: {
+			// FIXME: Should mini_wasm_is_scalar_vtype stuff go in here?
 			MonoClass *container_class = type->data.generic_class->container_class;
 			type = m_class_get_byval_arg (container_class);
 			goto retry;
@@ -1473,11 +1477,32 @@ retry:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#if SIZEOF_VOID_P == 8
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
+#endif
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#endif
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+#ifdef HOST_WASM
+			// This ISSTRUCT check is important, because the type could be an enum
+			if (MONO_TYPE_ISSTRUCT (info->ret_mono_type)) {
+				// The return type was already filtered previously, so if we get here
+				//  we're returning a struct byref instead of as a scalar
+				info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
+				info->ilen++;
+			}
+#endif
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
@@ -1503,6 +1528,15 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	margs->ilen = info->ilen;
 	margs->flen = info->flen;
 
+	size_t int_i = 0;
+	size_t int_f = 0;
+
+	if (info->ret_pinvoke_type == PINVOKE_ARG_WASM_VALUETYPE_RESULT) {
+		// Allocate an empty arg0 for the address of the return value
+		// info->ilen was already increased earlier
+		int_i++;
+	}
+
 	if (margs->ilen > 0) {
 		if (margs->ilen <= 8)
 			margs->iargs = margs->iargs_buf;
@@ -1516,9 +1550,6 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		else
 			margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
 	}
-
-	size_t int_i = 0;
-	size_t int_f = 0;
 
 	for (int i = 0; i < sig->param_count; i++) {
 		guint32 offset = get_arg_offset (frame->imethod, sig, i);
@@ -1578,6 +1609,15 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	}
 
 	switch (info->ret_pinvoke_type) {
+	case PINVOKE_ARG_WASM_VALUETYPE_RESULT:
+		// We pass the return value address in arg0 so fill it in, we already
+		//  reserved space for it earlier.
+		g_assert (frame->retval);
+		margs->iargs[0] = (gpointer*)frame->retval;
+		// The return type is void so retval should be NULL
+		margs->retval = NULL;
+		margs->is_float_ret = 0;
+		break;
 	case PINVOKE_ARG_INT:
 		margs->retval = (gpointer*)frame->retval;
 		margs->is_float_ret = 0;
@@ -1795,8 +1835,10 @@ ves_pinvoke_method (
 	g_free (ccontext.stack);
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
-	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type))
-		stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type)) {
+		if (call_info->ret_pinvoke_type != PINVOKE_ARG_WASM_VALUETYPE_RESULT)
+			stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	}
 
 	if (margs.iargs != margs.iargs_buf)
 		g_free (margs.iargs);
@@ -5813,15 +5855,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			goto jit_call;
 		}
-		MINT_IN_CASE(MINT_NEWOBJ_VT_INLINED) {
-			guint16 ret_size = ip [3];
-			gpointer this_vt = locals + ip [2];
-
-			memset (this_vt, 0, ret_size);
-			LOCAL_VAR (ip [1], gpointer) = this_vt;
-			ip += 4;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_NEWOBJ_SLOW) {
 			guint32 const token = ip [3];
 			return_offset = ip [1];
@@ -5964,8 +5997,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
-			interp_intrins_marvin_block ((guint32*)(locals + ip [1]), (guint32*)(locals + ip [2]));
-			ip += 3;
+			guint32 *pp0 = (guint32*)(locals + ip [1]);
+			guint32 *pp1 = (guint32*)(locals + ip [2]);
+			guint32 *dest0 = (guint32*)(locals + ip [3]);
+			guint32 *dest1 = (guint32*)(locals + ip [4]);
+
+			interp_intrins_marvin_block (pp0, pp1, dest0, dest1);
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE) {
@@ -7958,6 +7996,8 @@ interp_parse_options (const char *options)
 			else if (strncmp (arg, "jiterp", 6) == 0)
 				opt = INTERP_OPT_JITERPRETER;
 #endif
+			else if (strncmp (arg, "ssa", 3) == 0)
+				opt = INTERP_OPT_SSA;
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 
@@ -8709,19 +8749,6 @@ interp_cleanup (void)
 #endif
 }
 
-static void
-register_interp_stats (void)
-{
-	mono_counters_init ();
-	mono_counters_register ("Total transform time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.transform_time);
-	mono_counters_register ("Methods transformed", MONO_COUNTER_INTERP | MONO_COUNTER_LONG, &mono_interp_stats.methods_transformed);
-	mono_counters_register ("Total cprop time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.cprop_time);
-	mono_counters_register ("Total super instructions time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.super_instructions_time);
-	mono_counters_register ("Emitted instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.emitted_instructions);
-	mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
-	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
-}
-
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) interp_ ## name,
 
@@ -8749,8 +8776,6 @@ mono_ee_interp_init (const char *opts)
 		mono_interp_tiering_init ();
 
 	mini_install_interp_callbacks (&mono_interp_callbacks);
-
-	register_interp_stats ();
 
 #ifdef HOST_WASI
 	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;
