@@ -18541,7 +18541,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         default:
             break;
-
     }
     assert(!"Invalid <mod> <amount>");
     return 0;
@@ -32349,8 +32348,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_3C;
             break;
 
-        case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
-        case IF_SVE_BH_3B: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3A:   // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
         case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
