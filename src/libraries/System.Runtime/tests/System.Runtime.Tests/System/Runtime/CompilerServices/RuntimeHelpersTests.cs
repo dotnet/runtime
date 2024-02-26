@@ -75,6 +75,17 @@ namespace System.Runtime.CompilerServices.Tests
 
             Assert.True(RuntimeHelpers.Equals(Guid.Empty, Guid.Empty));
             Assert.False(RuntimeHelpers.Equals(Guid.Empty, Guid.NewGuid()));
+
+            // Reference equal
+            object o = new object();
+            Assert.True(RuntimeHelpers.Equals(o, o));
+
+            // Type mismatch
+            Assert.False(RuntimeHelpers.Equals(Guid.Empty, string.Empty));
+
+            // Non value types
+            Assert.False(RuntimeHelpers.Equals(new object(), new object()));
+            Assert.False(RuntimeHelpers.Equals(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 }));
         }
 
         [Fact]
