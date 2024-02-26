@@ -630,7 +630,6 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 #ifdef TARGET_X86
 #include "unwind_x86.h"
-#endif
 
 /*****************************************************************************
   How the stackwalkers buffer will be interpreted
@@ -641,6 +640,8 @@ struct CodeManStateBuf
     DWORD       hdrInfoSize;
     hdrInfo     hdrInfoBody;
 };
+
+#endif
 
 //*****************************************************************************
 #endif // _EETWAIN_H
