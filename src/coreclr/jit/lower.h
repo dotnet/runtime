@@ -140,6 +140,7 @@ private:
     GenTree* LowerCall(GenTree* call);
     bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
     bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
+    bool LowerCallMemset(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
     void MoveCFGCallArgs(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
