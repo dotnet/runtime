@@ -2479,7 +2479,7 @@ void CSE_HeuristicParameterized::GreedyPolicy()
         JITDUMP("\n");
 
         PerformCSE(&candidate);
-        madeChanges = true;
+        madeChanges        = true;
         choice.m_performed = true;
 
         // If performing this CSE impacted other CSEs, we need to
