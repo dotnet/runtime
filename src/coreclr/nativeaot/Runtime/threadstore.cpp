@@ -410,7 +410,7 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
-COOP_PINVOKE_HELPER_NOARGS(void *, RhpGetCurrentThread)
+COOP_PINVOKE_HELPER(void *, RhpGetCurrentThread, ())
 {
     return ThreadStore::GetCurrentThread();
 }

@@ -391,7 +391,7 @@ COOP_PINVOKE_HELPER(int64_t, RhpLockCmpXchg64, (int64_t * location, int64_t valu
     return PalInterlockedCompareExchange64(location, value, comparand);
 }
 
-EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
+COOP_PINVOKE_CDECL_HELPER(void*, RhAllocateThunksMapping, ())
 {
     return NULL;
 }

@@ -1128,7 +1128,7 @@ void Thread::ValidateExInfoStack()
 #ifndef DACCESS_COMPILE
 
 #ifndef TARGET_UNIX
-EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
+COOP_PINVOKE_CDECL_HELPER(uint32_t, RhCompatibleReentrantWaitAny, (UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles))
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }
@@ -1202,7 +1202,7 @@ void Thread::SetThreadAbortException(Object *exception)
     m_threadAbortException = exception;
 }
 
-COOP_PINVOKE_HELPER_NOARGS(Object *, RhpGetThreadAbortException)
+COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     return pCurThread->GetThreadAbortException();
@@ -1213,7 +1213,7 @@ Object** Thread::GetThreadStaticStorage()
     return &m_pThreadLocalStatics;
 }
 
-COOP_PINVOKE_HELPER_NOARGS(Object**, RhGetThreadStaticStorage)
+COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
@@ -1240,7 +1240,7 @@ COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root, Typ
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread
-COOP_PINVOKE_HELPER_NOARGS(uint8_t*, RhCurrentNativeThreadId)
+COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
 {
 #ifndef TARGET_UNIX
     return PalNtCurrentTeb();
@@ -1250,7 +1250,7 @@ COOP_PINVOKE_HELPER_NOARGS(uint8_t*, RhCurrentNativeThreadId)
 }
 
 // This function is used to get the OS thread identifier for the current thread.
-COOP_PINVOKE_HELPER_NOARGS(uint64_t, RhCurrentOSThreadId)
+COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
 {
     return PalGetCurrentOSThreadId();
 }

@@ -291,6 +291,11 @@ if (CLR_CMAKE_TARGET_UNIX)
 
 endif(CLR_CMAKE_TARGET_UNIX)
 
+# use standards compliant preprocessor for MSVC, necessary for __VA_OPT__ support
+if (MSVC)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:preprocessor>)
+endif()
+
 set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 list(APPEND COMMON_RUNTIME_SOURCES ${GC_HEADERS})

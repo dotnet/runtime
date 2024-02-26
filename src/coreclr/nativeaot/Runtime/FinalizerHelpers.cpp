@@ -27,7 +27,7 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-extern "C" void __cdecl ProcessFinalizers();
+COOP_PINVOKE_CDECL_HELPER(void, ProcessFinalizers, ());
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
 // finalizer thread we can't run managed code. Instead this method waits
@@ -89,12 +89,12 @@ void RhEnableFinalization()
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhInitializeFinalizerThread()
+COOP_PINVOKE_CDECL_HELPER(void, RhInitializeFinalizerThread, ())
 {
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
+COOP_PINVOKE_CDECL_HELPER(void, RhWaitForPendingFinalizers, (UInt32_BOOL allowReentrantWait))
 {
     // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
     // called in cooperative mode.
@@ -115,7 +115,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allow
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
+COOP_PINVOKE_CDECL_HELPER(UInt32_BOOL, RhpWaitForFinalizerRequest, ())
 {
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
@@ -182,7 +182,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 }
 
 // Indicate that the current round of finalizations is complete.
-EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete(uint32_t fcount)
+COOP_PINVOKE_CDECL_HELPER(void, RhpSignalFinalizationComplete, (uint32_t fcount))
 {
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
     g_FinalizerDoneEvent.Set();
@@ -194,7 +194,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete(uint32_t fcoun
 //
 
 // Fetch next object which needs finalization or return null if we've reached the end of the list.
-COOP_PINVOKE_HELPER_NOARGS(OBJECTREF, RhpGetNextFinalizableObject)
+COOP_PINVOKE_HELPER(OBJECTREF, RhpGetNextFinalizableObject, ())
 {
     while (true)
     {

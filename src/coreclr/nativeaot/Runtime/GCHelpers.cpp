@@ -95,7 +95,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
+COOP_PINVOKE_CDECL_HELPER(void, RhpCollect, (uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP))
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -110,7 +110,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uM
     pCurThread->EnablePreemptiveMode();
 }
 
-EXTERN_C NATIVEAOT_API int64_t __cdecl RhpGetGcTotalMemory()
+COOP_PINVOKE_CDECL_HELPER(int64_t, RhpGetGcTotalMemory, ())
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -126,7 +126,7 @@ EXTERN_C NATIVEAOT_API int64_t __cdecl RhpGetGcTotalMemory()
     return ret;
 }
 
-EXTERN_C NATIVEAOT_API int32_t __cdecl RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+COOP_PINVOKE_CDECL_HELPER(int32_t, RhpStartNoGCRegion, (int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC))
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -141,7 +141,7 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpStartNoGCRegion(int64_t totalSize, UIn
     return result;
 }
 
-EXTERN_C NATIVEAOT_API int32_t __cdecl RhpEndNoGCRegion()
+COOP_PINVOKE_CDECL_HELPER(int32_t, RhpEndNoGCRegion, ())
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -162,7 +162,7 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhReRegisterForFinalize, (OBJECTREF refObj))
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, refObj));
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int32_t, RhGetMaxGcGeneration)
+COOP_PINVOKE_HELPER(int32_t, RhGetMaxGcGeneration, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 }
@@ -182,12 +182,12 @@ COOP_PINVOKE_HELPER(int64_t, RhGetGenerationSize, (int32_t gen))
     return (int64_t)(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetLastGCPercentTimeInGC)
+COOP_PINVOKE_HELPER(int64_t, RhGetLastGCPercentTimeInGC, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int32_t, RhGetGcLatencyMode)
+COOP_PINVOKE_HELPER(int32_t, RhGetGcLatencyMode, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
 }
@@ -202,7 +202,7 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhIsPromoted, (OBJECTREF obj))
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->IsPromoted(obj));
 }
 
-COOP_PINVOKE_HELPER_NOARGS(FC_BOOL_RET, RhIsServerGc)
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhIsServerGc, ())
 {
     FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
 }
@@ -224,7 +224,7 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhRegisterObjectiveCMarshalBeginEndCallback, (v
 }
 #endif
 
-COOP_PINVOKE_HELPER_NOARGS(int32_t, RhGetLohCompactionMode)
+COOP_PINVOKE_HELPER(int32_t, RhGetLohCompactionMode, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetLOHCompactionMode();
 }
@@ -234,12 +234,12 @@ COOP_PINVOKE_HELPER(void, RhSetLohCompactionMode, (int32_t newLohCompactionMode)
     GCHeapUtilities::GetGCHeap()->SetLOHCompactionMode(newLohCompactionMode);
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetCurrentObjSize)
+COOP_PINVOKE_HELPER(int64_t, RhGetCurrentObjSize, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetCurrentObjSize();
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetGCNow)
+COOP_PINVOKE_HELPER(int64_t, RhGetGCNow, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetNow();
 }
@@ -261,7 +261,7 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhRegisterForFullGCNotification, (int32_t maxGe
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFullGCNotification(maxGenerationThreshold, largeObjectHeapThreshold));
 }
 
-COOP_PINVOKE_HELPER_NOARGS(FC_BOOL_RET, RhCancelFullGCNotification)
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCancelFullGCNotification, ())
 {
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->CancelFullGCNotification());
 }
@@ -284,7 +284,7 @@ COOP_PINVOKE_HELPER(int32_t, RhWaitForFullGCComplete, (int32_t millisecondsTimeo
     return GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(millisecondsTimeout);
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetGCSegmentSize)
+COOP_PINVOKE_HELPER(int64_t, RhGetGCSegmentSize, ())
 {
     size_t first = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(true);
     size_t second = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(false);
@@ -292,7 +292,7 @@ COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetGCSegmentSize)
     return (first > second) ? first : second;
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetAllocatedBytesForCurrentThread)
+COOP_PINVOKE_HELPER(int64_t, RhGetAllocatedBytesForCurrentThread, ())
 {
     Thread *pThread = ThreadStore::GetCurrentThread();
     gc_alloc_context *ac = pThread->GetAllocContext();
@@ -370,7 +370,7 @@ MethodTable* GetLastAllocEEType()
     return tls_pLastAllocationEEType;
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetTotalAllocatedBytes)
+COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
 {
     uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - Thread::GetDeadThreadsNonAllocBytes();
 
@@ -390,9 +390,7 @@ COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetTotalAllocatedBytes)
     return current_high;
 }
 
-using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+COOP_PINVOKE_CDECL_HELPER(void, RhEnumerateConfigurationValues, (void* configurationContext, ConfigurationValueFunc callback))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
@@ -401,7 +399,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEnumerateConfigurationValues(void* configu
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-EXTERN_C NATIVEAOT_API void __cdecl RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
+COOP_PINVOKE_CDECL_HELPER(void, RhRefreshMemoryLimit, (GCHeapHardLimitInfo heapHardLimitInfo))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
@@ -409,19 +407,19 @@ EXTERN_C NATIVEAOT_API void __cdecl RhRefreshMemoryLimit(GCHeapHardLimitInfo hea
     pHeap->RefreshMemoryLimit();
 }
 
-EXTERN_C NATIVEAOT_API uint64_t __cdecl RhGetGenerationBudget(int generation)
+COOP_PINVOKE_CDECL_HELPER(uint64_t, RhGetGenerationBudget, (int generation))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     return pHeap->GetGenerationBudget(generation);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
+COOP_PINVOKE_CDECL_HELPER(void, RhEnableNoGCRegionCallback, (NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
-EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
+COOP_PINVOKE_CDECL_HELPER(int64_t, RhGetTotalAllocatedBytesPrecise, ())
 {
     int64_t allocated;
 
@@ -535,7 +533,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+COOP_PINVOKE_CDECL_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -570,7 +568,7 @@ EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable* pEEType, u
     return GcAllocInternal(pEEType, uFlags, numElements, pThread);
 }
 
-EXTERN_C NATIVEAOT_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult)
+COOP_PINVOKE_CDECL_HELPER(void, RhAllocateNewArray, (MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -584,7 +582,7 @@ EXTERN_C NATIVEAOT_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32
     pThread->EnablePreemptiveMode();
 }
 
-EXTERN_C NATIVEAOT_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t flags, Object** pResult)
+COOP_PINVOKE_CDECL_HELPER(void, RhAllocateNewObject, (MethodTable* pEEType, uint32_t flags, Object** pResult))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -598,7 +596,7 @@ EXTERN_C NATIVEAOT_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t f
     pThread->EnablePreemptiveMode();
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int64_t, RhGetTotalPauseDuration)
+COOP_PINVOKE_HELPER(int64_t, RhGetTotalPauseDuration, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
@@ -623,7 +621,7 @@ COOP_PINVOKE_HELPER(void, RhUnregisterForGCReporting, (GCFrameRegistration* pReg
     pThread->PopGCFrameRegistration(pRegistration);
 }
 
-EXTERN_C NATIVEAOT_API void* __cdecl RhRegisterFrozenSegment(void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
+COOP_PINVOKE_CDECL_HELPER(void*, RhRegisterFrozenSegment, (void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize))
 {
     ASSERT(allocSize <= commitSize);
     ASSERT(commitSize <= reservedSize);
@@ -643,14 +641,14 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhRegisterFrozenSegment(void* pSection, siz
 #endif // FEATURE_BASICFREEZE
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
+COOP_PINVOKE_CDECL_HELPER(void, RhUpdateFrozenSegment, (void* pSegmentHandle, uint8_t* allocated, uint8_t* committed))
 {
     ASSERT(allocated <= committed);
 
     GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment((segment_handle)pSegmentHandle, allocated, committed);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhUnregisterFrozenSegment(void* pSegmentHandle)
+COOP_PINVOKE_CDECL_HELPER(void, RhUnregisterFrozenSegment, (void* pSegmentHandle))
 {
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)pSegmentHandle);
 }
@@ -685,7 +683,7 @@ EXTERN_C void REDHAWK_CALLCONV RhpStressGc()
     PalSetLastError(lastErrorOnEntry);
 }
 
-COOP_PINVOKE_HELPER_NOARGS(void, RhpInitializeGcStress)
+COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 {
     g_fGcStressStarted = UInt32_TRUE;
 }

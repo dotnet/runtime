@@ -37,13 +37,13 @@
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
 
-COOP_PINVOKE_HELPER_NOARGS(void, RhDebugBreak)
+COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
     PalDebugBreak();
 }
 
 // Busy spin for the given number of iterations.
-EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
+COOP_PINVOKE_CDECL_HELPER(void, RhSpinWait, (int32_t iterations))
 {
     ASSERT(iterations > 0);
 
@@ -56,7 +56,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhYield()
+COOP_PINVOKE_CDECL_HELPER(UInt32_BOOL, RhYield, ())
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -65,7 +65,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhYield()
     return PalSwitchToThread();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhFlushProcessWriteBuffers()
+COOP_PINVOKE_CDECL_HELPER(void, RhFlushProcessWriteBuffers, ())
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -337,14 +337,14 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
+COOP_PINVOKE_CDECL_HELPER(uint64_t, RhpGetTickCount64, ())
 {
     return PalGetTickCount64();
 }
 
-EXTERN_C int32_t __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
+COOP_PINVOKE_CDECL_HELPER(int32_t, RhpCalculateStackTraceWorker, (void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame));
 
-EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+COOP_PINVOKE_CDECL_HELPER(int32_t, RhpGetCurrentThreadStackTrace, (void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame))
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -386,7 +386,7 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
     g_threadExitCallback = (ThreadExitCallback)pCallback;
 }
 
-COOP_PINVOKE_HELPER_NOARGS(int32_t, RhGetProcessCpuCount)
+COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
 }
@@ -399,7 +399,7 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** p
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C NATIVEAOT_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
+COOP_PINVOKE_CDECL_HELPER(void, RhCpuIdEx, (int* cpuInfo, int functionId, int subFunctionId))
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }
