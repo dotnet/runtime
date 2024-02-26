@@ -209,11 +209,15 @@ typedef uint8_t CODE_LOCATION;
 #define COOP_ARGHELPER_STACKSIZE(...) COOP_ARGHELPER_NAME_((__VA_ARGS__ __VA_OPT__(,) 24, 20, 16, 12, 8, 4, 0))
 
 #define COOP_FASTCALL_ALTNAME(_method, _argSize) COOP_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
+#define COOP_FASTCALL_ALTNAME_IMPORT(_method, _argSize) COOP_XSTRINGIFY(/alternatename:@_method@_argSize=_method)
 
 #define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) \
     NATIVEAOT_API _rettype REDHAWK_CALLCONV _method COOP_ARGHELPER_REORDER _args
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) \
     _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
+    EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
+#define COOP_PINVOKE_HELPER_IMPORT(_rettype, _method, _args) \
+    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME_IMPORT(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
     EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
 
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
@@ -223,6 +227,7 @@ typedef uint8_t CODE_LOCATION;
 
 #define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
+#define COOP_PINVOKE_HELPER_IMPORT COOP_PINVOKE_HELPER
 #define COOP_PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER
 
 #endif
