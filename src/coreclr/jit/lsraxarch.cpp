@@ -633,6 +633,20 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            // Any register should do here, but the error register value should immediately
+            // be moved from GT_SWIFT_ERROR's destination register to the SwiftError struct,
+            // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
+            // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
+            // we can ensure the redundant move is elided.
+            BuildDef(tree, RBM_SWIFT_ERROR);
+            break;
+#endif // SWIFT_SUPPORT
+
     } // end switch (tree->OperGet())
 
     // We need to be sure that we've set srcCount and dstCount appropriately.
@@ -1356,6 +1370,30 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+
+#ifdef SWIFT_SUPPORT
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        // Tree is a Swift call with error handling; error register should have been killed
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        assert((killMask & RBM_SWIFT_ERROR) != 0);
+
+        // After a Swift call that might throw returns, we expect the error register to be consumed
+        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
+        // before GT_SWIFT_ERROR can consume it.
+        // (For example, the PInvoke epilog comes before the error register store.)
+        // To do so, delay the freeing of the error register until the next node.
+        // This only works if the next node after the call is the GT_SWIFT_ERROR node.
+        // (InsertPInvokeCallEpilog should have moved the GT_SWIFT_ERROR node during lowering.)
+        assert(call->gtNext != nullptr);
+        assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
+
+        // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
+        // during register allocation should be cheaper in terms of TP.
+        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
+        setDelayFree(pos);
+    }
+#endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
