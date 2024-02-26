@@ -13,7 +13,6 @@
 /*****************************************************************************/
 
 #include "daccess.h"
-#include "windef.h"     // For BYTE
 
 // Some declarations in this file are used on non-x86 platforms, but most are x86-specific.
 
