@@ -145,7 +145,7 @@ WCHAR *g_pFailFastBuffer = g_szFailFastBuffer;
 
 // This is the common code for FailFast processing that is wrapped by the two
 // FailFast FCalls below.
-void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, UINT exitCode, STRINGREF refErrorSourceString)
+void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, STRINGREF refErrorSourceString)
 {
     CONTRACTL
     {
@@ -282,7 +282,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     if (gc.refExceptionForWatsonBucketing != NULL)
         pThread->SetLastThrownObject(gc.refExceptionForWatsonBucketing);
 
-    EEPolicy::HandleFatalError(exitCode, retAddress, pszMessage, NULL, errorSourceString, argExceptionString);
+    EEPolicy::HandleFatalError(COR_E_FAILFAST, retAddress, pszMessage, NULL, errorSourceString, argExceptionString);
 
     GCPROTECT_END();
 }
@@ -301,25 +301,7 @@ FCIMPL1(VOID, SystemNative::FailFast, StringObject* refMessageUNSAFE)
     UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
 
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, NULL, retaddr, COR_E_FAILFAST, NULL);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(VOID, SystemNative::FailFastWithExitCode, StringObject* refMessageUNSAFE, UINT exitCode)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF refMessage = (STRINGREF)refMessageUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_1(refMessage);
-
-    // The HelperMethodFrame knows how to get the return address.
-    UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
-
-    // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, NULL, retaddr, exitCode, NULL);
+    GenericFailFast(refMessage, NULL, retaddr, NULL);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -338,7 +320,7 @@ FCIMPL2(VOID, SystemNative::FailFastWithException, StringObject* refMessageUNSAF
     UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
 
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, refException, retaddr, COR_E_FAILFAST, NULL);
+    GenericFailFast(refMessage, refException, retaddr, NULL);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -358,7 +340,7 @@ FCIMPL3(VOID, SystemNative::FailFastWithExceptionAndSource, StringObject* refMes
     UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
 
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, refException, retaddr, COR_E_FAILFAST, errorSource);
+    GenericFailFast(refMessage, refException, retaddr, errorSource);
 
     HELPER_METHOD_FRAME_END();
 }

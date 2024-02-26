@@ -57,9 +57,11 @@ namespace System.Text.RegularExpressions
             static bool FindPrefixesCore(RegexNode node, List<StringBuilder> results, bool ignoreCase)
             {
                 // If we're too deep to analyze further, we can't trust what we've already computed, so stop iterating.
-                // Also bail if any of our results is already hitting the threshold
+                // Also bail if any of our results is already hitting the threshold, or if this node is RTL, which is
+                // not worth the complexity of handling.
                 if (!StackHelper.TryEnsureSufficientExecutionStack() ||
-                    !results.TrueForAll(sb => sb.Length < MaxPrefixLength))
+                    !results.TrueForAll(sb => sb.Length < MaxPrefixLength) ||
+                    (node.Options & RegexOptions.RightToLeft) != 0)
                 {
                     return false;
                 }
@@ -79,7 +81,6 @@ namespace System.Text.RegularExpressions
                         // skip through them to their child.
                         case RegexNodeKind.Atomic:
                         case RegexNodeKind.Capture:
-                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
                             node = node.Child(0);
                             continue;
 
@@ -108,13 +109,13 @@ namespace System.Text.RegularExpressions
                         // that their min and max are the same.
                         case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or RegexNodeKind.Oneloopatomic when !ignoreCase || !RegexCharClass.ParticipatesInCaseConversion(node.Ch):
                             {
-                                int reps = node.Kind is RegexNodeKind.One ? 1 : node.M;
+                                int reps = node.Kind is RegexNodeKind.One ? 1 : Math.Min(node.M, MaxPrefixLength);
                                 foreach (StringBuilder sb in results)
                                 {
                                     sb.Append(node.Ch, reps);
                                 }
+                                return node.Kind is RegexNodeKind.One || reps == node.N;
                             }
-                            return node.Kind is RegexNodeKind.One || node.M == node.N;
 
                         // If we hit a string, we can just return that string.
                         // As with One above, this is only relevant for case-sensitive searches.
@@ -158,7 +159,7 @@ namespace System.Text.RegularExpressions
                                     return false;
                                 }
 
-                                int reps = node.Kind is RegexNodeKind.Set ? 1 : node.M;
+                                int reps = node.Kind is RegexNodeKind.Set ? 1 : Math.Min(node.M, MaxPrefixLength);
                                 if (!ignoreCase)
                                 {
                                     int existingCount = results.Count;
@@ -195,29 +196,36 @@ namespace System.Text.RegularExpressions
                                         sb.Append(setChars[1], reps);
                                     }
                                 }
+
+                                return node.Kind is RegexNodeKind.Set || reps == node.N;
                             }
-                            return node.Kind is RegexNodeKind.Set || node.N == node.M;
 
                         case RegexNodeKind.Concatenate:
                             {
                                 int childCount = node.ChildCount();
                                 for (int i = 0; i < childCount; i++)
                                 {
-                                    // Atomic and Capture nodes don't impact prefixes, so skip through them.
-                                    // Unlike earlier, however, we can't skip through loops, as a loop with
-                                    // more than one iteration impacts the matched sequence for the concatenation,
-                                    // and since we need a minimum of one, we'd only be able to skip a loop with
-                                    // both a min and max of 1, which in general is removed as superfluous during
-                                    // tree optimization. We could keep track of having traversed a loop and then
-                                    // stop processing the continuation after that, but that complexity isn't
-                                    // currently worthwhile.
-                                    if (!FindPrefixesCore(SkipThroughAtomicAndCapture(node.Child(i)), results, ignoreCase))
+                                    if (!FindPrefixesCore(node.Child(i), results, ignoreCase))
                                     {
                                         return false;
                                     }
                                 }
                             }
                             return true;
+
+                        // We can append any guaranteed iterations as if they were a concatenation.
+                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                            {
+                                int limit = Math.Min(node.M, MaxPrefixLength); // MaxPrefixLength here is somewhat arbitrary, as a single loop iteration could yield multiple chars
+                                for (int i = 0; i < limit; i++)
+                                {
+                                    if (!FindPrefixesCore(node.Child(0), results, ignoreCase))
+                                    {
+                                        return false;
+                                    }
+                                }
+                                return limit == node.N;
+                            }
 
                         // For alternations, we need to find a prefix for every branch; if we can't compute a
                         // prefix for any one branch, we can't trust the results and need to give up, since we don't
@@ -243,6 +251,10 @@ namespace System.Text.RegularExpressions
                                     Debug.Assert(alternateBranchResults.Count > 0);
                                     foreach (StringBuilder sb in alternateBranchResults)
                                     {
+                                        // If a branch yields an empty prefix, then none of the other branches
+                                        // matter, e.g. if the pattern is abc(def|ghi|), then this would result
+                                        // in prefixes abcdef, abcghi, and abc, and since abc is a prefix of both
+                                        // abcdef and abcghi, the former two would never be used.
                                         if (sb.Length == 0)
                                         {
                                             return false;
@@ -265,23 +277,35 @@ namespace System.Text.RegularExpressions
                                 // At this point, we know we can successfully incorporate the alternation's results
                                 // into the main results.
 
-                                // Duplicate all of the existing strings for all of the new suffixes, other than the first.
-                                int existingCount = results.Count;
-                                for (int i = 1; i < allBranchResults!.Count; i++)
+                                // If the results are currently empty (meaning a single empty StringBuilder), we can remove
+                                // that builder and just replace the results with the alternation's results. We would otherwise
+                                // be creating a dot product of every builder in the results with every branch's result, which
+                                // is logically the same thing.
+                                if (results.Count == 1 && results[0].Length == 0)
                                 {
-                                    StringBuilder suffix = allBranchResults[i];
+                                    results.Clear();
+                                    results.AddRange(allBranchResults!);
+                                }
+                                else
+                                {
+                                    // Duplicate all of the existing strings for all of the new suffixes, other than the first.
+                                    int existingCount = results.Count;
+                                    for (int i = 1; i < allBranchResults!.Count; i++)
+                                    {
+                                        StringBuilder suffix = allBranchResults[i];
+                                        for (int existing = 0; existing < existingCount; existing++)
+                                        {
+                                            StringBuilder newSb = new StringBuilder().Append(results[existing]);
+                                            newSb.Append(suffix);
+                                            results.Add(newSb);
+                                        }
+                                    }
+
+                                    // Then append the first suffix to all of the existing strings.
                                     for (int existing = 0; existing < existingCount; existing++)
                                     {
-                                        StringBuilder newSb = new StringBuilder().Append(results[existing]);
-                                        newSb.Append(suffix);
-                                        results.Add(newSb);
+                                        results[existing].Append(allBranchResults[0]);
                                     }
-                                }
-
-                                // Then append the first suffix to all of the existing strings.
-                                for (int existing = 0; existing < existingCount; existing++)
-                                {
-                                    results[existing].Append(allBranchResults[0]);
                                 }
                             }
 
@@ -1073,7 +1097,10 @@ namespace System.Text.RegularExpressions
             // Find the first concatenation.  We traverse through atomic and capture nodes as they don't effect flow control.  (We don't
             // want to explore loops, even if they have a guaranteed iteration, because we may use information about the node to then
             // skip the node's execution in the matching algorithm, and we would need to special-case only skipping the first iteration.)
-            node = SkipThroughAtomicAndCapture(node);
+            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
+            {
+                node = node.Child(0);
+            }
             if (node.Kind != RegexNodeKind.Concatenate)
             {
                 return null;
@@ -1295,16 +1322,6 @@ namespace System.Text.RegularExpressions
                         return RegexNodeKind.Unknown;
                 }
             }
-        }
-
-        /// <summary>Walk through a node's children as long as the nodes are atomic or capture.</summary>
-        private static RegexNode SkipThroughAtomicAndCapture(RegexNode node)
-        {
-            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
-            {
-                node = node.Child(0);
-            }
-            return node;
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>

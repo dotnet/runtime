@@ -289,6 +289,38 @@ namespace System.Linq.Tests
             Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        public void LookupImplementsICollection(int count)
+        {
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString()));
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString(), StringComparer.OrdinalIgnoreCase));
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString(), i => i));
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString(), i => i, StringComparer.OrdinalIgnoreCase));
+
+            var collection = (ICollection<IGrouping<string, int>>)Enumerable.Range(0, count).ToLookup(i => i.ToString());
+            Assert.Equal(count, collection.Count);
+            Assert.Throws<NotSupportedException>(() => collection.Add(null));
+            Assert.Throws<NotSupportedException>(() => collection.Remove(null));
+            Assert.Throws<NotSupportedException>(() => collection.Clear());
+
+            if (count > 0)
+            {
+                IGrouping<string, int> first = collection.First();
+                IGrouping<string, int> last = collection.Last();
+                Assert.True(collection.Contains(first));
+                Assert.True(collection.Contains(last));
+            }
+
+            IGrouping<string, int>[] items = new IGrouping<string, int>[count];
+            collection.CopyTo(items, 0);
+            Assert.Equal(collection.Select(i => i), items);
+            Assert.Equal(items, Enumerable.Range(0, count).ToLookup(i => i.ToString()).ToArray());
+            Assert.Equal(items, Enumerable.Range(0, count).ToLookup(i => i.ToString()).ToList());
+        }
+
         public class Membership
         {
             public int Id { get; set; }

@@ -151,12 +151,14 @@ class CSE_HeuristicParameterized : public CSE_HeuristicCommon
 protected:
     struct Choice
     {
-        Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0)
+        Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0), m_performed(false)
         {
         }
+
         CSEdsc* m_dsc;
         double  m_preference;
         double  m_softmax;
+        bool    m_performed;
     };
 
     enum
@@ -185,7 +187,7 @@ public:
     double StoppingPreference();
     void BuildChoices(ArrayStack<Choice>& choices);
 
-    Choice& ChooseGreedy(ArrayStack<Choice>& choices);
+    Choice& ChooseGreedy(ArrayStack<Choice>& choices, bool recompute);
 
     virtual const char* Name() const
     {
