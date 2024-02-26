@@ -1947,7 +1947,7 @@ public:
         if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
         {
             const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
-            if ((ni == NI_System_Buffer_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+            if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
             {
                 m_functor(m_compiler, node);
             }
@@ -2274,7 +2274,7 @@ public:
             return;
         }
 
-        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_Buffer_Memmove) ||
+        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
                node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
@@ -2540,10 +2540,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
             // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
             // In other cases they have large managed implementations we want to profile.
             case NI_System_String_Equals:
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
 
             // Same here, these are only folded when JIT knows the exact types
             case NI_System_Type_IsAssignableFrom:
@@ -4231,18 +4234,19 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetSwitchTargets()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
-    unsigned           dominantCase = caseCount;
+    const unsigned   caseCount    = block->GetSwitchTargets()->bbsCount;
+    FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+    unsigned         dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
     {
-        if (jumpTab[i] == dominantEdge->m_targetBlock)
+        BasicBlock* jumpTarget = jumpTab[i]->getDestinationBlock();
+        if (jumpTarget == dominantEdge->m_targetBlock)
         {
             if (dominantCase != caseCount)
             {
                 JITDUMP("Both case %u and %u lead to " FMT_BB "-- can't optimize\n", i, dominantCase,
-                        jumpTab[i]->bbNum);
+                        jumpTarget->bbNum);
                 dominantCase = caseCount;
                 break;
             }

@@ -42,16 +42,16 @@ internal static partial class Interop
 
 #if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle);
+        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle, void* beforeSyncJSImport, void* afterSyncJSImport);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportSync(nint data, nint signature);
+        public static extern void InvokeJSImportSync(nint signature, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportSyncSend(nint targetNativeTID, nint data, nint signature);
+        public static extern void InvokeJSImportSyncSend(nint targetNativeTID, nint signature, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportAsyncPost(nint targetNativeTID, nint data, nint signature);
+        public static extern void InvokeJSImportAsyncPost(nint targetNativeTID, nint signature, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void CancelPromise(nint taskHolderGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -60,7 +60,7 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImport(int importHandle, nint data);
+        public static extern void InvokeJSImportST(int importHandle, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void CancelPromise(nint gcHandle);
 #endif
