@@ -186,9 +186,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>c3f5cbfb2829795294f5c2d9fa5a0522f47e91fb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="9.0.0-beta.24112.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="9.0.0-beta.24126.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>c3f5cbfb2829795294f5c2d9fa5a0522f47e91fb</Sha>
+      <Sha>6f665a25162ef1cad9b252f5fb3dc7c822d2a4a5</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="9.0.0-beta.24112.1">
       <Uri>https://github.com/dotnet/arcade</Uri>

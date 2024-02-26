@@ -1,19 +1,18 @@
 <Project>
-  <Target Name="Test" DependsOnTargets="GetProjectWithBestTargetFrameworks;RemoveNetFrameworkProjectsOnNonWindows">
+  <Target Name="Test" DependsOnTargets="RemoveNetFrameworkProjectsOnNonWindows;GetProjectWithBestTargetFrameworks">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="Test">
     </MSBuild>
   </Target>
-  <Target Name="VSTest" DependsOnTargets="GetProjectWithBestTargetFrameworks;RemoveNetFrameworkProjectsOnNonWindows">
+  <Target Name="VSTest" DependsOnTargets="RemoveNetFrameworkProjectsOnNonWindows;GetProjectWithBestTargetFrameworks">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="VSTest">
     </MSBuild>
   </Target>
   <Target Name="RemoveNetFrameworkProjectsOnNonWindows" Condition="'$(TargetOS)' != 'windows'">
-    <ItemGroup>
+    <PropertyGroup>
       <!-- we'd try to run tests with Mono for netfx projects which doesn't work so filter them out -->
-      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="$([System.String]::Copy('%(AdditionalProperties)').Contains('TargetFramework=$(NetFrameworkCurrent)'))" />
-      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="$([System.String]::Copy('%(AdditionalProperties)').Contains('TargetFramework=$(NetFrameworkMinimum)'))" />
-    </ItemGroup>
+      <IncludeNetFrameworkTfms>false</IncludeNetFrameworkTfms>
+    </PropertyGroup>
   </Target>
 </Project>
