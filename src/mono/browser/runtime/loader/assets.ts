@@ -737,7 +737,6 @@ export async function streamingCompileWasm() {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
     }
 }
-
 export function preloadWorkers() {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");

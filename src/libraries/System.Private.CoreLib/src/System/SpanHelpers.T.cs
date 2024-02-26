@@ -16,6 +16,7 @@ namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        [Intrinsic] // Unrolled for small sizes
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.

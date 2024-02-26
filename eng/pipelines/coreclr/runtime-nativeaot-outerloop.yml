@@ -60,14 +60,17 @@ extends:
           - osx_x64
           - osx_arm64
           - linux_x64
+          - linux_arm
           - linux_arm64
           - linux_musl_x64
+          - linux_musl_arm64
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libs
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
             timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
+            includeAllPlatforms: true
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
@@ -162,6 +165,7 @@ extends:
           platforms:
           - windows_x64
           - linux_x64
+          - linux_arm
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
