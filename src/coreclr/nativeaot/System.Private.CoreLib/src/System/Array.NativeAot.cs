@@ -494,7 +494,7 @@ namespace System
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
             nuint elementSize = sourceArray.ElementSize;
 
-            Buffer.Memmove(
+            SpanHelpers.Memmove(
                 ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * elementSize),
                 ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * elementSize),
                 elementSize * (nuint)length);
@@ -534,7 +534,7 @@ namespace System
                 if (sourceElementType == destElementType)
                 {
                     // Multidim arrays and enum->int copies can still reach this path.
-                    Buffer.Memmove(ref *data, ref *srcData, (nuint)length * srcElementSize);
+                    SpanHelpers.Memmove(ref *data, ref *srcData, (nuint)length * srcElementSize);
                     return;
                 }
 
