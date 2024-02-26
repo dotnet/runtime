@@ -12,8 +12,8 @@
   <Target Name="RemoveNetFrameworkProjectsOnNonWindows" Condition="'$(OS)' != 'Windows_NT'">
     <ItemGroup>
       <!-- we'd try to run tests with Mono for netfx projects which doesn't work so filter them out -->
-      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="'%(AdditionalProperties)' == 'TargetFramework=$(NetFrameworkCurrent)'" />
-      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="'%(AdditionalProperties)' == 'TargetFramework=$(NetFrameworkMinimum)'" />
+      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="$([System.String]::Copy('%(AdditionalProperties)').Contains('TargetFramework=$(NetFrameworkCurrent)'))" />
+      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="$([System.String]::Copy('%(AdditionalProperties)').Contains('TargetFramework=$(NetFrameworkMinimum)'))" />
     </ItemGroup>
   </Target>
 </Project>
