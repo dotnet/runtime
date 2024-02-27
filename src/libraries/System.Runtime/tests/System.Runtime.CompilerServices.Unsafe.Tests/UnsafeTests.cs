@@ -605,7 +605,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void RefSubtract()
+        public static unsafe void RefSubtract()
         {
             string[] a = new string[] { "abc", "def", "ghi", "jkl" };
 
