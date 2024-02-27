@@ -1097,6 +1097,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
         case IF_SVE_GW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point arithmetic (unpredicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -11708,23 +11709,52 @@ void emitter::emitIns_R_R_R(instruction     ins,
             fmt = IF_SVE_HJ_3A;
             break;
 
-        case INS_sve_fabd:
+        case INS_sve_frecps:
+        case INS_sve_frsqrts:
+        case INS_sve_ftsmul:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_HK_3A;
+            break;
+
         case INS_sve_fadd:
+        case INS_sve_fsub:
+        case INS_sve_fmul:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_HK_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_HL_3A;
+            }
+            break;
+
+        case INS_sve_fabd:
         case INS_sve_fdiv:
         case INS_sve_fdivr:
         case INS_sve_fmax:
         case INS_sve_fmaxnm:
         case INS_sve_fmin:
         case INS_sve_fminnm:
-        case INS_sve_fmul:
         case INS_sve_fmulx:
         case INS_sve_fscale:
-        case INS_sve_fsub:
         case INS_sve_fsubr:
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsScalableFloat(opt));
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(insScalableOptsNone(sopt));
             fmt = IF_SVE_HL_3A;
             break;
@@ -23059,6 +23089,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
         case IF_SVE_GW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point arithmetic (unpredicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // nnnnn
@@ -26878,6 +26909,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_CA_3A: // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
         case IF_SVE_EV_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer clamp
         case IF_SVE_GW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point arithmetic (unpredicated)
         // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
         case IF_SVE_EM_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 saturating multiply-add high
         case IF_SVE_FW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
@@ -31015,6 +31047,34 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        case IF_SVE_HK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point arithmetic (unpredicated)
+            switch (ins)
+            {
+                case INS_sve_frecps:
+                case INS_sve_frsqrts:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_sve_fmul:
+                case INS_sve_ftsmul:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_sve_fadd:
+                case INS_sve_fsub:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)

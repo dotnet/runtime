@@ -5591,6 +5591,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_fclamp, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
                               INS_OPTS_SCALABLE_D); // FCLAMP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
 
+    // IF_SVE_HK_3A
+    theEmitter->emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // FADD <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_fmul, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // FMUL <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_frecps, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // FRECPS <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_frsqrts, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // FRSQRTS <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_fsub, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // FSUB <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_ftsmul, EA_SCALABLE, REG_V15, REG_V16, REG_V17, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // FTSMUL <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}
