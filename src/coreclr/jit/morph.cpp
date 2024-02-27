@@ -372,7 +372,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // Here, we try to insert a Vector128 to Scalar node so that the input 
                     // can be provided to the scalar cast
                     GenTree* retNode1 = gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, fieldType, 16);
-                    tree = gtNewCastNode((dstType == TYP_UINT) ? TYP_INT : TYP_LONG, retNode1, false, dstType);
+                    tree = gtNewCastNode(genActualType(dstType), retNode1, false, dstType);
                     tree->SetSaturatedConversion();
                     return fgMorphTree(tree);
                 }

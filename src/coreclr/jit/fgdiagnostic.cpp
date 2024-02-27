@@ -3279,7 +3279,7 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
             //    * All kinds of locals
             //    * GT_COMMA wrapped around any of the above.
             //
-            if (node->TypeIs(TYP_ULONG, TYP_UINT) && !node->OperIs(GT_CAST))
+            if (node->TypeIs(TYP_ULONG, TYP_UINT))
             {
                 m_compiler->gtDispTree(node);
                 assert(!"TYP_ULONG and TYP_UINT are not legal in IR");

@@ -518,16 +518,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             // TODO-XARCH-CQ: These intrinsics should be accelerated
             return nullptr;
         }
-
-        case NI_VectorT_ConvertToSingle:
-        {
-            if (simdBaseType == TYP_UINT)
-            {
-                // TODO-XARCH-CQ: These intrinsics should be accelerated
-                return nullptr;
-            }
-            break;
-        }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_X86)
@@ -1364,25 +1354,36 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT_ConvertToSingle:
                 {
-                    assert(simdBaseType == TYP_INT);
-                    NamedIntrinsic convert;
+                    assert(varTypeIsInt(simdBaseType));
+                    NamedIntrinsic intrinsic = NI_Illegal;
 
-                    switch (simdSize)
+                    if (simdBaseType == TYP_INT)
                     {
-                        case 16:
-                            convert = NI_SSE2_ConvertToVector128Single;
-                            break;
-                        case 32:
-                            convert = NI_AVX_ConvertToVector256Single;
-                            break;
-                        case 64:
-                            convert = NI_AVX512F_ConvertToVector512Single;
-                            break;
-                        default:
-                            unreached();
+                        if (simdSize == 16)
+                        {
+                            intrinsic = NI_SSE2_ConvertToVector128Single;
+                        }
+                        else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX))
+                        {
+                            intrinsic = NI_AVX_ConvertToVector256Single;
+                        }
+                        else if (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically())
+                        {
+                            intrinsic = NI_AVX512F_ConvertToVector512Single;
+                        }
                     }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
+                    else if (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically())
+                    {
+                        intrinsic =   (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128Single
+                                    : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single
+                                                       : NI_AVX512F_ConvertToVector512Single;
+                    }
+                    if (intrinsic != NI_Illegal)
+                    {
+                        //op1     = impSIMDPopStack();
+                        return gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+                    }
+                    return nullptr;
                 }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT_ConvertToDouble:

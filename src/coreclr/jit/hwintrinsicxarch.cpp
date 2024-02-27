@@ -1670,41 +1670,33 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ConvertToSingle:
         {
             assert(sig->numArgs == 1);
-
+            assert(varTypeIsInt(simdBaseType));
+            intrinsic = NI_Illegal;
             if (simdBaseType == TYP_INT)
             {
-                switch (simdSize)
+                if (simdSize == 16)
                 {
-                    case 16:
-                        intrinsic = NI_SSE2_ConvertToVector128Single;
-                        break;
-                    case 32:
-                        intrinsic = NI_AVX_ConvertToVector256Single;
-                        break;
-                    case 64:
-                        intrinsic = NI_AVX512F_ConvertToVector512Single;
-                        break;
-                    default:
-                        unreached();
+                    intrinsic = NI_SSE2_ConvertToVector128Single;
                 }
-
+                else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    intrinsic = NI_AVX_ConvertToVector256Single;
+                }
+                else if (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically())
+                {
+                    intrinsic = NI_AVX512F_ConvertToVector512Single;
+                }
+            }
+            else if (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                intrinsic =   (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128Single
+                            : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single
+                                                : NI_AVX512F_ConvertToVector512Single;
+            }
+            if (intrinsic != NI_Illegal)
+            {
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
-            else if (simdBaseType == TYP_ULONG)
-            {
-                if (IsBaselineVector512IsaSupportedOpportunistically())
-                {
-                    intrinsic = (simdSize == 64) ? NI_AVX512DQ_ConvertToVector256Single
-                                                 : NI_AVX512DQ_VL_ConvertToVector128Single;
-                    op1     = impSIMDPopStack();
-                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-                }
-            }
-            else
-            {
-                // TODO-XARCH-CQ: These intrinsics should be accelerated
-                assert(simdBaseType == TYP_UINT);
             }
             break;
         }
