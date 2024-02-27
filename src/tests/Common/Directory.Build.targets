@@ -40,10 +40,10 @@
     <!-- Publish crossgen2 on supported platforms. -->
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
-      Targets="Restore;Build"
+      Targets="Restore;PublishToDisk"
       BuildInParallel="true"
-      Properties="OutputPath=$(CORE_ROOT)\crossgen2"
-      Projects="$(CoreClrProjectRoot)tools/aot/crossgen2/crossgen2_publish.csproj" />
+      Properties="NativeAotSupported=$(NativeAotSupported);OutputPath=$(CORE_ROOT)\crossgen2"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
