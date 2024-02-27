@@ -77,12 +77,63 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
+			static class DynamicCode1 {}
+
+			[FeatureDependsOn (typeof (DynamicCode1))]
+			static class DynamicCode2 {}
+
+			[FeatureCheck (typeof (DynamicCode2))]
+			static bool GuardDynamicCodeIndirect => RuntimeFeature.IsDynamicCodeSupported;
+
+			static void TestIndirectGuards ()
+			{
+				if (GuardDynamicCodeIndirect)
+					RequiresDynamicCode ();
+			}
+
+			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
+			[FeatureDependsOn (typeof (DynamicCodeCycle))]
+			static class DynamicCodeCycle {}
+
+			[FeatureCheck (typeof (DynamicCodeCycle))]
+			static bool GuardDynamicCodeCycle => RuntimeFeature.IsDynamicCodeSupported;
+
+			[FeatureCheck (typeof (DynamicCodeCycle))]
+			static void TestFeatureDependencyCycle1 ()
+			{
+				if (GuardDynamicCodeCycle)
+					RequiresDynamicCode ();
+			}
+
+			[FeatureDependsOn (typeof (DynamicCodeCycle2_B))]
+			static class DynamicCodeCycle2_A {}
+
+			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
+			[FeatureDependsOn (typeof (DynamicCodeCycle2_A))]
+			static class DynamicCodeCycle2_B {}
+
+			[FeatureDependsOn (typeof (DynamicCodeCycle2_A))]
+			static class DynamicCodeCycle2 {}
+
+			[FeatureCheck (typeof (DynamicCodeCycle2))]
+			static bool GuardDynamicCodeCycle2 => RuntimeFeature.IsDynamicCodeSupported;
+
+			static void TestFeatureDependencyCycle2 ()
+			{
+				if (GuardDynamicCodeCycle2)
+					RequiresDynamicCode ();
+			}
+
 			public static void Test ()
 			{
 				TestGuardDynamicCode ();
 				TestGuardUnreferencedCode ();
 				TestGuardAssemblyFiles ();
 				TestMultipleGuards ();
+				TestIndirectGuards ();
+				TestFeatureDependencyCycle1 ();
+				TestFeatureDependencyCycle2 ();
 			}
 		}
 

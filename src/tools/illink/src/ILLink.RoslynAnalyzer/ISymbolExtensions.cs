@@ -71,9 +71,7 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static ValueSet<string> GetFeatureCheckAnnotations (
-			this IPropertySymbol propertySymbol,
-			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
+		internal static ValueSet<string> GetFeatureCheckAnnotations (this IPropertySymbol propertySymbol)
 		{
 			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
 			foreach (var attributeData in propertySymbol.GetAttributes ()) {
@@ -83,14 +81,10 @@ namespace ILLink.RoslynAnalyzer
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
 
 			void AddFeatures (INamedTypeSymbol featureType) {
-				foreach (var analyzer in enabledRequiresAnalyzers) {
-					if (featureType.HasName (analyzer.RequiresAttributeFullyQualifiedName)) {
-						featureSet.Add (analyzer.RequiresAttributeFullyQualifiedName);
-						// Don't need to continue looking for dependencies because the
-						// analyzer attributes don't have dependencies.
-						return;
-					}
-				}
+				var featureName = featureType.GetDisplayName ();
+				if (featureSet.Contains (featureName))
+					return;
+				featureSet.Add (featureName);
 
 				// Look at FeatureDependsOn attributes on the feature type.
 				foreach (var featureTypeAttributeData in featureType.GetAttributes ()) {

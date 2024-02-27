@@ -302,20 +302,20 @@ namespace ILLink.RoslynAnalyzer
 		// - custom feature checks defined in library code
 		private protected virtual bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) => false;
 
-		internal static bool IsAnnotatedFeatureCheck (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext, string featureName)
+		internal static bool IsAnnotatedFeatureCheck (IPropertySymbol propertySymbol, string featureName)
 		{
 			// Only respect FeatureCheckAttribute on static boolean properties.
 			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean)
 				return false;
 
-			ValueSet<string> featureCheckAnnotations = propertySymbol.GetFeatureCheckAnnotations (dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			ValueSet<string> featureCheckAnnotations = propertySymbol.GetFeatureCheckAnnotations ();
 			return featureCheckAnnotations.Contains (featureName);
 		}
 
-		internal bool IsFeatureCheck (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext)
+		internal bool IsFeatureCheck (IPropertySymbol propertySymbol, Compilation compilation)
 		{
-			return IsAnnotatedFeatureCheck (propertySymbol, dataFlowAnalyzerContext, RequiresAttributeFullyQualifiedName)
-				|| IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
+			return IsAnnotatedFeatureCheck (propertySymbol, RequiresAttributeFullyQualifiedName)
+				|| IsRequiresCheck (propertySymbol, compilation);
 		}
 
 		internal bool CheckAndCreateRequiresDiagnostic (

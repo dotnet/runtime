@@ -42,15 +42,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				}
 
 				ValueSet<string> returnValueFeatures = ReturnValue.EnabledFeatures;
-				// For any feature that this property is declared to guard,
+				// For any analyzer-supported feature that this property is declared to guard,
 				// the abstract return value must include that feature
 				// (indicating it is known to be enabled when the return value is true).
 				foreach (string feature in FeatureCheckAnnotations.GetKnownValues ()) {
-					if (!returnValueFeatures.Contains (feature)) {
-						diagnosticContext.AddDiagnostic (
-							DiagnosticId.ReturnValueDoesNotMatchFeatureChecks,
-							OwningSymbol.GetDisplayName (),
-							feature);
+					foreach (var analyzer in context.EnabledRequiresAnalyzers) {
+						if (feature != analyzer.RequiresAttributeFullyQualifiedName)
+							continue;
+
+						if (!returnValueFeatures.Contains (feature)) {
+							diagnosticContext.AddDiagnostic (
+								DiagnosticId.ReturnValueDoesNotMatchFeatureChecks,
+								OwningSymbol.GetDisplayName (),
+								feature);
+						}
 					}
 				}
 			}
