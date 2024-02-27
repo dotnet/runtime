@@ -12949,11 +12949,20 @@ collect_methods (MonoAotCompile *acfg)
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		MonoMethodSignature *sig;
 
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
 
 		if (!method) {
 			aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
+			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
+			mono_error_cleanup (error);
+			return FALSE;
+		}
+
+		sig = mono_method_signature_checked (method, error);
+		if (!sig) {
+			aot_printerrf (acfg, "Failed to load method %s:%s from '%s' due to %s.\n", mono_class_full_name (method->klass), method->name, image->name, mono_error_get_message (error));
 			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
 			mono_error_cleanup (error);
 			return FALSE;
