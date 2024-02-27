@@ -1427,8 +1427,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));       // ddddd
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3()));       // mmmmm
@@ -11845,6 +11846,20 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalableFloat(opt));
             assert(insScalableOptsNone(sopt));
             fmt = IF_SVE_HL_3A;
+            break;
+
+        case INS_sve_bfmul:
+        case INS_sve_bfadd:
+        case INS_sve_bfsub:
+        case INS_sve_bfmaxnm:
+        case INS_sve_bfminnm:
+        case INS_sve_bfmax:
+        case INS_sve_bfmin:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));    // mmmmm
+            fmt = IF_SVE_HL_3B;
             break;
 
         case INS_sve_frintn:
@@ -23089,6 +23104,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
@@ -26945,6 +26961,8 @@ void emitter::emitDispInsHelp(
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
         // <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
         case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        // <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+        case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
@@ -30733,6 +30751,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_GW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
         case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;

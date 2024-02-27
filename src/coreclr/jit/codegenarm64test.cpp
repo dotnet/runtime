@@ -5109,6 +5109,22 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_fsubr, EA_SCALABLE, REG_V6, REG_P4, REG_V29,
                               INS_OPTS_SCALABLE_D); // FSUBR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
+    // IF_SVE_HL_3B
+    theEmitter->emitIns_R_R_R(INS_sve_bfadd, EA_SCALABLE, REG_V0, REG_P0, REG_V1,
+                              INS_OPTS_SCALABLE_H); // BFADD <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_bfmax, EA_SCALABLE, REG_V2, REG_P1, REG_V3,
+                              INS_OPTS_SCALABLE_H); // BFMAX <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_bfmaxnm, EA_SCALABLE, REG_V4, REG_P2, REG_V5,
+                              INS_OPTS_SCALABLE_H); // BFMAXNM <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_bfmin, EA_SCALABLE, REG_V6, REG_P3, REG_V7,
+                              INS_OPTS_SCALABLE_H); // BFMIN <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_bfminnm, EA_SCALABLE, REG_V8, REG_P4, REG_V9,
+                              INS_OPTS_SCALABLE_H); // BFMINNM <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_bfmul, EA_SCALABLE, REG_V10, REG_P5, REG_V11,
+                              INS_OPTS_SCALABLE_H); // BFMUL <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_bfsub, EA_SCALABLE, REG_V12, REG_P6, REG_V13,
+                              INS_OPTS_SCALABLE_H); // BFSUB <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+
     // IF_SVE_HT_4A
     theEmitter->emitIns_R_R_R_R(INS_sve_facge, EA_SCALABLE, REG_P0, REG_P0, REG_V10, REG_V31,
                                 INS_OPTS_SCALABLE_H); // FACGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
