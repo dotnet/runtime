@@ -120,7 +120,7 @@ namespace System.Threading
             public void Dispose()
             {
                 Lock? lockObj = _lockObj;
-                if (lockObj != null)
+                if (lockObj is not null)
                 {
                     _lockObj = null;
                     lockObj.Exit(_currentThreadId);
