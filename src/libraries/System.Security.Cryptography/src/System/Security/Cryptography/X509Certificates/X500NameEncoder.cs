@@ -444,7 +444,6 @@ namespace System.Security.Cryptography.X509Certificates
                 // then some whitespace.
                 case ParseState.MaybeEndQuote:
                 case ParseState.SeekComma:
-                    Debug.Assert(tagOid != default);
                     Debug.Assert(valueStart != -1);
                     Debug.Assert(valueEnd != -1);
 
