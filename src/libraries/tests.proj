@@ -767,7 +767,7 @@
                       BuildInParallel="$(Samples_BuildInParallel)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(IsXUnitLogCheckerSupported)' == 'true'">
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$(XUnitLogCheckerLibrariesOutDir)" />
