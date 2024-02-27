@@ -338,10 +338,7 @@ struct VASigCookie
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
-    PTR_Module      pLoaderModule;
     Signature       signature;
-    Instantiation   classInst;
-    Instantiation   methodInst;
 };
 
 //
@@ -1363,9 +1360,7 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
-private:
-    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
+    VASigCookie *GetVASigCookie(Signature vaSignature);
 
 public:
 #ifndef DACCESS_COMPILE
