@@ -2470,29 +2470,19 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         fgInsertStmtAtEnd(block, cloneStmt);
     }
 
-    // add an unconditional block after this block to jump to the target block's fallthrough block
-    //
-    assert(!target->IsLast());
-    BasicBlock* const next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
-
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    FlowEdge* const targetTrueEdge  = fgGetPredForBlock(target->GetTrueTarget(), target);
-    FlowEdge* const targetFalseEdge = fgGetPredForBlock(target->GetFalseTarget(), target);
-    block->SetCond(target->GetTrueTarget(), next);
-    fgAddRefPred(block->GetTrueTarget(), block, targetTrueEdge);
     fgRemoveRefPred(target, block);
 
-    // Fix up target's flow and profile.
-    //
-    next->inheritWeight(block);
-    fgAddRefPred(next, block, targetFalseEdge);
-    FlowEdge* const nextEdge = fgAddRefPred(next->GetTarget(), next);
-    nextEdge->setLikelihood(1.0);
+    FlowEdge* const targetTrueEdge  = fgGetPredForBlock(target->GetTrueTarget(), target);
+    FlowEdge* const targetFalseEdge = fgGetPredForBlock(target->GetFalseTarget(), target);
+    block->SetCond(target->GetTrueTarget(), target->GetFalseTarget());
+    fgAddRefPred(block->GetTrueTarget(), block, targetTrueEdge);
+    fgAddRefPred(block->GetFalseTarget(), block, targetFalseEdge);
 
-    JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
-            block->bbNum, target->bbNum, next->bbNum);
+    JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), modified " FMT_BB "\n",
+            block->bbNum, target->bbNum, block->bbNum);
     JITDUMP("   expecting opts to key off V%02u in " FMT_BB "\n", lclNum, block->bbNum);
 
     if (target->hasProfileWeight() && block->hasProfileWeight())
@@ -4832,13 +4822,11 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, bDest))
                 {
                     assert(block->KindIs(BBJ_COND));
-                    change   = true;
-                    modified = true;
-                    bDest    = block->GetTrueTarget();
-                    bNext    = block->GetFalseTarget();
-
-                    // TODO-NoFallThrough: Adjust the above logic once bbFalseTarget can diverge from bbNext
-                    assert(block->NextIs(bNext));
+                    assert(bNext == block->Next());
+                    change     = true;
+                    modified   = true;
+                    bDest      = block->GetTrueTarget();
+                    bFalseDest = block->GetFalseTarget();
                 }
             }
 
