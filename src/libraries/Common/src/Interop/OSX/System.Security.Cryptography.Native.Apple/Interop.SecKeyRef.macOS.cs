@@ -37,7 +37,7 @@ internal static partial class Interop
 
         internal static SafeSecKeyRefHandle ImportEphemeralKey(ReadOnlySpan<byte> keyBlob, bool hasPrivateKey)
         {
-            Debug.Assert(Unsafe.IsNullRef(ref MemoryMarshal.GetReference(keyBlob)));
+            Debug.Assert(!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(keyBlob)));
 
             SafeSecKeyRefHandle keyHandle;
             int osStatus;
