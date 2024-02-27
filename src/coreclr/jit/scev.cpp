@@ -1,0 +1,669 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// This file contains code to analyze how the value of induction variables
+// evolve (scalar evolution analysis), and to turn them into the SCEV IR
+// defined in scev.h. The analysis is inspired by "Michael Wolfe. 1992. Beyond
+// induction variables." and also by LLVM's scalar evolution analysis.
+
+#include "jitpch.h"
+#include "scev.h"
+
+//------------------------------------------------------------------------
+// GetConstantValue: If this SSA use refers to a constant, then fetch that
+// constant.
+//
+// Parameters:
+//   comp - Compiler instance
+//   cns  - [out] Constant value; only valid if this function returns true.
+//
+// Returns:
+//   True if this SSA use refers to a constant; otherwise false,
+//
+bool ScevLocal::GetConstantValue(Compiler* comp, int64_t* cns)
+{
+    LclVarDsc*           dsc     = comp->lvaGetDesc(LclNum);
+    LclSsaVarDsc*        ssaDsc  = dsc->GetPerSsaData(SsaNum);
+    GenTreeLclVarCommon* defNode = ssaDsc->GetDefNode();
+    if ((defNode != nullptr) && defNode->Data()->OperIs(GT_CNS_INT, GT_CNS_LNG))
+    {
+        *cns = defNode->Data()->AsIntConCommon()->IntegralValue();
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// Scev::GetConstantValue: If this SCEV is always a constant (i.e. either an
+// inline constant or an SSA use referring to a constant) then obtain that
+// constant.
+//
+// Parameters:
+//   comp - Compiler instance
+//   cns  - [out] Constant value; only valid if this function returns true.
+//
+// Returns:
+//   True if a constant could be extracted.
+//
+bool Scev::GetConstantValue(Compiler* comp, int64_t* cns)
+{
+    if (OperIs(ScevOper::Constant))
+    {
+        *cns = ((ScevConstant*)this)->Value;
+        return true;
+    }
+
+    if (OperIs(ScevOper::Local))
+    {
+        return ((ScevLocal*)this)->GetConstantValue(comp, cns);
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ResetForLoop: Reset the internal cache in preparation of scalar
+// evolution analysis inside a new loop.
+//
+// Parameters:
+//    loop - The loop.
+//
+void ScalarEvolutionContext::ResetForLoop(FlowGraphNaturalLoop* loop)
+{
+    m_loop = loop;
+    m_cache.RemoveAll();
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// DumpScev: Print a scev node to stdout.
+//
+// Parameters:
+//   scev - The scev node.
+//
+void ScalarEvolutionContext::DumpScev(Scev* scev)
+{
+    switch (scev->Oper)
+    {
+        case ScevOper::Constant:
+        {
+            ScevConstant* cns = (ScevConstant*)scev;
+            printf("%zd", (ssize_t)cns->Value);
+            break;
+        }
+        case ScevOper::Local:
+        {
+            ScevLocal* invariantLocal = (ScevLocal*)scev;
+            printf("V%02u.%u", invariantLocal->LclNum, invariantLocal->SsaNum);
+
+            int64_t cns;
+            if (invariantLocal->GetConstantValue(m_comp, &cns))
+            {
+                printf(" (%lld)", (long long)cns);
+            }
+            break;
+        }
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
+        {
+            ScevUnop* unop = (ScevUnop*)scev;
+            printf("%cext<%d>(", unop->Oper == ScevOper::ZeroExtend ? 'z' : 's', genTypeSize(unop->Type) * 8);
+            DumpScev(unop->Op1);
+            printf(")");
+            break;
+        }
+        case ScevOper::Add:
+        case ScevOper::Mul:
+        case ScevOper::Lsh:
+        {
+            ScevBinop* binop = (ScevBinop*)scev;
+            printf("(");
+            DumpScev(binop->Op1);
+            const char* op;
+            switch (binop->Oper)
+            {
+                case ScevOper::Add:
+                    op = "+";
+                    break;
+                case ScevOper::Mul:
+                    op = "*";
+                    break;
+                case ScevOper::Lsh:
+                    op = "<<";
+                    break;
+                default:
+                    unreached();
+            }
+            printf(" %s ", op);
+            DumpScev(binop->Op2);
+            printf(")");
+            break;
+        }
+        case ScevOper::AddRec:
+        {
+            ScevAddRec* addRec = (ScevAddRec*)scev;
+            printf("<" FMT_LP, m_loop->GetIndex());
+            printf(", ");
+            DumpScev(addRec->Start);
+            printf(", ");
+            DumpScev(addRec->Step);
+            printf(">");
+            break;
+        }
+        default:
+            unreached();
+    }
+}
+#endif
+
+//------------------------------------------------------------------------
+// CreateSimpleInvariantScev: Create a "simple invariant" SCEV node for a tree:
+// either an invariant local use or a constant.
+//
+// Parameters:
+//   tree - The tree
+//
+// Returns:
+//   SCEV node or nullptr if the tree is not a simple invariant.
+//
+Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
+{
+    if (tree->OperIs(GT_CNS_INT, GT_CNS_LNG))
+    {
+        return CreateScevForConstant(tree->AsIntConCommon());
+    }
+
+    if (tree->OperIs(GT_LCL_VAR) && tree->AsLclVarCommon()->HasSsaName())
+    {
+        LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+        LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
+
+        if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
+        {
+            return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum());
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// CreateScevForConstant: Given an integer constant, create a SCEV node for it.
+//
+// Parameters:
+//   tree - The integer constant
+//
+// Returns:
+//   SCEV node or nullptr if the integer constant is not representable (e.g. a handle).
+//
+Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
+{
+    if (tree->IsIconHandle() || !tree->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return nullptr;
+    }
+
+    return NewConstant(tree->TypeGet(), tree->AsIntConCommon()->IntegralValue());
+}
+
+//------------------------------------------------------------------------
+// AnalyzeNew: Analyze the specified tree in the specified block, without going
+// through the cache.
+//
+// Parameters:
+//   block - Block containing the tree
+//   tree  - Tree node
+//   depth - Current analysis depth
+//
+// Returns:
+//   SCEV node if the tree was analyzable; otherwise nullptr if the value is
+//   cannot be described.
+//
+Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int depth)
+{
+    switch (tree->OperGet())
+    {
+        case GT_CNS_INT:
+        case GT_CNS_LNG:
+        {
+            return CreateScevForConstant(tree->AsIntConCommon());
+        }
+        case GT_LCL_VAR:
+        case GT_PHI_ARG:
+        {
+            if (!tree->AsLclVarCommon()->HasSsaName())
+            {
+                return nullptr;
+            }
+
+            assert(m_comp->lvaInSsa(tree->AsLclVarCommon()->GetLclNum()));
+            LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+            LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
+
+            if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
+            {
+                return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum());
+            }
+
+            if (ssaDsc->GetDefNode() == nullptr)
+            {
+                // GT_CALL retbuf def?
+                return nullptr;
+            }
+
+            if (ssaDsc->GetDefNode()->GetLclNum() != tree->AsLclVarCommon()->GetLclNum())
+            {
+                // Should be a def of the parent
+                assert(dsc->lvIsStructField && (ssaDsc->GetDefNode()->GetLclNum() == dsc->lvParentLcl));
+                return nullptr;
+            }
+
+            return Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode(), depth + 1);
+        }
+        case GT_STORE_LCL_VAR:
+        {
+            GenTreeLclVarCommon* store = tree->AsLclVarCommon();
+            GenTree*             data  = store->Data();
+            if (!data->OperIs(GT_PHI))
+            {
+                return Analyze(block, data, depth + 1);
+            }
+
+            if (block != m_loop->GetHeader())
+            {
+                return nullptr;
+            }
+
+            // We have a phi def for the current loop. Look for a primary
+            // induction variable.
+            GenTreePhi*    phi         = data->AsPhi();
+            GenTreePhiArg* enterSsa    = nullptr;
+            GenTreePhiArg* backedgeSsa = nullptr;
+
+            for (GenTreePhi::Use& use : phi->Uses())
+            {
+                GenTreePhiArg*  phiArg = use.GetNode()->AsPhiArg();
+                GenTreePhiArg*& ssaArg = m_loop->ContainsBlock(phiArg->gtPredBB) ? backedgeSsa : enterSsa;
+                if ((ssaArg == nullptr) || (ssaArg->GetSsaNum() == phiArg->GetSsaNum()))
+                {
+                    ssaArg = phiArg;
+                }
+                else
+                {
+                    return nullptr;
+                }
+            }
+
+            if ((enterSsa == nullptr) || (backedgeSsa == nullptr))
+            {
+                return nullptr;
+            }
+
+            ScevLocal* enterScev = NewLocal(enterSsa->GetLclNum(), enterSsa->GetSsaNum());
+
+            LclVarDsc*    dsc    = m_comp->lvaGetDesc(store);
+            LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
+
+            if (ssaDsc->GetDefNode() == nullptr)
+            {
+                // GT_CALL retbuf def
+                return nullptr;
+            }
+
+            if (ssaDsc->GetDefNode()->GetLclNum() != store->GetLclNum())
+            {
+                assert(dsc->lvIsStructField && ssaDsc->GetDefNode()->GetLclNum() == dsc->lvParentLcl);
+                return nullptr;
+            }
+
+            assert(ssaDsc->GetBlock() != nullptr);
+
+            // We currently do not handle complicated addrecs. We can do this
+            // by inserting a symbolic node in the cache and analyzing while it
+            // is part of the cache. It would allow us to model
+            //
+            //   int i = 0;
+            //   while (i < n)
+            //   {
+            //     int j = i + 1;
+            //     ...
+            //     i = j;
+            //   }
+            // => <L, 0, 1>
+            //
+            // and chains of recurrences, such as
+            //
+            //   int i = 0;
+            //   int j = 0;
+            //   while (i < n)
+            //   {
+            //     j++;
+            //     i += j;
+            //   }
+            // => <L, 0, <L, 1, 1>>
+            //
+            // The main issue is that it requires cache invalidation afterwards
+            // and turning the recursive result into an addrec.
+            //
+            return CreateSimpleAddRec(store, enterScev, ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data());
+        }
+        case GT_CAST:
+        {
+            GenTreeCast* cast = tree->AsCast();
+            if (cast->gtCastType != TYP_LONG)
+            {
+                return nullptr;
+            }
+
+            Scev* op = Analyze(block, cast->CastOp(), depth + 1);
+            if (op == nullptr)
+            {
+                return nullptr;
+            }
+
+            return NewExtension(cast->IsUnsigned() ? ScevOper::ZeroExtend : ScevOper::SignExtend, TYP_LONG, op);
+        }
+        case GT_ADD:
+        case GT_MUL:
+        case GT_LSH:
+        {
+            Scev* op1 = Analyze(block, tree->gtGetOp1(), depth + 1);
+            if (op1 == nullptr)
+                return nullptr;
+
+            Scev* op2 = Analyze(block, tree->gtGetOp2(), depth + 1);
+            if (op2 == nullptr)
+                return nullptr;
+
+            ScevOper oper;
+            switch (tree->OperGet())
+            {
+                case GT_ADD:
+                    oper = ScevOper::Add;
+                    break;
+                case GT_MUL:
+                    oper = ScevOper::Mul;
+                    break;
+                case GT_LSH:
+                    oper = ScevOper::Lsh;
+                    break;
+                default:
+                    unreached();
+            }
+
+            return NewBinop(oper, op1, op2);
+        }
+        case GT_COMMA:
+        {
+            return Analyze(block, tree->gtGetOp2(), depth + 1);
+        }
+        case GT_ARR_ADDR:
+        {
+            return Analyze(block, tree->AsArrAddr()->Addr(), depth + 1);
+        }
+        default:
+            return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------
+// CreateSimpleAddRec: Create a "simple" add-recurrence. This handles the most
+// common patterns for primary induction variables where we see a store like
+// "i = i + 1".
+//
+// Parameters:
+//   headerStore  - Phi definition of the candidate primary induction variable
+//   enterScev    - SCEV describing start value of the primary induction variable
+//   stepDefBlock - Block containing the def of the step value
+//   stepDefData  - Value of the def of the step value
+//
+// Returns:
+//   SCEV node if this is a simple addrec shape. Otherwise nullptr.
+//
+Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
+                                                 ScevLocal*           enterScev,
+                                                 BasicBlock*          stepDefBlock,
+                                                 GenTree*             stepDefData)
+{
+    if (!stepDefData->OperIs(GT_ADD))
+    {
+        return nullptr;
+    }
+
+    GenTree* stepTree;
+    GenTree* op1 = stepDefData->gtGetOp1();
+    GenTree* op2 = stepDefData->gtGetOp2();
+    if (op1->OperIs(GT_LCL_VAR) && (op1->AsLclVar()->GetLclNum() == headerStore->GetLclNum()) &&
+        (op1->AsLclVar()->GetSsaNum() == headerStore->GetSsaNum()))
+    {
+        stepTree = op2;
+    }
+    else if (op2->OperIs(GT_LCL_VAR) && (op2->AsLclVar()->GetLclNum() == headerStore->GetLclNum()) &&
+             (op2->AsLclVar()->GetSsaNum() == headerStore->GetSsaNum()))
+    {
+        stepTree = op1;
+    }
+    else
+    {
+        // Not a simple IV shape (i.e. more complex than "i = i + k")
+        return nullptr;
+    }
+
+    Scev* stepScev = CreateSimpleInvariantScev(stepTree);
+    if (stepScev == nullptr)
+    {
+        return nullptr;
+    }
+
+    return NewAddRec(enterScev, stepScev);
+}
+
+//------------------------------------------------------------------------
+// Analyze: Analyze the specified tree in the specified block.
+//
+// Parameters:
+//   block - Block containing the tree
+//   tree  - Tree node
+//
+// Returns:
+//   SCEV node if the tree was analyzable; otherwise nullptr if the value is
+//   cannot be described.
+//
+Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
+{
+    return Analyze(block, tree, 0);
+}
+
+// Since the analysis follows SSA defs we have no upper bound on the potential
+// depth of the analysis performed. We put an artificial limit on this for two
+// reasons:
+// 1. The analysis is recursive, and we should not stack overflow regardless of
+// the input program.
+// 2. If we produced arbitrarily deep SCEV trees then all algorithms over their
+// structure would similarly be at risk of stack overflows if they were
+// recursive. However, these algorithms are generally much more elegant when
+// they make use of recursion.
+const int SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH = 64;
+
+//------------------------------------------------------------------------
+// Analyze: Analyze the specified tree in the specified block.
+//
+// Parameters:
+//   block - Block containing the tree
+//   tree  - Tree node
+//   depth - Current analysis depth
+//
+// Returns:
+//   SCEV node if the tree was analyzable; otherwise nullptr if the value is
+//   cannot be described.
+//
+Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int depth)
+{
+    Scev* result;
+    if (!m_cache.Lookup(tree, &result))
+    {
+        if (depth >= SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH)
+        {
+            return nullptr;
+        }
+
+        result = AnalyzeNew(block, tree, depth);
+        m_cache.Set(tree, result);
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// FoldBinop: Fold simple binops.
+//
+// Type parameters:
+//   T - Type that the binop is being evaluated in
+//
+// Parameters:
+//   oper - Binary operation
+//   op1  - First operand
+//   op2  - Second operand
+//
+// Returns:
+//   Folded value.
+//
+template <typename T>
+static T FoldBinop(ScevOper oper, T op1, T op2)
+{
+    switch (oper)
+    {
+        case ScevOper::Add:
+            return op1 + op2;
+        case ScevOper::Mul:
+            return op1 * op2;
+        case ScevOper::Lsh:
+            return op1 << op2;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// Simplify: Try to simplify a SCEV node by folding and canonicalization.
+//
+// Parameters:
+//   scev - The node
+//
+// Returns:
+//   Simplified node.
+//
+// Remarks:
+//   Canonicalization is done for binops; constants are moved to the right and
+//   addrecs are moved to the left.
+//
+//   Simple unops/binops on constants are folded. Operands are distributed into
+//   add recs whenever possible.
+//
+Scev* ScalarEvolutionContext::Simplify(Scev* scev)
+{
+    switch (scev->Oper)
+    {
+        case ScevOper::Constant:
+        case ScevOper::Local:
+        {
+            return scev;
+        }
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
+        {
+            ScevUnop* unop = (ScevUnop*)scev;
+            assert(genTypeSize(unop->Type) >= genTypeSize(unop->Op1->Type));
+
+            Scev* op1 = Simplify(unop->Op1);
+
+            if (unop->Type == op1->Type)
+            {
+                return op1;
+            }
+
+            assert((unop->Type == TYP_LONG) && (op1->Type == TYP_INT));
+
+            if (op1->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns = (ScevConstant*)op1;
+                return NewConstant(unop->Type, unop->OperIs(ScevOper::ZeroExtend) ? (uint64_t)(int32_t)cns->Value
+                                                                                  : (int64_t)(int32_t)cns->Value);
+            }
+
+            if (op1->OperIs(ScevOper::AddRec))
+            {
+                // TODO-Cleanup: This requires some proof that it is ok, but
+                // currently we do not rely on this.
+                return op1;
+            }
+
+            return (op1 == unop->Op1) ? unop : NewExtension(unop->Oper, unop->Type, op1);
+        }
+        case ScevOper::Add:
+        case ScevOper::Mul:
+        case ScevOper::Lsh:
+        {
+            ScevBinop* binop = (ScevBinop*)scev;
+            Scev*      op1   = Simplify(binop->Op1);
+            Scev*      op2   = Simplify(binop->Op2);
+
+            if (binop->OperIs(ScevOper::Add, ScevOper::Mul))
+            {
+                // Normalize addrecs to the left
+                if (op2->OperIs(ScevOper::AddRec) && !op1->OperIs(ScevOper::AddRec))
+                {
+                    std::swap(op1, op2);
+                }
+                // Normalize constants to the right
+                if (op1->OperIs(ScevOper::Constant) && !op2->OperIs(ScevOper::Constant))
+                {
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (op1->OperIs(ScevOper::AddRec))
+            {
+                // <L, start, step> + x => <L, start + x, step>
+                // <L, start, step> * x => <L, start * x, step * x>
+                ScevAddRec* addRec   = (ScevAddRec*)op1;
+                Scev*       newStart = Simplify(NewBinop(binop->Oper, addRec->Start, op2));
+                Scev*       newStep  = scev->OperIs(ScevOper::Mul, ScevOper::Lsh)
+                                    ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
+                                    : addRec->Step;
+                return NewAddRec(newStart, newStep);
+            }
+
+            if (op1->OperIs(ScevOper::Constant) && op2->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns1 = (ScevConstant*)op1;
+                ScevConstant* cns2 = (ScevConstant*)op2;
+                int64_t       newValue;
+                if (binop->TypeIs(TYP_INT))
+                {
+                    newValue = FoldBinop<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value),
+                                                  static_cast<int32_t>(cns2->Value));
+                }
+                else
+                {
+                    assert(binop->TypeIs(TYP_LONG));
+                    newValue = FoldBinop<int64_t>(binop->Oper, cns1->Value, cns2->Value);
+                }
+
+                return NewConstant(binop->Type, newValue);
+            }
+
+            return (op1 == binop->Op1) && (op2 == binop->Op2) ? binop : NewBinop(binop->Oper, op1, op2);
+        }
+        case ScevOper::AddRec:
+        {
+            ScevAddRec* addRec = (ScevAddRec*)scev;
+            Scev*       start  = Simplify(addRec->Start);
+            Scev*       step   = Simplify(addRec->Step);
+            return (start == addRec->Start) && (step == addRec->Step) ? addRec : NewAddRec(start, step);
+        }
+        default:
+            unreached();
+    }
+}
