@@ -1,15 +1,9 @@
-trigger: none
-
-schedules:
-- cron: "0 6 * * *"
-  displayName: Daily at 10:00 PM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
-
-variables:
-  - template: /eng/pipelines/common/variables.yml
+parameters:
+  - name: platforms
+    type: object
+  - name: testGroup
+    type: string
+    default: outerloop
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -18,20 +12,13 @@ extends:
     - stage: Build
       jobs:
 
-      #
-      # Release CoreCLR and Library builds
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platformGroup: all
-          platforms:
-          # It is too early to include osx_arm64 in platform group all
-          # Adding it here will enable it also
-          - osx_arm64
+          buildConfig: checked
+          platforms: ${{ parameters.platforms }}
           jobParameters:
-            buildArgs: -s clr+libs -c $(_BuildConfig)
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -46,53 +33,33 @@ extends:
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
-                  testGroup: outerloop
+                  testGroup: ${{ parameters.testGroup }}
 
-      #
-      # Release test builds
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: release
+          buildConfig: checked
           platforms:
           - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
-            testGroup: outerloop
+            testGroup: ${{ parameters.testGroup }}
 
-      #
-      # Release test runs
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: release
-          platformGroup: all
+          buildConfig: checked
           platforms:
-          # It is too early to include osx_arm64 in platform group all
-          # Adding it here will enable it also
           - osx_arm64
+          - osx_x64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
-            testGroup: outerloop
+            testGroup: ${{ parameters.testGroup }}
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-
-      #
-      # Release R2R test runs
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: release
-          platformGroup: all
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            readyToRun: true
-            displayNameArgs: R2R
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-

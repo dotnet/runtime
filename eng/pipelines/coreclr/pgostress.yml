@@ -12,51 +12,14 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  template:  /eng/pipelines/coreclr/templates/jit-outerloop-pipeline.yml
   parameters:
-    stages:
-    - stage: Build
-      jobs:
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - osx_arm64
-          - windows_arm64
-          - windows_x64
-          - windows_x86
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: pgostress
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: pgostress
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - osx_arm64
-          - windows_arm64
-          - windows_x64
-          - windows_x86
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: pgostress
-            liveLibrariesBuildConfig: Release
+    platforms:
+    - osx_arm64
+    - linux_arm
+    - linux_arm64
+    - linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    testGroup: pgostress
