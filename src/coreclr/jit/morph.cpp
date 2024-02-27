@@ -2043,17 +2043,23 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
     }
 #endif // defined(TARGET_ARM)
-#ifndef TARGET_X86
+
+    bool addStubCellArg = true;
+
+#ifdef TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
+
+    addStubCellArg = call->gtCallType != CT_INDIRECT && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+#endif
 
     // We are allowed to have a ret buffer argument combined
     // with any of the remaining non-standard arguments
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-    if (call->IsVirtualStub())
+    if (call->IsVirtualStub() && addStubCellArg)
     {
         if (!call->IsTailCallViaJitHelper())
         {
@@ -2070,9 +2076,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else
-#endif // !TARGET_X86
-        if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
+    else if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
     {
         assert(!call->IsUnmanaged());
 
