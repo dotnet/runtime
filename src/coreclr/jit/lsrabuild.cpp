@@ -1056,7 +1056,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             killMask = getKillSetForBlockStore(tree->AsBlk());
             break;
 
