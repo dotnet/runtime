@@ -7270,11 +7270,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetTrueTarget(), block);
                             block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
-
                             // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense
                             // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
+
+                        FlowEdge* const edge = fgGetPredForBlock(block->GetTarget(), block);
+                        edge->setLikelihood(1.0);
                     }
 
                     break;
@@ -7536,6 +7538,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // transform the basic block into a BBJ_ALWAYS
                             block->SetKindAndTarget(BBJ_ALWAYS, curEdge->getDestinationBlock());
+                            curEdge->setLikelihood(1.0);
                             foundVal = true;
                         }
                         else

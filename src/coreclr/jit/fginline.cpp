@@ -684,6 +684,9 @@ private:
                     m_compiler->fgRemoveRefPred(block->GetFalseTarget(), block);
                     block->SetKind(BBJ_ALWAYS);
                 }
+
+                FlowEdge* const edge = m_compiler->fgGetPredForBlock(block->GetTarget(), block);
+                edge->setLikelihood(1.0);
             }
         }
         else
