@@ -29,6 +29,19 @@ namespace ILCompiler.DependencyAnalysis.X86
             EmitIndirInstruction(0x8B, (byte)reg, ref addrMode);
         }
 
+        public void EmitMOV(ref AddrMode addrMode, ISymbolNode symbol)
+        {
+            if (symbol.RepresentsIndirectionCell)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                EmitIndirInstruction(0xC7, (byte)0, ref addrMode);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_HIGHLOW);
+            }
+        }
+
         public void EmitLEA(Register reg, ref AddrMode addrMode)
         {
             Debug.Assert(addrMode.Size != AddrModeSize.Int8 && addrMode.Size != AddrModeSize.Int16);

@@ -174,9 +174,7 @@ namespace ILCompiler.DependencyAnalysis
                             AddrMode storeAtEspPlus8 = new AddrMode(Register.ESP, null, 8, 0, AddrModeSize.Int32);
                             encoder.EmitStackDup();
                             encoder.EmitMOV(ref storeAtEspPlus8, encoder.TargetRegister.Result);
-                            // TODO: Is it possible to fold this into one MOV?
-                            encoder.EmitMOV(encoder.TargetRegister.Result, target.Thunk);
-                            encoder.EmitMOV(ref storeAtEspPlus4, encoder.TargetRegister.Result);
+                            encoder.EmitMOV(ref storeAtEspPlus4, target.Thunk);
                         }
                         else
                         {
