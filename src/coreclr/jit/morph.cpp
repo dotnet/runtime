@@ -9239,7 +9239,7 @@ DONE_MORPHING_CHILDREN:
                 /* Check for "cns1 - op2" , we change it to "(cns1 + (-op2))" */
 
                 noway_assert(op1);
-                if (op1->IsCnsIntOrI())
+                if (op1->IsCnsIntOrI() && (op2->TypeGet() != TYP_BYREF))
                 {
                     noway_assert(varTypeIsIntegralOrI(tree));
 
