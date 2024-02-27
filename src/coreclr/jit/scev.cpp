@@ -7,7 +7,6 @@
 // induction variables." and also by LLVM's scalar evolution analysis.
 
 #include "jitpch.h"
-#include "scev.h"
 
 //------------------------------------------------------------------------
 // GetConstantValue: If this SSA use refers to a constant, then fetch that
@@ -62,43 +61,30 @@ bool Scev::GetConstantValue(Compiler* comp, int64_t* cns)
     return false;
 }
 
-//------------------------------------------------------------------------
-// ResetForLoop: Reset the internal cache in preparation of scalar
-// evolution analysis inside a new loop.
-//
-// Parameters:
-//    loop - The loop.
-//
-void ScalarEvolutionContext::ResetForLoop(FlowGraphNaturalLoop* loop)
-{
-    m_loop = loop;
-    m_cache.RemoveAll();
-}
-
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// DumpScev: Print a scev node to stdout.
+// Dump: Print this scev node to stdout.
 //
 // Parameters:
-//   scev - The scev node.
+//   comp - Compiler instance
 //
-void ScalarEvolutionContext::DumpScev(Scev* scev)
+void Scev::Dump(Compiler* comp)
 {
-    switch (scev->Oper)
+    switch (Oper)
     {
         case ScevOper::Constant:
         {
-            ScevConstant* cns = (ScevConstant*)scev;
+            ScevConstant* cns = (ScevConstant*)this;
             printf("%zd", (ssize_t)cns->Value);
             break;
         }
         case ScevOper::Local:
         {
-            ScevLocal* invariantLocal = (ScevLocal*)scev;
+            ScevLocal* invariantLocal = (ScevLocal*)this;
             printf("V%02u.%u", invariantLocal->LclNum, invariantLocal->SsaNum);
 
             int64_t cns;
-            if (invariantLocal->GetConstantValue(m_comp, &cns))
+            if (invariantLocal->GetConstantValue(comp, &cns))
             {
                 printf(" (%lld)", (long long)cns);
             }
@@ -107,9 +93,9 @@ void ScalarEvolutionContext::DumpScev(Scev* scev)
         case ScevOper::ZeroExtend:
         case ScevOper::SignExtend:
         {
-            ScevUnop* unop = (ScevUnop*)scev;
+            ScevUnop* unop = (ScevUnop*)this;
             printf("%cext<%d>(", unop->Oper == ScevOper::ZeroExtend ? 'z' : 's', genTypeSize(unop->Type) * 8);
-            DumpScev(unop->Op1);
+            unop->Op1->Dump(comp);
             printf(")");
             break;
         }
@@ -117,9 +103,9 @@ void ScalarEvolutionContext::DumpScev(Scev* scev)
         case ScevOper::Mul:
         case ScevOper::Lsh:
         {
-            ScevBinop* binop = (ScevBinop*)scev;
+            ScevBinop* binop = (ScevBinop*)this;
             printf("(");
-            DumpScev(binop->Op1);
+            binop->Op1->Dump(comp);
             const char* op;
             switch (binop->Oper)
             {
@@ -136,18 +122,18 @@ void ScalarEvolutionContext::DumpScev(Scev* scev)
                     unreached();
             }
             printf(" %s ", op);
-            DumpScev(binop->Op2);
+            binop->Op2->Dump(comp);
             printf(")");
             break;
         }
         case ScevOper::AddRec:
         {
-            ScevAddRec* addRec = (ScevAddRec*)scev;
-            printf("<" FMT_LP, m_loop->GetIndex());
+            ScevAddRec* addRec = (ScevAddRec*)this;
+            printf("<" FMT_LP, addRec->Loop->GetIndex());
             printf(", ");
-            DumpScev(addRec->Start);
+            addRec->Start->Dump(comp);
             printf(", ");
-            DumpScev(addRec->Step);
+            addRec->Step->Dump(comp);
             printf(">");
             break;
         }
@@ -156,6 +142,118 @@ void ScalarEvolutionContext::DumpScev(Scev* scev)
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// ScalarEvolutionContext: Construct an instance of a context to do scalar evolution in.
+//
+// Parameters:
+//   comp - Compiler instance
+//
+// Remarks:
+//   After construction the context should be reset for a new loop by calling
+//   ResetForLoop.
+//
+ScalarEvolutionContext::ScalarEvolutionContext(Compiler* comp)
+    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts))
+{
+}
+
+//------------------------------------------------------------------------
+// ResetForLoop: Reset the internal cache in preparation of scalar
+// evolution analysis inside a new loop.
+//
+// Parameters:
+//   loop - The loop.
+//
+void ScalarEvolutionContext::ResetForLoop(FlowGraphNaturalLoop* loop)
+{
+    m_loop = loop;
+    m_cache.RemoveAll();
+}
+
+//------------------------------------------------------------------------
+// NewConstant: Create a SCEV node that represents a constant.
+//
+// Returns:
+//   The new node.
+//
+ScevConstant* ScalarEvolutionContext::NewConstant(var_types type, int64_t value)
+{
+    ScevConstant* constant = new (m_comp, CMK_LoopIVOpts) ScevConstant(type, value);
+    return constant;
+}
+
+//------------------------------------------------------------------------
+// NewLocal: Create a SCEV node that represents an invariant local (i.e. a
+// use of an SSA def from outside the loop).
+//
+// Parameters:
+//   lclNum - The local
+//   ssaNum - The SSA number of the def outside the loop that is being used.
+//
+// Returns:
+//   The new node.
+//
+ScevLocal* ScalarEvolutionContext::NewLocal(unsigned lclNum, unsigned ssaNum)
+{
+    var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
+    ScevLocal* invariantLocal = new (m_comp, CMK_LoopIVOpts) ScevLocal(type, lclNum, ssaNum);
+    return invariantLocal;
+}
+
+//------------------------------------------------------------------------
+// NewExtension: Create a SCEV node that represents a zero or sign extension.
+//
+// Parameters:
+//   oper       - The operation (ScevOper::ZeroExtend or ScevOper::SignExtend)
+//   targetType - The target type of the extension
+//   op         - The operand being extended.
+//
+// Returns:
+//   The new node.
+//
+ScevUnop* ScalarEvolutionContext::NewExtension(ScevOper oper, var_types targetType, Scev* op)
+{
+    assert(op != nullptr);
+    ScevUnop* ext = new (m_comp, CMK_LoopIVOpts) ScevUnop(oper, targetType, op);
+    return ext;
+}
+
+//------------------------------------------------------------------------
+// NewBinop: Create a SCEV node that represents a binary operation.
+//
+// Parameters:
+//   oper - The operation
+//   op1  - First operand
+//   op2  - Second operand
+//
+// Returns:
+//   The new node.
+//
+ScevBinop* ScalarEvolutionContext::NewBinop(ScevOper oper, Scev* op1, Scev* op2)
+{
+    assert((op1 != nullptr) && (op2 != nullptr));
+    ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, op1->Type, op1, op2);
+    return binop;
+}
+
+//------------------------------------------------------------------------
+// NewAddRec: Create a SCEV node that represents a new add recurrence.
+//
+// Parameters:
+//   loop  - The loop where this add recurrence is evolving
+//   start - Value of the recurrence at the first iteration
+//   step  - Step value of the recurrence
+//
+// Returns:
+//   The new node.
+//
+ScevAddRec* ScalarEvolutionContext::NewAddRec(Scev* start, Scev* step)
+{
+    assert((start != nullptr) && (step != nullptr));
+    ScevAddRec* addRec = new (m_comp, CMK_LoopIVOpts) ScevAddRec(start->Type, start, step DEBUGARG(m_loop));
+    return addRec;
+}
 
 //------------------------------------------------------------------------
 // CreateSimpleInvariantScev: Create a "simple invariant" SCEV node for a tree:

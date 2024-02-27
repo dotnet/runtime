@@ -86,6 +86,11 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
     <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]]</DisplayString>
   </Type>
 
+  <!-- Scalar evolution -->
+  <Type Name="Scev">
+    <DisplayString>[{Oper,en}, {Type,en}]</DisplayString>
+  </Type>
+
   <!-- Register allocation -->
   <Type Name="LinearScan">
     <DisplayString>LinearScan</DisplayString>

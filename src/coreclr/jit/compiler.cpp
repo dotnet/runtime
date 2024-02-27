@@ -9418,6 +9418,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cLoops")
 #pragma comment(linker, "/include:cLoopsA")
 #pragma comment(linker, "/include:cLoop")
+#pragma comment(linker, "/include:cScev")
 #pragma comment(linker, "/include:cTreeFlags")
 #pragma comment(linker, "/include:cVN")
 
@@ -9443,6 +9444,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dCVarSet")
 #pragma comment(linker, "/include:dLoop")
 #pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dScev")
 #pragma comment(linker, "/include:dTreeFlags")
 #pragma comment(linker, "/include:dVN")
 
@@ -9686,22 +9688,36 @@ JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 JITDBGAPI void __cdecl cLoops(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(comp->m_loops);
 }
 
 JITDBGAPI void __cdecl cLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    printf("===================================================================== *LoopsA %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(loops);
 }
 
 JITDBGAPI void __cdecl cLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
     FlowGraphNaturalLoop::Dump(loop);
+}
+
+JITDBGAPI void __cdecl cScev(Compiler* comp, Scev* scev)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Scev %u\n", sequenceNumber++);
+    if (scev == nullptr)
+    {
+        printf("  NULL\n");
+    }
+    else
+    {
+        scev->Dump(comp);
+    }
 }
 
 JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
@@ -10292,6 +10308,11 @@ JITDBGAPI void __cdecl dLoopsA(FlowGraphNaturalLoops* loops)
 JITDBGAPI void __cdecl dLoop(FlowGraphNaturalLoop* loop)
 {
     cLoop(JitTls::GetCompiler(), loop);
+}
+
+JITDBGAPI void __cdecl dScev(Scev* scev)
+{
+    cScev(JitTls::GetCompiler(), scev);
 }
 
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)

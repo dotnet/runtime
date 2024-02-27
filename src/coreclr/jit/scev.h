@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma once
+
 // This file contains the definition of the scalar evolution IR. This IR allows
 // representing the values of IR nodes inside loops in a closed form, taking
 // into account that they are changing on each loop iteration. The IR is based
@@ -54,6 +56,10 @@ struct Scev
     }
 
     bool GetConstantValue(Compiler* comp, int64_t* cns);
+
+#ifdef DEBUG
+    void Dump(Compiler* comp);
+#endif
 };
 
 struct ScevConstant : Scev
@@ -101,12 +107,14 @@ struct ScevBinop : ScevUnop
 // "Start" and "Step" are guaranteed to be invariant in "Loop".
 struct ScevAddRec : Scev
 {
-    ScevAddRec(var_types type, Scev* start, Scev* step) : Scev(ScevOper::AddRec, type), Start(start), Step(step)
+    ScevAddRec(var_types type, Scev* start, Scev* step DEBUGARG(FlowGraphNaturalLoop* loop))
+        : Scev(ScevOper::AddRec, type), Start(start), Step(step) DEBUGARG(Loop(loop))
     {
     }
 
     Scev* const Start;
     Scev* const Step;
+    INDEBUG(FlowGraphNaturalLoop* const Loop);
 };
 
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
@@ -130,95 +138,15 @@ class ScalarEvolutionContext
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
 
 public:
-    ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts))
-    {
-    }
+    ScalarEvolutionContext(Compiler* comp);
 
     void ResetForLoop(FlowGraphNaturalLoop* loop);
-    void DumpScev(Scev* scev);
 
-    //------------------------------------------------------------------------
-    // NewConstant: Create a SCEV node that represents a constant.
-    //
-    // Returns:
-    //   The new node.
-    //
-    ScevConstant* NewConstant(var_types type, int64_t value)
-    {
-        ScevConstant* constant = new (m_comp, CMK_LoopIVOpts) ScevConstant(type, value);
-        return constant;
-    }
-
-    //------------------------------------------------------------------------
-    // NewLocal: Create a SCEV node that represents an invariant local (i.e. a
-    // use of an SSA def from outside the loop).
-    //
-    // Parameters:
-    //   lclNum - The local
-    //   ssaNum - The SSA number of the def outside the loop that is being used.
-    //
-    // Returns:
-    //   The new node.
-    //
-    ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum)
-    {
-        var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
-        ScevLocal* invariantLocal = new (m_comp, CMK_LoopIVOpts) ScevLocal(type, lclNum, ssaNum);
-        return invariantLocal;
-    }
-
-    //------------------------------------------------------------------------
-    // NewExtension: Create a SCEV node that represents a zero or sign extension.
-    //
-    // Parameters:
-    //   oper       - The operation (ScevOper::ZeroExtend or ScevOper::SignExtend)
-    //   targetType - The target type of the extension
-    //   op         - The operand being extended.
-    //
-    // Returns:
-    //   The new node.
-    //
-    ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op)
-    {
-        assert(op != nullptr);
-        ScevUnop* ext = new (m_comp, CMK_LoopIVOpts) ScevUnop(oper, targetType, op);
-        return ext;
-    }
-
-    //------------------------------------------------------------------------
-    // NewBinop: Create a SCEV node that represents a binary operation.
-    //
-    // Parameters:
-    //   oper - The operation
-    //   op1  - First operand
-    //   op2  - Second operand
-    //
-    // Returns:
-    //   The new node.
-    //
-    ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2)
-    {
-        assert((op1 != nullptr) && (op2 != nullptr));
-        ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, op1->Type, op1, op2);
-        return binop;
-    }
-
-    //------------------------------------------------------------------------
-    // NewAddRec: Create a SCEV node that represents a new add recurrence.
-    //
-    // Parameters:
-    //   start - Value of the recurrence at the first iteration
-    //   step  - Step value of the recurrence
-    //
-    // Returns:
-    //   The new node.
-    //
-    ScevAddRec* NewAddRec(Scev* start, Scev* step)
-    {
-        assert((start != nullptr) && (step != nullptr));
-        ScevAddRec* addRec = new (m_comp, CMK_LoopIVOpts) ScevAddRec(start->Type, start, step);
-        return addRec;
-    }
+    ScevConstant* NewConstant(var_types type, int64_t value);
+    ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum);
+    ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op);
+    ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2);
+    ScevAddRec* NewAddRec(Scev* start, Scev* step);
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
     Scev* Simplify(Scev* scev);

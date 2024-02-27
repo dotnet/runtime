@@ -381,7 +381,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 }
 
 //------------------------------------------------------------------------
-// optBestEffortReplaceNarrowIVUsesWith: Try to find and replace uses of the specified
+// optBestEffortReplaceNarrowIVUses: Try to find and replace uses of the specified
 // SSA def with a new local.
 //
 // Parameters:
@@ -391,7 +391,11 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 //   block     - Block to replace in
 //   firstStmt - First statement in "block" to start replacing in
 //
-void Compiler::optBestEffortReplaceNarrowIVUsesWith(
+// Remarks:
+//   This function is best effort; it might not find all uses of the provided
+//   SSA num, particularly because it does not follow into joins.
+//
+void Compiler::optBestEffortReplaceNarrowIVUses(
     unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt)
 {
     JITDUMP("Replacing V%02u -> V%02u in " FMT_BB " starting at " FMT_STMT "\n", lclNum, newLclNum, block->bbNum,
@@ -409,7 +413,7 @@ void Compiler::optBestEffortReplaceNarrowIVUsesWith(
     block->VisitRegularSuccs(this, [=](BasicBlock* succ) {
         if (succ->GetUniquePred(this) == block)
         {
-            optBestEffortReplaceNarrowIVUsesWith(lclNum, ssaNum, newLclNum, succ, succ->firstStmt());
+            optBestEffortReplaceNarrowIVUses(lclNum, ssaNum, newLclNum, succ, succ->firstStmt());
         }
 
         return BasicBlockVisit::Continue;
@@ -498,7 +502,7 @@ PhaseStatus Compiler::optInductionVariables()
 
             scev = scevContext.Simplify(scev);
             JITDUMP("  => ");
-            DBEXEC(verbose, scevContext.DumpScev(scev));
+            DBEXEC(verbose, scev->Dump(this));
             JITDUMP("\n");
             if (!scev->OperIs(ScevOper::AddRec))
             {
@@ -617,8 +621,8 @@ PhaseStatus Compiler::optInductionVariables()
             if (initStmt != nullptr)
             {
                 JITDUMP("    Replacing on the way to the loop\n");
-                optBestEffortReplaceNarrowIVUsesWith(lcl->GetLclNum(), startLocal->SsaNum, newLclNum, initBlock,
-                                                     initStmt->GetNextStmt());
+                optBestEffortReplaceNarrowIVUses(lcl->GetLclNum(), startLocal->SsaNum, newLclNum, initBlock,
+                                                 initStmt->GetNextStmt());
             }
 
             JITDUMP("    Replacing in the loop; %d statements with appearences\n", ivUses.Height());
