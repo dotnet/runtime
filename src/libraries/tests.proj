@@ -400,9 +400,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/95795 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
-    <!-- Issue: https://github.com/dotnet/runtime/issues/98406 -->
-    <!-- Issue: https://github.com/dotnet/runtime/issues/98101 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true' and '$(RunDisabledWasmTests)' != 'true'">
@@ -614,9 +611,7 @@
     <!-- Don't want the default smoke tests - just verify that threading works -->
     <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
-    <!-- Issue: https://github.com/dotnet/runtime/issues/98406 -->
-    <!-- Issue: https://github.com/dotnet/runtime/issues/98101 -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" /> -->
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
   </ItemGroup>
