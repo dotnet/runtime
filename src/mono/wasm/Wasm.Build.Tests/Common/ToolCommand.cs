@@ -130,9 +130,13 @@ namespace Wasm.Build.Tests
             };
 
             var completionTask = CurrentProcess.StartAndWaitForExitAsync();
+            _testOutput.WriteLine($"[{_label}] CurrentProcess {CurrentProcess.Id}");
+
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
             await completionTask;
+
+            _testOutput.WriteLine($"[{_label}] CurrentProcess exited {CurrentProcess.Id} {CurrentProcess.ExitCode}");
 
             RemoveNullTerminator(output);
 
