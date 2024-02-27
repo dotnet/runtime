@@ -1434,7 +1434,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum != 4);  // rsp
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppRax = &pRD->pRax;
+    PTR_uintptr_t* ppRax = &pRD->pRax;
     if (regNum > 4) regNum--; // rsp is skipped in NativeAOT RegDisplay
 #else
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
@@ -1571,7 +1571,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 #ifdef FEATURE_NATIVEAOT
     if(regNum < 14)
     {
-        PTR_UIntNative* ppReg = &pRD->pR0;
+        PTR_uintptr_t* ppReg = &pRD->pR0;
         return (OBJECTREF*)*(ppReg + regNum);
     }
     else
@@ -1692,7 +1692,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum != 18); // TEB
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppReg = &pRD->pX0;
+    PTR_uintptr_t* ppReg = &pRD->pX0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else
@@ -1853,7 +1853,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE((regNum == 1) || (regNum >= 4 && regNum <= 31));
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppReg = &pRD->pR0;
+    PTR_uintptr_t* ppReg = &pRD->pR0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else
@@ -1980,7 +1980,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE((regNum == 1) || (regNum >= 5 && regNum <= 31));
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppReg = &pRD->pR0;
+    PTR_uintptr_t* ppReg = &pRD->pR0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else

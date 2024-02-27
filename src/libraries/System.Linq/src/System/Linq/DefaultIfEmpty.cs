@@ -18,6 +18,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source is TSource[] { Length: > 0 })
+            {
+                return source;
+            }
+
             return new DefaultIfEmptyIterator<TSource>(source, defaultValue);
         }
 

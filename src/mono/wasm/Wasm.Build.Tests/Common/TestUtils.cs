@@ -52,7 +52,6 @@ public static class TestUtils
         if (!same && finfo0.Length == finfo1.Length)
             throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
     }
-
     public static string FindSubDirIgnoringCase(string parentDir, string dirName)
     {
         IEnumerable<string> matchingDirs = Directory.EnumerateDirectories(parentDir,

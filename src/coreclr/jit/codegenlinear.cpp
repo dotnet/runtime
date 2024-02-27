@@ -643,8 +643,41 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // TARGET_AMD64
 
+#if FEATURE_LOOP_ALIGN
+        auto SetLoopAlignBackEdge = [=](const BasicBlock* block, const BasicBlock* target) {
+            // This is the last place where we operate on blocks and after this, we operate
+            // on IG. Hence, if we know that the destination of "block" is the first block
+            // of a loop and that loop needs alignment (it has BBF_LOOP_ALIGN), then "block"
+            // might represent the lexical end of the loop. Propagate that information on the
+            // IG through "igLoopBackEdge".
+            //
+            // During emitter, this information will be used to calculate the loop size.
+            // Depending on the loop size, the decision of whether to align a loop or not will be taken.
+            // (Loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
+            // If `igLoopBackEdge` is set, then mark the next BasicBlock as a label. This will cause
+            // the emitter to create a new IG for the next block. Otherwise, if the next block
+            // did not have a label, additional instructions might be added to the current IG. This
+            // would make the "back edge" IG larger, possibly causing the size of the loop computed
+            // by `getLoopSize()` to be larger than actual, which could push the loop size over the
+            // threshold of loop size that can be aligned.
+
+            if (target->isLoopAlign())
+            {
+                if (GetEmitter()->emitSetLoopBackEdge(target))
+                {
+                    if (!block->IsLast())
+                    {
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                        block->Next()->SetFlags(BBF_HAS_LABEL);
+                    }
+                }
+            }
+        };
+#endif // FEATURE_LOOP_ALIGN
+
         /* Do we need to generate a jump or return? */
 
+        bool removedJmp = false;
         switch (block->GetKind())
         {
             case BBJ_RETURN:
@@ -733,6 +766,7 @@ void CodeGen::genCodeForBBlist()
                     }
 #endif // TARGET_AMD64
 
+                    removedJmp = true;
                     break;
                 }
 #ifdef TARGET_XARCH
@@ -746,45 +780,16 @@ void CodeGen::genCodeForBBlist()
             }
 
 #if FEATURE_LOOP_ALIGN
-                // This is the last place where we operate on blocks and after this, we operate
-                // on IG. Hence, if we know that the destination of "block" is the first block
-                // of a loop and needs alignment (it has BBF_LOOP_ALIGN), then "block" represents
-                // end of the loop. Propagate that information on the IG through "igLoopBackEdge".
-                //
-                // During emitter, this information will be used to calculate the loop size.
-                // Depending on the loop size, decision of whether to align a loop or not will be taken.
-                //
-                // In the emitter, we need to calculate the loop size from `block->bbTarget` through
-                // `block` (inclusive). Thus, we need to ensure there is a label on the lexical fall-through
-                // block, even if one is not otherwise needed, to be able to calculate the size of this
-                // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
-
-                if (block->GetTarget()->isLoopAlign())
-                {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetTarget());
-
-                    if (!block->IsLast())
-                    {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
-                        block->Next()->SetFlags(BBF_HAS_LABEL);
-                    }
-                }
+                SetLoopAlignBackEdge(block, block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
                 break;
 
             case BBJ_COND:
 
 #if FEATURE_LOOP_ALIGN
-                if (block->GetTrueTarget()->isLoopAlign())
-                {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetTrueTarget());
-
-                    if (!block->IsLast())
-                    {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
-                        block->Next()->SetFlags(BBF_HAS_LABEL);
-                    }
-                }
+                // Either true or false target of BBJ_COND can induce a loop.
+                SetLoopAlignBackEdge(block, block->GetTrueTarget());
+                SetLoopAlignBackEdge(block, block->GetFalseTarget());
 #endif // FEATURE_LOOP_ALIGN
 
                 break;
@@ -811,7 +816,7 @@ void CodeGen::genCodeForBBlist()
             assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
         }
 
         if (!block->IsLast() && block->Next()->isLoopAlign())
@@ -824,7 +829,7 @@ void CodeGen::genCodeForBBlist()
                 GetEmitter()->emitConnectAlignInstrWithCurIG();
             }
         }
-#endif
+#endif // FEATURE_LOOP_ALIGN
 
 #ifdef DEBUG
         if (compiler->verbose)
@@ -1257,13 +1262,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 unspillType = lcl->TypeGet();
             }
-
-#if defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
-            {
-                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
-            }
-#endif
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
@@ -1937,18 +1935,9 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
     if (sizeReg != REG_NA)
     {
-        unsigned blockSize = blkNode->Size();
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK))
-        {
-            assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            // This can go via helper which takes the size as a native uint.
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blockSize);
-        }
-        else
-        {
-            GenTree* sizeNode = blkNode->AsStoreDynBlk()->gtDynamicSize;
-            inst_Mov(sizeNode->TypeGet(), sizeReg, sizeNode->GetRegNum(), /* canSkip */ true);
-        }
+        assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
+        // This can go via helper which takes the size as a native uint.
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
     }
 }
 
@@ -2054,12 +2043,6 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     genConsumeReg(dstAddr);
     // The source may be a local or in a register; 'genConsumeBlockSrc' will check that.
     genConsumeBlockSrc(blkNode);
-    // 'genSetBlockSize' (called below) will ensure that a register has been reserved as needed
-    // in the case where the size is a constant (i.e. it is not GT_STORE_DYN_BLK).
-    if (blkNode->OperGet() == GT_STORE_DYN_BLK)
-    {
-        genConsumeReg(blkNode->AsStoreDynBlk()->gtDynamicSize);
-    }
 
     // Next, perform any necessary moves.
     genCopyRegIfNeeded(dstAddr, dstReg);

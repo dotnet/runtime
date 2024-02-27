@@ -29,7 +29,6 @@
 #include "marshal.h"
 #include <mono/metadata/debug-helpers.h>
 #include "abi-details.h"
-#include "cominterop.h"
 #include "components.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-error-internals.h>
@@ -2570,7 +2569,7 @@ metadata_signature_set_modopt_call_conv (MonoMethodSignature *sig, MonoType *cmo
 	if (count == 0)
 		return;
 	int base_callconv = sig->call_convention;
-	gboolean suppress_gc_transition = sig->suppress_gc_transition;
+	gboolean suppress_gc_transition = mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 	for (uint8_t i = 0; i < count; ++i) {
 		gboolean req = FALSE;
 		MonoType *cmod = mono_type_get_custom_modifier (cmod_type, i, &req, error);
@@ -2613,7 +2612,8 @@ metadata_signature_set_modopt_call_conv (MonoMethodSignature *sig, MonoType *cmo
 		}
 	}
 	sig->call_convention = base_callconv;
-	sig->suppress_gc_transition = suppress_gc_transition;
+	if (suppress_gc_transition)
+		sig->ext_callconv |= MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION;
 }
 
 /**
@@ -2679,6 +2679,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	case MONO_CALL_UNMANAGED_MD:
 		method->pinvoke = 1;
 		break;
+	}
+
+	if (mono_method_signature_has_ext_callconv (method, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		method->pinvoke = 1;
 	}
 
 	if (call_convention != 0xa) {
@@ -7053,12 +7057,6 @@ handle_enum:
 			*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
 			return MONO_NATIVE_INT;
 		}
-#ifndef DISABLE_COM
-		if (t == MONO_TYPE_CLASS && mono_cominterop_is_interface (type->data.klass)){
-			*conv = MONO_MARSHAL_CONV_OBJECT_INTERFACE;
-			return MONO_NATIVE_INTERFACE;
-		}
-#endif
 		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
 		return MONO_NATIVE_STRUCT;
 	}
@@ -7981,235 +7979,6 @@ mono_type_set_amods (MonoType *t, MonoAggregateModContainer *amods)
 	t_full->mods.amods = amods;
 }
 
-#ifndef DISABLE_COM
-static void
-mono_signature_append_class_name (GString *res, MonoClass *klass)
-{
-	if (!klass) {
-		g_string_append (res, "<UNKNOWN>");
-		return;
-	}
-	if (m_class_get_nested_in (klass)) {
-		mono_signature_append_class_name (res, m_class_get_nested_in (klass));
-		g_string_append_c (res, '+');
-	}
-	else if (*m_class_get_name_space (klass)) {
-		g_string_append (res, m_class_get_name_space (klass));
-		g_string_append_c (res, '.');
-	}
-	g_string_append (res, m_class_get_name (klass));
-}
-
-static void
-mono_guid_signature_append_method (GString *res, MonoMethodSignature *sig);
-
-static void
-mono_guid_signature_append_type (GString *res, MonoType *type)
-{
-	int i;
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		g_string_append (res, "void"); break;
-	case MONO_TYPE_BOOLEAN:
-		g_string_append (res, "bool"); break;
-	case MONO_TYPE_CHAR:
-		g_string_append (res, "wchar"); break;
-	case MONO_TYPE_I1:
-		g_string_append (res, "int8"); break;
-	case MONO_TYPE_U1:
-		g_string_append (res, "unsigned int8"); break;
-	case MONO_TYPE_I2:
-		g_string_append (res, "int16"); break;
-	case MONO_TYPE_U2:
-		g_string_append (res, "unsigned int16"); break;
-	case MONO_TYPE_I4:
-		g_string_append (res, "int32"); break;
-	case MONO_TYPE_U4:
-		g_string_append (res, "unsigned int32"); break;
-	case MONO_TYPE_I8:
-		g_string_append (res, "int64"); break;
-	case MONO_TYPE_U8:
-		g_string_append (res, "unsigned int64"); break;
-	case MONO_TYPE_R4:
-		g_string_append (res, "float32"); break;
-	case MONO_TYPE_R8:
-		g_string_append (res, "float64"); break;
-	case MONO_TYPE_U:
-		g_string_append (res, "unsigned int"); break;
-	case MONO_TYPE_I:
-		g_string_append (res, "int"); break;
-	case MONO_TYPE_OBJECT:
-		g_string_append (res, "class System.Object"); break;
-	case MONO_TYPE_STRING:
-		g_string_append (res, "class System.String"); break;
-	case MONO_TYPE_TYPEDBYREF:
-		g_string_append (res, "refany");
-		break;
-	case MONO_TYPE_VALUETYPE:
-		g_string_append (res, "value class ");
-		mono_signature_append_class_name (res, type->data.klass);
-		break;
-	case MONO_TYPE_CLASS:
-		g_string_append (res, "class ");
-		mono_signature_append_class_name (res, type->data.klass);
-		break;
-	case MONO_TYPE_SZARRAY:
-		mono_guid_signature_append_type (res, m_class_get_byval_arg (type->data.klass));
-		g_string_append (res, "[]");
-		break;
-	case MONO_TYPE_ARRAY:
-		mono_guid_signature_append_type (res, m_class_get_byval_arg (type->data.array->eklass));
-		g_string_append_c (res, '[');
-		if (type->data.array->rank == 0) g_string_append (res, "??");
-		for (i = 0; i < type->data.array->rank; ++i)
-		{
-			if (i > 0) g_string_append_c (res, ',');
-			if (type->data.array->sizes[i] == 0 || type->data.array->lobounds[i] == 0) continue;
-                        g_string_append_printf (res, "%d", type->data.array->lobounds[i]);
-                        g_string_append (res, "...");
-                        g_string_append_printf (res, "%d", type->data.array->lobounds[i] + type->data.array->sizes[i] + 1);
-		}
-		g_string_append_c (res, ']');
-		break;
-	case MONO_TYPE_MVAR:
-	case MONO_TYPE_VAR:
-		if (type->data.generic_param)
-			g_string_append_printf (res, "%s%d", type->type == MONO_TYPE_VAR ? "!" : "!!", mono_generic_param_num (type->data.generic_param));
-		else
-			g_string_append (res, "<UNKNOWN>");
-		break;
-	case MONO_TYPE_GENERICINST: {
-		MonoGenericContext *context;
-		mono_guid_signature_append_type (res, m_class_get_byval_arg (type->data.generic_class->container_class));
-		g_string_append (res, "<");
-		context = &type->data.generic_class->context;
-		if (context->class_inst) {
-			for (i = 0; i < context->class_inst->type_argc; ++i) {
-				if (i > 0)
-					g_string_append (res, ",");
-				mono_guid_signature_append_type (res, context->class_inst->type_argv [i]);
-			}
-		}
-		else if (context->method_inst) {
-			for (i = 0; i < context->method_inst->type_argc; ++i) {
-				if (i > 0)
-					g_string_append (res, ",");
-				mono_guid_signature_append_type (res, context->method_inst->type_argv [i]);
-			}
-		}
-		g_string_append (res, ">");
-		break;
-	}
-	case MONO_TYPE_FNPTR:
-		g_string_append (res, "fnptr ");
-		mono_guid_signature_append_method (res, type->data.method);
-		break;
-	case MONO_TYPE_PTR:
-		mono_guid_signature_append_type (res, type->data.type);
-		g_string_append_c (res, '*');
-		break;
-	default:
-		break;
-	}
-	if (m_type_is_byref (type)) g_string_append_c (res, '&');
-}
-
-static void
-mono_guid_signature_append_method (GString *res, MonoMethodSignature *sig)
-{
-	int i, j;
-
-	if (mono_signature_is_instance (sig)) g_string_append (res, "instance ");
-	if (sig->generic_param_count) g_string_append (res, "generic ");
-
-	switch (mono_signature_get_call_conv (sig))
-	{
-	case MONO_CALL_DEFAULT: break;
-	case MONO_CALL_C: g_string_append (res, "unmanaged cdecl "); break;
-	case MONO_CALL_STDCALL: g_string_append (res, "unmanaged stdcall "); break;
-	case MONO_CALL_THISCALL: g_string_append (res, "unmanaged thiscall "); break;
-	case MONO_CALL_FASTCALL: g_string_append (res, "unmanaged fastcall "); break;
-	case MONO_CALL_VARARG: g_string_append (res, "vararg "); break;
-	default: break;
-	}
-
-	mono_guid_signature_append_type (res, mono_signature_get_return_type_internal(sig));
-
-	g_string_append_c (res, '(');
-	for (i = 0, j = 0; i < sig->param_count && j < sig->param_count; ++i, ++j) {
-		if (i > 0) g_string_append_c (res, ',');
-		if (sig->params [j]->attrs & PARAM_ATTRIBUTE_IN)
-		{
-			/*.NET runtime "incorrectly" shifts the parameter signatures too...*/
-			g_string_append (res, "required_modifier System.Runtime.InteropServices.InAttribute");
-			if (++i == sig->param_count) break;
-			g_string_append_c (res, ',');
-		}
-		mono_guid_signature_append_type (res, sig->params [j]);
-	}
-	g_string_append_c (res, ')');
-}
-
-static void
-mono_generate_v3_guid_for_interface (MonoClass* klass, guint8* guid)
-{
-	/* COM+ Runtime GUID {69f9cbc9-da05-11d1-9408-0000f8083460} */
-	static const guchar guid_name_space[] = {0x69,0xf9,0xcb,0xc9,0xda,0x05,0x11,0xd1,0x94,0x08,0x00,0x00,0xf8,0x08,0x34,0x60};
-
-	MonoMD5Context ctx;
-	MonoMethod *method;
-	gpointer iter = NULL;
-	guchar byte;
-	glong items_read, items_written;
-	int i;
-
-	mono_md5_init (&ctx);
-	mono_md5_update (&ctx, guid_name_space, sizeof(guid_name_space));
-
-	GString *name = g_string_new ("");
-	mono_signature_append_class_name (name, klass);
-	gunichar2 *unicode_name = g_utf8_to_utf16 (name->str, name->len, &items_read, &items_written, NULL);
-	mono_md5_update (&ctx, (guchar *)unicode_name, items_written * sizeof(gunichar2));
-
-	g_free (unicode_name);
-	g_string_free (name, TRUE);
-
-	while ((method = mono_class_get_methods(klass, &iter)) != NULL)
-	{
-		ERROR_DECL (error);
-		if (!mono_cominterop_method_com_visible(method)) continue;
-
-		MonoMethodSignature *sig = mono_method_signature_checked (method, error);
-		mono_error_assert_ok (error); /*FIXME proper error handling*/
-
-		GString *res = g_string_new ("");
-		mono_guid_signature_append_method (res, sig);
-		mono_md5_update (&ctx, (guchar *)res->str, res->len);
-		g_string_free (res, TRUE);
-
-		for (i = 0; i < sig->param_count; ++i) {
-			byte = sig->params [i]->attrs;
-			mono_md5_update (&ctx, &byte, 1);
-		}
-	}
-
-	byte = 0;
-	if (mono_md5_ctx_byte_length (&ctx) & 1)
-		mono_md5_update (&ctx, &byte, 1);
-	mono_md5_final (&ctx, (guchar *)guid);
-
-        guid[6] &= 0x0f;
-        guid[6] |= 0x30; /* v3 (md5) */
-
-	guid[8] &= 0x3F;
-	guid[8] |= 0x80;
-
-	*(guint32 *)(guid + 0) = GUINT32_FROM_BE(*(guint32 *)(guid + 0));
-	*(guint16 *)(guid + 4) = GUINT16_FROM_BE(*(guint16 *)(guid + 4));
-	*(guint16 *)(guid + 6) = GUINT16_FROM_BE(*(guint16 *)(guid + 6));
-}
-#endif
-
 static gint
 mono_unichar_xdigit_value (gunichar c)
 {
@@ -8258,12 +8027,6 @@ mono_metadata_get_class_guid (MonoClass* klass, guint8* guid, MonoError *error)
 	memset(guid, 0, 16);
 	if (attr)
 		mono_string_to_guid (attr->guid, guid);
-#ifndef DISABLE_COM
-	else if (mono_class_is_interface (klass))
-		mono_generate_v3_guid_for_interface (klass, guid);
-	else
-		g_warning ("Generated GUIDs only implemented for interfaces!");
-#endif
 }
 
 uint32_t

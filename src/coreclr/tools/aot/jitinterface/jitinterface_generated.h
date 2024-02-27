@@ -51,7 +51,6 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTypeInstantiationArgument)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, unsigned index);
     size_t (* printClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     bool (* isValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    CorInfoInlineTypeCheck (* canInlineTypeCheck)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
     uint32_t (* getClassAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_MODULE_HANDLE (* getClassModule)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_ASSEMBLY_HANDLE (* getModuleAssembly)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE mod);
@@ -92,6 +91,7 @@ struct JitInterfaceCallbacks
     TypeCompareState (* compareTypesForCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
     TypeCompareState (* compareTypesForEquality)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     bool (* isMoreSpecificType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    bool (* isExactType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     TypeCompareState (* isEnum)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
     CORINFO_CLASS_HANDLE (* getParentType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getChildType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet);
@@ -115,6 +115,7 @@ struct JitInterfaceCallbacks
     void (* getVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars);
     void (* reportRichMappings)(void * thisHandle, CorInfoExceptionClass** ppException, ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings);
+    void (* reportMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, const char* key, const void* value, size_t length);
     void* (* allocateArray)(void * thisHandle, CorInfoExceptionClass** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
     CORINFO_ARG_LIST_HANDLE (* getArgNext)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ARG_LIST_HANDLE args);
@@ -592,16 +593,6 @@ public:
     return temp;
 }
 
-    virtual CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CorInfoInlineTypeCheck temp = _callbacks->canInlineTypeCheck(_thisHandle, &pException, cls, source);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -988,6 +979,15 @@ public:
     return temp;
 }
 
+    virtual bool isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->isExactType(_thisHandle, &pException, cls);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
     virtual TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType)
@@ -1212,6 +1212,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->reportRichMappings(_thisHandle, &pException, inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->reportMetadata(_thisHandle, &pException, key, value, length);
     if (pException != nullptr) throw pException;
 }
 

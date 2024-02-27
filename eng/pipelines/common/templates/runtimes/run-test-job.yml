@@ -389,7 +389,7 @@ jobs:
           - jitstress1_tiered
           - jitstress2
           - jitstress2_tiered
-          - zapdisable
+          - disabler2r
           - tailcallstress
         ${{ if in(parameters.testGroup, 'jitstress-random') }}:
           scenarios:
@@ -507,9 +507,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'gcstress-extra') }}:
           scenarios:
           - heapverify1
-          - gcstress0xc_zapdisable
-          - gcstress0xc_zapdisable_jitstress2
-          - gcstress0xc_zapdisable_heapverify1
+          - gcstress0xc_disabler2r
+          - gcstress0xc_disabler2r_jitstress2
+          - gcstress0xc_disabler2r_heapverify1
           - gcstress0xc_jitstress1
           - gcstress0xc_jitstress2
           - gcstress0xc_tailcallstress
@@ -585,7 +585,7 @@ jobs:
             - jitobjectstackallocation
             - jitphysicalpromotion_only
             - jitphysicalpromotion_full
-            - jitcrossblocklocalassertionprop
+            - jitrlcse
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg

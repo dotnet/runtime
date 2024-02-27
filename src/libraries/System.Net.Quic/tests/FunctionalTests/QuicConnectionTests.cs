@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [Collection(nameof(DisableParallelization))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
@@ -121,6 +121,47 @@ namespace System.Net.Quic.Tests
                     // Subsequent attempts should fail
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseCanceled()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseTaskStored()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    var task = clientConnection.CloseAsync(0).AsTask();
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
                 });
         }
 

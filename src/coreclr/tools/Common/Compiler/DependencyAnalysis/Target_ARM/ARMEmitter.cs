@@ -121,9 +121,41 @@ namespace ILCompiler.DependencyAnalysis.ARM
         // ldr.w reg, [reg, #offset]
         // reg range: [0..PC]
         // offset range: [-255..4095]
+        //
+        // for offset >= 4096 we do an expansion into:
+        // add.w destination, source, #const
+        // ldr.w destination, [destination, #offset]
         public void EmitLDR(Register destination, Register source, int offset)
         {
             Debug.Assert(IsValidReg(destination) && IsValidReg(source));
+
+            if (offset >= 0x1000)
+            {
+                uint constVal = (uint)offset & ~0xfffu;
+                uint mask32 = 0xff;
+                uint imm8 = 0;
+                int encode = 31; // 11111
+
+                do
+                {
+                    mask32 <<= 1;
+                    if ((constVal & ~mask32) == 0)
+                    {
+                        imm8 = (constVal & mask32) >> (32 - encode);
+                        break;
+                    }
+                    encode--;
+                } while (encode >= 8);
+
+                Debug.Assert(encode >= 8);
+                Debug.Assert((imm8 & 0x80) > 0);
+                Builder.EmitShort((short)(0xF100 + (byte)source + (((byte)encode & 0x10) << 6)));
+                Builder.EmitShort((short)((((byte)encode & 0xE) << 11) + ((byte)destination << 8) + (((byte)encode & 1) << 7) + (imm8 & 0x7f)));
+
+                offset = (int)(offset & 0xfffu);
+                source = destination;
+            }
+
             Debug.Assert(offset >= -255 && offset <= 4095);
             if (offset >= 0)
             {
@@ -214,6 +246,15 @@ namespace ILCompiler.DependencyAnalysis.ARM
         public void EmitRETIfEqual()
         {
             EmitBNE(4);
+            EmitRET();
+        }
+
+        // beq label(+4): ret(2) + next(2)
+        // bx lr
+        // label: ...
+        public void EmitRETIfNotEqual()
+        {
+            EmitBEQ(4);
             EmitRET();
         }
     }

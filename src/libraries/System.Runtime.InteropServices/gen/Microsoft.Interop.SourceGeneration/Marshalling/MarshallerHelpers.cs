@@ -88,7 +88,7 @@ namespace Microsoft.Interop
 
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
         {
-            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In || info.RefKind == RefKind.RefReadOnlyParameter);
         }
 
         /// <summary>
@@ -291,6 +291,7 @@ namespace Microsoft.Interop
                 switch (info.RefKind)
                 {
                     case RefKind.In:
+                    case RefKind.RefReadOnlyParameter:
                         return MarshalDirection.ManagedToUnmanaged;
                     case RefKind.Ref:
                         return MarshalDirection.Bidirectional;
@@ -312,6 +313,7 @@ namespace Microsoft.Interop
             switch (info.RefKind)
             {
                 case RefKind.In:
+                case RefKind.RefReadOnlyParameter:
                     return MarshalDirection.UnmanagedToManaged;
                 case RefKind.Ref:
                     return MarshalDirection.Bidirectional;
@@ -379,6 +381,57 @@ namespace Microsoft.Interop
                 }
                 // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
             }
+        }
+
+        public static SyntaxTokenList GetManagedParameterModifiers(TypePositionInfo typeInfo)
+        {
+            SyntaxTokenList tokens = TokenList();
+
+            // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
+            // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
+            // When the "scoped" keyword is present, it must be present on all declarations.
+            if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
+            {
+                tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
+            }
+
+            if (typeInfo.IsByRef)
+            {
+                switch (typeInfo.RefKind)
+                {
+                    case RefKind.In:
+                        tokens = tokens.Add(Token(SyntaxKind.InKeyword));
+                        break;
+                    case RefKind.Ref:
+                        tokens = tokens.Add(Token(SyntaxKind.RefKeyword));
+                        break;
+
+                    case RefKind.Out:
+                        tokens = tokens.Add(Token(SyntaxKind.OutKeyword));
+                        break;
+                    case RefKind.RefReadOnlyParameter:
+                        tokens = tokens.Add(Token(SyntaxKind.RefKeyword));
+                        tokens = tokens.Add(Token(SyntaxKind.ReadOnlyKeyword));
+                        break;
+                    default:
+                        throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}");
+                }
+            }
+
+            return tokens;
+        }
+
+        public static SyntaxToken GetManagedArgumentRefKindKeyword(TypePositionInfo typeInfo)
+        {
+            return typeInfo.RefKind switch
+            {
+                RefKind.None => default,
+                RefKind.In => Token(SyntaxKind.InKeyword),
+                RefKind.Ref => Token(SyntaxKind.RefKeyword),
+                RefKind.Out => Token(SyntaxKind.OutKeyword),
+                RefKind.RefReadOnlyParameter => Token(SyntaxKind.RefKeyword),
+                _ => throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}")
+            };
         }
     }
 }

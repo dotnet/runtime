@@ -31,7 +31,7 @@ namespace System.Diagnostics
 
         internal static void InvokeDebuggerTypeProxyProperties(object obj)
         {
-            DebuggerAttributeInfo info = ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);
+            DebuggerAttributeInfo info = ValidateDebuggerTypeProxyProperties(obj);
             foreach (PropertyInfo pi in info.Properties)
             {
                 pi.GetValue(info.Instance, null);
@@ -40,17 +40,7 @@ namespace System.Diagnostics
 
         internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(object obj)
         {
-            return ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);
-        }
-
-        internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(Type type, object obj)
-        {
-            return ValidateDebuggerTypeProxyProperties(type, type.GenericTypeArguments, obj);
-        }
-
-        internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(Type type, Type[] genericTypeArguments, object obj)
-        {
-            Type proxyType = GetProxyType(type, genericTypeArguments);
+            Type proxyType = GetProxyType(obj);
 
             // Create an instance of the proxy type, and make sure we can access all of the instance properties
             // on the type without exception
@@ -63,7 +53,13 @@ namespace System.Diagnostics
             };
         }
 
-        public static DebuggerBrowsableState? GetDebuggerBrowsableState(MemberInfo info)
+        internal static void CreateDebuggerTypeProxyWithNullArgument(Type type)
+        {
+            Type proxyType = GetProxyType(type);
+            Activator.CreateInstance(proxyType, [null]);
+        }
+
+        internal static DebuggerBrowsableState? GetDebuggerBrowsableState(MemberInfo info)
         {
             CustomAttributeData debuggerBrowsableAttribute = info.CustomAttributes
                 .SingleOrDefault(a => a.AttributeType == typeof(DebuggerBrowsableAttribute));
@@ -71,7 +67,7 @@ namespace System.Diagnostics
             return (DebuggerBrowsableState?)(int?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
         }
 
-        public static IEnumerable<FieldInfo> GetDebuggerVisibleFields(Type debuggerAttributeType)
+        internal static IEnumerable<FieldInfo> GetDebuggerVisibleFields(Type debuggerAttributeType)
         {
             // The debugger doesn't evaluate non-public members of type proxies.
             IEnumerable<FieldInfo> visibleFields = debuggerAttributeType.GetFields()
@@ -79,7 +75,7 @@ namespace System.Diagnostics
             return visibleFields;
         }
 
-        public static IEnumerable<PropertyInfo> GetDebuggerVisibleProperties(Type debuggerAttributeType)
+        internal static IEnumerable<PropertyInfo> GetDebuggerVisibleProperties(Type debuggerAttributeType)
         {
             // The debugger doesn't evaluate non-public members of type proxies. GetGetMethod returns null if the getter is non-public.
             IEnumerable<PropertyInfo> visibleProperties = debuggerAttributeType.GetProperties()
@@ -87,11 +83,24 @@ namespace System.Diagnostics
             return visibleProperties;
         }
 
-        public static object GetProxyObject(object obj) => Activator.CreateInstance(GetProxyType(obj), obj);
+        internal static object GetProxyObject(object obj) => Activator.CreateInstance(GetProxyType(obj), obj);
 
-        public static Type GetProxyType(object obj) => GetProxyType(obj.GetType());
+        internal static Type GetProxyType(object obj) => GetProxyType(obj.GetType());
 
-        public static Type GetProxyType(Type type) => GetProxyType(type, type.GenericTypeArguments);
+        internal static Type GetProxyType(Type type)
+        {
+            CustomAttributeData cad = FindAttribute(type, attributeType: typeof(DebuggerTypeProxyAttribute));
+
+            Type proxyType = cad.ConstructorArguments[0].ArgumentType == typeof(Type) ?
+                (Type)cad.ConstructorArguments[0].Value :
+                Type.GetType((string)cad.ConstructorArguments[0].Value);
+            if (type.GenericTypeArguments.Length > 0)
+            {
+                proxyType = proxyType.MakeGenericType(type.GenericTypeArguments);
+            }
+
+            return proxyType;
+        }
 
         internal static DebuggerDisplayResult ValidateFullyDebuggerDisplayReferences(object obj)
         {
@@ -134,21 +143,6 @@ namespace System.Diagnostics
                 }
             }
             throw new InvalidOperationException($"Expected one {attributeType.Name} on {type}.");
-        }
-
-        private static Type GetProxyType(Type type, Type[] genericTypeArguments)
-        {
-            CustomAttributeData cad = FindAttribute(type, attributeType: typeof(DebuggerTypeProxyAttribute));
-
-            Type proxyType = cad.ConstructorArguments[0].ArgumentType == typeof(Type) ?
-                (Type)cad.ConstructorArguments[0].Value :
-                Type.GetType((string)cad.ConstructorArguments[0].Value);
-            if (genericTypeArguments.Length > 0)
-            {
-                proxyType = proxyType.MakeGenericType(genericTypeArguments);
-            }
-
-            return proxyType;
         }
 
         private static string FormatDebuggerDisplayNamedArgument(string argumentName, CustomAttributeData debuggerDisplayAttributeData, object obj)

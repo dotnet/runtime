@@ -166,9 +166,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     fi
     ReleaseLock
   fi
-
-  export DOTNET_ZapRequire=$(ZapRequire)
-  export DOTNET_ZapRequireList=$(AssemblyName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -190,8 +187,12 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
 REM CrossGen2 Script
 if defined RunCrossGen2 (
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
+    set CrossGen2TestCheckPdb=$(CrossGen2TestCheckPdb)
+    set __CreatePdb=$(__CreatePdb)
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
+    if defined CrossGen2TestCheckPdb ( set __CreatePdb=1)
+
     set CrossGen2Status=0
     set R2RDumpStatus=0
     set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
@@ -215,6 +216,7 @@ if defined RunCrossGen2 (
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
         set __OutputFile=!scriptPath!\composite-r2r.dll
+        set __PdbFile=!scriptPath!\composite-r2r.ni.pdb
         rem In composite mode, treat all dll's in the test folder as rooting inputs
         set __InputFile=!scriptPath!IL-CG2\*.dll
         call :CompileOneFileCrossgen2
@@ -223,6 +225,7 @@ if defined RunCrossGen2 (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
         for %%I in (!scriptPath!IL-CG2\*.dll) do (
             set __OutputFile=!scriptPath!%%~nI.dll
+            set __PdbFile=!scriptPath!%%~nI.ni.pdb
             set __InputFile=%%I
             call :CompileOneFileCrossgen2
             IF NOT !CrossGen2Status!==0 (
@@ -239,14 +242,13 @@ if defined RunCrossGen2 (
     set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile! 2>nul
 
-    set __R2RDumpCommand=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
     if defined __TestDotNetCmd (
-        set __R2RDumpCommand=!__R2RDumpCommand! "!__TestDotNetCmd!"
+        set __R2RDumpCommand="!__TestDotNetCmd!"
     ) else (
-        set __R2RDumpCommand=!__R2RDumpCommand! "dotnet"
+        set __R2RDumpCommand="dotnet"
     )
-    set __R2RDumpCommand=!__R2RDumpCommand! "!CORE_ROOT!\r2rdump\r2rdump.dll"
+    set __R2RDumpCommand="!_DebuggerFullPath!" "!__R2RDumpCommand!" "!CORE_ROOT!\r2rdump\r2rdump.dll"
     set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
 
     set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
@@ -271,7 +273,7 @@ if defined RunCrossGen2 (
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
 
-    if not "$(__CreatePdb)" == "" (
+    if defined __CreatePdb (
         echo --pdb>>!__ResponseFile!
     )
 
@@ -305,6 +307,21 @@ if defined RunCrossGen2 (
     endlocal & set "R2RDumpStatus=%R2RDumpStatus%" &set "CrossGen2Status=%CrossGen2Status%"
 
     echo %time%
+
+    if !CrossGen2Status!==0 (
+        if defined CrossGen2TestCheckPdb (
+            set __CheckPdbCommand=!__DotNet!
+            set __CheckPdbCommand=!__CheckPdbCommand! "!CORE_ROOT!\PdbChecker\PdbChecker.dll"
+            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
+            echo "!__CheckPdbCommand!"
+            call !__CheckPdbCommand!
+            if not !ERRORLEVEL!==0 (
+                echo PDB check failed for file !__PdbFile! >2
+                set CrossGen2Status=42
+            )
+        )
+    )
+
     Exit /b 0
 
 :DoneCrossgen2Operations
@@ -319,9 +336,6 @@ if defined RunCrossGen2 (
         ECHO R2RDump failed with exitcode - !R2RDumpStatus!
         Exit /b 1
     )
-
-  set DOTNET_ZapRequire=$(ZapRequire)
-  set DOTNET_ZapRequireList=$(AssemblyName)
 )
         ]]>
       </CrossgenBatchScript>
