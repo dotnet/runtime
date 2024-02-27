@@ -609,6 +609,9 @@ namespace System.Runtime.CompilerServices
 
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
+
+            static ref byte NullTest(nuint offset) => ref Unsafe.Subtract(ref Unsafe.NullRef<byte>(), offset);
+            Assert.Equal(0, (nuint)Unsafe.AsPointer(ref NullTest(0)));
         }
 
         [Fact]
