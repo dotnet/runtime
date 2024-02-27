@@ -5616,7 +5616,6 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                 case GT_XCHG:
                 case GT_CMPXCHG:
                 case GT_MEMORYBARRIER:
-                case GT_STORE_DYN_BLK:
                 {
                     memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }

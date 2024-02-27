@@ -37,6 +37,7 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -82,7 +83,6 @@ GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                     
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
 GTNODE(BLK              , GenTreeBlk         ,0,1,GTK_UNOP|GTK_EXOP)                        // Struct load
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Struct store
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,1,GTK_SPECIAL|GTK_NOVALUE)                  // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,1,GTK_UNOP|GTK_NOVALUE)                     // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length

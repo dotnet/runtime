@@ -1513,6 +1513,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3()));       // nnnnn
             break;
 
+        case IF_SVE_CW_4A: // ........xx.mmmmm ..VVVVnnnnnddddd -- SVE select vector elements (predicated)
+            elemsize = id->idOpSize();
+            assert(isScalableVectorSize(elemsize)); // xx
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isPredicateRegister(id->idReg2())); // VVVV
+            assert(isVectorRegister(id->idReg3()));    // nnnnn
+            if (id->idIns() == INS_sve_sel)
+            {
+                assert(isVectorRegister(id->idReg4())); // mmmmm
+            }
+            break;
+
         // Scalable from general scalar (possibly SP)
         case IF_SVE_CQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE copy general register to vector (predicated)
             elemsize = id->idOpSize();
@@ -11363,6 +11376,14 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isPredicateRegister(reg3)); // NNNN
                 fmt = sopt == INS_SCALABLE_OPTS_NONE ? IF_SVE_CZ_4A : IF_SVE_CZ_4A_K;
             }
+            else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            {
+                assert(isVectorRegister(reg1));
+                assert(isPredicateRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(insOptsScalableStandard(opt));
+                fmt = IF_SVE_CW_4A;
+            }
             else
             {
                 assert(isVectorRegister(reg1));
@@ -14119,6 +14140,33 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_sel:
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                if (reg1 == reg4)
+                {
+                    // mov is a preferred alias for sel
+                    return emitIns_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                }
+
+                assert(insOptsScalableStandard(opt));
+                assert(isVectorRegister(reg1));    // ddddd
+                assert(isPredicateRegister(reg2)); // VVVV
+                assert(isVectorRegister(reg3));    // nnnnn
+                assert(isVectorRegister(reg4));    // mmmmm
+                fmt = IF_SVE_CW_4A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(isPredicateRegister(reg1)); // dddd
+                assert(isPredicateRegister(reg2)); // gggg
+                assert(isPredicateRegister(reg3)); // nnnn
+                assert(isPredicateRegister(reg4)); // mmmm
+                fmt = IF_SVE_CZ_4A;
+            }
+            break;
+
         case INS_sve_cmpeq:
         case INS_sve_cmpgt:
         case INS_sve_cmpge:
@@ -14154,7 +14202,6 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
         case INS_sve_bic:
         case INS_sve_orn:
         case INS_sve_bics:
-        case INS_sve_sel:
         case INS_sve_eors:
         case INS_sve_nor:
         case INS_sve_nand:
@@ -23128,6 +23175,19 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CW_4A: // ........xx.mmmmm ..VVVVnnnnnddddd -- SVE select vector elements (predicated)
+        {
+            regNumber reg4 = (ins == INS_sve_mov ? id->idReg1() : id->idReg4());
+            code           = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_P_13_to_10(id->idReg2());                // VVVV
+            code |= insEncodeReg_V_9_to_5(id->idReg3());                  // nnnnn
+            code |= insEncodeReg_V_20_to_16(reg4);                        // mmmmm
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+        }
+
         case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
         case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
         case IF_SVE_GE_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
@@ -27031,6 +27091,25 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                // mmmmm
             break;
 
+        // MOV <Zd>.<T>, <Pv>/M, <Zn>.<T> or SEL <Zd>.<T>, <Pv>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_CW_4A: // ........xx.mmmmm ..VVVVnnnnnddddd -- SVE select vector elements (predicated)
+        {
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+
+            if (id->idIns() == INS_sve_mov)
+            {
+                emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, id->idInsOpt(), true); // VVVV
+                emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                       // nnnnn
+            }
+            else
+            {
+                emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true); // VVVV
+                emitDispSveReg(id->idReg3(), id->idInsOpt(), true);                       // nnnnn
+                emitDispSveReg(id->idReg4(), id->idInsOpt(), false);                      // mmmmm
+            }
+            break;
+        }
+
         // <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
         case IF_SVE_GE_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
@@ -30651,6 +30730,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_SVE_CW_4A: // ........xx.mmmmm ..VVVVnnnnnddddd -- SVE select vector elements (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             break;
 
         case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
