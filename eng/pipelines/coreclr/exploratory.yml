@@ -40,7 +40,7 @@ extends:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             timeoutInMinutes: 360
             postBuildSteps:
-              - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly
+              - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(_BuildConfig) $(archType) generatelayoutonly
                 displayName: Create Core_Root
                 condition: succeeded()
               - template: /eng/pipelines/coreclr/templates/jit-exploratory-steps.yml
