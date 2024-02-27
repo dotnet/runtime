@@ -9241,7 +9241,7 @@ DONE_MORPHING_CHILDREN:
                 noway_assert(op1);
                 if (op1->IsCnsIntOrI())
                 {
-                    noway_assert(varTypeIsIntOrI(tree));
+                    noway_assert(varTypeIsIntegralOrI(tree));
 
                     // The type of the new GT_NEG node cannot just be op2->TypeGet().
                     // Otherwise we may sign-extend incorrectly in cases where the GT_NEG
