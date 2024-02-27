@@ -5613,6 +5613,18 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_D); // SUBPT <Zd>.D, <Zn>.D, <Zm>.D
 #endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
+    // IF_SVE_AU_3A
+    theEmitter->emitIns_R_R_R(INS_sve_and, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // AND <Zd>.D, <Zn>.D, <Zm>.D
+    theEmitter->emitIns_R_R_R(INS_sve_bic, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // BIC <Zd>.D, <Zn>.D, <Zm>.D
+    theEmitter->emitIns_R_R_R(INS_sve_eor, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // EOR <Zd>.D, <Zn>.D, <Zm>.D
+    theEmitter->emitIns_R_R_R(INS_sve_mov, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // MOV <Zd>.D, <Zn>.D, <Zm>.D
+    theEmitter->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // ORR <Zd>.D, <Zn>.D, <Zm>.D
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}

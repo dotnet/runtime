@@ -1194,6 +1194,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
         case IF_SVE_FO_3A: // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
             assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
@@ -10740,12 +10741,22 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_bic:
         case INS_sve_eor:
         case INS_sve_orr:
-            assert(isVectorRegister(reg1));
-            assert(isLowPredicateRegister(reg2));
-            assert(isVectorRegister(reg3));
             assert(insOptsScalableStandard(opt));
-            assert(insScalableOptsNone(sopt));
-            fmt = IF_SVE_AA_3A;
+            assert(isVectorRegister(reg1)); // mmmmm
+            assert(isVectorRegister(reg3)); // ddddd
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_AU_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_AA_3A;
+            }
             break;
 
         case INS_sve_add:
@@ -11404,8 +11415,17 @@ void emitter::emitIns_R_R_R(instruction     ins,
             // TODO-SVE: Following checks can be simplified to check reg1 as predicate register only after adding
             // definitions for predicate registers. Currently, predicate registers P0 to P15 are aliased to simd
             // registers V0 to V15.
-            if (isPredicateRegister(reg3) &&
-                (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(ins == INS_sve_mov);
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(isVectorRegister(reg1)); // ddddd
+                assert(isVectorRegister(reg2)); // nnnnn
+                assert(isVectorRegister(reg3)); // mmmmm
+                fmt = IF_SVE_AU_3A;
+            }
+            else if (isPredicateRegister(reg3) &&
+                     (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
             {
                 assert(opt == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(reg1)); // DDDD
@@ -23251,6 +23271,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
         case IF_SVE_FO_3A: // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
@@ -26933,6 +26954,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
         // <Zd>.D, <Zn>.D, <Zm>.D
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
         // <Zd>.B, <Zn>.B, <Zm>.B
         case IF_SVE_GF_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
@@ -30656,6 +30678,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_FS_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract interleaved long
         case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
+        case IF_SVE_AU_3A:   // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
