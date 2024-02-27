@@ -5,6 +5,60 @@
 // evolve (scalar evolution analysis), and to turn them into the SCEV IR
 // defined in scev.h. The analysis is inspired by "Michael Wolfe. 1992. Beyond
 // induction variables." and also by LLVM's scalar evolution analysis.
+//
+// The main idea of scalar evolution nalysis is to give a closed form
+// describing the value of tree nodes inside loops even when taking into
+// account that they are changing on each loop iteration. This is useful for
+// optimizations that want to reason about values of IR nodes inside loops,
+// such as IV widening or strength reduction.
+//
+// To represent the possibility of evolution the SCEV IR includes the concept
+// of an add recurrence <loop, start, step>, which describes a value that
+// starts at "start" and changes by adding "step" at each iteration. The IR
+// nodes that change in this way (or depend on something that changes in this
+// way) are generally called induction variables.
+//
+// An add recurrence arises only when a local exists in the loop that is
+// mutated in each iteration. Such a local will naturally end up with a phi
+// node in the loop header. These locals are called primary (or basic)
+// induction variables. The non-primary IVs (which always must depend on the
+// primary IVs) are sometimes called secondary IVs.
+//
+// The job of the analysis is to go from a tree node to a SCEV node that
+// describes its value (possibly taking its evolution into account). Note that
+// SCEV nodes are immutable and the values they represent are _not_
+// flow-dependent; that is, they don't exist at a specific location inside the
+// loop, even though some particular tree node gave rise to that SCEV node. The
+// analysis itself _is_ flow-dependent and guarantees that the Scev* returned
+// describes the value that corresponds to what the tree node computes at its
+// specific location. However, it would be perfectly legal for two trees at
+// different locations in the loop to analyze to the same SCEV node (even
+// potentially returning the same pointer). For example, in theory "i" and "j"
+// in the following loop would both be represented by the same add recurrence
+// <L, 0, 1>, and the analysis could even return the same Scev* for both of
+// them, even if it does not today:
+//
+//   int i = 0;
+//   while (true)
+//   {
+//     i++;
+//     ...
+//     int j = i - 1;
+//   }
+//
+// Actually materializing the value of a SCEV node back into tree IR is not
+// implemented yet, but generally would depend on the availability of tree
+// nodes that compute the dependent values at the point where the IR is to be
+// materialized.
+//
+// Besides the add recurrences the analysis itself is generally a
+// straightforward translation from JIT IR into the SCEV IR. Creating the add
+// recurrences requires paying attention to the structure of PHIs, and
+// disambiguating the values coming from outside the loop and the values coming
+// from the backedges. Currently only simplistic add recurrences that do not
+// require recursive analysis are supported. These simplistic add recurrences
+// are always on the form i = i + k.
+//
 
 #include "jitpch.h"
 

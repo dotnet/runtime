@@ -12,6 +12,8 @@
 // evolving in, "start" is the initial value and "step" is the step by which
 // the value evolves in every iteration.
 //
+// See scev.cpp for further documentation.
+//
 enum class ScevOper
 {
     Constant,
