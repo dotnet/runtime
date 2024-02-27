@@ -4293,7 +4293,7 @@
                     <!-- Allocation sampling events -->
                     <event value="303" version="0" level="win:Informational" template="AllocationSampled"
                            keywords="AllocationSamplingKeyword" opcode="AllocationSampled"
-                           task="AllocationSampled"
+                           task="AllocationSampling"
                            symbol="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledEventMessage)"/>
 
                 </events>
