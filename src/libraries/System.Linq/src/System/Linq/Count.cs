@@ -99,6 +99,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source is IReadOnlyCollection<TSource> readonlyCollection)
+            {
+                count = readonlyCollection.Count;
+                return true;
+            }
+
             if (source is ICollection<TSource> collectionoft)
             {
                 count = collectionoft.Count;

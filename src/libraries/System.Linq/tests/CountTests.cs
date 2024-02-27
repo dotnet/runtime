@@ -164,6 +164,29 @@ namespace System.Linq.Tests
             }
         }
 
+        private class MockReadOnlyCollection<T> : IReadOnlyCollection<T>
+        {
+            public IEnumerator<T> GetEnumerator()
+            {
+                throw new InvalidOperationException();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public int Count => 1;
+        }
+
+        [Fact]
+        public void NonEnumeratedCount_ShouldNotEnumerateReadOnlyCollection()
+        {
+            var readOnlyCollection = new MockReadOnlyCollection<int>();
+            Assert.True(readOnlyCollection.TryGetNonEnumeratedCount(out var count));
+            Assert.Equal(1, count);
+        }
+
         public static IEnumerable<object[]> NonEnumeratedCount_SupportedEnumerables()
         {
             yield return WrapArgs(4, new int[]{ 1, 2, 3, 4 });
@@ -199,7 +222,7 @@ namespace System.Linq.Tests
                 yield return WrapArgs(Enumerable.Range(1, 100));
                 yield return WrapArgs(Enumerable.Repeat(1, 80));
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
-                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
+                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
                 yield return WrapArgs(Enumerable.Range(1, 20).Reverse());
                 yield return WrapArgs(Enumerable.Range(1, 20).OrderBy(x => -x));
