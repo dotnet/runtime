@@ -7858,6 +7858,12 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P3, REG_V0, REG_V6, 270,
                                   INS_OPTS_SCALABLE_D); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
 
+    // IF_SVE_GI_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_histcnt, EA_SCALABLE, REG_V0, REG_P0, REG_V1, REG_V2,
+                                INS_OPTS_SCALABLE_S); // HISTCNT <Zd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_histcnt, EA_SCALABLE, REG_V3, REG_P7, REG_V4, REG_V5,
+                                INS_OPTS_SCALABLE_D); // HISTCNT <Zd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
+
     // IF_SVE_HI_3A
     theEmitter->emitIns_R_R_R(INS_sve_fcmeq, EA_SCALABLE, REG_P2, REG_P3, REG_V4,
                               INS_OPTS_SCALABLE_H); // FCMEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0

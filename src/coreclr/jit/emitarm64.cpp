@@ -1059,6 +1059,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                            // (predicated)
         case IF_SVE_AS_4A: // ........xx.mmmmm ...gggaaaaaddddd -- SVE integer multiply-add writing multiplicand
                            // (predicated)
+        case IF_SVE_GI_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE2 histogram generation (vector)
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -14384,6 +14385,16 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
             fmt = IF_SVE_AR_4A;
             break;
 
+        case INS_sve_histcnt:
+            assert(insOptsScalableWords(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isLowPredicateRegister(reg2));                  // ggg
+            assert(isVectorRegister(reg3));                        // nnnnn
+            assert(isVectorRegister(reg4));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_GI_4A;
+            break;
+
         case INS_sve_mad:
         case INS_sve_msb:
             assert(insOptsScalableStandard(opt));
@@ -23140,6 +23151,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         // Scalable, 4 regs. Reg4 in mmmmm.
         case IF_SVE_AR_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE integer multiply-accumulate writing addend
                            // (predicated)
+        case IF_SVE_GI_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE2 histogram generation (vector)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
@@ -27001,6 +27013,8 @@ void emitter::emitDispInsHelp(
                            // (predicated)
         case IF_SVE_AS_4A: // ........xx.mmmmm ...gggaaaaaddddd -- SVE integer multiply-add writing multiplicand
                            // (predicated)
+        // <Zd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_GI_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE2 histogram generation (vector)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
@@ -30768,6 +30782,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
         case IF_SVE_AU_3A:   // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
+        case IF_SVE_GI_4A:   // ........xx.mmmmm ...gggnnnnnddddd -- SVE2 histogram generation (vector)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
