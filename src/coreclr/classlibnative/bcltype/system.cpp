@@ -336,12 +336,9 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     GCX_COOP();
 
     STRINGREF refMessage = message.Get();
-    GCPROTECT_BEGIN(refMessage);
 
     // Call the actual worker to perform failfast
     SystemNative::GenericFailFast(refMessage, NULL, mark, NULL);
-
-    GCPROTECT_END();
 
     END_QCALL;
 }
@@ -354,20 +351,11 @@ extern "C" void QCALLTYPE Environment_FailFastWithException(QCall::StackCrawlMar
 
     GCX_COOP();
 
-    struct
-    {
-        STRINGREF refMessage;
-        EXCEPTIONREF refException;
-    } gc;
-    gc.refMessage = message.Get();
-    gc.refException = (EXCEPTIONREF)exception.Get();
-
-    GCPROTECT_BEGIN(gc);
+    STRINGREF refMessage = message.Get();
+    EXCEPTIONREF refException = (EXCEPTIONREF)exception.Get();
 
     // Call the actual worker to perform failfast
-    SystemNative::GenericFailFast(gc.refMessage, gc.refException, mark, NULL);
-
-    GCPROTECT_END();
+    SystemNative::GenericFailFast(refMessage, refException, mark, NULL);
 
     END_QCALL;
 }
@@ -380,22 +368,12 @@ extern "C" void QCALLTYPE Environment_FailFastWithExceptionAndSource(QCall::Stac
 
     GCX_COOP();
     
-    struct
-    {
-        STRINGREF refMessage;
-        EXCEPTIONREF refException;
-        STRINGREF refErrorSource;
-    } gc;
-    gc.refMessage = message.Get();
-    gc.refException = (EXCEPTIONREF)exception.Get();
-    gc.refErrorSource = errorSource.Get();
-
-    GCPROTECT_BEGIN(gc);
+    STRINGREF refMessage = message.Get();
+    EXCEPTIONREF refException = (EXCEPTIONREF)exception.Get();
+    STRINGREF refErrorSource = errorSource.Get();
 
     // Call the actual worker to perform failfast
-    SystemNative::GenericFailFast(gc.refMessage, gc.refException, mark, gc.refErrorSource);
-
-    GCPROTECT_END();
+    SystemNative::GenericFailFast(refMessage, refException, mark, refErrorSource);
 
     END_QCALL;
 }
