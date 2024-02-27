@@ -500,10 +500,8 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     ILStubHashBlob* pHashBlob,
     DWORD dwStubFlags,
     Module* pSigModule,
-    Module* pSigLoaderModule,
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
-    SigTypeContext* pTypeContext,
     AllocMemTracker* pamTracker,
     bool& bILStubCreator,
     MethodDesc *pLastMD)
@@ -540,23 +538,22 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         // Couldn't find it, let's make a new one.
         //
 
-        if (pSigLoaderModule == NULL)
+        Module *pContainingModule = pSigModule;
+        if (pTargetMD != NULL)
         {
-            pSigLoaderModule = (pTargetMD != NULL) ? pTargetMD->GetLoaderModule() : pSigModule;
+            // loader module may be different from signature module for generic targets
+            pContainingModule = pTargetMD->GetLoaderModule();
         }
+
+        MethodTable *pStubMT = GetOrCreateStubMethodTable(pContainingModule);
 
         SigTypeContext typeContext;
-        if (pTypeContext == NULL)
+        if (pTargetMD != NULL)
         {
-            if (pTargetMD != NULL)
-            {
-                SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
-            }
-            pTypeContext = &typeContext;
+            SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
         }
 
-        MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
-        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);
 
         if (SF_IsSharedStub(dwStubFlags))
         {

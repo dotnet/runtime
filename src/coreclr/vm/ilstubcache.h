@@ -53,10 +53,8 @@ public:
         ILStubHashBlob* pHashBlob,
         DWORD dwStubFlags,      // bitmask of NDirectStubFlags
         Module* pSigModule,
-        Module* pSigLoaderModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
-        SigTypeContext* pTypeContext,
         AllocMemTracker* pamTracker,
         bool& bILStubCreator,
         MethodDesc* pLastMD);
