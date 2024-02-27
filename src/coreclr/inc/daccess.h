@@ -2128,10 +2128,7 @@ inline void DACCOP_IGNORE(DacCopWarningCode code, const char * szReasonString)
 // Declare TADDR as a non-pointer type so that arithmetic
 // can be done on it directly, as with the DACCESS_COMPILE definition.
 // This also helps expose pointer usage that may need to be changed.
-#ifdef FEATURE_NATIVEAOT
-typedef uintptr_t TADDR;
-typedef uintptr_t* PTR_TADDR;
-#endif
+typedef ULONG_PTR TADDR;
 
 typedef void* PTR_VOID;
 typedef LPVOID* PTR_PTR_VOID;
