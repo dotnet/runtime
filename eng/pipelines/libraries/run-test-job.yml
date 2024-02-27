@@ -81,6 +81,9 @@ jobs:
         - _archiveTestsParameter: /p:ArchiveTests=true
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
           - template: /eng/pipelines/libraries/superpmi-collect-variables.yml
             parameters:
               buildConfig: ${{ parameters.buildConfig }}
@@ -258,5 +261,6 @@ jobs:
               MchFilesLocation: $(MchFilesLocation)
               SpmiLogsLocation: $(SpmiLogsLocation)
               SuperPmiMcsPath: $(SuperPmiMcsPath)
+              PythonSetupScript: $(PythonSetupScript)
               PythonScript: $(PythonScript)
               PipScript: $(PipScript)

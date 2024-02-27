@@ -35,13 +35,23 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - windows_x64
           - windows_x86
           jobParameters:
-            uploadAs: 'pipelineArtifacts'
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  tarCompression: $(tarCompression)
+                  archiveExtension: $(archiveExtension)
+                  artifactName: CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)
+                  displayName: JIT and SuperPMI Assets
             condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml

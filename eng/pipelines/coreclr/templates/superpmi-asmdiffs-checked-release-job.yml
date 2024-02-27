@@ -24,8 +24,8 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
     dependsOn:
-     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, 'checked') }}
-     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, 'release') }}
+      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_checked_'
+      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_release_'
 
     variables:
     - ${{ each variable in parameters.variables }}:
@@ -33,23 +33,22 @@ jobs:
 
     - name: releaseProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
-    - name: releaseProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
 
     steps:
-
     # Download jit checked builds
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)'
         displayName: 'JIT checked build'
+        cleanupUnpackFolder: false
 
-    #Download jit release builds
+    # Download jit release builds
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(releaseProductRootFolderPath)
-        artifactFileName: '$(releaseProductArtifactName)$(archiveExtension)'
-        artifactName: '$(releaseProductArtifactName)'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'ReleaseJIT_$(osGroup)_$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'ReleaseJIT_$(osGroup)_$(osSubgroup)_$(archType)'
         displayName: 'JIT release build'
+        cleanupUnpackFolder: false

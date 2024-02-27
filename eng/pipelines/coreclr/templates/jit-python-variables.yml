@@ -1,0 +1,20 @@
+parameters:
+  osGroup: ''
+
+variables:
+- ${{ if eq(parameters.osGroup, 'windows') }}:
+  - name: PythonSetupScript
+    value: 'py -3 -m venv $(Build.SourcesDirectory)\venv'
+  - name: PythonScript
+    value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe'
+  - name: PipScript
+    value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe -m pip'
+- ${{ if ne(parameters.osGroup, 'windows') }}:
+  - name: PythonSetupScript
+    value: 'python3 -m venv $(Build.SourcesDirectory)/venv'
+  - name: PythonScript
+    value: '$(Build.SourcesDirectory)/venv/bin/python3'
+  - name: PipScript
+    value: '$(Build.SourcesDirectory)/venv/bin/pip3'
+
+    - ${{ parameters.variables }}

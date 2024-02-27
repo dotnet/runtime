@@ -7,6 +7,9 @@ parameters:
   toolName: ''                    # required -- which tool to use: Antigen or Fuzzlyn?
 
 steps:
+- script: $(PythonSetupScript)
+  displayName: Enable python venv
+
 - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/fuzzer_setup.py -tool_name $(toolName) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
   displayName: ${{ format('{0} setup ({1}-{2})', parameters.toolName, parameters.osGroup, parameters.archType) }}
 

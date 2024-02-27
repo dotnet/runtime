@@ -18,6 +18,7 @@ parameters:
   MchFilesLocation: ''
   SpmiLogsLocation: ''
   SuperPmiMcsPath: ''
+  PythonSetupScript: ''
   PythonScript: ''
   PipScript: ''
 
@@ -35,7 +36,10 @@ steps:
         mkdir ${{ parameters.MergedMchFileLocation }}
         mkdir ${{ parameters.SpmiLogsLocation }}
       displayName: 'Create SuperPMI directories'
-      condition: always()
+      condition: always()  
+
+  - script: ${{ parameters.PythonSetupScript }}
+    displayName: Enable python venv
 
   - script: ${{ parameters.PythonScript }} $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern ${{ parameters.MchFilesLocation }}${{ parameters.SuperPmiCollectionName }}.${{ parameters.SuperPmiCollectionType }}*.mch -output_mch_path ${{ parameters.MergedMchFileLocation }}${{ parameters.SuperPmiCollectionName }}.${{ parameters.SuperPmiCollectionType }}.${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}.mch -core_root ${{ parameters.SuperPmiMcsPath }}
     displayName: 'Merge ${{ parameters.SuperPmiCollectionName }}-${{ parameters.SuperPmiCollectionType }} SuperPMI collections'

@@ -47,11 +47,11 @@ jobs:
     - name: diffType
       value: ${{ parameters.diffType }}
 
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'py -3'
-      - name: PipScript
-        value: 'py -3 -m pip'
       - name: SpmiCollectionLocation
         value: '$(Build.SourcesDirectory)\artifacts\spmi\'
       - name: SpmiLogsLocation
@@ -61,10 +61,6 @@ jobs:
       - name: HelixResultLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'python3'
-      - name: PipScript
-        value: 'pip3'
       - name: SpmiCollectionLocation
         value: '$(Build.SourcesDirectory)/artifacts/spmi/'
       - name: SpmiLogsLocation
@@ -93,6 +89,9 @@ jobs:
     container: ${{ parameters.container }}
     steps:
     - ${{ parameters.steps }}
+
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
 
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |

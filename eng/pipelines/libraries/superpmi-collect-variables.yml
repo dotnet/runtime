@@ -23,10 +23,6 @@ variables:
     - name: SuperPmiMcsPath
       value: $(_runtimeX64DownloadPath)
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - name: PythonScript
-      value: 'py -3'
-    - name: PipScript
-      value: 'py -3 -m pip'
     - name: MchFilesLocation
       value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
     - name: MergedMchFileLocation
@@ -34,10 +30,6 @@ variables:
     - name: SpmiLogsLocation
       value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
   - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - name: PythonScript
-      value: 'python3'
-    - name: PipScript
-      value: 'pip3'
     - name: MchFilesLocation
       value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
     - name: MergedMchFileLocation

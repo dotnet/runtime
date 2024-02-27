@@ -6,6 +6,9 @@ parameters:
   toolName: ''                    # required -- which tool to use: Antigen or Fuzzlyn?
 
 variables:
+- template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+  parameters:
+    osGroup: ${{ parameters.osGroup }}
 
 - ${{ if in(variables['Build.Reason'], 'Schedule') }}:
   - name: RunReason
@@ -14,10 +17,6 @@ variables:
   - name: RunReason
     value: 'PR'
 - ${{ if eq(parameters.osGroup, 'windows') }}:
-  - name: PythonScript
-    value: 'py -3'
-  - name: PipScript
-    value: 'py -3 -m pip'
   - name: Core_Root_Dir
     value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
   - name: HelixResults
@@ -30,10 +29,6 @@ variables:
     value: '$(Build.SourcesDirectory)\artifacts\fuzzlyn_logs\'
 
 - ${{ if ne(parameters.osGroup, 'windows') }}:
-  - name: PythonScript
-    value: 'python3'
-  - name: PipScript
-    value: 'pip3'
   - name: Core_Root_Dir
     value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
   - name: HelixResults

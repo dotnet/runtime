@@ -32,6 +32,7 @@ parameters:
   preBuildSteps: []
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
+  disableComponentGovernance: false
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -55,6 +56,8 @@ jobs:
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
       disableComponentGovernance: true
+    ${{ else }}:
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     workspace:
       clean: all

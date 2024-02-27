@@ -4,6 +4,7 @@ parameters:
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   liveLibrariesBuildConfig: ''
+  testGroup: 'innerloop'
 
 variables:
   - name: binTestsPath

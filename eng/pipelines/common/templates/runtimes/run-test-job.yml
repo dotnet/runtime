@@ -150,11 +150,10 @@ jobs:
         value: 'run'
       - name: CollectionName
         value: 'coreclr_tests'
+      - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+        parameters:
+          osGroup: ${{ parameters.osGroup }}
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - name: PythonScript
-          value: 'py -3'
-        - name: PipScript
-          value: 'py -3 -m pip'
         - name: MchFilesLocation
           value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
         - name: MergedMchFileLocation
@@ -162,10 +161,6 @@ jobs:
         - name: SpmiLogsLocation
           value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
       - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - name: PythonScript
-          value: 'python3'
-        - name: PipScript
-          value: 'pip3'
         - name: MchFilesLocation
           value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
         - name: MergedMchFileLocation
@@ -647,6 +642,9 @@ jobs:
             mkdir $(SpmiLogsLocation)
           displayName: Create SuperPMI directories
           condition: always()
+
+      - script: $(PythonSetupScript)
+        displayName: Enable python venv
 
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
         displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'

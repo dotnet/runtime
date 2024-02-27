@@ -28,16 +28,11 @@ jobs:
     helixType: 'format'
     pool: ${{ parameters.pool }}
     variables:
-
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
-
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'py -3'
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'python3'
 
     - ${{ if eq(parameters.osGroup, 'linux') }}:
       - name: LinuxCrossArg
@@ -58,6 +53,9 @@ jobs:
         version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
+
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -r $(Build.SourcesDirectory) -o $(osGroup) -a $(archType) $(LinuxCrossArg)
       displayName: Run jitformat.py

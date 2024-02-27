@@ -35,7 +35,8 @@ jobs:
     # Download jit builds
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'JIT product build'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)'
+        displayName: 'JIT checked build'
+        cleanupUnpackFolder: false

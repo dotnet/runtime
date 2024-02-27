@@ -22,10 +22,9 @@ extends:
     stages:
     - stage: Build
       jobs:
-
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/platform-matrix.yml
           buildConfig: checked
           platforms:
           - osx_arm64
@@ -38,10 +37,15 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/platform-matrix.yml
           buildConfig: release
           platforms:
           - osx_arm64
@@ -54,3 +58,8 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml

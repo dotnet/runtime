@@ -54,13 +54,11 @@ jobs:
     - CollectionType: ${{ parameters.collectionType }}
     - CollectionName: ${{ parameters.collectionName }}
 
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: PythonSetupScript
-        value: 'py -3 -m venv $(Build.SourcesDirectory)\venv'
-      - name: PythonScript
-        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe'
-      - name: PipScript
-        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe -m pip'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
@@ -72,12 +70,6 @@ jobs:
       - name: PayloadLocation
         value: '$(Build.SourcesDirectory)\payload'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: PythonSetupScript
-        value: 'python3 -m venv $(Build.SourcesDirectory)/venv'
-      - name: PythonScript
-        value: '$(Build.SourcesDirectory)/venv/bin/python3'
-      - name: PipScript
-        value: '$(Build.SourcesDirectory)/venv/bin/pip3'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation

@@ -38,11 +38,10 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
 
-    - name: PythonScript
-      value: 'py -3'
-    - name: PipScript
-      value: 'py -3 -m pip'
     - name: SpmiCollectionLocation
       value: '$(Build.SourcesDirectory)\artifacts\spmi\'
     - name: SpmiLogsLocation
@@ -64,6 +63,9 @@ jobs:
     - script: |
         mkdir -p $(SpmiCollectionLocation)
       displayName: Create directory for SPMI collection
+
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_checked_release_setup.py -source_directory $(Build.SourcesDirectory) -checked_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath) -arch $(archType)
       displayName: ${{ format('SuperPMI asmdiffs checked release setup ({0} {1})', parameters.osGroup, parameters.archType) }}
