@@ -806,7 +806,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     {
         return false;
     }
-    
+
     // Re-direct firstBlock to jump to inRangeBb
     FlowEdge* const newEdge = m_comp->fgAddRefPred(inRangeBb, m_b1);
 

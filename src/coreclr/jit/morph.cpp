@@ -14647,10 +14647,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
         elseBlock->SetTargetEdge(newEdge);
     }
-    
+
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
-
 
     condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
     elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
@@ -14678,7 +14677,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
         FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
         thenBlock->SetTargetEdge(newEdge);
-        
+
         assert(condBlock->TargetIs(elseBlock));
         FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
         condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);

@@ -170,7 +170,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // Ref count updates.
                 fgRemoveRefPred(currentBlock->GetTargetEdge());
                 FlowEdge* const newEdge = fgAddRefPred(postTryFinallyBlock, currentBlock);
-                
+
                 currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
@@ -1138,7 +1138,7 @@ PhaseStatus Compiler::fgCloneFinally()
                     // Ref count updates.
                     fgRemoveRefPred(currentBlock->GetTargetEdge());
                     FlowEdge* const newEdge = fgAddRefPred(firstCloneBlock, currentBlock);
-                    
+
                     // This call returns to the expected spot, so retarget it to branch to the clone.
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
                     currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
@@ -2151,7 +2151,7 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 
     // Wire up the new flow
     FlowEdge* const newEdge = fgAddRefPred(canonicalBlock, predBlock, predEdge);
-    
+
     if (predBlock->KindIs(BBJ_ALWAYS))
     {
         assert(predBlock->TargetIs(nonCanonicalBlock));

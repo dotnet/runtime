@@ -1292,7 +1292,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             /* Update the predecessor list for bNext's target */
             FlowEdge* const targetEdge = bNext->GetTargetEdge();
             fgReplacePred(targetEdge, block);
-            
+
             block->SetKindAndTargetEdge(bNext->GetKind(), targetEdge);
             break;
         }
@@ -1309,7 +1309,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             {
                 fgReplacePred(falseEdge, block);
             }
-            
+
             block->SetCond(trueEdge, falseEdge);
             break;
         }
@@ -1567,7 +1567,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
         FlowEdge* const newEdge = fgAddRefPred(bDest->GetTarget(), block, fgRemoveRefPred(bDest, block));
-        
+
         switch (block->GetKind())
         {
             case BBJ_ALWAYS:
@@ -2483,7 +2483,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     assert(!target->IsLast());
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true);
-    
+
     // The new block 'next' will inherit its weight from 'block'
     //
     next->inheritWeight(block);
@@ -2491,7 +2491,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow
     //
     fgRemoveRefPred(target, block);
-    
+
     FlowEdge* const trueEdge  = fgAddRefPred(target->GetTrueTarget(), block);
     FlowEdge* const falseEdge = fgAddRefPred(next, block);
     block->SetCond(trueEdge, falseEdge);
@@ -4994,7 +4994,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
                             {
                                 BasicBlock* const bDestFalseTarget = bDest->GetFalseTarget();
-                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
+                                BasicBlock* const bFixup           = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bFixup->inheritWeight(bDestFalseTarget);
 
                                 fgRemoveRefPred(bDestFalseTarget, bDest);
@@ -5682,7 +5682,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 {
                     fgRemoveRefPred(commSucc, predBlock);
                 }
-                
+
                 FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
                 predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }

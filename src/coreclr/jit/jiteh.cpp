@@ -4341,8 +4341,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n",
-                           ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
+                    printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n", ehGetIndex(HBtab),
+                           bFilterLast->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
                 // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'

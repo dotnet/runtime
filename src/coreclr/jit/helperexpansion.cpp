@@ -319,8 +319,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
-    BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, true);
+    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, true);
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
@@ -373,7 +372,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // Update preds in all new blocks
     //
     fgRemoveRefPred(block, prevBb);
-    
+
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
         fastPathBb->SetTargetEdge(newEdge);
@@ -396,12 +395,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         {
-            FlowEdge* const trueEdge = fgAddRefPred(fallbackBb, sizeCheckBb);
+            FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, sizeCheckBb);
             FlowEdge* const falseEdge = fgAddRefPred(nullcheckBb, sizeCheckBb);
             sizeCheckBb->SetTrueEdge(trueEdge);
             sizeCheckBb->SetFalseEdge(falseEdge);
         }
-        
+
         // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
         // fastPathBb is only reachable from successful nullcheckBb
     }
@@ -415,7 +414,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         // fallbackBb is only reachable from nullcheckBb (jump destination)
     }
 
-    FlowEdge* const trueEdge = fgAddRefPred(fallbackBb, nullcheckBb);
+    FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, nullcheckBb);
     FlowEdge* const falseEdge = fgAddRefPred(fastPathBb, nullcheckBb);
     nullcheckBb->SetTrueEdge(trueEdge);
     nullcheckBb->SetFalseEdge(falseEdge);
@@ -708,11 +707,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
     // fallbackBb
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
-    BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, true);
+    BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, true);
 
     GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
+    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
 
     *callUse = finalLcl;
 
@@ -1093,21 +1091,21 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     //
     assert(prevBb->KindIs(BBJ_ALWAYS));
     fgRemoveRefPred(prevBb->GetTargetEdge());
-    
+
     {
         FlowEdge* const newEdge = fgAddRefPred(maxThreadStaticBlocksCondBB, prevBb);
         prevBb->SetTargetEdge(newEdge);
     }
 
     {
-        FlowEdge* const trueEdge  = fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
-        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
+        FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
+        FlowEdge* const falseEdge = fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
         maxThreadStaticBlocksCondBB->SetTrueEdge(trueEdge);
         maxThreadStaticBlocksCondBB->SetFalseEdge(falseEdge);
     }
 
     {
-        FlowEdge* const trueEdge = fgAddRefPred(fastPathBb, threadStaticBlockNullCondBB);
+        FlowEdge* const trueEdge  = fgAddRefPred(fastPathBb, threadStaticBlockNullCondBB);
         FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
         threadStaticBlockNullCondBB->SetTrueEdge(trueEdge);
         threadStaticBlockNullCondBB->SetFalseEdge(falseEdge);
@@ -1814,7 +1812,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         lengthCheckBb->SetTrueEdge(trueEdge);
         lengthCheckBb->SetFalseEdge(falseEdge);
     }
-    
+
     {
         // fastpathBb flows into block
         FlowEdge* const newEdge = fgAddRefPred(block, fastpathBb);
@@ -2389,8 +2387,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
     GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, tmpNode, gtNewNull());
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
-    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
-                                                   debugInfo, true);
+    BasicBlock* nullcheckBb =
+        fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo, true);
 
     // The very first statement in the whole expansion is to assign obj to tmp.
     // We assume it's the value we're going to return in most cases.
@@ -2458,7 +2456,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     {
         // if fallback call is not needed, we just assign null to tmp
         GenTree* fallbackTree = gtNewTempStore(tmpNum, gtNewNull());
-        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, true);
+        fallbackBb            = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, true);
     }
     else
     {
@@ -2469,7 +2467,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL);
         }
         GenTree* fallbackTree = gtNewTempStore(tmpNum, call);
-        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, true);
+        fallbackBb            = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, true);
     }
 
     // Block 4: typeCheckSucceedBb
@@ -2484,8 +2482,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         typeCheckSucceedTree = gtNewNothingNode();
     }
     BasicBlock* typeCheckSucceedBb =
-        typeCheckNotNeeded ? nullptr
-                           : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
+        typeCheckNotNeeded ? nullptr : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
 
     //
     // Wire up the blocks
@@ -2516,7 +2513,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
 
     fgRemoveRefPred(firstBb->GetTargetEdge());
-    
+
     {
         FlowEdge* const newEdge = fgAddRefPred(nullcheckBb, firstBb);
         firstBb->SetTargetEdge(newEdge);

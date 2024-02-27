@@ -2201,7 +2201,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Update pred info
     //
-    FlowEdge* const trueEdge = fgAddRefPred(bJoin, bNewCond);
+    FlowEdge* const trueEdge  = fgAddRefPred(bJoin, bNewCond);
     FlowEdge* const falseEdge = fgAddRefPred(bTop, bNewCond);
     bNewCond->SetTrueEdge(trueEdge);
     bNewCond->SetFalseEdge(falseEdge);

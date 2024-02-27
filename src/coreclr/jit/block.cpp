@@ -1588,7 +1588,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
 BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-    block->bbKind   = kind;
+    block->bbKind     = kind;
 
     if (block->KindIs(BBJ_THROW))
     {

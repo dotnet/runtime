@@ -692,11 +692,11 @@ private:
 
     /* The following union describes the jump target(s) of this block */
     union {
-        unsigned    bbTargetOffs; // PC offset (temporary only)
-        FlowEdge*   bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
-        FlowEdge*   bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
-        BBswtDesc*  bbSwtTargets; // switch descriptor
-        BBehfDesc*  bbEhfTargets; // BBJ_EHFINALLYRET descriptor
+        unsigned   bbTargetOffs; // PC offset (temporary only)
+        FlowEdge*  bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
+        FlowEdge*  bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
+        BBswtDesc* bbSwtTargets; // switch descriptor
+        BBehfDesc* bbEhfTargets; // BBJ_EHFINALLYRET descriptor
     };
 
     // Successor edge of a BBJ_COND block if bbTrueEdge is not taken
@@ -893,6 +893,10 @@ public:
         SetFalseEdge(falseEdge);
     }
 
+    // In most cases, a block's true and false targets are known by the time SetCond is called.
+    // To simplify the few cases where the false target isn't available until later,
+    // overload SetCond to initialize only the true target.
+    // This simplifies, for example, lowering switch blocks into jump sequences.
     void SetCond(FlowEdge* trueEdge)
     {
         bbKind = BBJ_COND;
@@ -903,7 +907,7 @@ public:
     // block kinds that don't use `bbTargetEdge`.
     void SetKindAndTargetEdge(BBKinds kind, FlowEdge* targetEdge = nullptr)
     {
-        bbKind   = kind;
+        bbKind       = kind;
         bbTargetEdge = targetEdge;
 
         // If bbKind indicates this block has a jump, bbTargetEdge cannot be null.
@@ -1768,7 +1772,7 @@ public:
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
         // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
         // `m_succs` or at the switch table successor array.
-        FlowEdge* m_succs[2];
+        FlowEdge*        m_succs[2];
         FlowEdge* const* m_begin;
         FlowEdge* const* m_end;
 

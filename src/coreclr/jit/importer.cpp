@@ -4691,7 +4691,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 {
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
-                
+
                 FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
                 newEdge->setLikelihood(1.0);
                 step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
@@ -4730,8 +4730,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
                 unsigned callFinallyHndIndex =
                     (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
-                callBlock =
-                    fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, block);
+                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, block);
 
                 // Convert the BBJ_LEAVE to BBJ_ALWAYS, jumping to the new BBJ_CALLFINALLY. This is because
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
@@ -4762,7 +4761,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(callBlock->HasInitializedTarget());
                 fgRemoveRefPred(callBlock->GetTargetEdge());
 
-                // callBlock will call the finally handler. This will be set up later.
+// callBlock will call the finally handler. This will be set up later.
 
 #ifdef DEBUG
                 if (verbose)
@@ -4843,8 +4842,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
 
                 // callBlock will call the finally handler
-                callBlock =
-                    fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
+                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
                 if (step == block)
                 {
                     fgRemoveRefPred(step->GetTargetEdge());

@@ -266,7 +266,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock* top         = block;
+        BasicBlock* top = block;
 
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
@@ -361,7 +361,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
         FlowEdge* const falseEdge = fgAddRefPred(poll, top);
-        
+
         FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
         poll->SetTargetEdge(newEdge);
         assert(poll->JumpsToNext());
@@ -2767,8 +2767,8 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     newHead->bbRefs = 0;
 
     fgInsertBBbefore(block, newHead); // insert the new block in the block list
-    fgExtendEHRegionBefore(block); // Update the EH table to make the prolog block the first block in the block's EH
-                                   // block.
+    fgExtendEHRegionBefore(block);    // Update the EH table to make the prolog block the first block in the block's EH
+                                      // block.
 
     // Distribute the pred list between newHead and block. Incoming edges coming from outside
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and

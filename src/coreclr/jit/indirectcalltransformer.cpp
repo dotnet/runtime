@@ -1036,7 +1036,7 @@ private:
             checkBlock->SetTargetEdge(thenEdge);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
-            
+
             FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
             elseEdge->setLikelihood(elseLikelihoodWt);
             thenBlock->SetTargetEdge(elseEdge);

@@ -1553,7 +1553,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         assert(topBlock->TargetIs(bottomBlock));
         FlowEdge* const oldEdge = fgRemoveRefPred(bottomBlock, topBlock);
         FlowEdge* const newEdge = fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock, oldEdge);
-        
+
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         topBlock->SetTargetEdge(newEdge);
         topBlock->SetFlags(BBF_NONE_QUIRK);
