@@ -1426,6 +1426,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1()));       // ddddd
+            assert(isLowPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg3()));       // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         // Scalable to Simd Vector.
         case IF_SVE_AG_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (quadwords)
         case IF_SVE_AJ_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (quadwords)
@@ -10787,9 +10796,19 @@ void emitter::emitIns_R_R_R(instruction     ins,
             unreached(); // TODO-SVE: Not yet supported.
             assert(opt == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(reg1)); // ddddd
-            assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmmmm
-            fmt = IF_SVE_AT_3B;
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_AT_3B;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_AB_3B;
+            }
             break;
 
         case INS_sve_sdiv:
@@ -17426,7 +17445,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isLowPredicateRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
+    assert((ureg >= 0) && (ureg <= 7));
     return ureg << 10;
 }
 
@@ -23069,6 +23088,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());   // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Scalable with Merge or Zero predicate
         case IF_SVE_AH_3A: // ........xx.....M ...gggnnnnnddddd -- SVE constructive prefix (predicated)
             code = emitInsCodeSve(ins, fmt);
@@ -26916,6 +26943,8 @@ void emitter::emitDispInsHelp(
                            // (predicated)
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
+        // <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
+        case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
@@ -30703,6 +30732,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EX_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector elements (quadwords)
         case IF_SVE_GW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;

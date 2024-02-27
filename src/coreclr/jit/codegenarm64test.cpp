@@ -4581,6 +4581,14 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_subr, EA_SCALABLE, REG_V2, REG_P0, REG_V13,
                               INS_OPTS_SCALABLE_S); // SUBR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    // IF_SVE_AB_3B
+    theEmitter->emitIns_R_R_R(INS_sve_addpt, EA_SCALABLE, REG_V0, REG_P1, REG_V2,
+                              INS_OPTS_SCALABLE_D); // ADDPT <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
+    theEmitter->emitIns_R_R_R(INS_sve_subpt, EA_SCALABLE, REG_V0, REG_P1, REG_V2,
+                              INS_OPTS_SCALABLE_D); // SUBPT <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
+#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+
     // IF_SVE_AC_3A
     theEmitter->emitIns_R_R_R(INS_sve_sdiv, EA_SCALABLE, REG_V3, REG_P2, REG_V9,
                               INS_OPTS_SCALABLE_S); // SDIV     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
@@ -5611,11 +5619,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     // IF_SVE_AT_3B
-    theEmitter->emitIns_R_R_R(INS_sve_addpt, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
-                              INS_OPTS_SCALABLE_D); // ADDPT <Zd>.D, <Zn>.D, <Zm>.D
-    theEmitter->emitIns_R_R_R(INS_sve_subpt, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
-                              INS_OPTS_SCALABLE_D); // SUBPT <Zd>.D, <Zn>.D, <Zm>.D
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    theEmitter->emitIns_R_R_R(INS_sve_addpt, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // ADDPT <Zd>.D, <Zn>.D, <Zm>.D
+    theEmitter->emitIns_R_R_R(INS_sve_subpt, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // SUBPT <Zd>.D, <Zn>.D, <Zm>.D
+#endif                                                         // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AU_3A
     theEmitter->emitIns_R_R_R(INS_sve_and, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D,
