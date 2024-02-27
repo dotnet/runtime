@@ -21,6 +21,7 @@
 #include "fileio.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
+extern int doStreamingSuperPMI(CommandLine::Options& o);
 
 // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().
 // There must be a single, fixed prefix common to all strings, to ease the determination of when
@@ -136,42 +137,81 @@ static const char* ResultToString(ReplayResult result)
     }
 }
 
-static bool PrintDiffsCsvHeader(FileWriter& fw)
+static void PrintDiffsCsvHeader(FileWriter& fw)
 {
-    return fw.Printf("Context,Context size,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions\n");
+    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions");
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) fw.Print(",Base " #name ",Diff " #name);
+
+#include "jitmetadatalist.h"
+
+    fw.Print("\n");
 }
 
-static bool PrintDiffsCsvRow(
+static void PrintDiffsCsvRow(
     FileWriter& fw,
     int context, uint32_t contextSize,
     const ReplayResults& baseRes,
     const ReplayResults& diffRes,
     bool hasDiff)
 {
-    return fw.Printf("%d,%u,%s,%s,%s,%s,%u,%u,%lld,%lld\n",
-        context, contextSize,
+    fw.Printf("%d,%u,", context, contextSize);
+    fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
+    fw.Printf(
+        ",%s,%s,%s,%s,%s,%u,%u,%lld,%lld",
+        baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
         baseRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
         baseRes.NumCodeBytes, diffRes.NumCodeBytes,
         baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) \
+    fw.Print(",");                           \
+    fw.Print(baseRes.CompileResults->name);  \
+    fw.Print(",");                           \
+    fw.Print(diffRes.CompileResults->name);
+
+#include "jitmetadatalist.h"
+
+    fw.Print("\n");
 }
 
-static bool PrintReplayCsvHeader(FileWriter& fw)
+static void PrintReplayCsvHeader(FileWriter& fw)
 {
-    return fw.Printf("Context,Context size,Result,MinOpts,Size,Instructions\n");
+    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,Instructions");
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) fw.Print("," #name);
+
+#include "jitmetadatalist.h"
+
+    fw.Print("\n");
 }
 
-static bool PrintReplayCsvRow(
+static void PrintReplayCsvRow(
     FileWriter& fw,
     int context, uint32_t contextSize,
     const ReplayResults& res)
 {
-    return fw.Printf("%d,%u,%s,%s,%u,%lld\n",
-        context, contextSize,
+    fw.Printf("%d,%u,", context, contextSize);
+    fw.PrintQuotedCsvField(res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName);
+    fw.Printf(",%s,%s,%s,%u,%lld",
+        res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,
         ResultToString(res.Result),
         res.IsMinOpts ? "True" : "False",
         res.NumCodeBytes, res.NumExecutedInstructions);
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) \
+    fw.Print(",");                           \
+    fw.Print(res.CompileResults->name);
+
+#include "jitmetadatalist.h"
+
+    fw.Print("\n");
 }
 
 // Run superpmi. The return value is as follows:
@@ -228,6 +268,11 @@ int __cdecl main(int argc, char* argv[])
     if (o.parallel)
     {
         return doParallelSuperPMI(o);
+    }
+
+    if (o.streamFile != nullptr)
+    {
+        return doStreamingSuperPMI(o);
     }
 
     SetBreakOnException(o.breakOnException);

@@ -6,23 +6,8 @@ using System.Diagnostics;
 
 namespace System.Linq
 {
-    public partial class Lookup<TKey, TElement> : IIListProvider<IGrouping<TKey, TElement>>
+    public partial class Lookup<TKey, TElement>
     {
-        IGrouping<TKey, TElement>[] IIListProvider<IGrouping<TKey, TElement>>.ToArray()
-        {
-            IGrouping<TKey, TElement>[] array;
-            if (_count > 0)
-            {
-                array = new IGrouping<TKey, TElement>[_count];
-                Fill(_lastGrouping, array);
-            }
-            else
-            {
-                array = [];
-            }
-            return array;
-        }
-
         internal TResult[] ToArray<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {
             TResult[] array = new TResult[_count];
@@ -44,38 +29,5 @@ namespace System.Linq
 
             return array;
         }
-
-        List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
-        {
-            var list = new List<IGrouping<TKey, TElement>>(_count);
-            if (_count > 0)
-            {
-                Fill(_lastGrouping, Enumerable.SetCountAndGetSpan(list, _count));
-            }
-
-            return list;
-        }
-
-        private static void Fill(Grouping<TKey, TElement>? lastGrouping, Span<IGrouping<TKey, TElement>> results)
-        {
-            int index = 0;
-            Grouping<TKey, TElement>? g = lastGrouping;
-            if (g != null)
-            {
-                do
-                {
-                    g = g._next;
-                    Debug.Assert(g != null);
-
-                    results[index] = g;
-                    ++index;
-                }
-                while (g != lastGrouping);
-            }
-
-            Debug.Assert(index == results.Length, "All list elements were not initialized.");
-        }
-
-        int IIListProvider<IGrouping<TKey, TElement>>.GetCount(bool onlyIfCheap) => _count;
     }
 }

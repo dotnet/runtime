@@ -8,6 +8,7 @@
 #include <config.h>
 #include <glib.h>
 
+// If you change this, update jiterpreter-opcodes.ts.
 typedef enum
 {
 	MintOpNoArgs,
@@ -208,7 +209,8 @@ typedef enum {
 
 #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
 
-#define MINT_IS_NOP(op) ((op) == MINT_NOP || (op) == MINT_DEF || (op) == MINT_DUMMY_USE || (op) == MINT_IL_SEQ_POINT)
+#define MINT_IS_NOP(op) ((op) == MINT_NOP || (op) == MINT_DEF || (op) == MINT_DEF_ARG || (op) == MINT_DUMMY_USE || (op) == MINT_IL_SEQ_POINT)
+#define MINT_IS_EMIT_NOP(op) ((op) == MINT_NOP || (op) == MINT_DEF || (op) == MINT_DEF_ARG || (op) == MINT_DEF_TIER_VAR || (op) == MINT_DUMMY_USE)
 #define MINT_IS_MOV(op) ((op) >= MINT_MOV_I4_I1 && (op) <= MINT_MOV_VT)
 #define MINT_IS_UNCONDITIONAL_BRANCH(op) ((op) >= MINT_BR && (op) <= MINT_CALL_HANDLER_S)
 #define MINT_IS_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BLT_UN_R8_S)
@@ -234,7 +236,7 @@ typedef enum {
 #define MINT_IS_RETURN(op) (((op) >= MINT_RET && (op) <= MINT_RET_U2) || (op) == MINT_RET_I4_IMM || (op) == MINT_RET_I8_IMM)
 
 // TODO Add more
-#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX)
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX || op == MINT_INITLOCAL)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

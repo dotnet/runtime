@@ -441,6 +441,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // TARGET_ARM64
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            genCodeForSwiftErrorReg(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
+
         case GT_RELOAD:
             // do nothing - reload is just a marker.
             // The parent node will call genConsumeReg on this which will trigger the unspill of this node's child
@@ -1925,37 +1931,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     genProduceReg(tree);
 }
 
-//----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a load barrier after a volatile CpBlk operation
-        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
-    }
-}
-
 #ifdef TARGET_ARM64
 
 // The following classes
@@ -3219,31 +3194,6 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
-{
-    // Size goes in arg2, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (initBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile initBlock Operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-
-//------------------------------------------------------------------------
 // genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
 //    It's needed for cases when size is too big to unroll and we're not allowed
 //    to use memset call due to atomicity requirements.
@@ -3424,6 +3374,17 @@ void CodeGen::genCall(GenTreeCall* call)
     {
         genDefineTempLabel(genCreateTempLabel());
     }
+
+#ifdef SWIFT_SUPPORT
+    // Clear the Swift error register before calling a Swift method,
+    // so we can check if it set the error register after returning.
+    // (Flag is only set if we know we need to check the error register)
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
+    }
+#endif // SWIFT_SUPPORT
 
     genCallInstruction(call);
 
@@ -3623,6 +3584,44 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
+#ifdef TARGET_ARM64
+        bool isTlsHandleTarget =
+            compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && target->IsTlsIconHandle();
+
+        if (isTlsHandleTarget)
+        {
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            emitter*       emitter  = GetEmitter();
+            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
+            GenTreeIntCon* iconNode = target->AsIntCon();
+            methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
+
+            // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
+            // it as part of the call. Generating individual instructions is tricky to get it
+            // correct in the format the way linker needs. Also, we might end up spilling or
+            // reloading a register, which can break the pattern.
+            //
+            //      mrs  x1, tpidr_el0
+            //      adrp x0, :tlsdesc:tlsRoot   ; R_AARCH64_TLSDESC_ADR_PAGE21
+            //      ldr  x2, [x0]               ; R_AARCH64_TLSDESC_LD64_LO12
+            //      add  x0, x0, #0             ; R_AARCH64_TLSDESC_ADD_LO12
+            //      blr  x2                     ; R_AARCH64_TLSDESC_CALL
+            //      add  x0, x1, x0
+            // We guaranteed in LSRA that r0, r1 and r2 are assigned to this node.
+
+            // mrs
+            emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
+
+            // adrp
+            // ldr
+            // add
+            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
+                                          (ssize_t)methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                              DEBUGARG(iconNode->gtFlags));
+        }
+#endif
+
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,
                     methHnd,
@@ -3633,6 +3632,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
+
+#ifdef TARGET_ARM64
+        if (isTlsHandleTarget)
+        {
+            // add x0, x1, x0
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
+        }
+#endif
         // clang-format on
     }
     else
@@ -4582,18 +4589,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
-            break;
-
-        case GenTreeBlk::BlkOpKindHelper:
-            assert(!blkOp->gtBlkOpGcUnsafe);
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(blkOp);
-            }
             break;
 
         case GenTreeBlk::BlkOpKindUnroll:

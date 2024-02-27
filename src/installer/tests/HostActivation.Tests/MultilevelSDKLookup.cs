@@ -33,10 +33,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public MultilevelSDKLookup()
         {
-            // The dotnetMultilevelSDKLookup dir will contain some folders and files that will be
-            // necessary to perform the tests
-            string baseMultilevelDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetMultilevelSDKLookup");
-            _multilevelDir = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir));
+            _multilevelDir = TestArtifact.Create(nameof(MultilevelSDKLookup));
 
             // The tested locations will be the cwd, exe dir, and registered directory. cwd is no longer supported.
             //     All dirs will be placed inside the multilevel folder
@@ -44,7 +41,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             _exeDir = Path.Combine(_multilevelDir.Location, "exe");
             _regDir = Path.Combine(_multilevelDir.Location, "reg");
 
-            DotNet = new DotNetBuilder(_multilevelDir.Location, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
+            DotNet = new DotNetBuilder(_multilevelDir.Location, TestContext.BuiltDotNet.BinPath, "exe")
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
 
