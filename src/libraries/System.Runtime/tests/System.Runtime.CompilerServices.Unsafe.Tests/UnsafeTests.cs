@@ -463,6 +463,14 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static void ByteOffsetNull()
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint NullTest(ref byte origin) => Unsafe.ByteOffset(ref origin, ref Unsafe.NullRef<byte>());
+            Assert.Equal(0, NullTest(ref Unsafe.NullRef<byte>()));
+        }
+
+        [Fact]
         public static unsafe void AsRef()
         {
             byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
