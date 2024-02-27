@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "delegate");
 #pragma warning restore CA2208
 
-            NativeFunctionPointerWrapper? fpWrapper = del.Target as NativeFunctionPointerWrapper;
+            NativeFunctionPointerWrapper? fpWrapper = del.TryGetNativeFunctionPointerWrapper();
             if (fpWrapper != null)
             {
                 //
@@ -104,64 +104,64 @@ namespace System.Runtime.InteropServices
             public IntPtr FunctionPtr;     // Function pointer for open static delegates
         }
 
-        internal sealed class PInvokeDelegateThunk
+        internal sealed unsafe class PInvokeDelegateThunk
         {
-            public IntPtr Thunk;        //  Thunk pointer
-            public IntPtr ContextData;  //  ThunkContextData pointer which will be stored in the context slot of the thunk
+            public readonly IntPtr Thunk;        //  Thunk pointer
+            public readonly IntPtr ContextData;  //  ThunkContextData pointer which will be stored in the context slot of the thunk
 
             public PInvokeDelegateThunk(Delegate del)
             {
-
                 Thunk = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
-                Debug.Assert(Thunk != IntPtr.Zero);
-
                 if (Thunk == IntPtr.Zero)
                 {
-                    // We've either run out of memory, or failed to allocate a new thunk due to some other bug. Now we should fail fast
-                    Environment.FailFast("Insufficient number of thunks.");
+                    throw new OutOfMemoryException();
                 }
-                else
+
+                //
+                //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
+                //
+                IntPtr openStaticFunctionPointer = del.TryGetOpenStaticFunctionPointer();
+
+                //
+                // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
+                // We will store this pointer on the context slot of thunk data
+                //
+                unsafe
                 {
-                    //
-                    // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
-                    // We will store this pointer on the context slot of thunk data
-                    //
-                    unsafe
-                    {
-                        ContextData = (IntPtr)NativeMemory.Alloc((nuint)(2 * IntPtr.Size));
+                    ContextData = (IntPtr)NativeMemory.Alloc((nuint)(2 * IntPtr.Size));
 
-                        ThunkContextData* thunkData = (ThunkContextData*)ContextData;
+                    ThunkContextData* thunkData = (ThunkContextData*)ContextData;
 
-                        // allocate a weak GChandle for the delegate
-                        thunkData->Handle = GCHandle.Alloc(del, GCHandleType.Weak);
-
-                        // if it is an open static delegate get the function pointer
-                        if (del.IsOpenStatic)
-                            thunkData->FunctionPtr = del.GetFunctionPointer(out RuntimeTypeHandle _, out bool _, out bool _);
-                        else
-                            thunkData->FunctionPtr = default;
-                    }
+                    // allocate a weak GChandle for the delegate
+                    thunkData->Handle = GCHandle.Alloc(del, GCHandleType.Weak);
+                    thunkData->FunctionPtr = openStaticFunctionPointer;
                 }
+
+                IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(new RuntimeTypeHandle(del.GetMethodTable()), openStaticFunctionPointer != IntPtr.Zero);
+                Debug.Assert(pTarget != IntPtr.Zero);
+
+                RuntimeAugments.SetThunkData(s_thunkPoolHeap, Thunk, ContextData, pTarget);
             }
 
             ~PInvokeDelegateThunk()
             {
                 // Free the thunk
-                RuntimeAugments.FreeThunk(s_thunkPoolHeap, Thunk);
-                unsafe
+                if (Thunk != IntPtr.Zero)
                 {
-                    if (ContextData != IntPtr.Zero)
-                    {
-                        // free the GCHandle
-                        GCHandle handle = ((ThunkContextData*)ContextData)->Handle;
-                        if (handle.IsAllocated)
-                        {
-                            handle.Free();
-                        }
+                    RuntimeAugments.FreeThunk(s_thunkPoolHeap, Thunk);
+                }
 
-                        // Free the allocated context data memory
-                        NativeMemory.Free((void*)ContextData);
+                if (ContextData != IntPtr.Zero)
+                {
+                    // free the GCHandle
+                    GCHandle handle = ((ThunkContextData*)ContextData)->Handle;
+                    if (handle.IsAllocated)
+                    {
+                        handle.Free();
                     }
+
+                    // Free the allocated context data memory
+                    NativeMemory.Free((void*)ContextData);
                 }
             }
         }
@@ -179,19 +179,7 @@ namespace System.Runtime.InteropServices
                 Debug.Assert(s_thunkPoolHeap != null);
             }
 
-            var delegateThunk = new PInvokeDelegateThunk(del);
-
-            //
-            //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
-            //
-            bool openStaticDelegate = del.IsOpenStatic;
-
-            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(new RuntimeTypeHandle(del.GetMethodTable()), openStaticDelegate);
-            Debug.Assert(pTarget != IntPtr.Zero);
-
-            RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);
-
-            return delegateThunk;
+            return new PInvokeDelegateThunk(del);
         }
 
         /// <summary>
