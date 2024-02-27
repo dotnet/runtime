@@ -15,8 +15,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            int count = 0;
-            if (source.TryGetNonEnumeratedCount(out count))
+            if (source.TryGetNonEnumeratedCount(out int count))
             {
                 return count;
             }
