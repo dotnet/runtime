@@ -66,7 +66,7 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
-        internal async void StartAsyncCertificateValidation(IntPtr certificatePtr, IntPtr chainPtr)
+        internal async Task<bool> StartAsyncCertificateValidation(IntPtr certificatePtr, IntPtr chainPtr)
         {
             //
             // The provided data pointers are valid only while still inside this function, so they need to be
@@ -154,18 +154,23 @@ public partial class QuicConnection
                 }
             }
 
-            int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
-                _connection._handle,
-                result == QUIC_TLS_ALERT_CODES.SUCCESS ? (byte)1 : (byte)0,
-                result);
-
-            if (MsQuic.StatusFailed(status))
+            if (MsQuicApi.SupportsAsyncCertValidation)
             {
-                if (NetEventSource.Log.IsEnabled())
+                int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
+                    _connection._handle,
+                    result == QUIC_TLS_ALERT_CODES.SUCCESS ? (byte)1 : (byte)0,
+                    result);
+
+                if (MsQuic.StatusFailed(status))
                 {
-                    NetEventSource.Error(_connection, $"{_connection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(_connection, $"{_connection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
+                    }
                 }
             }
+
+            return result == QUIC_TLS_ALERT_CODES.SUCCESS;
         }
 
         private QUIC_TLS_ALERT_CODES ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
