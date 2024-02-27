@@ -7,7 +7,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal sealed partial class GroupByResultIterator<TSource, TKey, TElement, TResult>
+        private sealed partial class GroupByResultIterator<TSource, TKey, TElement, TResult>
         {
             public override TResult[] ToArray() =>
                 Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).ToArray(_resultSelector);
@@ -19,7 +19,7 @@ namespace System.Linq
                 onlyIfCheap ? -1 : Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).Count;
         }
 
-        internal sealed partial class GroupByResultIterator<TSource, TKey, TResult>
+        private sealed partial class GroupByResultIterator<TSource, TKey, TResult>
         {
             public override TResult[] ToArray() =>
                 Lookup<TKey, TSource>.Create(_source, _keySelector, _comparer).ToArray(_resultSelector);
@@ -31,7 +31,7 @@ namespace System.Linq
                 onlyIfCheap ? -1 : Lookup<TKey, TSource>.Create(_source, _keySelector, _comparer).Count;
         }
 
-        internal sealed partial class GroupByIterator<TSource, TKey, TElement>
+        private sealed partial class GroupByIterator<TSource, TKey, TElement>
         {
             public override IGrouping<TKey, TElement>[] ToArray() =>
                 Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).ToArray();
@@ -43,7 +43,7 @@ namespace System.Linq
                 onlyIfCheap ? -1 : Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).Count;
         }
 
-        internal sealed partial class GroupByIterator<TSource, TKey>
+        private sealed partial class GroupByIterator<TSource, TKey>
         {
             public override IGrouping<TKey, TSource>[] ToArray() =>
                 Lookup<TKey, TSource>.Create(_source, _keySelector, _comparer).ToArray();

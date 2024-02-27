@@ -88,13 +88,12 @@ namespace System.Linq
             /// <typeparam name="TResult">The type of the mapped items.</typeparam>
             /// <param name="selector">The selector used to map each item.</param>
             public virtual IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-                new
 #if OPTIMIZE_FOR_SIZE
-                IEnumerableSelectIterator
+                new IEnumerableSelectIterator<TSource, TResult>(this, selector);
 #else
-                IteratorSelectIterator
+                new IteratorSelectIterator<TSource, TResult>(this, selector);
 #endif
-                <TSource, TResult>(this, selector);
+
 
             /// <summary>
             /// Returns an enumerable that filters each item in this iterator based on a predicate.

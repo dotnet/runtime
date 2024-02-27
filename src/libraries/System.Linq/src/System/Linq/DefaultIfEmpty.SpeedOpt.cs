@@ -51,7 +51,7 @@ namespace System.Linq
                 }
 
                 found = true;
-                return default;
+                return _default;
             }
 
             public override TSource? TryGetLast(out bool found)
@@ -63,7 +63,7 @@ namespace System.Linq
                 }
 
                 found = true;
-                return default;
+                return _default;
             }
 
             public override TSource? TryGetElementAt(int index, out bool found)
@@ -79,7 +79,7 @@ namespace System.Linq
                     found = true;
                 }
 
-                return default;
+                return _default;
             }
         }
     }

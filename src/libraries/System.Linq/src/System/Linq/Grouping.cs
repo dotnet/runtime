@@ -121,7 +121,7 @@ namespace System.Linq
             return new GroupByResultIterator<TSource, TKey, TElement, TResult>(source, keySelector, elementSelector, resultSelector, comparer);
         }
 
-        internal sealed partial class GroupByResultIterator<TSource, TKey, TElement, TResult> : Iterator<TResult>
+        private sealed partial class GroupByResultIterator<TSource, TKey, TElement, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TKey> _keySelector;
@@ -179,7 +179,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class GroupByResultIterator<TSource, TKey, TResult> : Iterator<TResult>
+        private sealed partial class GroupByResultIterator<TSource, TKey, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TKey> _keySelector;
@@ -235,7 +235,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class GroupByIterator<TSource, TKey, TElement> : Iterator<IGrouping<TKey, TElement>>
+        private sealed partial class GroupByIterator<TSource, TKey, TElement> : Iterator<IGrouping<TKey, TElement>>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TKey> _keySelector;
@@ -290,7 +290,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class GroupByIterator<TSource, TKey> : Iterator<IGrouping<TKey, TSource>>
+        private sealed partial class GroupByIterator<TSource, TKey> : Iterator<IGrouping<TKey, TSource>>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TKey> _keySelector;
