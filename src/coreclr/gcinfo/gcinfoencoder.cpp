@@ -939,7 +939,6 @@ bool GcInfoEncoder::DoNotTrackInPartiallyInterruptible(GcSlotDesc &slotDesc)
 
         return ((regNum <= 3) || (regNum >= 12)) // R12 is volatile and SP/LR can't contain objects around calls
             && regNum != 0                       // R0 can contain return value
-            && regNum != 1                       // R1 can contain return value
             ;
     }
     else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&
