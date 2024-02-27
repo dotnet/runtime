@@ -8676,7 +8676,8 @@ void emitter::emitIns_R_R(instruction     ins,
             break;
 
         case INS_sve_pmov:
-            if (opt != INS_OPTS_SCALABLE_B) {
+            if (opt != INS_OPTS_SCALABLE_B)
+            {
                 assert(insOptsScalableStandard(opt));
                 return emitIns_R_R_I(INS_sve_pmov, attr, reg1, reg2, 0, opt, sopt);
             }
