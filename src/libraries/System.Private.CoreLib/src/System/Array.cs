@@ -54,17 +54,33 @@ namespace System
 
             if (larray.Length != newSize)
             {
-                // Due to array variance, it's possible that the incoming array is
-                // actually of type U[], where U:T; or that an int[] <-> uint[] or
-                // similar cast has occurred. In any case, since it's always legal
-                // to reinterpret U as T in this scenario (but not necessarily the
-                // other way around), we can use SpanHelpers.Memmove here.
+                T[] newArray;
 
-                T[] newArray = new T[newSize];
+                if (larray.GetType() == typeof(T[]))
+                {
+                    // We know the type of the array to be exactly T[].
+
+                    newArray = new T[newSize];
+                }
+                else
+                {
+                    // The array is actually a U[] where U:T. We'll make sure to create
+                    // an array of the exact same backing type. The cast to T[] will
+                    // never fail.
+
+                    newArray = Unsafe.As<T[]>(Array.CreateInstanceFromArrayType(larray.GetType(), newSize));
+                }
+
+                // In either case, the newly-allocated array is the exact same type as the
+                // original incoming array. It's safe for us to Buffer.Memmove the contents
+                // from the source array to the destination array, otherwise the contents
+                // wouldn't have been valid for the source array in the first place.
+
                 Buffer.Memmove(
                     ref MemoryMarshal.GetArrayDataReference(newArray),
                     ref MemoryMarshal.GetArrayDataReference(larray),
                     (uint)Math.Min(newSize, larray.Length));
+
                 array = newArray;
             }
 

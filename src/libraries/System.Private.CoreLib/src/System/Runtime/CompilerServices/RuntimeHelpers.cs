@@ -29,7 +29,7 @@ namespace System.Runtime.CompilerServices
 
             T[] dest;
 
-            if (typeof(T[]) == array.GetType())
+            if (array.GetType() == typeof(T[]))
             {
                 // We know the type of the array to be exactly T[].
 
@@ -50,7 +50,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // In either case, the newly-allocated array is the exact same type as the
-            // original incoming array. It's safe for us to SpanHelpers.Memmove the contents
+            // original incoming array. It's safe for us to Buffer.Memmove the contents
             // from the source array to the destination array, otherwise the contents
             // wouldn't have been valid for the source array in the first place.
 
