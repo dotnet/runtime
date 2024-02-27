@@ -1196,6 +1196,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
         case IF_SVE_BD_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
             assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
@@ -11032,12 +11033,20 @@ void emitter::emitIns_R_R_R(instruction     ins,
 
         case INS_sve_sdot:
         case INS_sve_udot:
-            assert(insOptsScalableWords(opt));
-            assert(isVectorRegister(reg1));                        // ddddd
-            assert(isVectorRegister(reg2));                        // nnnnn
-            assert(isVectorRegister(reg3));                        // mmmmm
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            fmt = IF_SVE_EH_3A;
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                fmt = IF_SVE_EF_3A;
+            }
+            else
+            {
+                fmt = IF_SVE_EH_3A;
+                assert(insOptsScalableWords(opt));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            }
             break;
 
         case INS_sve_smlalb:
@@ -23282,6 +23291,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
         case IF_SVE_BD_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
@@ -27205,6 +27215,13 @@ void emitter::emitDispInsHelp(
             emitDispElementIndex(emitGetInsSC(id), false);           // ii/iii
             break;
 
+        // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmmmm
+            break;
+
         // <Zd>.D, <Zn>.S, <Zm>.S[<imm>]
         case IF_SVE_FE_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply long (indexed)
         case IF_SVE_FH_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
@@ -31065,12 +31082,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         // Arithmetic, shift complex
         case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
                            // (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
         // Arithmetic, pairwise add and accum long
         case IF_SVE_EQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE2 integer pairwise add and accumulate long
+        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
