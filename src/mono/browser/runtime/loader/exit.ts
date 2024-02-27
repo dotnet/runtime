@@ -22,7 +22,12 @@ export function assert_runtime_running() {
             mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
         }
     } else {
-        mono_assert(!loaderHelpers.assertAfterExit, () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+        const message = `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`;
+        if (loaderHelpers.assertAfterExit) {
+            mono_assert(false, message);
+        } else {
+            mono_log_warn(message);
+        }
     }
 }
 
@@ -74,7 +79,11 @@ export function mono_exit(exit_code: number, reason?: any): void {
 
     // unify shape of the reason object
     const is_object = reason && typeof reason === "object";
-    exit_code = (is_object && typeof reason.status === "number") ? reason.status : exit_code;
+    exit_code = (is_object && typeof reason.status === "number")
+        ? reason.status
+        : exit_code === undefined
+            ? -1
+            : exit_code;
     const message = (is_object && typeof reason.message === "string")
         ? reason.message
         : "" + reason;
@@ -107,6 +116,9 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 }
                 if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
                     runtimeHelpers.forceDisposeProxies(true, true);
+                }
+                if (WasmEnableThreads && exit_code !== 0 && loaderHelpers.config?.dumpThreadsOnNonZeroExit) {
+                    runtimeHelpers.dumpThreads();
                 }
             }
         }
@@ -163,9 +175,9 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
         try {
             runtimeHelpers.nativeExit(exit_code);
         }
-        catch (err) {
-            if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {
-                mono_log_warn("mono_wasm_exit failed", err);
+        catch (error: any) {
+            if (runtimeHelpers.ExitStatus && !(error instanceof runtimeHelpers.ExitStatus)) {
+                mono_log_warn("mono_wasm_exit failed: " + error.toString());
             }
         }
     }
@@ -211,7 +223,6 @@ function abort_promises(reason: any) {
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
-    loaderHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
@@ -225,12 +236,12 @@ function abort_promises(reason: any) {
 }
 
 function appendElementOnExit(exit_code: number) {
-    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit && document) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
-        if (exit_code) tests_done_elem.style.background = "red";
-        tests_done_elem.innerHTML = exit_code.toString();
+        if (exit_code !== 0) tests_done_elem.style.background = "red";
+        tests_done_elem.innerHTML = "" + exit_code;
         document.body.appendChild(tests_done_elem);
     }
 }
@@ -274,18 +285,18 @@ function logOnExit(exit_code: number, reason: any) {
     }
 }
 function unhandledrejection_handler(event: any) {
-    fatal_handler(event, event.reason);
+    fatal_handler(event, event.reason, "rejection");
 }
 
 function error_handler(event: any) {
-    fatal_handler(event, event.error);
+    fatal_handler(event, event.error, "error");
 }
 
-function fatal_handler(event: any, reason: any) {
+function fatal_handler(event: any, reason: any, type: string) {
     event.preventDefault();
     try {
         if (!reason) {
-            reason = new Error("Unhandled");
+            reason = new Error("Unhandled " + type);
         }
         if (reason.stack === undefined) {
             reason.stack = new Error().stack;

@@ -407,7 +407,7 @@ namespace ILCompiler.DependencyAnalysis
                         // We don't do this if the method can be placed in the sealed vtable since
                         // those can never be overriden by children anyway.
                         bool canUseTentativeMethod = isNonInterfaceAbstractType
-                            && !decl.CanMethodBeInSealedVTable()
+                            && !decl.CanMethodBeInSealedVTable(factory)
                             && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
                         IMethodNode implNode = canUseTentativeMethod ?
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
@@ -1039,7 +1039,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Final NewSlot methods cannot be overridden, and therefore can be placed in the sealed-vtable to reduce the size of the vtable
                 // of this type and any type that inherits from it.
-                if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces())
+                if (declMethod.CanMethodBeInSealedVTable(factory) && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
 
                 bool shouldEmitImpl = !implMethod.IsAbstract;

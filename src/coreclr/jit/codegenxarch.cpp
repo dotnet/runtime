@@ -2107,6 +2107,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NOP:
             break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            genCodeForSwiftErrorReg(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
+
         case GT_KEEPALIVE:
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             break;
@@ -2177,7 +2183,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -3051,7 +3056,7 @@ ALLOC_DONE:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
-    assert(storeBlkNode->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(storeBlkNode->OperIs(GT_STORE_BLK));
 
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
@@ -3070,19 +3075,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             genCodeForInitBlkLoop(storeBlkNode);
             break;
 
-#ifdef TARGET_AMD64
-        case GenTreeBlk::BlkOpKindHelper:
-            assert(!storeBlkNode->gtBlkOpGcUnsafe);
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(storeBlkNode);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(storeBlkNode);
-            }
-            break;
-#endif // TARGET_AMD64
         case GenTreeBlk::BlkOpKindRepInstr:
 #ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -3401,27 +3393,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }
 }
-
-#ifdef TARGET_AMD64
-//------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-#endif // TARGET_AMD64
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 // Generate code for a load from some address + offset
@@ -4310,27 +4281,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     gcInfo.gcMarkRegSetNpt(RBM_RDI);
 }
 
-#ifdef TARGET_AMD64
-//----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-}
-#endif // TARGET_AMD64
-
 // generate code do a switch statement based on a table of ip-relative offsets
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
@@ -4356,10 +4306,10 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabOffs;
-    unsigned     jmpTabBase;
+    unsigned   jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    unsigned   jmpTabOffs;
+    unsigned   jmpTabBase;
 
     jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
 
@@ -4369,7 +4319,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
-        BasicBlock* target = *jumpTable++;
+        BasicBlock* target = (*jumpTable)->getDestinationBlock();
+        jumpTable++;
         noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
@@ -6074,18 +6025,31 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
-    // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
-    // transition penalty, assuming the user function contains legacy SSE instruction.
-    // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
-    // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
-    // when there's preceding 256-bit AVX to legacy SSE transition penalty.
-    // This applies to 512bit AVX512 instructions as well.
-    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && (GetEmitter()->Contains256bitOrMoreAVX()))
+    if (GetEmitter()->Contains256bitOrMoreAVX() && call->NeedsVzeroupper(compiler))
     {
-        assert(compiler->canUseVexEncoding());
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        // This method contains a call that needs vzeroupper but also uses 256-bit or higher
+        // AVX itself. This means we couldn't optimize to only emitting a single vzeroupper in
+        // the method prologue and instead need to insert one before each call that needs it.
+
         instGen(INS_vzeroupper);
     }
+
+#ifdef SWIFT_SUPPORT
+    // Clear the Swift error register before calling a Swift method,
+    // so we can check if it set the error register after returning.
+    // (Flag is only set if we know we need to check the error register)
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
+    }
+#endif // SWIFT_SUPPORT
 
     genCallInstruction(call X86_ARG(stackArgBytes));
 
@@ -11188,11 +11152,26 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
-    genVzeroupperIfNeeded(false);
     regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
+
+    if (GetEmitter()->ContainsCallNeedingVzeroupper() && !GetEmitter()->Contains256bitOrMoreAVX())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        // This method contains a call that needs vzeroupper but also doesn't use 256-bit or higher
+        // AVX itself. Thus we can optimize to only emitting a single vzeroupper in the function prologue
+        // This reduces the overall amount of codegen, particularly for more common paths not using any
+        // SIMD or floating-point.
+
+        instGen(INS_vzeroupper);
+    }
 
     // fast path return
     if (regMask == RBM_NONE)
@@ -11241,10 +11220,20 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
 
+    if (GetEmitter()->Contains256bitOrMoreAVX())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        instGen(INS_vzeroupper);
+    }
+
     // fast path return
     if (regMask == RBM_NONE)
     {
-        genVzeroupperIfNeeded();
         return;
     }
 
@@ -11286,37 +11275,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
             regMask &= ~regBit;
             offset -= XMM_REGSIZE_BYTES;
         }
-    }
-    genVzeroupperIfNeeded();
-}
-
-// Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
-// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs
-// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains
-// 128-bit or 256-bit AVX code, to avoid legacy SSE to AVX transition penalty, which could happen when native
-// code contains legacy SSE code calling into JIT AVX code (e.g. reverse pinvoke). Issue VZEROUPPER in Epilog
-// if the method contains 256-bit AVX code, to avoid AVX to legacy SSE transition penalty.
-//
-// Params
-//   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
-//      instruction, false to check if the function contains AVX instruction (either 128-bit or 256-bit).
-//
-void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
-{
-    bool emitVzeroUpper = false;
-    if (check256bitOnly)
-    {
-        emitVzeroUpper = GetEmitter()->Contains256bitOrMoreAVX();
-    }
-    else
-    {
-        emitVzeroUpper = GetEmitter()->ContainsAVX();
-    }
-
-    if (emitVzeroUpper)
-    {
-        assert(compiler->canUseVexEncoding());
-        instGen(INS_vzeroupper);
     }
 }
 

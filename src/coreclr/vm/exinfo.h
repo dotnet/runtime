@@ -269,6 +269,8 @@ struct ExInfo : public ExceptionTrackerBase
     // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
     CONTEXT        m_exContext;
     REGDISPLAY     m_regDisplay;
+    // Initial explicit frame for stack walking
+    Frame         *m_pInitialFrame;
 
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);

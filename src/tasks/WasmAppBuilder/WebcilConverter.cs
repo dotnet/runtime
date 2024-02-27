@@ -8,6 +8,7 @@ using System.Reflection.PortableExecutable;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using WasmAppBuilder;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
@@ -21,8 +22,8 @@ public class WebcilConverter
 
     private readonly NET.WebAssembly.Webcil.WebcilConverter _converter;
 
-    private TaskLoggingHelper Log { get; }
-    private WebcilConverter(NET.WebAssembly.Webcil.WebcilConverter converter, string inputPath, string outputPath, TaskLoggingHelper logger)
+    private LogAdapter Log { get; }
+    private WebcilConverter(NET.WebAssembly.Webcil.WebcilConverter converter, string inputPath, string outputPath, LogAdapter logger)
     {
         _converter = converter;
         _inputPath = inputPath;
@@ -30,7 +31,7 @@ public class WebcilConverter
         Log = logger;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, TaskLoggingHelper logger)
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger)
     {
         var converter = NET.WebAssembly.Webcil.WebcilConverter.FromPortableExecutable(inputPath, outputPath);
         return new WebcilConverter(converter, inputPath, outputPath, logger);

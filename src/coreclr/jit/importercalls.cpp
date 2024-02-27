@@ -98,6 +98,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_SIG_INFO calliSig;
     NewCallArg       extraArg;
 
+    // Swift calls may use special register types that require additional IR to handle,
+    // so if we're importing a Swift call, look for these types in the signature
+    CallArg* swiftErrorArg = nullptr;
+    CallArg* swiftSelfArg  = nullptr;
+
     /*-------------------------------------------------------------------------
      * First create the call node
      */
@@ -651,6 +656,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
+        assert(call->IsCall());
+
         // We set up the unmanaged call by linking the frame, disabling GC, etc
         // This needs to be cleaned up on return.
         // In addition, native calls have different normalization rules than managed code
@@ -663,7 +670,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         checkForSmallType = true;
 
-        impPopArgsForUnmanagedCall(call->AsCall(), sig);
+        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg, &swiftSelfArg);
 
         goto DONE;
     }
@@ -1290,7 +1297,7 @@ DONE_CALL:
             impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
         }
         else if (JitConfig.JitProfileValues() && call->IsCall() &&
-                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
             if (opts.IsOptimizedWithProfile())
             {
@@ -1485,6 +1492,15 @@ DONE_CALL:
         impPushOnStack(call, tiRetVal);
     }
 
+#ifdef SWIFT_SUPPORT
+    // If call is a Swift call with error handling, append additional IR
+    // to handle storing the error register's value post-call.
+    if (swiftErrorArg != nullptr)
+    {
+        impAppendSwiftErrorStore(call->AsCall(), swiftErrorArg);
+    }
+#endif // SWIFT_SUPPORT
+
     return callRetTyp;
 }
 #ifdef _PREFAST_
@@ -1555,7 +1571,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
         unsigned argNum   = 0;
         ssize_t  minValue = 0;
         ssize_t  maxValue = 0;
-        if (call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+        if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
             // dst(0), src(1), len(2)
             argNum = 2;
@@ -1822,7 +1838,10 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 /*****************************************************************************/
 
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
+                                          CORINFO_SIG_INFO*   sig,
+                                          /* OUT */ CallArg** swiftErrorArg,
+                                          /* OUT */ CallArg** swiftSelfArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
@@ -1842,9 +1861,73 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
-        assert(argsToReverse);
+        assert(argsToReverse != 0);
         argsToReverse--;
     }
+
+#ifdef SWIFT_SUPPORT
+    unsigned short swiftErrorIndex = sig->numArgs;
+
+    // We are importing an unmanaged Swift call, which might require special parameter handling
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
+    {
+        bool checkEntireStack = false;
+
+        // Check the signature of the Swift call for the special types
+        CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+
+        for (unsigned short argIndex = 0; argIndex < sig->numArgs;
+             sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
+        {
+            CORINFO_CLASS_HANDLE argClass;
+            CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+            bool                 argIsByrefOrPtr = false;
+
+            if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
+            {
+                argClass        = info.compCompHnd->getArgClass(sig, sigArg);
+                argType         = info.compCompHnd->getChildType(argClass, &argClass);
+                argIsByrefOrPtr = true;
+            }
+
+            if ((argType != CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(argClass))
+            {
+                continue;
+            }
+
+            const char* namespaceName;
+            const char* className = info.compCompHnd->getClassNameFromMetadata(argClass, &namespaceName);
+
+            if ((strcmp(className, "SwiftError") == 0) &&
+                (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // For error handling purposes, we expect a pointer/reference to a SwiftError to be passed
+                if (!argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftError pointer/reference, got struct");
+                }
+
+                if (swiftErrorIndex != sig->numArgs)
+                {
+                    BADCODE("Duplicate SwiftError* parameter");
+                }
+
+                swiftErrorIndex  = argIndex;
+                checkEntireStack = true;
+            }
+            // TODO: Handle SwiftSelf, SwiftAsync
+        }
+
+        // Don't need to reverse args for Swift calls
+        argsToReverse = 0;
+
+        // If using one of the Swift register types, check entire stack for side effects
+        if (checkEntireStack)
+        {
+            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
+        }
+    }
+#endif // SWIFT_SUPPORT
 
 #ifndef TARGET_X86
     // Don't reverse args on ARM or x64 - first four args always placed in regs in order
@@ -1892,6 +1975,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
+    unsigned short argIndex = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         GenTree* argNode = arg.GetEarlyNode();
@@ -1914,8 +1998,54 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
                 assert(!"*** invalid IL: gc ref passed to unmanaged call");
             }
         }
+
+#ifdef SWIFT_SUPPORT
+        if (argIndex == swiftErrorIndex)
+        {
+            // Found the SwiftError* arg
+            assert(swiftErrorArg != nullptr);
+            *swiftErrorArg = &arg;
+        }
+// TODO: SwiftSelf, SwiftAsync
+#endif // SWIFT_SUPPORT
+
+        argIndex++;
     }
 }
+
+#ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// impAppendSwiftErrorStore: Append IR to store the Swift error register value
+// to the SwiftError* argument specified by swiftErrorArg, post-Swift call
+//
+// Arguments:
+//    call - the Swift call
+//    swiftErrorArg - the SwiftError* argument passed to call
+//
+void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
+{
+    assert(call != nullptr);
+    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+    assert(swiftErrorArg != nullptr);
+
+    GenTree* const argNode = swiftErrorArg->GetNode();
+    assert(argNode != nullptr);
+
+    // Store the error register value to where the SwiftError* points to
+    GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
+    errorRegNode->SetHasOrderingSideEffect();
+    errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
+    impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
+
+    // Indicate the error register will be checked after this call returns
+    call->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
+
+    // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
+    call->gtArgs.Remove(swiftErrorArg);
+}
+#endif // SWIFT_SUPPORT
 
 //------------------------------------------------------------------------
 // impInitializeArrayIntrinsic: Attempts to replace a call to InitializeArray
@@ -2761,7 +2891,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 betterToExpand = true;
                 break;
 
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
             case NI_System_SpanHelpers_SequenceEqual:
                 // We're going to instrument these
                 betterToExpand = opts.IsInstrumented();
@@ -2827,26 +2957,38 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_String_Equals:
             {
-                retNode = impStringEqualsOrStartsWith(/*startsWith:*/ false, sig, methodFlags);
+                retNode = impUtf16StringComparison(StringComparisonKind::Equals, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             {
-                retNode = impSpanEqualsOrStartsWith(/*startsWith:*/ false, sig, methodFlags);
+                retNode = impUtf16SpanComparison(StringComparisonKind::Equals, sig, methodFlags);
                 break;
             }
 
             case NI_System_String_StartsWith:
             {
-                retNode = impStringEqualsOrStartsWith(/*startsWith:*/ true, sig, methodFlags);
+                retNode = impUtf16StringComparison(StringComparisonKind::StartsWith, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_String_EndsWith:
+            {
+                retNode = impUtf16StringComparison(StringComparisonKind::EndsWith, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_StartsWith:
             {
-                retNode = impSpanEqualsOrStartsWith(/*startsWith:*/ true, sig, methodFlags);
+                retNode = impUtf16SpanComparison(StringComparisonKind::StartsWith, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_MemoryExtensions_EndsWith:
+            {
+                retNode = impUtf16SpanComparison(StringComparisonKind::EndsWith, sig, methodFlags);
                 break;
             }
 
@@ -3216,6 +3358,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1->gtType = TYP_REF;
                     retNode     = op1;
                 }
+                else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)
+                {
+                    // We'll try to expand it later.
+                    isSpecial = true;
+                }
                 break;
             }
 
@@ -3465,6 +3612,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 3);
 
                 GenTree* op3 = impPopStack().val; // comparand
+                if (varTypeIsSmall(callType))
+                {
+                    // small types need the comparand to have its upper bits zeroed
+                    op3 = gtNewCastNode(genActualType(callType), op3, /* uns */ false, varTypeToUnsigned(callType));
+                }
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
                 retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
@@ -3521,18 +3673,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
             {
                 assert(sig->numArgs == 0);
-
-                GenTree* op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
-                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-
                 // On XARCH `NI_System_Threading_Interlocked_ReadMemoryBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
-                if (ni == NI_System_Threading_Interlocked_ReadMemoryBarrier)
-                {
-                    op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
-                }
-
-                retNode = op1;
+                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Interlocked_ReadMemoryBarrier);
                 break;
             }
 
@@ -3969,7 +4112,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8:
             case NI_System_SpanHelpers_SequenceEqual:
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
+            case NI_System_SpanHelpers_Memmove:
             {
                 if (sig->sigInst.methInstCount == 0)
                 {
@@ -3977,6 +4121,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     isSpecial = true;
                 }
                 // The generic version is also marked as [Intrinsic] just as a hint for the inliner
+                break;
+            }
+
+            case NI_System_SpanHelpers_Fill:
+            {
+                if (sig->sigInst.methInstCount == 1)
+                {
+                    // We'll try to unroll this in lower for constant input.
+                    isSpecial = true;
+                }
                 break;
             }
 
@@ -5605,8 +5759,7 @@ void Compiler::impCheckForPInvokeCall(
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
         unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
-        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
-        unmanagedCallConv == CorInfoCallConvExtension::Swift)
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
     {
         return;
     }
@@ -5814,15 +5967,19 @@ void Compiler::pickGDV(GenTreeCall*           call,
 #ifdef DEBUG
     if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfClasses > 0))
     {
-        bool                 isExact;
-        bool                 isNonNull;
-        CallArg*             thisArg            = call->gtArgs.GetThisArg();
-        CORINFO_CLASS_HANDLE declaredThisClsHnd = gtGetClassHandle(thisArg->GetNode(), &isExact, &isNonNull);
         JITDUMP("Likely classes for call [%06u]", dspTreeID(call));
-        if (declaredThisClsHnd != NO_CLASS_HANDLE)
+        if (!call->IsHelperCall())
         {
-            const char* baseClassName = eeGetClassName(declaredThisClsHnd);
-            JITDUMP(" on class %p (%s)", declaredThisClsHnd, baseClassName);
+            bool     isExact;
+            bool     isNonNull;
+            CallArg* thisArg = call->gtArgs.GetThisArg();
+            assert(thisArg != nullptr);
+            CORINFO_CLASS_HANDLE declaredThisClsHnd = gtGetClassHandle(thisArg->GetNode(), &isExact, &isNonNull);
+            if (declaredThisClsHnd != NO_CLASS_HANDLE)
+            {
+                const char* baseClassName = eeGetClassName(declaredThisClsHnd);
+                JITDUMP(" on class %p (%s)", declaredThisClsHnd, baseClassName);
+            }
         }
         JITDUMP("\n");
 
@@ -6884,7 +7041,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     switch (intrinsicName)
     {
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
 
@@ -8518,7 +8674,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 if (isNumber)
                 {
-                    std::swap(op1, op2);
+                    // Swap the operands so that the cnsNode is op1, this prevents
+                    // the unknown value (which could be NaN) from being selected.
 
                     retNode->AsHWIntrinsic()->Op(1) = op2;
                     retNode->AsHWIntrinsic()->Op(2) = op1;
@@ -8846,13 +9003,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_BitConverter_Int64BitsToDouble;
                         }
                     }
-                    else if (strcmp(className, "Buffer") == 0)
-                    {
-                        if (strcmp(methodName, "Memmove") == 0)
-                        {
-                            result = NI_System_Buffer_Memmove;
-                        }
-                    }
                     break;
                 }
 
@@ -8922,6 +9072,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "StartsWith") == 0)
                         {
                             result = NI_System_MemoryExtensions_StartsWith;
+                        }
+                        else if (strcmp(methodName, "EndsWith") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_EndsWith;
                         }
                     }
                     break;
@@ -9000,6 +9154,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_SpanHelpers_SequenceEqual;
                         }
+                        else if (strcmp(methodName, "Fill") == 0)
+                        {
+                            result = NI_System_SpanHelpers_Fill;
+                        }
+                        else if (strcmp(methodName, "ClearWithoutReferences") == 0)
+                        {
+                            result = NI_System_SpanHelpers_ClearWithoutReferences;
+                        }
+                        else if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_SpanHelpers_Memmove;
+                        }
                     }
                     else if (strcmp(className, "String") == 0)
                     {
@@ -9022,6 +9188,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "StartsWith") == 0)
                         {
                             result = NI_System_String_StartsWith;
+                        }
+                        else if (strcmp(methodName, "EndsWith") == 0)
+                        {
+                            result = NI_System_String_EndsWith;
                         }
                     }
                     break;

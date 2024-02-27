@@ -4,7 +4,7 @@
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
+import { getU16 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -12,15 +12,15 @@ import {
     MintOpcodePtr, WasmBuilder, addWasmFunctionPointer,
     _now, isZeroPageReserved,
     getRawCwrap, importDef, JiterpreterOptions, getOptions, recordFailure,
-    getMemberOffset, getCounter, modifyCounter,
+    getCounter, modifyCounter,
     simdFallbackCounters, getWasmFunctionTable
 } from "./jiterpreter-support";
 import {
-    JiterpMember, BailoutReasonNames, BailoutReason,
+    BailoutReasonNames, BailoutReason,
     JiterpreterTable, JiterpCounter,
 } from "./jiterpreter-enums";
 import {
-    generateWasmBody
+    generateWasmBody, generateBackwardBranchTable
 } from "./jiterpreter-trace-generator";
 import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
@@ -34,10 +34,6 @@ export const
     // Record a trace of all managed interpreter opcodes then dump it to console
     //  if an error occurs while compiling the output wasm
     traceOnError = false,
-    // Record trace but dump it when the trace has a runtime error instead
-    //  requires trapTraceErrors to work and will slow trace compilation +
-    //  increase memory usage
-    traceOnRuntimeError = false,
     // Trace the method name, location and reason for each abort
     traceAbortLocations = false,
     // Count the number of times a given method is seen as a call target, then
@@ -61,11 +57,6 @@ export const
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
     traceBackBranches = 0,
-    // If we encounter an enter opcode that looks like a loop body and it was already
-    //  jitted, we should abort the current trace since it's not worth continuing
-    // Unproductive if we have backward branches enabled because it can stop us from jitting
-    //  nested loops
-    abortAtJittedLoopBodies = true,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -884,9 +875,8 @@ function generate_wasm(
         //  independently jitting traces will not stomp on each other and all threads
         //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
-        mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-        let idx : number;
+        let idx: number;
         if (presetFunctionPointer) {
             const fnTable = getWasmFunctionTable();
             fnTable.set(presetFunctionPointer, fn);
@@ -901,7 +891,7 @@ function generate_wasm(
         //  suites or benchmarks if you've enabled stats
         const tracesCompiled = getCounter(JiterpCounter.TracesCompiled);
         if (builder.options.enableStats && tracesCompiled && (tracesCompiled % autoDumpInterval) === 0)
-            jiterpreter_dump_stats(false, true);
+            jiterpreter_dump_stats(true);
 
         return idx;
     } catch (exc: any) {
@@ -1031,11 +1021,8 @@ export function mono_interp_tier_prepare_jiterpreter(
     const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
 
-    const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
-    const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
-    const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-    let backwardBranchTable = backBranchCount
-        ? new Uint16Array(localHeapViewU8().buffer, pBackBranches, backBranchCount)
+    let backwardBranchTable = mostRecentOptions.noExitBackwardBranches
+        ? generateBackwardBranchTable(ip, startOfBody, sizeOfBody)
         : null;
 
     // If we're compiling a trace that doesn't start at the beginning of a method,
@@ -1087,14 +1074,14 @@ export function mono_jiterp_free_method_data_js(
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
+export function jiterpreter_dump_stats(concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }
-    if (!mostRecentOptions || (b !== undefined))
+    if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    if (!mostRecentOptions.enableStats && (b !== undefined))
+    if (!mostRecentOptions.enableStats)
         return;
 
     const backBranchesEmitted = getCounter(JiterpCounter.BackBranchesEmitted),
@@ -1256,10 +1243,4 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
 
     for (const k in simdFallbackCounters)
         mono_log_info(`// simd ${k}: ${simdFallbackCounters[k]} fallback insn(s)`);
-
-    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
-        setTimeout(
-            () => jiterpreter_dump_stats(b),
-            15000
-        );
 }

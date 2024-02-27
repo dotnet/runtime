@@ -857,6 +857,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_CreateSequence:
+        case NI_Vector128_CreateSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+            {
+                // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                break;
+            }
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateSequenceNode(retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
         {
