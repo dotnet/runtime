@@ -203,7 +203,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
@@ -231,7 +230,6 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
