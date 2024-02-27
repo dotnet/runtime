@@ -1,6 +1,6 @@
 ## WasmBasicTestApp
 
-This a test application used by various Wasm.Build.Tests. The idea is to share a common behavior (so that we don't have to maintain many test apps) and tweak it for the test case.
+This is a test application used by various Wasm.Build.Tests. The idea is to share a common behavior (so that we don't have to maintain many test apps) and tweak it for the test case.
 It typically suits scenario where you need more than a plain template app. If the test case is too different, feel free to create another app.
 
 ### Usage
