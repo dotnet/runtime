@@ -34,6 +34,7 @@ void Compiler::optInit()
     optCSECandidateCount = 0;
     optCSEattempt        = 0;
     optCSEheuristic      = nullptr;
+    optCSEunmarks        = 0;
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
@@ -5615,7 +5616,6 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                 case GT_XCHG:
                 case GT_CMPXCHG:
                 case GT_MEMORYBARRIER:
-                case GT_STORE_DYN_BLK:
                 {
                     memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }

@@ -5671,6 +5671,14 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V2, REG_P6, REG_V28,
                               INS_OPTS_SCALABLE_S); // SPLICE  <Zdn>.<T>, <Pv>, <Zdn>.<T>, <Zm>.<T>
 
+    // IF_SVE_CW_4A
+    theEmitter->emitIns_R_R_R(INS_sve_mov, EA_SCALABLE, REG_V0, REG_P0, REG_V30, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_PREDICATE_MERGE); // MOV     <Zd>.<T>, <Pv>/M, <Zn>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_sel, EA_SCALABLE, REG_V29, REG_P15, REG_V28, REG_V4, INS_OPTS_SCALABLE_D,
+                                INS_SCALABLE_OPTS_UNPREDICATED); // SEL     <Zd>.<T>, <Pv>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_sel, EA_SCALABLE, REG_V5, REG_P13, REG_V27, REG_V5, INS_OPTS_SCALABLE_S,
+                                INS_SCALABLE_OPTS_UNPREDICATED); // SEL     <Zd>.<T>, <Pv>, <Zn>.<T>, <Zm>.<T>
+
     // IF_SVE_EQ_3A
     // Note: Scalable size is the size of the destination <T>, not the source <Tb>.
     theEmitter->emitIns_R_R_R(INS_sve_sadalp, EA_SCALABLE, REG_V26, REG_P3, REG_V8,
@@ -8217,6 +8225,215 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V5, REG_V3, REG_V9, 1, INS_OPTS_SCALABLE_D_UXTW);
     theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V5, REG_V3, REG_V9, 2, INS_OPTS_SCALABLE_D_UXTW);
     theEmitter->emitIns_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V5, REG_V3, REG_V9, 3, INS_OPTS_SCALABLE_D_UXTW);
+    
+    // IF_SVE_BF_2A
+    // ASR <Zd>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V31, REG_V31, 7, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 5, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 9, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 15, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 33, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    // LSL <Zd>.<T>, <Zn>.<T>, #<const
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V31, REG_V31, 7, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 5, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V31, REG_V31, 15, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 9, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V31, REG_V31, 31, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 15, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V31, REG_V31, 63, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 33, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    // LSR <Zd>.<T>, <Zn>.<T>, #<const
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 5, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 9, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 15, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 33, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_UNPREDICATED);
+
+    // IF_SVE_FT_2A
+    // SLI <Zd>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V31, REG_V31, 7, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 3, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V31, REG_V31, 15, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 7, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V31, REG_V31, 31, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 17, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V31, REG_V31, 63, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 31, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_sli, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D);
+    // SRI <Zd>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 3, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 7, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 17, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 31, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_sri, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D);
+
+    // IF_SVE_FU_2A
+    // SRSRA <Zda>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 3, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 7, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 17, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 31, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_srsra, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D);
+    // SSRA <Zda>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 3, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 7, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 17, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 31, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_ssra, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D);
+    // URSRA <Zda>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 3, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 7, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 17, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 31, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_ursra, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D);
+    // USRA <Zda>.<T>, <Zn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V31, REG_V31, 8, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 3, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 4, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V31, REG_V31, 16, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 7, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V31, REG_V31, 32, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 17, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 16, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V0, 1, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V31, REG_V31, 64, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 31, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_R_R_I(INS_sve_usra, EA_SCALABLE, REG_V0, REG_V31, 32, INS_OPTS_SCALABLE_D);
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

@@ -570,8 +570,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            FALLTHROUGH;
-        case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
 
@@ -2013,7 +2011,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
     assert(call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ||
-           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove));
+           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_SpanHelpers_Memmove));
 
     assert(call->gtArgs.CountUserArgs() == 3);
 
@@ -2374,7 +2372,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     {
         switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
                 if (LowerCallMemmove(call, &nextNode))
                 {
                     return nextNode;
@@ -5997,6 +5995,26 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         InsertPInvokeCallEpilog(call);
     }
 
+#ifdef SWIFT_SUPPORT
+    // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
+    // that consumes the error register is the call node's successor.
+    // This is to simplify logic for marking the error register as busy in LSRA.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        GenTree* swiftErrorNode = call->gtNext;
+        assert(swiftErrorNode != nullptr);
+
+        while (!swiftErrorNode->OperIs(GT_SWIFT_ERROR))
+        {
+            swiftErrorNode = swiftErrorNode->gtNext;
+            assert(swiftErrorNode != nullptr);
+        }
+
+        BlockRange().Remove(swiftErrorNode);
+        BlockRange().InsertAfter(call, swiftErrorNode);
+    }
+#endif // SWIFT_SUPPORT
+
     return result;
 }
 
@@ -8108,24 +8126,27 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         }
     }
 
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        // Size is not a constant
-        size = blkNode->AsStoreDynBlk()->gtDynamicSize;
-    }
-    else
-    {
-        // Size is a constant
-        size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
-        BlockRange().InsertBefore(data, size);
-    }
+    // Size is a constant
+    size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
 
     // A hacky way to safely call fgMorphTree in Lower
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
     GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
 
-    GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    const bool isMemzero = helper == CORINFO_HELP_MEMSET ? data->IsIntegralConst(0) : false;
+
+    GenTreeCall* call;
+    if (isMemzero)
+    {
+        BlockRange().Remove(data);
+        call = comp->gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, destPlaceholder, sizePlaceholder);
+    }
+    else
+    {
+        call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    }
     comp->fgMorphArgs(call);
 
     LIR::Range range      = LIR::SeqTree(comp, call);
@@ -8136,17 +8157,21 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     blkNode->gtBashToNOP();
 
     LIR::Use destUse;
-    LIR::Use dataUse;
     LIR::Use sizeUse;
     BlockRange().TryGetUse(destPlaceholder, &destUse);
-    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
     BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
     destUse.ReplaceWith(dest);
-    dataUse.ReplaceWith(data);
     sizeUse.ReplaceWith(size);
     destPlaceholder->SetUnusedValue();
-    dataPlaceholder->SetUnusedValue();
     sizePlaceholder->SetUnusedValue();
+
+    if (!isMemzero)
+    {
+        LIR::Use dataUse;
+        BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+        dataUse.ReplaceWith(data);
+        dataPlaceholder->SetUnusedValue();
+    }
 
     LowerRange(rangeStart, rangeEnd);
 
@@ -8155,8 +8180,11 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     MoveCFGCallArgs(call);
 
     BlockRange().Remove(destPlaceholder);
-    BlockRange().Remove(dataPlaceholder);
     BlockRange().Remove(sizePlaceholder);
+    if (!isMemzero)
+    {
+        BlockRange().Remove(dataPlaceholder);
+    }
 
 // Wrap with memory barriers on weak memory models
 // if the block store was volatile
@@ -9189,13 +9217,10 @@ void Lowering::LowerLclHeap(GenTree* node)
 //
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
 
     if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
     {
-        // Make sure we don't use GT_STORE_DYN_BLK
-        assert(blkNode->OperIs(GT_STORE_BLK));
-
         // and we only zero it (and that zero is better to be not hoisted/CSE'd)
         assert(blkNode->Data()->IsIntegralConst(0));
     }
@@ -9231,13 +9256,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
     if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
     }

@@ -5452,7 +5452,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     if (ex->GetExceptionRecord()->ExceptionCode != STATUS_BREAKPOINT && ex->GetExceptionRecord()->ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or
-        // in one of the JIT helper functions (JIT_MemSet, ...)
+        // in one of the JIT helper functions
         PCODE controlPc = GetIP(ex->GetContextRecord());
         if (ExecutionManager::IsManagedCode(controlPc) && IsGcMarker(ex->GetContextRecord(), ex->GetExceptionRecord()))
         {

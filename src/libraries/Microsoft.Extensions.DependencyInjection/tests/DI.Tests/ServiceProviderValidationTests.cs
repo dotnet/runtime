@@ -240,6 +240,84 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            serviceCollection.AddSingleton<IFoo, Foo>();
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(1, aggregateException.InnerExceptions.Count);
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo': " +
+                         "Cannot consume scoped service 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBar' from singleton 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo'."
+                , aggregateException.InnerExceptions[0].Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton_ReverseRegistrationOrder()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IFoo, Foo>();
+            serviceCollection.AddScoped<IBar, Bar>();
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(1, aggregateException.InnerExceptions.Count);
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo': " +
+                         "Cannot consume scoped service 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBar' from singleton 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo'."
+                , aggregateException.InnerExceptions[0].Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_DoesNotThrow_WhenScopeFactoryIsInjectedIntoSingleton()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBoo, Boo>();
+
+            // Act + Assert
+            serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true });
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton_CachedCallSites()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<Foo>();
+            serviceCollection.AddSingleton<Foo2>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddScoped<IBaz, Baz>();
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(1, aggregateException.InnerExceptions.Count);
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo2 Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo2': " +
+                         "Cannot consume scoped service 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBar' from singleton 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo2'."
+                , aggregateException.InnerExceptions[0].Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_DoesNotThrow_CachedCallSites()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<Foo>();
+            serviceCollection.AddScoped<Foo2>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddScoped<IBaz, Baz>();
+
+            // Act + Assert
+            serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true });
+        }
+
+        [Fact]
         public void BuildServiceProvider_ValidateOnBuild_ThrowsForUnresolvableServices()
         {
             // Arrange
@@ -323,6 +401,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private class Foo : IFoo
         {
             public Foo(IBar bar)
+            {
+            }
+        }
+
+        private class Foo2 : IFoo
+        {
+            public Foo2(IBar bar)
             {
             }
         }

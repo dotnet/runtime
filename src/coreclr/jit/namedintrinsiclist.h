@@ -20,7 +20,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
-    NI_System_Buffer_Memmove,
+    NI_System_SpanHelpers_Memmove,
 
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,

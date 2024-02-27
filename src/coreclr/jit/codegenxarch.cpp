@@ -2107,6 +2107,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NOP:
             break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            genCodeForSwiftErrorReg(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
+
         case GT_KEEPALIVE:
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             break;
@@ -2177,7 +2183,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -3051,7 +3056,7 @@ ALLOC_DONE:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
-    assert(storeBlkNode->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(storeBlkNode->OperIs(GT_STORE_BLK));
 
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
@@ -6034,6 +6039,17 @@ void CodeGen::genCall(GenTreeCall* call)
 
         instGen(INS_vzeroupper);
     }
+
+#ifdef SWIFT_SUPPORT
+    // Clear the Swift error register before calling a Swift method,
+    // so we can check if it set the error register after returning.
+    // (Flag is only set if we know we need to check the error register)
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
+    }
+#endif // SWIFT_SUPPORT
 
     genCallInstruction(call X86_ARG(stackArgBytes));
 
@@ -10789,9 +10805,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindEndProlog();
 
     // TODO We may need EBP restore sequence here if we introduce PSPSym
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+#endif
 }
 
 /*****************************************************************************
@@ -10810,8 +10829,10 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
+#ifdef UNIX_X86_ABI
     // Revert a padding that was added for 16-byte alignment
     inst_RV_IV(INS_add, REG_SPBASE, 12, EA_PTRSIZE);
+#endif
 
     instGen_Return(0);
 }
