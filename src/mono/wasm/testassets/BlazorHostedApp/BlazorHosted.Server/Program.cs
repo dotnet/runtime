@@ -6,7 +6,17 @@ using System;
 using Microsoft.Extensions.Logging;
 using BlazorHosted.Server.Hubs;
 
-var builder = WebApplication.CreateBuilder(args);
+// to avoid The WebRootPath was not found:
+// C:\helix\work\workitem\e\wbt artifacts\SignalRClientTests_w5t2nznu_yll\BlazorHosted.Server\wwwroot. Static files may be unavailable.
+var contentRootPath = AppContext.BaseDirectory;
+var blazorClientPath = Path.Combine(contentRootPath, "../../../../BlazorHosted.Client");
+
+var options = new WebApplicationOptions
+{
+    ContentRootPath = blazorClientPath
+};
+
+var builder = WebApplication.CreateBuilder(options);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
@@ -42,6 +52,12 @@ app.Use(async (context, next) =>
 });
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
+// var customWwwRoot = Path.Combine(app.Environment.ContentRootPath, "../BlazorHosted.Client/wwwroot");
+// app.UseStaticFiles(new StaticFileOptions
+// {
+//     FileProvider = new PhysicalFileProvider(customWwwRoot),
+//     RequestPath = "/customwwwroot"
+// });
 
 app.UseRouting();
 
@@ -50,5 +66,10 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.MapHub<ChatHub>("/chathub");
+
+var environment = app.Services.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+
+// Print the WebRootPath
+Console.WriteLine($"WebRootPath: {environment?.WebRootPath}");
 
 app.Run();
