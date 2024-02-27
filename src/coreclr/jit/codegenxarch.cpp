@@ -10789,6 +10789,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindEndProlog();
 
     // TODO We may need EBP restore sequence here if we introduce PSPSym
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
