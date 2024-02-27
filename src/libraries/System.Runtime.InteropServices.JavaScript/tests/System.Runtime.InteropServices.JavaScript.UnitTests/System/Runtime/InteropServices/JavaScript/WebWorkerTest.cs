@@ -343,7 +343,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 var jsTid = WebWorkerTestHelper.GetTid();
                 var csTid = WebWorkerTestHelper.NativeThreadId;
-                if (executor.Type == ExecutorType.Main || executor.Type == ExecutorType.JSWebWorker)
+                if (executor.Type == ExecutorType.JSWebWorker)
                 {
                     Assert.Equal(jsTid, csTid);
                 }
@@ -364,22 +364,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
+                Console.WriteLine("ThreadingTimer: Start Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
 
                 await ForceBlockingWaitAsync(async () =>
                 {
-
                     using var timer = new Timer(_ =>
                     {
                         Assert.NotEqual(1, Environment.CurrentManagedThreadId);
                         Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        tcs.SetResult();
                         hit = true;
+                        tcs.SetResult();
                     }, null, 100, Timeout.Infinite);
 
                     await tcs.Task;
                 });
             }, cts.Token);
 
+            Console.WriteLine("ThreadingTimer: End Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
             Assert.True(hit);
         }
 
@@ -481,6 +482,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                         exception = ex;
                     }
 
+                    Console.WriteLine("WaitAssertsOnJSInteropThreads: ExecuterType: " + executor.Type + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
                     executor.AssertBlockingWait(exception);
 
                     return Task.CompletedTask;

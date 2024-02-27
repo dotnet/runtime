@@ -24,6 +24,7 @@
     <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
+    <Compile Include="ReadOnlySpan\CastUp.cs" />
     <Compile Include="Span\StringSearchValues.cs" />
     <Compile Include="Span\Reflection.cs" />
     <Compile Include="SequenceReader\Advance.cs" />

@@ -94,10 +94,6 @@ encountered by most phases of the JIT:
       [#21705](https://github.com/dotnet/coreclr/pull/21705) they are no longer large nodes.
   * `GT_STORE_OBJ` and `GT_STORE_BLK` have the same structure as `GT_OBJ` and `GT_BLK`, respectively
     * `Data()` is op2
-  * `GT_STORE_DYN_BLK` (GenTreeStoreDynBlk extends GenTreeBlk)
-    * Additional child `gtDynamicSize`
-    * Note that these aren't really struct stores; they represent dynamically sized blocks
-      of arbitrary data.
   * For `GT_LCL_FLD` nodes, we store a pointer to `ClassLayout` in the node.
   * For `GT_LCL_VAR` nodes, the `ClassLayout` is obtained from the `LclVarDsc`.
 

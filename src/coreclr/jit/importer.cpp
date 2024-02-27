@@ -1677,8 +1677,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING);
-    slotPtrTree->gtFlags &= ~GTF_GLOB_REF; // TODO-Bug?: this is a quirk. Can we mark this indirection invariant?
+    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     return slotPtrTree;
 }
@@ -5428,8 +5427,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     assert(op1->TypeGet() == TYP_REF);
 
     // Optimistically assume the jit should expand this as an inline test
-    bool shouldExpandInline = true;
-    bool isClassExact       = info.compCompHnd->isExactType(pResolvedToken->hClass);
+    bool isClassExact = info.compCompHnd->isExactType(pResolvedToken->hClass);
 
     // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
     // We can convert constant-ish tokens of nullable to its underlying type.
@@ -5438,7 +5436,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
     {
         CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
-
         if (hClass != pResolvedToken->hClass)
         {
             bool runtimeLookup;
@@ -5448,93 +5445,34 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
     }
 
-    // Profitability check.
-    //
-    // Don't bother with inline expansion when jit is trying to generate code quickly
-    if (opts.OptimizationDisabled())
+    const CorInfoHelpFunc helper = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
+
+    bool       shouldExpandEarly = false;
+    const bool tooManyLocals     = (((op1->gtFlags & GTF_GLOB_EFFECT) != 0) && lvaHaveManyLocals());
+    if (isClassExact && opts.OptimizationEnabled() && !compCurBB->isRunRarely() && !tooManyLocals)
     {
-        // not worth the code expansion if jitting fast or in a rarely run block
-        shouldExpandInline = false;
-    }
-    else if ((op1->gtFlags & GTF_GLOB_EFFECT) && lvaHaveManyLocals())
-    {
-        // not worth creating an untracked local variable
-        shouldExpandInline = false;
-    }
-    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitProfileCasts() == 1))
-    {
-        // Optimizations are enabled but we're still instrumenting (including casts)
-        if (isCastClass && !isClassExact)
+        // TODO-InlineCast: Fix size regressions for these two cases if they're moved to the
+        // late cast expansion path and remove this early expansion entirely.
+        if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
         {
-            // Usually, we make a speculative assumption that it makes sense to expand castclass
-            // even for non-sealed classes, but let's rely on PGO in this specific case
-            shouldExpandInline = false;
+            shouldExpandEarly = true;
+        }
+        else if (helper == CORINFO_HELP_ISINSTANCEOFARRAY && !op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+        {
+            shouldExpandEarly = true;
         }
     }
 
-    if (shouldExpandInline && compCurBB->isRunRarely())
+    if (!shouldExpandEarly)
     {
-        // For cold blocks we only expand castclass against exact classes because it's cheap
-        shouldExpandInline = isCastClass && isClassExact;
-    }
-
-    // Pessimistically assume the jit cannot expand this as an inline test
-    bool                  canExpandInline = false;
-    bool                  reversedMTCheck = false;
-    const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
-
-    CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
-
-    // By default, we assume it's 50/50 with the slow path.
-    unsigned fastPathLikelihood = 50;
-
-    // Legality check.
-    //
-    // Not all classclass/isinst operations can be inline expanded.
-    // Check legality only if an inline expansion is desirable.
-    if (shouldExpandInline)
-    {
-        if (isCastClass)
-        {
-            // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
-
-            // For ChkCastAny we ignore cases where the class is known to be abstract or is an interface.
-            if (helper == CORINFO_HELP_CHKCASTANY)
-            {
-                const bool isAbstract = (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) &
-                                         (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
-                canExpandInline = !isAbstract;
-            }
-        }
-        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
-        {
-            // If the class is exact, the jit can expand the IsInst check inline.
-            canExpandInline = isClassExact;
-        }
-    }
-
-    bool expandInline = canExpandInline && shouldExpandInline;
-
-    if (op2->IsIconHandle(GTF_ICON_CLASS_HDL) && (helper != CORINFO_HELP_ISINSTANCEOFCLASS || !isClassExact))
-    {
-        // TODO-InlineCast: move these to the late cast expansion phase as well:
-        // 1) isinst <exact class>
-        // 2) op2 being GT_RUNTIMELOOKUP
-        expandInline = false;
-    }
-
-    if (!expandInline)
-    {
-        JITDUMP("\nExpanding %s as call because %s\n", isCastClass ? "castclass" : "isinst",
-                canExpandInline ? "want smaller code or faster jitting" : "inline expansion not legal");
+        JITDUMP("\nImporting %s as call because %s\n", isCastClass ? "castclass" : "isinst");
 
         // If we CSE this class handle we prevent assertionProp from making SubType assertions
         // so instead we force the CSE logic to not consider CSE-ing this class handle.
         //
         op2->gtFlags |= GTF_DONT_CSE;
-
-        GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+        GenTreeCall* call          = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+        call->gtCastHelperILOffset = ilOffset;
 
         // Instrument this castclass/isinst
         if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
@@ -5560,129 +5498,41 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         return call;
     }
 
-    JITDUMP("\nExpanding %s inline\n", isCastClass ? "castclass" : "isinst");
+    JITDUMP("\nExpanding isinst inline\n");
 
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark2"));
+    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling "));
 
-    GenTree* temp;
-    GenTree* condMT;
+    // Now we import it as two QMark nodes representing this:
     //
-    // expand the methodtable match:
-    //
-    //  condMT ==>   GT_NE
-    //               /    \.
-    //           GT_IND   op2 (typically CNS_INT)
-    //              |
-    //           op1Copy
-    //
-
-    // This can replace op1 with a GT_COMMA that evaluates op1 into a local
-    //
-    op1 = impCloneExpr(op1, &temp, CHECK_SPILL_ALL, nullptr DEBUGARG("CASTCLASS eval op1"));
-    //
-    // op1 is now known to be a non-complex tree
-    // thus we can use gtClone(op1) from now on
+    //  tmp = op1;
+    //  if (tmp != null) // qmarkNull
+    //  {
+    //      if (tmp->pMT == op2) // qmarkMT
+    //          result = tmp;
+    //      else
+    //          result = null;
+    //  }
+    //  else
+    //      result = null;
     //
 
-    GenTree* op2Var = op2;
-    if (isCastClass && (exactCls == NO_CLASS_HANDLE))
-    {
-        // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
-        op2Var                                                  = fgInsertCommaFormTemp(&op2);
-        lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
-    }
-    temp = gtNewMethodTableLookup(temp);
-    condMT =
-        gtNewOperNode(GT_NE, TYP_INT, temp, (exactCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(exactCls) : op2);
+    // Spill op1 if it's a complex expression
+    GenTree* op1Clone;
+    op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("ISINST eval op1"));
 
-    GenTree* condNull;
-    //
-    // expand the null check:
-    //
-    //  condNull ==>   GT_EQ
-    //                 /    \.
-    //             op1Copy CNS_INT
-    //                      null
-    //
-    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
-
-    //
-    // expand the true and false trees for the condMT
-    //
-    GenTree* condFalse = reversedMTCheck ? gtNewNull() : gtClone(op1);
-    GenTree* condTrue;
-    if (isCastClass)
-    {
-        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
-               (helper == CORINFO_HELP_CHKCASTANY) || (helper == CORINFO_HELP_CHKCASTINTERFACE));
-
-        CorInfoHelpFunc specialHelper = helper;
-        if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
-            ((exactCls == nullptr) || (exactCls == gtGetHelperArgClassHandle(op2))))
-        {
-            // use the special helper that skips the cases checked by our inlined cast
-            specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
-        }
-        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, op2Var, gtClone(op1));
-    }
-    else
-    {
-        condTrue = gtNewIconNode(0, TYP_REF);
-    }
-
-    GenTreeQmark* qmarkMT;
-    //
-    // Generate first QMARK - COLON tree
-    //
-    //  qmarkMT ==>   GT_QMARK
-    //                 /     \.
-    //            condMT   GT_COLON
-    //                      /     \.
-    //                condFalse  condTrue
-    //
-    temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
-    qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp->AsColon());
-    qmarkMT->SetThenNodeLikelihood(fastPathLikelihood);
-
-    if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
-    {
-        if (helper == CORINFO_HELP_CHKCASTCLASS)
-        {
-            // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
-            condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-
-            // defer calling setMethodHasNoReturnCalls until qmark expasion
-        }
-    }
-
-    GenTree* qmarkNull;
-    //
-    // Generate second QMARK - COLON tree
-    //
-    //  qmarkNull ==>  GT_QMARK
-    //                 /     \.
-    //           condNull  GT_COLON
-    //                      /     \.
-    //                qmarkMT   op1Copy
-    //
-    temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
-    qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
-    qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
+    GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+    GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
+    GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
+    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtClone(op1), qmarkMT));
 
     // Make QMark node a top level node by spilling it.
-    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
-    impStoreTemp(tmp, qmarkNull, CHECK_SPILL_NONE);
+    const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
+    impStoreTemp(result, qmarkNull, CHECK_SPILL_NONE);
 
-    // TODO-CQ: Is it possible op1 has a better type?
-    //
     // See also gtGetHelperCallClassHandle where we make the same
     // determination for the helper call variants.
-    LclVarDsc* lclDsc = lvaGetDesc(tmp);
-    assert(lclDsc->lvSingleDef == 0);
-    lclDsc->lvSingleDef = 1;
-    JITDUMP("Marked V%02u as a single def temp\n", tmp);
-    lvaSetClass(tmp, pResolvedToken->hClass);
-    return gtNewLclvNode(tmp, TYP_REF);
+    lvaSetClass(result, pResolvedToken->hClass);
+    return gtNewLclvNode(result, TYP_REF);
 }
 
 #ifndef DEBUG
@@ -7668,16 +7518,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-                    bool         foundVal  = false;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    bool       foundVal  = false;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
-                        BasicBlock* curJump = *jumpTab;
+                        FlowEdge* curEdge = *jumpTab;
 
-                        assert(curJump->countOfInEdges() > 0);
+                        assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                         // If val matches switchVal or we are at the last entry and
                         // we never found the switch value then set the new jump dest
@@ -7685,13 +7535,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
                             // transform the basic block into a BBJ_ALWAYS
-                            block->SetKindAndTarget(BBJ_ALWAYS, curJump);
+                            block->SetKindAndTarget(BBJ_ALWAYS, curEdge->getDestinationBlock());
                             foundVal = true;
                         }
                         else
                         {
-                            // Remove 'block' from the predecessor list of 'curJump'
-                            fgRemoveRefPred(curJump, block);
+                            // Remove 'curEdge'
+                            fgRemoveRefPred(curEdge);
                         }
                     }
 
@@ -10279,9 +10129,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_CPBLK:
             {
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                op3                     = impPopStack().val; // Size
-                op2                     = impPopStack().val; // Value / Src addr
-                op1                     = impPopStack().val; // Dst addr
+                const bool   isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+#ifndef TARGET_X86
+                if (isVolatile && !impStackTop(0).val->IsCnsIntOrI())
+                {
+                    // We're going to emit a helper call surrounded by memory barriers, so we need to spill any side
+                    // effects.
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                }
+#endif
+
+                op3 = gtFoldExpr(impPopStack().val); // Size
+                op2 = gtFoldExpr(impPopStack().val); // Value / Src addr
+                op1 = impPopStack().val;             // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
@@ -10318,24 +10178,41 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
+                    if (TARGET_POINTER_SIZE == 8)
+                    {
+                        // Cast size to TYP_LONG on 64-bit targets
+                        op3 = gtNewCastNode(TYP_LONG, op3, /* fromUnsigned */ true, TYP_LONG);
+                    }
+
+                    GenTreeCall* call;
                     if (opcode == CEE_INITBLK)
                     {
-                        if (!op2->IsIntegralConst(0))
+                        // value is zero -> memzero, otherwise -> memset
+                        if (op2->IsIntegralConst(0))
                         {
-                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, op1, op3);
+                        }
+                        else
+                        {
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMSET, TYP_VOID, op1, op2, op3);
                         }
                     }
                     else
                     {
-                        op2 = gtNewIndir(TYP_STRUCT, op2);
+                        call = gtNewHelperCallNode(CORINFO_HELP_MEMCPY, TYP_VOID, op1, op2, op3);
                     }
 
-#ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
-#endif
-
-                    op1 = gtNewStoreDynBlkNode(op1, op2, op3, indirFlags);
+                    if (isVolatile)
+                    {
+                        // Wrap with memory barriers: full-barrier + call + load-barrier
+                        impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+                        op1 = gtNewMemoryBarrier(true);
+                    }
+                    else
+                    {
+                        op1 = call;
+                    }
                 }
                 goto SPILL_APPEND;
             }
@@ -12275,7 +12152,7 @@ void Compiler::impFixPredLists()
                 if (predCount > 0)
                 {
                     jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
 
                     unsigned predNum = 0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
@@ -12291,7 +12168,7 @@ void Compiler::impFixPredLists()
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
                         newEdge->setLikelihood(1.0 / predCount);
 
-                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        jumpEhf->bbeSuccs[predNum] = newEdge;
                         ++predNum;
 
                         if (!added)
