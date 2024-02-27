@@ -268,7 +268,6 @@ namespace System.Globalization
                 // Write fraction and separator, if necessary
                 if (fractionDigits != 0)
                 {
-                    Debug.Assert(format == StandardFormat.C || !decimalSeparator.IsEmpty);
                     if (format == StandardFormat.C)
                     {
                         *p++ = TChar.CastFrom('.');

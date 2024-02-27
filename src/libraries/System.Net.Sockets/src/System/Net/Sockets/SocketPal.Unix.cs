@@ -528,7 +528,6 @@ namespace System.Net.Sockets
             out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
-            Debug.Assert(socketAddress != default, "Expected non-default socketAddress");
 
             int buffersCount = buffers.Count;
             bool allocOnStack = buffersCount <= IovStackThreshold;
@@ -810,7 +809,6 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert(flags == SocketFlags.None);
                     Debug.Assert(buffers == null);
-                    Debug.Assert(socketAddress == default);
 
                     receivedFlags = default;
                     received = SysRead(socket, buffer, out errno);

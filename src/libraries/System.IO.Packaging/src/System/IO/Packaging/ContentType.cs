@@ -351,7 +351,6 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static int GetLengthOfParameterValue(ReadOnlySpan<char> s, int startIndex)
         {
-            Debug.Assert(s != default);
 
             int length;
 
