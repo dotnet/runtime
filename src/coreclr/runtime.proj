@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove);CMakeArgs" />
+    <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
