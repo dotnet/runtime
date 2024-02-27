@@ -3520,6 +3520,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
+#ifdef TARGET_ARM
+    // ARM32 support multireg returns, but only to return 64bit primitives.
+    assert(secondRetSize != EA_GCREF);
+    assert(secondRetSize != EA_BYREF);
+#endif
+
     DebugInfo di;
     // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
