@@ -1,0 +1,87 @@
+parameters:
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  archType: ''                    # required -- targeting CPU architecture
+  buildConfig: ''                 # required -- build configuration
+  helixQueues: ''                 # required -- Helix queues
+  toolName: ''                    # required -- which tool to use: Antigen or Fuzzlyn?
+
+steps:
+- script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/fuzzer_setup.py -tool_name $(toolName) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
+  displayName: ${{ format('{0} setup ({1}-{2})', parameters.toolName, parameters.osGroup, parameters.archType) }}
+
+  # Run exploratory tool in helix
+- template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+  parameters:
+    displayName: 'Send job to Helix'
+    helixBuild: $(Build.BuildNumber)
+    helixSource: $(_HelixSource)
+    helixType: 'build/tests/'
+    helixQueues: ${{ join(',', parameters.helixQueues) }}
+    creator: dotnet-bot
+    WorkItemTimeout: 2:30 # 2.5 hours
+    WorkItemDirectory: '$(WorkItemDirectory)'
+    CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
+    helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/exploratory.proj'
+    BuildConfig: ${{ parameters.buildConfig }}
+    osGroup: ${{ parameters.osGroup }}
+    RunConfiguration: '$(RunConfiguration)'
+    ToolName: ${{ parameters.toolName }}
+    RunReason: '$(RunReason)'
+
+# Always upload the available issues-summary.txt files
+- task: CopyFiles@2
+  displayName: Copying issues-summary.txt of all partitions
+  inputs:
+    sourceFolder: '$(HelixResults)'
+    contents: '**/issues-summary-*.txt'
+    targetFolder: '$(IssuesLocation)'
+  continueOnError: true
+  condition: always()
+
+# Always upload the available AllIssues-*.zip files to be used for summarization
+- task: CopyFiles@2
+  displayName: Copying AllIssues.zip of all partitions
+  inputs:
+    sourceFolder: '$(HelixResults)'
+    contents: '**/AllIssues-*.zip'
+    targetFolder: '$(IssuesLocation)'
+  continueOnError: true
+  condition: always()
+
+- task: PublishPipelineArtifact@1
+  displayName: Publish issue files
+  inputs:
+    targetPath: $(IssuesLocation)
+    artifactName: 'Issues_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)'
+  continueOnError: true
+  condition: always()
+
+# Always upload the available log files
+- task: CopyFiles@2
+  displayName: Copying fuzzer logs of all partitions
+  inputs:
+    sourceFolder: '$(HelixResults)'
+    contents: '**/*.log'
+    targetFolder: '$(FuzzerLogsLocation)'
+  continueOnError: true
+  condition: always()
+
+- task: PublishPipelineArtifact@1
+  displayName: Publish fuzzer log files
+  inputs:
+    targetPath: '$(FuzzerLogsLocation)'
+    artifactName: '$(toolName)_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)'
+  continueOnError: true
+  condition: always()
+
+- script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/$(SummarizeScript) -issues_directory $(IssuesLocation) -arch $(archType) -platform $(osGroup)$(osSubgroup) -build_config $(_BuildConfig)
+  displayName: ${{ format('Summarize ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+  condition: always()
+
+- task: PublishPipelineArtifact@1
+  displayName: ${{ format('Publish {0} build logs', parameters.toolName) }}
+  inputs:
+    targetPath: $(Build.SourcesDirectory)/artifacts/log
+    artifactName: '$(toolName)_BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)'
+  condition: always()

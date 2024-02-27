@@ -21,40 +21,32 @@ extends:
     stages:
     - stage: Build
       jobs:
-
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-          buildConfig: checked
-          platforms:
-          # Linux tests are built on the OSX machines.
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          - osx_arm64
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: outerloop
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/jit-exploratory-job.yml
-          buildConfig: checked
-          platforms:
-          # Linux tests are built on the OSX machines.
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          - osx_arm64
-          helixQueueGroup: ci
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: checked
+          platforms:
+          # Linux tests are built on the OSX machines.
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          - osx_arm64
           jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            toolName: ${{ variables.toolName }}
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            timeoutInMinutes: 360
+            postBuildSteps:
+              - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly
+                displayName: Create Core_Root
+                condition: succeeded()
+              - template: /eng/pipelines/coreclr/templates/jit-exploratory-steps.yml
+                parameters:
+                  toolName: ${{ variables.toolName }}
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-exploratory-variables.yml
+                parameters:
+                  toolName: ${{ variables.toolName }}

@@ -1,0 +1,58 @@
+parameters:
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  archType: ''                    # required -- targeting CPU architecture
+  buildConfig: ''                 # required -- build configuration
+  toolName: ''                    # required -- which tool to use: Antigen or Fuzzlyn?
+
+variables:
+
+- ${{ if in(variables['Build.Reason'], 'Schedule') }}:
+  - name: RunReason
+    value: 'Scheduled'
+- ${{ if notin(variables['Build.Reason'], 'Schedule') }}:
+  - name: RunReason
+    value: 'PR'
+- ${{ if eq(parameters.osGroup, 'windows') }}:
+  - name: PythonScript
+    value: 'py -3'
+  - name: PipScript
+    value: 'py -3 -m pip'
+  - name: Core_Root_Dir
+    value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+  - name: HelixResults
+    value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+  - name: IssuesLocation
+    value: '$(Build.SourcesDirectory)\artifacts\issues\'
+  - name: AntigenLogsLocation
+    value: '$(Build.SourcesDirectory)\artifacts\antigen_logs\'
+  - name: FuzzlynLogsLocation
+    value: '$(Build.SourcesDirectory)\artifacts\fuzzlyn_logs\'
+
+- ${{ if ne(parameters.osGroup, 'windows') }}:
+  - name: PythonScript
+    value: 'python3'
+  - name: PipScript
+    value: 'pip3'
+  - name: Core_Root_Dir
+    value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
+  - name: HelixResults
+    value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+  - name: IssuesLocation
+    value: '$(Build.SourcesDirectory)/artifacts/issues/'
+  - name: AntigenLogsLocation
+    value: '$(Build.SourcesDirectory)/artifacts/antigen_logs/'
+  - name: FuzzlynLogsLocation
+    value: '$(Build.SourcesDirectory)/artifacts/fuzzlyn_logs/'
+
+- ${{ if eq(parameters.toolName, 'Antigen') }}:
+  - name: SummarizeScript
+    value: 'antigen_summarize.py'
+  - name: FuzzerLogsLocation
+    value: '$(AntigenLogsLocation)'
+
+- ${{ if eq(parameters.toolName, 'Fuzzlyn') }}:
+  - name: SummarizeScript
+    value: 'fuzzlyn_summarize.py'
+  - name: FuzzerLogsLocation
+    value: '$(FuzzlynLogsLocation)'
