@@ -11,5 +11,56 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
+
+        private const float DefaultFloatTolerance = 1e-6f;
+#if NETCOREAPP
+        private const double DefaultDoubleTolerance = 1e-15;
+        private const float DefaultHalfTolerance = 1e-4f;
+
+        private static class DefaultTolerance<T> where T : unmanaged, INumber<T>
+        {
+            public static readonly T Value = DetermineTolerance<T>(DefaultDoubleTolerance, DefaultFloatTolerance, Half.CreateTruncating(DefaultHalfTolerance)) ?? T.CreateTruncating(0);
+        }
+
+        public static bool IsEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
+        {
+            tolerance = tolerance ?? DefaultTolerance<T>.Value;
+            T diff = T.Abs(expected - actual);
+            return !(diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance);
+        }
+#else
+        public static bool IsEqualWithTolerance(float expected, float actual, float? tolerance = null)
+        {
+            tolerance ??= DefaultFloatTolerance;
+            float diff = MathF.Abs(expected - actual);
+            return !(diff > tolerance && diff > MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * tolerance);
+        }
+#endif
+
+        public static T? DetermineTolerance<T>(
+            double? doubleTolerance = null,
+            float? floatTolerance = null
+#if NETCOREAPP
+            , Half? halfTolerance = null
+#endif
+            ) where T : struct
+        {
+            if (typeof(T) == typeof(double) && doubleTolerance != null)
+            {
+                return (T?)(object)doubleTolerance;
+            }
+            else if (typeof(T) == typeof(float) && floatTolerance != null)
+            {
+                return (T?)(object)floatTolerance;
+            }
+#if NETCOREAPP
+            else if (typeof(T) == typeof(Half) && halfTolerance != null)
+            {
+                return (T?)(object)halfTolerance;
+            }
+#endif
+
+            return null;
+        }
     }
 }
