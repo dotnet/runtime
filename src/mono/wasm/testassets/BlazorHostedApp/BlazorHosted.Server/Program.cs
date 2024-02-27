@@ -6,17 +6,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using BlazorHosted.Server.Hubs;
 
-// to avoid The WebRootPath was not found:
-// C:\helix\work\workitem\e\wbt artifacts\SignalRClientTests_w5t2nznu_yll\BlazorHosted.Server\wwwroot. Static files may be unavailable.
-var contentRootPath = AppContext.BaseDirectory;
-var blazorClientPath = Path.Combine(contentRootPath, "../../../../BlazorHosted.Client");
-
-var options = new WebApplicationOptions
-{
-    ContentRootPath = blazorClientPath
-};
-
-var builder = WebApplication.CreateBuilder(options);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
