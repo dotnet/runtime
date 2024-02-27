@@ -394,7 +394,7 @@ namespace System.Net
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
             public override void Flush() => innerStream.Flush();
-            public override Task FlushAsync(CancellationToken cancellationToken) => base.FlushAsync(cancellationToken);
+            public override Task FlushAsync(CancellationToken cancellationToken) => innerStream.FlushAsync(cancellationToken);
             public override int Read(byte[] buffer, int offset, int count)
             {
                 return Read(new Span<byte>(buffer, offset, count));
