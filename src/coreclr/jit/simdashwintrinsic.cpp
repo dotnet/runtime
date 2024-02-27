@@ -1162,41 +1162,48 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // +INF: 0b0000
                         // -VAL: 0b0000
                         // +VAL: 0b0000
-                        for ( int i = 0; i < 8; i++ )
+                        for (int i = 0; i < 8; i++)
                         {
                             tbl->gtSimdVal.i64[i] = 0x00000088;
                         }
 
                         // Generate first operand
-                        // The logic is that first and second operand are basically the same because we want 
+                        // The logic is that first and second operand are basically the same because we want
                         // the output to be in the same xmm register
                         // Hence we clone the first operand
                         GenTree* op2Clone = fgMakeMultiUse(&op1);
                         // GenTree* op2Clone;
                         // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
                         //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
-                        
-                        //run vfixupimmsd base on table and no flags reporting
-                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                                    NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                        GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT64_MAX)), simdBaseJitType, simdSize);
-                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG), CORINFO_TYPE_LONG, simdSize);
-                        //we will be using the input value twice
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                         NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        GenTree* max_val =
+                            gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT64_MAX)),
+                                                         simdBaseJitType, simdSize);
+                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG),
+                                                                           CORINFO_TYPE_LONG, simdSize);
+                        // we will be using the input value twice
                         GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
-                        //usage 1 --> compare with max value of integer
-                        saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
-                        //cast it
+                        // usage 1 --> compare with max value of integer
+                        saturate_val =
+                            gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
+                        // cast it
 
-                        NamedIntrinsic intrinsic =    (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
-                                                    : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
-                                                    :                    NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
 
-                        GenTree* retNode = gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
+                        GenTree* retNode =
+                            gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
 
-                        //usage 2 --> use thecompared mask with input value and max value to blend
-                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_LONG, simdSize);
+                        // usage 2 --> use thecompared mask with input value and max value to blend
+                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_LONG,
+                                                   simdSize);
                     }
 #endif // TARGET_AMD64
                     return nullptr;
@@ -1222,32 +1229,32 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // +INF: 0b0000
                         // -VAL: 0b1000: Saturate to Zero
                         // +VAL: 0b0000
-                        for ( int i = 0; i < 16; i++ )
+                        for (int i = 0; i < 16; i++)
                         {
                             tbl->gtSimdVal.i32[i] = 0x08000088;
                         }
 
                         // Generate first operand
-                        // The logic is that first and second operand are basically the same because we want 
+                        // The logic is that first and second operand are basically the same because we want
                         // the output to be in the same xmm register
                         // Hence we clone the first operand
                         GenTree* op2Clone = fgMakeMultiUse(&op1);
-                        
-                        //run vfixupimmsd base on table and no flags reporting
+
+                        // run vfixupimmsd base on table and no flags reporting
                         GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                                    NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+                                                                     NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-
-                        intrinsic = (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation
-                                                        : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation
-                                                                        : NI_AVX512F_ConvertToVector512UInt32WithTruncation;
+                        intrinsic = (simdSize == 16)
+                                        ? NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation
+                                        : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation
+                                                           : NI_AVX512F_ConvertToVector512UInt32WithTruncation;
 
                         return gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
                     }
 #endif // TARGET_AMD64
                     return nullptr;
                 }
-        
+
                 case NI_VectorT_ConvertToUInt64:
                 {
                     assert(sig->numArgs == 1);
@@ -1268,31 +1275,32 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // +INF: 0b0000
                         // -VAL: 0b1000: Saturate to Zero
                         // +VAL: 0b0000
-                        for ( int i = 0; i < 8; i++ )
+                        for (int i = 0; i < 8; i++)
                         {
                             tbl->gtSimdVal.i64[i] = 0x08000088;
                         }
 
                         // Generate first operand
-                        // The logic is that first and second operand are basically the same because we want 
+                        // The logic is that first and second operand are basically the same because we want
                         // the output to be in the same xmm register
                         // Hence we clone the first operand
                         GenTree* op2Clone = fgMakeMultiUse(&op1);
-                        
-                        //run vfixupimmsd base on table and no flags reporting
-                        GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                                    NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                        intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
-                                                    : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
-                                                                        : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                     NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        intrinsic = (simdSize == 16)
+                                        ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
+                                        : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
+                                                           : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
 
                         return gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
                     }
 #endif // TARGET_AMD64
                     return nullptr;
                 }
-                
+
                 case NI_VectorT_ConvertToInt32:
                 {
                     assert(simdBaseType == TYP_FLOAT);
@@ -1312,41 +1320,48 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // +INF: 0b0000
                         // -VAL: 0b0000
                         // +VAL: 0b0000
-                        for ( int i = 0; i < 16; i++ )
+                        for (int i = 0; i < 16; i++)
                         {
                             tbl->gtSimdVal.i32[i] = 0x00000088;
                         }
 
                         // Generate first operand
-                        // The logic is that first and second operand are basically the same because we want 
+                        // The logic is that first and second operand are basically the same because we want
                         // the output to be in the same xmm register
                         // Hence we clone the first operand
                         GenTree* op2Clone = fgMakeMultiUse(&op1);
                         // GenTree* op2Clone;
                         // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
                         //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
-                        
-                        //run vfixupimmsd base on table and no flags reporting
-                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                                    NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                        GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)), simdBaseJitType, simdSize);
-                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT32_MAX, TYP_INT), CORINFO_TYPE_INT, simdSize);
-                        //we will be using the input value twice
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                         NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        GenTree* max_val =
+                            gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)),
+                                                         simdBaseJitType, simdSize);
+                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT32_MAX, TYP_INT),
+                                                                           CORINFO_TYPE_INT, simdSize);
+                        // we will be using the input value twice
                         GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
-                        //usage 1 --> compare with max value of integer
-                        saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
-                        //cast it
+                        // usage 1 --> compare with max value of integer
+                        saturate_val =
+                            gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
+                        // cast it
 
-                        NamedIntrinsic intrinsic =    (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
-                                                    : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
-                                                    :                    NI_AVX512F_ConvertToVector512Int32WithTruncation;
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
+                                             : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
+                                                                : NI_AVX512F_ConvertToVector512Int32WithTruncation;
 
-                        GenTree* retNode = gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
+                        GenTree* retNode =
+                            gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
 
-                        //usage 2 --> use thecompared mask with input value and max value to blend
-                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_INT, simdSize);
+                        // usage 2 --> use thecompared mask with input value and max value to blend
+                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_INT,
+                                                   simdSize);
                     }
 #endif // TARGET_AMD64
                     return nullptr;
@@ -1374,13 +1389,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     }
                     else if (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        intrinsic =   (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128Single
-                                    : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single
-                                                       : NI_AVX512F_ConvertToVector512Single;
+                        intrinsic = (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128Single
+                                                     : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single
+                                                                        : NI_AVX512F_ConvertToVector512Single;
                     }
                     if (intrinsic != NI_Illegal)
                     {
-                        //op1     = impSIMDPopStack();
+                        // op1     = impSIMDPopStack();
                         return gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
                     }
                     return nullptr;

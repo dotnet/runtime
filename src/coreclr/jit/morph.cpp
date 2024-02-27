@@ -324,14 +324,15 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         }
     }
 
-    // This if check needs to be changed to make sure we only 
+    // This if check needs to be changed to make sure we only
     // block casts which are already Fixed UP.
-    do {
+    do
+    {
         if (!tree->gtOverflow() && varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType))
         {
             if ((dstType == TYP_LONG) && (srcType == TYP_FLOAT))
             {
-                oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+                oper    = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
                 srcType = TYP_DOUBLE;
             }
             if (tree->IsSaturatedConversion())
@@ -340,7 +341,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             }
             CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
-            if ( compOpportunisticallyDependsOn(InstructionSet_AVX512F) )
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (varTypeIsUnsigned(dstType))
                 {
@@ -359,30 +360,29 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     tbl->gtSimdVal.i32[0] = 0x08000088;
 
                     // Generate first operand
-                    // The logic is that first and second operand are basically the same because we want 
+                    // The logic is that first and second operand are basically the same because we want
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
                     GenTree* op2Clone = fgMakeMultiUse(&oper);
-                    
-                    //run vfixupimmsd base on table and no flags reporting
+
+                    // run vfixupimmsd base on table and no flags reporting
                     GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
                                                                 NI_AVX512F_FixupScalar, fieldType, 16);
-                    
+
                     // Convert to scalar
-                    // Here, we try to insert a Vector128 to Scalar node so that the input 
+                    // Here, we try to insert a Vector128 to Scalar node so that the input
                     // can be provided to the scalar cast
-                    GenTree* retNode1 = gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, fieldType, 16);
+                    GenTree* retNode1 =
+                        gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, fieldType, 16);
                     tree = gtNewCastNode(genActualType(dstType), retNode1, false, dstType);
                     tree->SetSaturatedConversion();
                     return fgMorphTree(tree);
                 }
                 else
                 {
-                    CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT 
-                                              :                        CORINFO_TYPE_LONG;
-                    
-                    ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX 
-                                         :                        INT64_MAX;
+                    CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
+
+                    ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX : INT64_MAX;
 
                     // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
                     // Generate the control table for VFIXUPIMMSD
@@ -400,39 +400,43 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     tbl->gtSimdVal.i32[0] = 0x00000088;
 
                     // Generate first operand
-                    // The logic is that first and second operand are basically the same because we want 
+                    // The logic is that first and second operand are basically the same because we want
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    GenTree* op2Clone = fgMakeMultiUse(&oper);                    
+                    GenTree* op2Clone = fgMakeMultiUse(&oper);
 
-                    //run vfixupimmsd base on table and no flags reporting
+                    // run vfixupimmsd base on table and no flags reporting
                     oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
-                                                                NI_AVX512F_FixupScalar, fieldType, 16);
-                    
+                                                    NI_AVX512F_FixupScalar, fieldType, 16);
+
                     GenTree* saturate_val = oper;
-                    
-                    //get the max value vector
-                    
-                    GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal)) : gtNewDconNodeF(static_cast<float>(actualMaxVal));
-                    GenTree* max_valDup = (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewLconNode(actualMaxVal);
-                    max_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
+
+                    // get the max value vector
+
+                    GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal))
+                                                               : gtNewDconNodeF(static_cast<float>(actualMaxVal));
+                    GenTree* max_valDup =
+                        (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewLconNode(actualMaxVal);
+                    max_val    = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
                     max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_valDup, destFieldType, 16);
-                    
-                    //we will be using the input value twice
+
+                    // we will be using the input value twice
                     GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
-                    //usage 1 --> compare with max value of integer
+                    // usage 1 --> compare with max value of integer
                     saturate_val = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturate_val, max_val, fieldType, 16);
-                    GenTree* retNode1 = gtNewSimdHWIntrinsicNode(srcType, saturate_valDup, NI_Vector128_ToScalar, fieldType, 16);
-                    //cast it
+                    GenTree* retNode1 =
+                        gtNewSimdHWIntrinsicNode(srcType, saturate_valDup, NI_Vector128_ToScalar, fieldType, 16);
+                    // cast it
                     tree = gtNewCastNode(dstType, retNode1, false, dstType);
                     tree->SetSaturatedConversion();
                     GenTree* tree1 = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
 
-                    //usage 2 --> use thecompared mask with input value and max value to blend
+                    // usage 2 --> use thecompared mask with input value and max value to blend
                     // GenTree* dummy = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewLconNode(2), destFieldType, 16);
                     saturate_val = gtNewSimdCndSelNode(TYP_SIMD16, saturate_val, max_valDup, tree1, destFieldType, 16);
-                    saturate_val = gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, destFieldType, 16);
+                    saturate_val =
+                        gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, destFieldType, 16);
                     return fgMorphTree(saturate_val);
                 }
             }
@@ -450,7 +454,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
             }
         }
-    }while(false);
+    } while (false);
 
 #endif // TARGET_AMD64
 
@@ -465,7 +469,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || ((dstType == TYP_INT || dstType == TYP_ULONG || dstType == TYP_LONG) && !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
+            && (tree->gtOverflow() || ((dstType == TYP_INT || dstType == TYP_ULONG || dstType == TYP_LONG) &&
+                                       !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -505,7 +510,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         {
                             return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
                         }
-#endif //TARGET_XARCH
+#endif // TARGET_XARCH
                         return nullptr;
 
                     case TYP_UINT:
@@ -526,7 +531,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                             return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
                         }
                         return nullptr;
-#endif //TARGET_XARCH
+#endif // TARGET_XARCH
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
 
                     case TYP_ULONG:

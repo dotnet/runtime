@@ -12785,7 +12785,7 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             castToType   = TYP_UINT;
             castFromType = TYP_DOUBLE;
             break;
-        
+
         case CORINFO_HELP_FLT2UINT:
             castToType   = TYP_UINT;
             castFromType = TYP_FLOAT;
