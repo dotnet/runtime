@@ -16,7 +16,6 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UseLocalAppHostPack>true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
@@ -29,6 +28,7 @@
     <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</PublishReadyToRun>
     <PublishReadyToRunComposite>$(PublishReadyToRun)</PublishReadyToRunComposite>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
