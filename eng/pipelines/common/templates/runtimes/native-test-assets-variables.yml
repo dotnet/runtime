@@ -72,9 +72,9 @@ variables:
     - name: librariesBuildArtifactName
       value : ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
     - name: librariesOverrideArg
-      value : $(Build.SourcesDirectory)/artifacts
-    - name: librariesDownloadDir
       value : ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
+    - name: librariesDownloadDir
+      value : $(Build.SourcesDirectory)/artifacts
 
   - name: priorityArg
     value: ''
