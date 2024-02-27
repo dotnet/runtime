@@ -18640,44 +18640,26 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     code_t encoding = 0;
 
+    imm = insEncodeShiftImmediate(optGetSveElemsize(opt), isRightShift, imm);
+
     switch (opt)
     {
         case INS_OPTS_SCALABLE_B:
-            assert((imm >= 0) && (imm <= 8));
-            if (isRightShift)
-            {
-                imm = 8 - imm;
-            }
             imm = imm & 0b111;     // bits 18-16
             encoding |= (1 << 19); // bit 19
             break;
 
         case INS_OPTS_SCALABLE_H:
-            assert((imm >= 0) && (imm <= 16));
-            if (isRightShift)
-            {
-                imm = 16 - imm;
-            }
             imm = imm & 0b1111;    // bits 19-16
             encoding |= (1 << 20); // bit 20
             break;
 
         case INS_OPTS_SCALABLE_S:
-            assert((imm >= 0) && (imm <= 32));
-            if (isRightShift)
-            {
-                imm = 32 - imm;
-            }
             imm = imm & 0b11111;   // bits 20-16
             encoding |= (1 << 22); // bit 22
             break;
 
         case INS_OPTS_SCALABLE_D:
-            assert((imm >= 0) && (imm <= 64));
-            if (isRightShift)
-            {
-                imm = 64 - imm;
-            }
             // this gets the last bit of 'imm' and tries to set bit 22
             encoding |= ((imm >> 5) << 22);
             imm = imm & 0b11111;   // bits 20-16
