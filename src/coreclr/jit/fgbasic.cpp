@@ -4827,8 +4827,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newEdge->setLikelihood(1.0);
 
     // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
-    // above code (and so newBlock->bbNext is valid, so SetCond() can initialize the false target if newBlock is a
-    // BBJ_COND).
+    // above code.
     newBlock->TransferTarget(curr);
 
     curr->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);

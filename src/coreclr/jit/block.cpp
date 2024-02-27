@@ -857,6 +857,11 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             SetEhf(from->GetEhfTargets());
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
+
+        // TransferTarget may be called after setting the source block of `from`'s
+        // successor edges to this block.
+        // This means calling GetTarget/GetTrueTarget/GetFalseTarget would trigger asserts.
+        // Avoid this by accessing the edges directly.
         case BBJ_COND:
             SetCond(from->bbTrueEdge, from->bbFalseEdge);
             break;
