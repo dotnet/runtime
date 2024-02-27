@@ -4486,7 +4486,6 @@ void Compiler::impImportLeave(BasicBlock* block)
             unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
             assert(finallyNesting <= compHndBBtabCount);
 
-            assert(!callBlock->HasInitializedTarget());
             FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
             newEdge->setLikelihood(1.0);
             callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
