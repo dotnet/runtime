@@ -888,11 +888,15 @@ public:
 
     void SetCond(FlowEdge* trueEdge, FlowEdge* falseEdge)
     {
-        assert(trueEdge != nullptr);
-        assert(falseEdge != nullptr);
-        bbKind      = BBJ_COND;
-        bbTrueEdge  = trueEdge;
-        bbFalseEdge = falseEdge;
+        bbKind = BBJ_COND;
+        SetTrueEdge(trueEdge);
+        SetFalseEdge(falseEdge);
+    }
+
+    void SetCond(FlowEdge* trueEdge)
+    {
+        bbKind = BBJ_COND;
+        SetTrueEdge(trueEdge);
     }
 
     // Set both the block kind and target edge. This can clear `bbTargetEdge` when setting
