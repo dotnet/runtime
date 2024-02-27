@@ -9920,7 +9920,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
 
             case GT_BLK:
             case GT_STORE_BLK:
-            case GT_STORE_DYN_BLK:
 
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {

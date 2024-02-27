@@ -50,7 +50,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // In either case, the newly-allocated array is the exact same type as the
-            // original incoming array. It's safe for us to Buffer.Memmove the contents
+            // original incoming array. It's safe for us to SpanHelpers.Memmove the contents
             // from the source array to the destination array, otherwise the contents
             // wouldn't have been valid for the source array in the first place.
 
@@ -125,9 +125,6 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static bool IsKnownConstant(char t) => false;
-
-        [Intrinsic]
-        internal static bool IsKnownConstant(int t) => false;
 #pragma warning restore IDE0060
     }
 }
