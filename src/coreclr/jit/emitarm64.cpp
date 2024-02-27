@@ -11472,6 +11472,8 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isVectorRegister(reg2)); // nnnnn
                 assert(isVectorRegister(reg3)); // mmmmm
                 fmt = IF_SVE_AU_3A;
+                // ORR is an alias for MOV, and is always the preferred disassembly.
+                ins = INS_sve_orr;
             }
             else if (isPredicateRegister(reg3) &&
                      (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
@@ -11481,6 +11483,8 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isPredicateRegister(reg2)); // gggg
                 assert(isPredicateRegister(reg3)); // NNNN
                 fmt = sopt == INS_SCALABLE_OPTS_NONE ? IF_SVE_CZ_4A : IF_SVE_CZ_4A_K;
+                // MOV is an alias for CPY, and is always the preferred disassembly.
+                ins = INS_sve_mov;
             }
             else
             {
@@ -11498,10 +11502,10 @@ void emitter::emitIns_R_R_R(instruction     ins,
                     assert(isVectorRegister(reg3));
                     fmt = IF_SVE_CP_3A;
                 }
-            }
 
-            // MOV is an alias for CPY, and is always the preferred disassembly.
-            ins = INS_sve_mov;
+                // MOV is an alias for CPY, and is always the preferred disassembly.
+                ins = INS_sve_mov;
+            }
             break;
 
         case INS_sve_lasta:
