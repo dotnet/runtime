@@ -2488,7 +2488,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // Note that division by the constant 0 was already checked for above by the
             // op2->IsIntegralConst(0) check
 
-            if (!divisorOp->IsCnsIntOrI())
+            if ((exceptions & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None &&
+                !divisorOp->IsCnsIntOrI())
             {
                 // divisorOp is not a constant, so it could be zero
                 genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
@@ -5101,7 +5102,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -7245,14 +7245,14 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_BLK));
 
     if (blkOp->gtBlkOpGcUnsafe)
     {

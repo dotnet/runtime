@@ -18,6 +18,7 @@
 
   <ItemGroup Condition="'$(OptimizeForSize)' != true">
     <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Cast.SpeedOpt.cs" />
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
     <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
