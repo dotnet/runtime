@@ -341,7 +341,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             }
             CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
             {
                 if (varTypeIsUnsigned(dstType))
                 {
