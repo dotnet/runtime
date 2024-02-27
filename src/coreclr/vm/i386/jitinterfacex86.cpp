@@ -270,8 +270,8 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
             psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, gc_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
         }
 
-        // cmp             eax, [edx]Thread.m_alloc_context.fast_alloc_helper_limit_ptr
-        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, fast_alloc_helper_limit_ptr));
+        // cmp             eax, [edx]Thread.m_alloc_context.alloc_sampling
+        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, alloc_sampling));
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);

@@ -91,6 +91,8 @@
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
                     <keyword name="WaitHandleKeyword" mask="0x40000000000"
                              message="$(string.RuntimePublisher.WaitHandleKeywordMessage)" symbol="CLR_WAITHANDLE_KEYWORD"/>
+                    <keyword name="AllocationSamplingKeyword" mask="0x80000000000"
+                             message="$(string.RuntimePublisher.AllocationSamplingKeywordMessage)" symbol="CLR_ALLOCATIONSAMPLING_KEYWORD"/>
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -461,7 +463,15 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                <!--Next available ID is 40-->
+                    <task name="AllocationSampling" symbol="CLR_ALLOCATIONSAMPLING_TASK"
+                          value="40" eventGUID="{CC82530E-A21C-4EB0-A68A-FA4F7E66498F}"
+                          message="$(string.RuntimePublisher.AllocationSamplingTaskMessage)">
+                        <opcodes>
+                            <!-- TODO: I don't know which value should be picked for this opcode-->
+                            <opcode name="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledOpcodeMessage)" symbol="CLR_ALLOCATIONSAMPLED_OPCODE" value="11"> </opcode>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 41-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -998,7 +1008,7 @@
                             </GCHeapStats_V2>
                         </UserData>
                     </template>
-                    
+
                     <template tid="GCCreateSegment">
                         <data name="Address" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="Size" inType="win:UInt64" outType="win:HexInt64" />
@@ -1444,7 +1454,7 @@
                         <struct name="Values"   count="Count"  >
                             <data name="Index" inType="win:UInt16" />
                             <data name="Count" inType="win:UInt32" />
-                            <data name="Size" inType="win:Pointer" outType="win:HexInt64" /> 
+                            <data name="Size" inType="win:Pointer" outType="win:HexInt64" />
                         </struct>
 
                         <UserData>
@@ -3126,7 +3136,7 @@
                             </ExecutionCheckpoint>
                         </UserData>
                     </template>
-                    
+
                     <template tid="ProfilerMessage">
                       <data name="ClrInstanceID" inType="win:UInt16"/>
                       <data name="Message" inType="win:UnicodeString" />
@@ -3161,6 +3171,29 @@
                                 <AssociatedObjectID> %2 </AssociatedObjectID>
                                 <ClrInstanceID> %3 </ClrInstanceID>
                             </ContentionLockCreated>
+                        </UserData>
+                    </template>
+
+                    <template tid="AllocationSampled">
+                        <!--TODO: is it a problem to reuse the GC allocation kind?-->
+                        <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="TypeID" inType="win:Pointer" />
+                        <data name="TypeName" inType="win:UnicodeString" />
+                        <data name="HeapIndex" inType="win:UInt32" />
+                        <data name="Address" inType="win:Pointer" />
+                        <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+
+                        <UserData>
+                            <AllocationSampled xmlns="myNs">
+                                <AllocationKind> %1 </AllocationKind>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <TypeID> %3 </TypeID>
+                                <TypeName> %4 </TypeName>
+                                <HeapIndex> %5 </HeapIndex>
+                                <Address> %6 </Address>
+                                <ObjectSize> %7 </ObjectSize>
+                            </AllocationSampled>
                         </UserData>
                     </template>
 
@@ -3566,7 +3599,7 @@
                            keywords ="ThreadingKeyword"  opcode="Wait"
                            task="ThreadPoolWorkerThread"
                            symbol="ThreadPoolWorkerThreadWait" message="$(string.RuntimePublisher.ThreadPoolWorkerThreadEventMessage)"/>
-                  
+
                     <event value="58" version="0" level="win:Informational" template="YieldProcessorMeasurement"
                            keywords="ThreadingKeyword" task="YieldProcessorMeasurement" opcode="win:Info"
                            symbol="YieldProcessorMeasurement" message="$(string.RuntimePublisher.YieldProcessorMeasurementEventMessage)"/>
@@ -4257,6 +4290,12 @@
                            task="WaitHandleWait"
                            symbol="WaitHandleWaitStop" message="$(string.RuntimePublisher.WaitHandleWaitStopEventMessage)"/>
 
+                    <!-- Allocation sampling events -->
+                    <event value="303" version="0" level="win:Informational" template="AllocationSampled"
+                           keywords="AllocationSamplingKeyword" opcode="AllocationSampled"
+                           task="AllocationSampled"
+                           symbol="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledEventMessage)"/>
+
                 </events>
             </provider>
 
@@ -4372,14 +4411,14 @@
                             <opcode name="ExecutionCheckpointDCEnd" message="$(string.RundownPublisher.ExecutionCheckpointDCEndOpcodeMessage)" symbol="CLR_EXECUTIONCHECKPOINT_DCSTART_OPCODE" value="11"/>
                         </opcodes>
                     </task>
-                    
+
                     <task name="CLRGCRundown" symbol="CLR_GC_RUNDOWN_TASK"
                           value="40" eventGUID="{51B6C146-777F-4375-A0F8-1349D076E215}"
                           message="$(string.RundownPublisher.GCTaskMessage)">
                         <opcodes>
                             <opcode name="GCSettingsRundown" message="$(string.RundownPublisher.GCSettingsOpcodeMessage)" symbol="CLR_GC_GCSETTINGS_OPCODE" value="10"> </opcode>
                         </opcodes>
-                    </task>                    
+                    </task>
                 </tasks>
 
                 <maps>
@@ -7297,7 +7336,7 @@
                            keywords="PrivateFusionKeyword" opcode="NgenBind"
                            task="CLRNgenBinder"
                            symbol="NgenBindEvent" message="$(string.PrivatePublisher.NgenBinderMessage)"/>
-                    
+
                     <event value="189" version="0" level="win:Informational" template="JittedMethodRichDebugInfo"
                            keywords="JittedMethodRichDebugInfoKeyword"
                            task="CLRMethodPrivate" opcode="JittedMethodRichDebugInfo"
@@ -8203,7 +8242,7 @@
                            keywords ="LoaderKeyword" opcode="ModuleFailed"
                            task="MonoProfiler"
                            symbol="MonoProfilerModuleFailed" message="$(string.MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage)" />
-                    
+
                     <event value="22" version="0" level="win:Informational"  template="ModuleLoadedUnloaded"
                            keywords ="LoaderKeyword" opcode="ModuleLoaded"
                            task="MonoProfiler"
@@ -8213,7 +8252,7 @@
                            keywords ="LoaderKeyword" opcode="ModuleUnloading"
                            task="MonoProfiler"
                            symbol="MonoProfilerModuleUnloading" message="$(string.MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage)" />
-                    
+
                     <event value="24" version="0" level="win:Informational"  template="ModuleLoadedUnloaded"
                            keywords ="LoaderKeyword" opcode="ModuleUnloaded"
                            task="MonoProfiler"
@@ -8223,17 +8262,17 @@
                            keywords ="LoaderKeyword" opcode="AssemblyLoading"
                            task="MonoProfiler"
                            symbol="MonoProfilerAssemblyLoading" message="$(string.MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage)" />
-                    
+
                     <event value="26" version="0" level="win:Informational"  template="AssemblyLoadedUnloaded"
                            keywords ="LoaderKeyword" opcode="AssemblyLoaded"
                            task="MonoProfiler"
                            symbol="MonoProfilerAssemblyLoaded" message="$(string.MonoProfilerPublisher.AssemblyLoadedUnloadedEventMessage)" />
-                    
+
                     <event value="27" version="0" level="win:Verbose"  template="AssemblyLoadingUnloading"
                            keywords ="LoaderKeyword" opcode="AssemblyUnloading"
                            task="MonoProfiler"
                            symbol="MonoProfilerAssemblyUnloading" message="$(string.MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage)" />
-                    
+
                     <event value="28" version="0" level="win:Informational"  template="AssemblyLoadedUnloaded"
                            keywords ="LoaderKeyword" opcode="AssemblyUnloaded"
                            task="MonoProfiler"
@@ -8616,6 +8655,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="ClrInstanceID=%1"/>
+                <string id="RuntimePublisher.AllocationSampledEventMessage" value="%nKind=%1;%nClrInstanceID=%2;%nTypeID=%3;%nTypeName=%4;%nHeapIndex=%5;%nAddress=%6;%nObjectSize=%7" />
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -8659,7 +8699,7 @@
                 <string id="RundownPublisher.ThreadCreatedEventMessage" value="ManagedThreadID=%1;%nAppDomainID=%2;%nFlags=%3;%nManagedThreadIndex=%4;%nOSThreadID=%5;%nClrInstanceID=%6" />
                 <string id="RundownPublisher.RuntimeInformationEventMessage" value="ClrInstanceID=%1;%nSKU=%2;%nBclMajorVersion=%3;%nBclMinorVersion=%4;%nBclBuildNumber=%5;%nBclQfeNumber=%6;%nVMMajorVersion=%7;%nVMMinorVersion=%8;%nVMBuildNumber=%9;%nVMQfeNumber=%10;%nStartupFlags=%11;%nStartupMode=%12;%nCommandLine=%13;%nComObjectGUID=%14;%nRuntimeDllPath=%15"/>
                 <string id="RundownPublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
-                <string id="RundownPublisher.GCSettingsRundownEventMessage" value="HardLimit=%1;%nLOHThreshold=%2;%nPhysicalMemoryConfig=%3;%nGen0MinBudgetConfig=%4;%nGen0MaxBudgetConfig=%5;%nHighMemPercentConfig=%6;%nBitSettings=%7;%nClrInstanceID=%8" />                
+                <string id="RundownPublisher.GCSettingsRundownEventMessage" value="HardLimit=%1;%nLOHThreshold=%2;%nPhysicalMemoryConfig=%3;%nGen0MinBudgetConfig=%4;%nGen0MaxBudgetConfig=%5;%nHighMemPercentConfig=%6;%nBitSettings=%7;%nClrInstanceID=%8" />
                 <string id="RundownPublisher.ModuleRangeDCStartEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.ModuleRangeDCEndEventMessage" value= "ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartEventMessage" value="ClrInstanceID=%1;%nFlags=%2" />
@@ -8791,6 +8831,7 @@
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
                 <string id="RuntimePublisher.WaitHandleWaitTaskMessage" value="WaitHandleWait" />
+                <string id="RuntimePublisher.AllocationSamplingTaskMessage" value="AllocationSampling" />
 
                 <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
@@ -9155,6 +9196,7 @@
                 <string id="RundownPublisher.StackKeywordMessage" value="Stack" />
                 <string id="RundownPublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.WaitHandleKeywordMessage" value="WaitHandle" />
+                <string id="RuntimePublisher.AllocationSamplingKeywordMessage" value="AllocationSampling" />
 
                 <string id="PrivatePublisher.GCPrivateKeywordMessage" value="GC" />
                 <string id="PrivatePublisher.StartupKeywordMessage" value="Startup" />
@@ -9287,8 +9329,9 @@
                 <string id="RuntimePublisher.InstrumentationDataOpcodeMessage" value="InstrumentationData" />
 
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
-                
+
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
+                <string id="RuntimePublisher.AllocationSampledOpcodeMessage" value="AllocationSampled" />
 
                 <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
 

@@ -30,13 +30,10 @@ The second options provides better opportunities to build tools and integrate in
 
 ## Event - Keyword, verbosity and payload definition
 
-A new *AllocationSampling* event (id=303) will be emitted by the .NET runtime provider under the *AllocationSamplingKeyword*=0x80000000000 keyword with **informational** verbosity.
-
-**TODO: should this event still be emitted under the GCKeyword?
-In that case, it should be renaned GCAllocationSampling with id=210**
+A new *AllocationSampled* event (id=303) will be emitted by the .NET runtime provider under the *AllocationSamplingKeyword*=0x80000000000 keyword with **informational** verbosity.
 
 The payload should contain the following information:
-```xml  <template tid="AllocationSampling">
+```xml  <template tid="AllocationSampled">
     <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
     <data name="ClrInstanceID" inType="win:UInt16" />
     <data name="TypeID" inType="win:Pointer" />
@@ -46,7 +43,7 @@ The payload should contain the following information:
     <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
 
     <UserData>
-      <AllocationSampling xmlns="myNs">
+      <AllocationSampled xmlns="myNs">
         <AllocationKind> %1 </AllocationKind>
         <ClrInstanceID> %2 </ClrInstanceID>
         <TypeID> %3 </TypeID>
@@ -54,13 +51,10 @@ The payload should contain the following information:
         <HeapIndex> %5 </HeapIndex>
         <Address> %6 </Address>
         <ObjectSize> %7 </ObjectSize>
-      </AllocationSampling>
+      </AllocationSampled>
     </UserData>
 </template>
 ```
-**NOTE: If it is possible to dynamically change the sampling rate, it could be interesting to add it to the payload**
-
-**TODO: I'm not sure we will be able to know it if a profiler API is provided to change it dynamically. The current value might not be the one used to compute the threshold of the sampled allocation**
 
 The existing *AllocationTick* event will not be changed.
 
@@ -80,7 +74,7 @@ The fast path code checks the required allocation size against **alloc_sampling 
 - if there is not enough space in the allocation context (i.e. **alloc_limit - alloc_ptr < required allocation size**), a new allocation context is retrieved from the GC and a new sampling threshold is computed
 - otherwise, a new sampling threshold is computed
 
-**TODO: For LOH and POH, since the current thread allocation context is not used (only its alloc_bytes_uoh field will be updated), 2 global thresholds should be used instead.**
+For LOH and POH, the current thread allocation context is not used (only its alloc_bytes_uoh field will be updated). However, a sampling decision can still be made per allocation.
 
 
 **2) GC internal changes**
@@ -95,7 +89,7 @@ The new *AllocationSampling* event needs to be defined in ClrEtwAll.man.
 TODO: is there anything to do in ClrEtwAllMeta.lst?
 
 
-Perfview should be updated to recognize the new event and leverage its payload for more accurate memory allocations analysis.
+Perfview could be updated to recognize the new event and leverage its payload for more accurate memory allocations analysis.
 
 
 

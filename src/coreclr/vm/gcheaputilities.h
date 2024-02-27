@@ -14,6 +14,8 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 extern "C" {
 #endif // !DACCESS_COMPILE
 
+const DWORD SamplingDistributionMean = (100 * 1024);
+
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
 typedef struct _ee_alloc_context
 {
@@ -43,24 +45,19 @@ typedef struct _ee_alloc_context
         gc_alloc_context.init();
     }
 
-    inline void ComputeSamplingLimit(CLRRandom* pRandomizer, size_t mean)
+    inline void ComputeSamplingLimit(CLRRandom* pRandomizer)
     {
         // TODO: maybe it is easier to assume that the caller of this function will check if sampling is on/off
         // If sampling is off this is just setting alloc_sampling = alloc_limit
         // If sampling is on then we'd do some pseudo-random number generation to decide what is
         // the next sampled byte in the gc_alloc_context, if any.
 
-        //TODO: implement sampling limit placement strategy
+        // compute the next sampling limit based on an exponential distribution
         double probability = pRandomizer->NextDouble();
-        size_t threshold = (size_t)(-log((1-probability) * mean) + 1);
-        if (threshold < (size_t)(gc_alloc_context.alloc_limit - gc_alloc_context.alloc_ptr))
-        {
-            alloc_sampling = gc_alloc_context.alloc_ptr + threshold;
-        }
-        else
-        {
-            alloc_sampling = gc_alloc_context.alloc_limit;
-        }
+        size_t threshold = (size_t)(-log((1-probability) * SamplingDistributionMean));
+
+        // if the threshold is larger than the allocation context, no sampling will occur
+        alloc_sampling = Min(gc_alloc_context.alloc_ptr + threshold, gc_alloc_context.alloc_limit);
     }
 } ee_alloc_context;
 
