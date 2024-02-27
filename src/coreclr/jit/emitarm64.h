@@ -544,6 +544,9 @@ static code_t insEncodeSveElemsize_30_or_21(insFormat fmt, emitAttr size);
 // Returns the encoding for the field 'i1:tszh:tszl' at bit locations '23-22:20-18'.
 static code_t insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ssize_t imm);
 
+// Returns the encoding for the field 'tszh:tszl:imm3' at bit locations '23-22:20-19:18-16'.
+static code_t insEncodeSveElemsizeWithShift_tszh_tszl_imm3(const insOpts opt, ssize_t imm, bool isRightShift);
+
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
 static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
