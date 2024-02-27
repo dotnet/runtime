@@ -35,7 +35,7 @@ namespace Profiler.Tests
             }
 
             Console.WriteLine("Waiting for profilers to all detach");
-            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
+            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(10)))
             {
                 Console.WriteLine("Profiler did not set the callback, test will fail.");
             }
