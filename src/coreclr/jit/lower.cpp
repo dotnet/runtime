@@ -570,8 +570,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            FALLTHROUGH;
-        case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
 
@@ -8128,17 +8126,9 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         }
     }
 
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        // Size is not a constant
-        size = blkNode->AsStoreDynBlk()->gtDynamicSize;
-    }
-    else
-    {
-        // Size is a constant
-        size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
-        BlockRange().InsertBefore(data, size);
-    }
+    // Size is a constant
+    size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
 
     // A hacky way to safely call fgMorphTree in Lower
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
@@ -9227,13 +9217,10 @@ void Lowering::LowerLclHeap(GenTree* node)
 //
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
 
     if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
     {
-        // Make sure we don't use GT_STORE_DYN_BLK
-        assert(blkNode->OperIs(GT_STORE_BLK));
-
         // and we only zero it (and that zero is better to be not hoisted/CSE'd)
         assert(blkNode->Data()->IsIntegralConst(0));
     }
@@ -9269,13 +9256,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
     if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
     }
