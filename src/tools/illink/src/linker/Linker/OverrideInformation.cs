@@ -29,7 +29,7 @@ namespace Mono.Linker
 		}
 
 		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> InterfaceImplementor?.InterfaceImplementation;
+			=> InterfaceImplementor?.InterfaceImplementations[^1];
 
 		public TypeDefinition? InterfaceType
 			=> InterfaceImplementor?.InterfaceType;

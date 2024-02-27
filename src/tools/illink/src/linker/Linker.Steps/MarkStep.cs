@@ -825,7 +825,9 @@ namespace Mono.Linker.Steps
 				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor.Implementor))
 				return;
 
-			MarkInterfaceImplementation (ov.InterfaceImplementor.InterfaceImplementation);
+			foreach(var ifaceImpl in ov.InterfaceImplementor.InterfaceImplementations) {
+				MarkInterfaceImplementation (ifaceImpl);
+			}
 		}
 
 		void MarkMarshalSpec (IMarshalInfoProvider spec, in DependencyInfo reason)
@@ -2453,11 +2455,27 @@ namespace Mono.Linker.Steps
 			if (!type.HasInterfaces)
 				return;
 
-			foreach (var iface in type.Interfaces) {
-				// Only mark interface implementations of interface types that have been marked.
-				// This enables stripping of interfaces that are never used
-				if (ShouldMarkInterfaceImplementation (type, iface))
-					MarkInterfaceImplementation (iface, new MessageOrigin (type));
+			// Should look at all recursive interfaces
+			Queue<InterfaceImplementation[]> ifacesToVisit = new();
+			foreach(var iface in type.Interfaces) ifacesToVisit.Enqueue ([iface]);
+			HashSet<TypeDefinition> visitedTypes = new();
+			while (ifacesToVisit.Count > 0) {
+				var ifaces = ifacesToVisit.Dequeue();
+				var topInterfaceType = Context.Resolve(ifaces[0].InterfaceType);
+				if (topInterfaceType is not TypeDefinition resolvedInterfaceType)
+					continue;
+
+				if (visitedTypes.Add (resolvedInterfaceType)) {
+					if (ShouldMarkInterfaceImplementation(type, ifaces[0]))
+					{
+						foreach (var iface in ifaces)
+							MarkInterfaceImplementation (iface, new MessageOrigin (type));
+					}
+					if (resolvedInterfaceType.HasInterfaces)
+					{
+						foreach (var iface in resolvedInterfaceType.Interfaces) ifacesToVisit.Enqueue ([iface, ..ifaces]);
+					}
+				}
 			}
 		}
 
@@ -2562,7 +2580,7 @@ namespace Mono.Linker.Steps
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
-			InterfaceImplementation? iface = overrideInformation.InterfaceImplementor.InterfaceImplementation;
+			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
 			if (!((iface is not null && Annotations.IsMarked (iface))
 				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
 				return false;
