@@ -3,7 +3,8 @@
     <OutputType>Library</OutputType>
     <IlcMultiModule>true</IlcMultiModule>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="Library.cs" />
+    <Compile Include="MultiModuleLibrary.cs" />
   </ItemGroup>
 </Project>

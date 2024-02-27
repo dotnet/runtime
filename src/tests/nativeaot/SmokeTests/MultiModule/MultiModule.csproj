@@ -8,11 +8,13 @@
     <CLRTestTargetUnsupported Condition="'$(BuildNativeAotFrameworkObjects)' != 'true'">true</CLRTestTargetUnsupported>
     <IlcMultiModule>true</IlcMultiModule>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="MultiModule.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="Library.csproj" />
+    <ProjectReference Include="MultiModuleLibrary.csproj" />
   </ItemGroup>
 
   <!--

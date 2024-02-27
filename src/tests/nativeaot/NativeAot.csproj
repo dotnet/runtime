@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
-    <!-- <MergedWrapperProjectReference Remove="CustomMain/CustomMain.csproj" /> -->
-    <MergedWrapperProjectReference Remove="SmokeTests/MultiModule/*.*" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -10,4 +8,17 @@
   </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+
+  <!-- Target IlcCompile returns the library object (MultiModuleLibrary.o),
+       and therefore, it ends up in the "_ResolvedProjectReferencePaths" list.
+       However, at this point, it is no longer needed and causes build issues if
+       if left there, so we added this target to remove it from the list. -->
+
+  <Target Name="RemoveObjectFileFromResolvedAssemblies"
+          BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <_ResolvedProjectReferencePaths Remove="@(_ResolvedProjectReferencePaths)"
+                                      Condition="'%(Extension)' != '.dll'" />
+    </ItemGroup>
+  </Target>
 </Project>
