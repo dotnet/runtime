@@ -2,13 +2,13 @@
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/DefineFeatureCheck" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false">
       <method signature="System.Boolean get_GuardDynamicCode()" body="stub" value="false" />
-      <method signature="System.Boolean get_GuardDynamicCodeAndUnreferencedCode()" body="stub" value="false" />
+      <method signature="System.Boolean get_GuardDynamicCodeIndirect()" body="stub" value="false" />
+      <method signature="System.Boolean get_GuardDynamicCodeCycle()" body="stub" value="false" />
+      <method signature="System.Boolean get_GuardDynamicCodeCycle2()" body="stub" value="false" />
     </type>
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/DefineFeatureCheck">
       <method signature="System.Boolean get_GuardUnreferencedCode()" body="stub" value="false" />
       <method signature="System.Boolean get_GuardDynamicCodeAndUnreferencedCode()" body="stub" value="false" />
-    </type>
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/DefineFeatureCheck">
       <method signature="System.Boolean get_GuardAssemblyFiles()" body="stub" value="false" />
     </type>
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/GuardBodyValidation">

@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[FeatureCheck (typeof (DynamicCode2))]
 			static bool GuardDynamicCodeIndirect => RuntimeFeature.IsDynamicCodeSupported;
 
-			static void TestIndirectGuards ()
+			static void TestIndirectGuard ()
 			{
 				if (GuardDynamicCodeIndirect)
 					RequiresDynamicCode ();
@@ -131,7 +131,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestGuardUnreferencedCode ();
 				TestGuardAssemblyFiles ();
 				TestMultipleGuards ();
-				TestIndirectGuards ();
+				TestIndirectGuard ();
 				TestFeatureDependencyCycle1 ();
 				TestFeatureDependencyCycle2 ();
 			}
