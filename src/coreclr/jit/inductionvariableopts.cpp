@@ -416,7 +416,13 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 //
 // Remarks:
 //   This function is best effort; it might not find all uses of the provided
-//   SSA num, particularly because it does not follow into joins.
+//   SSA num, particularly because it does not follow into joins. Note that we
+//   only use this to replace uses of the narrow IV outside the loop; inside
+//   the loop we do ensure that all uses/defs are replaced.
+//   Keeping it best-effort outside the loop is ok; there is no correctness
+//   issue since we do not invalidate the value of the old narrow IV in any
+//   way, but it may mean we end up leaving the narrow IV live concurrently
+//   with the new widened IV, increasing register pressure.
 //
 void Compiler::optBestEffortReplaceNarrowIVUses(
     unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt)
