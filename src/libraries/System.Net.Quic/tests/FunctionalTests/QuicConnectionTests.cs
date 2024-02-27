@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,10 +23,15 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(LocalAddresses))]
         public async Task TestConnect(IPAddress address)
         {
+            if (address.AddressFamily == AddressFamily.InterNetworkV6 && !IsIPv6Available)
+            {
+                throw new SkipTestException("IPv6 is not available on this platform");
+            }
+
             await using QuicListener listener = await CreateQuicListener(address);
             Assert.Equal(address, listener.LocalEndPoint.Address);
 
