@@ -4724,6 +4724,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                     TADDR baseSP = ESP;
                     // Set baseSP as initial SP
                     baseSP += GetPushedArgSize(&info, table, curOffs);
+
                     // 16-byte stack alignment padding (allocated in genFuncletProlog)
                     // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
                     //   prolog: sub esp, 12
@@ -4731,7 +4732,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                     //           ret
                     // SP alignment padding should be added for all instructions except the first one and the last one.
                     // Epilog may not exist (unreachable), so we need to check the instruction code.
-                    if (curOffs != 0 && methodStart[curOffs] != X86_INSTR_RETN)
+                    const PTR_CBYTE funcletStart = PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo));
+                    if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
                         baseSP += 12;
 
                     // -sizeof(void*) because we want to point *AT* first parameter
