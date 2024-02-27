@@ -2105,12 +2105,11 @@ namespace System.Net.Tests
         [InlineData(false)]
         public async Task SendHttpPostRequest_WhenBufferingChanges_Success(bool buffering)
         {
-            byte[] randomData = new byte[16 * 1024];
-            new Random().NextBytes(randomData);
+            byte[] randomData = Encoding.ASCII.GetBytes("Hello World!!!!\n");
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
-                    int size = randomData.Length * 128;
+                    int size = randomData.Length * 100;
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
                     request.AllowWriteStreamBuffering = buffering;
@@ -2157,8 +2156,10 @@ namespace System.Net.Tests
                     using (Stream requestStream = await request.GetRequestStreamAsync())
                     {
                         requestStream.Write("Hello"u8);
+                        requestStream.Flush();
                         await sem.WaitAsync();
                         requestStream.Write("WorlddD"u8);
+                        requestStream.Flush();
                     }
                     await request.GetResponseAsync();
                     sem.Release();
