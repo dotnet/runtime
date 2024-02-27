@@ -2539,6 +2539,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             break;
 
+        case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
+        case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
+        case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(isValidVectorShiftAmount(imm, optGetSveElemsize(id->idInsOpt()),
+                                            emitInsIsVectorRightShift(id->idIns())));
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -9639,11 +9652,24 @@ void emitter::emitIns_R_R_I(instruction     ins,
         case INS_sve_uqshl:
         case INS_sve_asrd:
             isRightShift = emitInsIsVectorRightShift(ins);
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg1));       // ddddd
-            assert(isLowPredicateRegister(reg2)); // ggg
             assert(isValidVectorShiftAmount(imm, optGetSveElemsize(opt), isRightShift));
-            fmt = IF_SVE_AM_2A;
+            assert(insOptsScalableStandard(opt));
+            assert(isScalableVectorSize(size));
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert((ins == INS_sve_asr) || (ins == INS_sve_lsl) || (ins == INS_sve_lsr));
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                fmt = IF_SVE_BF_2A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isVectorRegister(reg1));       // ddddd
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_AM_2A;
+            }
             break;
 
         case INS_sve_sqrshrn:
@@ -9811,6 +9837,32 @@ void emitter::emitIns_R_R_I(instruction     ins,
                 assert(isPredicateRegister(reg1));
                 fmt = IF_SVE_JG_2A;
             }
+            break;
+
+        case INS_sve_sli:
+        case INS_sve_sri:
+            isRightShift = emitInsIsVectorRightShift(ins);
+            assert(isValidVectorShiftAmount(imm, optGetSveElemsize(opt), isRightShift));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_FT_2A;
+            break;
+
+        case INS_sve_srsra:
+        case INS_sve_ssra:
+        case INS_sve_ursra:
+        case INS_sve_usra:
+            isRightShift = emitInsIsVectorRightShift(ins);
+            assert(isValidVectorShiftAmount(imm, optGetSveElemsize(opt), isRightShift));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_FU_2A;
             break;
 
         default:
@@ -18579,6 +18631,69 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the field 'tszh:tszl:imm3' at bit locations '23-22:20-19:18-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsizeWithShift_tszh_tszl_imm3(const insOpts opt,
+                                                                                 ssize_t       imm,
+                                                                                 bool          isRightShift)
+{
+    code_t encoding = 0;
+
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+            assert((imm >= 0) && (imm <= 8));
+            if (isRightShift)
+            {
+                imm = 8 - imm;
+            }
+            imm = imm & 0b111;     // bits 18-16
+            encoding |= (1 << 19); // bit 19
+            break;
+
+        case INS_OPTS_SCALABLE_H:
+            assert((imm >= 0) && (imm <= 16));
+            if (isRightShift)
+            {
+                imm = 16 - imm;
+            }
+            imm = imm & 0b1111;    // bits 19-16
+            encoding |= (1 << 20); // bit 20
+            break;
+
+        case INS_OPTS_SCALABLE_S:
+            assert((imm >= 0) && (imm <= 32));
+            if (isRightShift)
+            {
+                imm = 32 - imm;
+            }
+            imm = imm & 0b11111;   // bits 20-16
+            encoding |= (1 << 22); // bit 22
+            break;
+
+        case INS_OPTS_SCALABLE_D:
+            assert((imm >= 0) && (imm <= 64));
+            if (isRightShift)
+            {
+                imm = 64 - imm;
+            }
+            // this gets the last bit of 'imm' and tries to set bit 22
+            encoding |= ((imm >> 5) << 22);
+            imm = imm & 0b11111;   // bits 20-16
+            encoding |= (1 << 23); // bit 23
+            break;
+
+        default:
+            assert(!"Invalid size for vector register");
+            break;
+    }
+
+    return (encoding | (code_t)(imm << 16));
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
  *  This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
  */
@@ -24350,6 +24465,18 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
+        case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
+        case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
+            code |= insEncodeSveElemsizeWithShift_tszh_tszl_imm3(id->idInsOpt(), imm,
+                                                                 emitInsIsVectorRightShift(ins)); // xx xxiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -28179,6 +28306,18 @@ void emitter::emitDispInsHelp(
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
+            break;
+
+        // <Zd>.<T>, <Zn>.<T>, #<const>
+        case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
+        // <Zd>.<T>, <Zn>.<T>, #<const>
+        case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
+        // <Zda>.<T>, <Zn>.<T>, #<const>
+        case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispImm(imm, false);
             break;
 
         default:
@@ -32184,6 +32323,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_HF_2A: // ........xx...... ......nnnnnddddd -- SVE floating-point reciprocal estimate (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
+        case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
         default:
