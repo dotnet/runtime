@@ -3364,9 +3364,6 @@ public:
     GenTreeBlk* gtNewStoreBlkNode(
         ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
 
-    GenTreeStoreDynBlk* gtNewStoreDynBlkNode(
-        GenTree* addr, GenTree* data, GenTree* dynamicSize, GenTreeFlags indirFlags = GTF_EMPTY);
-
     GenTreeStoreInd* gtNewStoreIndNode(
         var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
 
@@ -4368,7 +4365,11 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg);
+
+#ifdef SWIFT_SUPPORT
+    void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
+#endif // SWIFT_SUPPORT
 
     void impInsertHelperCall(CORINFO_HELPER_DESC* helperCall);
     void impHandleAccessAllowed(CorInfoIsAccessAllowedResult result, CORINFO_HELPER_DESC* helperCall);
@@ -6456,7 +6457,6 @@ private:
 public:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphCopyBlock(GenTree* tree);
-    GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
@@ -11312,6 +11312,7 @@ public:
             case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
             case GT_NOP:
+            case GT_SWIFT_ERROR:
                 break;
 
             // Lclvar unary operators
@@ -11435,28 +11436,6 @@ public:
                     {
                         return result;
                     }
-                }
-                break;
-            }
-
-            case GT_STORE_DYN_BLK:
-            {
-                GenTreeStoreDynBlk* const dynBlock = node->AsStoreDynBlk();
-
-                result = WalkTree(&dynBlock->gtOp1, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&dynBlock->gtOp2, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&dynBlock->gtDynamicSize, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
                 }
                 break;
             }
