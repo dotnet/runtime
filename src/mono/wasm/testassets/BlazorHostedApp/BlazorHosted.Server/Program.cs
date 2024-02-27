@@ -39,8 +39,6 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-
 // Add headers to enable SharedArrayBuffer
 app.Use(async (context, next) =>
 {
@@ -52,12 +50,6 @@ app.Use(async (context, next) =>
 });
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
-// var customWwwRoot = Path.Combine(app.Environment.ContentRootPath, "../BlazorHosted.Client/wwwroot");
-// app.UseStaticFiles(new StaticFileOptions
-// {
-//     FileProvider = new PhysicalFileProvider(customWwwRoot),
-//     RequestPath = "/customwwwroot"
-// });
 
 app.UseRouting();
 
@@ -66,10 +58,5 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.MapHub<ChatHub>("/chathub");
-
-var environment = app.Services.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
-
-// Print the WebRootPath
-Console.WriteLine($"WebRootPath: {environment?.WebRootPath}");
 
 app.Run();

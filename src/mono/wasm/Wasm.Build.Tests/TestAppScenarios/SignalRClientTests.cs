@@ -38,28 +38,44 @@ public class SignalRClientTests : AppTestBase
             binFrameworkDir: frameworkDir,
             runtimeType: RuntimeVariant.MultiThreaded);
 
+        List<string> testOutput = new();
+        List<string> consoleOutput = new();
+        List<string> serverOutput = new();
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
-        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run -c {config} --no-build");
+        var url = await runner.StartServerAndGetUrlAsync(
+            cmd: runCommand,
+            args: $"run -c {config} --no-build",
+            onServerMessage: OnServerMessage);
+        var chatUrl = url + $"/chat?transport={transport}&message=ping";
         IBrowser browser = await runner.SpawnBrowserAsync(url);
         IBrowserContext context = await browser.NewContextAsync();
-        List<string> testOutput = new();
 
-        var chatUrl = url + $"/chat?transport={transport}&message=ping";
         testOutput.Add($"Starting to run on browser URL: {chatUrl}");
         var page = await runner.RunAsync(context, chatUrl);
-        #pragma warning disable 4014
-        page.Console += (_, msg) => OnConsoleMessage(msg);
-        #pragma warning restore 4014
-        testOutput.Add($"Wait for loading state");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-        await page.ClickAsync("button#connectButton");
-        // give the connection some time to establish
-        await Task.Delay(3000);
+        try
+        {
+            #pragma warning disable 4014
+            page.Console += (_, msg) => OnConsoleMessage(msg);
+            #pragma warning restore 4014
+            testOutput.Add($"Wait for loading state");
+            await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+            await page.ClickAsync("button#connectButton");
+            // give the connection some time to establish
+            await Task.Delay(3000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}");
+            Console.WriteLine($"ConsoleOutput: {string.Join(Environment.NewLine, consoleOutput)}");
+            Console.WriteLine($"ServerOutput: {string.Join(Environment.NewLine, serverOutput)}");
+            throw;
+        }
 
         async Task OnConsoleMessage(IConsoleMessage msg)
         {
+            consoleOutput.Add(msg.Text);
             if (msg.Text.Contains("TestOutput ->"))
             {
                 testOutput.Add(msg.Text);
@@ -79,6 +95,9 @@ public class SignalRClientTests : AppTestBase
                 await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
             }
         }
+
+        void OnServerMessage(string msg) => serverOutput.Add(msg);
+
         string output = string.Join(Environment.NewLine, testOutput);
 
         // check sending threadId
