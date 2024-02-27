@@ -4072,6 +4072,7 @@ bool UnwindEbpDoubleAlignFrame(
             // Set baseSP as initial SP
             baseSP += GetPushedArgSize(info, table, curOffs);
 
+#ifdef UNIX_X86_ABI
             // 16-byte stack alignment padding (allocated in genFuncletProlog)
             // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
             //   prolog: sub esp, 12
@@ -4082,6 +4083,7 @@ bool UnwindEbpDoubleAlignFrame(
             const TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
             if (funcletStart != pCodeInfo->GetCodeAddress() && methodStart[pCodeInfo->GetRelOffset()] != X86_INSTR_RETN)
                 baseSP += 12;
+#endif
 
             pContext->PCTAddr = baseSP;
             pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
@@ -4725,6 +4727,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                     // Set baseSP as initial SP
                     baseSP += GetPushedArgSize(&info, table, curOffs);
 
+#ifdef UNIX_X86_ABI
                     // 16-byte stack alignment padding (allocated in genFuncletProlog)
                     // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
                     //   prolog: sub esp, 12
@@ -4735,6 +4738,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                     const PTR_CBYTE funcletStart = PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo));
                     if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
                         baseSP += 12;
+#endif
 
                     // -sizeof(void*) because we want to point *AT* first parameter
                     pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
