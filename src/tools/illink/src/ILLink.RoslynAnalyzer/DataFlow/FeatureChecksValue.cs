@@ -18,6 +18,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public ValueSet<string> EnabledFeatures;
 		public ValueSet<string> DisabledFeatures;
 
+		public static readonly FeatureChecksValue All = new FeatureChecksValue (ValueSet<string>.Unknown, ValueSet<string>.Empty);
+
 		public static FeatureChecksValue None = new FeatureChecksValue (ValueSet<string>.Empty, ValueSet<string>.Empty);
 
 		public FeatureChecksValue (string enabledFeature)

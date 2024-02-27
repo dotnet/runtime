@@ -148,7 +148,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ReturnFalseGuard => false;
 

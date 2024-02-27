@@ -68,6 +68,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return context.Negate ();
 		}
 
+		public override FeatureChecksValue VisitLiteral (ILiteralOperation operation, StateValue state)
+		{
+			// 'false' can guard any feature
+			if (GetConstantBool (operation.ConstantValue) is false)
+				return FeatureChecksValue.All;
+
+			return FeatureChecksValue.None;
+		}
+
 		public bool? GetLiteralBool (IOperation operation)
 		{
 			if (operation is not ILiteralOperation literal)
