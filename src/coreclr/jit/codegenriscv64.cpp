@@ -7888,10 +7888,10 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     assert(compiler->compGeneratingProlog);
 
     //
-    // The 'initReg' might have been calculated to be one of the callee-saved registers (say T0, T1 and T2 are in use,
-    // so the next possible register is S1, which should be callee-save register). This is fine as long as we will
-    // save callee-save registers before ferst use of 'initReg'. Instead we can use REG_SCRATCH before that.
-    // We don't care if REG_SCRATCH will be overridden, so wi will skip 'RegZeroed check'.
+    // The 'initReg' could have been calculated as one of the callee-saved registers (let's say T0, T1 and T2 are in use,
+    // so the next possible register is S1, which should be callee-save register). This is fine, as long as we save
+    // callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH beforehand.
+    // We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
     //
     bool ignoreInitRegZeroed = false;
 
@@ -8020,7 +8020,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     genSaveCalleeSavedRegistersHelp(rsPushRegs, offset, 0);
     offset += (int)(genCountBits(rsPushRegs) << 3); // each reg has 8 bytes
 
-    // From now on we can use 'initReg' safely, because all callee-saved registers has been saved.
+    // From now on we can use 'initReg' safely, because all callee-saved registers have been saved.
 
     emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, offset);
     compiler->unwindSaveReg(REG_RA, offset);
