@@ -722,7 +722,7 @@ namespace System.IO
                     case Interop.Sys.NotifyEvents.IN_MOVED_TO:
                         if (!previousEventName.IsEmpty)
                         {
-                            // If the previous name from IN_MOVED_FROM is non-null, then this is a rename.
+                            // If the previous name from IN_MOVED_FROM is non-empty, then this is a rename.
                             watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, expandedName, previousEventName);
                         }
                         else
