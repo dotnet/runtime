@@ -682,7 +682,7 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
                 }
 
                 return ScevVisit::Continue;
-                });
+            });
 
             if (result == ScevVisit::Abort)
             {
@@ -703,7 +703,7 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
         // These cases can arise due to "dup".
         // In this case we see that i = <L, [i from outside loop], -1>, but for
         // j we will see <L, [i from outside loop], -1> + (-1) in this function.
-        // 
+        //
         return nullptr;
     }
 

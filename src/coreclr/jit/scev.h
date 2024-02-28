@@ -68,7 +68,7 @@ struct Scev
 #ifdef DEBUG
     void Dump(Compiler* comp);
 #endif
-    template<typename TVisitor>
+    template <typename TVisitor>
     ScevVisit Visit(TVisitor visitor);
 };
 
@@ -139,7 +139,7 @@ struct ScevAddRec : Scev
 // Remarks:
 //   The visit is done in preorder.
 //
-template<typename TVisitor>
+template <typename TVisitor>
 ScevVisit Scev::Visit(TVisitor visitor)
 {
     if (visitor(this) == ScevVisit::Abort)
