@@ -42,7 +42,7 @@ internal static partial class Interop
 
 #if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle);
+        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle, void* beforeSyncJSImport, void* afterSyncJSImport);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
 
