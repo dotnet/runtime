@@ -304,6 +304,12 @@ namespace System.Linq.Tests
         public static IEnumerable<object[]> DistinctBy_TestData()
         {
             yield return WrapArgs(
+                source: Array.Empty<int>(),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Empty<int>());
+
+            yield return WrapArgs(
                 source: Enumerable.Range(0, 10),
                 keySelector: x => x,
                 comparer: null,
