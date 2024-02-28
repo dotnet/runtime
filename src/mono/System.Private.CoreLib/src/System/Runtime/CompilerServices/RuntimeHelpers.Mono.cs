@@ -138,7 +138,7 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(module.Value);
         }
 
-        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
+        public static unsafe IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
             if (type is not RuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
