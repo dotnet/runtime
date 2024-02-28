@@ -4559,49 +4559,51 @@ void GCInfo::gcMakeRegPtrTable(
 
         for (regPtrDsc* genRegPtrTemp = gcRegPtrList; genRegPtrTemp != nullptr; genRegPtrTemp = genRegPtrTemp->rpdNext)
         {
-            // Is this a call site?
-            if (genRegPtrTemp->rpdIsCallInstr())
+            if (genRegPtrTemp->rpdArg)
             {
-                // This is a true call site.
-
-                regMaskSmall gcrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs);
-
-                regMaskSmall byrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs);
-
-                assert((gcrefRegMask & byrefRegMask) == 0);
-
-                regMaskSmall regMask = gcrefRegMask | byrefRegMask;
-
-                // The "rpdOffs" is (apparently) the offset of the following instruction already.
-                // GcInfoEncoder wants the call instruction, so subtract the width of the call instruction.
-                assert(genRegPtrTemp->rpdOffs >= genRegPtrTemp->rpdCallInstrSize);
-                unsigned callOffset = genRegPtrTemp->rpdOffs - genRegPtrTemp->rpdCallInstrSize;
-
-                // Tell the GCInfo encoder about these registers.  We say that the registers become live
-                // before the call instruction, and dead after.
-                gcInfoRecordGCRegStateChange(gcInfoEncoder, mode, callOffset, regMask, GC_SLOT_LIVE, byrefRegMask,
-                                             nullptr);
-                gcInfoRecordGCRegStateChange(gcInfoEncoder, mode, genRegPtrTemp->rpdOffs, regMask, GC_SLOT_DEAD,
-                                             byrefRegMask, nullptr);
-
-                // Also remember the call site.
-                if (mode == MAKE_REG_PTR_MODE_DO_WORK)
+                // Is this a call site?
+                if (genRegPtrTemp->rpdIsCallInstr())
                 {
-                    assert(pCallSites != nullptr && pCallSiteSizes != nullptr);
-                    pCallSites[callSiteNum]     = callOffset;
-                    pCallSiteSizes[callSiteNum] = genRegPtrTemp->rpdCallInstrSize;
-                    callSiteNum++;
+                    // This is a true call site.
+
+                    regMaskSmall gcrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs);
+
+                    regMaskSmall byrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs);
+
+                    assert((gcrefRegMask & byrefRegMask) == 0);
+
+                    regMaskSmall regMask = gcrefRegMask | byrefRegMask;
+
+                    // The "rpdOffs" is (apparently) the offset of the following instruction already.
+                    // GcInfoEncoder wants the call instruction, so subtract the width of the call instruction.
+                    assert(genRegPtrTemp->rpdOffs >= genRegPtrTemp->rpdCallInstrSize);
+                    unsigned callOffset = genRegPtrTemp->rpdOffs - genRegPtrTemp->rpdCallInstrSize;
+
+                    // Tell the GCInfo encoder about these registers.  We say that the registers become live
+                    // before the call instruction, and dead after.
+                    gcInfoRecordGCRegStateChange(gcInfoEncoder, mode, callOffset, regMask, GC_SLOT_LIVE, byrefRegMask,
+                                                 nullptr);
+                    gcInfoRecordGCRegStateChange(gcInfoEncoder, mode, genRegPtrTemp->rpdOffs, regMask, GC_SLOT_DEAD,
+                                                 byrefRegMask, nullptr);
+
+                    // Also remember the call site.
+                    if (mode == MAKE_REG_PTR_MODE_DO_WORK)
+                    {
+                        assert(pCallSites != nullptr && pCallSiteSizes != nullptr);
+                        pCallSites[callSiteNum]     = callOffset;
+                        pCallSiteSizes[callSiteNum] = genRegPtrTemp->rpdCallInstrSize;
+                        callSiteNum++;
+                    }
+                }
+                else
+                {
+                    // These are reporting outgoing stack arguments, but we don't need to report anything
+                    // for partially interruptible
+                    assert(genRegPtrTemp->rpdGCtypeGet() != GCT_NONE);
+                    assert(genRegPtrTemp->rpdArgTypeGet() == rpdARG_PUSH);
                 }
             }
-            else if (genRegPtrTemp->rpdArg)
-            {
-                // These are reporting outgoing stack arguments, but we don't need to report anything
-                // for partially interruptible
-                assert(genRegPtrTemp->rpdGCtypeGet() != GCT_NONE);
-                assert(genRegPtrTemp->rpdArgTypeGet() == rpdARG_PUSH);
-            }
         }
-
         // The routine is fully interruptible.
         if (mode == MAKE_REG_PTR_MODE_DO_WORK)
         {
