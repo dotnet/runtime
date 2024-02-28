@@ -1036,14 +1036,15 @@ private:
             // preceeding test's likelihood of success.
             //
             unsigned const thenLikelihood = origCall->GetGDVCandidateInfo(checkIdx)->likelihood;
-            unsigned       baseLikelihood = 100;
+            unsigned       baseLikelihood = 0;
 
             for (uint8_t i = 0; i < checkIdx; i++)
             {
-                baseLikelihood -= origCall->GetGDVCandidateInfo(i)->likelihood;
+                baseLikelihood += origCall->GetGDVCandidateInfo(i)->likelihood;
             }
+            assert(baseLikelihood < 100);
+            baseLikelihood = 100 - baseLikelihood;
 
-            assert(baseLikelihood > 0);
             weight_t adjustedThenLikelihood = min(((weight_t)thenLikelihood) / baseLikelihood, 100.0);
             JITDUMP("For check in " FMT_BB ": orig likelihood " FMT_WT ", base likelihood " FMT_WT
                     ", adjusted likelihood " FMT_WT "\n",
