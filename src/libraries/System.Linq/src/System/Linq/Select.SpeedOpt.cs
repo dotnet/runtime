@@ -10,15 +10,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        static partial void CreateSelectIPartitionIterator<TResult, TSource>(
-            Func<TSource, TResult> selector, IPartition<TSource> partition, ref IEnumerable<TResult>? result)
+        private sealed partial class IEnumerableSelectIterator<TSource, TResult>
         {
-            result = new SelectIPartitionIterator<TSource, TResult>(partition, selector);
-        }
-
-        private sealed partial class SelectEnumerableIterator<TSource, TResult> : IIListProvider<TResult>
-        {
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TResult> builder = new(scratch);
@@ -35,7 +29,7 @@ namespace System.Linq
                 return result;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
@@ -48,7 +42,7 @@ namespace System.Linq
                 return list;
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
@@ -71,11 +65,73 @@ namespace System.Linq
 
                 return count;
             }
+
+            public override TResult? TryGetElementAt(int index, out bool found)
+            {
+                if (index >= 0)
+                {
+                    IEnumerator<TSource> e = _source.GetEnumerator();
+                    try
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (index == 0)
+                            {
+                                found = true;
+                                return _selector(e.Current);
+                            }
+
+                            index--;
+                        }
+                    }
+                    finally
+                    {
+                        (e as IDisposable)?.Dispose();
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TResult? TryGetFirst(out bool found)
+            {
+                using IEnumerator<TSource> e = _source.GetEnumerator();
+                if (e.MoveNext())
+                {
+                    found = true;
+                    return _selector(e.Current);
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TResult? TryGetLast(out bool found)
+            {
+                using IEnumerator<TSource> e = _source.GetEnumerator();
+
+                if (e.MoveNext())
+                {
+                    found = true;
+                    TSource last = e.Current;
+
+                    while (e.MoveNext())
+                    {
+                        last = e.Current;
+                    }
+
+                    return _selector(last);
+                }
+
+                found = false;
+                return default;
+            }
         }
 
-        private sealed partial class SelectArrayIterator<TSource, TResult> : IPartition<TResult>
+        private sealed partial class ArraySelectIterator<TSource, TResult>
         {
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 // See assert in constructor.
                 // Since _source should never be empty, we don't check for 0/return Array.Empty.
@@ -88,7 +144,7 @@ namespace System.Linq
                 return results;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 TSource[] source = _source;
                 Debug.Assert(source.Length > 0);
@@ -107,7 +163,7 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
@@ -123,7 +179,7 @@ namespace System.Linq
                 return _source.Length;
             }
 
-            public IPartition<TResult>? Skip(int count)
+            public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
                 if (count >= _source.Length)
@@ -131,30 +187,31 @@ namespace System.Linq
                     return null;
                 }
 
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
+                return new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
-            public IPartition<TResult> Take(int count)
+            public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
                 return count >= _source.Length ?
                     this :
-                    new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+                    new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index < (uint)_source.Length)
+                TSource[] source = _source;
+                if ((uint)index < (uint)source.Length)
                 {
                     found = true;
-                    return _selector(_source[index]);
+                    return _selector(source[index]);
                 }
 
                 found = false;
                 return default;
             }
 
-            public TResult TryGetFirst(out bool found)
+            public override TResult TryGetFirst(out bool found)
             {
                 Debug.Assert(_source.Length > 0); // See assert in constructor
 
@@ -162,22 +219,22 @@ namespace System.Linq
                 return _selector(_source[0]);
             }
 
-            public TResult TryGetLast(out bool found)
+            public override TResult TryGetLast(out bool found)
             {
                 Debug.Assert(_source.Length > 0); // See assert in constructor
 
                 found = true;
-                return _selector(_source[_source.Length - 1]);
+                return _selector(_source[^1]);
             }
         }
 
-        private sealed partial class SelectRangeIterator<TResult> : Iterator<TResult>, IPartition<TResult>
+        private sealed partial class RangeSelectIterator<TResult> : Iterator<TResult>
         {
             private readonly int _start;
             private readonly int _end;
             private readonly Func<int, TResult> _selector;
 
-            public SelectRangeIterator(int start, int end, Func<int, TResult> selector)
+            public RangeSelectIterator(int start, int end, Func<int, TResult> selector)
             {
                 Debug.Assert(start < end);
                 Debug.Assert((uint)(end - start) <= (uint)int.MaxValue);
@@ -189,7 +246,7 @@ namespace System.Linq
             }
 
             public override Iterator<TResult> Clone() =>
-                new SelectRangeIterator<TResult>(_start, _end, _selector);
+                new RangeSelectIterator<TResult>(_start, _end, _selector);
 
             public override bool MoveNext()
             {
@@ -206,9 +263,9 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectRangeIterator<TResult2>(_start, _end, CombineSelectors(_selector, selector));
+                new RangeSelectIterator<TResult2>(_start, _end, CombineSelectors(_selector, selector));
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 var results = new TResult[_end - _start];
                 Fill(results, _start, _selector);
@@ -216,7 +273,7 @@ namespace System.Linq
                 return results;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 var results = new List<TResult>(_end - _start);
                 Fill(SetCountAndGetSpan(results, _end - _start), _start, _selector);
@@ -232,7 +289,7 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of the selector,
                 // run it provided `onlyIfCheap` is false.
@@ -247,7 +304,7 @@ namespace System.Linq
                 return _end - _start;
             }
 
-            public IPartition<TResult>? Skip(int count)
+            public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
@@ -256,10 +313,10 @@ namespace System.Linq
                     return null;
                 }
 
-                return new SelectRangeIterator<TResult>(_start + count, _end, _selector);
+                return new RangeSelectIterator<TResult>(_start + count, _end, _selector);
             }
 
-            public IPartition<TResult> Take(int count)
+            public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
 
@@ -268,10 +325,10 @@ namespace System.Linq
                     return this;
                 }
 
-                return new SelectRangeIterator<TResult>(_start, _start + count, _selector);
+                return new RangeSelectIterator<TResult>(_start, _start + count, _selector);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)(_end - _start))
                 {
@@ -283,14 +340,14 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult TryGetFirst(out bool found)
+            public override TResult TryGetFirst(out bool found)
             {
                 Debug.Assert(_end > _start);
                 found = true;
                 return _selector(_start);
             }
 
-            public TResult TryGetLast(out bool found)
+            public override TResult TryGetLast(out bool found)
             {
                 Debug.Assert(_end > _start);
                 found = true;
@@ -298,9 +355,9 @@ namespace System.Linq
             }
         }
 
-        private sealed partial class SelectListIterator<TSource, TResult> : IPartition<TResult>
+        private sealed partial class ListSelectIterator<TSource, TResult>
         {
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
                 if (source.Length == 0)
@@ -314,7 +371,7 @@ namespace System.Linq
                 return results;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
 
@@ -332,7 +389,7 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
@@ -350,19 +407,19 @@ namespace System.Linq
                 return count;
             }
 
-            public IPartition<TResult> Skip(int count)
+            public override Iterator<TResult> Skip(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
+                return new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
-            public IPartition<TResult> Take(int count)
+            public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+                return new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)_source.Count)
                 {
@@ -374,7 +431,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetFirst(out bool found)
+            public override TResult? TryGetFirst(out bool found)
             {
                 if (_source.Count != 0)
                 {
@@ -386,7 +443,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetLast(out bool found)
+            public override TResult? TryGetLast(out bool found)
             {
                 int len = _source.Count;
                 if (len != 0)
@@ -400,9 +457,9 @@ namespace System.Linq
             }
         }
 
-        private sealed partial class SelectIListIterator<TSource, TResult> : IPartition<TResult>
+        private sealed partial class IListSelectIterator<TSource, TResult>
         {
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 int count = _source.Count;
                 if (count == 0)
@@ -416,7 +473,7 @@ namespace System.Linq
                 return results;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 IList<TSource> source = _source;
                 int count = _source.Count;
@@ -435,7 +492,7 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
@@ -453,19 +510,19 @@ namespace System.Linq
                 return count;
             }
 
-            public IPartition<TResult> Skip(int count)
+            public override Iterator<TResult> Skip(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
+                return new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
-            public IPartition<TResult> Take(int count)
+            public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+                return new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)_source.Count)
                 {
@@ -477,7 +534,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetFirst(out bool found)
+            public override TResult? TryGetFirst(out bool found)
             {
                 if (_source.Count != 0)
                 {
@@ -489,7 +546,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetLast(out bool found)
+            public override TResult? TryGetLast(out bool found)
             {
                 int len = _source.Count;
                 if (len != 0)
@@ -504,17 +561,17 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that maps each item of an <see cref="IPartition{TSource}"/>.
+        /// An iterator that maps each item of an <see cref="Iterator{TSource}"/>.
         /// </summary>
-        /// <typeparam name="TSource">The type of the source partition.</typeparam>
+        /// <typeparam name="TSource">The type of the source elements.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed class SelectIPartitionIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
+        private sealed class IteratorSelectIterator<TSource, TResult> : Iterator<TResult>
         {
-            private readonly IPartition<TSource> _source;
+            private readonly Iterator<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
             private IEnumerator<TSource>? _enumerator;
 
-            public SelectIPartitionIterator(IPartition<TSource> source, Func<TSource, TResult> selector)
+            public IteratorSelectIterator(Iterator<TSource> source, Func<TSource, TResult> selector)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(selector != null);
@@ -523,7 +580,7 @@ namespace System.Linq
             }
 
             public override Iterator<TResult> Clone() =>
-                new SelectIPartitionIterator<TSource, TResult>(_source, _selector);
+                new IteratorSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {
@@ -560,23 +617,23 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectIPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+                new IteratorSelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
 
-            public IPartition<TResult>? Skip(int count)
+            public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
-                IPartition<TSource>? source = _source.Skip(count);
-                return source is null ? null : new SelectIPartitionIterator<TSource, TResult>(source, _selector);
+                Iterator<TSource>? source = _source.Skip(count);
+                return source is null ? null : new IteratorSelectIterator<TSource, TResult>(source, _selector);
             }
 
-            public IPartition<TResult>? Take(int count)
+            public override Iterator<TResult>? Take(int count)
             {
                 Debug.Assert(count > 0);
-                IPartition<TSource>? source = _source.Take(count);
-                return source is null ? null : new SelectIPartitionIterator<TSource, TResult>(source, _selector);
+                Iterator<TSource>? source = _source.Take(count);
+                return source is null ? null : new IteratorSelectIterator<TSource, TResult>(source, _selector);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 bool sourceFound;
                 TSource? input = _source.TryGetElementAt(index, out sourceFound);
@@ -584,7 +641,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            public TResult? TryGetFirst(out bool found)
+            public override TResult? TryGetFirst(out bool found)
             {
                 bool sourceFound;
                 TSource? input = _source.TryGetFirst(out sourceFound);
@@ -592,7 +649,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            public TResult? TryGetLast(out bool found)
+            public override TResult? TryGetLast(out bool found)
             {
                 bool sourceFound;
                 TSource? input = _source.TryGetLast(out sourceFound);
@@ -629,7 +686,7 @@ namespace System.Linq
                 return array;
             }
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 int count = _source.GetCount(onlyIfCheap: true);
                 return count switch
@@ -640,7 +697,7 @@ namespace System.Linq
                 };
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 int count = _source.GetCount(onlyIfCheap: true);
                 List<TResult> list;
@@ -665,7 +722,7 @@ namespace System.Linq
                 return list;
             }
 
-            private static void Fill(IPartition<TSource> source, Span<TResult> results, Func<TSource, TResult> func)
+            private static void Fill(Iterator<TSource> source, Span<TResult> results, Func<TSource, TResult> func)
             {
                 int index = 0;
                 foreach (TSource item in source)
@@ -677,7 +734,7 @@ namespace System.Linq
                 Debug.Assert(index == results.Length, "All list elements were not initialized.");
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 if (!onlyIfCheap)
                 {
@@ -705,14 +762,14 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         [DebuggerDisplay("Count = {Count}")]
-        private sealed class SelectListPartitionIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
+        private sealed class IListSkipTakeSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IList<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
 
-            public SelectListPartitionIterator(IList<TSource> source, Func<TSource, TResult> selector, int minIndexInclusive, int maxIndexInclusive)
+            public IListSkipTakeSelectIterator(IList<TSource> source, Func<TSource, TResult> selector, int minIndexInclusive, int maxIndexInclusive)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(selector != null);
@@ -725,7 +782,7 @@ namespace System.Linq
             }
 
             public override Iterator<TResult> Clone() =>
-                new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, _maxIndexInclusive);
+                new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()
             {
@@ -745,23 +802,23 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectListPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector), _minIndexInclusive, _maxIndexInclusive);
+                new IListSkipTakeSelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector), _minIndexInclusive, _maxIndexInclusive);
 
-            public IPartition<TResult>? Skip(int count)
+            public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
                 int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
             }
 
-            public IPartition<TResult> Take(int count)
+            public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
                 int maxIndex = _minIndexInclusive + count - 1;
-                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, maxIndex);
+                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, maxIndex);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
@@ -773,7 +830,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetFirst(out bool found)
+            public override TResult? TryGetFirst(out bool found)
             {
                 if (_source.Count > _minIndexInclusive)
                 {
@@ -785,7 +842,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetLast(out bool found)
+            public override TResult? TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
                 if (lastIndex >= _minIndexInclusive)
@@ -812,7 +869,7 @@ namespace System.Linq
                 }
             }
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 int count = Count;
                 if (count == 0)
@@ -826,7 +883,7 @@ namespace System.Linq
                 return array;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 int count = Count;
                 if (count == 0)
@@ -848,7 +905,7 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
