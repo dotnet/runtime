@@ -9219,11 +9219,11 @@ DONE_MORPHING_CHILDREN:
 
             // TODO #4104: there are a lot of other places where
             // this condition is not checked before transformations.
-            if (fgGlobalMorph)
+            noway_assert(op2);
+            if (fgGlobalMorph && !op2->TypeIs(TYP_BYREF))
             {
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
 
-                noway_assert(op2);
                 if (op2->IsCnsIntOrI() && !op2->IsIconHandle())
                 {
                     // Negate the constant and change the node to be "+",
@@ -9239,7 +9239,7 @@ DONE_MORPHING_CHILDREN:
                 /* Check for "cns1 - op2" , we change it to "(cns1 + (-op2))" */
 
                 noway_assert(op1);
-                if (op1->IsCnsIntOrI() && !op2->TypeIs(TYP_BYREF))
+                if (op1->IsCnsIntOrI())
                 {
                     noway_assert(varTypeIsIntegralOrI(tree));
 
