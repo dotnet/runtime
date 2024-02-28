@@ -119,6 +119,7 @@ namespace System.Net.Security
             }
 
             ProtocolToken token = default;
+            token.RentBuffer = true;
 
             int errorCode = SSPIWrapper.AcceptSecurityContext(
                 GlobalSSPI.SSPISecureChannel,
@@ -163,6 +164,7 @@ namespace System.Net.Security
             }
 
             ProtocolToken token = default;
+            token.RentBuffer = true;
             int errorCode = SSPIWrapper.InitializeSecurityContext(
                                 GlobalSSPI.SSPISecureChannel,
                                 ref credentialsHandle,

@@ -1113,9 +1113,6 @@ void SystemDomain::Init()
     // to allow stub caches to use the memory pool. Do not
     // initialize it here!
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
-        g_fAllowNativeImages = false;
-
     m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
 
@@ -1347,7 +1344,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // further loading of nonprimitive types may need casting support.
         // initialize cast cache here.
         CastCache::Initialize();
-        ECall::PopulateManagedCastHelpers();
+        ECall::PopulateManagedHelpers();
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -2349,8 +2346,8 @@ void FileLoadLock::SetError(Exception *ex)
 
     m_cachedHR = ex->GetHR();
 
-    LOG((LF_LOADER, LL_WARNING, "LOADER: %x:***%s*\t!!!Non-transient error 0x%x\n",
-         m_pDomainAssembly->GetAppDomain(), m_pDomainAssembly->GetSimpleName(), m_cachedHR));
+    LOG((LF_LOADER, LL_WARNING, "LOADER: ***%s*\t!!!Non-transient error 0x%x\n",
+        m_pDomainAssembly->GetSimpleName(), m_cachedHR));
 
     m_pDomainAssembly->SetError(ex);
 
@@ -2733,7 +2730,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(this, pPEAssembly, pLoaderAllocator);
+        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
 
         LoadLockHolder lock(this);
 
@@ -2808,7 +2805,7 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
-        PRECONDITION(pLock->GetDomainAssembly()->GetAppDomain() == this);
+        PRECONDITION(AppDomain::GetCurrentDomain() == this);
         POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
@@ -2845,8 +2842,8 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
         if (immediateTargetLevel > limit.GetLoadLevel())
             immediateTargetLevel = limit.GetLoadLevel();
 
-        LOG((LF_LOADER, LL_INFO100, "LOADER: %x:***%s*\t>>>Load initiated, %s/%s\n",
-             pFile->GetAppDomain(), pFile->GetSimpleName(),
+        LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t>>>Load initiated, %s/%s\n",
+             pFile->GetSimpleName(),
              fileLoadLevelName[immediateTargetLevel], fileLoadLevelName[targetLevel]));
 
         // Now loop and do the load incrementally to the target level.
@@ -2881,14 +2878,14 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
 
             if (pLock->GetLoadLevel() == immediateTargetLevel-1)
             {
-                LOG((LF_LOADER, LL_INFO100, "LOADER: %x:***%s*\t<<<Load limited due to detected deadlock, %s\n",
-                     pFile->GetAppDomain(), pFile->GetSimpleName(),
+                LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t<<<Load limited due to detected deadlock, %s\n",
+                     pFile->GetSimpleName(),
                      fileLoadLevelName[immediateTargetLevel-1]));
             }
         }
 
-        LOG((LF_LOADER, LL_INFO100, "LOADER: %x:***%s*\t<<<Load completed, %s\n",
-             pFile->GetAppDomain(), pFile->GetSimpleName(),
+        LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t<<<Load completed, %s\n",
+             pFile->GetSimpleName(),
              fileLoadLevelName[pLock->GetLoadLevel()]));
 
     }
@@ -4343,7 +4340,6 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
@@ -4356,7 +4352,6 @@ UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
     CONTRACTL {
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_typeIDMap.LookupTypeID(pMT);

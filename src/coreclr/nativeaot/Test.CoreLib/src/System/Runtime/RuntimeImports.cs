@@ -76,15 +76,9 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         private static extern unsafe object RhNewObject(MethodTable* pEEType);
 
-        internal static unsafe object RhNewObject(EETypePtr pEEType)
-            => RhNewObject(pEEType.ToPointer());
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         private static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
-
-        internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
-            => RhNewArray(pEEType.ToPointer(), length);
 
         [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
@@ -96,6 +90,14 @@ namespace System.Runtime
         //
         // Interlocked helpers
         //
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg8")]
+        internal static extern byte InterlockedCompareExchange(ref byte location1, byte value, byte comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg16")]
+        internal static extern short InterlockedCompareExchange(ref short location1, short value, short comparand);
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);

@@ -509,11 +509,6 @@ extern Volatile<BOOL> g_TriggerHeapDump;
 
 #ifndef DACCESS_COMPILE
 //
-// Allow use of native images?
-//
-extern bool g_fAllowNativeImages;
-
-//
 // Default install library
 //
 EXTERN const WCHAR g_pwBaseLibrary[];

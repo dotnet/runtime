@@ -19,8 +19,6 @@
              Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
@@ -83,7 +81,6 @@
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
-    <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />

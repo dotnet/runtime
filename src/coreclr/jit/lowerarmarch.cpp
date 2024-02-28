@@ -570,6 +570,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
             return;
         }
 #endif
@@ -580,8 +585,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
-            src->OperIs(GT_CNS_INT))
+        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -629,7 +633,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
         }
     }
     else
@@ -645,7 +650,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
 
         ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        bool         doCpObj              = layout->HasGCPtr();
         unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
         if (doCpObj && (size <= copyBlockUnrollLimit))
@@ -680,9 +685,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            LowerBlockStoreAsHelperCall(blkNode);
         }
     }
 }

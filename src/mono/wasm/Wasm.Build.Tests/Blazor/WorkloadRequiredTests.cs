@@ -22,7 +22,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
         ("RunAOTCompilation", true),
-        ("WasmEnableLegacyJsInterop", false),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),

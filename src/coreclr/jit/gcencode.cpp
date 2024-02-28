@@ -1563,15 +1563,16 @@ size_t GCInfo::gcInfoBlockHdrSave(
 
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
-#ifndef UNIX_X86_ABI
+
+#if !defined(FEATURE_EH_FUNCLETS)
     // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
     if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
-        assert(compiler->syncStartEmitCookie != NULL);
+        assert(compiler->syncStartEmitCookie != nullptr);
         header->syncStartOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
         assert(header->syncStartOffset != INVALID_SYNC_OFFSET);
 
-        assert(compiler->syncEndEmitCookie != NULL);
+        assert(compiler->syncEndEmitCookie != nullptr);
         header->syncEndOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncEndEmitCookie, 0);
         assert(header->syncEndOffset != INVALID_SYNC_OFFSET);
 
@@ -3887,7 +3888,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
@@ -3930,7 +3931,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();

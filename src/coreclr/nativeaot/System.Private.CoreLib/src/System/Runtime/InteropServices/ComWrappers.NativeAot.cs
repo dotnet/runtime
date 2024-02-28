@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
+using Internal.Runtime;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -417,7 +419,7 @@ namespace System.Runtime.InteropServices
             static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, EETypePtr.EETypePtrOf<ManagedObjectWrapperHolder>()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, MethodTable.Of<ManagedObjectWrapperHolder>()))
                 {
                     throw new OutOfMemoryException();
                 }

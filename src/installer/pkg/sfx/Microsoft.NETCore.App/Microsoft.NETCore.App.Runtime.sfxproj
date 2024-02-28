@@ -8,7 +8,7 @@
     <InstallerName Condition="'$(TargetOS)' != 'osx'">dotnet-runtime</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-runtime-internal</InstallerName>
     <CreateSymbolsArchive Condition="'$(PgoInstrument)' == ''">true</CreateSymbolsArchive>
-    <IsPackable Condition="'$(PgoInstrument)' != ''">false</IsPackable>
+    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != ''">false</IsPackable>
     <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
@@ -19,7 +19,7 @@
     <SkipInstallerBuild Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipInstallerBuild>
     <!-- Skip building any archives except in source-build, where the symbols archive is necessary
          for distro maintainers. It can generally be removed when https://github.com/dotnet/source-build/issues/3547 is resolved. -->
-    <SkipArchivesBuild Condition="'$(DotNetBuildFromSource)' != 'true' or '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true' or '$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipArchivesBuild>
+    <SkipArchivesBuild Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true' or '$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipArchivesBuild>
   </PropertyGroup>
 
   <ItemGroup>

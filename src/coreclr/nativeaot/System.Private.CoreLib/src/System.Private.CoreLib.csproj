@@ -126,7 +126,6 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
@@ -184,14 +183,11 @@
     <Compile Include="System\GC.NativeAot.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
-    <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
-    <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\RuntimeType.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
@@ -221,6 +217,7 @@
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.NativeAot.cs" />
     <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\StartupHookProvider.NativeAot.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
@@ -253,11 +250,21 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="System\EventReporter.cs" />
     <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
       <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs">
+      <Link>Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs">
+      <Link>Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
       <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>

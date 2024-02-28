@@ -253,6 +253,13 @@ FCIMPL1_V(double, COMDouble::Sin, double x)
     return sin(x);
 FCIMPLEND
 
+#if defined(_MSC_VER)
+// The /fp:fast form of `sincos` for xarch returns sin twice, rather than sincos
+// https://developercommunity.visualstudio.com/t/MSVCs-sincos-implementation-is-incorrec/10582378
+#pragma float_control(push)
+#pragma float_control(precise, on)
+#endif
+
 /*====================================SinCos====================================
 **
 ==============================================================================*/
@@ -262,11 +269,17 @@ FCIMPL3_VII(void, COMDouble::SinCos, double x, double* pSin, double* pCos)
 #ifdef _MSC_VER
     *pSin = sin(x);
     *pCos = cos(x);
+#elif defined(__APPLE__)
+    __sincos(x, pSin, pCos);
 #else
     sincos(x, pSin, pCos);
 #endif
 
 FCIMPLEND
+
+#if defined(_MSC_VER)
+#pragma float_control(pop)
+#endif
 
 /*=====================================Sinh=====================================
 **

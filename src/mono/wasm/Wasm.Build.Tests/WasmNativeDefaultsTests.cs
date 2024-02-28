@@ -23,7 +23,6 @@ namespace Wasm.Build.Tests
         {
             List<(string propertyName, bool defaultValueInRuntimePack)> defaults = new()
             {
-                ("WasmEnableLegacyJsInterop", true),
                 ("WasmEnableSIMD", true),
                 ("WasmEnableExceptionHandling", true),
                 ("InvariantTimezone", false),
@@ -128,10 +127,10 @@ namespace Wasm.Build.Tests
 
         public static TheoryData<string, string, bool, bool> SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData() => new()
         {
-            { "Debug",   "<WasmNativeStrip>false</WasmNativeStrip><WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>", true, false },
-            { "Release", "<WasmNativeStrip>false</WasmNativeStrip><WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>", true, false },
-            { "Debug",   "<WasmNativeStrip>true</WasmNativeStrip><WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>", true, true },
-            { "Release", "<WasmNativeStrip>true</WasmNativeStrip><WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>", true, true }
+            { "Debug",   "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, false },
+            { "Release", "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, false },
+            { "Debug",   "<WasmNativeStrip>true</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, true },
+            { "Release", "<WasmNativeStrip>true</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, true }
         };
 
         [Theory]

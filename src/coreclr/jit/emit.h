@@ -418,8 +418,9 @@ struct emitLclVarAddr
     // Constructor
     void initLclVarAddr(int varNum, unsigned offset);
 
-    int lvaVarNum(); // Returns the variable to access. Note that it returns a negative number for compiler spill temps.
-    unsigned lvaOffset(); // returns the offset into the variable to access
+    int lvaVarNum() const; // Returns the variable to access. Note that it returns a negative number for compiler spill
+                           // temps.
+    unsigned lvaOffset() const; // returns the offset into the variable to access
 
     // This struct should be 32 bits in size for the release build.
     // We have this constraint because this type is used in a union
@@ -767,15 +768,33 @@ protected:
         unsigned _idLargeDsp : 1;  // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
-        unsigned _idBound : 1; // jump target / frame offset bound
-#ifndef TARGET_ARMARCH
-        unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
-#endif
-        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
+        // We have several pieces of information we need to encode but which are only applicable
+        // to a subset of instrDescs. To accommodate that, we define a several _idCustom# bitfields
+        // and then some defineds to make accessing them simpler
+
+        unsigned _idCustom1 : 1;
+        unsigned _idCustom2 : 1;
+        unsigned _idCustom3 : 1;
+
+#define _idBound _idCustom1 /* jump target / frame offset bound */
+#define _idTlsGD _idCustom2 /* Used to store information related to TLS GD access on linux */
+#define _idNoGC _idCustom3  /* Some helpers don't get recorded in GC tables */
+#define _idEvexAaaContext (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1 /* bits used for the EVEX.aaa context */
+
+#if !defined(TARGET_ARMARCH)
+        unsigned _idCustom4 : 1;
+
+#define _idCallRegPtr _idCustom4   /* IL indirect calls : addr in reg */
+#define _idEvexZContext _idCustom4 /* bits used for the EVEX.z context */
+#endif                             // !TARGET_ARMARCH
+
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
-#endif                                //  TARGET_XARCH
+        // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
+        // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
+        // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
+        // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
+        unsigned _idEvexbContext : 2;
+#endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
 
@@ -808,8 +827,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         47 bits
-        // amd64:       47 bits
+        // x86:         48 bits
+        // amd64:       48 bits
         // arm:         48 bits
         // arm64:       53 bits
         // loongarch64: 46 bits
@@ -828,7 +847,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (15)
+#define ID_EXTRA_BITFIELD_BITS (16)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -863,8 +882,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         53/49 bits
-        // amd64:       54/49 bits
+        // x86:         54/50 bits
+        // amd64:       55/50 bits
         // arm:         54/50 bits
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
@@ -880,8 +899,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         11/15 bits
-        // amd64:       10/15 bits
+        // x86:         10/14 bits
+        // amd64:       9/14 bits
         // arm:         10/14 bits
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
@@ -971,19 +990,25 @@ protected:
                 iiaEncodedInstrCount = (count << iaut_SHIFT) | iaut_INST_COUNT;
             }
 
-#ifdef TARGET_ARMARCH
-
+#ifdef TARGET_ARM
             struct
             {
-#ifdef TARGET_ARM64
-                // For 64-bit architecture this 32-bit structure can pack with these unsigned bit fields
-                emitLclVarAddr iiaLclVar;
-                unsigned       _idReg3Scaled : 1; // Reg3 is scaled by idOpSize bits
-                GCtype         _idGCref2 : 2;
-#endif
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
+#elif defined(TARGET_ARM64)
+            struct
+            {
+                // This 32-bit structure can pack with these unsigned bit fields
+                emitLclVarAddr iiaLclVar;
+                unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
+                GCtype         _idGCref2 : 2;
+                regNumber      _idReg3 : REGNUM_BITS;
+                regNumber      _idReg4 : REGNUM_BITS;
+            };
+
+            insSvePattern _idSvePattern;
+
 #elif defined(TARGET_XARCH)
             struct
             {
@@ -1021,6 +1046,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
+
 #elif defined(TARGET_RISCV64)
             struct
             {
@@ -1038,6 +1064,9 @@ protected:
                 return iiaEncodedInstr;
             }
 #endif // defined(TARGET_RISCV64)
+
+            // Used for instrDesc that has relocatable immediate offset
+            bool iiaSecRel;
 
         } _idAddrUnion;
 
@@ -1151,7 +1180,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_RISCV64)
-        unsigned  idCodeSize() const
+        unsigned idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1402,12 +1431,62 @@ protected:
         bool idReg3Scaled() const
         {
             assert(!idIsSmallDsc());
-            return (idAddr()->_idReg3Scaled == 1);
+            return (idAddr()->_idRegBit == 1);
         }
         void idReg3Scaled(bool val)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3Scaled = val ? 1 : 0;
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idPredicateReg2Merge() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idPredicateReg2Merge(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idVectorLength4x() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idVectorLength4x(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idOptionalShift() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idOptionalShift(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        insSvePattern idSvePattern() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idSvePattern);
+        }
+        void idSvePattern(insSvePattern idSvePattern)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idSvePattern = idSvePattern;
+        }
+        insSvePrfop idSvePrfop() const
+        {
+            assert(!idIsSmallDsc());
+            return (insSvePrfop)(idAddr()->_idReg4);
+        }
+        void idSvePrfop(insSvePrfop idSvePrfop)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg4 = (regNumber)idSvePrfop;
         }
 #endif // TARGET_ARM64
 
@@ -1523,46 +1602,112 @@ protected:
 
         bool idIsBound() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idBound != 0;
         }
         void idSetIsBound()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idBound = 1;
         }
 
 #ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idCallRegPtr != 0;
         }
         void idSetIsCallRegPtr()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idCallRegPtr = 1;
         }
-#endif
+#endif // !TARGET_ARMARCH
+
+        bool idIsTlsGD() const
+        {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
+            return _idTlsGD != 0;
+        }
+        void idSetTlsGD()
+        {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
+            _idTlsGD = 1;
+        }
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
         bool idIsNoGC() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idNoGC != 0;
         }
         void idSetIsNoGC(bool val)
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idNoGC = val;
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEvexbContext() const
+        bool idIsEvexbContextSet() const
         {
             return _idEvexbContext != 0;
         }
-        void idSetEvexbContext()
+
+        void idSetEvexbContext(insOpts instOptions)
         {
-            assert(_idEvexbContext == 0);
-            _idEvexbContext = 1;
-            assert(_idEvexbContext == 1);
+            assert(!idIsEvexbContextSet());
+
+            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            {
+                _idEvexbContext = 1;
+            }
+            else if (instOptions == INS_OPTS_EVEX_er_ru)
+            {
+                _idEvexbContext = 2;
+            }
+            else if (instOptions == INS_OPTS_EVEX_er_rz)
+            {
+                _idEvexbContext = 3;
+            }
+            else
+            {
+                unreached();
+            }
+        }
+
+        unsigned idGetEvexbContext() const
+        {
+            return _idEvexbContext;
+        }
+
+        unsigned idGetEvexAaaContext() const
+        {
+            assert(IsAvx512OrPriorInstruction(_idIns));
+            return _idEvexAaaContext;
+        }
+
+        void idSetEvexAaaContext(insOpts instOptions)
+        {
+            assert(idGetEvexAaaContext() == 0);
+            unsigned value = static_cast<unsigned>((instOptions & INS_OPTS_EVEX_aaa_MASK) >> 2);
+
+            _idCustom1 = ((value >> 0) & 1);
+            _idCustom2 = ((value >> 1) & 1);
+            _idCustom3 = ((value >> 2) & 1);
+        }
+
+        bool idIsEvexZContextSet() const
+        {
+            assert(IsAvx512OrPriorInstruction(_idIns));
+            return _idEvexZContext != 0;
+        }
+
+        void idSetEvexZContext()
+        {
+            assert(!idIsEvexZContextSet());
+            _idEvexZContext = 1;
         }
 #endif
 
@@ -1702,6 +1847,7 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
 
+#define PERFSCORE_THROUGHPUT_9X (1.0f / 9.0f)
 #define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
 #define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
 #define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
@@ -1842,11 +1988,6 @@ protected:
 #define PERFSCORE_MEMORY_READ 1
 #define PERFSCORE_MEMORY_WRITE 2
 #define PERFSCORE_MEMORY_READ_WRITE 3
-
-#define PERFSCORE_CODESIZE_COST_HOT 0.10f
-#define PERFSCORE_CODESIZE_COST_COLD 0.01f
-
-#define PERFSCORE_CALLEE_SPILL_COST 0.75f
 
     struct insExecutionCharacteristics
     {
@@ -2095,7 +2236,7 @@ protected:
     static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
     unsigned emitInsCount;
 
     /************************************************************************/
@@ -2142,6 +2283,8 @@ protected:
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
+    void emitDispEmbRounding(instrDesc* id);
+    void emitDispEmbMasking(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2464,7 +2607,7 @@ private:
                              DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
-    void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
+    bool emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
                                                   size_t offset DEBUG_ARG(bool isAlignAdjusted)
@@ -3790,7 +3933,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
         // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.

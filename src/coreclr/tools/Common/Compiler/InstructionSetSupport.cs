@@ -10,6 +10,12 @@ using Internal.JitInterface;
 
 namespace ILCompiler
 {
+    [Flags]
+    public enum InstructionSetSupportFlags
+    {
+        Vector512Throttling = 0x1,
+    }
+
     public class InstructionSetSupport
     {
         private readonly TargetArchitecture _targetArchitecture;
@@ -17,19 +23,21 @@ namespace ILCompiler
         private readonly InstructionSetFlags _supportedInstructionSets;
         private readonly InstructionSetFlags _unsupportedInstructionSets;
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
+        private readonly InstructionSetSupportFlags _flags;
 
         public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
             this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
         {
         }
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture, InstructionSetSupportFlags flags = 0)
         {
             _supportedInstructionSets = supportedInstructionSets;
             _unsupportedInstructionSets = unsupportedInstructionSets;
             _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
             _nonSpecifiableInstructionSets = nonSpecifiableInstructionSets;
+            _flags = flags;
         }
 
         public bool IsInstructionSetSupported(InstructionSet instructionSet)
@@ -53,6 +61,8 @@ namespace ILCompiler
         public InstructionSetFlags NonSpecifiableFlags => _nonSpecifiableInstructionSets;
 
         public TargetArchitecture Architecture => _targetArchitecture;
+
+        public InstructionSetSupportFlags Flags => _flags;
 
         public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
@@ -88,6 +98,10 @@ namespace ILCompiler
             {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
+            }
+            else if (architecture == TargetArchitecture.RiscV64)
+            {
+                return "";
             }
             else
             {

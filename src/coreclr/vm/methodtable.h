@@ -107,6 +107,14 @@ enum class MethodTableStaticsFlags
     support_use_as_flags // Enable the template functions in enum_class_flags.h
 };
 
+enum class MethodDataComputeOptions
+{
+    NoCache, // Do not place the results of getting the MethodData into the cache, but use it if it is there
+    NoCacheVirtualsOnly, // Do not place the results of getting the MethodData into the cache, but use it if it is there. If freshly computed, only fill in virtual data, and ignore non-virtuals
+    Cache, // Place result of getting MethodData into the cache if it is not already there
+    CacheOnly, // Get the MethodData from the cache. If not present, simply do not return one
+};
+
 //============================================================================
 // This is the in-memory structure of a class and it will evolve.
 //============================================================================
@@ -322,9 +330,9 @@ struct MethodTableAuxiliaryData
         enum_flag_Initialized             = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
 
-        enum_flag_Unrestored                = 0x0004,
+        // enum_unused                      = 0x0004,
         enum_flag_HasApproxParent           = 0x0010,
-        enum_flag_UnrestoredTypeKey         = 0x0020,
+        // enum_unused                      = 0x0020,
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
@@ -332,7 +340,7 @@ struct MethodTableAuxiliaryData
         enum_flag_IsStaticDataAllocated     = 0x0200,
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0400,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_IsTlsIndexAllocated       = 0x0800,
-        // enum_unused                      = 0x1000,
+        enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
         // enum_unused                      = 0x2000,
 
 #ifdef _DEBUG
@@ -349,7 +357,7 @@ struct MethodTableAuxiliaryData
             int16_t m_offsetToNonVirtualSlots;
         };
     };
-    
+
 
     PTR_Module m_pLoaderModule;
 
@@ -471,27 +479,13 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey |
-                      MethodTableAuxiliaryData::enum_flag_Unrestored |
-                      MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded |
+        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded |
                       MethodTableAuxiliaryData::enum_flag_HasApproxParent);
-    }
-
-    void SetIsRestoredForBuildMethodTable()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey |
-                       MethodTableAuxiliaryData::enum_flag_Unrestored);
     }
 
     void SetIsRestoredForBuildArrayMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        SetIsRestoredForBuildMethodTable();
 
         // Array's parent is always precise
         m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_HasApproxParent);
@@ -519,6 +513,16 @@ public:
     static inline PTR_DynamicStaticsInfo GetDynamicStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
     static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
     static inline PTR_ThreadStaticsInfo GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+    inline void SetMayHaveOpenInterfacesInInterfaceMap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, MethodTableAuxiliaryData::enum_flag_MayHaveOpenInterfaceInInterfaceMap);
+    }
+
+    inline bool MayHaveOpenInterfacesInInterfaceMap() const
+    {
+        return !!(m_dwFlags & MethodTableAuxiliaryData::enum_flag_MayHaveOpenInterfaceInInterfaceMap);
+    }
 };  // struct MethodTableAuxiliaryData
 
 // Any Generic MethodTable which has static variables has this structure. Note that it ends
@@ -751,13 +755,6 @@ public:
     Assembly *GetAssembly();
 
     PTR_Module GetModuleIfLoaded();
-
-    // GetDomain on an instantiated type, e.g. C<ty1,ty2> returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
-    // and returns an AppDomain if any of the parts are from an AppDomain,
-    // i.e. are domain-bound.  Note that if any of the parts are domain-bound
-    // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain();
 
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type
@@ -1026,40 +1023,11 @@ public:
     void SetHasClassConstructor();
     WORD GetClassConstructorSlot();
 
-    void GetSavedExtent(TADDR *ppStart, TADDR *ppEnd);
-
-    //-------------------------------------------------------------------
-    // Save/Fixup/Restore/NeedsRestore
-    //
-    // Restore this method table if it's not already restored
-    // This is done by forcing a class load which in turn calls the Restore method
-    // The pending list is required for restoring types that reference themselves through
-    // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
-
     void AllocateRegularStaticBoxes(OBJECTREF** ppStaticBase);
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
     static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
     void CheckRestore();
-
-    inline BOOL HasUnrestoredTypeKey() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey) != 0;
-    }
-
-    // Actually do the restore actions on the method table
-    void Restore();
-
-    void SetIsRestored();
-
-    inline BOOL IsRestored()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return !(GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_Unrestored);
-    }
 
     //-------------------------------------------------------------------
     // LOAD LEVEL
@@ -1084,7 +1052,6 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored());
 
         InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded);
     }
@@ -1143,7 +1110,6 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored());
 
         InterlockedOr((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, MethodTableAuxiliaryData::enum_flag_DependenciesLoaded);
     }
@@ -1156,12 +1122,6 @@ public:
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
-            if (dwFlags & MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey)
-                return CLASS_LOAD_UNRESTOREDTYPEKEY;
-
-            if (dwFlags & MethodTableAuxiliaryData::enum_flag_Unrestored)
-                return CLASS_LOAD_UNRESTORED;
-
             if (dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent)
                 return CLASS_LOAD_APPROXPARENTS;
 
@@ -2105,7 +2065,7 @@ public:
                 if (pCurrentMethodTable->HasSameTypeDefAs(pMT) &&
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
-                    !pMTOwner->ContainsGenericVariables() &&
+                    !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;
@@ -2415,6 +2375,7 @@ public:
     inline void SetHasBoxedRegularStatics()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
         SetFlag(enum_flag_HasBoxedRegularStatics);
     }
 
@@ -2422,6 +2383,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return GetFlag(enum_flag_HasBoxedRegularStatics);
+    }
+
+    inline void SetHasBoxedThreadStatics()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
+        SetFlag(enum_flag_HasBoxedThreadStatics);
+    }
+
+    inline DWORD HasBoxedThreadStatics()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetFlag(enum_flag_HasBoxedThreadStatics);
     }
 
     DWORD HasFixedAddressVTStatics();
@@ -2450,8 +2424,6 @@ public:
     }
 
     WORD GetNumHandleRegularStatics();
-    WORD GetNumBoxedRegularStatics ();
-    WORD GetNumBoxedThreadStatics ();
 
     //-------------------------------------------------------------------
     // GENERICS DICT INFO
@@ -2488,7 +2460,7 @@ public:
     OBJECTREF Allocate();
 
     // This flavor of Allocate is more efficient, but can only be used
-    // if IsRestored(), CheckInstanceActivated(), IsClassInited() are known to be true.
+    // if CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
     // exists in the same appdomain. It's currently called only from Delegate.Combine
     // via COMDelegate::InternalAllocLike.
@@ -3013,14 +2985,20 @@ protected:
     {
       public:
         // Static method that returns the amount of memory to allocate for a particular type.
-        static UINT32 GetObjectSize(MethodTable *pMT);
+        static UINT32 GetObjectSize(MethodTable *pMT, MethodDataComputeOptions computeOptions);
 
         // Constructor. Make sure you have allocated enough memory using GetObjectSize.
-        inline MethodDataObject(MethodTable *pMT) : MethodData(pMT, pMT)
-            { WRAPPER_NO_CONTRACT; Init(NULL); }
+        inline MethodDataObject(MethodTable *pMT, MethodDataComputeOptions computeOptions) :
+            MethodData(pMT, pMT),
+            m_numMethods(ComputeNumMethods(pMT, computeOptions)),
+            m_virtualsOnly(computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
+            { WRAPPER_NO_CONTRACT; _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly); Init(NULL); }
 
-        inline MethodDataObject(MethodTable *pMT, MethodData *pParentData) : MethodData(pMT, pMT)
-            { WRAPPER_NO_CONTRACT; Init(pParentData); }
+        inline MethodDataObject(MethodTable *pMT, MethodData *pParentData, MethodDataComputeOptions computeOptions) :
+            MethodData(pMT, pMT),
+            m_numMethods(ComputeNumMethods(pMT, computeOptions)),
+            m_virtualsOnly(computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
+            { WRAPPER_NO_CONTRACT; _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly); Init(pParentData); }
 
         virtual ~MethodDataObject() { LIMITED_METHOD_CONTRACT; }
 
@@ -3037,8 +3015,27 @@ protected:
 
         virtual UINT32 GetNumVirtuals()
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumVirtuals(); }
+
+        static UINT32 ComputeNumMethods(MethodTable *pMT, MethodDataComputeOptions computeOptions)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+
+            // MethodDataComputeOptions::CacheOnly is used for asking for a MethodDataObject that already exists,
+            // so there should never be a reason to ask what the size of a new one might be.
+            _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
+
+            if (computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
+            {
+                return pMT->GetCanonicalMethodTable()->GetNumVtableSlots();
+            }
+            else
+            {
+                return pMT->GetCanonicalMethodTable()->GetNumMethods();
+            }
+        }
+
         virtual UINT32 GetNumMethods()
-            { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetCanonicalMethodTable()->GetNumMethods(); }
+            { LIMITED_METHOD_CONTRACT; return m_numMethods; }
 
         virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber);
 
@@ -3051,7 +3048,9 @@ protected:
         UINT32       m_iNextChainDepth;
         static const UINT32 MAX_CHAIN_DEPTH = UINT32_MAX;
 
-        BOOL m_containsMethodImpl;
+        UINT32       m_numMethods;
+        bool         m_virtualsOnly;
+        bool         m_containsMethodImpl;
 
         // NOTE: Use of these APIs are unlocked and may appear to be erroneous. However, since calls
         //       to ProcessMap will result in identical values being placed in the MethodDataObjectEntry
@@ -3109,10 +3108,11 @@ protected:
             MethodTable* pMT;
         };
 
-        static void* operator new(size_t size, TargetMethodTable targetMT)
+        static void* operator new(size_t size, TargetMethodTable targetMT, MethodDataComputeOptions computeOptions)
         {
-            _ASSERTE(size <= GetObjectSize(targetMT.pMT));
-            return ::operator new(GetObjectSize(targetMT.pMT));
+            _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
+            _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
+            return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
@@ -3265,41 +3265,37 @@ protected:
 
     //--------------------------------------------------------------------------------------
     static MethodDataCache *s_pMethodDataCache;
-    static BOOL             s_fUseParentMethodData;
-    static BOOL             s_fUseMethodDataCache;
 
 public:
-    static void AllowMethodDataCaching()
-        { WRAPPER_NO_CONTRACT; CheckInitMethodDataCache(); s_fUseMethodDataCache = TRUE; }
+    static void InitMethodDataCache();
     static void ClearMethodDataCache();
-    static void AllowParentMethodDataCopy()
-        { LIMITED_METHOD_CONTRACT; s_fUseParentMethodData = TRUE; }
-    // NOTE: The fCanCache argument determines if the resulting MethodData object can
+    // NOTE: The computeOption argument determines if the resulting MethodData object can
     //       be added to the global MethodDataCache. This is used when requesting a
     //       MethodData object for a type currently being built.
-    static MethodData *GetMethodData(MethodTable *pMT, BOOL fCanCache = TRUE);
-    static MethodData *GetMethodData(MethodTable *pMTDecl, MethodTable *pMTImpl, BOOL fCanCache = TRUE);
+    static MethodData *GetMethodData(MethodTable *pMT, MethodDataComputeOptions computeOption);
+    static MethodData *GetMethodData(MethodTable *pMTDecl, MethodTable *pMTImpl, MethodDataComputeOptions computeOption);
     // This method is used by BuildMethodTable because the exact interface has not yet been loaded.
     // NOTE: This method does not cache the resulting MethodData object in the global MethodDataCache.
     static MethodData * GetMethodData(
         const DispatchMapTypeID * rgDeclTypeIDs,
         UINT32                    cDeclTypeIDs,
         MethodTable *             pMTDecl,
-        MethodTable *             pMTImpl);
+        MethodTable *             pMTImpl,
+        MethodDataComputeOptions computeOption);
 
     void CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT);
 
 protected:
-    static void CheckInitMethodDataCache();
     static MethodData *FindParentMethodDataHelper(MethodTable *pMT);
     static MethodData *FindMethodDataHelper(MethodTable *pMTDecl, MethodTable *pMTImpl);
-    static MethodData *GetMethodDataHelper(MethodTable *pMTDecl, MethodTable *pMTImpl, BOOL fCanCache);
+    static MethodData *GetMethodDataHelper(MethodTable *pMTDecl, MethodTable *pMTImpl, MethodDataComputeOptions computeOption);
     // NOTE: This method does not cache the resulting MethodData object in the global MethodDataCache.
     static MethodData * GetMethodDataHelper(
         const DispatchMapTypeID * rgDeclTypeIDs,
         UINT32                    cDeclTypeIDs,
         MethodTable *             pMTDecl,
-        MethodTable *             pMTImpl);
+        MethodTable *             pMTImpl,
+        MethodDataComputeOptions computeOption);
 
 public:
     //--------------------------------------------------------------------------------------
@@ -3422,11 +3418,11 @@ private:
 
         enum_flag_IsByRefLike               = 0x00001000,
 
-        enum_flag_NotInPZM                  = 0x00002000,   // True if this type is not in its PreferredZapModule
+        enum_flag_HasBoxedRegularStatics    = 0x00002000,
+        enum_flag_HasBoxedThreadStatics     = 0x00004000,
 
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
 #define SET_FALSE(flag)     ((flag) & 0)
@@ -3438,7 +3434,8 @@ private:
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
         enum_flag_StringArrayValues = SET_FALSE(enum_flag_HasCriticalFinalizer) |
-                                      SET_FALSE(enum_flag_NotInPZM) |
+                                      SET_FALSE(enum_flag_HasBoxedRegularStatics) |
+                                      SET_FALSE(enum_flag_HasBoxedThreadStatics) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
                                       SET_FALSE(enum_flag_HasDefaultCtor) |
@@ -3530,11 +3527,11 @@ private:
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
 
-        enum_flag_DynamicStatics            = 0x0001,
-        enum_flag_HasPerInstInfo            = 0x0002,
+        enum_flag_HasPerInstInfo            = 0x0001,
+        enum_flag_DynamicStatics            = 0x0002,
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
-        enum_flag_HasBoxedRegularStatics    = 0x0008, // GetNumBoxedRegularStatics() != 0
+        enum_flag_wflags2_unused_2          = 0x0008,
         enum_flag_HasModuleDependencies     = 0x0010,
         enum_flag_IsIntrinsicType           = 0x0020,
         enum_flag_HasCctor                  = 0x0040,

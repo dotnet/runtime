@@ -60,7 +60,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (managedFailure.LastErrorCode == 0)
                 {
                     // we change the error code to some generic one
-                    managedFailure.lastResult = ExceptionHelper.ERROR_DS_UNKNOWN_ERROR;
+                    managedFailure.lastResult = Interop.Errors.ERROR_DS_UNKNOWN_ERROR;
                 }
 
                 Add(managedFailure);

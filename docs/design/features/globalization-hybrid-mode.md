@@ -17,12 +17,29 @@ For WebAssembly in Browser we are using Web API instead of some ICU data. Ideall
 
 Hybrid has higher priority than sharding or custom modes, described in globalization-icu-wasm.md.
 
+**HashCode**
+
+Affected public APIs:
+- System.Globalization.CompareInfo.GetHashCode
+
+For invariant culture all `CompareOptions` are available.
+
+For non-invariant cultures following `CompareOptions` are available:
+- `CompareOption.None`
+- `CompareOption.IgnoreCase`
+
+The remaining combinations for non-invariant cultures throw `PlatformNotSupportedException`.
+
 **SortKey**
 
 Affected public APIs:
 - System.Globalization.CompareInfo.GetSortKey
 - System.Globalization.CompareInfo.GetSortKeyLength
-- System.Globalization.CompareInfo.GetHashCode
+
+For invariant culture all `CompareOptions` are available.
+
+For non-invariant cultures `PlatformNotSupportedException` is thrown.
+
 Indirectly affected APIs (the list might not be complete):
 - Microsoft.VisualBasic.Collection.Add
 - System.Collections.Hashtable.Add
@@ -42,8 +59,6 @@ Indirectly affected APIs (the list might not be complete):
 - System.Collections.Generic.Dictionary
 - System.Net.Mail.MailAddress.GetHashCode
 - System.Xml.Xsl.XslCompiledTransform.Transform
-
-Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
 
 **Case change**
 
@@ -364,9 +379,9 @@ The Hybrid responses may differ because they use Web API functions. To better il
 |        ShortTimePattern       |                                       `Intl.DateTimeFormat(locale, { timeStyle: "medium" })`                                       |                 bg-BG                |        HH:mm       |        H:mm       |
 |        YearMonthPattern       |                           `Date.prototype.toLocaleDateString(locale, { year: "numeric", month: "long" })`                          |                 ar-SA                |      MMMM yyyy     |    MMMM yyyy g    |
 
-### OSX
+### Apple platforms
 
-For OSX platforms we are using native apis instead of ICU data.
+For Apple platforms (iOS/tvOS/maccatalyst) we are using native apis instead of ICU data.
 
 ## String comparison
 

@@ -267,4 +267,37 @@
   <data name="Argument_RedefinedLabel" xml:space="preserve">
     <value>Label defined multiple times.</value>
   </data>
+  <data name="Argument_BadPInvokeMethod" xml:space="preserve">
+    <value>PInvoke methods must be static and native and cannot be abstract.</value>
+  </data>
+  <data name="Argument_BadPInvokeOnInterface" xml:space="preserve">
+    <value>PInvoke methods cannot exist on interfaces.</value>
+  </data>
+  <data name="Argument_MethodRedefined" xml:space="preserve">
+    <value>Method has been already defined.</value>
+  </data>
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
+    <value>Global members must be static.</value>
+  </data>
+  <data name="InvalidOperation_GlobalsHaveBeenCreated" xml:space="preserve">
+    <value>Type definition of the global function has been completed.</value>
+  </data>
+  <data name="Argument_BadSizeForData" xml:space="preserve">
+    <value>Data size must be &amp;gt; 1 and &amp;lt; 0x3f0000.</value>
+  </data>
+  <data name="InvalidOperation_TokenNotPopulated" xml:space="preserve">
+    <value>MetadataToken for the member is not generated until the assembly saved.</value>
+  </data>
+  <data name="Argument_BadSigFormat" xml:space="preserve">
+    <value>Incorrect signature format.</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="NotSupported_NonReflectedType" xml:space="preserve">
+    <value>Not supported in a non-reflected type.</value>
+  </data>
+  <data name="NotSupported_SymbolMethod" xml:space="preserve">
+    <value>Not supported in an array method of a type definition that is not complete.</value>
+  </data>
 </root>

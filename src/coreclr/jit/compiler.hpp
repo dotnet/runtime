@@ -196,10 +196,45 @@ inline unsigned __int64 BitsBetween(unsigned __int64 value, unsigned __int64 end
            (end - 1);                       // Ones to the right of set bit in the end mask.
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------------
+// jitIsScaleIndexMul: Check if the value is a valid addressing mode multiplier
+// amount for x64.
+//
+// Parameters:
+//   val - The multiplier
+//
+// Returns:
+//   True if value is 1, 2, 4 or 8.
+//
 inline bool jitIsScaleIndexMul(size_t val)
 {
+    // TODO-Cleanup: On arm64 the scale that can be used in addressing modes
+    // depends on the containing indirection, so this function should be reevaluated.
+    switch (val)
+    {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// jitIsScaleIndexMul: Check if the value is a valid addressing mode multiplier amount.
+//
+// Parameters:
+//   val - The multiplier
+//   naturalMul - For arm64, the natural multiplier (size of containing indirection)
+//
+// Returns:
+//   True if the multiplier can be used in an address mode.
+//
+inline bool jitIsScaleIndexMul(size_t val, unsigned naturalMul)
+{
+#if defined(TARGET_XARCH)
     switch (val)
     {
         case 1:
@@ -211,6 +246,11 @@ inline bool jitIsScaleIndexMul(size_t val)
         default:
             return false;
     }
+#elif defined(TARGET_ARM64)
+    return val == naturalMul;
+#else
+    return false;
+#endif
 }
 
 // Returns "tree" iff "val" is a valid addressing mode scale shift amount on
@@ -252,6 +292,19 @@ class Dumpable
 {
 public:
     virtual void dump(FILE* output) = 0;
+};
+
+// Helper class record and display a simple single value.
+class Counter : public Dumpable
+{
+public:
+    int64_t Value;
+
+    Counter(int64_t initialValue = 0) : Value(initialValue)
+    {
+    }
+
+    void dump(FILE* output);
 };
 
 // Helper class to record and display a histogram of different values.
@@ -368,7 +421,7 @@ inline unsigned Compiler::ehGetIndex(EHblkDsc* ehDsc)
  * Return the EH descriptor for the most nested 'try' region this BasicBlock is a member of
  * (or nullptr if this block is not in a 'try' region).
  */
-inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockTryDsc(const BasicBlock* block)
 {
     if (!block->hasTryIndex())
     {
@@ -382,7 +435,7 @@ inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
  * Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of
  * (or nullptr if this block is not in a filter or handler region).
  */
-inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockHndDsc(const BasicBlock* block)
 {
     if (!block->hasHndIndex())
     {
@@ -572,6 +625,13 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 {
+    // These are "pseudo-blocks" and control never actually flows into them
+    // (codegen directly jumps to its successor after finally calls).
+    if (KindIs(BBJ_CALLFINALLYRET))
+    {
+        return BasicBlockVisit::Continue;
+    }
+
     return ::VisitEHSuccs</* skipJumpDest */ false, TFunc>(comp, this, func);
 }
 
@@ -597,33 +657,34 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             {
                 for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]->getDestinationBlock()));
                 }
             }
 
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
-            // No exceptions can occur in this paired block; skip its normal EH successors.
-            return func(bbTarget);
+            // These are "pseudo-blocks" and control never actually flows into them
+            // (codegen directly jumps to its successor after finally calls).
+            return func(GetTarget());
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -671,7 +732,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             {
                 for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]->getDestinationBlock()));
                 }
             }
 
@@ -683,14 +744,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return BasicBlockVisit::Continue;
@@ -1276,9 +1337,10 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
     GenTreeIntCon* node;
 #if defined(LATE_DISASM)
-    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
+    node = new (this, LargeOpOpcode())
+        GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields DEBUGARG(/*largeNode*/ true));
 #else
-    node             = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
+    node             = new (this, GT_CNS_INT) GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
@@ -2320,7 +2382,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
 inline bool Compiler::lvaKeepAliveAndReportThis()
 {
-    if (info.compIsStatic || lvaTable[0].TypeGet() != TYP_REF)
+    if (info.compIsStatic || (lvaTable[0].TypeGet() != TYP_REF))
     {
         return false;
     }
@@ -2354,7 +2416,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // We keep it alive in the lookup scenario, even when the VM didn't ask us to,
     // because collectible types need the generics context when gc-ing.
     //
-    // Methoods that can inspire OSR methods must always report context as live
+    // Methods that can inspire OSR methods must always report context as live
     //
     if (genericsContextIsThis)
     {
@@ -3045,7 +3107,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeList
     // for the final determination.
 
-    for (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
+    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
     {
         if (block == add->acdDstBlk)
         {
@@ -3068,7 +3130,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
 inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 {
-    for (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
+    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
     {
         if (block == add->acdDstBlk)
         {
@@ -3488,7 +3550,7 @@ inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
  *  the cookie associated with the given basic block.
  */
 
-inline void* emitCodeGetCookie(BasicBlock* block)
+inline void* emitCodeGetCookie(const BasicBlock* block)
 {
     assert(block);
     return block->bbEmitCookie;
@@ -3616,208 +3678,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     }
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
-{
-#ifdef DEBUG
-    assert(lpFlags & LPFLG_ITER);
-
-    // iterTree should be "lcl = lcl <op> const"
-
-    assert(lpIterTree->OperIs(GT_STORE_LCL_VAR));
-
-    const GenTree* value = lpIterTree->AsLclVar()->Data();
-    assert(value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_RSH, GT_LSH));
-    assert(value->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
-    assert(value->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lpIterTree->AsLclVar()->GetLclNum());
-    assert(value->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
-#endif
-}
-
-//-----------------------------------------------------------------------------
-
-inline unsigned Compiler::LoopDsc::lpIterVar() const
-{
-    VERIFY_lpIterTree();
-    return lpIterTree->AsLclVar()->GetLclNum();
-}
-
-//-----------------------------------------------------------------------------
-
-inline int Compiler::LoopDsc::lpIterConst() const
-{
-    VERIFY_lpIterTree();
-    GenTree* value = lpIterTree->AsLclVar()->Data();
-    return (int)value->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-}
-
-//-----------------------------------------------------------------------------
-
-inline genTreeOps Compiler::LoopDsc::lpIterOper() const
-{
-    VERIFY_lpIterTree();
-    return lpIterTree->AsLclVar()->Data()->OperGet();
-}
-
-inline var_types Compiler::LoopDsc::lpIterOperType() const
-{
-    VERIFY_lpIterTree();
-
-    var_types type = lpIterTree->TypeGet();
-    assert(genActualType(type) == TYP_INT);
-
-    return type;
-}
-
-inline void Compiler::LoopDsc::VERIFY_lpTestTree() const
-{
-#ifdef DEBUG
-    assert(lpFlags & LPFLG_ITER);
-    assert(lpTestTree);
-
-    genTreeOps oper = lpTestTree->OperGet();
-    assert(GenTree::OperIsCompare(oper));
-
-    GenTree* iterator = nullptr;
-    GenTree* limit    = nullptr;
-    if ((lpTestTree->AsOp()->gtOp2->gtOper == GT_LCL_VAR) &&
-        (lpTestTree->AsOp()->gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0)
-    {
-        iterator = lpTestTree->AsOp()->gtOp2;
-        limit    = lpTestTree->AsOp()->gtOp1;
-    }
-    else if ((lpTestTree->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
-             (lpTestTree->AsOp()->gtOp1->gtFlags & GTF_VAR_ITERATOR) != 0)
-    {
-        iterator = lpTestTree->AsOp()->gtOp1;
-        limit    = lpTestTree->AsOp()->gtOp2;
-    }
-    else
-    {
-        // one of the nodes has to be the iterator
-        assert(false);
-    }
-
-    if (lpFlags & LPFLG_CONST_LIMIT)
-    {
-        assert(limit->OperIsConst());
-    }
-    if (lpFlags & LPFLG_VAR_LIMIT)
-    {
-        assert(limit->OperGet() == GT_LCL_VAR);
-    }
-    if (lpFlags & LPFLG_ARRLEN_LIMIT)
-    {
-        assert(limit->OperGet() == GT_ARR_LENGTH);
-    }
-#endif
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpIsReversed() const
-{
-    VERIFY_lpTestTree();
-    return ((lpTestTree->AsOp()->gtOp2->gtOper == GT_LCL_VAR) &&
-            (lpTestTree->AsOp()->gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0);
-}
-
-//-----------------------------------------------------------------------------
-
-inline genTreeOps Compiler::LoopDsc::lpTestOper() const
-{
-    VERIFY_lpTestTree();
-    genTreeOps op = lpTestTree->OperGet();
-    return lpIsReversed() ? GenTree::SwapRelop(op) : op;
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpIsIncreasingLoop() const
-{
-    // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_LT, GT_LE);
-    return (isLessThanLimitCheck &&
-            (((lpIterOper() == GT_ADD) && (lpIterConst() > 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() < 0))));
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpIsDecreasingLoop() const
-{
-    // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
-    // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_GT, GT_GE);
-    return (isGreaterThanLimitCheck &&
-            (((lpIterOper() == GT_ADD) && (lpIterConst() < 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() > 0))));
-}
-
-//-----------------------------------------------------------------------------
-
-inline GenTree* Compiler::LoopDsc::lpIterator() const
-{
-    VERIFY_lpTestTree();
-
-    return lpIsReversed() ? lpTestTree->AsOp()->gtOp2 : lpTestTree->AsOp()->gtOp1;
-}
-
-//-----------------------------------------------------------------------------
-
-inline GenTree* Compiler::LoopDsc::lpLimit() const
-{
-    VERIFY_lpTestTree();
-
-    return lpIsReversed() ? lpTestTree->AsOp()->gtOp1 : lpTestTree->AsOp()->gtOp2;
-}
-
-//-----------------------------------------------------------------------------
-
-inline int Compiler::LoopDsc::lpConstLimit() const
-{
-    VERIFY_lpTestTree();
-    assert(lpFlags & LPFLG_CONST_LIMIT);
-
-    GenTree* limit = lpLimit();
-    assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->gtIconVal;
-}
-
-//-----------------------------------------------------------------------------
-
-inline unsigned Compiler::LoopDsc::lpVarLimit() const
-{
-    VERIFY_lpTestTree();
-    assert(lpFlags & LPFLG_VAR_LIMIT);
-
-    GenTree* limit = lpLimit();
-    assert(limit->OperGet() == GT_LCL_VAR);
-    return limit->AsLclVarCommon()->GetLclNum();
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index) const
-{
-    VERIFY_lpTestTree();
-    assert(lpFlags & LPFLG_ARRLEN_LIMIT);
-
-    GenTree* limit = lpLimit();
-    assert(limit->OperGet() == GT_ARR_LENGTH);
-
-    // Check if we have a.length or a[i][j].length
-    if (limit->AsArrLen()->ArrRef()->gtOper == GT_LCL_VAR)
-    {
-        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
-        index->rank   = 0;
-        return true;
-    }
-    // We have a[i].length, extract a[i] pattern.
-    else if (limit->AsArrLen()->ArrRef()->gtOper == GT_COMMA)
-    {
-        return comp->optReconstructArrIndex(limit->AsArrLen()->ArrRef(), index);
-    }
-    return false;
-}
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3927,6 +3787,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 #ifdef FEATURE_READYTORUN
         || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE || helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE ||
+        helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR ||
         helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE
 #endif
         || helper == CORINFO_HELP_INITCLASS;
@@ -4371,6 +4232,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+        case GT_SWIFT_ERROR:
             return;
 
         // Unary operators with an optional operand
@@ -4483,21 +4345,6 @@ void GenTree::VisitOperands(TVisitor visitor)
                     return;
                 }
             }
-            return;
-        }
-
-        case GT_STORE_DYN_BLK:
-        {
-            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(dynBlock->gtOp2) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
             return;
         }
 
@@ -4962,8 +4809,9 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         dfsFrom(fgEntryBB);
     }
 
-    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
+    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum))
     {
+        assert(!fgGlobalMorphDone);
         // We introduce the merged return BB before morph and will redirect
         // other returns to it as part of morph; keep it reachable.
         dfsFrom(genReturnBB);
@@ -4997,7 +4845,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
         // loop block rpo index = head block rpoIndex + index
         // loop block po index = PostOrderCount - 1 - loop block rpo index
         //                     = headPreOrderIndex - index
-        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        unsigned poIndex = m_header->bbPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
         return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
@@ -5025,7 +4873,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
-        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        unsigned poIndex = m_header->bbPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
         return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
@@ -5071,27 +4919,85 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
-    BasicBlock* top    = m_header;
-    BasicBlock* bottom = m_header;
+    BasicBlock* top           = m_header;
+    unsigned    numLoopBlocks = 0;
     VisitLoopBlocks([&](BasicBlock* block) {
         if (block->bbNum < top->bbNum)
+        {
             top = block;
-        if (block->bbNum > bottom->bbNum)
-            bottom = block;
+        }
+
+        numLoopBlocks++;
         return BasicBlockVisit::Continue;
     });
 
-    BasicBlock* block = top;
-    while (true)
+    INDEBUG(BasicBlock* prev = nullptr);
+    BasicBlock* cur = top;
+    while (numLoopBlocks > 0)
     {
-        if (ContainsBlock(block) && (func(block) == BasicBlockVisit::Abort))
-            return BasicBlockVisit::Abort;
+        // If we run out of blocks the blocks aren't sequential.
+        assert(cur != nullptr);
 
-        if (block == bottom)
-            return BasicBlockVisit::Continue;
+        if (ContainsBlock(cur))
+        {
+            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
 
-        block = block->Next();
+            if (func(cur) == BasicBlockVisit::Abort)
+                return BasicBlockVisit::Abort;
+
+            INDEBUG(prev = cur);
+            numLoopBlocks--;
+        }
+
+        cur = cur->Next();
     }
+
+    return BasicBlockVisit::Continue;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit non-handler blocks that
+// are outside the loop but that may have regular predecessors inside the loop.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//   BasicBlockVisit that indicated whether the visit was aborted by the
+//   callback or whether all blocks were visited.
+//
+// Remarks:
+//   Note that no handler begins are visited by this function, even if they
+//   have regular predecessors inside the loop (for example, finally handlers
+//   can have regular BBJ_CALLFINALLY predecessors inside the loop). This
+//   choice is motivated by the fact that such handlers will also show up as
+//   exceptional exit blocks that must always be handled specially by client
+//   code regardless.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
+{
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BitVecTraits traits = m_dfsTree->PostOrderTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    for (FlowEdge* edge : ExitEdges())
+    {
+        BasicBlock* exit = edge->getDestinationBlock();
+        assert(m_dfsTree->Contains(exit) && !ContainsBlock(exit));
+        if (!comp->bbIsHandlerBeg(exit) && BitVecOps::TryAddElemD(&traits, visited, exit->bbPostorderNum) &&
+            (func(exit) == BasicBlockVisit::Abort))
+        {
+            return BasicBlockVisit::Abort;
+        }
+    }
+
+    return BasicBlockVisit::Continue;
 }
 
 /*****************************************************************************/

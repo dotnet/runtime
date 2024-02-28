@@ -7,12 +7,13 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
-    <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>
     <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(DotNetBuildSourceOnly)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+    <!-- FreeBSD runtime/apphost packs aren't built in the official build so only reference the RIDs when targetting FreeBSD -->
+    <RuntimeIdentifiers Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(TargetOS)' == 'freebsd'">$(RuntimeIdentifiers);freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
@@ -21,7 +22,7 @@
     <!-- Publish crossgen2 as a single-file app on native-OS builds. Cross-OS NativeAOT compilation is not supported yet -->
     <NativeAotSupported Condition="'$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">false</NativeAotSupported>
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
+    <NativeAotSupported Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</NativeAotSupported>
   </PropertyGroup>
 
   <ItemGroup>

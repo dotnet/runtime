@@ -69,9 +69,6 @@ ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass 
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
-ValueNumFuncDef(FltRound, 1, false, false, false, false)
-ValueNumFuncDef(DblRound, 1, false, false, false, false)
-
 ValueNumFuncDef(Abs, 1, false, false, false, false)
 ValueNumFuncDef(Acos, 1, false, false, false, false)
 ValueNumFuncDef(Acosh, 1, false, false, false, false)
@@ -122,6 +119,7 @@ ValueNumFuncDef(GetdynamicNongcstaticBaseNoctor, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseGC, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseNonGC, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseThread, 1, false, true, true, false)
+ValueNumFuncDef(ReadyToRunStaticBaseThreadNoctor, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseThreadNonGC, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunGenericStaticBase, 2, false, true, true, false)
 ValueNumFuncDef(GetpinnedGcstaticBase, 1, false, true, true, false)
@@ -150,13 +148,13 @@ ValueNumFuncDef(JitNewArr, 3, false, true, false, false)
 ValueNumFuncDef(JitNewMdArr, 4, false, true, false, false)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true, false, false)
 ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false, false)
-ValueNumFuncDef(Box, 3, false, false, false, false)
+ValueNumFuncDef(Box, 3, false, true, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false, false)
 
 ValueNumFuncDef(LazyStrCns, 2, false, true, false, false)            // Lazy-initialized string literal (helper)
 ValueNumFuncDef(InvariantLoad, 1, false, false, false, false)        // Args: 0: (VN of) the address.
 ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false, false)  // Args: 0: (VN of) the address.
-ValueNumFuncDef(Unbox, 2, false, true, false, false)
+ValueNumFuncDef(Unbox, 2, false, false, false, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false, false)

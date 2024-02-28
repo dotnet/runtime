@@ -905,10 +905,6 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
 
     TypeHandle methodType = pMethodType.AsTypeHandle();
 
-    // Caching of MethodDescs (impl and decl) for MethodTable slots provided significant
-    // performance gain in some reflection emit scenarios.
-    MethodTable::AllowMethodDataCaching();
-
     TypeHandle targetType((gc.target != NULL) ? gc.target->GetMethodTable() : NULL);
     // get the invoke of the delegate
     MethodTable * pDelegateType = gc.refThis->GetMethodTable();
@@ -2023,7 +2019,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
-    if (NDirect::MarshalingRequired(pMD, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
+    if (NDirect::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 

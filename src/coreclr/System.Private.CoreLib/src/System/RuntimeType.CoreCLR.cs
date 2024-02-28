@@ -1438,7 +1438,6 @@ namespace System
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
-            private bool m_bIsDomainInitialized;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1521,12 +1520,6 @@ namespace System
 
                     return value;
                 }
-            }
-
-            internal bool DomainInitialized
-            {
-                get => m_bIsDomainInitialized;
-                set => m_bIsDomainInitialized = value;
             }
 
             internal string? GetName(TypeNameKind kind)
@@ -1935,12 +1928,6 @@ namespace System
             set => Cache.GenericCache = value;
         }
 
-        internal bool DomainInitialized
-        {
-            get => Cache.DomainInitialized;
-            set => Cache.DomainInitialized = value;
-        }
-
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {
             return GetFieldInfo(RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle), fieldHandle);
@@ -2046,11 +2033,7 @@ namespace System
             if (nsDelimiter >= 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
+                name = fullname.Substring(nsDelimiter + 1);
                 Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
@@ -2774,7 +2757,12 @@ namespace System
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
-                im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
+                RuntimeMethodInfo? targetMethod = (RuntimeMethodInfo?)rtTypeMethodBase;
+                // the TargetMethod provided to us by runtime internals may be a generic method instance,
+                //  potentially with invalid arguments. TargetMethods in the InterfaceMap should never be
+                //  instances, only definitions.
+                im.TargetMethods[i] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+                    ? targetMethod.GetGenericMethodDefinition() : targetMethod!;
             }
 
             return im;
@@ -3881,6 +3869,31 @@ namespace System
             {
                 return Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
             }
+        }
+
+        /// <summary>
+        /// Helper to get instances of uninitialized objects.
+        /// </summary>
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object GetUninitializedObject()
+        {
+            object? genericCache = GenericCache;
+
+            if (genericCache is not CreateUninitializedCache cache)
+            {
+                if (genericCache is ActivatorCache activatorCache)
+                {
+                    cache = activatorCache.GetCreateUninitializedCache(this);
+                }
+                else
+                {
+                    cache = new CreateUninitializedCache(this);
+                    GenericCache = cache;
+                }
+            }
+
+            return cache.CreateUninitializedObject(this);
         }
 
         /// <summary>

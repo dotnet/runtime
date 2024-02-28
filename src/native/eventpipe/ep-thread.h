@@ -92,9 +92,6 @@ ep_thread_release (EventPipeThread *thread);
 void
 ep_thread_init (void);
 
-void
-ep_thread_fini (void);
-
 bool
 ep_thread_register (EventPipeThread *thread);
 

@@ -11,7 +11,7 @@
  */
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 65
+#define MINOR_VERSION 66
 
 typedef enum {
 	MDBGPROT_CMD_COMPOSITE = 100

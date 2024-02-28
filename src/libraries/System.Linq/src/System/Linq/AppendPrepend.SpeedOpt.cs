@@ -8,15 +8,6 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private abstract partial class AppendPrependIterator<TSource> : IIListProvider<TSource>
-        {
-            public abstract TSource[] ToArray();
-
-            public abstract List<TSource> ToList();
-
-            public abstract int GetCount(bool onlyIfCheap);
-        }
-
         private sealed partial class AppendPrepend1Iterator<TSource>
         {
             private TSource[] LazyToArray()
@@ -130,13 +121,62 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is IIListProvider<TSource> listProv)
+                if (_source is Iterator<TSource> iterator)
                 {
-                    int count = listProv.GetCount(onlyIfCheap);
+                    int count = iterator.GetCount(onlyIfCheap);
                     return count == -1 ? -1 : count + 1;
                 }
 
                 return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + 1 : -1;
+            }
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                if (_appending)
+                {
+                    TSource? first = _source.TryGetFirst(out found);
+                    if (found)
+                    {
+                        return first;
+                    }
+                }
+
+                found = true;
+                return _item;
+            }
+
+            public override TSource? TryGetLast(out bool found)
+            {
+                if (!_appending)
+                {
+                    TSource? last = _source.TryGetLast(out found);
+                    if (found)
+                    {
+                        return last;
+                    }
+                }
+
+                found = true;
+                return _item;
+            }
+
+            public override TSource? TryGetElementAt(int index, out bool found)
+            {
+                if (!_appending)
+                {
+                    if (index == 0)
+                    {
+                        found = true;
+                        return _item;
+                    }
+
+                    index--;
+                    return
+                        _source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
+                        TryGetElementAtNonIterator(_source, index, out found);
+                }
+
+                return base.TryGetElementAt(index, out found);
             }
         }
 
@@ -232,9 +272,9 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is IIListProvider<TSource> listProv)
+                if (_source is Iterator<TSource> iterator)
                 {
-                    int count = listProv.GetCount(onlyIfCheap);
+                    int count = iterator.GetCount(onlyIfCheap);
                     return count == -1 ? -1 : count + _appendCount + _prependCount;
                 }
 

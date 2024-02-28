@@ -181,8 +181,6 @@ struct InterpMethod {
 	unsigned int is_verbose : 1;
 #if HOST_BROWSER
 	unsigned int contains_traces : 1;
-	guint16 *backward_branch_offsets;
-	unsigned int backward_branch_offsets_count;
 	MonoBitSet *address_taken_bits;
 #endif
 #if PROFILE_INTERP
@@ -275,17 +273,16 @@ typedef struct {
 typedef struct {
 	gint64 transform_time;
 	gint64 methods_transformed;
+	gint64 optimize_time;
+	gint64 ssa_compute_time;
+	gint64 ssa_compute_dominance_time;
+	gint64 ssa_compute_global_vars_time;
+	gint64 ssa_compute_pruned_liveness_time;
+	gint64 ssa_rename_vars_time;
+	gint64 optimize_bblocks_time;
 	gint64 cprop_time;
 	gint64 super_instructions_time;
-	gint32 stloc_nps;
-	gint32 movlocs;
-	gint32 copy_propagations;
-	gint32 constant_folds;
-	gint32 ldlocas_removed;
-	gint32 killed_instructions;
 	gint32 emitted_instructions;
-	gint32 super_instructions;
-	gint32 added_pop_count;
 	gint32 inlined_methods;
 	gint32 inline_failures;
 } MonoInterpStats;

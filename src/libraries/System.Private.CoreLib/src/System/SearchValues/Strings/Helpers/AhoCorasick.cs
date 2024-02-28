@@ -96,7 +96,7 @@ namespace System.Buffers
                     // If '\0' is one of the starting chars and we're running on Ssse3 hardware, this may return false-positives.
                     // False-positives here are okay, we'll just rule them out below. While we could flow the Ssse3AndWasmHandleZeroInNeedle
                     // generic through, we expect such values to be rare enough that introducing more code is not worth it.
-                    int offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
+                    int offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
                         ref Unsafe.AsRef(in _startingAsciiChars));
@@ -205,7 +205,7 @@ namespace System.Buffers
 
                 if (remainingLength >= Vector128<ushort>.Count)
                 {
-                    int offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
+                    int offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
                         ref Unsafe.AsRef(in _startingAsciiChars));

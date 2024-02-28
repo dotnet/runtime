@@ -912,20 +912,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 #endif // FEATURE_ARG_SPLIT
 
-        /* If the argument tree contains an assignment (GTF_ASG) then the argument and
-           and every earlier argument (except constants) must be evaluated into temps
-           since there may be other arguments that follow and they may use the value being assigned.
-
-           EXAMPLE: ArgTab is "a, a=5, a"
-                    -> when we see the second arg "a=5"
-                       we know the first two arguments "a, a=5" have to be evaluated into temps
-
-           For the case of an assignment, we only know that there exist some assignment someplace
-           in the tree.  We don't know what is being assigned so we are very conservative here
-           and assume that any local variable could have been assigned.
-         */
-
-        if (argx->gtFlags & GTF_ASG)
+        // If the argument tree contains an assignment (GTF_ASG) then the argument and
+        // and every earlier argument (except constants) must be evaluated into temps
+        // since there may be other arguments that follow and they may use the value being assigned.
+        //
+        // EXAMPLE: ArgTab is "a, a=5, a"
+        //          -> when we see the second arg "a=5"
+        //             we know the first two arguments "a, a=5" have to be evaluated into temps
+        //
+        if ((argx->gtFlags & GTF_ASG) != 0)
         {
             // If this is not the only argument, or it's a copyblk, or it
             // already evaluates the expression to a tmp then we need a temp in
@@ -942,8 +937,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 assert(argx->IsValue());
             }
 
-            // For all previous arguments, unless they are a simple constant
-            //  we require that they be evaluated into temps
+            // For all previous arguments that may interfere with the store we
+            // require that they be evaluated into temps.
             for (CallArg& prevArg : Args())
             {
                 if (&prevArg == &arg)
@@ -960,7 +955,13 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
 #endif
 
-                if ((prevArg.GetEarlyNode() != nullptr) && !prevArg.GetEarlyNode()->IsInvariant())
+                if ((prevArg.GetEarlyNode() == nullptr) || prevArg.m_needTmp)
+                {
+                    continue;
+                }
+
+                if (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                    comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -1827,6 +1828,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         if (setupArg != nullptr)
         {
             arg.SetEarlyNode(setupArg);
+            call->gtFlags |= setupArg->gtFlags & GTF_SIDE_EFFECT;
 
             // Make sure we do not break recognition of retbuf-as-local
             // optimization here. If this is hit it indicates that we are
@@ -2041,17 +2043,23 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
     }
 #endif // defined(TARGET_ARM)
-#ifndef TARGET_X86
+
+    bool addStubCellArg = true;
+
+#ifdef TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
+
+    addStubCellArg = call->gtCallType != CT_INDIRECT && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+#endif
 
     // We are allowed to have a ret buffer argument combined
     // with any of the remaining non-standard arguments
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-    if (call->IsVirtualStub())
+    if (call->IsVirtualStub() && addStubCellArg)
     {
         if (!call->IsTailCallViaJitHelper())
         {
@@ -2068,9 +2076,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else
-#endif // !TARGET_X86
-        if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
+    else if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
     {
         assert(!call->IsUnmanaged());
 
@@ -3382,6 +3388,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         if (makeOutArgCopy)
         {
             fgMakeOutgoingStructArgCopy(call, &arg);
+
+            if (arg.GetEarlyNode() != nullptr)
+            {
+                flagsSummary |= arg.GetEarlyNode()->gtFlags;
+            }
         }
 
         if (argx->gtOper == GT_MKREFANY)
@@ -3413,6 +3424,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // Change the expression to "(tmp=val)"
             arg.SetEarlyNode(store);
             call->gtArgs.SetTemp(&arg, tmp);
+            flagsSummary |= GTF_ASG;
             hasMultiregStructArgs |= ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef);
 #endif // !TARGET_X86
         }
@@ -6308,7 +6320,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->SetKindAndTarget(BBJ_THROW);
+            compCurBB->SetKindAndTargetEdge(BBJ_THROW);
         }
 
         if (isRootReplaced)
@@ -7455,7 +7467,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetKindAndTarget(BBJ_ALWAYS, fgEntryBB);
+        FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     else
     {
@@ -7470,11 +7483,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         //
         fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        block->SetKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
+        FlowEdge* const newEdge = fgAddRefPred(fgFirstBB->Next(), block);
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
 
     // Finish hooking things up.
-    fgAddRefPred(block->GetTarget(), block);
     block->RemoveFlags(BBF_HAS_JMP);
 }
 
@@ -7697,10 +7710,18 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
-    if (fgGlobalMorph && IsStaticHelperEligibleForExpansion(call))
+    if (fgGlobalMorph)
     {
-        // Current method has potential candidates for fgExpandStaticInit phase
-        setMethodHasStaticInit();
+        if (IsStaticHelperEligibleForExpansion(call))
+        {
+            // Current method has potential candidates for fgExpandStaticInit phase
+            setMethodHasStaticInit();
+        }
+        else if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0)
+        {
+            // Current method has potential candidates for fgLateCastExpansion phase
+            setMethodHasExpandableCasts();
+        }
     }
 
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
@@ -7741,8 +7762,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             {
                 setMethodHasFrozenObjects();
                 GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                retNode->gtType  = TYP_REF;
-                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
                 return fgMorphTree(retNode);
             }
         }
@@ -8852,23 +8871,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_RUNTIMELOOKUP:
             return fgMorphTree(op1);
 
-#ifdef TARGET_ARM
-        case GT_INTRINSIC:
-            if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round)
-            {
-                switch (tree->TypeGet())
-                {
-                    case TYP_DOUBLE:
-                        return fgMorphIntoHelperCall(tree, CORINFO_HELP_DBLROUND, true /* morphArgs */, op1);
-                    case TYP_FLOAT:
-                        return fgMorphIntoHelperCall(tree, CORINFO_HELP_FLTROUND, true /* morphArgs */, op1);
-                    default:
-                        unreached();
-                }
-            }
-            break;
-#endif
-
         case GT_COMMA:
             if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
             {
@@ -9656,22 +9658,8 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    GenTree* op1SideEffects = nullptr;
-                    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
-                    if (op1SideEffects != nullptr)
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        // Keep side-effects of op1
-                        tree = gtNewOperNode(GT_COMMA, TYP_INT, op1SideEffects, gtNewIconNode(0));
-                        JITDUMP("false with side effects:\n")
-                        DISPTREE(tree);
-                    }
-                    else
-                    {
-                        JITDUMP("false\n");
-                        DEBUG_DESTROY_NODE(tree, op1);
-                        tree = gtNewIconNode(0);
-                    }
+                    JITDUMP("false\n");
+                    tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
                 }
                 INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return tree;
@@ -10604,6 +10592,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 break;
             }
+
+#if defined(TARGET_XARCH)
+            if ((node->GetSimdSize() == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // When SSE4.1 isn't supported then Vector2 only needs a single horizontal add
+                // which means the result isn't broadcast across the entire vector and we can't
+                // optimize
+                break;
+            }
+#endif // TARGET_XARCH
 
             GenTree* op1      = node->Op(1);
             GenTree* sqrt     = nullptr;
@@ -12792,10 +12790,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             gtUpdateNodeSideEffects(tree);
             break;
 
-        case GT_STORE_DYN_BLK:
-            tree = fgMorphStoreDynBlock(tree->AsStoreDynBlk());
-            break;
-
         case GT_SELECT:
             tree->AsConditional()->gtCond = fgMorphTree(tree->AsConditional()->gtCond);
             tree->AsConditional()->gtOp1  = fgMorphTree(tree->AsConditional()->gtOp1);
@@ -12974,7 +12968,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
     const bool makeCondAssertions =
         tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
 
-    // Intialize apLocalIfTrue if we might look for it later,
+    // Initialize apLocalIfTrue if we might look for it later,
     // even if it ends up identical to apLocal.
     //
     if (makeCondAssertions)
@@ -13012,14 +13006,14 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
         if (ifTrueAssertionIndex != NO_ASSERTION_INDEX)
         {
-            announce(ifTrueAssertionIndex, " [if true]");
+            announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
         {
-            announce(ifFalseAssertionIndex, " [if false]");
+            announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
         }
@@ -13202,26 +13196,17 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             if (cond->AsIntCon()->gtIconVal != 0)
             {
-                /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
+                // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetTrueTarget();
                 bNotTaken = block->GetFalseTarget();
                 block->SetKind(BBJ_ALWAYS);
             }
             else
             {
-                /* Unmark the loop if we are removing a backwards branch */
-                /* dest block must also be marked as a loop head and     */
-                /* We must be able to reach the backedge block           */
-                if (optLoopTableValid && block->GetTrueTarget()->isLoopHead() &&
-                    (block->GetTrueTarget()->bbNum <= block->bbNum) && fgReachable(block->GetTrueTarget(), block))
-                {
-                    optUnmarkLoopBlocks(block->GetTrueTarget(), block);
-                }
-
-                /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
+                // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetFalseTarget();
                 bNotTaken = block->GetTrueTarget();
-                block->SetKindAndTarget(BBJ_ALWAYS, bTaken);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
                 block->SetFlags(BBF_NONE_QUIRK);
             }
 
@@ -13317,56 +13302,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 printf("\n");
             }
 #endif
-
-            // Handle updates to the loop table.
-            // Note this is distinct from the check for BBF_LOOP_HEAD above.
-            //
-            if (optLoopTableValid)
-            {
-                for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-                {
-                    LoopDsc& loop = optLoopTable[loopNum];
-
-                    // Some loops may have been already removed by
-                    // loop unrolling or conditional folding
-                    //
-                    if (loop.lpIsRemoved())
-                    {
-                        continue;
-                    }
-
-                    // Removed edge from bottom -> entry?
-                    //
-                    if ((loop.lpBottom == block) && (loop.lpEntry == bNotTaken))
-                    {
-                        // This either destroyed the loop or lessened its extent.
-                        // We currently ignore the latter.
-                        //
-                        if (loop.lpEntry->countOfInEdges() == 1)
-                        {
-                            // We removed the only backedge.
-                            //
-                            JITDUMP("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB
-                                    ") -- no longer has a backedge\n\n",
-                                    loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
-
-                            optMarkLoopRemoved(loopNum);
-                        }
-                    }
-
-                    // Removed edge from head -> entry?
-                    //
-                    if ((loop.lpHead == block) && (loop.lpEntry == bNotTaken))
-                    {
-                        // Loop is no longer reachable from outside
-                        //
-                        JITDUMP("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ") -- no longer reachable\n\n",
-                                loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
-
-                        optMarkLoopRemoved(loopNum);
-                    }
-                }
-            }
         }
     }
     else if (block->KindIs(BBJ_SWITCH))
@@ -13423,29 +13358,29 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
-            BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-            bool         foundVal  = false;
+            size_t     switchVal = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+            bool       foundVal  = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
-                BasicBlock* curJump = *jumpTab;
+                FlowEdge* curEdge = *jumpTab;
 
-                assert(curJump->countOfInEdges() > 0);
+                assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    block->SetKindAndTarget(BBJ_ALWAYS, curJump);
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
                     foundVal = true;
                 }
                 else
                 {
-                    // Remove 'block' from the predecessor list of 'curJump'
-                    fgRemoveRefPred(curJump, block);
+                    // Remove 'curEdge'
+                    fgRemoveRefPred(curEdge);
                 }
             }
 
@@ -13479,7 +13414,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //
 // Returns:
 //    true if 'stmt' was removed from the block.
-//  s false if 'stmt' is still in the block (even if other statements were removed).
+//    false if 'stmt' is still in the block (even if other statements were removed).
 //
 // Notes:
 //   Can be called anytime, unlike fgMorphStmts() which should only be called once.
@@ -13627,11 +13562,7 @@ void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
         {
             if ((*use)->OperIsBlkOp())
             {
-                if ((*use)->OperIs(GT_STORE_DYN_BLK))
-                {
-                    *use = m_compiler->fgMorphStoreDynBlock((*use)->AsStoreDynBlk());
-                }
-                else if ((*use)->OperIsInitBlkOp())
+                if ((*use)->OperIsInitBlkOp())
                 {
                     *use = m_compiler->fgMorphInitBlock(*use);
                 }
@@ -13851,8 +13782,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
-//    highestReachablePostorder - maximum postorder number for a
-//     reachable block.
 //
 void Compiler::fgMorphBlock(BasicBlock* block)
 {
@@ -13893,7 +13822,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // An equal number means pred == block (block is a self-loop).
                     // Either way the assertion info is not available, and we must assume the worst.
                     //
-                    if (pred->bbNewPostorderNum <= block->bbNewPostorderNum)
+                    if (pred->bbPostorderNum <= block->bbPostorderNum)
                     {
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
@@ -13904,7 +13833,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // Yes, pred assertions are available.
                     // If the pred is (a non-degenerate) BBJ_COND, fetch the appropriate out set.
                     //
-                    ASSERT_TP  assertionsOut     = pred->bbAssertionOut;
+                    ASSERT_TP  assertionsOut;
                     const bool useCondAssertions = pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2);
 
                     if (useCondAssertions)
@@ -13920,6 +13849,10 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                             JITDUMP("Using `if false` assertions from pred " FMT_BB "\n", pred->bbNum);
                             assertionsOut = pred->bbAssertionOutIfFalse;
                         }
+                    }
+                    else
+                    {
+                        assertionsOut = pred->bbAssertionOut;
                     }
 
                     // If this is the first pred, copy (or share, when block is the only successor).
@@ -14006,7 +13939,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 //
 // Note:
 //   Morph almost always changes IR, so we don't actually bother to
-//   track if it made any changees.
+//   track if it made any changes.
 //
 PhaseStatus Compiler::fgMorphBlocks()
 {
@@ -14123,6 +14056,14 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgEntryBB = nullptr;
     }
 
+    // We don't maintain `genReturnBB` after this point.
+    if (genReturnBB != nullptr)
+    {
+        // It no longer needs special "keep" treatment.
+        genReturnBB->RemoveFlags(BBF_DONT_REMOVE);
+        genReturnBB = nullptr;
+    }
+
     // We are done with the global morphing phase
     //
     fgInvalidateDfsTree();
@@ -14185,10 +14126,11 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
-            fgAddRefPred(genReturnBB, block);
+            FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
+            block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             fgReturnCount--;
         }
+
         if (genReturnLocal != BAD_VAR_NUM)
         {
             // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
@@ -14243,7 +14185,15 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             noway_assert(ret->TypeGet() == TYP_VOID);
             noway_assert(ret->gtGetOp1() == nullptr);
 
-            fgRemoveStmt(block, lastStmt);
+            if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
+            {
+                // We can't remove the return as it might remove a sequence point. Convert it to a NOP.
+                ret->gtBashToNOP();
+            }
+            else
+            {
+                fgRemoveStmt(block, lastStmt);
+            }
         }
 
         JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
@@ -14553,229 +14503,6 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 }
 
 //------------------------------------------------------------------------
-// fgExpandQmarkForCastInstOf: expand qmark for cast
-//
-// Arguments:
-//   block - block containing the qmark
-//   stmt  - statement containing the qmark
-//
-// Returns:
-//   true if the expansion introduced a throwing block
-//
-// Notes:
-//
-//  For a castclass helper call,
-//  Importer creates the following tree:
-//      tmp = (op1 == null) ? op1 : ((*op1 == (cse = op2, cse)) ? op1 : helper());
-//
-//  This method splits the qmark expression created by the importer into the
-//  following blocks: (block, asg, cond1, cond2, helper, remainder)
-//  Notice that op1 is the result for both the conditions. So we coalesce these
-//  assignments into a single block instead of two blocks resulting a nested diamond.
-//
-//                       +---------->-----------+
-//                       |          |           |
-//                       ^          ^           v
-//                       |          |           |
-//  block-->asg-->cond1--+-->cond2--+-->helper--+-->remainder
-//
-//  We expect to achieve the following codegen:
-//     mov      rsi, rdx                           tmp = op1                  // asgBlock
-//     test     rsi, rsi                           goto skip if tmp == null ? // cond1Block
-//     je       SKIP
-//     mov      rcx, 0x76543210                    cns = op2                  // cond2Block
-//     cmp      qword ptr [rsi], rcx               goto skip if *tmp == op2
-//     je       SKIP
-//     call     CORINFO_HELP_CHKCASTCLASS_SPECIAL  tmp = helper(cns, tmp)     // helperBlock
-//     mov      rsi, rax
-//  SKIP:                                                                     // remainderBlock
-//     tmp has the result.
-//
-bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nExpanding CastInstOf qmark in " FMT_BB " (before)\n", block->bbNum);
-        fgDispBasicBlocks(block, block, true);
-    }
-#endif // DEBUG
-
-    bool     introducedThrow = false;
-    GenTree* expr            = stmt->GetRootNode();
-
-    GenTree*      dst   = nullptr;
-    GenTreeQmark* qmark = fgGetTopLevelQmark(expr, &dst);
-
-    noway_assert(dst != nullptr);
-    assert(dst->OperIsLocalStore());
-    assert(qmark->gtFlags & GTF_QMARK_CAST_INSTOF);
-
-    // Get cond, true, false exprs for the qmark.
-    GenTree* condExpr  = qmark->gtGetOp1();
-    GenTree* trueExpr  = qmark->gtGetOp2()->AsColon()->ThenNode();
-    GenTree* falseExpr = qmark->gtGetOp2()->AsColon()->ElseNode();
-
-    // Get cond, true, false exprs for the nested qmark.
-    GenTree* nestedQmark = falseExpr;
-    GenTree* cond2Expr;
-    GenTree* true2Expr;
-    GenTree* false2Expr;
-
-    unsigned nestedQmarkElseLikelihood = 50;
-    if (nestedQmark->gtOper == GT_QMARK)
-    {
-        cond2Expr                 = nestedQmark->gtGetOp1();
-        true2Expr                 = nestedQmark->gtGetOp2()->AsColon()->ThenNode();
-        false2Expr                = nestedQmark->gtGetOp2()->AsColon()->ElseNode();
-        nestedQmarkElseLikelihood = nestedQmark->AsQmark()->ElseNodeLikelihood();
-    }
-    else
-    {
-        // This is a rare case that arises when we are doing minopts and encounter isinst of null
-        // gtFoldExpr was still is able to optimize away part of the tree (but not all).
-        // That means it does not match our pattern.
-
-        // Rather than write code to handle this case, just fake up some nodes to make it match the common
-        // case.  Synthesize a comparison that is always true, and for the result-on-true, use the
-        // entire subtree we expected to be the nested question op.
-
-        cond2Expr  = gtNewOperNode(GT_EQ, TYP_INT, gtNewIconNode(0, TYP_I_IMPL), gtNewIconNode(0, TYP_I_IMPL));
-        true2Expr  = nestedQmark;
-        false2Expr = gtNewIconNode(0, TYP_I_IMPL);
-    }
-    assert(false2Expr->OperGet() == trueExpr->OperGet());
-
-    // Create the chain of blocks. See method header comment.
-    // The order of blocks after this is the following:
-    //     block ... asgBlock ... cond1Block ... cond2Block ... helperBlock ... remainderBlock
-    //
-    // We need to remember flags that exist on 'block' that we want to propagate to 'remainderBlock',
-    // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
-    // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
-    // remainderBlock will still be GC safe.
-    BasicBlockFlags propagateFlags = block->GetFlagsRaw() & BBF_GC_SAFE_POINT;
-    BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
-    fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
-
-    BasicBlock* helperBlock = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
-    BasicBlock* cond2Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
-    BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
-    BasicBlock* asgBlock    = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
-
-    block->RemoveFlags(BBF_NEEDS_GCPOLL);
-    remainderBlock->SetFlags(propagateFlags);
-    helperBlock->SetFlags(BBF_NONE_QUIRK);
-    asgBlock->SetFlags(BBF_NONE_QUIRK);
-
-    // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
-    // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if (!block->HasFlag(BBF_INTERNAL))
-    {
-        helperBlock->RemoveFlags(BBF_INTERNAL);
-        cond2Block->RemoveFlags(BBF_INTERNAL);
-        cond1Block->RemoveFlags(BBF_INTERNAL);
-        asgBlock->RemoveFlags(BBF_INTERNAL);
-        helperBlock->SetFlags(BBF_IMPORTED);
-        cond2Block->SetFlags(BBF_IMPORTED);
-        cond1Block->SetFlags(BBF_IMPORTED);
-        asgBlock->SetFlags(BBF_IMPORTED);
-    }
-
-    // Chain the flow correctly.
-    assert(block->KindIs(BBJ_ALWAYS));
-    block->SetTarget(asgBlock);
-    fgAddRefPred(asgBlock, block);
-    fgAddRefPred(cond1Block, asgBlock);
-    fgAddRefPred(remainderBlock, helperBlock);
-
-    cond1Block->SetFalseTarget(cond2Block);
-    cond2Block->SetFalseTarget(helperBlock);
-    fgAddRefPred(cond2Block, cond1Block);
-    fgAddRefPred(helperBlock, cond2Block);
-    fgAddRefPred(remainderBlock, cond1Block);
-    fgAddRefPred(remainderBlock, cond2Block);
-
-    // Set the weights; some are guesses.
-    asgBlock->inheritWeight(block);
-    cond1Block->inheritWeight(block);
-
-    // We only have likelihood for the fast path (and fallback), but we don't know
-    // how often we have null in the root QMARK (although, we might be able to guess it too)
-    // so leave 50/50 for now. Thus, we have:
-    //
-    //   [weight 1.0]
-    //   if (obj != null)
-    //   {
-    //       [weight 0.5]
-    //       if (obj.GetType() == typeof(FastType))
-    //       {
-    //           [weight 0.5 * <likelihood of FastType>]
-    //       }
-    //       else
-    //       {
-    //           [weight 0.5 * <100 - likelihood of FastType>]
-    //       }
-    //
-    cond2Block->inheritWeightPercentage(cond1Block, 50);
-    helperBlock->inheritWeightPercentage(cond2Block, nestedQmarkElseLikelihood);
-
-    // Append cond1 as JTRUE to cond1Block
-    GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
-    Statement* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
-    fgInsertStmtAtEnd(cond1Block, jmpStmt);
-
-    // Append cond2 as JTRUE to cond2Block
-    jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, cond2Expr);
-    jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
-    fgInsertStmtAtEnd(cond2Block, jmpStmt);
-
-    unsigned dstLclNum = dst->AsLclVarCommon()->GetLclNum();
-
-    // AsgBlock should get tmp = op1.
-    GenTree* trueExprStore =
-        dst->OperIs(GT_STORE_LCL_FLD)
-            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), trueExpr)
-            : gtNewStoreLclVarNode(dstLclNum, trueExpr)->AsLclVarCommon();
-    Statement* trueStmt = fgNewStmtFromTree(trueExprStore, stmt->GetDebugInfo());
-    fgInsertStmtAtEnd(asgBlock, trueStmt);
-
-    // Since we are adding helper in the JTRUE false path, reverse the cond2 and add the helper.
-    gtReverseCond(cond2Expr);
-
-    if (true2Expr->OperIs(GT_CALL) && (true2Expr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
-    {
-        Statement* helperStmt = fgNewStmtFromTree(true2Expr, stmt->GetDebugInfo());
-        fgInsertStmtAtEnd(helperBlock, helperStmt);
-        fgConvertBBToThrowBB(helperBlock);
-        setMethodHasNoReturnCalls();
-        introducedThrow = true;
-    }
-    else
-    {
-        GenTree* helperExprStore =
-            dst->OperIs(GT_STORE_LCL_FLD)
-                ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), true2Expr)
-                : gtNewStoreLclVarNode(dstLclNum, true2Expr)->AsLclVarCommon();
-        Statement* helperStmt = fgNewStmtFromTree(helperExprStore, stmt->GetDebugInfo());
-        fgInsertStmtAtEnd(helperBlock, helperStmt);
-    }
-
-    // Finally remove the nested qmark stmt.
-    fgRemoveStmt(block, stmt);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nExpanding CastInstOf qmark in " FMT_BB " (after)\n", block->bbNum);
-        fgDispBasicBlocks(block, remainderBlock, true);
-    }
-#endif // DEBUG
-
-    return introducedThrow;
-}
-
-//------------------------------------------------------------------------
 // fgExpandQmarkStmt: expand a qmark into control flow
 //
 // Arguments:
@@ -14848,11 +14575,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         return false;
     }
 
-    if (qmark->gtFlags & GTF_QMARK_CAST_INSTOF)
-    {
-        return fgExpandQmarkForCastInstOf(block, stmt);
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -14907,15 +14629,23 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->bbWeight == remainderBlock->bbWeight);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    block->SetTarget(condBlock);
-    condBlock->SetTarget(elseBlock);
-    elseBlock->SetTarget(remainderBlock);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(condBlock, block);
+        block->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
+        condBlock->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
+        elseBlock->SetTargetEdge(newEdge);
+    }
+
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
-
-    fgAddRefPred(condBlock, block);
-    fgAddRefPred(elseBlock, condBlock);
-    fgAddRefPred(remainderBlock, elseBlock);
 
     condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
     elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
@@ -14933,17 +14663,20 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //
         gtReverseCond(condExpr);
 
-        thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
+        thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->SetFlags(propagateFlagsToAll);
-        condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
             thenBlock->SetFlags(BBF_IMPORTED);
         }
 
-        fgAddRefPred(thenBlock, condBlock);
-        fgAddRefPred(remainderBlock, thenBlock);
+        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
+        thenBlock->SetTargetEdge(newEdge);
+
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
+        condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);
 
         thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
@@ -14957,8 +14690,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(remainderBlock, elseBlock);
-        fgAddRefPred(remainderBlock, condBlock);
+
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
+        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
@@ -14973,8 +14709,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetCond(remainderBlock, elseBlock);
-        fgAddRefPred(remainderBlock, condBlock);
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
+        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
 
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
     }
@@ -15472,7 +15209,7 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                                       (nonCallAppearances <= varDsc->lvFieldCnt));
 
 #ifdef DEBUG
-                // Above is a profitability heurisic; either value of
+                // Above is a profitability heuristic; either value of
                 // undoPromotion should lead to correct code. So,
                 // under stress, make different decisions at times.
                 if (compStressCompile(STRESS_BYREF_PROMOTION, 25))

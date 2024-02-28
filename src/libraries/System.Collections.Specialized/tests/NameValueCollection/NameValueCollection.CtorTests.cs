@@ -46,7 +46,7 @@ namespace System.Collections.Specialized.Tests
             Assert.False(((ICollection)nameValueCollection).IsSynchronized);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(5)]
         public void Ctor_Int(int capacity)
@@ -85,7 +85,7 @@ namespace System.Collections.Specialized.Tests
             yield return new object[] { Helpers.CreateNameValueCollection(10) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_NameValueCollection_TestData))]
         public void Ctor_NameValueCollection(NameValueCollection nameValueCollection1)
         {
@@ -126,7 +126,7 @@ namespace System.Collections.Specialized.Tests
             yield return new object[] { 15, Helpers.CreateNameValueCollection(10) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_Int_NameValueCollection_TestData))]
         public void Ctor_Int_NameValueCollection(int capacity, NameValueCollection nameValueCollection1)
         {
@@ -156,7 +156,7 @@ namespace System.Collections.Specialized.Tests
             yield return new object[] { 10, null };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_Int_IEqualityComparer_TestData))]
         public void Ctor_Int_IEqualityComparer(int capacity, IEqualityComparer equalityComparer)
         {
@@ -170,7 +170,7 @@ namespace System.Collections.Specialized.Tests
             yield return new object[] { null };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_IEqualityComparer_TestData))]
         public void Ctor_IEqualityComparer(IEqualityComparer equalityComparer)
         {

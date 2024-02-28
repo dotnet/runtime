@@ -16,18 +16,16 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
-    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(MonoWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -256,10 +254,10 @@
       <EmccExportedFunction Include="_tanf" />
       <EmccExportedFunction Include="_tanhf" />
     </ItemGroup>
-    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
-    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
     <PropertyGroup>
@@ -272,10 +270,10 @@
     <ItemGroup>
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
       <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
-      <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
+      <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
+      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
+      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
+      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
@@ -295,7 +293,7 @@
       <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
 
       <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
@@ -357,7 +355,8 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
+                                  $(ICULibDir)/libicudata.a;
+                                  $(BrowserProjectRoot)runtime/hybrid-globalization/segmentation-rules.json" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -373,7 +372,7 @@
       <!-- -lexports.js has the magical property of disabling minification of export names -->
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1 -lexports.js</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
@@ -390,9 +389,8 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DENABLE_JS_INTEROP_BY_VALUE=1</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_LEGACY_JS_INTEROP=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
@@ -404,8 +402,6 @@
       <CMakeBuildRuntimeCmd Condition="'$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp;  $(CMakeBuildRuntimeCmd)'</CMakeBuildRuntimeCmd>
     </PropertyGroup>
     <ItemGroup>
-      <_CmakeEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP=1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'"/>
-      <_CmakeEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP=0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'"/>
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=1" Condition="'$(WasmEnableJsInteropByValue)' != 'false'"/>
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
@@ -479,7 +475,6 @@
                        $(NativeBinDir)dotnet.runtime.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
-                       $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.native.wasm"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
@@ -528,7 +523,7 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/*.ts"
-		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/dotnet-legacy.d.ts;$(BrowserProjectRoot)runtime/diagnostics-mock.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
+		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/diagnostics-mock.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/tsconfig.*"
 		   Exclude="$(BrowserProjectRoot)runtime/node_modules/**/tsconfig.*" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/workers/**/*.js"/>
@@ -543,13 +538,11 @@
       <_MonoRollupEnvironmentVariable Include="NativeBinDir:$(NativeBinDir)" />
       <_MonoRollupEnvironmentVariable Include="WasmObjDir:$(WasmObjDir)" />
       <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
-      <_MonoRollupEnvironmentVariable Include="MonoWasmThreads:$(MonoWasmThreads)" />
+      <_MonoRollupEnvironmentVariable Include="WasmEnableThreads:$(WasmEnableThreads)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
-      <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
-      <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
       <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <_MonoRollupEnvironmentVariable Include="MonoDiagnosticsMock:$(MonoDiagnosticsMock)" />
@@ -568,7 +561,7 @@
   <Target Name="WriteRollupEnvToFile" DependsOnTargets="SetMonoRollupEnvironment">
     <!-- the purpose of this file is to be an input to the BuildWithRollup target.  That way if any
          of the environment values change, we will do a new rollup build.  For example if the
-         `MonoWasmThreads` property is changed between builds by a developer. -->
+         `WasmEnableThreads` property is changed between builds by a developer. -->
     <WriteLinesToFile File="$(_RollupEnvIntermediateFile)"
 		      Lines="$(MonoRollupEnvironment)"
 		      WriteOnlyWhenDifferent="true"

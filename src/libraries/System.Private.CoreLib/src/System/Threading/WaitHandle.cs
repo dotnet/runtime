@@ -132,6 +132,12 @@ namespace System.Threading
 #if !CORECLR // CoreCLR sends the wait events from the native side
                     bool sendWaitEvents =
                         millisecondsTimeout != 0 &&
+#if NATIVEAOT
+                        // A null check is necessary in NativeAOT due to the possibility of reentrance during class
+                        // construction, as this path can be reached through Lock. See
+                        // https://github.com/dotnet/runtime/issues/94728 for a call stack.
+                        NativeRuntimeEventSource.Log != null &&
+#endif
                         NativeRuntimeEventSource.Log.IsEnabled(
                             EventLevel.Verbose,
                             NativeRuntimeEventSource.Keywords.WaitHandleKeyword);

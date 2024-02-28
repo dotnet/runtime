@@ -2700,6 +2700,8 @@ public:
     // may still execute GS cookie tracking/checking code paths.
     #define SKIP_GSCOOKIE_CHECK 0x10000
 
+    #define UNWIND_FLOATS 0x20000
+
     StackWalkAction StackWalkFramesEx(
                         PREGDISPLAY pRD,        // virtual register set at crawl start
                         PSTACKWALKFRAMESCALLBACK pCallback,

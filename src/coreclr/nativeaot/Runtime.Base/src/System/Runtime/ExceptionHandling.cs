@@ -68,6 +68,14 @@ namespace System.Runtime
             private IntPtr _dummy; // For alignment
         }
 
+        internal struct MethodRegionInfo
+        {
+            internal byte* _hotStartAddress;
+            internal nuint _hotSize;
+            internal byte* _coldStartAddress;
+            internal nuint _coldSize;
+        }
+
 #pragma warning disable IDE0060
         // This is a fail-fast function used by the runtime as a last resort that will terminate the process with
         // as little effort as possible. No guarantee is made about the semantics of this fail-fast.
@@ -386,14 +394,14 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
-        public static void FailedAllocation(EETypePtr pEEType, bool fIsOverflow)
+        public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
 
             // Throw the out of memory exception defined by the classlib, using the input MethodTable*
             // to find the correct classlib.
 
-            throw pEEType.ToPointer()->GetClasslibException(exID);
+            throw pEEType->GetClasslibException(exID);
         }
 
 #if !INPLACE_RUNTIME
@@ -932,6 +940,20 @@ namespace System.Runtime
                 "Handling frame must have a valid stack frame pointer");
         }
 
+        // Caclulate the code offset from the start of the method as if the hot and cold regions were
+        // stored sequentially in memory.
+        private static uint CalculateCodeOffset(byte* pbControlPC, in MethodRegionInfo methodRegionInfo)
+        {
+            uint codeOffset = (uint)(pbControlPC - methodRegionInfo._hotStartAddress);
+            // If the PC is in the cold region, adjust the offset to be relative to the start of the method.
+            if ((methodRegionInfo._coldSize != 0) && (codeOffset >= methodRegionInfo._hotSize))
+            {
+                codeOffset = (uint)(methodRegionInfo._hotSize + (nuint)(pbControlPC - methodRegionInfo._coldStartAddress));
+            }
+
+            return codeOffset;
+        }
+
         private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, UIntPtr sp,
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame, ref ExInfo exInfo)
         {
@@ -958,13 +980,13 @@ namespace System.Runtime
             tryRegionIdx = MaxTryRegionIdx;
 
             EHEnum ehEnum;
-            byte* pbMethodStartAddress;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, &pbMethodStartAddress, &ehEnum))
+            MethodRegionInfo methodRegionInfo;
+            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, out methodRegionInfo, &ehEnum))
                 return false;
 
             byte* pbControlPC = frameIter.ControlPC;
 
-            uint codeOffset = (uint)(pbControlPC - pbMethodStartAddress);
+            uint codeOffset = CalculateCodeOffset(pbControlPC, in methodRegionInfo);
 
             uint lastTryStart = 0, lastTryEnd = 0;
 
@@ -1084,27 +1106,21 @@ namespace System.Runtime
 
             return TypeCast.IsInstanceOfException(pClauseType, exception);
 #else
-            bool retry = false;
-            do
+            if (tryUnwrapException && exception is RuntimeWrappedException ex)
             {
-                MethodTable* mt = RuntimeHelpers.GetMethodTable(exception);
-                while (mt != null)
-                {
-                    if (pClauseType == mt)
-                    {
-                        return true;
-                    }
-
-                    mt = mt->ParentMethodTable;
-                }
-
-                if (tryUnwrapException && exception is RuntimeWrappedException ex)
-                {
-                    exception = ex.WrappedException;
-                    retry = true;
-                }
+                exception = ex.WrappedException;
             }
-            while (retry);
+
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(exception);
+            while (mt != null)
+            {
+                if (pClauseType == mt)
+                {
+                    return true;
+                }
+
+                mt = mt->ParentMethodTable;
+            }
 
             return false;
 #endif
@@ -1117,13 +1133,14 @@ namespace System.Runtime
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;
-            byte* pbMethodStartAddress;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, &pbMethodStartAddress, &ehEnum))
+            MethodRegionInfo methodRegionInfo;
+
+            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, out methodRegionInfo, &ehEnum))
                 return;
 
             byte* pbControlPC = exInfo._frameIter.ControlPC;
 
-            uint codeOffset = (uint)(pbControlPC - pbMethodStartAddress);
+            uint codeOffset = CalculateCodeOffset(pbControlPC, in methodRegionInfo);
 
             uint lastTryStart = 0, lastTryEnd = 0;
 

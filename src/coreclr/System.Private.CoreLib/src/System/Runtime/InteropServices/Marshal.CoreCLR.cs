@@ -49,11 +49,13 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            return OffsetOfHelper(rtField);
+            nint offset = OffsetOf(rtField.GetFieldHandle());
+            GC.KeepAlive(rtField);
+            return offset;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr OffsetOfHelper(IRuntimeFieldInfo f);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOf")]
+        private static partial nint OffsetOf(IntPtr pFD);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
@@ -264,7 +266,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
             }
         }
 
@@ -289,7 +291,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
+                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
         }
 
@@ -361,17 +363,26 @@ namespace System.Runtime.InteropServices
 
 #endif // TARGET_WINDOWS
 
+        internal static Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        {
+            Exception? exception = null;
+            GetExceptionForHRInternal(errorCode, errorInfo, ObjectHandleOnStack.Create(ref exception));
+            return exception!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetExceptionForHR")]
+        private static partial void GetExceptionForHRInternal(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception);
 
 #if FEATURE_COMINTEROP
         /// <summary>
         /// Converts the CLR exception to an HRESULT. This function also sets
         /// up an IErrorInfo for the exception.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHRForException(Exception? e);
+        public static int GetHRForException(Exception? e)
+            => GetHRForException(ObjectHandleOnStack.Create(ref e));
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHRForException")]
+        private static partial int GetHRForException(ObjectHandleOnStack exception);
 
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.

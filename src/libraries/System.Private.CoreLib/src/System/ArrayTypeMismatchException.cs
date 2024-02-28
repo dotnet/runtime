@@ -28,13 +28,13 @@ namespace System
         // and its ExceptionInfo reference set to null.
         //
         public ArrayTypeMismatchException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_ArrayTypeMismatchException)
         {
             HResult = HResults.COR_E_ARRAYTYPEMISMATCH;
         }
 
         public ArrayTypeMismatchException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ArrayTypeMismatchException, innerException)
         {
             HResult = HResults.COR_E_ARRAYTYPEMISMATCH;
         }

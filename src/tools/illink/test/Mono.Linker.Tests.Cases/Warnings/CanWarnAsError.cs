@@ -4,7 +4,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Warnings
 {
 	[ExpectNonZeroExitCode (1)]
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[SetupLinkerSubstitutionFile ("CanWarnAsErrorSubstitutions.xml")]
 	[SetupLinkerArgument ("--verbose")]

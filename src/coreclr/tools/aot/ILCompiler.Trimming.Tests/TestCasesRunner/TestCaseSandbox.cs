@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			// Converts paths like /root-folder/runtime/artifacts/bin/Mono.Linker.Tests/x64/Debug/Mono.Linker.Tests.dll
 			// to /root-folder/runtime/artifacts/bin/ILLink.testcases/
-			string artifacts = (string) AppContext.GetData ("Mono.Linker.Tests.ArtifactsDir")!;
+			string artifacts = (string) AppContext.GetData ("Mono.Linker.Tests.ArtifactsBinDir")!;
 			string tests = Path.Combine (artifacts, "ILLink.testcases");
 			return new NPath (tests);
 		}

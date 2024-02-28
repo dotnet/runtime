@@ -287,14 +287,8 @@ Histogram bbCntTable(bbCntBuckets);
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
 Histogram bbOneBBSizeTable(bbSizeBuckets);
 
-unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
-Histogram domsChangedIterationTable(domsChangedIterationBuckets);
-
 unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
 Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
-
-unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
-Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
 
 #endif // COUNT_BASIC_BLOCKS
 
@@ -311,7 +305,6 @@ Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets)
 
 unsigned totalLoopMethods;        // counts the total number of methods that have natural loops
 unsigned maxLoopsPerMethod;       // counts the maximum number of loops a method has
-unsigned totalLoopOverflows;      // # of methods that identified more loops than we can represent
 unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
@@ -1566,21 +1559,9 @@ void Compiler::compShutdown()
     jitprintf("--------------------------------------------------\n");
 
     jitprintf("--------------------------------------------------\n");
-    jitprintf("fgComputeDoms `while (change)` iterations:\n");
-    jitprintf("--------------------------------------------------\n");
-    domsChangedIterationTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
-    jitprintf("--------------------------------------------------\n");
     jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
     jitprintf("--------------------------------------------------\n");
     computeReachabilitySetsIterationTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("fgComputeReachability `while (change)` iterations:\n");
-    jitprintf("--------------------------------------------------\n");
-    computeReachabilityIterationTable.dump(jitstdout());
     jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_BASIC_BLOCKS
@@ -1594,7 +1575,6 @@ void Compiler::compShutdown()
     jitprintf("Total number of methods with loops is %5u\n", totalLoopMethods);
     jitprintf("Total number of              loops is %5u\n", totalLoopCount);
     jitprintf("Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
-    jitprintf("# of methods overflowing nat loop table is %5u\n", totalLoopOverflows);
     jitprintf("Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     jitprintf("# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     jitprintf("Total number of loops with an         iterator is %5u\n", iterLoopCount);
@@ -1813,9 +1793,13 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodName = eeGetMethodName(methodHnd);
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
-    info.compPerfScore  = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
+
+    if (!compIsForInlining())
+    {
+        JitMetadata::report(this, JitMetadata::MethodFullName, info.compFullName, strlen(info.compFullName));
+    }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG)
@@ -1883,9 +1867,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         //
         // Initialize all the per-method statistics gathering data structures.
         //
-
-        optLoopsCloned = 0;
-
+        CLANG_FORMAT_COMMENT_ANCHOR;
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
         m_curLoopHasHoistedExpression = false;
@@ -1985,6 +1967,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compUsesThrowHelper = false;
 
     m_preferredInitCctor = CORINFO_HELP_UNDEF;
+
+    new (&Metrics, jitstd::placement_t()) JitMetrics();
 }
 
 /*****************************************************************************
@@ -2332,6 +2316,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
@@ -2637,6 +2622,32 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
 
+    // Setup assembly name list for disassembly and dump, if not already set up.
+    if (!s_pJitDisasmIncludeAssembliesListInitialized)
+    {
+        const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
+        if (assemblyNameList != nullptr)
+        {
+            s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
+                AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
+        }
+        s_pJitDisasmIncludeAssembliesListInitialized = true;
+    }
+
+    // Check for a specific set of assemblies to dump.
+    // If we have an assembly name list for disassembly, also check this method's assembly.
+    bool assemblyInIncludeList = true; // assume we'll dump, if there's not an include list (or it's empty).
+    if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
+    {
+        const char* assemblyName = info.compCompHnd->getAssemblyName(
+            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+        {
+            // We have a list, and the current assembly is not in it, so we won't dump.
+            assemblyInIncludeList = false;
+        }
+    }
+
     bool altJitConfig = !pfAltJit->isEmpty();
 
     bool verboseDump = false;
@@ -2658,6 +2669,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 verboseDump = true;
             }
         }
+    }
+
+    // Optionally suppress dumping if not in specified list of included assemblies.
+    //
+    if (verboseDump && !assemblyInIncludeList)
+    {
+        verboseDump = false;
     }
 
     // Optionally suppress dumping Tier0 jit requests.
@@ -2801,7 +2819,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             assert(fgPgoSchema == nullptr);
         }
-#endif
+#endif // DEBUG
     }
 
     if (compIsForInlining())
@@ -2838,6 +2856,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspDiffable  = false;
     opts.disAlignment = false;
     opts.disCodeBytes = false;
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2848,6 +2867,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
     opts.dspGCtbls       = false;
+    opts.dspMetrics      = false;
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
@@ -2866,28 +2886,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         bool disEnabled = true;
 
-        // Setup assembly name list for disassembly, if not already set up.
-        if (!s_pJitDisasmIncludeAssembliesListInitialized)
+        // Optionally suppress dumping if not in specified list of included assemblies.
+        //
+        if (!assemblyInIncludeList)
         {
-            const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
-            if (assemblyNameList != nullptr)
-            {
-                s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
-                    AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
-            }
-            s_pJitDisasmIncludeAssembliesListInitialized = true;
-        }
-
-        // If we have an assembly name list for disassembly, also check this method's assembly.
-        if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
-        {
-            const char* assemblyName = info.compCompHnd->getAssemblyName(
-                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
-
-            if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
-            {
-                disEnabled = false;
-            }
+            disEnabled = false;
         }
 
         if (disEnabled)
@@ -2927,6 +2930,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.dspDebugInfo = true;
             }
         }
+
         if (opts.disAsm && JitConfig.JitDisasmWithGC())
         {
             opts.disasmWithGC = true;
@@ -2934,14 +2938,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef LATE_DISASM
         if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        {
             opts.doLateDisasm = true;
+        }
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: DOTNET_JitDasmWithAddress=1
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
+
         if (JitConfig.JitLongAddress() != 0)
         {
             opts.compLongAddress = true;
@@ -2951,6 +2957,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.optRepeat = true;
         }
+
+        opts.dspMetrics = (JitConfig.JitMetrics() != 0);
     }
 
     if (verboseDump)
@@ -3046,19 +3054,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.dspDiffable = true;
         }
     }
-
-// These are left for backward compatibility, to be removed
-#ifdef DEBUG
-    if (JitConfig.JitDasmWithAlignmentBoundaries())
-    {
-        opts.disAlignment = true;
-    }
-    if (JitConfig.JitDiffableDasm())
-    {
-        opts.disDiffable = true;
-        opts.dspDiffable = true;
-    }
-#endif // DEBUG
 
 //-------------------------------------------------------------------------
 
@@ -3329,6 +3324,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compDbgEnC  = %s\n", dspBool(opts.compDbgEnC));
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
+
+        // This is rare; don't clutter up the dump with it normally.
+        if (compProfilerHookNeeded)
+        {
+            printf("OPTIONS: compProfilerHookNeeded   = %s\n", dspBool(compProfilerHookNeeded));
+        }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
@@ -3653,6 +3654,12 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
+#ifdef TARGET_XARCH
+    else if (regs == RBM_ALLMASK)
+    {
+        printf("[allMask]");
+    }
+#endif // TARGET_XARCH
     else
     {
         dspRegMask(regs);
@@ -4501,7 +4508,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4603,6 +4609,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Add any internal blocks/trees we may need
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Remove empty try regions
     //
@@ -4882,6 +4893,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doValueNum                = true;
         bool doLoopHoisting            = true;
         bool doCopyProp                = true;
+        bool doOptimizeIVs             = true;
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
@@ -4894,6 +4906,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doSsa                     = (JitConfig.JitDoSsa() != 0);
         doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
+        doOptimizeIVs             = doSsa && (JitConfig.JitDoOptimizeIVs() != 0);
         doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
@@ -4994,12 +5007,22 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
             }
 
+            if (doOptimizeIVs)
+            {
+                // Simplify and optimize induction variables used in natural loops
+                //
+                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
+            }
+
             if (doVNBasedDeadStoreRemoval)
             {
                 // Note: this invalidates SSA and value numbers on tree nodes.
                 //
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
+
+            // Conservatively mark all VNs as stale
+            vnStore = nullptr;
 
             if (fgModified)
             {
@@ -5029,11 +5052,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    optLoopsRequirePreHeaders = false;
+    optLoopsCanonical = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
+
+    // Expand casts
+    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
     DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
@@ -5202,7 +5228,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
         if (JitConfig.JitMetrics() > 0)
         {
-            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount);
+            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", Metrics.PerfScore, optCSEcount);
         }
 #endif
 
@@ -5231,21 +5257,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #if FEATURE_LOOP_ALIGN
 
-// TODO-Quirk: Remove
-static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (child->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-            return true;
-
-        if (HasOldChildLoop(comp, child))
-            return true;
-    }
-
-    return false;
-}
-
 //------------------------------------------------------------------------
 // shouldAlignLoop: Check if it is legal and profitable to align a loop.
 //
@@ -5258,23 +5269,13 @@ static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 //
 // Remarks:
 //   All innermost loops whose block weight meets a threshold are candidates for alignment.
-//   The top block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
-//   (the loop table itself is not changed).
+//   The top block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this.
 //
-//   Depends on the loop table, and on block weights being set.
+//   Depends on block weights being set.
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
-    // TODO-Quirk: Remove. When removing we will likely need to add some
-    // form of "lexicality" heuristic here: only align loops whose blocks
-    // are fairly tightly packed together physically.
-    if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
-    // TODO-Quirk: Switch to loop->GetChild() != nullptr
-    if (HasOldChildLoop(this, loop))
+    if (loop->GetChild() != nullptr)
     {
         JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
         return false;
@@ -5334,8 +5335,8 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     if (top->Prev()->isBBCallFinallyPairTail())
     {
-        // If the previous block is the BBJ_ALWAYS of a
-        // BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we can't add alignment
+        // If the previous block is the BBJ_CALLFINALLYRET of a
+        // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
         // because we can't add instructions in that block. In the
         // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
         // reported EH, as above.
@@ -5431,7 +5432,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             block->SetFlags(BBF_LOOP_ALIGN);
             BitVecOps::AddElemD(&loopTraits, alignedLoops, loop->GetIndex());
-            INDEBUG(loopAlignCandidates++);
+            Metrics.LoopAlignmentCandidates++;
 
             BasicBlock* prev = block->Prev();
             // shouldAlignLoop should have guaranteed these properties.
@@ -5480,7 +5481,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
     }
 
-    JITDUMP("Found %u candidates for loop alignment\n", loopAlignCandidates);
+    JITDUMP("Found %d candidates for loop alignment\n", Metrics.LoopAlignmentCandidates);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -5698,7 +5699,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
     const int offsetAdjust   = 0;
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
@@ -5849,13 +5850,13 @@ void Compiler::RecomputeFlowGraphAnnotations()
     assert(JitConfig.JitOptRepeatCount() > 0);
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
-    fgDomsComputed = false;
+
     fgComputeReachability();
     optSetBlockWeights();
-    optFindLoops();
 
+    fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
-    optFindNewLoops();
+    optFindLoops();
 
     if (fgHasLoops)
     {
@@ -5863,14 +5864,6 @@ void Compiler::RecomputeFlowGraphAnnotations()
     }
 
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-
-    // Dominators and the loop table are computed above for old<->new loop
-    // crossreferencing, but they are not actually used for optimization
-    // anymore.
-    optLoopTableValid = false;
-    optLoopTable      = nullptr;
-    optLoopCount      = 0;
-    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/
@@ -6461,6 +6454,8 @@ void Compiler::compCompileFinish()
         compArenaAllocator->finishMemStats();
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
+
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6644,7 +6639,7 @@ void Compiler::compCompileFinish()
 
         printf(" %3d |", optCallCount);
         printf(" %3d |", optIndirectCallCount);
-        printf(" %3d |", fgBBcountAtCodegen);
+        printf(" %3d |", Metrics.BasicBlocksAtCodegen);
         printf(" %3d |", lvaCount);
 
         if (opts.MinOpts())
@@ -6657,13 +6652,13 @@ void Compiler::compCompileFinish()
             printf(" %3d |", optCSEcount);
         }
 
-        if (info.compPerfScore < 9999.995)
+        if (Metrics.PerfScore < 9999.995)
         {
-            printf(" %7.2f |", info.compPerfScore);
+            printf(" %7.2f |", Metrics.PerfScore);
         }
         else
         {
-            printf(" %7.0f |", info.compPerfScore);
+            printf(" %7.0f |", Metrics.PerfScore);
         }
 
         printf(" %4d |", info.compMethodInfo->ILCodeSize);
@@ -6674,9 +6669,13 @@ void Compiler::compCompileFinish()
         printf(""); // in our logic this causes a flush
     }
 
+    JITDUMP("Final metrics:\n");
+    Metrics.report(this);
+    DBEXEC(verbose, Metrics.dump());
+
     if (verbose)
     {
-        printf("****** DONE compiling %s\n", info.compFullName);
+        printf("\n****** DONE compiling %s\n", info.compFullName);
         printf(""); // in our logic this causes a flush
     }
 
@@ -6971,7 +6970,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             frameSizeUpdate = 8;
         }
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if ((totalFrameSize & 0xf) != 0)
         {
             frameSizeUpdate = 8;
@@ -7162,6 +7161,19 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     compSetOptimizationLevel();
+
+    if ((JitConfig.JitDisasmOnlyOptimized() != 0) && (!opts.OptimizationEnabled()))
+    {
+        // Disable JitDisasm for non-optimized code.
+        opts.disAsm = false;
+    }
+
+#ifdef DEBUG
+    {
+        const char* tieringName = compGetTieringName(true);
+        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
+    }
+#endif
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);
@@ -9091,12 +9103,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
-    fprintf(s_csvFile, "%u,", comp->optLoopCount);
-    fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsFoundDuringOpts);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsCloned);
 #if FEATURE_LOOP_ALIGN
 #ifdef DEBUG
-    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
-    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopAlignmentCandidates);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsAligned);
 #endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
@@ -9106,7 +9118,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -9119,7 +9131,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -9338,22 +9350,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVarsFinal,  dVarsFinal     : Display the local variable table (call lvaTableDump(FINAL_FRAME_LAYOUT)).
  *      cBlockPreds, dBlockPreds    : Display a block's predecessors (call block->dspPreds()).
  *      cBlockSuccs, dBlockSuccs    : Display a block's successors (call block->dspSuccs(compiler)).
- *      cReach,      dReach         : Display all block reachability (call fgDispReach()).
- *      cDoms,       dDoms          : Display all block dominators (call fgDispDoms()).
+ *      cReach,      dReach         : Display all block reachability (call BlockReachabilitySets::Dump).
+ *      cDoms,       dDoms          : Display all block dominators (call FlowGraphDominatorTree::Dump).
  *      cLiveness,   dLiveness      : Display per-block variable liveness (call fgDispBBLiveness()).
  *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
  *                                    indices. These are converted to variable numbers and sorted. (Calls
  *                                    dumpConvertedVarSet()).
- *      cLoop,       dLoop          : Display the blocks of a loop, including the trees, given a loop number (call
- *                                    optPrintLoopInfo()).
- *      cLoopPtr,    dLoopPtr       : Display the blocks of a loop, including the trees, given a LoopDsc* (call
- *                                    optPrintLoopInfo()).
- *      cLoops,      dLoops         : Display the loop table (call optPrintLoopTable()).
- *      cNewLoops,   dNewLoops      : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
+ *      cLoops,      dLoops         : Display the loops (call FlowGraphNaturalLoops::Dump()) with
  *                                    Compiler::m_loops.
- *      cNewLoopsA,  dNewLoopsA     : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
+ *      cLoopsA,     dLoopsA        : Display the loops (call FlowGraphNaturalLoops::Dump()) with a given
  *                                    loops arg.
- *      cNewLoop,    dNewLoop       : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
+ *      cLoop,       dLoop          : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
  *                                    loop arg.
  *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
  *      cVN,         dVN            : Display a ValueNum (call vnPrint()).
@@ -9368,7 +9375,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      dFindTree                   : Find a tree in the IR, specifying a tree id. Sets `dbTree` and `dbTreeBlock`.
  *      dFindStmt                   : Find a Statement in the IR, specifying a statement id. Sets `dbStmt`.
  *      dFindBlock                  : Find a block in the IR, specifying a block number. Sets `dbBlock`.
- *      dFindLoop                   : Find a loop in the loop table, specifying a loop number. Sets `dbLoop`.
+ *      dFindLoop                   : Find a loop specifying a loop index. Sets `dbLoop`.
  */
 
 // Make the debug helpers available (under #ifdef DEBUG) even though they are unreferenced. When the Microsoft
@@ -9408,12 +9415,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cDoms")
 #pragma comment(linker, "/include:cLiveness")
 #pragma comment(linker, "/include:cCVarSet")
-#pragma comment(linker, "/include:cLoop")
-#pragma comment(linker, "/include:cLoopPtr")
 #pragma comment(linker, "/include:cLoops")
-#pragma comment(linker, "/include:cNewLoops")
-#pragma comment(linker, "/include:cNewLoopsA")
-#pragma comment(linker, "/include:cNewLoop")
+#pragma comment(linker, "/include:cLoopsA")
+#pragma comment(linker, "/include:cLoop")
+#pragma comment(linker, "/include:cScev")
 #pragma comment(linker, "/include:cTreeFlags")
 #pragma comment(linker, "/include:cVN")
 
@@ -9438,11 +9443,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dLiveness")
 #pragma comment(linker, "/include:dCVarSet")
 #pragma comment(linker, "/include:dLoop")
-#pragma comment(linker, "/include:dLoopPtr")
 #pragma comment(linker, "/include:dLoops")
-#pragma comment(linker, "/include:dNewLoops")
-#pragma comment(linker, "/include:dNewLoopsA")
-#pragma comment(linker, "/include:dNewLoop")
+#pragma comment(linker, "/include:dScev")
 #pragma comment(linker, "/include:dTreeFlags")
 #pragma comment(linker, "/include:dVN")
 
@@ -9480,11 +9482,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_cLiveness")
 #pragma comment(linker, "/include:_cCVarSet")
 #pragma comment(linker, "/include:_cLoop")
-#pragma comment(linker, "/include:_cLoopPtr")
 #pragma comment(linker, "/include:_cLoops")
-#pragma comment(linker, "/include:_cNewLoops")
-#pragma comment(linker, "/include:_cNewLoopsA")
-#pragma comment(linker, "/include:_cNewLoop")
+#pragma comment(linker, "/include:_cLoopsA")
 #pragma comment(linker, "/include:_cTreeFlags")
 #pragma comment(linker, "/include:_cVN")
 
@@ -9508,12 +9507,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_dDoms")
 #pragma comment(linker, "/include:_dLiveness")
 #pragma comment(linker, "/include:_dCVarSet")
-#pragma comment(linker, "/include:_dLoop")
-#pragma comment(linker, "/include:_dLoopPtr")
 #pragma comment(linker, "/include:_dLoops")
-#pragma comment(linker, "/include:_dNewLoops")
-#pragma comment(linker, "/include:_dNewLoopsA")
-#pragma comment(linker, "/include:_dNewLoop")
+#pragma comment(linker, "/include:_dLoopsA")
+#pragma comment(linker, "/include:_dLoop")
 #pragma comment(linker, "/include:_dTreeFlags")
 #pragma comment(linker, "/include:_dVN")
 
@@ -9650,14 +9646,28 @@ JITDBGAPI void __cdecl cReach(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Reach %u\n", sequenceNumber++);
-    comp->fgDispReach();
+    if (comp->m_reachabilitySets != nullptr)
+    {
+        comp->m_reachabilitySets->Dump();
+    }
+    else
+    {
+        printf("  Not computed\n");
+    }
 }
 
 JITDBGAPI void __cdecl cDoms(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Doms %u\n", sequenceNumber++);
-    comp->fgDispDoms();
+    if (comp->m_domTree != nullptr)
+    {
+        comp->m_domTree->Dump();
+    }
+    else
+    {
+        printf("  Not computed\n");
+    }
 }
 
 JITDBGAPI void __cdecl cLiveness(Compiler* comp)
@@ -9675,48 +9685,39 @@ JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
 }
 
-JITDBGAPI void __cdecl cLoop(Compiler* comp, unsigned loopNum)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loop %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
-    printf("\n");
-}
-
-JITDBGAPI void __cdecl cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loop, /* verbose */ true);
-    printf("\n");
-}
-
 JITDBGAPI void __cdecl cLoops(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Loops %u\n", sequenceNumber++);
-    comp->optPrintLoopTable();
-}
-
-JITDBGAPI void __cdecl cNewLoops(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(comp->m_loops);
 }
 
-JITDBGAPI void __cdecl cNewLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
+JITDBGAPI void __cdecl cLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    printf("===================================================================== *LoopsA %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(loops);
 }
 
-JITDBGAPI void __cdecl cNewLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
+JITDBGAPI void __cdecl cLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
     FlowGraphNaturalLoop::Dump(loop);
+}
+
+JITDBGAPI void __cdecl cScev(Compiler* comp, Scev* scev)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Scev %u\n", sequenceNumber++);
+    if (scev == nullptr)
+    {
+        printf("  NULL\n");
+    }
+    else
+    {
+        scev->Dump(comp);
+    }
 }
 
 JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
@@ -9770,10 +9771,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     chars += printf("[VAR_USEASG]");
-                }
-                if (tree->gtFlags & GTF_VAR_ITERATOR)
-                {
-                    chars += printf("[VAR_ITERATOR]");
                 }
                 if (tree->gtFlags & GTF_VAR_MOREUSES)
                 {
@@ -9916,14 +9913,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_QMARK:
-
-                if (tree->gtFlags & GTF_QMARK_CAST_INSTOF)
-                {
-                    chars += printf("[QMARK_CAST_INSTOF]");
-                }
-                break;
-
             case GT_BOX:
 
                 if (tree->gtFlags & GTF_BOX_VALUE)
@@ -9956,7 +9945,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
 
             case GT_BLK:
             case GT_STORE_BLK:
-            case GT_STORE_DYN_BLK:
 
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
@@ -10075,11 +10063,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->IsGuarded())
                     {
                         chars += printf("[CALL_GUARDED]");
-                    }
-
-                    if (call->IsExpRuntimeLookup())
-                    {
-                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
 
                     if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
@@ -10311,34 +10294,24 @@ JITDBGAPI void __cdecl dCVarSet(VARSET_VALARG_TP vars)
     cCVarSet(JitTls::GetCompiler(), vars);
 }
 
-JITDBGAPI void __cdecl dLoop(unsigned loopNum)
-{
-    cLoop(JitTls::GetCompiler(), loopNum);
-}
-
-JITDBGAPI void __cdecl dLoopPtr(const Compiler::LoopDsc* loop)
-{
-    cLoopPtr(JitTls::GetCompiler(), loop);
-}
-
 JITDBGAPI void __cdecl dLoops()
 {
     cLoops(JitTls::GetCompiler());
 }
 
-JITDBGAPI void __cdecl dNewLoops()
+JITDBGAPI void __cdecl dLoopsA(FlowGraphNaturalLoops* loops)
 {
-    cNewLoops(JitTls::GetCompiler());
+    cLoopsA(JitTls::GetCompiler(), loops);
 }
 
-JITDBGAPI void __cdecl dNewLoopsA(FlowGraphNaturalLoops* loops)
+JITDBGAPI void __cdecl dLoop(FlowGraphNaturalLoop* loop)
 {
-    cNewLoopsA(JitTls::GetCompiler(), loops);
+    cLoop(JitTls::GetCompiler(), loop);
 }
 
-JITDBGAPI void __cdecl dNewLoop(FlowGraphNaturalLoop* loop)
+JITDBGAPI void __cdecl dScev(Scev* scev)
 {
-    cNewLoop(JitTls::GetCompiler(), loop);
+    cScev(JitTls::GetCompiler(), scev);
 }
 
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
@@ -10375,11 +10348,11 @@ JITDBGAPI void __cdecl dBlockList(BasicBlockList* list)
 // Trees, Stmts, and/or Blocks using id or bbNum.
 // That can be used in watch window or as a way to get address of fields for data breakpoints.
 
-GenTree*           dbTree;
-Statement*         dbStmt;
-BasicBlock*        dbTreeBlock;
-BasicBlock*        dbBlock;
-Compiler::LoopDsc* dbLoop;
+GenTree*              dbTree;
+Statement*            dbStmt;
+BasicBlock*           dbTreeBlock;
+BasicBlock*           dbBlock;
+FlowGraphNaturalLoop* dbLoop;
 
 // Debug APIs for finding Trees, Stmts, and/or Blocks.
 // As a side effect, they set the debug variables above.
@@ -10471,18 +10444,18 @@ JITDBGAPI BasicBlock* __cdecl dFindBlock(unsigned bbNum)
     return nullptr;
 }
 
-JITDBGAPI Compiler::LoopDsc* __cdecl dFindLoop(unsigned loopNum)
+JITDBGAPI FlowGraphNaturalLoop* __cdecl dFindLoop(unsigned index)
 {
     Compiler* comp = JitTls::GetCompiler();
     dbLoop         = nullptr;
 
-    if (loopNum >= comp->optLoopCount)
+    if ((comp->m_loops == nullptr) || (index >= comp->m_loops->NumLoops()))
     {
-        printf("loopNum %u out of range\n", loopNum);
+        printf("Index %u out of range\n", index);
         return nullptr;
     }
 
-    dbLoop = &comp->optLoopTable[loopNum];
+    dbLoop = comp->m_loops->GetLoopByIndex(index);
     return dbLoop;
 }
 
@@ -10683,6 +10656,31 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "undefined";
     }
 }
+
+//------------------------------------------------------------------------------
+// printfAlloc: printf a string and allocate the result in CMK_DebugOnly
+// memory.
+//
+// Arguments:
+//    format - Format string
+//
+// Returns:
+//    Allocated string.
+//
+const char* Compiler::printfAlloc(const char* format, ...)
+{
+    char    str[512];
+    va_list args;
+    va_start(args, format);
+    int result = vsprintf_s(str, ArrLen(str), format, args);
+    va_end(args);
+    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
+
+    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
+    memcpy(resultStr, str, (unsigned)result + 1);
+    return resultStr;
+}
+
 #endif // defined(DEBUG)
 
 #if TRACK_ENREG_STATS

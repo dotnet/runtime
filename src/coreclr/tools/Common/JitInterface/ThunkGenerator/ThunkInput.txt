@@ -87,6 +87,7 @@ CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*
 CORINFO_THREAD_STATIC_BLOCKS_INFO*,CORINFO_THREAD_STATIC_BLOCKS_INFO*
+CORINFO_THREAD_STATIC_INFO_NATIVEAOT*,CORINFO_THREAD_STATIC_INFO_NATIVEAOT*
 CORINFO_CALL_INFO*,CORINFO_CALL_INFO*
 CORINFO_DEVIRTUALIZATION_INFO*,CORINFO_DEVIRTUALIZATION_INFO*
 CORINFO_TYPE_LAYOUT_NODE*,CORINFO_TYPE_LAYOUT_NODE*
@@ -201,7 +202,6 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
     size_t printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     bool isValueClass(CORINFO_CLASS_HANDLE cls)
-    CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
     uint32_t getClassAttribs(CORINFO_CLASS_HANDLE cls)
     CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE cls)
     CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod)
@@ -240,7 +240,8 @@ FUNCTIONS
     bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)
     TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
     TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-    bool isMoreSpecificType(CORINFO_CLASS_HANDLE        cls1, CORINFO_CLASS_HANDLE        cls2)
+    bool isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+    bool isExactType(CORINFO_CLASS_HANDLE cls)
     TypeCompareState isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
     CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE cls)
     CorInfoType getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet)
@@ -256,6 +257,7 @@ FUNCTIONS
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     uint32_t getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCtype)
     void getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+    void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries)
@@ -263,6 +265,7 @@ FUNCTIONS
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers)
     void setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars)
     void reportRichMappings(ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings)
+    void reportMetadata(const char* key, const void* value, size_t length)
     void*allocateArray(size_t cBytes);
     void freeArray(void*array);
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);

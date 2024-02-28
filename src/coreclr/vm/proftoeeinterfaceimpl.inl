@@ -180,8 +180,7 @@ inline BOOL IsClassOfMethodTableInited(MethodTable * pMethodTable)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (pMethodTable->IsRestored() &&
-        pMethodTable->IsClassInited());
+    return pMethodTable->IsClassInited();
 }
 
 

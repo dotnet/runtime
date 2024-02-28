@@ -1,15 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import type { AssetEntryInternal } from "./types/internal";
+
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
-import { AssetEntryInternal } from "./types/internal";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
+import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -25,6 +27,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
         case "dotnetwasm":
         case "js-module-threads":
         case "symbols":
+        case "segmentation-rules":
             // do nothing
             break;
         case "resource":
@@ -101,6 +104,16 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
         parseSymbolMapFile(text);
     } catch (error: any) {
         mono_log_info(`Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
+    }
+}
+
+export async function instantiate_segmentation_rules_asset(pendingAsset: AssetEntryInternal): Promise<void> {
+    try {
+        const response = await pendingAsset.pendingDownloadInternal!.response;
+        const json = await response.json();
+        setSegmentationRulesFromJson(json);
+    } catch (error: any) {
+        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
 }
 

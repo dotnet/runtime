@@ -9,7 +9,11 @@ namespace System
     {
         [DoesNotReturn]
         public static void ThrowArgument_DestinationTooShort() =>
-            throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
+            ThrowArgument_DestinationTooShort("destination");
+
+        [DoesNotReturn]
+        public static void ThrowArgument_DestinationTooShort(string destinationName) =>
+            throw new ArgumentException(SR.Argument_DestinationTooShort, destinationName);
 
         [DoesNotReturn]
         public static void ThrowArgument_SpansMustHaveSameLength() =>

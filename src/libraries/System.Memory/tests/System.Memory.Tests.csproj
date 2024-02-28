@@ -24,6 +24,7 @@
     <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
+    <Compile Include="ReadOnlySpan\CastUp.cs" />
     <Compile Include="Span\StringSearchValues.cs" />
     <Compile Include="Span\Reflection.cs" />
     <Compile Include="SequenceReader\Advance.cs" />
@@ -276,6 +277,5 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\MutableDecimal.cs" Link="Common\System\MutableDecimal.cs" />
   </ItemGroup>
 </Project>

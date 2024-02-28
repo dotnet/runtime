@@ -409,15 +409,6 @@ bool MyICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repIsValueClass(cls);
 }
 
-// Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-CorInfoInlineTypeCheck MyICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
-{
-    jitInstance->mc->cr->AddCall("canInlineTypeCheck");
-    return jitInstance->mc->repCanInlineTypeCheck(cls, source);
-}
-
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t MyICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
@@ -756,6 +747,13 @@ bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
 }
 
+// Returns true if a class handle can only describe values of exactly one type.
+bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isExactType");
+    return jitInstance->mc->repIsExactType(cls);
+}
+
 // Returns TypeCompareState::Must if cls is known to be an enum.
 // For enums with known exact type returns the underlying
 // type in underlyingType when the provided pointer is
@@ -889,6 +887,12 @@ void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* p
     jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
 }
 
+void MyICJI::getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalStaticInfo_NativeAOT");
+    jitInstance->mc->repGetThreadLocalStaticInfo_NativeAOT(pInfo);
+}
+
 // Returns true iff "fldHnd" represents a static field.
 bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1013,6 +1017,37 @@ void MyICJI::reportRichMappings(
     // TODO: record these mappings
     freeArray(inlineTreeNodes);
     freeArray(mappings);
+}
+
+void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
+{
+    jitInstance->mc->cr->AddCall("reportMetadata");
+
+    if (strcmp(key, "MethodFullName") == 0)
+    {
+        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(length + 1));
+        memcpy(buf, value, length + 1);
+        jitInstance->mc->cr->MethodFullName = buf;
+        return;
+    }
+
+    if (strcmp(key, "TieringName") == 0)
+    {
+        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(length + 1));
+        memcpy(buf, value, length + 1);
+        jitInstance->mc->cr->TieringName = buf;
+        return;
+    }
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) \
+    if ((strcmp(key, #name) == 0) && (length == sizeof(type)))   \
+    {                                                            \
+        memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
+        return;                                                  \
+    }
+
+#include "jitmetadatalist.h"
 }
 
 /*-------------------------- Misc ---------------------------------------*/

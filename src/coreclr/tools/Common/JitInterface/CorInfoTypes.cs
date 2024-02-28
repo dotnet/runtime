@@ -392,7 +392,8 @@ namespace Internal.JitInterface
         // New calling conventions supported with the extensible calling convention encoding go here.
         CMemberFunction,
         StdcallMemberFunction,
-        FastcallMemberFunction
+        FastcallMemberFunction,
+        Swift
     }
 
     public enum CORINFO_CALLINFO_FLAGS
@@ -564,13 +565,13 @@ namespace Internal.JitInterface
     {
         //  CORINFO_FLG_UNUSED                = 0x00000001,
         //  CORINFO_FLG_UNUSED                = 0x00000002,
-        CORINFO_FLG_PROTECTED = 0x00000004,
+        //  CORINFO_FLG_UNUSED                = 0x00000004,
         CORINFO_FLG_STATIC = 0x00000008,
         CORINFO_FLG_FINAL = 0x00000010,
         CORINFO_FLG_SYNCH = 0x00000020,
         CORINFO_FLG_VIRTUAL = 0x00000040,
         //  CORINFO_FLG_UNUSED                = 0x00000080,
-        CORINFO_FLG_NATIVE = 0x00000100,
+        //  CORINFO_FLG_UNUSED                = 0x00000100,
         CORINFO_FLG_INTRINSIC_TYPE = 0x00000200, // This type is marked by [Intrinsic]
         CORINFO_FLG_ABSTRACT = 0x00000400,
 
@@ -603,7 +604,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
         CORINFO_FLG_INDEXABLE_FIELDS = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
         CORINFO_FLG_BYREF_LIKE = 0x08000000, // it is byref-like value type
-        CORINFO_FLG_VARIANCE = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
+        //  CORINFO_FLG_UNUSED = 0x10000000,
         CORINFO_FLG_BEFOREFIELDINIT = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
         CORINFO_FLG_GENERIC_TYPE_VARIABLE = 0x40000000, // This is really a handle for a variable type
         CORINFO_FLG_UNSAFE_VALUECLASS = 0x80000000, // Unsafe (C++'s /GS) value type
@@ -1109,7 +1110,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
-        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic empty string (String.Empty)
         CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
     }
 
@@ -1153,6 +1154,16 @@ namespace Internal.JitInterface
         public nuint threadVarsSection;
         public uint offsetOfThreadLocalStoragePointer;
         public uint offsetOfThreadStaticBlocks;
+    };
+
+
+    public unsafe struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
+    {
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP tlsRootObject;
+        public CORINFO_CONST_LOOKUP tlsIndexObject;
+        public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+        public CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
     };
 
     // System V struct passing

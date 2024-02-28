@@ -16,7 +16,7 @@ namespace System
 {
     /// <summary>
     /// Span represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
-    /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
+    /// or native memory, or to memory allocated on the stack. It is type-safe and memory-safe.
     /// </summary>
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
@@ -300,19 +300,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Fill(T value)
         {
-            if (sizeof(T) == 1)
-            {
-                // Special-case single-byte types like byte / sbyte / bool.
-                // The runtime eventually calls memset, which can efficiently support large buffers.
-                // We don't need to check IsReferenceOrContainsReferences because no references
-                // can ever be stored in types this small.
-                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), *(byte*)&value, (uint)_length);
-            }
-            else
-            {
-                // Call our optimized workhorse method for all other types.
-                SpanHelpers.Fill(ref _reference, (uint)_length, value);
-            }
+            SpanHelpers.Fill(ref _reference, (uint)_length, value);
         }
 
         /// <summary>

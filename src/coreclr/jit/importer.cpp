@@ -1677,8 +1677,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING);
-    slotPtrTree->gtFlags &= ~GTF_GLOB_REF; // TODO-Bug?: this is a quirk. Can we mark this indirection invariant?
+    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     return slotPtrTree;
 }
@@ -2021,12 +2020,14 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     {
         // Create extra basic block for the spill
         //
-        BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true, /* jumpDest */ hndBlk);
+        BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true);
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
-        fgAddRefPred(hndBlk, newBlk);
+        FlowEdge* const newEdge = fgAddRefPred(hndBlk, newBlk);
+        newEdge->setLikelihood(1.0);
+        newBlk->SetTargetEdge(newEdge);
 
         // Spill into a temp.
         unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
@@ -2493,7 +2494,7 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 
 void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
 {
-    block->SetKindAndTarget(BBJ_THROW);
+    block->SetKindAndTargetEdge(BBJ_THROW);
     block->SetFlags(BBF_FAILED_VERIFICATION);
     block->RemoveFlags(BBF_IMPORTED);
 
@@ -3820,14 +3821,20 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-            if (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+<<<<<<< HEAD
+#ifdef FEATURE_READYTORUN
+            if (!opts.IsReadyToRun())
+#endif // FEATURE_READYTORUN
             {
-                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
-            }
-            else
-            {
-                assert(pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
-                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+                if (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                {
+                    typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
+                }
+                else
+                {
+                    assert(pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                    typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+                }
             }
 
             FALLTHROUGH;
@@ -3843,6 +3850,21 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 {
                     isHoistable = true;
                     callFlags |= GTF_CALL_HOISTABLE;
+                }
+
+                if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
+                {
+                    assert(pFieldInfo->helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE);
+                    op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR, TYP_BYREF);
+
+                    op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
+                    op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
+                    op1->gtFlags |= callFlags;
+
+                    op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
+
+                    m_preferredInitCctor = CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
+                    break;
                 }
 
                 op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
@@ -4382,10 +4404,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = block;
 
                 assert(callBlock->HasInitializedTarget());
-                fgRemoveRefPred(callBlock->GetTarget(), callBlock);
+                fgRemoveRefPred(callBlock->GetTargetEdge());
 
-                // callBlock will call the finally handler. Convert the BBJ_LEAVE to BBJ_CALLFINALLY.
-                callBlock->SetKindAndTarget(BBJ_CALLFINALLY, HBtab->ebdHndBeg);
+                // callBlock will call the finally handler. This will be set up later.
 
                 if (endCatches)
                 {
@@ -4407,15 +4428,16 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // Calling the finally block.
 
-                // callBlock will call the finally handler
-                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step, HBtab->ebdHndBeg);
+                // callBlock will call the finally handler. This will be set up later.
+                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
 
                 // step's jump target shouldn't be set yet
                 assert(!step->HasInitializedTarget());
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
-                step->SetTarget(callBlock);
-                fgAddRefPred(callBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4463,9 +4485,9 @@ void Compiler::impImportLeave(BasicBlock* block)
             unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
             assert(finallyNesting <= compHndBBtabCount);
 
-            assert(callBlock->KindIs(BBJ_CALLFINALLY));
-            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-            fgAddRefPred(callBlock->GetTarget(), callBlock);
+            FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+            newEdge->setLikelihood(1.0);
+            callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
             endLFinStmt      = gtNewStmt(endLFin);
@@ -4508,14 +4530,17 @@ void Compiler::impImportLeave(BasicBlock* block)
         // Insert a new BB either in the try region indicated by tryIndex or
         // the handler region indicated by leaveTarget->bbHndIndex,
         // depending on which is the inner region.
-        BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step, leaveTarget);
+        BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step);
         finalStep->SetFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // step's jump target shouldn't be set yet
         assert(!step->HasInitializedTarget());
 
-        step->SetTarget(finalStep);
-        fgAddRefPred(finalStep, step);
+        {
+            FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
+            newEdge->setLikelihood(1.0);
+            step->SetTargetEdge(newEdge);
+        }
 
         // The new block will inherit this block's weight.
         finalStep->inheritWeight(block);
@@ -4544,7 +4569,11 @@ void Compiler::impImportLeave(BasicBlock* block)
         impEndTreeList(finalStep, endLFinStmt, lastStmt);
 
         // this is the ultimate destination of the LEAVE
-        fgAddRefPred(leaveTarget, finalStep);
+        {
+            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
+            newEdge->setLikelihood(1.0);
+            finalStep->SetTargetEdge(newEdge);
+        }
 
         // Queue up the jump target for importing
 
@@ -4660,9 +4689,11 @@ void Compiler::impImportLeave(BasicBlock* block)
                 {
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
-                step->SetTarget(exitBlock); // the previous step (maybe a call to a nested finally, or a nested catch
-                                            // exit) returns to this block
-                fgAddRefPred(exitBlock, step);
+
+                FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
+                newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
+                                              // exit) returns to this block
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);
@@ -4697,16 +4728,16 @@ void Compiler::impImportLeave(BasicBlock* block)
                     (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
                 unsigned callFinallyHndIndex =
                     (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
-                callBlock =
-                    fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, block, HBtab->ebdHndBeg);
+                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, block);
 
                 // Convert the BBJ_LEAVE to BBJ_ALWAYS, jumping to the new BBJ_CALLFINALLY. This is because
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                fgRemoveRefPred(block->GetTarget(), block);
-                block->SetKindAndTarget(BBJ_ALWAYS, callBlock);
-                fgAddRefPred(callBlock, block);
+                fgRemoveRefPred(block->GetTargetEdge());
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, block);
+                newEdge->setLikelihood(1.0);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4726,10 +4757,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = block;
 
                 assert(callBlock->HasInitializedTarget());
-                fgRemoveRefPred(callBlock->GetTarget(), callBlock);
+                fgRemoveRefPred(callBlock->GetTargetEdge());
 
-                // callBlock will call the finally handler. Convert the BBJ_LEAVE to BBJ_CALLFINALLY
-                callBlock->SetKindAndTarget(BBJ_CALLFINALLY, HBtab->ebdHndBeg);
+// callBlock will call the finally handler. This will be set up later.
 
 #ifdef DEBUG
                 if (verbose)
@@ -4772,10 +4802,12 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     if (step == block)
                     {
-                        fgRemoveRefPred(step->GetTarget(), step);
+                        fgRemoveRefPred(step->GetTargetEdge());
                     }
-                    step->SetTarget(step2);
-                    fgAddRefPred(step2, step);
+
+                    FlowEdge* const newEdge = fgAddRefPred(step2, step);
+                    newEdge->setLikelihood(1.0);
+                    step->SetTargetEdge(newEdge);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
@@ -4808,15 +4840,16 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
 
                 // callBlock will call the finally handler
-                callBlock =
-                    fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step, HBtab->ebdHndBeg);
+                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTarget(), step);
+                    fgRemoveRefPred(step->GetTargetEdge());
                 }
-                step->SetTarget(callBlock); // the previous call to a finally returns to this call (to the next
-                                            // finally in the chain)
-                fgAddRefPred(callBlock, step);
+
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
+                                              // finally in the chain)
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4850,9 +4883,9 @@ void Compiler::impImportLeave(BasicBlock* block)
             }
 #endif
 
-            assert(callBlock->KindIs(BBJ_CALLFINALLY));
-            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-            fgAddRefPred(callBlock->GetTarget(), callBlock);
+            FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+            newEdge->setLikelihood(1.0);
+            callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
                  !jitIsBetween(jmpAddr, tryBeg, tryEnd))
@@ -4916,10 +4949,12 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTarget(), step);
+                    fgRemoveRefPred(step->GetTargetEdge());
                 }
-                step->SetTarget(catchStep);
-                fgAddRefPred(catchStep, step);
+
+                FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
+                newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge);
 
                 // The new block will inherit this block's weight.
                 catchStep->inheritWeight(block);
@@ -4972,8 +5007,9 @@ void Compiler::impImportLeave(BasicBlock* block)
         {
             fgRemoveRefPred(step->GetTarget(), step);
         }
-        step->SetTarget(leaveTarget); // this is the ultimate destination of the LEAVE
-        fgAddRefPred(leaveTarget, step);
+        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
+        newEdge->setLikelihood(1.0);
+        step->SetTargetEdge(newEdge); // this is the ultimate destination of the LEAVE
 
 #ifdef DEBUG
         if (verbose)
@@ -5032,9 +5068,11 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // will be treated as pair and handled correctly.
     if (block->KindIs(BBJ_CALLFINALLY))
     {
-        BasicBlock* dupBlock = BasicBlock::New(this, BBJ_CALLFINALLY, block->GetTarget());
+        BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
-        fgAddRefPred(dupBlock->GetTarget(), dupBlock);
+        FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
+        newEdge->setLikelihood(1.0);
+        dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
 
@@ -5063,9 +5101,10 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgInitBBLookup();
 
-    fgRemoveRefPred(block->GetTarget(), block);
-    block->SetKindAndTarget(BBJ_LEAVE, fgLookupBB(jmpAddr));
-    fgAddRefPred(block->GetTarget(), block);
+    fgRemoveRefPred(block->GetTargetEdge());
+    FlowEdge* const newEdge = fgAddRefPred(fgLookupBB(jmpAddr), block);
+    newEdge->setLikelihood(1.0);
+    block->SetKindAndTargetEdge(BBJ_LEAVE, newEdge);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
     // the BBJ_ALWAYS block will be unreachable, and will be removed after. The
@@ -5322,7 +5361,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             // See if we can sharpen exactness by looking for final classes
             if (!isExact)
             {
-                isExact = impIsClassExact(fromClass);
+                isExact = info.compCompHnd->isExactType(fromClass);
             }
 
             // Cast to exact type will fail. Handle case where we have
@@ -5388,8 +5427,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     assert(op1->TypeGet() == TYP_REF);
 
     // Optimistically assume the jit should expand this as an inline test
-    bool shouldExpandInline = true;
-    bool isClassExact       = impIsClassExact(pResolvedToken->hClass);
+    bool isClassExact = info.compCompHnd->isExactType(pResolvedToken->hClass);
 
     // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
     // We can convert constant-ish tokens of nullable to its underlying type.
@@ -5398,7 +5436,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
     {
         CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
-
         if (hClass != pResolvedToken->hClass)
         {
             bool runtimeLookup;
@@ -5408,183 +5445,38 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
     }
 
-    // Profitability check.
-    //
-    // Don't bother with inline expansion when jit is trying to generate code quickly
-    if (opts.OptimizationDisabled())
+    const CorInfoHelpFunc helper = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
+
+    bool       shouldExpandEarly = false;
+    const bool tooManyLocals     = (((op1->gtFlags & GTF_GLOB_EFFECT) != 0) && lvaHaveManyLocals());
+    if (isClassExact && opts.OptimizationEnabled() && !compCurBB->isRunRarely() && !tooManyLocals)
     {
-        // not worth the code expansion if jitting fast or in a rarely run block
-        shouldExpandInline = false;
-    }
-    else if ((op1->gtFlags & GTF_GLOB_EFFECT) && lvaHaveManyLocals())
-    {
-        // not worth creating an untracked local variable
-        shouldExpandInline = false;
-    }
-    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitProfileCasts() == 1))
-    {
-        // Optimizations are enabled but we're still instrumenting (including casts)
-        if (isCastClass && !isClassExact)
+        // TODO-InlineCast: Fix size regressions for these two cases if they're moved to the
+        // late cast expansion path and remove this early expansion entirely.
+        if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
         {
-            // Usually, we make a speculative assumption that it makes sense to expand castclass
-            // even for non-sealed classes, but let's rely on PGO in this specific case
-            shouldExpandInline = false;
+            shouldExpandEarly = true;
+        }
+        else if (helper == CORINFO_HELP_ISINSTANCEOFARRAY && !op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+        {
+            shouldExpandEarly = true;
         }
     }
 
-    if (shouldExpandInline && compCurBB->isRunRarely())
+    if (!shouldExpandEarly)
     {
-        // For cold blocks we only expand castclass against exact classes because it's cheap
-        shouldExpandInline = isCastClass && isClassExact;
-    }
-
-    // Pessimistically assume the jit cannot expand this as an inline test
-    bool                  canExpandInline = false;
-    bool                  partialExpand   = false;
-    bool                  reversedMTCheck = false;
-    const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
-
-    CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
-
-    // By default, we assume it's 50/50 with the slow path.
-    unsigned fastPathLikelihood = 50;
-
-    // Legality check.
-    //
-    // Not all classclass/isinst operations can be inline expanded.
-    // Check legality only if an inline expansion is desirable.
-    if (shouldExpandInline)
-    {
-        CORINFO_CLASS_HANDLE actualImplCls = NO_CLASS_HANDLE;
-        if (this->IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
-            ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_CHKCASTINTERFACE)) &&
-            (info.compCompHnd->getExactClasses(pResolvedToken->hClass, 1, &actualImplCls) == 1) &&
-            (actualImplCls != NO_CLASS_HANDLE) && impIsClassExact(actualImplCls))
-        {
-            // if an interface has a single implementation on NativeAOT where we won't load new types,
-            // we can assume that our object is always of that implementation's type, e.g.:
-            //
-            // var case1 = obj is IMyInterface;
-            // var case2 = (IMyInterface)obj;
-            //
-            //   can be optimized to:
-            //
-            // var case1 = o is not null && o.GetType() == typeof(MyInterfaceImpl);
-            // var case2 = (o is null || o.GetType() == typeof(MyInterfaceImpl)) ? o : HELPER_CALL(o);
-            //
-            canExpandInline = true;
-            exactCls        = actualImplCls;
-
-            JITDUMP("'%s' interface has a single implementation - '%s', using that to inline isinst/castclass.",
-                    eeGetClassName(pResolvedToken->hClass), eeGetClassName(actualImplCls));
-        }
-        else if (isCastClass)
-        {
-            // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
-
-            // For ChkCastAny we ignore cases where the class is known to be abstract or is an interface.
-            if (helper == CORINFO_HELP_CHKCASTANY)
-            {
-                const bool isAbstract = (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) &
-                                         (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
-                canExpandInline = !isAbstract;
-            }
-        }
-        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
-        {
-            // If the class is exact, the jit can expand the IsInst check inline.
-            canExpandInline = isClassExact;
-        }
-
-        // Check if this cast helper have some profile data
-        if (impIsCastHelperMayHaveProfileData(helper))
-        {
-            const int               maxLikelyClasses = 32;
-            LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-            unsigned                likelyClassCount =
-                getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
-
-            if (likelyClassCount > 0)
-            {
-#ifdef DEBUG
-                for (UINT32 i = 0; i < likelyClassCount; i++)
-                {
-                    const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
-                            likelyClasses[i].likelihood);
-                }
-
-                // Optional stress mode to pick a random known class, rather than
-                // the most likely known class.
-                if (JitConfig.JitRandomGuardedDevirtualization() != 0)
-                {
-                    // Reuse the random inliner's random state.
-                    CLRRandom* const random =
-                        impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-
-                    unsigned index          = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
-                    likelyClasses[0].handle = likelyClasses[index].handle;
-                    likelyClasses[0].likelihood = 100;
-                    likelyClassCount            = 1;
-                }
-#endif
-
-                LikelyClassMethodRecord likelyClass = likelyClasses[0];
-                CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
-
-                // if there is a dominating candidate with >= 40% likelihood, use it
-                const unsigned likelihoodMinThreshold = 40;
-                if ((likelyCls != NO_CLASS_HANDLE) && (likelyClass.likelihood > likelihoodMinThreshold))
-                {
-                    TypeCompareState castResult =
-                        info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass);
-
-                    // If case of MustNot we still can optimize isinst (only), e.g.:
-                    //
-                    //   bool objIsDisposable = obj is IDisposable;
-                    //
-                    // when the profile tells us that obj is mostly Int32, hence, never implements that interface.
-                    // for castclass it makes little sense as it will always throw a cast exception anyway.
-                    if ((castResult == TypeCompareState::Must) ||
-                        (castResult == TypeCompareState::MustNot && !isCastClass))
-                    {
-                        bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
-                                           (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
-                        // If it's abstract it means we most likely deal with a stale PGO data so bail out.
-                        if (!isAbstract)
-                        {
-                            JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
-                                    eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
-
-                            reversedMTCheck    = castResult == TypeCompareState::MustNot;
-                            canExpandInline    = true;
-                            partialExpand      = true;
-                            exactCls           = likelyCls;
-                            fastPathLikelihood = likelyClass.likelihood;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    const bool expandInline = canExpandInline && shouldExpandInline;
-
-    if (!expandInline)
-    {
-        JITDUMP("\nExpanding %s as call because %s\n", isCastClass ? "castclass" : "isinst",
-                canExpandInline ? "want smaller code or faster jitting" : "inline expansion not legal");
+        JITDUMP("\nImporting %s as call because %s\n", isCastClass ? "castclass" : "isinst");
 
         // If we CSE this class handle we prevent assertionProp from making SubType assertions
         // so instead we force the CSE logic to not consider CSE-ing this class handle.
         //
         op2->gtFlags |= GTF_DONT_CSE;
-
-        GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+        GenTreeCall* call          = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+        call->gtCastHelperILOffset = ilOffset;
 
         // Instrument this castclass/isinst
-        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
+            !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
             if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
@@ -5597,136 +5489,50 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
         }
+        else
+        {
+            // Leave a note for fgLateCastExpand to expand this helper call
+            call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
+            call->gtCastHelperILOffset = ilOffset;
+        }
         return call;
     }
 
-    JITDUMP("\nExpanding %s inline\n", isCastClass ? "castclass" : "isinst");
+    JITDUMP("\nExpanding isinst inline\n");
 
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark2"));
+    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling "));
 
-    GenTree* temp;
-    GenTree* condMT;
+    // Now we import it as two QMark nodes representing this:
     //
-    // expand the methodtable match:
-    //
-    //  condMT ==>   GT_NE
-    //               /    \.
-    //           GT_IND   op2 (typically CNS_INT)
-    //              |
-    //           op1Copy
-    //
-
-    // This can replace op1 with a GT_COMMA that evaluates op1 into a local
-    //
-    op1 = impCloneExpr(op1, &temp, CHECK_SPILL_ALL, nullptr DEBUGARG("CASTCLASS eval op1"));
-    //
-    // op1 is now known to be a non-complex tree
-    // thus we can use gtClone(op1) from now on
+    //  tmp = op1;
+    //  if (tmp != null) // qmarkNull
+    //  {
+    //      if (tmp->pMT == op2) // qmarkMT
+    //          result = tmp;
+    //      else
+    //          result = null;
+    //  }
+    //  else
+    //      result = null;
     //
 
-    GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
-    {
-        // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
-        op2Var                                                  = fgInsertCommaFormTemp(&op2);
-        lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
-    }
-    temp = gtNewMethodTableLookup(temp);
-    condMT =
-        gtNewOperNode(GT_NE, TYP_INT, temp, (exactCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(exactCls) : op2);
+    // Spill op1 if it's a complex expression
+    GenTree* op1Clone;
+    op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("ISINST eval op1"));
 
-    GenTree* condNull;
-    //
-    // expand the null check:
-    //
-    //  condNull ==>   GT_EQ
-    //                 /    \.
-    //             op1Copy CNS_INT
-    //                      null
-    //
-    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
-
-    //
-    // expand the true and false trees for the condMT
-    //
-    GenTree* condFalse = reversedMTCheck ? gtNewNull() : gtClone(op1);
-    GenTree* condTrue;
-    if (isCastClass)
-    {
-        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
-               (helper == CORINFO_HELP_CHKCASTANY) || (helper == CORINFO_HELP_CHKCASTINTERFACE));
-
-        CorInfoHelpFunc specialHelper = helper;
-        if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
-            ((exactCls == nullptr) || (exactCls == gtGetHelperArgClassHandle(op2))))
-        {
-            // use the special helper that skips the cases checked by our inlined cast
-            specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
-        }
-        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
-    }
-    else if (partialExpand)
-    {
-        condTrue = gtNewHelperCallNode(helper, TYP_REF, op2, gtClone(op1));
-    }
-    else
-    {
-        condTrue = gtNewIconNode(0, TYP_REF);
-    }
-
-    GenTreeQmark* qmarkMT;
-    //
-    // Generate first QMARK - COLON tree
-    //
-    //  qmarkMT ==>   GT_QMARK
-    //                 /     \.
-    //            condMT   GT_COLON
-    //                      /     \.
-    //                condFalse  condTrue
-    //
-    temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
-    qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp->AsColon());
-    qmarkMT->SetThenNodeLikelihood(fastPathLikelihood);
-
-    if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
-    {
-        if (helper == CORINFO_HELP_CHKCASTCLASS)
-        {
-            // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
-            condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-
-            // defer calling setMethodHasNoReturnCalls until qmark expasion
-        }
-    }
-
-    GenTree* qmarkNull;
-    //
-    // Generate second QMARK - COLON tree
-    //
-    //  qmarkNull ==>  GT_QMARK
-    //                 /     \.
-    //           condNull  GT_COLON
-    //                      /     \.
-    //                qmarkMT   op1Copy
-    //
-    temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
-    qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
-    qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
+    GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+    GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
+    GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
+    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtClone(op1), qmarkMT));
 
     // Make QMark node a top level node by spilling it.
-    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
-    impStoreTemp(tmp, qmarkNull, CHECK_SPILL_NONE);
+    const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
+    impStoreTemp(result, qmarkNull, CHECK_SPILL_NONE);
 
-    // TODO-CQ: Is it possible op1 has a better type?
-    //
     // See also gtGetHelperCallClassHandle where we make the same
     // determination for the helper call variants.
-    LclVarDsc* lclDsc = lvaGetDesc(tmp);
-    assert(lclDsc->lvSingleDef == 0);
-    lclDsc->lvSingleDef = 1;
-    JITDUMP("Marked V%02u as a single def temp\n", tmp);
-    lvaSetClass(tmp, pResolvedToken->hClass);
-    return gtNewLclvNode(tmp, TYP_REF);
+    lvaSetClass(result, pResolvedToken->hClass);
+    return gtNewLclvNode(result, TYP_REF);
 }
 
 #ifndef DEBUG
@@ -6059,7 +5865,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Change block to BBJ_THROW so we won't trigger importation of successors.
             //
-            block->SetKindAndTarget(BBJ_THROW);
+            block->SetKindAndTargetEdge(BBJ_THROW);
 
             // If this method has a explicit generic context, the only uses of it may be in
             // the IL for this block. So assume it's used.
@@ -6877,7 +6683,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 if (opts.OptimizationEnabled() && (gtGetArrayElementClassHandle(impStackTop(1).val) == ldelemClsHnd) &&
-                    impIsClassExact(ldelemClsHnd))
+                    info.compCompHnd->isExactType(ldelemClsHnd))
                 {
                     JITDUMP("\nldelema of T[] with T exact: skipping covariant check\n");
                     goto ARR_LD;
@@ -7256,6 +7062,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -7278,14 +7087,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_NOT:
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1, nullptr);
+
                 type = genActualType(op1->TypeGet());
-                impPushOnStack(gtNewOperNode(GT_NOT, type, op1), tiRetVal);
+                op1  = gtNewOperNode(GT_NOT, type, op1);
+
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
+                impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_CKFINITE:
@@ -7363,14 +7181,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
                     bool jumpToNextOptimization = false;
-                    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
+                    if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
                         fgRemoveRefPred(block->GetFalseTarget(), block);
                         block->SetKind(BBJ_ALWAYS);
 
-                        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
+                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
 
@@ -7442,18 +7260,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetTrueTarget()->bbNum);
-                            fgRemoveRefPred(block->GetFalseTarget(), block);
+                            fgRemoveRefPred(block->GetFalseEdge());
                             block->SetKind(BBJ_ALWAYS);
                         }
                         else
                         {
-                            // TODO-NoFallThrough: Update once bbFalseTarget can diverge from bbNext
+                            // TODO-NoFallThrough: Update once false target can diverge from bbNext
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
-                            fgRemoveRefPred(block->GetTrueTarget(), block);
-                            block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
+                            fgRemoveRefPred(block->GetTrueEdge());
+                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
 
-                            // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense
+                            // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense
                             // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
@@ -7625,14 +7443,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
                     bool jumpToNextOptimization = false;
-                    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
+                    if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
                         fgRemoveRefPred(block->GetFalseTarget(), block);
                         block->SetKind(BBJ_ALWAYS);
 
-                        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
+                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
 
@@ -7700,16 +7518,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-                    bool         foundVal  = false;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    bool       foundVal  = false;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
-                        BasicBlock* curJump = *jumpTab;
+                        FlowEdge* curEdge = *jumpTab;
 
-                        assert(curJump->countOfInEdges() > 0);
+                        assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                         // If val matches switchVal or we are at the last entry and
                         // we never found the switch value then set the new jump dest
@@ -7717,13 +7535,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
                             // transform the basic block into a BBJ_ALWAYS
-                            block->SetKindAndTarget(BBJ_ALWAYS, curJump);
+                            block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
                             foundVal = true;
                         }
                         else
                         {
-                            // Remove 'block' from the predecessor list of 'curJump'
-                            fgRemoveRefPred(curJump, block);
+                            // Remove 'curEdge'
+                            fgRemoveRefPred(curEdge);
                         }
                     }
 
@@ -8013,7 +7831,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_NEG:
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1, nullptr);
-                impPushOnStack(gtNewOperNode(GT_NEG, genActualType(op1->gtType), op1), tiRetVal);
+                op1 = gtNewOperNode(GT_NEG, genActualType(op1->gtType), op1);
+
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
+                impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_POP:
@@ -10306,9 +10129,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_CPBLK:
             {
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                op3                     = impPopStack().val; // Size
-                op2                     = impPopStack().val; // Value / Src addr
-                op1                     = impPopStack().val; // Dst addr
+                const bool   isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+#ifndef TARGET_X86
+                if (isVolatile && !impStackTop(0).val->IsCnsIntOrI())
+                {
+                    // We're going to emit a helper call surrounded by memory barriers, so we need to spill any side
+                    // effects.
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                }
+#endif
+
+                op3 = gtFoldExpr(impPopStack().val); // Size
+                op2 = gtFoldExpr(impPopStack().val); // Value / Src addr
+                op1 = impPopStack().val;             // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
@@ -10345,25 +10178,41 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
+                    if (TARGET_POINTER_SIZE == 8)
+                    {
+                        // Cast size to TYP_LONG on 64-bit targets
+                        op3 = gtNewCastNode(TYP_LONG, op3, /* fromUnsigned */ true, TYP_LONG);
+                    }
+
+                    GenTreeCall* call;
                     if (opcode == CEE_INITBLK)
                     {
-                        if (!op2->IsIntegralConst(0))
+                        // value is zero -> memzero, otherwise -> memset
+                        if (op2->IsIntegralConst(0))
                         {
-                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, op1, op3);
+                        }
+                        else
+                        {
+                            call = gtNewHelperCallNode(CORINFO_HELP_MEMSET, TYP_VOID, op1, op2, op3);
                         }
                     }
                     else
                     {
-                        op2 = gtNewIndir(TYP_STRUCT, op2);
+                        call = gtNewHelperCallNode(CORINFO_HELP_MEMCPY, TYP_VOID, op1, op2, op3);
                     }
 
-#ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
-#endif
-
-                    op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    op1->gtFlags |= indirFlags;
+                    if (isVolatile)
+                    {
+                        // Wrap with memory barriers: full-barrier + call + load-barrier
+                        impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+                        op1 = gtNewMemoryBarrier(true);
+                    }
+                    else
+                    {
+                        op1 = call;
+                    }
                 }
                 goto SPILL_APPEND;
             }
@@ -12303,7 +12152,7 @@ void Compiler::impFixPredLists()
                 if (predCount > 0)
                 {
                     jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
 
                     unsigned predNum = 0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
@@ -12316,9 +12165,10 @@ void Compiler::impFixPredLists()
                         }
 
                         BasicBlock* const continuation = predBlock->Next();
-                        fgAddRefPred(continuation, finallyBlock);
+                        FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
+                        newEdge->setLikelihood(1.0 / predCount);
 
-                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        jumpEhf->bbeSuccs[predNum] = newEdge;
                         ++predNum;
 
                         if (!added)
@@ -13630,42 +13480,6 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
 }
 
 //------------------------------------------------------------------------
-// impIsClassExact: check if a class handle can only describe values
-//    of exactly one class.
-//
-// Arguments:
-//    classHnd - handle for class in question
-//
-// Returns:
-//    true if class is final and not subject to special casting from
-//    variance or similar.
-//
-// Note:
-//    We are conservative on arrays of primitive types here.
-
-bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
-{
-    DWORD flags     = info.compCompHnd->getClassAttribs(classHnd);
-    DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
-
-    if ((flags & flagsMask) == CORINFO_FLG_FINAL)
-    {
-        return true;
-    }
-    if ((flags & flagsMask) == (CORINFO_FLG_FINAL | CORINFO_FLG_ARRAY))
-    {
-        CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
-        CorInfoType          type               = info.compCompHnd->getChildType(classHnd, &arrayElementHandle);
-
-        if ((type == CORINFO_TYPE_CLASS) || (type == CORINFO_TYPE_VALUECLASS))
-        {
-            return impIsClassExact(arrayElementHandle);
-        }
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
 // impCanSkipCovariantStoreCheck: see if storing a ref type value to an array
 //    can skip the array store covariance check.
 //
@@ -13748,7 +13562,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         return true;
     }
 
-    const bool arrayTypeIsSealed = impIsClassExact(arrayElementHandle);
+    const bool arrayTypeIsSealed = info.compCompHnd->isExactType(arrayElementHandle);
 
     if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
     {

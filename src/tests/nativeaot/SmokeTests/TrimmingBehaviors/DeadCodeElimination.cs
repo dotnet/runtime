@@ -21,6 +21,7 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
         TestUnmodifiableStaticFieldOptimization.Run();
         TestUnmodifiableInstanceFieldOptimization.Run();
@@ -339,6 +340,8 @@ class DeadCodeElimination
 
     class TestTypeEquals
     {
+        sealed class Gen<T> { }
+
         sealed class Never { }
 
         static Type s_type = null;
@@ -349,9 +352,37 @@ class DeadCodeElimination
             // despite the typeof
             Console.WriteLine(s_type == typeof(Never));
 
+            // This was a compiler crash
+            Console.WriteLine(typeof(object) == typeof(Gen<>));
+
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
 #endif
+        }
+    }
+
+    class TestTypeIsValueType
+    {
+        class Never { }
+
+        class Ever { }
+
+        static void Generic<T>()
+        {
+            if (typeof(T).IsValueType)
+            {
+                Activator.CreateInstance(typeof(Never));
+            }
+
+            Activator.CreateInstance(typeof(Ever));
+        }
+
+        public static void Run()
+        {
+            Generic<object>();
+
+            ThrowIfPresent(typeof(TestTypeIsValueType), nameof(Never));
+            ThrowIfNotPresent(typeof(TestTypeIsValueType), nameof(Ever));
         }
     }
 
@@ -625,6 +656,8 @@ class DeadCodeElimination
         }
     }
 
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
     private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
     {
         Type t = GetTypeSecretly(testType, typeName);

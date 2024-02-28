@@ -54,14 +54,24 @@ namespace Microsoft.Workload.Build.Tasks
 
             Directory.CreateDirectory(projecDir);
 
-            File.WriteAllText(Path.Combine(projecDir, "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(projecDir, "Directory.Build.targets"), "<Project />");
+            File.WriteAllText(Path.Combine(projecDir, "Directory.Build.props"), """
+<Project>
+
+  <!-- This is an empty Directory.Build.props file to prevent projects which reside
+       under this directory to use any of the repository local settings. -->
+  <PropertyGroup>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+
+</Project>
+""");
             File.WriteAllText(projectPath, GenerateProject(references));
             File.WriteAllText(Path.Combine(projecDir, "nuget.config"), _nugetConfigContents);
 
             _logger.LogMessage(MessageImportance.Low, $"Restoring packages: {string.Join(", ", references.Select(r => $"{r.Name}/{r.Version}"))}");
 
-            string args = $"restore \"{projectPath}\" /p:RestorePackagesPath=\"{_packagesDir}\"";
+            string args = $"restore \"{projectPath}\" /p:RestorePackagesPath=\"{_packagesDir}\" /bl:{Path.Combine(_tempDir, "restore.binlog")}";
             (int exitCode, string output) = Utils.TryRunProcess(_logger, "dotnet", args, silent: false, debugMessageImportance: MessageImportance.Low);
             if (exitCode != 0)
             {
@@ -69,7 +79,7 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            IList<(PackageReference, string)> failedToRestore = references
+            List<(PackageReference, string)> failedToRestore = references
                                                              .Select(r => (r, Path.Combine(_packagesDir, r.Name.ToLowerInvariant(), r.Version)))
                                                              .Where(tuple => !Directory.Exists(tuple.Item2))
                                                              .ToList();

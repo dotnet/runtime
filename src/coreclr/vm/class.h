@@ -14,7 +14,7 @@
 //
 // Given that the data itself is touched infrequently, we can trade off space reduction against cpu-usage to
 // good effect here. A fair amount of work has gone into reducing the size of each EEClass instance (see
-// EEClassOptionalFields and EEClassPackedFields) at the expense of somewhat more convoluted runtime access.
+// EEClassOptionalFields) at the expense of somewhat more convoluted runtime access.
 //
 // Please consider this (and measure the impact of your changes against startup scenarios) before adding
 // fields to EEClass or otherwise increasing its size.
@@ -46,7 +46,6 @@
 #include "typectxt.h"
 #include "iterator_util.h"
 
-#include "packedfields.inl"
 #include "array.h"
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
@@ -614,49 +613,6 @@ class EEClassOptionalFields
     }
 };
 typedef DPTR(EEClassOptionalFields) PTR_EEClassOptionalFields;
-
-//
-// Another mechanism used to reduce the size of the average EEClass instance is the notion of packed fields.
-// This is based on the observation that EEClass has a large number of integer fields that typically contain
-// small values and that are fixed once class layout has completed. We can compact these fields by discarding
-// the leading zero bits (and for small values there'll be a lot of these) and packing the significant data
-// into compact bitfields. This is a dynamic operation (the exact packing used depends on the exact data
-// stored in the fields).
-//
-// The PackedDWORDFields<> class (defined in PackedFields.inl) encapsulates this. It takes one template
-// parameter, the number of fields to pack, and provides operations to get and set those fields until we're
-// happy with the values, at which point it will compact them for us.
-//
-// The packed fields themselves are stored at the end of the EEClass instance (or the LayoutEEClass or the
-// DelegateEEClass etc.) so we can take advantage of the variable sized nature of the fields. We gain nothing for
-// runtime allocated EEClasses (we have to allocate a maximally sized structure for the packed fields because
-// we can't tell at the beginning of EEClass layout what the field values will be). But in the ngen scenario
-// we can compact the fields just prior to saving and only store the portion of the EEClass that is relvant,
-// helping us with our goal of packing all the EEClass instances together as tightly as possible.
-//
-// Since each packed field is now accessed via an array-like index, we give each of those indices a name with
-// the enum below to make the code more readable.
-//
-
-enum EEClassFieldId
-{
-    EEClass_Field_NumInstanceFields = 0,
-    EEClass_Field_NumMethods,
-    EEClass_Field_NumStaticFields,
-    EEClass_Field_NumHandleStatics,
-    EEClass_Field_NumBoxedStatics,
-    EEClass_Field_NonGCStaticFieldBytes,
-    EEClass_Field_NumThreadStaticFields,
-    EEClass_Field_NumHandleThreadStatics,
-    EEClass_Field_NumBoxedThreadStatics,
-    EEClass_Field_NonGCThreadStaticFieldBytes,
-    EEClass_Field_NumNonVirtualSlots,
-    EEClass_Field_COUNT
-};
-
-typedef PackedDWORDFields<EEClass_Field_COUNT> EEClassPackedFields;
-typedef DPTR(EEClassPackedFields) PTR_EEClassPackedFields;
-
 //@GENERICS:
 // For most types there is a one-to-one mapping between MethodTable* and EEClass*
 // However this is not the case for instantiated types where code and representation
@@ -908,13 +864,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return (WORD)GetPackableField(EEClass_Field_NumInstanceFields);
+        return m_NumInstanceFields;
     }
 
     inline void SetNumInstanceFields (WORD wNumInstanceFields)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumInstanceFields, wNumInstanceFields);
+        m_NumInstanceFields = wNumInstanceFields;
     }
 
     /*
@@ -925,25 +881,25 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return (WORD)GetPackableField(EEClass_Field_NumStaticFields);
+        return m_NumStaticFields;
     }
     inline void SetNumStaticFields (WORD wNumStaticFields)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumStaticFields, wNumStaticFields);
+        m_NumStaticFields = wNumStaticFields;
     }
 
     inline WORD GetNumThreadStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return (WORD)GetPackableField(EEClass_Field_NumThreadStaticFields);
+        return m_NumThreadStaticFields;
     }
 
     inline void SetNumThreadStaticFields (WORD wNumThreadStaticFields)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumThreadStaticFields, wNumThreadStaticFields);
+        m_NumThreadStaticFields = wNumThreadStaticFields;
     }
 
     /*
@@ -954,34 +910,34 @@ public:
     inline DWORD GetNonGCRegularStaticFieldBytes()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetPackableField(EEClass_Field_NonGCStaticFieldBytes);
+        return m_NonGCStaticFieldBytes;
     }
     inline void SetNonGCRegularStaticFieldBytes (DWORD cbNonGCStaticFieldBytes)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NonGCStaticFieldBytes, cbNonGCStaticFieldBytes);
+        m_NonGCStaticFieldBytes = cbNonGCStaticFieldBytes;
     }
 
     inline DWORD GetNonGCThreadStaticFieldBytes()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetPackableField(EEClass_Field_NonGCThreadStaticFieldBytes);
+        return m_NonGCThreadStaticFieldBytes;
     }
     inline void SetNonGCThreadStaticFieldBytes (DWORD cbNonGCStaticFieldBytes)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NonGCThreadStaticFieldBytes, cbNonGCStaticFieldBytes);
+        m_NonGCThreadStaticFieldBytes = cbNonGCStaticFieldBytes;
     }
 
     inline WORD GetNumNonVirtualSlots()
     {
         LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumNonVirtualSlots);
+        return m_NumNonVirtualSlots;
     }
     inline void SetNumNonVirtualSlots(WORD wNumNonVirtualSlots)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumNonVirtualSlots, wNumNonVirtualSlots);
+        m_NumNonVirtualSlots = wNumNonVirtualSlots;
     }
 
     inline BOOL IsEquivalentType()
@@ -1004,12 +960,12 @@ public:
     inline WORD GetNumHandleRegularStatics ()
     {
         LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumHandleStatics);
+        return m_NumHandleStatics;
     }
     inline void SetNumHandleRegularStatics (WORD wNumHandleRegularStatics)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumHandleStatics, wNumHandleRegularStatics);
+        m_NumHandleStatics = wNumHandleRegularStatics;
     }
 
     /*
@@ -1018,40 +974,12 @@ public:
     inline WORD GetNumHandleThreadStatics ()
     {
         LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumHandleThreadStatics);
+        return m_NumHandleThreadStatics;
     }
     inline void SetNumHandleThreadStatics (WORD wNumHandleThreadStatics)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumHandleThreadStatics, wNumHandleThreadStatics);
-    }
-
-    /*
-     * Number of boxed statics allocated
-     */
-    inline WORD GetNumBoxedRegularStatics ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumBoxedStatics);
-    }
-    inline void SetNumBoxedRegularStatics (WORD wNumBoxedRegularStatics)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumBoxedStatics, wNumBoxedRegularStatics);
-    }
-
-    /*
-     * Number of boxed statics allocated for ThreadStatics
-     */
-    inline WORD GetNumBoxedThreadStatics ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumBoxedThreadStatics);
-    }
-    inline void SetNumBoxedThreadStatics (WORD wNumBoxedThreadStatics)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumBoxedThreadStatics, wNumBoxedThreadStatics);
+        m_NumHandleThreadStatics = wNumHandleThreadStatics;
     }
 
     /*
@@ -1105,12 +1033,12 @@ public:
     inline WORD GetNumMethods()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumMethods);
+        return m_NumMethods;
     }
     inline void SetNumMethods (WORD wNumMethods)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumMethods, wNumMethods);
+        m_NumMethods = wNumMethods;
     }
 
     /*
@@ -1670,9 +1598,6 @@ public:
     //     - Any field that has a default value for the vast majority of EEClass instances
     //       should be stored in the EEClassOptionalFields (see header comment)
     //
-    //     - Any field that is nearly always a small positive integer and is infrequently
-    //       accessed should be in the EEClassPackedFields (see header comment)
-    //
     // If none of these categories apply - such as for always-meaningful pointer members or
     // sets of flags - a full field is used.  Please avoid adding such members if possible.
     //-------------------------------------------------------------
@@ -1806,10 +1731,17 @@ private:
     // NOTE: Following BYTE fields are laid out together so they'll fit within the same DWORD for efficient
     // structure packing.
     BYTE m_NormType;
-    BYTE m_fFieldsArePacked;        // TRUE iff fields pointed to by GetPackedFields() are in packed state
-    BYTE m_cbFixedEEClassFields;    // Count of bytes of normal fields of this instance (EEClass,
-                                    // LayoutEEClass etc.). Doesn't count bytes of "packed" fields
     BYTE m_cbBaseSizePadding;       // How many bytes of padding are included in BaseSize
+
+    WORD m_NumInstanceFields;
+    WORD m_NumMethods;
+    WORD m_NumStaticFields;
+    WORD m_NumHandleStatics;
+    WORD m_NumThreadStaticFields;
+    WORD m_NumHandleThreadStatics;
+    WORD m_NumNonVirtualSlots;
+    DWORD m_NonGCStaticFieldBytes;
+    DWORD m_NonGCThreadStaticFieldBytes;
 
 public:
     // EEClass optional field support. Whether a particular EEClass instance has optional fields is determined
@@ -1838,23 +1770,6 @@ public:
         return m_rpOptionalFields;
     }
 
-private:
-    //
-    // Support for packed fields.
-    //
-
-    // Get pointer to the packed fields structure attached to this instance.
-    PTR_EEClassPackedFields GetPackedFields();
-
-    // Get the value of the given field. Works regardless of whether the field is currently in its packed or
-    // unpacked state.
-    DWORD GetPackableField(EEClassFieldId eField);
-
-    // Set the value of the given field. The field *must* be in the unpacked state for this to be legal (in
-    // practice all packable fields must be initialized during class construction and from then on remain
-    // immutable).
-    void SetPackableField(EEClassFieldId eField, DWORD dwValue);
-
     //-------------------------------------------------------------
     // END CONCRETE DATA LAYOUT
     //-------------------------------------------------------------
@@ -1869,7 +1784,10 @@ protected:
     /*
      * Constructor: prevent any other class from doing a new()
      */
-    EEClass(DWORD cbFixedEEClassFields);
+    EEClass()
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
     /*
      * Destructor: prevent any other class from deleting
@@ -1946,7 +1864,7 @@ public:
     Volatile<PTR_EEClassNativeLayoutInfo> m_nativeLayoutInfo;
 
 #ifndef DACCESS_COMPILE
-    LayoutEEClass() : EEClass(sizeof(LayoutEEClass))
+    LayoutEEClass() : EEClass()
     {
         LIMITED_METHOD_CONTRACT;
         m_nativeLayoutInfo = NULL;
@@ -1994,7 +1912,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    DelegateEEClass() : EEClass(sizeof(DelegateEEClass))
+    DelegateEEClass() : EEClass()
     {
         LIMITED_METHOD_CONTRACT;
         // Note: Memory allocated on loader heap is zero filled
@@ -2016,7 +1934,7 @@ class ArrayClass : public EEClass
     friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
-    ArrayClass() : EEClass(sizeof(ArrayClass)) { LIMITED_METHOD_CONTRACT; }
+    ArrayClass() { LIMITED_METHOD_CONTRACT; }
 #else
     friend class NativeImageDumper;
 #endif

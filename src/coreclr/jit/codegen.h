@@ -31,8 +31,14 @@ public:
 
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(
-        GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
+    virtual bool genCreateAddrMode(GenTree*  addr,
+                                   bool      fold,
+                                   unsigned  naturalMul,
+                                   bool*     revPtr,
+                                   GenTree** rv1Ptr,
+                                   GenTree** rv2Ptr,
+                                   unsigned* mulPtr,
+                                   ssize_t*  cnsPtr);
 
 #ifdef LATE_DISASM
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs);
@@ -265,7 +271,7 @@ protected:
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
 #endif
     void genEnregisterIncomingStackArgs();
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genEnregisterOSRArgsAndLocals();
@@ -344,6 +350,10 @@ protected:
     void genOSRRecordTier0CalleeSavedRegistersAndFrame();
     void genOSRSaveRemainingCalleeSavedRegisters();
 #endif // TARGET_AMD64
+
+#if defined(TARGET_RISCV64)
+    void genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize);
+#endif
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
@@ -450,11 +460,11 @@ protected:
         regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
-        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
+        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
         int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
         int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
-        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
-        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+        int fiSpDelta;                       // Stack pointer delta (negative)
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
@@ -466,8 +476,6 @@ protected:
     // Save/Restore callee saved float regs to stack
     void genPreserveCalleeSavedFltRegs(unsigned lclFrameSize);
     void genRestoreCalleeSavedFltRegs(unsigned lclFrameSize);
-    // Generate VZeroupper instruction to avoid AVX/SSE transition penalty
-    void genVzeroupperIfNeeded(bool check256bitOnly = true);
 
 #endif // TARGET_XARCH
 
@@ -968,38 +976,50 @@ protected:
 #ifdef FEATURE_HW_INTRINSICS
     void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
-    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
+    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node,
+                             instruction         ins,
+                             emitAttr            attr,
+                             regNumber           reg,
+                             GenTree*            rmOp,
+                             insOpts             instOptions = INS_OPTS_NONE);
     void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
-    void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
-    void genHWIntrinsic_R_R_RM(
-        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2);
+    void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions);
     void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
-    void genHWIntrinsic_R_R_R_RM(
-        instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
+    void genHWIntrinsic_R_R_R_RM(instruction ins,
+                                 emitAttr    attr,
+                                 regNumber   targetReg,
+                                 regNumber   op1Reg,
+                                 regNumber   op2Reg,
+                                 GenTree*    op3,
+                                 insOpts     instOptions = INS_OPTS_NONE);
     void genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
+
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
-    void genSSEIntrinsic(GenTreeHWIntrinsic* node);
-    void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
+    void genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
-    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
-    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
-    void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
     void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
+
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
                                          regNumber                 nonConstImmReg,
                                          regNumber                 baseReg,
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
+
+    void genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* lastOp);
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
@@ -1162,10 +1182,10 @@ protected:
     void genCodeForCpObj(GenTreeBlk* cpObjNode);
     void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
-#ifndef TARGET_X86
-    void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
-#endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef SWIFT_SUPPORT
+    void genCodeForSwiftErrorReg(GenTree* tree);
+#endif // SWIFT_SUPPORT
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
     void genCodeForReuseVal(GenTree* treeNode);
@@ -1237,9 +1257,6 @@ protected:
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
     void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-#ifndef TARGET_X86
-    void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
-#endif
     void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
@@ -1557,7 +1574,13 @@ public:
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
-    void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
+    void inst_RV_RV_TT(instruction ins,
+                       emitAttr    size,
+                       regNumber   targetReg,
+                       regNumber   op1Reg,
+                       GenTree*    op2,
+                       bool        isRMW,
+                       insOpts     instOptions);
     void inst_RV_RV_TT_IV(
         instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
 #endif

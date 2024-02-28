@@ -17,16 +17,6 @@
 class MarshalNative
 {
 public:
-
-    //====================================================================
-    // These methods convert between an HR and and a managed exception.
-    //====================================================================
-    static FCDECL2(Object *, GetExceptionForHR, INT32 errorCode, LPVOID errorInfo);
-#ifdef FEATURE_COMINTEROP
-    static FCDECL1(int, GetHRForException, Object* eUNSAFE);
-#endif // FEATURE_COMINTEROP
-
-    static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
     static FCDECL0(int, GetLastPInvokeError);
     static FCDECL1(void, SetLastPInvokeError, int error);
 
@@ -44,6 +34,8 @@ public:
 #endif // FEATURE_COMINTEROP
 };
 
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD);
+
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
 
@@ -52,6 +44,14 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
 
 extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate);
 extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(QCall::ObjectHandleOnStack delegate);
+
+//====================================================================
+// These methods convert between an HR and and a managed exception.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOID errorInfo, QCall::ObjectHandleOnStack obj);
+#ifdef FEATURE_COMINTEROP
+extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandleOnStack obj);
+#endif // FEATURE_COMINTEROP
 
 extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type);
 extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle);
@@ -142,6 +142,6 @@ extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t);
 extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t);
 
 extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak);
-#endif
+#endif // FEATURE_COMINTEROP
 
 #endif

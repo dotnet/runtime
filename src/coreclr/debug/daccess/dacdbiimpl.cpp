@@ -1487,18 +1487,11 @@ void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
      *pThExact = TypeHandle::FromPtr(vmThExact.GetDacPtr());
      *pThApprox = TypeHandle::FromPtr(vmThApprox.GetDacPtr());
 
-    // If we can't find the class, return the proper HR to the right side. Note: if the class is not a value class and
-    // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
-    // unrestored value classes slide, though, and special case access to the class's parent below.
-    if ((pThApprox->IsNull()) || ((!pThApprox->IsValueType()) && (!pThApprox->IsRestored())))
+    // If we can't find the class, return the proper HR to the right side.
+    if (pThApprox->IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::GASCI: class isn't loaded.\n"));
         ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
-    }
-    // If the exact type handle is not restored ignore it.
-    if (!pThExact->IsNull() && !pThExact->IsRestored())
-    {
-        *pThExact = TypeHandle();
     }
  }  // DacDbiInterfaceImpl::GetTypeHandles
 
@@ -1786,9 +1779,6 @@ void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainAssembly       
 {
     DD_ENTER_MAY_THROW;
 
-    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
-    _ASSERTE(pDomainAssembly != NULL);
-    AppDomain * pAppDomain = pDomainAssembly->GetAppDomain();
     TypeHandle  thExact;
     TypeHandle  thApprox;
 
@@ -1798,7 +1788,7 @@ void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainAssembly       
 
     pFieldList->Alloc(GetTotalFieldCount(thApprox));
 
-    CollectFields(thExact, thApprox, pAppDomain, pFieldList);
+    CollectFields(thExact, thApprox, AppDomain::GetCurrentDomain(), pFieldList);
 
 } // DacDbiInterfaceImpl::GetInstantiationFieldInfo
 
@@ -2997,9 +2987,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
     TypeHandle typeConstructor =
         ClassLoader::LookupTypeDefOrRefInModule(pModule, pTopLevelTypeData->ClassTypeData.metadataToken);
 
-    // If we can't find the class, throw the appropriate HR. Note: if the class is not a value class and
-    // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
-    // unrestored value classes slide, though, and special case access to the class's parent below.
+    // If we can't find the class, throw the appropriate HR.
     if (typeConstructor.IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::ETITTH: class isn't loaded.\n"));
@@ -3560,16 +3548,15 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
         {
             PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
             ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
-            ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(pRemoteTargetObj->GetGCSafeMethodTable()->GetDomain()->AsAppDomain()));
             break;
         }
 
         default:
             ppTargetObj->SetDacTargetPtr(NULL);
-            ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(pDelObj->GetGCSafeMethodTable()->GetDomain()->AsAppDomain()));
             break;
     }
 
+    ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(AppDomain::GetCurrentDomain()));
     return hr;
 }
 
@@ -3736,17 +3723,11 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             DebugStackTrace::DebugStackTraceElement const& currentElement = stackFramesData.pElements[index];
             DacExceptionCallStackData& currentFrame = dacStackFrames[index];
 
-            Module* pModule = currentElement.pFunc->GetModule();
-            BaseDomain* pBaseDomain = currentElement.pFunc->GetAssembly()->GetDomain();
-
-            AppDomain* pDomain = NULL;
-            DomainAssembly* pDomainAssembly = NULL;
-
-            pDomain = pBaseDomain->AsAppDomain();
-
+            AppDomain* pDomain = AppDomain::GetCurrentDomain();
             _ASSERTE(pDomain != NULL);
 
-            pDomainAssembly = pModule->GetDomainAssembly();
+            Module* pModule = currentElement.pFunc->GetModule();
+            DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
             _ASSERTE(pDomainAssembly != NULL);
 
             currentFrame.vmAppDomain.SetHostPtr(pDomain);
@@ -4131,8 +4112,6 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
         _ASSERTE(pTargetModule != NULL);
         _ASSERTE( TypeFromToken(targetTypeDef) == mdtTypeDef );
 
-        AppDomain * pAppDomain = pDomainAssembly->GetAppDomain();
-
         pTargetRefInfo->vmDomainAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetDomainAssembly()));
         pTargetRefInfo->typeToken = targetTypeDef;
     }
@@ -4382,11 +4361,10 @@ void DacDbiInterfaceImpl::GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAss
     ZeroMemory(pData, sizeof(*pData));
 
     DomainAssembly * pDomainAssembly  = vmDomainAssembly.GetDacPtr();
-    AppDomain  * pAppDomain   = pDomainAssembly->GetAppDomain();
 
     // @dbgtodo - is this efficient DAC usage (perhaps a dac-cop rule)? Are we round-tripping the pointer?
     pData->vmDomainAssembly.SetHostPtr(pDomainAssembly);
-    pData->vmAppDomain.SetHostPtr(pAppDomain);
+    pData->vmAppDomain.SetHostPtr(AppDomain::GetCurrentDomain());
 }
 
 // Implement IDacDbiInterface::GetModuleData
@@ -4526,7 +4504,6 @@ VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
 
 
     DomainAssembly * pDomainAssembly  = vmScope.GetDacPtr();
-    AppDomain  * pAppDomain   = pDomainAssembly->GetAppDomain();
     Module     * pModule      = pDomainAssembly->GetModule();
 
     VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
@@ -7046,21 +7023,11 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
 
     PTR_Object obj(TO_TADDR(addr));
     MethodTable *mt = obj->GetMethodTable();
-
     PTR_Module module = mt->GetModule();
-    PTR_Assembly assembly = module->GetAssembly();
-    BaseDomain *baseDomain = assembly->GetDomain();
 
-    if (baseDomain->IsAppDomain())
-    {
-        pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(baseDomain->AsAppDomain()));
-        pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-        pDomainAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainAssembly()));
-    }
-    else
-    {
-        return false;
-    }
+    pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain()));
+    pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
+    pDomainAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainAssembly()));
 
     return true;
 }

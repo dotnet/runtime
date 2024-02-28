@@ -300,13 +300,6 @@ bool interceptor_ICJI::isValueClass(
     return original_ICorJitInfo->isValueClass(cls);
 }
 
-CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    return original_ICorJitInfo->canInlineTypeCheck(cls, source);
-}
-
 uint32_t interceptor_ICJI::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -568,6 +561,12 @@ bool interceptor_ICJI::isMoreSpecificType(
     return original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
 }
 
+bool interceptor_ICJI::isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isExactType(cls);
+}
+
 TypeCompareState interceptor_ICJI::isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType)
@@ -672,6 +671,12 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
 }
 
+void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -725,6 +730,14 @@ void interceptor_ICJI::reportRichMappings(
           uint32_t numMappings)
 {
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
+void interceptor_ICJI::reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length)
+{
+    original_ICorJitInfo->reportMetadata(key, value, length);
 }
 
 void* interceptor_ICJI::allocateArray(

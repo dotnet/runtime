@@ -121,9 +121,41 @@ namespace ILCompiler.DependencyAnalysis.ARM
         // ldr.w reg, [reg, #offset]
         // reg range: [0..PC]
         // offset range: [-255..4095]
+        //
+        // for offset >= 4096 we do an expansion into:
+        // add.w destination, source, #const
+        // ldr.w destination, [destination, #offset]
         public void EmitLDR(Register destination, Register source, int offset)
         {
             Debug.Assert(IsValidReg(destination) && IsValidReg(source));
+
+            if (offset >= 0x1000)
+            {
+                uint constVal = (uint)offset & ~0xfffu;
+                uint mask32 = 0xff;
+                uint imm8 = 0;
+                int encode = 31; // 11111
+
+                do
+                {
+                    mask32 <<= 1;
+                    if ((constVal & ~mask32) == 0)
+                    {
+                        imm8 = (constVal & mask32) >> (32 - encode);
+                        break;
+                    }
+                    encode--;
+                } while (encode >= 8);
+
+                Debug.Assert(encode >= 8);
+                Debug.Assert((imm8 & 0x80) > 0);
+                Builder.EmitShort((short)(0xF100 + (byte)source + (((byte)encode & 0x10) << 6)));
+                Builder.EmitShort((short)((((byte)encode & 0xE) << 11) + ((byte)destination << 8) + (((byte)encode & 1) << 7) + (imm8 & 0x7f)));
+
+                offset = (int)(offset & 0xfffu);
+                source = destination;
+            }
+
             Debug.Assert(offset >= -255 && offset <= 4095);
             if (offset >= 0)
             {
@@ -139,15 +171,24 @@ namespace ILCompiler.DependencyAnalysis.ARM
 
         // movw  reg, [reloc] & 0x0000FFFF
         // movt  reg, [reloc] & 0xFFFF0000
+        // add   reg, pc
         // reg range: [0..12, LR]
         public void EmitMOV(Register destination, ISymbolNode symbol)
         {
             Debug.Assert(destination >= Register.R0 && (destination <= Register.R12 || destination == TargetRegister.LR));
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL); // 12-byte offset is part of the relocation
             Builder.EmitShort(unchecked((short)0xf240));
             Builder.EmitShort((short)((byte)destination << 8));
             Builder.EmitShort(unchecked((short)0xf2c0));
             Builder.EmitShort((short)((byte)destination << 8));
+            if (destination <= Register.R7)
+            {
+                Builder.EmitShort(unchecked((short)(0x4478u + (byte)destination)));
+            }
+            else
+            {
+                Builder.EmitShort(unchecked((short)(0x44f0u + (byte)destination)));
+            }
         }
 
         // b.w symbol
@@ -205,6 +246,15 @@ namespace ILCompiler.DependencyAnalysis.ARM
         public void EmitRETIfEqual()
         {
             EmitBNE(4);
+            EmitRET();
+        }
+
+        // beq label(+4): ret(2) + next(2)
+        // bx lr
+        // label: ...
+        public void EmitRETIfNotEqual()
+        {
+            EmitBEQ(4);
             EmitRET();
         }
     }

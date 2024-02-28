@@ -1028,8 +1028,14 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_MEMZERO:
+                    id = ReadyToRunHelper.MemZero;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_MEMCPY:
                     id = ReadyToRunHelper.MemCpy;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NATIVE_MEMSET:
+                    id = ReadyToRunHelper.NativeMemSet;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD:
@@ -3366,5 +3372,12 @@ namespace Internal.JitInterface
             // stable e.g. mark calls as no-return if their IL has no rets.
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+        {
+            // Implemented for NativeAOT only for now.
+        }
+#pragma warning restore CA1822 // Mark members as static
     }
 }

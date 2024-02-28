@@ -675,13 +675,13 @@ private:
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetTrueTarget(), block);
-                    block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
+                    m_compiler->fgRemoveRefPred(block->GetTrueEdge());
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
                     block->SetFlags(BBF_NONE_QUIRK);
                 }
                 else
                 {
-                    m_compiler->fgRemoveRefPred(block->GetFalseTarget(), block);
+                    m_compiler->fgRemoveRefPred(block->GetFalseEdge());
                     block->SetKind(BBJ_ALWAYS);
                 }
             }
@@ -1533,8 +1533,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
-                block->SetKindAndTarget(BBJ_ALWAYS, bottomBlock);
-                fgAddRefPred(bottomBlock, block);
+                FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
+                newEdge->setLikelihood(1.0);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                 if (block == InlineeCompiler->fgLastBB)
                 {
@@ -1550,11 +1551,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->TargetIs(bottomBlock));
+        FlowEdge* const oldEdge = fgRemoveRefPred(bottomBlock, topBlock);
+        FlowEdge* const newEdge = fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock, oldEdge);
+
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetTarget(topBlock->Next());
+        topBlock->SetTargetEdge(newEdge);
         topBlock->SetFlags(BBF_NONE_QUIRK);
-        fgRemoveRefPred(bottomBlock, topBlock);
-        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //

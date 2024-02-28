@@ -28,8 +28,7 @@
       _WasmGenerateRunV8Script;
     </WasmGenerateAppBundleDependsOn>
 
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
-    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and ( '$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' )">true</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
@@ -48,7 +47,6 @@
 
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.LegacyJsInterop.xml"</_ExtraTrimmerArgs>
 
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
     <WasmClang>emcc</WasmClang>
@@ -64,10 +62,8 @@
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
 
-    <_BoolPropertiesThatTriggerRelinking Include="WasmEnableLegacyJsInterop" DefaultValueInRuntimePack="true" />
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableSIMD" DefaultValueInRuntimePack="true" />
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />
-    <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
   </ItemGroup>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
@@ -104,8 +100,9 @@
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)segmentation-rules.json"/>
       <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles);$(_WasmIcuDataFileName)"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="@(_HybridGlobalizationDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
@@ -122,9 +119,9 @@
           Condition="'$(WasmGenerateAppBundle)' == 'true'">
 
     <PropertyGroup>
-      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
+      <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
+      <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -150,8 +147,9 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
-      IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
-      PThreadPoolSize="$(_WasmPThreadPoolSize)"
+      IncludeThreadsWorker="$(WasmEnableThreads)"
+      PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
+      PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
       UseWebcil="$(WasmEnableWebcil)"
       WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
@@ -277,7 +275,6 @@
       <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">$(EmccInitialHeapSize)</WasmInitialHeapSize>
       <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
-      <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
 
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
     </PropertyGroup>
@@ -309,7 +306,6 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
-      <_EmccCFlags Include="-DDISABLE_LEGACY_JS_INTEROP=1"     Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
       <_EmccCFlags Include="-DENABLE_JS_INTEROP_BY_VALUE=1"    Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
 
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
@@ -337,7 +333,7 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <!-- See src\mono\wasm\runtime\modularize-dotnet.md -->
+      <!-- See src\mono\browser\runtime\modularize-dotnet.md -->
       <JSFileType Include="extpre.js"  Kind="extern-pre-js" />
       <JSFileType Include="iffe.js"    Kind="extern-pre-js" />
       <JSFileType Include="pre.js"     Kind="pre-js" />
@@ -355,8 +351,6 @@
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
-      <EmscriptenEnvVars Include="DISABLE_LEGACY_JS_INTEROP=1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
-      <EmscriptenEnvVars Include="DISABLE_LEGACY_JS_INTEROP=0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />

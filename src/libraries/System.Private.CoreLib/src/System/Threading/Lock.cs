@@ -444,9 +444,9 @@ namespace System.Threading
 
         Wait:
             bool areContentionEventsEnabled =
-                NativeRuntimeEventSource.Log.IsEnabled(
+                NativeRuntimeEventSource.Log?.IsEnabled(
                     EventLevel.Informational,
-                    NativeRuntimeEventSource.Keywords.ContentionKeyword);
+                    NativeRuntimeEventSource.Keywords.ContentionKeyword) ?? false;
             AutoResetEvent waitEvent = _waitEvent ?? CreateWaitEvent(areContentionEventsEnabled);
             if (State.TryLockBeforeWait(this))
             {
@@ -463,7 +463,7 @@ namespace System.Threading
                 long waitStartTimeTicks = 0;
                 if (areContentionEventsEnabled)
                 {
-                    NativeRuntimeEventSource.Log.ContentionStart(this);
+                    NativeRuntimeEventSource.Log!.ContentionStart(this);
                     waitStartTimeTicks = Stopwatch.GetTimestamp();
                 }
 
@@ -535,7 +535,7 @@ namespace System.Threading
                     {
                         double waitDurationNs =
                             (Stopwatch.GetTimestamp() - waitStartTimeTicks) * 1_000_000_000.0 / Stopwatch.Frequency;
-                        NativeRuntimeEventSource.Log.ContentionStop(waitDurationNs);
+                        NativeRuntimeEventSource.Log!.ContentionStop(waitDurationNs);
                     }
 
                     return currentThreadId;

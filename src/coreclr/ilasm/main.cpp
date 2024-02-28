@@ -11,6 +11,7 @@
 #include "clrversion.h"
 #include "shimload.h"
 
+#include "strsafe.h"
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
@@ -530,7 +531,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     else
                     {
                     InvalidOption:
-                        fprintf(stderr, "Error : Invalid Option: %LS\n", argv[i]);
+                        MAKE_UTF8PTR_FROMWIDE_NOTHROW(invalidOpt, argv[i]);
+                        fprintf(stderr, "Error : Invalid Option: %s\n", invalidOpt);
                         goto ErrorExit;
                     }
                 }
