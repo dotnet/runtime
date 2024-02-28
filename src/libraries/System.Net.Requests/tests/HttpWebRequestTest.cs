@@ -2244,7 +2244,7 @@ namespace System.Net.Tests
                                 await tcs.Task;
                             });
                     });
-            }, IsAsync.ToString());
+            }, IsAsync.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -2280,7 +2280,7 @@ namespace System.Net.Tests
                     socket.Dispose();
                     cts.Dispose();
                 }
-            }, IsAsync.ToString());
+            }, IsAsync.ToString()).Dispose();
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
