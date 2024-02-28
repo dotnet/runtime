@@ -36,18 +36,21 @@ public class SignalRClientTests : AppTestBase
             clientDirRelativeToProjectDir: "../BlazorHosted.Client");
         BuildProject(configuration: config,
             binFrameworkDir: frameworkDir,
-            runtimeType: RuntimeVariant.MultiThreaded,
-            extraArgs: "-p:_WasmDevel=true");
+            runtimeType: RuntimeVariant.MultiThreaded);
 
         List<string> testOutput = new();
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
+
+        // To look for static files in the paths defined by "*staticwebassets.runtime.json"
+        // and avoid: "Static files may be unavailable."
+        s_buildEnv.EnvVars["ASPNETCORE_ENVIRONMENT"] = "Development";
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
         var url = await runner.StartServerAndGetUrlAsync(
             cmd: runCommand,
-            args: $"run -c {config} --no-build --verbosity detailed",
+            args: $"run -c {config} --no-build",
             onServerMessage: OnServerMessage);
         var chatUrl = url + $"/chat?transport={transport}&message=ping";
         IBrowser browser = await runner.SpawnBrowserAsync(url);
