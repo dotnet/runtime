@@ -761,7 +761,7 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                Div32Rem(m_length, out int extraBits);
+                int quotient = Div32Rem(m_length, out int extraBits);
 
                 Array.Copy(m_array, 0, intArray, index, quotient);
 
