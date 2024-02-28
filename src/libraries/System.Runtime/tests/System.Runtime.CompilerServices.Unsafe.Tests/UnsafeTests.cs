@@ -464,7 +464,7 @@ namespace System.Runtime.CompilerServices
 
         private static unsafe class StaticReadonlyHolder
         {
-            public static readonly void* Pointer = (void*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BitcastDisasm), 1);
+            public static readonly void* Pointer = (void*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(StaticReadonlyHolder), 1);
         }
 
         [Fact]
