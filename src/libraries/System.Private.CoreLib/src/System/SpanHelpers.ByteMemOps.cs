@@ -22,7 +22,9 @@ namespace System
 #else
         private const nuint MemmoveNativeThreshold = 2048;
 #endif
+#if !MONO
         private const nuint ZeroMemoryNativeThreshold = 1024;
+#endif
 
 
 #if HAS_CUSTOM_BLOCKS
