@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -9,76 +8,18 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal sealed class OrderedPartition<TElement> : IPartition<TElement>
-        {
-            private readonly OrderedEnumerable<TElement> _source;
-            private readonly int _minIndexInclusive;
-            private readonly int _maxIndexInclusive;
-
-            public OrderedPartition(OrderedEnumerable<TElement> source, int minIdxInclusive, int maxIdxInclusive)
-            {
-                _source = source;
-                _minIndexInclusive = minIdxInclusive;
-                _maxIndexInclusive = maxIdxInclusive;
-            }
-
-            public IEnumerator<TElement> GetEnumerator() => _source.GetEnumerator(_minIndexInclusive, _maxIndexInclusive);
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-            public IPartition<TElement>? Skip(int count)
-            {
-                int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
-            }
-
-            public IPartition<TElement> Take(int count)
-            {
-                int maxIndex = _minIndexInclusive + count - 1;
-                if ((uint)maxIndex >= (uint)_maxIndexInclusive)
-                {
-                    return this;
-                }
-
-                return new OrderedPartition<TElement>(_source, _minIndexInclusive, maxIndex);
-            }
-
-            public TElement? TryGetElementAt(int index, out bool found)
-            {
-                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive))
-                {
-                    return _source.TryGetElementAt(index + _minIndexInclusive, out found);
-                }
-
-                found = false;
-                return default;
-            }
-
-            public TElement? TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
-
-            public TElement? TryGetLast(out bool found) =>
-                _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
-
-            public TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
-
-            public List<TElement> ToList() => _source.ToList(_minIndexInclusive, _maxIndexInclusive);
-
-            public int GetCount(bool onlyIfCheap) => _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
-        }
-
-
         /// <summary>
         /// An iterator that yields the items of part of an <see cref="IList{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         [DebuggerDisplay("Count = {Count}")]
-        private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>, IList<TSource>, IReadOnlyList<TSource>
+        private sealed class IListSkipTakeIterator<TSource> : Iterator<TSource>, IList<TSource>, IReadOnlyList<TSource>
         {
             private readonly IList<TSource> _source;
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
 
-            public ListPartition(IList<TSource> source, int minIndexInclusive, int maxIndexInclusive)
+            public IListSkipTakeIterator(IList<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(minIndexInclusive >= 0);
@@ -89,7 +30,7 @@ namespace System.Linq
             }
 
             public override Iterator<TSource> Clone() =>
-                new ListPartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
+                new IListSkipTakeIterator<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()
             {
@@ -109,21 +50,21 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-                new SelectListPartitionIterator<TSource, TResult>(_source, selector, _minIndexInclusive, _maxIndexInclusive);
+                new IListSkipTakeSelectIterator<TSource, TResult>(_source, selector, _minIndexInclusive, _maxIndexInclusive);
 
-            public IPartition<TSource>? Skip(int count)
+            public override Iterator<TSource>? Skip(int count)
             {
                 int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new ListPartition<TSource>(_source, minIndex, _maxIndexInclusive);
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new IListSkipTakeIterator<TSource>(_source, minIndex, _maxIndexInclusive);
             }
 
-            public IPartition<TSource> Take(int count)
+            public override Iterator<TSource> Take(int count)
             {
                 int maxIndex = _minIndexInclusive + count - 1;
-                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new ListPartition<TSource>(_source, _minIndexInclusive, maxIndex);
+                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new IListSkipTakeIterator<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
-            public TSource? TryGetElementAt(int index, out bool found)
+            public override TSource? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
@@ -135,7 +76,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetFirst(out bool found)
+            public override TSource? TryGetFirst(out bool found)
             {
                 if (_source.Count > _minIndexInclusive)
                 {
@@ -147,7 +88,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetLast(out bool found)
+            public override TSource? TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
                 if (lastIndex >= _minIndexInclusive)
@@ -174,9 +115,9 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap) => Count;
+            public override int GetCount(bool onlyIfCheap) => Count;
 
-            public TSource[] ToArray()
+            public override TSource[] ToArray()
             {
                 int count = Count;
                 if (count == 0)
@@ -189,16 +130,16 @@ namespace System.Linq
                 return array;
             }
 
-            public List<TSource> ToList()
+            public override List<TSource> ToList()
             {
                 int count = Count;
-                if (count == 0)
+
+                List<TSource> list = [];
+                if (count != 0)
                 {
-                    return new List<TSource>();
+                    Fill(_source, SetCountAndGetSpan(list, count), _minIndexInclusive);
                 }
 
-                List<TSource> list = new List<TSource>(count);
-                Fill(_source, SetCountAndGetSpan(list, count), _minIndexInclusive);
                 return list;
             }
 
@@ -258,7 +199,7 @@ namespace System.Linq
         /// An iterator that yields the items of part of an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private sealed class EnumerablePartition<TSource> : Iterator<TSource>, IPartition<TSource>
+        private sealed class IEnumerableSkipTakeIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly int _minIndexInclusive;
@@ -266,7 +207,7 @@ namespace System.Linq
                                                      // If this is -1, it's impossible to set a limit on the count.
             private IEnumerator<TSource>? _enumerator;
 
-            internal EnumerablePartition(IEnumerable<TSource> source, int minIndexInclusive, int maxIndexInclusive)
+            internal IEnumerableSkipTakeIterator(IEnumerable<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(!(source is IList<TSource>), $"The caller needs to check for {nameof(IList<TSource>)}.");
@@ -290,7 +231,7 @@ namespace System.Linq
             private int Limit => _maxIndexInclusive + 1 - _minIndexInclusive; // This is that upper bound.
 
             public override Iterator<TSource> Clone() =>
-                new EnumerablePartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
+                new IEnumerableSkipTakeIterator<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override void Dispose()
             {
@@ -303,7 +244,7 @@ namespace System.Linq
                 base.Dispose();
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 if (onlyIfCheap)
                 {
@@ -320,7 +261,7 @@ namespace System.Linq
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
                     // We only want to iterate up to _maxIndexInclusive + 1.
-                    // Past that, we know the enumerable will be able to fit this partition,
+                    // Past that, we know the enumerable will be able to fit this subset,
                     // so the count will just be _maxIndexInclusive + 1 - _minIndexInclusive.
 
                     // Note that it is possible for _maxIndexInclusive to be int.MaxValue here,
@@ -332,7 +273,6 @@ namespace System.Linq
                     Debug.Assert(count != (uint)int.MaxValue + 1 || _minIndexInclusive > 0, "Our return value will be incorrect.");
                     return Math.Max((int)count - _minIndexInclusive, 0);
                 }
-
             }
 
             public override bool MoveNext()
@@ -384,10 +324,7 @@ namespace System.Linq
                 return false;
             }
 
-            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-                new SelectIPartitionIterator<TSource, TResult>(this, selector);
-
-            public IPartition<TSource>? Skip(int count)
+            public override Iterator<TSource>? Skip(int count)
             {
                 int minIndex = _minIndexInclusive + count;
 
@@ -398,7 +335,7 @@ namespace System.Linq
                         // If we don't know our max count and minIndex can no longer fit in a positive int,
                         // then we will need to wrap ourselves in another iterator.
                         // This can happen, for example, during e.Skip(int.MaxValue).Skip(int.MaxValue).
-                        return new EnumerablePartition<TSource>(this, count, -1);
+                        return new IEnumerableSkipTakeIterator<TSource>(this, count, -1);
                     }
                 }
                 else if ((uint)minIndex > (uint)_maxIndexInclusive)
@@ -410,10 +347,10 @@ namespace System.Linq
                 }
 
                 Debug.Assert(minIndex >= 0, $"We should have taken care of all cases when {nameof(minIndex)} overflows.");
-                return new EnumerablePartition<TSource>(_source, minIndex, _maxIndexInclusive);
+                return new IEnumerableSkipTakeIterator<TSource>(_source, minIndex, _maxIndexInclusive);
             }
 
-            public IPartition<TSource> Take(int count)
+            public override Iterator<TSource> Take(int count)
             {
                 int maxIndex = _minIndexInclusive + count - 1;
                 if (!HasLimit)
@@ -426,7 +363,7 @@ namespace System.Linq
                         // _minIndexInclusive (which is count - 1) must fit in an int.
                         // Example: e.Skip(50).Take(int.MaxValue).
 
-                        return new EnumerablePartition<TSource>(this, 0, count - 1);
+                        return new IEnumerableSkipTakeIterator<TSource>(this, 0, count - 1);
                     }
                 }
                 else if ((uint)maxIndex >= (uint)_maxIndexInclusive)
@@ -438,18 +375,23 @@ namespace System.Linq
                 }
 
                 Debug.Assert(maxIndex >= 0, $"We should have taken care of all cases when {nameof(maxIndex)} overflows.");
-                return new EnumerablePartition<TSource>(_source, _minIndexInclusive, maxIndex);
+                return new IEnumerableSkipTakeIterator<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
-            public TSource? TryGetElementAt(int index, out bool found)
+            public override TSource? TryGetElementAt(int index, out bool found)
             {
                 // If the index is negative or >= our max count, return early.
                 if (index >= 0 && (!HasLimit || index < Limit))
                 {
+                    Debug.Assert(_minIndexInclusive + index >= 0, $"Adding {nameof(index)} caused {nameof(_minIndexInclusive)} to overflow.");
+
+                    if (_source is Iterator<TSource> iterator)
+                    {
+                        return iterator.TryGetElementAt(_minIndexInclusive + index, out found);
+                    }
+
                     using (IEnumerator<TSource> en = _source.GetEnumerator())
                     {
-                        Debug.Assert(_minIndexInclusive + index >= 0, $"Adding {nameof(index)} caused {nameof(_minIndexInclusive)} to overflow.");
-
                         if (SkipBefore(_minIndexInclusive + index, en) && en.MoveNext())
                         {
                             found = true;
@@ -462,8 +404,15 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetFirst(out bool found)
+            public override TSource? TryGetFirst(out bool found)
             {
+                Debug.Assert(!HasLimit || Limit > 0);
+
+                if (_source is Iterator<TSource> iterator)
+                {
+                    return iterator.TryGetElementAt(_minIndexInclusive, out found);
+                }
+
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
                     if (SkipBeforeFirst(en) && en.MoveNext())
@@ -477,8 +426,17 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetLast(out bool found)
+            public override TSource? TryGetLast(out bool found)
             {
+                if (_source is Iterator<TSource> iterator &&
+                    iterator.GetCount(onlyIfCheap: true) is int count &&
+                    count >= _minIndexInclusive)
+                {
+                    return !HasLimit ?
+                        iterator.TryGetLast(out found) :
+                        iterator.TryGetElementAt(_maxIndexInclusive, out found);
+                }
+
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
                     if (SkipBeforeFirst(en) && en.MoveNext())
@@ -503,7 +461,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource[] ToArray()
+            public override TSource[] ToArray()
             {
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
@@ -531,7 +489,7 @@ namespace System.Linq
                 return [];
             }
 
-            public List<TSource> ToList()
+            public override List<TSource> ToList()
             {
                 var list = new List<TSource>();
 

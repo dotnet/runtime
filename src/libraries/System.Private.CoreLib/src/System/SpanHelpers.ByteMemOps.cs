@@ -22,7 +22,6 @@ namespace System
 #else
         private const nuint MemmoveNativeThreshold = 2048;
 #endif
-        // TODO: Determine optimal value
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
 

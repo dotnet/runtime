@@ -7970,7 +7970,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -7984,7 +7984,7 @@ extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *p
 
     IJitManager* pJitMan = pFrameIter->m_crawl.GetJitManager();
     const METHODTOKEN& MethToken = pFrameIter->m_crawl.GetMethodToken();
-    *pMethodStartAddress = (BYTE*)pJitMan->JitTokenToStartAddress(MethToken);
+    pJitMan->JitTokenToMethodRegionInfo(MethToken, pMethodRegionInfo);
     pExtendedEHEnum->EHCount = pJitMan->InitializeEHEnumeration(MethToken, pEHEnum);
 
     END_QCALL;

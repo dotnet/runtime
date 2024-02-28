@@ -923,7 +923,12 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    if (_remoteEndPoint != null && !SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
+                    if (_remoteEndPoint == null)
+                    {
+                        // detach user provided SA as it was updated in place.
+                        _socketAddress = null;
+                    }
+                    else if (!SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {
