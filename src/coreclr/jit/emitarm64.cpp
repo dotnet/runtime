@@ -1672,6 +1672,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidSimm6(emitGetInsSC(id)));      // iiiiii
             break;
 
+        case IF_SVE_BC_1A: // ................ .....iiiiiiddddd -- SVE stack frame size
+            assert(insOptsNone(id->idInsOpt()));
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(isGeneralRegister(id->idReg1())); // ddddd
+            assert(isValidSimm6(emitGetInsSC(id)));  // iiiiii
+            break;
+
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
             assert(insOptsScalableWide(id->idInsOpt()));
@@ -7698,6 +7705,15 @@ void emitter::emitIns_R_I(instruction     ins,
             {
                 assert(!"Instruction cannot be encoded: IF_DI_1A");
             }
+            break;
+
+        case INS_sve_rdvl:
+            assert(insOptsNone(opt));
+            assert(size == EA_8BYTE);
+            assert(isGeneralRegister(reg)); // ddddd
+            assert(isValidSimm6(imm));      // iiiiii
+            fmt       = IF_SVE_BC_1A;
+            canEncode = true;
             break;
 
         case INS_sve_smax:
@@ -23939,6 +23955,13 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_BC_1A: // ................ .....iiiiiiddddd -- SVE stack frame size
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_R_4_to_0(id->idReg1());      // ddddd
+            code |= insEncodeSimm6_10_to_5(emitGetInsSC(id)); // iiiiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
@@ -28238,11 +28261,17 @@ void emitter::emitDispInsHelp(
         {
             const regNumber reg1 = (id->idReg1() == REG_ZR) ? REG_SP : id->idReg1();
             const regNumber reg2 = (id->idReg2() == REG_ZR) ? REG_SP : id->idReg2();
-            emitDispReg(reg1, id->idOpSize(), true); // dddd
-            emitDispReg(reg2, id->idOpSize(), true); // nnnn
+            emitDispReg(reg1, id->idOpSize(), true); // ddddd
+            emitDispReg(reg2, id->idOpSize(), true); // nnnnn
             emitDispImm(emitGetInsSC(id), false);    // iiiiii
             break;
         }
+
+        // <Xd>, #<imm>
+        case IF_SVE_BC_1A: // ................ .....iiiiiiddddd -- SVE stack frame size
+            emitDispReg(id->idReg1(), id->idOpSize(), true); // ddddd
+            emitDispImm(emitGetInsSC(id), false);            // iiiiii
+            break;
 
         // <Zd>.<T>, <Zn>.<Tb>, #<const>
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
@@ -31573,6 +31602,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_AU_3A:   // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
         case IF_SVE_GI_4A:   // ........xx.mmmmm ...gggnnnnnddddd -- SVE2 histogram generation (vector)
         case IF_SVE_BB_2A:   // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
+        case IF_SVE_BC_1A:   // ................ .....iiiiiiddddd -- SVE stack frame size
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

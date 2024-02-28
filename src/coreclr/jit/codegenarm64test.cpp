@@ -5696,6 +5696,12 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_R5, 31);  // ADDVL <Xd|SP>, <Xn|SP>, #<imm>
     theEmitter->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_SP, 0);   // ADDVL <Xd|SP>, <Xn|SP>, #<imm>
 
+    // IF_SVE_BC_1A
+    theEmitter->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_R0, -32); // RDVL <Xd>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_R5, 0);   // RDVL <Xd>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_R10, 5);  // RDVL <Xd>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_R15, 31); // RDVL <Xd>, #<imm>
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}
