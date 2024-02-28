@@ -1,7 +1,8 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-        .586
+        .686P
+        .XMM
         .model  flat
         option  casemap:none
         .code
@@ -38,5 +39,236 @@ ProbeLoop:
     ret
 
 RhpStackProbe ENDP
+
+;; *********************************************************************/
+;; llshl - long shift left
+;;
+;; Purpose:
+;;    Does a Long Shift Left (signed and unsigned are identical)
+;;    Shifts a long left any number of bits.
+;;
+;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
+;;
+;; Entry:
+;;    EDX:EAX - long value to be shifted
+;;        ECX - number of bits to shift by
+;;
+;; Exit:
+;;    EDX:EAX - shifted value
+;;
+RhpLLsh PROC public
+    ;; Reduce shift amount mod 64
+    and     ecx, 63
+
+    cmp     ecx, 32
+    jae     LLshMORE32
+
+    ;; Handle shifts of between bits 0 and 31
+    shld    edx, eax, cl
+    shl     eax, cl
+    ret
+
+LLshMORE32:
+    ;; Handle shifts of between bits 32 and 63
+    ;; The x86 shift instructions only use the lower 5 bits.
+    mov     edx, eax
+    xor     eax, eax
+    shl     edx, cl
+    ret
+RhpLLsh ENDP
+
+;; *********************************************************************/
+;; LRsh - long shift right
+;;
+;; Purpose:
+;;    Does a signed Long Shift Right
+;;    Shifts a long right any number of bits.
+;;
+;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
+;;
+;; Entry:
+;;    EDX:EAX - long value to be shifted
+;;        ECX - number of bits to shift by
+;;
+;; Exit:
+;;    EDX:EAX - shifted value
+;;
+RhpLRsh PROC public
+    ;; Reduce shift amount mod 64
+    and     ecx, 63
+
+    cmp     ecx, 32
+    jae     LRshMORE32
+
+    ;; Handle shifts of between bits 0 and 31
+    shrd    eax, edx, cl
+    sar     edx, cl
+    ret
+
+LRshMORE32:
+    ;; Handle shifts of between bits 32 and 63
+    ;; The x86 shift instructions only use the lower 5 bits.
+    mov     eax, edx
+    sar     edx, 31
+    sar     eax, cl
+    ret
+RhpLRsh ENDP
+
+;; *********************************************************************/
+;;  LRsz:
+;; Purpose:
+;;    Does a unsigned Long Shift Right
+;;    Shifts a long right any number of bits.
+;;
+;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
+;;
+;; Entry:
+;;    EDX:EAX - long value to be shifted
+;;        ECX - number of bits to shift by
+;;
+;; Exit:
+;;    EDX:EAX - shifted value
+;;
+RhpLRsz PROC public
+    ;; Reduce shift amount mod 64
+    and     ecx, 63
+
+    cmp     ecx, 32
+    jae     LRszMORE32
+
+    ;; Handle shifts of between bits 0 and 31
+    shrd    eax, edx, cl
+    shr     edx, cl
+    ret
+
+LRszMORE32:
+    ;; Handle shifts of between bits 32 and 63
+    ;; The x86 shift instructions only use the lower 5 bits.
+    mov     eax, edx
+    xor     edx, edx
+    shr     eax, cl
+    ret
+RhpLRsz ENDP
+
+;;
+;; Following helpers are unoptimized, forward to C library, and should
+;; eventually be revisited.
+;;
+
+EXTERN __dtol3 : PROC
+
+RhpDbl2Lng PROC public
+    movsd   xmm0, qword ptr [esp+4]
+    call    __dtol3
+    ret 8
+RhpDbl2Lng ENDP
+
+RhpDbl2Int PROC public
+    movsd   xmm0, qword ptr [esp+4]
+    cvttsd2si eax, xmm0
+    ret 8
+RhpDbl2Int ENDP
+
+RhpDbl2UInt PROC public
+    movsd   xmm0, qword ptr [esp+4]
+    call    __dtol3
+    ret 8
+RhpDbl2UInt ENDP
+
+;EXTERN __ltod3 : PROC
+
+RhpLng2Dbl PROC public
+    fild    qword ptr [esp+4]
+    ;mov     edx, dword ptr [esp+8]
+    ;mov     ecx, dword ptr [esp+4]
+    ;call    __ltod3
+    ;movsd   qword ptr [esp+4], xmm0
+    ;fld     qword ptr [esp+4]
+    ret     8
+RhpLng2Dbl ENDP
+
+EXTERN __ultod3 : PROC
+
+RhpULng2Dbl PROC public
+    mov     edx, dword ptr [esp+8]
+    mov     ecx, dword ptr [esp+4]
+    call    __ultod3
+    movsd   qword ptr [esp+4], xmm0
+    fld     qword ptr [esp+4]
+    ret     8
+RhpULng2Dbl ENDP
+
+EXTERN __alldiv : PROC
+
+RhpLDiv PROC public
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
+    call    __alldiv
+    ret     16
+RhpLDiv ENDP
+
+EXTERN __allrem : PROC
+
+RhpLMod PROC public
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
+    call    __allrem
+    ret     16
+RhpLMod ENDP
+
+EXTERN __aulldiv : PROC
+
+RhpULDiv PROC public
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
+    call    __aulldiv
+    ret     16
+RhpULDiv ENDP
+
+EXTERN __aullrem : PROC
+
+RhpULMod PROC public
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
+    call    __aullrem
+    ret     16
+RhpULMod ENDP
+
+EXTERN __allmul : PROC
+
+RhpLMul PROC public
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+8]
+    push    dword ptr [esp+24]
+    push    dword ptr [esp+24]
+    call    __allmul
+    ret     16
+RhpLMul ENDP
+
+;;
+;; https://github.com/dotnet/runtime/pull/98858 moves the following helpers to
+;; managed code, so no need to optimize this
+;;
+
+REDIRECT_FUNC macro ExportName, ImportName
+    EXTERN ImportName : PROC
+
+    public  ExportName
+    ExportName    proc
+        jmp ImportName
+    ExportName    endp
+endm
+
+REDIRECT_FUNC RhpDbl2ULng, @RhpDbl2ULng@8
+REDIRECT_FUNC RhpFltRem, @RhpFltRem@8
+REDIRECT_FUNC RhpDblRem, @RhpDblRem@16
 
 end
