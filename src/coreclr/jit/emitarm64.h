@@ -860,6 +860,12 @@ static bool isValidSimm8(ssize_t value)
     return (-0x80 <= value) && (value <= 0x7F);
 };
 
+// Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
+static bool isValidSimm8_MultipleOf256(ssize_t value)
+{
+    return (-0x8000 <= value) && (value <= 0x7f00) && (value % 256 == 0);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
 static bool isValidUimm12(ssize_t value)
 {
