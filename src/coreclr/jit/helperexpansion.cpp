@@ -800,14 +800,11 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         return false;
     }
 
-<<<<<<< HEAD
     // TODO ... actually implement this stuff.
     return false;
     /*
     assert(!opts.IsReadyToRun());
 
-=======
->>>>>>> 00474fcb63082b51a0615039c8c1b5d4666f91b2
     if (TargetOS::IsUnix)
     {
 #if defined(TARGET_ARM) || !defined(TARGET_64BIT)

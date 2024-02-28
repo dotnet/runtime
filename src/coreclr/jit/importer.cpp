@@ -3821,7 +3821,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-<<<<<<< HEAD
 #ifdef FEATURE_READYTORUN
             if (!opts.IsReadyToRun())
 #endif // FEATURE_READYTORUN
