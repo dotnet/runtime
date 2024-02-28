@@ -1204,7 +1204,7 @@
     <value>Return value does not match feature check annotations of the property.</value>
   </data>
   <data name="InvalidFeatureCheckMessage" xml:space="preserve">
-    <value>Invalid FeatureCheckAttribute. Ensure the attribute is plated on a static boolean property.</value>
+    <value>Invalid FeatureCheckAttribute. The attribute must be placed on a static boolean property with only a 'get' accessor.</value>
   </data>
   <data name="InvalidFeatureCheckTitle" xml:space="preserve">
     <value>Invalid FeatureCheckAttribute.</value>
