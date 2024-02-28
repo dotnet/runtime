@@ -7887,6 +7887,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 {
     assert(compiler->compGeneratingProlog);
 
+    //
+    // The 'initReg' might have been calculated to be one of the callee-saved registers (say T0, T1 and T2 are in use,
+    // so the next possible register is S1, which should be callee-save register). This is fine as long as we will
+    // save callee-save registers before ferst use of 'initReg'. Instead we can use REG_SCRATCH before that.
+    // We don't care if REG_SCRATCH will be overridden, so wi will skip 'RegZeroed check'.
+    //
+    bool ignoreInitRegZeroed = false;
+
     // Unlike on x86/x64, we can also push float registers to stack
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
@@ -7999,11 +8007,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
             offset            = calleeSaveSPDelta - offset;
 
-            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, &ignoreInitRegZeroed, /* reportUnwindData */ true);
         }
         else
         {
-            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, &ignoreInitRegZeroed, /* reportUnwindData */ true);
         }
     }
 
@@ -8011,6 +8019,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     genSaveCalleeSavedRegistersHelp(rsPushRegs, offset, 0);
     offset += (int)(genCountBits(rsPushRegs) << 3); // each reg has 8 bytes
+
+    // From now on we can use 'initReg' safely, because all callee-saved registers has been saved.
 
     emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, offset);
     compiler->unwindSaveReg(REG_RA, offset);
