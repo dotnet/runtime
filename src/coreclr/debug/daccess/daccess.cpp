@@ -5656,7 +5656,7 @@ static int FormatCLRStubName(
 
     // Compute the address as a string safely.
     WCHAR addrString[Max64BitHexString + 1];
-    FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
+    FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", (ULONG64)stubAddr);
     size_t addStringLen = u16_strlen(addrString);
 
     // Compute maximum length, include the null terminator.
