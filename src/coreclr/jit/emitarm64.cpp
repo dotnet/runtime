@@ -1664,6 +1664,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                                                                               // x
             break;
 
+        case IF_SVE_BB_2A: // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
+            assert(insOptsNone(id->idInsOpt()));
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(isGeneralRegisterOrZR(id->idReg1())); // ddddd
+            assert(isGeneralRegisterOrZR(id->idReg2())); // nnnnn
+            assert(isValidSimm6(emitGetInsSC(id)));      // iiiiii
+            break;
+
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
             assert(insOptsScalableWide(id->idInsOpt()));
@@ -9756,6 +9764,18 @@ void emitter::emitIns_R_R_I(instruction     ins,
                 assert(isLowPredicateRegister(reg2)); // ggg
                 fmt = IF_SVE_AM_2A;
             }
+            break;
+
+        case INS_sve_addvl:
+        case INS_sve_addpl:
+            assert(insOptsNone(opt));
+            assert(size == EA_8BYTE);
+            assert(isGeneralRegisterOrSP(reg1)); // ddddd
+            assert(isGeneralRegisterOrSP(reg2)); // nnnnn
+            assert(isValidSimm6(imm));           // iiiiii
+            reg1 = encodingSPtoZR(reg1);
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_SVE_BB_2A;
             break;
 
         case INS_sve_sqrshrn:
@@ -21167,6 +21187,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 6-bits at bit locations '10-5'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm6_10_to_5(ssize_t imm)
+{
+    assert(isValidSimm6(imm));
+    if (imm < 0)
+    {
+        imm = (imm & 0x3F);
+    }
+    return (code_t)imm << 5;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 6-bits at bit locations '20-16'.
  */
 
@@ -23893,6 +23928,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_20_to_16(id->idReg2()); // mmmmm
             code |= insEncodeReg_V_9_to_5(id->idReg3());   // kkkkk
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BB_2A: // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_R_4_to_0(id->idReg1());      // ddddd
+            code |= insEncodeSimm6_10_to_5(emitGetInsSC(id)); // iiiiii
+            code |= insEncodeReg_R_20_to_16(id->idReg2());    // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -28190,6 +28233,17 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg2(), optWidenSveElemsizeArrangement(id->idInsOpt()), false); // nnnnn
             break;
 
+        // <Xd|SP>, <Xn|SP>, #<imm>
+        case IF_SVE_BB_2A: // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
+        {
+            const regNumber reg1 = (id->idReg1() == REG_ZR) ? REG_SP : id->idReg1();
+            const regNumber reg2 = (id->idReg2() == REG_ZR) ? REG_SP : id->idReg2();
+            emitDispReg(reg1, id->idOpSize(), true); // dddd
+            emitDispReg(reg2, id->idOpSize(), true); // nnnn
+            emitDispImm(emitGetInsSC(id), false);    // iiiiii
+            break;
+        }
+
         // <Zd>.<T>, <Zn>.<Tb>, #<const>
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
@@ -31518,6 +31572,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
         case IF_SVE_AU_3A:   // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
         case IF_SVE_GI_4A:   // ........xx.mmmmm ...gggnnnnnddddd -- SVE2 histogram generation (vector)
+        case IF_SVE_BB_2A:   // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

@@ -5689,6 +5689,13 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_nbsl, EA_SCALABLE, REG_V15, REG_V16, REG_V17,
                               INS_OPTS_SCALABLE_D); // NBSL <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
 
+    // IF_SVE_BB_2A
+    theEmitter->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, REG_R0, REG_R1, -32); // ADDPL <Xd|SP>, <Xn|SP>, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, REG_R2, REG_SP, 0);   // ADDPL <Xd|SP>, <Xn|SP>, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_R3, REG_R4, 5);   // ADDVL <Xd|SP>, <Xn|SP>, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_R5, 31);  // ADDVL <Xd|SP>, <Xn|SP>, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_SP, 0);   // ADDVL <Xd|SP>, <Xn|SP>, #<imm>
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}
