@@ -2188,6 +2188,7 @@ namespace System.Net.Tests
                         int readLen = responseStream.Read(buffer, 0, buffer.Length);
                         Assert.Equal(5, readLen);
                         Assert.Equal(new string('a', 5), Encoding.UTF8.GetString(buffer[0..readLen]));
+                        Assert.Equal(0, responseStream.Read(buffer));
                     }
                 },
                 async (server) =>
@@ -2199,7 +2200,7 @@ namespace System.Net.Tests
                             await tcs.Task;
                         });
                 });
-            }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
+            }, IsAsync.ToString()).Dispose();
         }
 
         [Fact]
@@ -2222,8 +2223,7 @@ namespace System.Net.Tests
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ServicePoint.BindIPEndPointDelegate =
-                        (sp, ep, retryCount) => { return new IPEndPoint(IPAddress.Loopback, 27277); };
+                    request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => new IPEndPoint(IPAddress.Loopback, 27277);
                     using (var response = (HttpWebResponse)await GetResponseAsync(request))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -2260,8 +2260,7 @@ namespace System.Net.Tests
             {
                 // URI shouldn't matter because it should throw exception before connection open.
                 HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
-                request.ServicePoint.BindIPEndPointDelegate =
-                    (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
+                request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => (IPEndPoint)socket.LocalEndPoint!;
                 var exception = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
                 Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
             }

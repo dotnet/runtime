@@ -1667,6 +1667,7 @@ namespace System.Net
                     {
                         servicePoint.Certificate = cert;
                     }
+
                     if (rcvc is not null)
                     {
                         return rcvc(request!, cert, chain, errors);
@@ -1682,10 +1683,10 @@ namespace System.Net
 
                     try
                     {
-                        //Start dns resolve
                         IPAddress[] addresses = parameters.Async ?
                             await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false) :
                             Dns.GetHostAddresses(context.DnsEndPoint.Host);
+
                         if (parameters.ServicePoint is { } servicePoint)
                         {
                             if (servicePoint.ReceiveBufferSize != -1)
@@ -1719,6 +1720,7 @@ namespace System.Net
                                         {
                                             break;
                                         }
+
                                         try
                                         {
                                             socket.Bind(endPoint);
