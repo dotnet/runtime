@@ -15,12 +15,14 @@ namespace System.Security.Cryptography
     /// </summary>
     public sealed partial class CngKey : IDisposable
     {
-        //
-        // Key properties
-        //
-
         private const int CachedKeySizeUninitializedSentinel = -1;
         private int _cachedKeySize = CachedKeySizeUninitializedSentinel;
+
+        private CngAlgorithm? _cachedAlgorithm;
+        private bool _hasCachedAlgorithmGroup;
+        private CngAlgorithmGroup? _cachedAlgorithmGroup;
+        private bool _hasCachedProvider;
+        private CngProvider? _cachedProvider;
 
         /// <summary>
         ///     Algorithm group this key can be used with
@@ -29,9 +31,16 @@ namespace System.Security.Cryptography
         {
             get
             {
-                string algorithm = _keyHandle.GetPropertyAsString(KeyPropertyName.Algorithm, CngPropertyOptions.None)!;
-                // .NET Framework compat: Don't check for null. Just let CngAlgorithm handle it.
-                return new CngAlgorithm(algorithm);
+                if (_cachedAlgorithm is null || _keyHandle.IsClosed)
+                {
+                    string algorithm = _keyHandle.GetPropertyAsString(KeyPropertyName.Algorithm, CngPropertyOptions.None)!;
+
+                    // .NET Framework compat: Don't check for null. Just let CngAlgorithm handle it.
+                    _cachedAlgorithm = new CngAlgorithm(algorithm);
+                }
+
+                return _cachedAlgorithm;
+
             }
 
         }
@@ -40,14 +49,22 @@ namespace System.Security.Cryptography
         ///     Name of the algorithm this key can be used with
         /// </summary>
         public CngAlgorithmGroup? AlgorithmGroup
-
         {
             get
             {
-                string? algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
-                if (algorithmGroup == null)
-                    return null;
-                return new CngAlgorithmGroup(algorithmGroup);
+                if (!_hasCachedAlgorithmGroup || _keyHandle.IsClosed)
+                {
+                    string? algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
+
+                    if (algorithmGroup is not null)
+                    {
+                        _cachedAlgorithmGroup = new CngAlgorithmGroup(algorithmGroup);
+                    }
+
+                    _hasCachedAlgorithmGroup = true;
+                }
+
+                return _cachedAlgorithmGroup;
             }
         }
 
@@ -279,10 +296,19 @@ namespace System.Security.Cryptography
         {
             get
             {
-                string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
-                if (provider == null)
-                    return null;
-                return new CngProvider(provider);
+                if (!_hasCachedProvider || _keyHandle.IsClosed)
+                {
+                    string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
+
+                    if (provider is not null)
+                    {
+                        _cachedProvider = new CngProvider(provider);
+                    }
+
+                    _hasCachedProvider = true;
+                }
+
+                return _cachedProvider;
             }
         }
 
