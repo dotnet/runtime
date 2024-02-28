@@ -4759,7 +4759,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitThisByrefRegs = byrefRegs;
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
