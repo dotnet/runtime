@@ -154,6 +154,7 @@ namespace Wasm.Build.Tests
                 UseShellExecute = false
             };
 
+            psi.Environment["SHOW_BUILD_OUTPUT"] = "1";
             psi.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
 

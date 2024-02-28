@@ -36,7 +36,8 @@ public class SignalRClientTests : AppTestBase
             clientDirRelativeToProjectDir: "../BlazorHosted.Client");
         BuildProject(configuration: config,
             binFrameworkDir: frameworkDir,
-            runtimeType: RuntimeVariant.MultiThreaded);
+            runtimeType: RuntimeVariant.MultiThreaded,
+            extraArgs: "-p:_WasmDevel=true");
 
         List<string> testOutput = new();
         List<string> consoleOutput = new();
@@ -46,7 +47,7 @@ public class SignalRClientTests : AppTestBase
         await using var runner = new BrowserRunner(_testOutput);
         var url = await runner.StartServerAndGetUrlAsync(
             cmd: runCommand,
-            args: $"run -c {config} --no-build",
+            args: $"run -c {config} --no-build --verbosity detailed",
             onServerMessage: OnServerMessage);
         var chatUrl = url + $"/chat?transport={transport}&message=ping";
         IBrowser browser = await runner.SpawnBrowserAsync(url);
