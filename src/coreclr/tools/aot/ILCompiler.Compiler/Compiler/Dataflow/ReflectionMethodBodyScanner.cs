@@ -1062,7 +1062,7 @@ namespace ILCompiler.Dataflow
             return aotUnsafeDelegate || comDangerousMethod;
         }
 
-        private class MakeGenericMethodSite : INodeWithRuntimeDeterminedDependencies
+        private sealed class MakeGenericMethodSite : INodeWithRuntimeDeterminedDependencies
         {
             private readonly MethodDesc _method;
 
@@ -1076,7 +1076,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        private class MakeGenericTypeSite : INodeWithRuntimeDeterminedDependencies
+        private sealed class MakeGenericTypeSite : INodeWithRuntimeDeterminedDependencies
         {
             private readonly TypeDesc _type;
 
