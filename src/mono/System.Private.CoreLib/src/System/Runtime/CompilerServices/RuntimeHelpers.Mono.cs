@@ -139,7 +139,13 @@ namespace System.Runtime.CompilerServices
 
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
-            throw new PlatformNotSupportedException();
+            if (type is not RuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            // We don't support unloading; the memory will never be freed.
+            return (IntPtr)NativeMemory.AllocZeroed((uint)size);
         }
 
         [Intrinsic]
