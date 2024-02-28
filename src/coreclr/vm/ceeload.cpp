@@ -4733,6 +4733,10 @@ static bool TypeSignatureContainsGenericVariables(SigParser& sp)
             }
             return false;
 
+        case ELEMENT_TYPE_INTERNAL:
+            IfFailThrow(sp.GetPointer(NULL));
+            return false;
+
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
         default:
