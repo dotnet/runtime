@@ -55,9 +55,7 @@
 // straightforward translation from JIT IR into the SCEV IR. Creating the add
 // recurrences requires paying attention to the structure of PHIs, and
 // disambiguating the values coming from outside the loop and the values coming
-// from the backedges. Currently only simplistic add recurrences that do not
-// require recursive analysis are supported. These simplistic add recurrences
-// are always on the form i = i + k.
+// from the backedges.
 //
 
 #include "jitpch.h"
@@ -208,7 +206,7 @@ void Scev::Dump(Compiler* comp)
 //   ResetForLoop.
 //
 ScalarEvolutionContext::ScalarEvolutionContext(Compiler* comp)
-    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts))
+    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts)), m_cyclicCache(comp->getAllocator(CMK_LoopIVOpts))
 {
 }
 
@@ -471,34 +469,34 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
 
             assert(ssaDsc->GetBlock() != nullptr);
 
-            // We currently do not handle complicated addrecs. We can do this
-            // by inserting a symbolic node in the cache and analyzing while it
-            // is part of the cache. It would allow us to model
-            //
-            //   int i = 0;
-            //   while (i < n)
-            //   {
-            //     int j = i + 1;
-            //     ...
-            //     i = j;
-            //   }
-            // => <L, 0, 1>
-            //
-            // and chains of recurrences, such as
-            //
-            //   int i = 0;
-            //   int j = 0;
-            //   while (i < n)
-            //   {
-            //     j++;
-            //     i += j;
-            //   }
-            // => <L, 0, <L, 1, 1>>
-            //
-            // The main issue is that it requires cache invalidation afterwards
-            // and turning the recursive result into an addrec.
-            //
-            return CreateSimpleAddRec(store, enterScev, ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data());
+            Scev* simpleAddRec = CreateSimpleAddRec(store, enterScev, ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data());
+            if (simpleAddRec != nullptr)
+            {
+                return simpleAddRec;
+            }
+
+            ScevConstant* symbolicAddRec = NewConstant(TYP_INT, 0xdeadbeef);
+            m_cyclicCache.Emplace(store, symbolicAddRec);
+
+            Scev* result;
+            if (m_usingCyclicCache)
+            {
+                result = Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data(), depth + 1);
+            }
+            else
+            {
+                m_usingCyclicCache = true;
+                result             = Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data(), depth + 1);
+                m_usingCyclicCache = false;
+                m_cyclicCache.RemoveAll();
+            }
+
+            if (result == nullptr)
+            {
+                return nullptr;
+            }
+
+            return MakeAddRecFromRecursiveScev(enterScev, result, symbolicAddRec);
         }
         case GT_CAST:
         {
@@ -612,6 +610,133 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStor
 }
 
 //------------------------------------------------------------------------
+// ExtractAddOperands: Extract all operands of potentially nested add
+// operations.
+//
+// Parameters:
+//   binop    - The binop representing an add
+//   operands - Array stack to add the operands to
+//
+void ScalarEvolutionContext::ExtractAddOperands(ScevBinop* binop, ArrayStack<Scev*>& operands)
+{
+    assert(binop->OperIs(ScevOper::Add));
+
+    if (binop->Op1->OperIs(ScevOper::Add))
+    {
+        ExtractAddOperands(static_cast<ScevBinop*>(binop->Op1), operands);
+    }
+    else
+    {
+        operands.Push(binop->Op1);
+    }
+
+    if (binop->Op2->OperIs(ScevOper::Add))
+    {
+        ExtractAddOperands(static_cast<ScevBinop*>(binop->Op2), operands);
+    }
+    else
+    {
+        operands.Push(binop->Op2);
+    }
+}
+
+//------------------------------------------------------------------------
+// MakeAddRecFromRecursiveScev: Given a recursive SCEV and a symbolic SCEV
+// whose appearances represent an occurrence of the full SCEV, create a
+// non-recursive add-rec from it.
+//
+// Parameters:
+//   startScev     - The start value of the addrec
+//   scev          - The scev
+//   recursiveScev - A symbolic node whose appearence represents the value of "scev"
+//
+// Returns:
+//   A non-recursive addrec
+//
+Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev* scev, Scev* recursiveScev)
+{
+    if (!scev->OperIs(ScevOper::Add))
+    {
+        return nullptr;
+    }
+
+    ArrayStack<Scev*> addOperands(m_comp->getAllocator(CMK_LoopIVOpts));
+    ExtractAddOperands(static_cast<ScevBinop*>(scev), addOperands);
+
+    assert(addOperands.Height() >= 2);
+
+    int numAppearences = 0;
+    for (int i = 0; i < addOperands.Height(); i++)
+    {
+        Scev* addOperand = addOperands.Bottom(i);
+        if (addOperand == recursiveScev)
+        {
+            numAppearences++;
+        }
+        else
+        {
+            ScevVisit result = addOperand->Visit([=](Scev* node) {
+                if (node == recursiveScev)
+                {
+                    return ScevVisit::Abort;
+                }
+
+                return ScevVisit::Continue;
+                });
+
+            if (result == ScevVisit::Abort)
+            {
+                // We do not handle nested occurrences. Some of these may be representable, some won't.
+                return nullptr;
+            }
+        }
+    }
+
+    if (numAppearences == 0)
+    {
+        // TODO-CQ: We currently cannot handle cases like
+        // i = arr.Length;
+        // j = i - 1;
+        // i = j;
+        // while (true) { ...; j = i - 1; i = j; }
+        //
+        // These cases can arise due to "dup".
+        // In this case we see that i = <L, [i from outside loop], -1>, but for
+        // j we will see <L, [i from outside loop], -1> + (-1) in this function.
+        // 
+        return nullptr;
+    }
+
+    if (numAppearences > 1)
+    {
+        // Multiple occurrences -- cannot be represented as an addrec
+        // (corresponds to a geometric progression).
+        return nullptr;
+    }
+
+    Scev* step = nullptr;
+    for (int i = 0; i < addOperands.Height(); i++)
+    {
+        Scev* addOperand = addOperands.Bottom(i);
+        if (addOperand == recursiveScev)
+        {
+            continue;
+        }
+
+        if (step == nullptr)
+        {
+            step = addOperand;
+        }
+        else
+        {
+            step = NewBinop(ScevOper::Add, step, addOperand);
+        }
+    }
+
+    return NewAddRec(startScev, step);
+}
+
+//------------------------------------------------------------------------
 // Analyze: Analyze the specified tree in the specified block.
 //
 // Parameters:
@@ -653,7 +778,7 @@ const int SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH = 64;
 Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int depth)
 {
     Scev* result;
-    if (!m_cache.Lookup(tree, &result))
+    if (!m_cache.Lookup(tree, &result) && (!m_usingCyclicCache || !m_cyclicCache.Lookup(tree, &result)))
     {
         if (depth >= SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH)
         {
@@ -661,7 +786,15 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int dept
         }
 
         result = AnalyzeNew(block, tree, depth);
-        m_cache.Set(tree, result);
+
+        if (m_usingCyclicCache)
+        {
+            m_cyclicCache.Set(tree, result, ScalarEvolutionMap::Overwrite);
+        }
+        else
+        {
+            m_cache.Set(tree, result);
+        }
     }
 
     return result;
