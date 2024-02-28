@@ -259,6 +259,21 @@ function_name() to call the system's implementation
 #define remove DUMMY_remove
 #define printf DUMMY_printf
 #define vprintf DUMMY_vprintf
+#define fopen DUMMY_fopen
+#define setvbuf DUMMY_setvbuf
+#define fprintf DUMMY_fprintf
+#define vfprintf DUMMY_vfprintf
+#define fgets DUMMY_fgets
+#define ferror DUMMY_ferror
+#define fread DUMMY_fread
+#define fwrite DUMMY_fwrite
+#define ftell DUMMY_ftell
+#define fclose DUMMY_fclose
+#define fflush DUMMY_fflush
+#define fputs DUMMY_fputs
+#define fseek DUMMY_fseek
+#define fgetpos DUMMY_fgetpos
+#define fsetpos DUMMY_fsetpos
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX
@@ -353,7 +368,8 @@ function_name() to call the system's implementation
 #define intptr_t PAL_intptr_t
 #define uintptr_t PAL_uintptr_t
 #define timeval PAL_timeval
-#define FILE PAL_FILE
+
+#define DEFINE_DUMMY_FILE_TYPE
 
 #include "pal.h"
 #include "palprivate.h"
@@ -433,7 +449,6 @@ function_name() to call the system's implementation
 #undef qsort
 #undef bsearch
 #undef time
-#undef FILE
 #undef fclose
 #undef fopen
 #undef fread
@@ -447,7 +462,6 @@ function_name() to call the system's implementation
 #undef fgetpos
 #undef fsetpos
 #undef getcwd
-#undef _flushall
 #undef setvbuf
 #undef unlink
 #undef size_t
@@ -619,6 +633,7 @@ function_name() to call the system's implementation
 #include <unistd.h>
 #include <fcntl.h>
 #include <glob.h>
+#include <errno.h>
 
 #ifdef __APPLE__
 

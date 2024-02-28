@@ -756,6 +756,11 @@ namespace System.Collections
 
             if (array is int[] intArray)
             {
+                if (array.Length - index < GetInt32ArrayLengthFromBitLength(m_length))
+                {
+                    throw new ArgumentException(SR.Argument_InvalidOffLen);
+                }
+
                 Div32Rem(m_length, out int extraBits);
 
                 if (extraBits == 0)
