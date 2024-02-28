@@ -2194,9 +2194,9 @@ namespace System.Net.Tests
                 async (server) =>
                 {
                     await server.AcceptConnectionAsync(
-                        async (client) =>
+                        async connection =>
                         {
-                            await client.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10));
+                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10));
                             await tcs.Task;
                         });
                 });
@@ -2215,64 +2215,72 @@ namespace System.Net.Tests
             Assert.Equal(HttpVersion.Version11, request.ServicePoint.ProtocolVersion);
         }
 
-        [Fact]
-        public async Task SendHttpRequest_BindIPEndPoint_Success()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendHttpRequest_BindIPEndPoint_Success()
         {
-            TaskCompletionSource tcs = new TaskCompletionSource();
-            await LoopbackServer.CreateClientAndServerAsync(
-                async (uri) =>
-                {
-                    HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => new IPEndPoint(IPAddress.Loopback, 27277);
-                    using (var response = (HttpWebResponse)await GetResponseAsync(request))
+            RemoteExecutor.Invoke(async (async) =>
+            {
+                TaskCompletionSource tcs = new TaskCompletionSource();
+                await LoopbackServer.CreateClientAndServerAsync(
+                    async (uri) =>
                     {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    }
-                    tcs.SetResult();
-                },
-                async (server) =>
-                {
-                    await server.AcceptConnectionAsync(
-                        async (client) =>
+                        HttpWebRequest request = WebRequest.CreateHttp(uri);
+                        request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => new IPEndPoint(IPAddress.Loopback, 27277);
+                        var responseTask = bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse());
+                        using (var response = (HttpWebResponse)await responseTask)
                         {
-                            var ipEp = (IPEndPoint)client.Socket.RemoteEndPoint;
-                            Assert.Equal(27277, ipEp.Port);
-                            await client.SendResponseAsync();
-                            await tcs.Task;
-                        });
-                });
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        }
+                        tcs.SetResult();
+                    },
+                    async (server) =>
+                    {
+                        await server.AcceptConnectionAsync(
+                            async connection =>
+                            {
+                                var ipEp = (IPEndPoint)connection.Socket.RemoteEndPoint;
+                                Assert.Equal(27277, ipEp.Port);
+                                await connection.SendResponseAsync();
+                                await tcs.Task;
+                            });
+                    });
+            }, IsAsync.ToString());
         }
 
-        [Fact]
-        public async Task SendHttpRequest_BindIPEndPoint_Throws()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendHttpRequest_BindIPEndPoint_Throws()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            ValueTask<Socket>? clientSocket = null;
-            CancellationTokenSource cts = new CancellationTokenSource();
-            if (PlatformDetection.IsLinux)
+            RemoteExecutor.Invoke(async (async) =>
             {
-                socket.Listen();
-                clientSocket = socket.AcceptAsync(cts.Token);
-            }
-
-            try
-            {
-                // URI shouldn't matter because it should throw exception before connection open.
-                HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
-                request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => (IPEndPoint)socket.LocalEndPoint!;
-                var exception = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
-                Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
-            }
-            finally
-            {
-                if (clientSocket is not null)
+                Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                ValueTask<Socket>? clientSocket = null;
+                CancellationTokenSource cts = new CancellationTokenSource();
+                if (PlatformDetection.IsLinux)
                 {
-                    await cts.CancelAsync();
+                    socket.Listen();
+                    clientSocket = socket.AcceptAsync(cts.Token);
                 }
-                socket.Dispose();
-                cts.Dispose();
-            }
+
+                try
+                {
+                    // URI shouldn't matter because it should throw exception before connection open.
+                    HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+                    request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => (IPEndPoint)socket.LocalEndPoint!;
+                    var exception = await Assert.ThrowsAsync<WebException>(() =>
+                        bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
+                    Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
+                }
+                finally
+                {
+                    if (clientSocket is not null)
+                    {
+                        await cts.CancelAsync();
+                    }
+                    socket.Dispose();
+                    cts.Dispose();
+                }
+            }, IsAsync.ToString());
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)

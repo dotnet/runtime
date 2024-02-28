@@ -156,7 +156,8 @@ namespace System.Net
                     IdleSince = DateTime.Now,
                     Expect100Continue = Expect100Continue,
                     UseNagleAlgorithm = UseNagleAlgorithm,
-                    KeepAlive = KeepAlive
+                    KeepAlive = KeepAlive,
+                    MaxIdleTime = MaxServicePointIdleTime
                 };
                 s_servicePointTable[tableKey] = new WeakReference<ServicePoint>(sp);
 

@@ -42,6 +42,7 @@ namespace System.Net
         private Task<HttpResponseMessage>? _sendRequestTask;
 
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
+        private static int _defaultMaximumErrorResponseLength = -1;
 
         private int _beginGetRequestStreamCalled;
         private int _beginGetResponseCalled;
@@ -674,11 +675,22 @@ namespace System.Net
             }
             set
             {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
                 _defaultMaxResponseHeadersLength = value;
             }
         }
 
-        public static int DefaultMaximumErrorResponseLength { get; set; } = -1;
+        public static int DefaultMaximumErrorResponseLength {
+            get
+            {
+                return _defaultMaximumErrorResponseLength;
+            }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                _defaultMaximumErrorResponseLength = value;
+            }
+        }
 
         private static RequestCachePolicy? _defaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
         private static bool _isDefaultCachePolicySet;
@@ -1734,7 +1746,7 @@ namespace System.Net
 
                                     if (retryCount >= MaxRetries)
                                     {
-                                        throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                        throw new OverflowException(SR.net_maximumbindretries);
                                     }
                                 }
                             }

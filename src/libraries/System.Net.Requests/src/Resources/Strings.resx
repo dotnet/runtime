@@ -264,4 +264,7 @@
   <data name="net_proxyschemenotsupported" xml:space="preserve">
     <value>The ServicePointManager does not support proxies with the {0} scheme.</value>
   </data>
+  <data name="net_maximumbindretries" xml:space="preserve">
+    <value>Reached maximum number of BindIPEndPointDelegate retries</value>
+  </data>
 </root>
