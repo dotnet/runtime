@@ -296,6 +296,9 @@
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="TARGET_BUILD_ARCH=arm64" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="TARGET_BUILD_ARCH=arm" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'armv6'" Include="TARGET_BUILD_ARCH=armv6" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'armv6'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6zk" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mcpu=arm1176jzf-s" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfpu=vfp" />
@@ -310,42 +313,49 @@
     <ItemGroup Condition="'$(Targetsillumos)' == 'true' and '$(MonoCrossDir)' != ''">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- x64 Haiku cross build options -->
     <ItemGroup Condition="'$(TargetsHaiku)' == 'true' and '$(MonoCrossDir)' != ''">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/boot/system/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- x64 linux cross build options -->
     <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'x64'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- x86 linux cross build options -->
     <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'x86'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x86" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- riscv64 Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'riscv64'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=riscv64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/riscv64-linux-gnu/pkgconfig" />
     </ItemGroup>
 
     <!-- s390x Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 's390x'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=s390x" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/s390x-linux-gnu/pkgconfig" />
     </ItemGroup>
 
     <!-- ppc64le Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'ppc64le'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=ppc64le" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/powerpc64le-linux-gnu/pkgconfig" />
     </ItemGroup>
 
     <!-- x64 FreeBSD cross build options -->
@@ -818,6 +828,21 @@
       <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=$(AotHostArchitecture)" />
     </ItemGroup>
 
+    <!-- x64 Linux cross build options -->
+    <ItemGroup Condition="'$(AotHostArchitecture)' == 'x64' and '$(AotHostOS)' == 'linux'">
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/x86_64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
+    <!-- ARM Linux cross build options on CI -->
+    <ItemGroup Condition="'$(AotHostArchitecture)' == 'arm64' and '$(AotHostOS)' == 'linux'">
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
+    <!-- ARM Linux cross build options on CI -->
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux-musl'">
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
+    </ItemGroup>
+  
     <PropertyGroup>
       <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
