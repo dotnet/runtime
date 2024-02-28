@@ -29,6 +29,8 @@ IF_DEF(SVE_8A, IS_NONE, NONE) // Instruction has 8  possible encoding types, typ
 IF_DEF(SVE_8B, IS_NONE, NONE) // Instruction has 8  possible encoding types, type B
 IF_DEF(SVE_8C, IS_NONE, NONE) // Instruction has 8  possible encoding types, type C
 IF_DEF(SVE_7A, IS_NONE, NONE) // Instruction has 7  possible encoding types, type A
+IF_DEF(SVE_7B, IS_NONE, NONE) // Instruction has 7  possible encoding types, type B
+IF_DEF(SVE_7C, IS_NONE, NONE) // Instruction has 7  possible encoding types, type C
 IF_DEF(SVE_6A, IS_NONE, NONE) // Instruction has 6  possible encoding types, type A
 IF_DEF(SVE_6B, IS_NONE, NONE) // Instruction has 6  possible encoding types, type B
 IF_DEF(SVE_6C, IS_NONE, NONE) // Instruction has 6  possible encoding types, type C
@@ -36,6 +38,7 @@ IF_DEF(SVE_6D, IS_NONE, NONE) // Instruction has 6  possible encoding types, typ
 IF_DEF(SVE_6E, IS_NONE, NONE) // Instruction has 6  possible encoding types, type E
 IF_DEF(SVE_6F, IS_NONE, NONE) // Instruction has 6  possible encoding types, type F
 IF_DEF(SVE_6G, IS_NONE, NONE) // Instruction has 6  possible encoding types, type G
+IF_DEF(SVE_6H, IS_NONE, NONE) // Instruction has 6  possible encoding types, type H
 IF_DEF(SVE_5A, IS_NONE, NONE) // Instruction has 5  possible encoding types, type A
 IF_DEF(SVE_5B, IS_NONE, NONE) // Instruction has 5  possible encoding types, type B
 IF_DEF(SVE_5C, IS_NONE, NONE) // Instruction has 5  possible encoding types, type C
@@ -396,17 +399,27 @@ IF_DEF(SVE_HM_2A,   IS_NONE, NONE) // SVE_HM_2A  ........xx...... ...ggg....iddd
 IF_DEF(SVE_HN_2A,   IS_NONE, NONE) // SVE_HN_2A  ........xx...iii ......mmmmmddddd  -- SVE floating-point trig multiply-add coefficient
 IF_DEF(SVE_HO_3A,   IS_NONE, NONE) // SVE_HO_3A  ................ ...gggnnnnnddddd  -- SVE floating-point convert precision
 IF_DEF(SVE_HO_3A_B, IS_NONE, NONE) // SVE_HO_3A_B  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HO_3A_C, IS_NONE, NONE) // SVE_HO_3A_B  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HO_3A_D, IS_NONE, NONE) // SVE_HO_3A_B  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HO_3A_E, IS_NONE, NONE) // SVE_HO_3A_B  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HO_3A_F, IS_NONE, NONE) // SVE_HO_3A_B  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HP_3A,   IS_NONE, NONE) // SVE_HP_3A  .............xx. ...gggnnnnnddddd  -- SVE floating-point convert to integer
 IF_DEF(SVE_HP_3B,   IS_NONE, NONE) // SVE_HP_3B  ................ ...gggnnnnnddddd  -- SVE floating-point convert to integer
 IF_DEF(SVE_HP_3B_H, IS_NONE, NONE) // SVE_HP_3B_H  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HP_3B_I, IS_NONE, NONE) // SVE_HP_3B_I  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HP_3B_J, IS_NONE, NONE) // SVE_HP_3B_J  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HP_3B_K, IS_NONE, NONE) // SVE_HP_3B_K  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HP_3B_L, IS_NONE, NONE) // SVE_HP_3B_L  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HP_3B_M, IS_NONE, NONE) // SVE_HP_3B_M  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HQ_3A,   IS_NONE, NONE) // SVE_HQ_3A  ........xx...... ...gggnnnnnddddd  -- SVE floating-point round to integral value
 IF_DEF(SVE_HR_3A,   IS_NONE, NONE) // SVE_HR_3A  ........xx...... ...gggnnnnnddddd  -- SVE floating-point unary operations
 IF_DEF(SVE_HS_3A,   IS_NONE, NONE) // SVE_HS_3A  ................ ...gggnnnnnddddd  -- SVE integer convert to floating-point
 IF_DEF(SVE_HS_3A_H, IS_NONE, NONE) // SVE_HS_3A_H  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HS_3A_I, IS_NONE, NONE) // SVE_HS_3A_I  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HS_3A_J, IS_NONE, NONE) // SVE_HS_3A_J  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HS_3A_K, IS_NONE, NONE) // SVE_HP_3B_K  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HS_3A_L, IS_NONE, NONE) // SVE_HP_3B_L  ................ ...gggnnnnnddddd  -- 
+IF_DEF(SVE_HS_3A_M, IS_NONE, NONE) // SVE_HP_3B_M  ................ ...gggnnnnnddddd  -- 
 IF_DEF(SVE_HT_4A,   IS_NONE, NONE) // SVE_HT_4A  ........xx.mmmmm ...gggnnnnn.DDDD  -- SVE floating-point compare vectors
 IF_DEF(SVE_HU_4A,   IS_NONE, NONE) // SVE_HU_4A  ........xx.mmmmm ...gggnnnnnddddd  -- SVE floating-point multiply-accumulate writing addend
 IF_DEF(SVE_HU_4B,   IS_NONE, NONE) // SVE_HU_4B  ...........mmmmm ...gggnnnnnddddd  -- SVE floating-point multiply-accumulate writing addend

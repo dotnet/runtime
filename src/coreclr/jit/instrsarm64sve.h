@@ -239,6 +239,43 @@ INST7(ld1sw,             "ld1sw",                 0,                       IF_SV
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_IU_4B_B         11000101010mmmmm 100gggnnnnnttttt     C540 8000   
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_IV_3A           11000101001iiiii 100gggnnnnnttttt     C520 8000   
 
+//    enum               name                     info                                              SVE_HP_3B        SVE_HP_3B_H      SVE_HP_3B_I      SVE_HP_3B_J  SVE_HP_3B_K   SVE_HP_3B_L    SVE_HP_3B_M 
+INST7(fcvtzs,            "fcvtzs",                0,                       IF_SVE_7B,               0x659CA000,      0x65DCA000,      0x65D8A000,      0x65DEA000,  0x655AA000,   0x655CA000,    0x655EA000       )
+    // FCVTZS  <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HP_3B           0110010110011100 101gggnnnnnddddd     659C A000   
+    // FCVTZS  <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HP_3B_H         0110010111011100 101gggnnnnnddddd     65DC A000   
+    // FCVTZS  <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_I         0110010111011000 101gggnnnnnddddd     65D8 A000   
+    // FCVTZS  <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_J         0110010111011110 101gggnnnnnddddd     65DE A000   
+    // FCVTZS  <Zd>.H, <Pg>/M, <Zn>.H                                                    SVE_HP_3B_K         0110010101011010 101gggnnnnnddddd     655A A000   
+    // FCVTZS  <Zd>.S, <Pg>/M, <Zn>.H                                                    SVE_HP_3B_L         0110010111011000 101gggnnnnnddddd     655C A000   
+    // FCVTZS  <Zd>.D, <Pg>/M, <Zn>.H                                                    SVE_HP_3B_M         0110010111011110 101gggnnnnnddddd     655E A000   
+
+INST7(fcvtzu,            "fcvtzu",                0,                       IF_SVE_7B,               0x659DA000,      0x65DDA000,      0x65D9A000,      0x65DFA000, 0x655BA000, 0x655DA000, 0x655FA000       )
+    // FCVTZU  <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HP_3B           0110010110011101 101gggnnnnnddddd     659D A000   
+    // FCVTZU  <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HP_3B_H         0110010111011101 101gggnnnnnddddd     65DD A000   
+    // FCVTZU  <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_I         0110010111011001 101gggnnnnnddddd     65D9 A000   
+    // FCVTZU  <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_J         0110010111011111 101gggnnnnnddddd     65DF A000   
+    // FCVTZU  <Zd>.H, <Pg>/M, <Zn>.H                                                    SVE_HP_3B_K         0110010101011011 101gggnnnnnddddd     655B A000   
+    // FCVTZU  <Zd>.S, <Pg>/M, <Zn>.H                                                    SVE_HP_3B_L         0110010111011111 101gggnnnnnddddd     655D A000   
+    // FCVTZU  <Zd>.D, <Pg>/M, <Zn>.H                                                    SVE_HP_3B_M         0110010111011111 101gggnnnnnddddd     655F A000   
+
+//    enum               name                     info                                              SVE_HS_3A        SVE_HS_3A_H      SVE_HS_3A_I      SVE_HS_3A_J SVE_HS_3A_K SVE_HS_3A_L SVE_HS_3A_M    
+INST7(scvtf,             "scvtf",                 0,                       IF_SVE_7C,               0x6594A000,      0x65D0A000,      0x65D4A000,      0x65D6A000, 0x6552A000, 0x6554A000, 0x6556A000       )
+    // SCVTF   <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HS_3A           0110010110010100 101gggnnnnnddddd     6594 A000   
+    // SCVTF   <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HS_3A_H         0110010111010000 101gggnnnnnddddd     65D0 A000   
+    // SCVTF   <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_I         0110010111010100 101gggnnnnnddddd     65D4 A000   
+    // SCVTF   <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_J         0110010111010110 101gggnnnnnddddd     65D6 A000   
+    // SCVTF   <Zd>.H, <Pg>/M, <Zn>.H                                                    SVE_HS_3A_K         0110010101010010 101gggnnnnnddddd     6552 A000   
+    // SCVTF   <Zd>.H, <Pg>/M, <Zn>.S                                                    SVE_HS_3A_L         0110010101010100 101gggnnnnnddddd     6554 A000   
+    // SCVTF   <Zd>.H, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_M         0110010111010110 101gggnnnnnddddd     6556 A000   
+
+INST7(ucvtf,             "ucvtf",                 0,                       IF_SVE_7C,               0x6595A000,      0x65D1A000,      0x65D5A000,      0x65D7A000, 0x6553A000, 0x6555A000, 0x6557A000       )
+    // UCVTF   <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HS_3A           0110010110010101 101gggnnnnnddddd     6595 A000   
+    // UCVTF   <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HS_3A_H         0110010111010001 101gggnnnnnddddd     65D1 A000   
+    // UCVTF   <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_I         0110010111010101 101gggnnnnnddddd     65D5 A000   
+    // UCVTF   <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_J         0110010111010111 101gggnnnnnddddd     65D7 A000   
+    // UCVTF   <Zd>.H, <Pg>/M, <Zn>.H                                                    SVE_HS_3A_K         0110010101010011 101gggnnnnnddddd     6553 A000   
+    // UCVTF   <Zd>.H, <Pg>/M, <Zn>.S                                                    SVE_HS_3A_L         0110010101010101 101gggnnnnnddddd     6555 A000   
+    // UCVTF   <Zd>.H, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_M         0110010101010111 101gggnnnnnddddd     6557 A000   
 
 //    enum               name                     info                                              SVE_AE_3A        SVE_BD_3A        SVE_EE_1A        SVE_FD_3A        SVE_FD_3B        SVE_FD_3C        
 INST6(mul,               "mul",                   0,                       IF_SVE_6A,               0x04100000,      0x04206000,      0x2530C000,      0x4420F800,      0x44A0F800,      0x44E0F800       )
@@ -342,6 +379,16 @@ INST6(st1b,              "st1b",                  0,                       IF_SV
     // ST1B    {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                             SVE_JN_3A           111001000xx0iiii 111gggnnnnnttttt     E400 E000   
 
 
+//    enum               name                     info                                              SVE_HO_3A        SVE_HO_3A_B    SVE_HO_3A_C  SVE_HO_3A_D  SVE_HO_3A_E  SVE_HO_3A_F          
+INST6(fcvt,              "fcvt",                  0,                       IF_SVE_6H,              0x65CBA000,      0x65CAA000,    0x65C8A000,  0x65C9A000,  0x6588A000,  0x6589A000                  )
+    // FCVT    <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HO_3A           0110010111001011 101gggnnnnnddddd     65CB A000   
+    // FCVT    <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HO_3A_B         0110010111001010 101gggnnnnnddddd     65CA A000   
+    // FCVT    <Zd>.H, <Pg>/M, <Zn>.D                                                    SVE_HO_3A_C         0110010111001000 101gggnnnnnddddd     65C8 A000   
+    // FCVT    <Zd>.D, <Pg>/M, <Zn>.H                                                    SVE_HO_3A_D         0110010111001001 101gggnnnnnddddd     65C9 A000   
+    // FCVT    <Zd>.H, <Pg>/M, <Zn>.S                                                    SVE_HO_3A_E         0110010110001000 101gggnnnnnddddd     6588 A000   
+    // FCVT    <Zd>.S, <Pg>/M, <Zn>.H                                                    SVE_HO_3A_F         0110010110001001 101gggnnnnnddddd     6589 A000   
+
+
 //    enum               name                     info                                              SVE_AM_2A        SVE_AN_3A        SVE_AO_3A        SVE_BF_2A        SVE_BG_3A        
 INST5(asr,               "asr",                   RSH,                     IF_SVE_5A,               0x04008000,      0x04108000,      0x04188000,      0x04209000,      0x04208000       )
     // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>                                    SVE_AM_2A           00000100xx000000 100gggxxiiiddddd     0400 8000   
@@ -442,32 +489,6 @@ INST4(fmov,              "fmov",                  0,                       IF_SV
     // FMOV    <Zd>.<T>, #0.0                                                            SVE_EB_1B           00100101xx111000 11000000000ddddd     2538 C000   
 
 
-//    enum               name                     info                                              SVE_HS_3A        SVE_HS_3A_H      SVE_HS_3A_I      SVE_HS_3A_J      
-INST4(scvtf,             "scvtf",                 0,                       IF_SVE_4C,               0x6594A000,      0x65D0A000,      0x65D4A000,      0x65D6A000       )
-    // SCVTF   <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HS_3A           0110010110010100 101gggnnnnnddddd     6594 A000   
-    // SCVTF   <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HS_3A_H         0110010111010000 101gggnnnnnddddd     65D0 A000   
-    // SCVTF   <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_I         0110010111010100 101gggnnnnnddddd     65D4 A000   
-    // SCVTF   <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_J         0110010111010110 101gggnnnnnddddd     65D6 A000   
-
-INST4(ucvtf,             "ucvtf",                 0,                       IF_SVE_4C,               0x6595A000,      0x65D1A000,      0x65D5A000,      0x65D7A000       )
-    // UCVTF   <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HS_3A           0110010110010101 101gggnnnnnddddd     6595 A000   
-    // UCVTF   <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HS_3A_H         0110010111010001 101gggnnnnnddddd     65D1 A000   
-    // UCVTF   <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_I         0110010111010101 101gggnnnnnddddd     65D5 A000   
-    // UCVTF   <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HS_3A_J         0110010111010111 101gggnnnnnddddd     65D7 A000   
-
-
-//    enum               name                     info                                              SVE_HP_3B        SVE_HP_3B_H      SVE_HP_3B_I      SVE_HP_3B_J      
-INST4(fcvtzs,            "fcvtzs",                0,                       IF_SVE_4D,               0x659CA000,      0x65DCA000,      0x65D8A000,      0x65DEA000       )
-    // FCVTZS  <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HP_3B           0110010110011100 101gggnnnnnddddd     659C A000   
-    // FCVTZS  <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HP_3B_H         0110010111011100 101gggnnnnnddddd     65DC A000   
-    // FCVTZS  <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_I         0110010111011000 101gggnnnnnddddd     65D8 A000   
-    // FCVTZS  <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_J         0110010111011110 101gggnnnnnddddd     65DE A000   
-
-INST4(fcvtzu,            "fcvtzu",                0,                       IF_SVE_4D,               0x659DA000,      0x65DDA000,      0x65D9A000,      0x65DFA000       )
-    // FCVTZU  <Zd>.S, <Pg>/M, <Zn>.S                                                    SVE_HP_3B           0110010110011101 101gggnnnnnddddd     659D A000   
-    // FCVTZU  <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HP_3B_H         0110010111011101 101gggnnnnnddddd     65DD A000   
-    // FCVTZU  <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_I         0110010111011001 101gggnnnnnddddd     65D9 A000   
-    // FCVTZU  <Zd>.D, <Pg>/M, <Zn>.D                                                    SVE_HP_3B_J         0110010111011111 101gggnnnnnddddd     65DF A000   
 
 
 //    enum               name                     info                                              SVE_BE_3A        SVE_FI_3A        SVE_FI_3B        SVE_FI_3C        
@@ -1119,12 +1140,6 @@ INST2(fmlalltt,          "fmlalltt",              0,                       IF_SV
 INST2(not,               "not",                   0,                       IF_SVE_2AR,              0x041EA000,      0x25004200                  )
     // NOT     <Zd>.<T>, <Pg>/M, <Zn>.<T>                                                SVE_AP_3A           00000100xx011110 101gggnnnnnddddd     041E A000   
     // NOT     <Pd>.B, <Pg>/Z, <Pn>.B                                                    SVE_CZ_4A           001001010000MMMM 01gggg1NNNN0DDDD     2500 4200   
-
-
-//    enum               name                     info                                              SVE_HO_3A        SVE_HO_3A_B                 
-INST2(fcvt,              "fcvt",                  0,                       IF_SVE_2AS,              0x65CBA000,      0x65CAA000                  )
-    // FCVT    <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HO_3A           0110010111001011 101gggnnnnnddddd     65CB A000   
-    // FCVT    <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_HO_3A_B         0110010111001010 101gggnnnnnddddd     65CA A000   
 
 
 //    enum               name                     info                                              SVE_AB_3A        SVE_EC_1A                   
