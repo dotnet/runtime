@@ -620,7 +620,7 @@ namespace System.Runtime.CompilerServices
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static ref byte NullTest(nuint offset) => ref Unsafe.Subtract(ref Unsafe.NullRef<byte>(), offset);
-            Assert.Equal(0, (nuint)Unsafe.AsPointer(ref NullTest(0)));
+            Assert.True(Unsafe.IsNullRef(ref NullTest(0)));
         }
 
         [Fact]
