@@ -142,6 +142,8 @@ export function generateBackwardBranchTable(
     // IP of the start of the trace in U16s, relative to startOfBody.
     const rbase16 = (<any>ip - <any>startOfBody) / 2;
 
+    // FIXME: This will potentially scan the entire method and record branches that won't
+    //  ever run since the trace compilation will end before we reach them.
     while (ip < endOfBody) {
         // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
         const rip16 = (<any>ip - <any>startOfBody) / 2;
@@ -166,16 +168,23 @@ export function generateBackwardBranchTable(
             break;
         }
 
-        const rtarget16 = rip16 + (displacement);
-        if (rtarget16 < 0) {
-            mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
-            break;
-        }
+        // Only record *backward* branches
+        // We will filter this down further in the Cfg because it takes note of which branches it sees,
+        //  but it is also beneficial to have a null table (further down) due to seeing no potential
+        //  back branch targets at all, as it allows the Cfg to skip additional code generation entirely
+        //  if it knows there will never be any backwards branches in a given trace
+        if (displacement < 0) {
+            const rtarget16 = rip16 + (displacement);
+            if (rtarget16 < 0) {
+                mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
+                break;
+            }
 
-        // If the relative target is before the start of the trace, don't record it.
-        // The trace will be unable to successfully branch to it so it would just make the table bigger.
-        if (rtarget16 >= rbase16)
-            table.push(rtarget16);
+            // If the relative target is before the start of the trace, don't record it.
+            // The trace will be unable to successfully branch to it so it would just make the table bigger.
+            if (rtarget16 >= rbase16)
+                table.push(rtarget16);
+        }
 
         switch (opcode) {
             case MintOpcode.MINT_CALL_HANDLER:
