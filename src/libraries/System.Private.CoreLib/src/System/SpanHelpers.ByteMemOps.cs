@@ -22,9 +22,7 @@ namespace System
 #else
         private const nuint MemmoveNativeThreshold = 2048;
 #endif
-#if !MONO
         private const nuint ZeroMemoryNativeThreshold = 1024;
-#endif
 
 
 #if HAS_CUSTOM_BLOCKS
@@ -258,7 +256,7 @@ namespace System
 
             // Mono works faster with Unsafe.InitBlockUnaligned
 #if MONO
-            if (len > 768)
+            if (len > ZeroMemoryNativeThreshold)
                 goto PInvoke;
             Unsafe.InitBlockUnaligned(ref dest, 0, (uint)len);
             return;
