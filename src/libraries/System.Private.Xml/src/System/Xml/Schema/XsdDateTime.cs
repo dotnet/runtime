@@ -396,7 +396,7 @@ namespace System.Xml.Schema
             {
                 case DateTimeTypeCode.GMonth:
                 case DateTimeTypeCode.GDay:
-                    // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime not constructed from multiple elements - it's converted from an XsdDateTime.
+                    // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - The XML specification does not explicitly define this behavior for parsing in a non-leap year. We intentionally throw here. Altering this behavior to be more resilient, producing dates like 2/28 or 3/1, could introduce unintended consequences and may not be desirable for user.
                     result = new DateTime(DateTime.Now.Year, xdt.Month, xdt.Day);
                     break;
                 case DateTimeTypeCode.Time:

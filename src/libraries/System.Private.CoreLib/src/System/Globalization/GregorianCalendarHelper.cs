@@ -35,7 +35,7 @@ namespace System.Globalization
             this.yearOffset = yearOffset;
             this.minEraYear = minEraYear;
             this.maxEraYear = maxEraYear;
-            // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime is constructed using the user specifed values, not a combination of different sources.
+            // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - A DateTime object is created using values obtained from the machine configuration.
             this.ticks = new DateTime(startYear, startMonth, startDay).Ticks;
             this.eraName = eraName;
             this.abbrevEraName = abbrevEraName;
