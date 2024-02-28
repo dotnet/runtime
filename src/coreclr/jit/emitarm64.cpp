@@ -25495,22 +25495,21 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             switch (id->idInsOpt())
             {
                 case INS_OPTS_H_TO_S:
-                    code |= (1 << 23) | (1 << 16);
+                    code |= (1 << 16);
                     break;
                 case INS_OPTS_H_TO_D:
-                    code |= (3 << 22) | (1 << 16);
+                    code |= (1 << 22) | (1 << 16);
                     break;
                 case INS_OPTS_S_TO_H:
-                    code |= (1 << 23);
                     break;
                 case INS_OPTS_S_TO_D:
-                    code |= (3 << 22) | (3 << 16);
+                    code |= (1 << 22) | (3 << 16);
                     break;
                 case INS_OPTS_D_TO_H:
-                    code |= (3 << 22);
+                    code |= (1 << 22);
                     break;
                 case INS_OPTS_D_TO_S:
-                    code |= (3 << 22) | (1 << 17);
+                    code |= (1 << 22) | (1 << 17);
                     break;
                 default:
                     unreached();

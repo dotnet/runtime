@@ -2721,8 +2721,8 @@ INST1(bfcvt,             "bfcvt",                 0,                       IF_SV
     // BFCVT   <Zd>.H, <Pg>/M, <Zn>.S                                                    SVE_HO_3A           0110010110001010 101gggnnnnnddddd     658A A000   
 
 //    enum               name                     info                                              SVE_HO_3B
-INST1(fcvt,              "fcvt",                  0,                       IF_SVE_HO_3B,            0x6508A000)
-    // FCVT    <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HO_3B           0110010100001000 101gggnnnnnddddd     6508 A000   
+INST1(fcvt,              "fcvt",                  0,                       IF_SVE_HO_3B,            0x6588A000)
+    // FCVT    <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_HO_3B           0110010110001000 101gggnnnnnddddd     6588 A000   
 
 //    enum               name                     info                                              SVE_HO_3C
 INST1(fcvtx,             "fcvtx",                 0,                       IF_SVE_HO_3C,            0x650AA000                                   )
