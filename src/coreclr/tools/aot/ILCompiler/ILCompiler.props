@@ -47,10 +47,10 @@
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
     <!-- source-build doesn't use ObjWriter for the ILCompiler.  the end-user will end up pulling Microsoft-built bits for NativeAOT anyway.  -->
-    <IncludeObjWriter Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ObjWriterVersion)' != ''">true</IncludeObjWriter>
+    <IncludeObjWriter Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ObjWriterVersion)' != ''">true</IncludeObjWriter>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
     <PackageReference Include="runtime.$(ObjWriterRid).Microsoft.NETCore.Runtime.ObjWriter" Condition="'$(IncludeObjWriter)' == 'true'">

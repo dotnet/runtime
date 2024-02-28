@@ -76,7 +76,7 @@
     <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-        <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/net9.0/publish/wwwroot/blazor-template/**/*.*"/>
+        <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/blazor-template/**/*.*"/>
     </ItemGroup>
 
     <Copy
@@ -102,7 +102,7 @@
     <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame" Command="dotnet publish browser-frame.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-        <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/bin/$(Configuration)/net8.0/publish/wwwroot/**/*.*"/>
+        <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/**/*.*"/>
     </ItemGroup>
 
     <Copy

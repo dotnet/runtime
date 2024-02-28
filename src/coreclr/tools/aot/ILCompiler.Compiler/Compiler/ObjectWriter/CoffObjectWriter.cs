@@ -446,8 +446,8 @@ namespace ILCompiler.ObjectWriter
                     // Emit RUNTIME_FUNCTION
                     pdataSectionWriter.EmitAlignment(4);
                     pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
-                    // Only x64 has the End symbol
-                    if (_machine == Machine.Amd64)
+                    // Only x86/x64 has the End symbol
+                    if (_machine is Machine.I386 or Machine.Amd64)
                     {
                         pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
                     }
@@ -626,6 +626,35 @@ namespace ILCompiler.ObjectWriter
                     methodSymbol.Size,
                     debugNode.GetNativeSequencePoints());
             }
+        }
+
+        private protected override void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+            if (!debugNode.GetNativeSequencePoints().Any())
+                return;
+
+            CodeViewSymbolsBuilder debugSymbolsBuilder;
+
+            if (ShouldShareSymbol((ObjectNode)debugNode))
+            {
+                // If the method is emitted in COMDAT section then we need to create an
+                // associated COMDAT section for the debugging symbols.
+                var sectionWriter = GetOrCreateSection(DebugSymbolSection, methodName, null);
+                debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture, sectionWriter);
+            }
+            else
+            {
+                debugSymbolsBuilder = _debugSymbolsBuilder;
+            }
+
+            debugSymbolsBuilder.EmitLineInfo(
+                _debugFileTableBuilder,
+                methodName,
+                methodSymbol.Size,
+                debugNode.GetNativeSequencePoints());
         }
 
         private protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)

@@ -23,6 +23,8 @@
   </PropertyGroup>
   <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <Import Project="$(RepositoryEngineeringDir)Publishing.props" Condition="Exists('$(RepositoryEngineeringDir)Publishing.props')" />
+
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -55,6 +57,16 @@
     <ManifestBuildData Include="AzureDevOpsRepository=$(BUILD_REPOSITORY_URI)" />
     <ManifestBuildData Include="AzureDevOpsBranch=$(BUILD_SOURCEBRANCH)" />
   </ItemGroup>
+
+  <!-- 
+    Set metadata for assets that are not marked as NonShipping. 
+    This is used to determine if the asset should be shipped as part of .NET release.
+  -->
+  <ItemDefinitionGroup>
+    <ItemsToPush>
+      <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
+    </ItemsToPush>
+  </ItemDefinitionGroup>
 
   <!--
     Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks

@@ -338,6 +338,13 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
+        private protected virtual void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+        }
+
         private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
         private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
@@ -490,15 +497,21 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode and IMethodNode methodNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                     {
-                        bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
                         string methodName = GetMangledName(symbolDefinitionNode);
-
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            if (node is IMethodNode methodNode)
+                            {
+                                bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
+                                uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
+                                EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            }
+                            else
+                            {
+                                EmitDebugThunkInfo(methodName, methodSymbol, debugNode);
+                            }
                         }
                     }
                 }

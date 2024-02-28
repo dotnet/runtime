@@ -294,6 +294,19 @@ public:
     virtual void dump(FILE* output) = 0;
 };
 
+// Helper class record and display a simple single value.
+class Counter : public Dumpable
+{
+public:
+    int64_t Value;
+
+    Counter(int64_t initialValue = 0) : Value(initialValue)
+    {
+    }
+
+    void dump(FILE* output);
+};
+
 // Helper class to record and display a histogram of different values.
 // Usage like:
 // static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
@@ -644,34 +657,34 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             {
                 for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]->getDestinationBlock()));
                 }
             }
 
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
             // These are "pseudo-blocks" and control never actually flows into them
             // (codegen directly jumps to its successor after finally calls).
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -719,7 +732,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             {
                 for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]->getDestinationBlock()));
                 }
             }
 
@@ -731,14 +744,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return BasicBlockVisit::Continue;
@@ -4233,6 +4246,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+        case GT_SWIFT_ERROR:
             return;
 
         // Unary operators with an optional operand
@@ -4345,21 +4359,6 @@ void GenTree::VisitOperands(TVisitor visitor)
                     return;
                 }
             }
-            return;
-        }
-
-        case GT_STORE_DYN_BLK:
-        {
-            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(dynBlock->gtOp2) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
             return;
         }
 
@@ -4965,6 +4964,51 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
         }
 
         cur = cur->Next();
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit non-handler blocks that
+// are outside the loop but that may have regular predecessors inside the loop.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//   BasicBlockVisit that indicated whether the visit was aborted by the
+//   callback or whether all blocks were visited.
+//
+// Remarks:
+//   Note that no handler begins are visited by this function, even if they
+//   have regular predecessors inside the loop (for example, finally handlers
+//   can have regular BBJ_CALLFINALLY predecessors inside the loop). This
+//   choice is motivated by the fact that such handlers will also show up as
+//   exceptional exit blocks that must always be handled specially by client
+//   code regardless.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
+{
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BitVecTraits traits = m_dfsTree->PostOrderTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    for (FlowEdge* edge : ExitEdges())
+    {
+        BasicBlock* exit = edge->getDestinationBlock();
+        assert(m_dfsTree->Contains(exit) && !ContainsBlock(exit));
+        if (!comp->bbIsHandlerBeg(exit) && BitVecOps::TryAddElemD(&traits, visited, exit->bbPostorderNum) &&
+            (func(exit) == BasicBlockVisit::Abort))
+        {
+            return BasicBlockVisit::Abort;
+        }
     }
 
     return BasicBlockVisit::Continue;

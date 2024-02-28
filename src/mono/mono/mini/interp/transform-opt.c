@@ -4,6 +4,7 @@
 
 #include "mintops.h"
 #include "transform.h"
+#include "interp-intrins.h"
 
 /*
  * VAR OFFSET ALLOCATOR
@@ -1681,6 +1682,16 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	mark_bb_as_dead (td, bb, bb->next_bb);
 }
 
+static int
+get_bb_links_capacity (int links)
+{
+	if (links <= 2)
+		return links;
+	// Return the next power of 2 bigger or equal to links
+	int leading_zero = interp_intrins_clz_i4 (links - 1);
+	return 1 << (32 - leading_zero);
+}
+
 void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to)
 {
@@ -1694,12 +1705,15 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		}
 	}
 	if (!found) {
-		InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, sizeof (InterpBasicBlock*) * (from->out_count + 1));
-		for (i = 0; i < from->out_count; ++i)
-			newa [i] = from->out_bb [i];
-		newa [i] = to;
+		int prev_capacity = get_bb_links_capacity (from->out_count);
+		int new_capacity = get_bb_links_capacity (from->out_count + 1);
+		if (new_capacity > prev_capacity) {
+			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
+			memcpy (newa, from->out_bb, from->out_count * sizeof (InterpBasicBlock*));
+			from->out_bb = newa;
+		}
+		from->out_bb [from->out_count] = to;
 		from->out_count++;
-		from->out_bb = newa;
 	}
 
 	found = FALSE;
@@ -1710,12 +1724,15 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		}
 	}
 	if (!found) {
-		InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, sizeof (InterpBasicBlock*) * (to->in_count + 1));
-		for (i = 0; i < to->in_count; ++i)
-			newa [i] = to->in_bb [i];
-		newa [i] = from;
+		int prev_capacity = get_bb_links_capacity (to->in_count);
+		int new_capacity = get_bb_links_capacity (to->in_count + 1);
+		if (new_capacity > prev_capacity) {
+			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
+			memcpy (newa, to->in_bb, to->in_count * sizeof (InterpBasicBlock*));
+			to->in_bb = newa;
+		}
+		to->in_bb [to->in_count] = from;
 		to->in_count++;
-		to->in_bb = newa;
 	}
 }
 
@@ -1942,7 +1959,8 @@ interp_reorder_bblocks (TransformData *td)
 				InterpInst *last_ins = interp_last_ins (in_bb);
 				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
 						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
-						last_ins->info.target_bb == bb) {
+						last_ins->info.target_bb == bb &&
+						in_bb != bb) {
 					InterpBasicBlock *target_bb = first->info.target_bb;
 					last_ins->info.target_bb = target_bb;
 					interp_unlink_bblocks (in_bb, bb);

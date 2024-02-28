@@ -505,7 +505,7 @@ UINT32 CLRToCOMLateBoundWorker(
     ULONG uSemantic;
 
     // See if there is property information for this member.
-    hr = pItfMT->GetModule()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);
+    hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);
     if (hr != S_OK)
     {
         // Non-property method

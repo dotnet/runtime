@@ -194,7 +194,7 @@ inline AssertionIndex GetAssertionIndex(unsigned index)
 
 class AssertionInfo
 {
-    // true if the assertion holds on the bbNext edge instead of the bbTarget edge (for GT_JTRUE nodes)
+    // true if the assertion holds on the false edge instead of the true edge (for GT_JTRUE nodes)
     unsigned short m_isNextEdgeAssertion : 1;
     // 1-based index of the assertion
     unsigned short m_assertionIndex : 15;
@@ -506,9 +506,6 @@ enum GenTreeFlags : unsigned int
                                               //               with explicit "loop test" in the header block.
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
-
-    GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
-                                              //             castclass or instanceof?
 
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
@@ -1219,7 +1216,7 @@ public:
 
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_DYN_BLK);
+        return StaticOperIs(gtOper, GT_STORE_BLK);
     }
 
     bool OperIsStoreBlk() const
@@ -1548,7 +1545,7 @@ public:
     static bool OperIsIndir(genTreeOps gtOper)
     {
         static_assert_no_msg(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND,
-                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
+                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
         return (GT_LOCKADD <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -2234,6 +2231,16 @@ public:
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
+    bool IsTlsIconHandle()
+    {
+        if (IsIconHandle())
+        {
+            GenTreeFlags tlsFlags = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
+            return ((gtFlags & tlsFlags) == tlsFlags);
+        }
+        return false;
+    }
+
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
@@ -2244,13 +2251,12 @@ public:
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     bool IsEmbMaskOp()
     {
-        bool result = (gtFlags & GTF_HW_EM_OP) != 0;
-        assert(!result || (gtOper == GT_HWINTRINSIC));
-        return result;
+        return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
     }
 
     void MakeEmbMaskOp()
     {
+        assert(OperIsHWIntrinsic());
         assert(!IsEmbMaskOp());
         gtFlags |= GTF_HW_EM_OP;
     }
@@ -2856,7 +2862,6 @@ class GenTreeUseEdgeIterator final
     // Advance functions for special nodes
     void AdvanceCmpXchg();
     void AdvanceArrElem();
-    void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
@@ -4107,6 +4112,10 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
+
+#ifdef SWIFT_SUPPORT
+    GTF_CALL_M_SWIFT_ERROR_HANDLING    = 0x10000000, // call uses the Swift calling convention, and error register will be checked after it returns.
+#endif // SWIFT_SUPPORT
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5124,6 +5133,10 @@ struct GenTreeCall final : public GenTree
         }
 #endif
     }
+
+#ifdef TARGET_XARCH
+    bool NeedsVzeroupper(Compiler* comp);
+#endif // TARGET_XARCH
 
     // Get reg mask of all the valid registers of gtOtherRegs array
     regMaskTP GetOtherRegMask() const;
@@ -6374,6 +6387,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBroadcastScalar() const;
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
+    bool OperIsEmbRoundingEnabled() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -7343,13 +7357,8 @@ private:
 public:
     ClassLayout* GetLayout() const
     {
+        assert(m_layout != nullptr);
         return m_layout;
-    }
-
-    void SetLayout(ClassLayout* layout)
-    {
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        m_layout = layout;
     }
 
     // The data to be stored (null for GT_BLK)
@@ -7365,8 +7374,7 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        assert((m_layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        return (m_layout != nullptr) ? m_layout->GetSize() : 0;
+        return m_layout->GetSize();
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using
@@ -7377,9 +7385,6 @@ public:
         BlkOpKindCpObjUnroll,
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
-#endif
-#ifndef TARGET_X86
-        BlkOpKindHelper,
 #endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
@@ -7395,7 +7400,7 @@ public:
 
     bool ContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr();
+        return m_layout->HasGCPtr();
     }
 
     bool IsOnHeapAndContainsReferences()
@@ -7426,8 +7431,8 @@ public:
 
     void Initialize(ClassLayout* layout)
     {
-        assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
-        assert((layout == nullptr) || (layout->GetSize() != 0));
+        assert(layout != nullptr);
+        assert(layout->GetSize() != 0);
 
         m_layout    = layout;
         gtBlkOpKind = BlkOpKindInvalid;
@@ -7440,35 +7445,6 @@ public:
 protected:
     friend GenTree;
     GenTreeBlk() : GenTreeIndir()
-    {
-    }
-#endif // DEBUGGABLE_GENTREE
-};
-
-// GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
-//
-// This node is used to represent stores that have a dynamic size - the "cpblk" and "initblk"
-// IL instructions are implemented with it. Note that such stores assume the input has no GC
-// pointers in it, and as such do not ever use write barriers.
-//
-// The "Data()" member of this node will either be a "dummy" IND(struct) node, for "cpblk", or
-// the zero constant/INIT_VAL for "initblk".
-//
-struct GenTreeStoreDynBlk : public GenTreeBlk
-{
-public:
-    GenTree* gtDynamicSize;
-
-    GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
-        : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
-    {
-        gtFlags |= dynamicSize->gtFlags & GTF_ALL_EFFECT;
-    }
-
-#if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
-    GenTreeStoreDynBlk() : GenTreeBlk()
     {
     }
 #endif // DEBUGGABLE_GENTREE
@@ -8888,10 +8864,6 @@ struct GenTreeCCMP final : public GenTreeOpCC
 
 inline bool GenTree::OperIsBlkOp()
 {
-    if (OperIs(GT_STORE_DYN_BLK))
-    {
-        return true;
-    }
     if (OperIsStore())
     {
         return varTypeIsStruct(this);
@@ -9299,7 +9271,7 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK));
+    assert(OperIsStore());
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 

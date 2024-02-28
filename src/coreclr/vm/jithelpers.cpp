@@ -3596,6 +3596,14 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
+HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
+{
+    _ASSERTE(pDest != nullptr);
+    FCALL_CONTRACT;
+    memset(pDest, value, length);
+}
+HCIMPLEND
+
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;
@@ -4289,7 +4297,10 @@ void RethrowNew()
 
     ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);

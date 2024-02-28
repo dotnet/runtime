@@ -228,13 +228,19 @@ namespace System.Runtime.InteropServices.JavaScript
         public void ToJS(Task? value)
         {
             Task? task = value;
+            var ctx = ToJSContext;
+            var isCurrentThread = ctx.IsCurrentThread();
 
             if (task == null)
             {
+                if (!isCurrentThread)
+                {
+                    Environment.FailFast("Marshalling null task to JS is not supported in MT");
+                }
                 slot.Type = MarshalerType.None;
                 return;
             }
-            if (task.IsCompleted)
+            if (isCurrentThread && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -251,8 +257,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-
-            var ctx = ToJSContext;
 
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
@@ -298,14 +302,20 @@ namespace System.Runtime.InteropServices.JavaScript
         public void ToJS<T>(Task<T>? value, ArgumentToJSCallback<T> marshaler)
         {
             Task<T>? task = value;
+            var ctx = ToJSContext;
+            var isCurrentThread = ctx.IsCurrentThread();
 
             if (task == null)
             {
+                if (!isCurrentThread)
+                {
+                    Environment.FailFast("NULL not supported in MT");
+                }
                 slot.Type = MarshalerType.None;
                 return;
             }
 
-            if (task.IsCompleted)
+            if (isCurrentThread && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -325,7 +335,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            var ctx = ToJSContext;
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport

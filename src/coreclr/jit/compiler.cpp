@@ -1793,9 +1793,13 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodName = eeGetMethodName(methodHnd);
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
-    info.compPerfScore  = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
+
+    if (!compIsForInlining())
+    {
+        JitMetadata::report(this, JitMetadata::MethodFullName, info.compFullName, strlen(info.compFullName));
+    }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG)
@@ -1863,9 +1867,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         //
         // Initialize all the per-method statistics gathering data structures.
         //
-
-        optLoopsCloned = 0;
-
+        CLANG_FORMAT_COMMENT_ANCHOR;
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
         m_curLoopHasHoistedExpression = false;
@@ -1965,6 +1967,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compUsesThrowHelper = false;
 
     m_preferredInitCctor = CORINFO_HELP_UNDEF;
+
+    new (&Metrics, jitstd::placement_t()) JitMetrics();
 }
 
 /*****************************************************************************
@@ -2312,6 +2316,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
@@ -4888,6 +4893,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doValueNum                = true;
         bool doLoopHoisting            = true;
         bool doCopyProp                = true;
+        bool doOptimizeIVs             = true;
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
@@ -4900,6 +4906,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doSsa                     = (JitConfig.JitDoSsa() != 0);
         doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
+        doOptimizeIVs             = doSsa && (JitConfig.JitDoOptimizeIVs() != 0);
         doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
@@ -5000,12 +5007,22 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
             }
 
+            if (doOptimizeIVs)
+            {
+                // Simplify and optimize induction variables used in natural loops
+                //
+                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
+            }
+
             if (doVNBasedDeadStoreRemoval)
             {
                 // Note: this invalidates SSA and value numbers on tree nodes.
                 //
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
+
+            // Conservatively mark all VNs as stale
+            vnStore = nullptr;
 
             if (fgModified)
             {
@@ -5035,11 +5052,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    optLoopsRequirePreHeaders = false;
+    optLoopsCanonical = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
+
+    // Expand casts
+    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
     DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
@@ -5049,9 +5069,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
-
-    // Expand casts
-    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5211,7 +5228,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
         if (JitConfig.JitMetrics() > 0)
         {
-            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount);
+            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", Metrics.PerfScore, optCSEcount);
         }
 #endif
 
@@ -5415,7 +5432,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             block->SetFlags(BBF_LOOP_ALIGN);
             BitVecOps::AddElemD(&loopTraits, alignedLoops, loop->GetIndex());
-            INDEBUG(loopAlignCandidates++);
+            Metrics.LoopAlignmentCandidates++;
 
             BasicBlock* prev = block->Prev();
             // shouldAlignLoop should have guaranteed these properties.
@@ -5464,7 +5481,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
     }
 
-    JITDUMP("Found %u candidates for loop alignment\n", loopAlignCandidates);
+    JITDUMP("Found %d candidates for loop alignment\n", Metrics.LoopAlignmentCandidates);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -6437,6 +6454,8 @@ void Compiler::compCompileFinish()
         compArenaAllocator->finishMemStats();
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
+
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6620,7 +6639,7 @@ void Compiler::compCompileFinish()
 
         printf(" %3d |", optCallCount);
         printf(" %3d |", optIndirectCallCount);
-        printf(" %3d |", fgBBcountAtCodegen);
+        printf(" %3d |", Metrics.BasicBlocksAtCodegen);
         printf(" %3d |", lvaCount);
 
         if (opts.MinOpts())
@@ -6633,13 +6652,13 @@ void Compiler::compCompileFinish()
             printf(" %3d |", optCSEcount);
         }
 
-        if (info.compPerfScore < 9999.995)
+        if (Metrics.PerfScore < 9999.995)
         {
-            printf(" %7.2f |", info.compPerfScore);
+            printf(" %7.2f |", Metrics.PerfScore);
         }
         else
         {
-            printf(" %7.0f |", info.compPerfScore);
+            printf(" %7.0f |", Metrics.PerfScore);
         }
 
         printf(" %4d |", info.compMethodInfo->ILCodeSize);
@@ -6650,9 +6669,13 @@ void Compiler::compCompileFinish()
         printf(""); // in our logic this causes a flush
     }
 
+    JITDUMP("Final metrics:\n");
+    Metrics.report(this);
+    DBEXEC(verbose, Metrics.dump());
+
     if (verbose)
     {
-        printf("****** DONE compiling %s\n", info.compFullName);
+        printf("\n****** DONE compiling %s\n", info.compFullName);
         printf(""); // in our logic this causes a flush
     }
 
@@ -7144,6 +7167,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Disable JitDisasm for non-optimized code.
         opts.disAsm = false;
     }
+
+#ifdef DEBUG
+    {
+        const char* tieringName = compGetTieringName(true);
+        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
+    }
+#endif
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);
@@ -9073,12 +9103,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
-    fprintf(s_csvFile, "%u,", comp->optNumNaturalLoopsFound);
-    fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsFoundDuringOpts);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsCloned);
 #if FEATURE_LOOP_ALIGN
 #ifdef DEBUG
-    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
-    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopAlignmentCandidates);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsAligned);
 #endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
@@ -9088,7 +9118,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -9101,7 +9131,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -9388,6 +9418,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cLoops")
 #pragma comment(linker, "/include:cLoopsA")
 #pragma comment(linker, "/include:cLoop")
+#pragma comment(linker, "/include:cScev")
 #pragma comment(linker, "/include:cTreeFlags")
 #pragma comment(linker, "/include:cVN")
 
@@ -9413,6 +9444,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dCVarSet")
 #pragma comment(linker, "/include:dLoop")
 #pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dScev")
 #pragma comment(linker, "/include:dTreeFlags")
 #pragma comment(linker, "/include:dVN")
 
@@ -9656,22 +9688,36 @@ JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 JITDBGAPI void __cdecl cLoops(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(comp->m_loops);
 }
 
 JITDBGAPI void __cdecl cLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    printf("===================================================================== *LoopsA %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(loops);
 }
 
 JITDBGAPI void __cdecl cLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
     FlowGraphNaturalLoop::Dump(loop);
+}
+
+JITDBGAPI void __cdecl cScev(Compiler* comp, Scev* scev)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Scev %u\n", sequenceNumber++);
+    if (scev == nullptr)
+    {
+        printf("  NULL\n");
+    }
+    else
+    {
+        scev->Dump(comp);
+    }
 }
 
 JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
@@ -9867,14 +9913,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_QMARK:
-
-                if (tree->gtFlags & GTF_QMARK_CAST_INSTOF)
-                {
-                    chars += printf("[QMARK_CAST_INSTOF]");
-                }
-                break;
-
             case GT_BOX:
 
                 if (tree->gtFlags & GTF_BOX_VALUE)
@@ -9907,7 +9945,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
 
             case GT_BLK:
             case GT_STORE_BLK:
-            case GT_STORE_DYN_BLK:
 
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
@@ -10272,6 +10309,11 @@ JITDBGAPI void __cdecl dLoop(FlowGraphNaturalLoop* loop)
     cLoop(JitTls::GetCompiler(), loop);
 }
 
+JITDBGAPI void __cdecl dScev(Scev* scev)
+{
+    cScev(JitTls::GetCompiler(), scev);
+}
+
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
 {
     cTreeFlags(JitTls::GetCompiler(), tree);
@@ -10614,6 +10656,31 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "undefined";
     }
 }
+
+//------------------------------------------------------------------------------
+// printfAlloc: printf a string and allocate the result in CMK_DebugOnly
+// memory.
+//
+// Arguments:
+//    format - Format string
+//
+// Returns:
+//    Allocated string.
+//
+const char* Compiler::printfAlloc(const char* format, ...)
+{
+    char    str[512];
+    va_list args;
+    va_start(args, format);
+    int result = vsprintf_s(str, ArrLen(str), format, args);
+    va_end(args);
+    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
+
+    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
+    memcpy(resultStr, str, (unsigned)result + 1);
+    return resultStr;
+}
+
 #endif // defined(DEBUG)
 
 #if TRACK_ENREG_STATS
