@@ -58,56 +58,56 @@ namespace System
             // Copy bytes which are multiples of 16 and leave the remainder for MCPY01 to handle.
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.As<byte, Block16>(ref dest) = Unsafe.As<byte, Block16>(ref src); // [0,16]
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<Block16>(ref src));
 #elif TARGET_64BIT
-            Unsafe.As<byte, long>(ref dest) = Unsafe.As<byte, long>(ref src);
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 8)); // [0,16]
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<long>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 8), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 8)));
 #else
-            Unsafe.As<byte, int>(ref dest) = Unsafe.As<byte, int>(ref src);
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 4));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 8)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 8));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 12)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 12)); // [0,16]
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<int>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 4)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 8), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 8)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 12), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 12)));
 #endif
             if (len <= 32)
                 goto MCPY01;
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.As<byte, Block16>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref src, 16)); // [0,32]
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 16), Unsafe.ReadUnaligned<Block16>(ref Unsafe.Add(ref src, 16)));
 #elif TARGET_64BIT
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 16));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 24)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 24)); // [0,32]
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 16), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 24), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 24)));
 #else
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 16));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 20)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 20));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 24)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 24));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 28)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 28)); // [0,32]
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 16), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 20), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 20)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 24), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 24)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 28), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 28)));
 #endif
             if (len <= 48)
                 goto MCPY01;
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.As<byte, Block16>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref src, 32)); // [0,48]
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 32), Unsafe.ReadUnaligned<Block16>(ref Unsafe.Add(ref src, 32)));
 #elif TARGET_64BIT
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 32));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 40)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 40)); // [0,48]
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 32), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 32)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 40), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 40)));
 #else
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 32));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 36)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 36));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 40)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 40));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 44)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 44)); // [0,48]
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 32), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 32)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 36), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 36)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 40), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 40)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 44), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 44)));
 #endif
 
         MCPY01:
             // Unconditionally copy the last 16 bytes using destEnd and srcEnd and return.
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.As<byte, Block16>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref srcEnd, -16));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -16), Unsafe.ReadUnaligned<Block16>(ref Unsafe.Add(ref srcEnd, -16)));
 #elif TARGET_64BIT
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -16));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -8));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -16), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref srcEnd, -16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref srcEnd, -8)));
 #else
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -16));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -12)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -12));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -8));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -4));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -16), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -12), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -12)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -8)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -4)));
 #endif
             return;
 
@@ -117,13 +117,13 @@ namespace System
                 goto MCPY03;
             Debug.Assert(len >= 8 && len <= 16);
 #if TARGET_64BIT
-            Unsafe.As<byte, long>(ref dest) = Unsafe.As<byte, long>(ref src);
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -8));
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<long>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref srcEnd, -8)));
 #else
-            Unsafe.As<byte, int>(ref dest) = Unsafe.As<byte, int>(ref src);
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 4));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -8));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -4));
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<int>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 4)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -8)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -4)));
 #endif
             return;
 
@@ -132,8 +132,8 @@ namespace System
             if ((len & 4) == 0)
                 goto MCPY04;
             Debug.Assert(len >= 4 && len < 8);
-            Unsafe.As<byte, int>(ref dest) = Unsafe.As<byte, int>(ref src);
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -4));
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<int>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -4)));
             return;
 
         MCPY04:
@@ -144,7 +144,7 @@ namespace System
             dest = src;
             if ((len & 2) == 0)
                 return;
-            Unsafe.As<byte, short>(ref Unsafe.Add(ref destEnd, -2)) = Unsafe.As<byte, short>(ref Unsafe.Add(ref srcEnd, -2));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -2), Unsafe.ReadUnaligned<short>(ref Unsafe.Add(ref srcEnd, -2)));
             return;
 
         MCPY05:
@@ -163,7 +163,7 @@ namespace System
                 // dest is more important to align than src because an unaligned store is more expensive
                 // than an unaligned load.
                 nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref dest) & 63;
-                Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<Block64>(ref src));
                 src = ref Unsafe.Add(ref src, misalignedElements);
                 dest = ref Unsafe.Add(ref dest, misalignedElements);
                 len -= misalignedElements;
@@ -177,33 +177,33 @@ namespace System
 
         MCPY06:
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<Block64>(ref src));
 #elif TARGET_64BIT
-            Unsafe.As<byte, long>(ref dest) = Unsafe.As<byte, long>(ref src);
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 8));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 16));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 24)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 24));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 32));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 40)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 40));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 48)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 48));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 56)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 56));
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<long>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 8), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 8)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 16), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 24), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 24)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 32), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 32)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 40), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 40)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 48), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 48)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 56), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref src, 56)));
 #else
-            Unsafe.As<byte, int>(ref dest) = Unsafe.As<byte, int>(ref src);
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 4));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 8)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 8));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 12)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 12));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 16));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 20)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 20));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 24)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 24));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 28)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 28));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 32));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 36)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 36));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 40)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 40));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 44)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 44));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 48)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 48));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 52)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 52));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 56)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 56));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 60)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 60));
+            Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<int>(ref src));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 4)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 8), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 8)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 12), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 12)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 16), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 20), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 20)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 24), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 24)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 28), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 28)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 32), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 32)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 36), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 36)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 40), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 40)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 44), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 44)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 48), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 48)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 52), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 52)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 56), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 56)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 60), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 60)));
 #endif
             dest = ref Unsafe.Add(ref dest, 64);
             src = ref Unsafe.Add(ref src, 64);
@@ -215,15 +215,15 @@ namespace System
             if (len > 16)
                 goto MCPY00;
 #if HAS_CUSTOM_BLOCKS
-            Unsafe.As<byte, Block16>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref srcEnd, -16));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -16), Unsafe.ReadUnaligned<Block16>(ref Unsafe.Add(ref srcEnd, -16)));
 #elif TARGET_64BIT
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -16));
-            Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -8));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -16), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref srcEnd, -16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref srcEnd, -8)));
 #else
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -16));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -12)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -12));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -8));
-            Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -4));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -16), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -16)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -12), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -12)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -8)));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -4)));
 #endif
             return;
 
