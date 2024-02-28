@@ -14,9 +14,9 @@ namespace System.Linq
             Debug.Assert(count > 0);
 
             return
-                source is IPartition<TSource> partition ? (partition.Take(count) ?? Empty<TSource>()) :
-                source is IList<TSource> sourceList ? new ListPartition<TSource>(sourceList, 0, count - 1) :
-                new EnumerablePartition<TSource>(source, 0, count - 1);
+                source is Iterator<TSource> iterator ? (iterator.Take(count) ?? Empty<TSource>()) :
+                source is IList<TSource> sourceList ? new IListSkipTakeIterator<TSource>(sourceList, 0, count - 1) :
+                new IEnumerableSkipTakeIterator<TSource>(source, 0, count - 1);
         }
 
         private static IEnumerable<TSource> TakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
@@ -25,15 +25,15 @@ namespace System.Linq
             Debug.Assert(startIndex >= 0 && startIndex < endIndex);
 
             return
-                source is IPartition<TSource> partition ? TakePartitionRange(partition, startIndex, endIndex) :
-                source is IList<TSource> sourceList ? new ListPartition<TSource>(sourceList, startIndex, endIndex - 1) :
-                new EnumerablePartition<TSource>(source, startIndex, endIndex - 1);
+                source is Iterator<TSource> iterator ? TakeIteratorRange(iterator, startIndex, endIndex) :
+                source is IList<TSource> sourceList ? new IListSkipTakeIterator<TSource>(sourceList, startIndex, endIndex - 1) :
+                new IEnumerableSkipTakeIterator<TSource>(source, startIndex, endIndex - 1);
 
-            static IEnumerable<TSource> TakePartitionRange(IPartition<TSource> partition, int startIndex, int endIndex)
+            static IEnumerable<TSource> TakeIteratorRange(Iterator<TSource> iterator, int startIndex, int endIndex)
             {
-                IPartition<TSource>? source;
+                Iterator<TSource>? source;
                 if (endIndex != 0 &&
-                    (source = partition.Take(endIndex)) is not null &&
+                    (source = iterator.Take(endIndex)) is not null &&
                     (startIndex == 0 || (source = source!.Skip(startIndex)) is not null))
                 {
                     return source;

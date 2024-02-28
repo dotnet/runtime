@@ -9082,19 +9082,22 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         ssize_t            val         = ConstantValue<ssize_t>(vn);
         const GenTreeFlags handleFlags = GetHandleFlags(vn);
         printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
-        switch (handleFlags & GTF_ICON_HDL_MASK)
+        if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !comp->opts.IsReadyToRun())
         {
-            case GTF_ICON_CLASS_HDL:
-                printf(" %s", comp->eeGetClassName((CORINFO_CLASS_HANDLE)val));
-                break;
-            case GTF_ICON_METHOD_HDL:
-                printf(" %s", comp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)val));
-                break;
-            case GTF_ICON_FIELD_HDL:
-                printf(" %s", comp->eeGetFieldName((CORINFO_FIELD_HANDLE)val, true));
-                break;
-            default:
-                break;
+            switch (handleFlags & GTF_ICON_HDL_MASK)
+            {
+                case GTF_ICON_CLASS_HDL:
+                    printf(" %s", comp->eeGetClassName((CORINFO_CLASS_HANDLE)val));
+                    break;
+                case GTF_ICON_METHOD_HDL:
+                    printf(" %s", comp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)val));
+                    break;
+                case GTF_ICON_FIELD_HDL:
+                    printf(" %s", comp->eeGetFieldName((CORINFO_FIELD_HANDLE)val, true));
+                    break;
+                default:
+                    break;
+            }
         }
     }
     else if (IsVNConstant(vn))
@@ -9570,8 +9573,8 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
-                                                 GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
+                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_LCL_VAR,
+                                                 GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ARR_ADDR, GT_BOUNDS_CHECK,
@@ -9871,7 +9874,7 @@ public:
             return false;
         }
 
-        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueTargetIs(predBlock->GetFalseTarget()))
+        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueEdgeIs(predBlock->GetFalseEdge()))
         {
             return true;
         }
@@ -11321,7 +11324,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             break;
 
             case GT_CATCH_ARG:
+            case GT_SWIFT_ERROR:
                 // We know nothing about the value of a caught expression.
+                // We also know nothing about the error register's value post-Swift call.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
 
@@ -11483,12 +11488,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 unsigned  loadSize = tree->AsIndir()->Size();
                 VNFuncApp funcApp{VNF_COUNT};
 
-                // TODO-1stClassStructs: delete layout-less "IND(struct)" nodes and the "loadSize == 0" condition.
-                if (loadSize == 0)
-                {
-                    tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadType));
-                }
-                else if (fgValueNumberConstLoad(tree->AsIndir()))
+                if (fgValueNumberConstLoad(tree->AsIndir()))
                 {
                     // VN is assigned inside fgValueNumberConstLoad
                 }
@@ -11754,30 +11754,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 fgValueNumberHWIntrinsic(tree->AsHWIntrinsic());
                 break;
 #endif // FEATURE_HW_INTRINSICS
-
-            case GT_STORE_DYN_BLK:
-            {
-                // Conservatively, mutate the heaps - we don't analyze these rare stores.
-                // Likewise, any locals possibly defined by them we mark as address-exposed.
-                fgMutateGcHeap(tree DEBUGARG("dynamic block store"));
-
-                GenTreeStoreDynBlk* store     = tree->AsStoreDynBlk();
-                ValueNumPair        vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
-
-                // Propagate the exceptions...
-                vnpExcSet = vnStore->VNPUnionExcSet(store->Addr()->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(store->Data()->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(store->gtDynamicSize->gtVNPair, vnpExcSet);
-
-                // This is a store, it produces no value. Thus we use VNPForVoid().
-                store->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
-
-                // Note that we are only adding the exception for the destination address.
-                // Currently, "Data()" is an explicit indirection in case this is a "cpblk".
-                assert(store->Data()->gtEffectiveVal()->OperIsIndir() || store->OperIsInitBlkOp());
-                fgValueNumberAddExceptionSetForIndirection(store, store->Addr());
-                break;
-            }
 
             case GT_CMPXCHG: // Specialop
             {

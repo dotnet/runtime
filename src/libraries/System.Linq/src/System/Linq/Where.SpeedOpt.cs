@@ -8,9 +8,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class WhereEnumerableIterator<TSource> : IPartition<TSource>
+        private sealed partial class IEnumerableWhereIterator<TSource>
         {
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 if (onlyIfCheap)
                 {
@@ -33,7 +33,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray()
+            public override TSource[] ToArray()
             {
                 SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TSource> builder = new(scratch);
@@ -53,7 +53,7 @@ namespace System.Linq
                 return result;
             }
 
-            public List<TSource> ToList()
+            public override List<TSource> ToList()
             {
                 var list = new List<TSource>();
 
@@ -69,7 +69,7 @@ namespace System.Linq
                 return list;
             }
 
-            public TSource? TryGetFirst(out bool found)
+            public override TSource? TryGetFirst(out bool found)
             {
                 Func<TSource, bool> predicate = _predicate;
 
@@ -86,7 +86,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetLast(out bool found)
+            public override TSource? TryGetLast(out bool found)
             {
                 using IEnumerator<TSource> e = _source.GetEnumerator();
 
@@ -121,7 +121,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetElementAt(int index, out bool found)
+            public override TSource? TryGetElementAt(int index, out bool found)
             {
                 if (index >= 0)
                 {
@@ -145,15 +145,11 @@ namespace System.Linq
                 found = false;
                 return default;
             }
-
-            public IPartition<TSource>? Skip(int count) => new EnumerablePartition<TSource>(this, count, -1);
-
-            public IPartition<TSource>? Take(int count) => new EnumerablePartition<TSource>(this, 0, count - 1);
         }
 
-        internal sealed partial class WhereArrayIterator<TSource> : IPartition<TSource>
+        internal sealed partial class ArrayWhereIterator<TSource>
         {
-            public int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate);
+            public override int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate);
 
             public static int GetCount(bool onlyIfCheap, ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
@@ -178,7 +174,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray() => ToArray(_source, _predicate);
+            public override TSource[] ToArray() => ToArray(_source, _predicate);
 
             public static TSource[] ToArray(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
@@ -199,7 +195,7 @@ namespace System.Linq
                 return result;
             }
 
-            public List<TSource> ToList() => ToList(_source, _predicate);
+            public override List<TSource> ToList() => ToList(_source, _predicate);
 
             public static List<TSource> ToList(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
@@ -216,7 +212,7 @@ namespace System.Linq
                 return list;
             }
 
-            public TSource? TryGetFirst(out bool found)
+            public override TSource? TryGetFirst(out bool found)
             {
                 Func<TSource, bool> predicate = _predicate;
 
@@ -233,7 +229,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetLast(out bool found)
+            public override TSource? TryGetLast(out bool found)
             {
                 TSource[] source = _source;
                 Func<TSource, bool> predicate = _predicate;
@@ -251,7 +247,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetElementAt(int index, out bool found)
+            public override TSource? TryGetElementAt(int index, out bool found)
             {
                 if (index >= 0)
                 {
@@ -275,21 +271,17 @@ namespace System.Linq
                 found = false;
                 return default;
             }
-
-            public IPartition<TSource>? Skip(int count) => new EnumerablePartition<TSource>(this, count, -1);
-
-            public IPartition<TSource>? Take(int count) => new EnumerablePartition<TSource>(this, 0, count - 1);
         }
 
-        private sealed partial class WhereListIterator<TSource> : Iterator<TSource>, IPartition<TSource>
+        private sealed partial class ListWhereIterator<TSource> : Iterator<TSource>
         {
-            public int GetCount(bool onlyIfCheap) => WhereArrayIterator<TSource>.GetCount(onlyIfCheap, CollectionsMarshal.AsSpan(_source), _predicate);
+            public override int GetCount(bool onlyIfCheap) => ArrayWhereIterator<TSource>.GetCount(onlyIfCheap, CollectionsMarshal.AsSpan(_source), _predicate);
 
-            public TSource[] ToArray() => WhereArrayIterator<TSource>.ToArray(CollectionsMarshal.AsSpan(_source), _predicate);
+            public override TSource[] ToArray() => ArrayWhereIterator<TSource>.ToArray(CollectionsMarshal.AsSpan(_source), _predicate);
 
-            public List<TSource> ToList() => WhereArrayIterator<TSource>.ToList(CollectionsMarshal.AsSpan(_source), _predicate);
+            public override List<TSource> ToList() => ArrayWhereIterator<TSource>.ToList(CollectionsMarshal.AsSpan(_source), _predicate);
 
-            public TSource? TryGetFirst(out bool found)
+            public override TSource? TryGetFirst(out bool found)
             {
                 Func<TSource, bool> predicate = _predicate;
 
@@ -306,7 +298,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetLast(out bool found)
+            public override TSource? TryGetLast(out bool found)
             {
                 ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
                 Func<TSource, bool> predicate = _predicate;
@@ -324,7 +316,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetElementAt(int index, out bool found)
+            public override TSource? TryGetElementAt(int index, out bool found)
             {
                 if (index >= 0)
                 {
@@ -348,15 +340,11 @@ namespace System.Linq
                 found = false;
                 return default;
             }
-
-            public IPartition<TSource>? Skip(int count) => new EnumerablePartition<TSource>(this, count, -1);
-
-            public IPartition<TSource>? Take(int count) => new EnumerablePartition<TSource>(this, 0, count - 1);
         }
 
-        private sealed partial class WhereSelectArrayIterator<TSource, TResult> : IPartition<TResult>
+        private sealed partial class ArrayWhereSelectIterator<TSource, TResult>
         {
-            public int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate, _selector);
+            public override int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate, _selector);
 
             public static int GetCount(bool onlyIfCheap, ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
@@ -385,7 +373,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray() => ToArray(_source, _predicate, _selector);
+            public override TResult[] ToArray() => ToArray(_source, _predicate, _selector);
 
             public static TResult[] ToArray(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
@@ -406,7 +394,7 @@ namespace System.Linq
                 return result;
             }
 
-            public List<TResult> ToList() => ToList(_source, _predicate, _selector);
+            public override List<TResult> ToList() => ToList(_source, _predicate, _selector);
 
             public static List<TResult> ToList(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
@@ -423,7 +411,7 @@ namespace System.Linq
                 return list;
             }
 
-            public TResult? TryGetFirst(out bool found) => TryGetFirst(_source, _predicate, _selector, out found);
+            public override TResult? TryGetFirst(out bool found) => TryGetFirst(_source, _predicate, _selector, out found);
 
             public static TResult? TryGetFirst(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector, out bool found)
             {
@@ -440,7 +428,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetLast(out bool found) => TryGetLast(_source, _predicate, _selector, out found);
+            public override TResult? TryGetLast(out bool found) => TryGetLast(_source, _predicate, _selector, out found);
 
             public static TResult? TryGetLast(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector, out bool found)
             {
@@ -457,7 +445,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetElementAt(int index, out bool found) => TryGetElementAt(_source, _predicate, _selector, index, out found);
+            public override TResult? TryGetElementAt(int index, out bool found) => TryGetElementAt(_source, _predicate, _selector, index, out found);
 
             public static TResult? TryGetElementAt(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector, int index, out bool found)
             {
@@ -481,34 +469,26 @@ namespace System.Linq
                 found = false;
                 return default;
             }
-
-            public IPartition<TResult>? Skip(int count) => new EnumerablePartition<TResult>(this, count, -1);
-
-            public IPartition<TResult>? Take(int count) => new EnumerablePartition<TResult>(this, 0, count - 1);
         }
 
-        private sealed partial class WhereSelectListIterator<TSource, TResult> : IPartition<TResult>
+        private sealed partial class ListWhereSelectIterator<TSource, TResult>
         {
-            public int GetCount(bool onlyIfCheap) => WhereSelectArrayIterator<TSource, TResult>.GetCount(onlyIfCheap, CollectionsMarshal.AsSpan(_source), _predicate, _selector);
+            public override int GetCount(bool onlyIfCheap) => ArrayWhereSelectIterator<TSource, TResult>.GetCount(onlyIfCheap, CollectionsMarshal.AsSpan(_source), _predicate, _selector);
 
-            public TResult[] ToArray() => WhereSelectArrayIterator<TSource, TResult>.ToArray(CollectionsMarshal.AsSpan(_source), _predicate, _selector);
+            public override TResult[] ToArray() => ArrayWhereSelectIterator<TSource, TResult>.ToArray(CollectionsMarshal.AsSpan(_source), _predicate, _selector);
 
-            public List<TResult> ToList() => WhereSelectArrayIterator<TSource, TResult>.ToList(CollectionsMarshal.AsSpan(_source), _predicate, _selector);
+            public override List<TResult> ToList() => ArrayWhereSelectIterator<TSource, TResult>.ToList(CollectionsMarshal.AsSpan(_source), _predicate, _selector);
 
-            public TResult? TryGetElementAt(int index, out bool found) => WhereSelectArrayIterator<TSource, TResult>.TryGetElementAt(CollectionsMarshal.AsSpan(_source), _predicate, _selector, index, out found);
+            public override TResult? TryGetElementAt(int index, out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetElementAt(CollectionsMarshal.AsSpan(_source), _predicate, _selector, index, out found);
 
-            public TResult? TryGetFirst(out bool found) => WhereSelectArrayIterator<TSource, TResult>.TryGetFirst(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
+            public override TResult? TryGetFirst(out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetFirst(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
 
-            public TResult? TryGetLast(out bool found) => WhereSelectArrayIterator<TSource, TResult>.TryGetLast(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
-
-            public IPartition<TResult>? Skip(int count) => new EnumerablePartition<TResult>(this, count, -1);
-
-            public IPartition<TResult>? Take(int count) => new EnumerablePartition<TResult>(this, 0, count - 1);
+            public override TResult? TryGetLast(out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetLast(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
         }
 
-        private sealed partial class WhereSelectEnumerableIterator<TSource, TResult> : IPartition<TResult>
+        private sealed partial class IEnumerableWhereSelectIterator<TSource, TResult>
         {
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
@@ -535,7 +515,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TResult> builder = new(scratch);
@@ -556,7 +536,7 @@ namespace System.Linq
                 return result;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
@@ -573,7 +553,7 @@ namespace System.Linq
                 return list;
             }
 
-            public TResult? TryGetFirst(out bool found)
+            public override TResult? TryGetFirst(out bool found)
             {
                 Func<TSource, bool> predicate = _predicate;
 
@@ -590,7 +570,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetLast(out bool found)
+            public override TResult? TryGetLast(out bool found)
             {
                 using IEnumerator<TSource> e = _source.GetEnumerator();
 
@@ -625,7 +605,7 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if (index >= 0)
                 {
@@ -649,10 +629,6 @@ namespace System.Linq
                 found = false;
                 return default;
             }
-
-            public IPartition<TResult>? Skip(int count) => new EnumerablePartition<TResult>(this, count, -1);
-
-            public IPartition<TResult>? Take(int count) => new EnumerablePartition<TResult>(this, 0, count - 1);
         }
     }
 }

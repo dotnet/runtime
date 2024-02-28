@@ -83,6 +83,55 @@ namespace System.Linq.Tests
             VerifyEqualsWorker(expected, actual);
         }
 
+        [Theory]
+        [MemberData(nameof(ArraySourcesData))]
+        [MemberData(nameof(SelectArraySourcesData))]
+        [MemberData(nameof(EnumerableSourcesData))]
+        [MemberData(nameof(NonCollectionSourcesData))]
+        [MemberData(nameof(ListSourcesData))]
+        [MemberData(nameof(ConcatOfConcatsData))]
+        [MemberData(nameof(ConcatWithSelfData))]
+        [MemberData(nameof(ChainedCollectionConcatData))]
+        [MemberData(nameof(AppendedPrependedConcatAlternationsData))]
+        public void First_Last_ElementAt(IEnumerable<int> _, IEnumerable<int> actual)
+        {
+            int count = actual.Count();
+            if (count == 0)
+            {
+                Assert.Throws<InvalidOperationException>(() => actual.First());
+                Assert.Throws<InvalidOperationException>(() => actual.Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => actual.ElementAt(0));
+            }
+            else
+            {
+                int first = actual.First();
+                int last = actual.Last();
+                int elementAt = actual.ElementAt(count / 2);
+
+                int enumeratedFirst = 0, enumeratedLast = 0, enumeratedElementAt = 0;
+                int i = 0;
+                foreach (int item in actual)
+                {
+                    if (i == 0)
+                    {
+                        enumeratedFirst = item;
+                    }
+
+                    if (i == count / 2)
+                    {
+                        enumeratedElementAt = item;
+                    }
+
+                    enumeratedLast = item;
+                    i++;
+                }
+
+                Assert.Equal(enumeratedFirst, first);
+                Assert.Equal(enumeratedLast, last);
+                Assert.Equal(enumeratedElementAt, elementAt);
+            }
+        }
+
         private static void VerifyEqualsWorker<T>(IEnumerable<T> expected, IEnumerable<T> actual)
         {
             // Returns a list of functions that, when applied to enumerable, should return

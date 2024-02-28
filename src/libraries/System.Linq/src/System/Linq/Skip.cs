@@ -23,17 +23,19 @@ namespace System.Linq
             {
                 // Return source if not actually skipping, but only if it's a type from here, to avoid
                 // issues if collections are used as keys or otherwise must not be aliased.
-                if (source is Iterator<TSource> || source is IPartition<TSource>)
+                if (source is Iterator<TSource>)
                 {
                     return source;
                 }
 
                 count = 0;
             }
-            else if (source is IPartition<TSource> partition)
+#if !OPTIMIZE_FOR_SIZE
+            else if (source is Iterator<TSource> iterator)
             {
-                return partition.Skip(count) ?? Empty<TSource>();
+                return iterator.Skip(count) ?? Empty<TSource>();
             }
+#endif
 
             return SkipIterator(source, count);
         }

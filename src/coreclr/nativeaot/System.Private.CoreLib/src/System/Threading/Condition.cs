@@ -114,7 +114,6 @@ namespace System.Threading
                 success =
                     waiter.ev.WaitOneNoCheck(
                         millisecondsTimeout,
-                        false, // useTrivialWaits
                         associatedObjectForMonitorWait,
                         associatedObjectForMonitorWait != null
                             ? NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait

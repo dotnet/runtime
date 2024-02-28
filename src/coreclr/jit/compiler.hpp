@@ -664,27 +664,27 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
             // These are "pseudo-blocks" and control never actually flows into them
             // (codegen directly jumps to its successor after finally calls).
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -744,14 +744,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return BasicBlockVisit::Continue;
@@ -4246,6 +4246,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+        case GT_SWIFT_ERROR:
             return;
 
         // Unary operators with an optional operand
@@ -4358,21 +4359,6 @@ void GenTree::VisitOperands(TVisitor visitor)
                     return;
                 }
             }
-            return;
-        }
-
-        case GT_STORE_DYN_BLK:
-        {
-            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(dynBlock->gtOp2) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
             return;
         }
 
