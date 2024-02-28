@@ -7,6 +7,7 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
+    <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
