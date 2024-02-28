@@ -5629,6 +5629,10 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_fclamp, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
                               INS_OPTS_SCALABLE_D); // FCLAMP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
 
+    // IF_SVE_GW_3B
+    theEmitter->emitIns_R_R_R(INS_sve_bfclamp, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
+                              INS_OPTS_SCALABLE_H); // BFCLAMP <Zd>.H, <Zn>.H, <Zm>.H
+
     // IF_SVE_HK_3A
     theEmitter->emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_H,
                               INS_SCALABLE_OPTS_UNPREDICATED); // FADD <Zd>.<T>, <Zn>.<T>, <Zm>.<T>

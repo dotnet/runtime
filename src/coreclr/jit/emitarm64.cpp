@@ -1203,6 +1203,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_GJ_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
         case IF_SVE_GN_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
         case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_GW_3B: // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
             assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
@@ -11375,6 +11376,14 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmmmm
             fmt = IF_SVE_GO_3A;
+            break;
+
+        case INS_sve_bfclamp:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_GW_3B;
             break;
 
         case INS_sve_eorbt:
@@ -23762,6 +23771,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_GJ_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
         case IF_SVE_GN_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
         case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_GW_3B: // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
@@ -27508,6 +27518,8 @@ void emitter::emitDispInsHelp(
         // <Zd>.D, <Zn>.D, <Zm>.D
         // <Zd>.S, <Zn>.S, <Zm>.S
         case IF_SVE_GJ_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
+        // <Zd>.H, <Zn>.H, <Zm>.H
+        case IF_SVE_GW_3B:                                       // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn/mmmmm
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
@@ -31288,6 +31300,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
         case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
         case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_GW_3B: // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
