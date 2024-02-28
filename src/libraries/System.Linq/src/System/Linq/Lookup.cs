@@ -76,7 +76,7 @@ namespace System.Linq
     {
         private readonly IEqualityComparer<TKey> _comparer;
         private Grouping<TKey, TElement>[] _groupings;
-        private Grouping<TKey, TElement>? _lastGrouping;
+        internal Grouping<TKey, TElement>? _lastGrouping;
         private int _count;
 
         internal static Lookup<TKey, TElement> Create<TSource>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
@@ -85,7 +85,7 @@ namespace System.Linq
             Debug.Assert(keySelector != null);
             Debug.Assert(elementSelector != null);
 
-            Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
+            var lookup = new CollectionLookup<TKey, TElement>(comparer);
             foreach (TSource item in source)
             {
                 lookup.GetGrouping(keySelector(item), create: true)!.Add(elementSelector(item));
@@ -99,7 +99,7 @@ namespace System.Linq
             Debug.Assert(source != null);
             Debug.Assert(keySelector != null);
 
-            Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
+            var lookup = new CollectionLookup<TKey, TElement>(comparer);
             foreach (TElement item in source)
             {
                 lookup.GetGrouping(keySelector(item), create: true)!.Add(item);
@@ -110,7 +110,7 @@ namespace System.Linq
 
         internal static Lookup<TKey, TElement> CreateForJoin(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
-            Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
+            var lookup = new CollectionLookup<TKey, TElement>(comparer);
             foreach (TElement item in source)
             {
                 TKey key = keySelector(item);
@@ -123,7 +123,7 @@ namespace System.Linq
             return lookup;
         }
 
-        private Lookup(IEqualityComparer<TKey>? comparer)
+        private protected Lookup(IEqualityComparer<TKey>? comparer)
         {
             _comparer = comparer ?? EqualityComparer<TKey>.Default;
             _groupings = new Grouping<TKey, TElement>[7];
@@ -259,16 +259,68 @@ namespace System.Linq
         }
     }
 
+    internal sealed class CollectionLookup<TKey, TElement> : Lookup<TKey, TElement>, ICollection<IGrouping<TKey, TElement>>, IReadOnlyCollection<IGrouping<TKey, TElement>>
+    {
+        internal CollectionLookup(IEqualityComparer<TKey>? comparer) : base(comparer) { }
+
+        void ICollection<IGrouping<TKey, TElement>>.CopyTo(IGrouping<TKey, TElement>[] array, int arrayIndex)
+        {
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
+            ArgumentOutOfRangeException.ThrowIfLessThan(array.Length - arrayIndex, Count, nameof(arrayIndex));
+
+            Grouping<TKey, TElement>? g = _lastGrouping;
+            if (g != null)
+            {
+                do
+                {
+                    g = g._next;
+                    Debug.Assert(g != null);
+
+                    array[arrayIndex] = g;
+                    ++arrayIndex;
+                }
+                while (g != _lastGrouping);
+            }
+        }
+
+        bool ICollection<IGrouping<TKey, TElement>>.Contains(IGrouping<TKey, TElement> item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            return GetGrouping(item.Key, create: false) is { } grouping && grouping == item;
+        }
+
+        bool ICollection<IGrouping<TKey, TElement>>.IsReadOnly => true;
+        void ICollection<IGrouping<TKey, TElement>>.Add(IGrouping<TKey, TElement> item) => throw new NotSupportedException();
+        void ICollection<IGrouping<TKey, TElement>>.Clear() => throw new NotSupportedException();
+        bool ICollection<IGrouping<TKey, TElement>>.Remove(IGrouping<TKey, TElement> item) => throw new NotSupportedException();
+    }
+
     [DebuggerDisplay("Count = 0")]
     [DebuggerTypeProxy(typeof(SystemLinq_LookupDebugView<,>))]
-    internal sealed class EmptyLookup<TKey, TElement> : ILookup<TKey, TElement>
+    internal sealed class EmptyLookup<TKey, TElement> : ILookup<TKey, TElement>, ICollection<IGrouping<TKey, TElement>>, IReadOnlyCollection<IGrouping<TKey, TElement>>
     {
         public static readonly EmptyLookup<TKey, TElement> Instance = new();
 
         public IEnumerable<TElement> this[TKey key] => [];
         public int Count => 0;
-        public bool Contains(TKey key) => false;
+
         public IEnumerator<IGrouping<TKey, TElement>> GetEnumerator() => Enumerable.Empty<IGrouping<TKey, TElement>>().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public bool Contains(TKey key) => false;
+        public bool Contains(IGrouping<TKey, TElement> item) => false;
+        public void CopyTo(IGrouping<TKey, TElement>[] array, int arrayIndex)
+        {
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
+        }
+
+        public bool IsReadOnly => true;
+        public void Add(IGrouping<TKey, TElement> item) => throw new NotSupportedException();
+        public void Clear() => throw new NotSupportedException();
+        public bool Remove(IGrouping<TKey, TElement> item) => throw new NotSupportedException();
     }
 }

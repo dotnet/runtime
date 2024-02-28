@@ -2561,14 +2561,7 @@ namespace System.Text.RegularExpressions
                 {
                     // In particular we want to look for sets that contain only the upper and lowercase variant
                     // of the same ASCII letter.
-                    if (RegexCharClass.IsNegated(child.Str!) ||
-                        RegexCharClass.GetSetChars(child.Str!, twoChars) != 2 ||
-                        twoChars[0] >= 128 ||
-                        twoChars[1] >= 128 ||
-                        twoChars[0] == twoChars[1] ||
-                        !char.IsLetter(twoChars[0]) ||
-                        !char.IsLetter(twoChars[1]) ||
-                        ((twoChars[0] | 0x20) != (twoChars[1] | 0x20)))
+                    if (!RegexCharClass.SetContainsAsciiOrdinalIgnoreCaseCharacter(child.Str!, twoChars))
                     {
                         break;
                     }

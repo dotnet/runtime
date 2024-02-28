@@ -21,13 +21,7 @@ void Compiler::optInit()
 {
     fgHasLoops = false;
 
-    optLoopsCanonical       = false;
-    optNumNaturalLoopsFound = 0;
-
-#ifdef DEBUG
-    loopAlignCandidates = 0;
-    loopsAligned        = 0;
-#endif
+    optLoopsCanonical = false;
 
     /* Keep track of the number of calls and indirect calls made by this method */
     optCallCount         = 0;
@@ -40,6 +34,7 @@ void Compiler::optInit()
     optCSECandidateCount = 0;
     optCSEattempt        = 0;
     optCSEheuristic      = nullptr;
+    optCSEunmarks        = 0;
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
@@ -553,7 +548,7 @@ void Compiler::optCheckPreds()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// optRedirectBlock: Initialize the branch successors of a block based on a block map.
+// optSetMappedBlockTargets: Initialize the branch successors of a block based on a block map.
 //
 // Updates the successors of `newBlk`, a copy of `blk`:
 // If `blk2` is a branch successor of `blk`, and there is a mapping
@@ -570,7 +565,7 @@ void Compiler::optCheckPreds()
 //     Upon returning, `newBlk` should have all of its successors initialized.
 //     `blk` must have its successors set upon entry; these won't be changed.
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
+void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
 {
     // Caller should not have initialized newBlk's target yet
     assert(newBlk->KindIs(BBJ_ALWAYS));
@@ -590,20 +585,24 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_LEAVE:
+        {
+            FlowEdge* newEdge;
+
             // Determine if newBlk should be redirected to a different target from blk's target
             if (redirectMap->Lookup(blk->GetTarget(), &newTarget))
             {
                 // newBlk needs to be redirected to a new target
-                newBlk->SetKindAndTarget(blk->GetKind(), newTarget);
+                newEdge = fgAddRefPred(newTarget, newBlk);
             }
             else
             {
                 // newBlk uses the same target as blk
-                newBlk->SetKindAndTarget(blk->GetKind(), blk->GetTarget());
+                newEdge = fgAddRefPred(blk->GetTarget(), newBlk);
             }
 
-            fgAddRefPred(newBlk->GetTarget(), newBlk);
+            newBlk->SetKindAndTargetEdge(blk->GetKind(), newEdge);
             break;
+        }
 
         case BBJ_COND:
         {
@@ -632,9 +631,9 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
                 falseTarget = blk->GetFalseTarget();
             }
 
-            fgAddRefPred(trueTarget, newBlk);
-            fgAddRefPred(falseTarget, newBlk);
-            newBlk->SetCond(trueTarget, falseTarget);
+            FlowEdge* const trueEdge  = fgAddRefPred(trueTarget, newBlk);
+            FlowEdge* const falseEdge = fgAddRefPred(falseTarget, newBlk);
+            newBlk->SetCond(trueEdge, falseEdge);
             break;
         }
 
@@ -672,23 +671,27 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
         {
             BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
             BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
-            newSwtDesc->bbsDstTab  = new (this, CMK_BasicBlock) BasicBlock*[newSwtDesc->bbsCount];
-            BasicBlock** jumpPtr   = newSwtDesc->bbsDstTab;
+            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
 
-            for (BasicBlock* const switchTarget : blk->SwitchTargets())
+            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
             {
+                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
+
                 // Determine if newBlk should target switchTarget, or be redirected
                 if (redirectMap->Lookup(switchTarget, &newTarget))
                 {
-                    *jumpPtr = newTarget;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(newTarget, newBlk);
                 }
                 else
                 {
-                    *jumpPtr = switchTarget;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(switchTarget, newBlk);
                 }
 
-                fgAddRefPred(*jumpPtr, newBlk);
-                jumpPtr++;
+                newSwtDesc->bbsDstTab[i] = newEdge;
             }
 
             newBlk->SetSwitch(newSwtDesc);
@@ -697,16 +700,18 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
+        {
             // newBlk's jump target should not need to be redirected
             assert(!redirectMap->Lookup(blk->GetTarget(), &newTarget));
-            newBlk->SetKindAndTarget(blk->GetKind(), blk->GetTarget());
-            fgAddRefPred(newBlk->GetTarget(), newBlk);
+            FlowEdge* newEdge = fgAddRefPred(newBlk->GetTarget(), newBlk);
+            newBlk->SetKindAndTargetEdge(blk->GetKind(), newEdge);
             break;
+        }
 
         default:
             // blk doesn't have a jump destination
             assert(blk->NumSucc() == 0);
-            newBlk->SetKindAndTarget(blk->GetKind());
+            newBlk->SetKindAndTargetEdge(blk->GetKind());
             break;
     }
 
@@ -1300,6 +1305,8 @@ PhaseStatus Compiler::optUnrollLoops()
     {
         assert(anyIRchange);
 
+        Metrics.LoopsUnrolled += unrollCount;
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -1709,12 +1716,12 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             testCopyStmt->SetRootNode(sideEffList);
         }
 
-        fgRemoveRefPred(prevTestBlock->GetTrueTarget(), prevTestBlock);
-        fgRemoveRefPred(prevTestBlock->GetFalseTarget(), prevTestBlock);
+        fgRemoveRefPred(prevTestBlock->GetTrueEdge());
+        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
 
         // Redirect exit edge from previous iteration to new entry.
-        prevTestBlock->SetKindAndTarget(BBJ_ALWAYS, target);
-        fgAddRefPred(target, prevTestBlock);
+        FlowEdge* const newEdge = fgAddRefPred(target, prevTestBlock);
+        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
         JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
                 target->bbNum);
@@ -1923,7 +1930,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return false;
     }
 
-    // Since bTest is a BBJ_COND it will have a bbFalseTarget
+    // Since bTest is a BBJ_COND it will have a false target
     //
     BasicBlock* const bJoin = bTest->GetFalseTarget();
     noway_assert(bJoin != nullptr);
@@ -1945,7 +1952,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // It has to be a forward jump. Defer this check until after all the cheap checks
-    // are done, since it iterates forward in the block list looking for bbTarget.
+    // are done, since it iterates forward in the block list looking for block's target.
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
     if (!fgIsForwardBranch(block, block->GetTarget()))
@@ -2135,10 +2142,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
-    block->SetKindAndTarget(BBJ_ALWAYS, bNewCond);
-    block->SetFlags(BBF_NONE_QUIRK);
-    assert(block->JumpsToNext());
+    BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
 
     // Clone each statement in bTest and append to bNewCond.
     for (Statement* const stmt : bTest->Statements())
@@ -2197,12 +2201,17 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Update pred info
     //
-    bNewCond->SetFalseTarget(bTop);
-    fgAddRefPred(bJoin, bNewCond);
-    fgAddRefPred(bTop, bNewCond);
+    FlowEdge* const trueEdge  = fgAddRefPred(bJoin, bNewCond);
+    FlowEdge* const falseEdge = fgAddRefPred(bTop, bNewCond);
+    bNewCond->SetTrueEdge(trueEdge);
+    bNewCond->SetFalseEdge(falseEdge);
 
-    fgAddRefPred(bNewCond, block);
-    fgRemoveRefPred(bTest, block);
+    fgRemoveRefPred(block->GetTargetEdge());
+    FlowEdge* const newEdge = fgAddRefPred(bNewCond, block);
+
+    block->SetTargetEdge(newEdge);
+    block->SetFlags(BBF_NONE_QUIRK);
+    assert(block->JumpsToNext());
 
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
@@ -2670,7 +2679,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    optNumNaturalLoopsFound = (unsigned)m_loops->NumLoops();
+    Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -2976,7 +2985,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         insertBefore = header;
     }
 
-    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
+    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false);
     preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheaderOrExit(preheader);
 
@@ -2989,7 +2998,8 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 
     JITDUMP("Created new preheader " FMT_BB " for " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
 
-    fgAddRefPred(header, preheader);
+    FlowEdge* const newEdge = fgAddRefPred(header, preheader);
+    preheader->SetTargetEdge(newEdge);
 
     for (FlowEdge* enterEdge : loop->EntryEdges())
     {
@@ -3092,26 +3102,27 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
         if (bottom->hasTryIndex() && (bottom->getTryIndex() == finallyBlock->getHndIndex()) && !bottom->hasHndIndex())
         {
-            newExit = fgNewBBafter(BBJ_ALWAYS, bottom, true, exit);
+            newExit = fgNewBBafter(BBJ_ALWAYS, bottom, true);
         }
         else
         {
             // Otherwise just do the heavy-handed thing and insert it anywhere in the right region.
-            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, exit, /* putInFilter */ false,
+            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, /* putInFilter */ false,
                                       /* runRarely */ false, /* insertAtEnd */ true);
         }
     }
     else
 #endif
     {
-        newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false, exit);
+        newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
         newExit->SetFlags(BBF_NONE_QUIRK);
         fgSetEHRegionForNewPreheaderOrExit(newExit);
     }
 
     newExit->SetFlags(BBF_INTERNAL);
 
-    fgAddRefPred(exit, newExit);
+    FlowEdge* const newEdge = fgAddRefPred(exit, newExit);
+    newExit->SetTargetEdge(newEdge);
 
     newExit->bbCodeOffs = exit->bbCodeOffs;
 
@@ -5147,6 +5158,8 @@ void Compiler::optHoistCandidate(GenTree*              tree,
 
     // Record the hoisted expression in hoistCtxt
     hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
+
+    Metrics.HoistedExpressions++;
 }
 
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)
@@ -5613,7 +5626,6 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                 case GT_XCHG:
                 case GT_CMPXCHG:
                 case GT_MEMORYBARRIER:
-                case GT_STORE_DYN_BLK:
                 {
                     memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }

@@ -572,7 +572,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_INIT_PINVOKE_FRAME,   // initialize an inlined PInvoke Frame for the JIT-compiler
 
     CORINFO_HELP_MEMSET,                // Init block of memory
+    CORINFO_HELP_MEMZERO,               // Init block of memory with zeroes
     CORINFO_HELP_MEMCPY,                // Copy block of memory
+    CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null, 
+                                        // not safe for unbounded size, does not trigger GC)
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
     CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,      // determine a type/field/method handle at run-time, with IBC logging
@@ -2915,6 +2918,13 @@ public:
             ICorDebugInfo::RichOffsetMapping* mappings,           // [IN] Rich mappings
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
+
+    // Report back some metadata about the compilation to the EE -- for
+    // example, metrics about the compilation.
+    virtual void reportMetadata(
+        const char* key,
+        const void* value,
+        size_t length) = 0;
 
     /*-------------------------- Misc ---------------------------------------*/
 

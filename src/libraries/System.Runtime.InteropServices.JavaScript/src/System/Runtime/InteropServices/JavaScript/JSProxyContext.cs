@@ -41,10 +41,17 @@ namespace System.Runtime.InteropServices.JavaScript
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
 
+        public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
+        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
+        public static JSThreadInteropMode ThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
+        public bool IsPendingSynchronousCall;
+
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsCurrentThread()
         {
-            return ManagedTID == Environment.CurrentManagedThreadId;
+            return ManagedTID == Environment.CurrentManagedThreadId && (!IsMainThread || MainThreadingMode == MainThreadingMode.UIThread);
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
@@ -232,7 +239,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static JSProxyContext AssertIsInteropThread()
         {
 #if FEATURE_WASM_MANAGED_THREADS

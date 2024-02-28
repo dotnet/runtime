@@ -12,8 +12,9 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    [Collection(nameof(DisableParallelization))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -1211,16 +1212,16 @@ namespace System.Net.Quic.Tests
 
         private const int SmallestPayload = 1;
         private const int SmallPayload = 1024;
-        private const int BufferPayload = 64*1024;
-        private const int BufferPlusPayload = 64*1024+1;
-        private const int BigPayload = 1024*1024*1024;
+        private const int BufferPayload = 64 * 1024;
+        private const int BufferPlusPayload = 64 * 1024 + 1;
+        private const int BigPayload = 1024 * 1024 * 1024;
 
         public static IEnumerable<object[]> PayloadSizeAndTwoBools()
         {
-            var boolValues = new [] { true, false };
+            var boolValues = new[] { true, false };
             var payloadValues = !PlatformDetection.IsInHelix ?
-                                    new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
-                                    new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
+                                    new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
+                                    new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
             return
                 from payload in payloadValues
                 from bool1 in boolValues
