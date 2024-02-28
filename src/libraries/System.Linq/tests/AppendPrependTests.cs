@@ -263,5 +263,27 @@ namespace System.Linq.Tests
             source = NumberRangeGuaranteedNotCollectionType(2, 2).Prepend(1).Prepend(0).Append(4).Append(5).RunOnce();
             Assert.Equal(Enumerable.Range(0, 6), source.ToList());
         }
+
+        [Fact]
+        public void AppendPrepend_First_Last_ElementAt()
+        {
+            Assert.Equal(42, new int[] { 42 }.Append(84).First());
+            Assert.Equal(42, new int[] { 84 }.Prepend(42).First());
+            Assert.Equal(84, new int[] { 42 }.Append(84).Last());
+            Assert.Equal(84, new int[] { 84 }.Prepend(42).Last());
+            Assert.Equal(42, new int[] { 42 }.Append(84).ElementAt(0));
+            Assert.Equal(42, new int[] { 84 }.Prepend(42).ElementAt(0));
+            Assert.Equal(84, new int[] { 42 }.Append(84).ElementAt(1));
+            Assert.Equal(84, new int[] { 84 }.Prepend(42).ElementAt(1));
+
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).First());
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).First());
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).Last());
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).Last());
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).ElementAt(0));
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(0));
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).ElementAt(1));
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(1));
+        }
     }
 }
