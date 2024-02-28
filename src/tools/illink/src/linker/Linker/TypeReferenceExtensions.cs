@@ -151,25 +151,6 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
-		{
-			var typeDef = resolver.TryResolve (typeRef);
-
-			if (typeDef?.HasInterfaces != true)
-				yield break;
-
-			if (typeRef is GenericInstanceType genericInstance) {
-				foreach (var interfaceImpl in typeDef.Interfaces) {
-					// InflateGenericType only returns null when inflating generic parameters (and the generic instance type doesn't resolve).
-					// Here we are not inflating a generic parameter but an interface type reference.
-					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType, resolver), interfaceImpl)!;
-				}
-			} else {
-				foreach (var interfaceImpl in typeDef.Interfaces)
-					yield return (interfaceImpl.InterfaceType, interfaceImpl);
-			}
-		}
-
 		public static TypeReference? InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
 		{
 			if (typeToInflate is ArrayType arrayType) {
