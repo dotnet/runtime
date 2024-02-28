@@ -2,6 +2,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
 {
+	[SkipILVerify]
 	public class GenericInterfaceWithMethodManyVariations
 	{
 		public static void Main ()

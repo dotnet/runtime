@@ -2456,6 +2456,9 @@ namespace Mono.Linker.Steps
 				return;
 
 			// Should look at all recursive interfaces
+			foreach(var iface in Annotations.GetRecusiveInterfaces(type)) {
+
+			}
 			Queue<InterfaceImplementation[]> ifacesToVisit = new();
 			foreach(var iface in type.Interfaces) ifacesToVisit.Enqueue ([iface]);
 			HashSet<TypeDefinition> visitedTypes = new();

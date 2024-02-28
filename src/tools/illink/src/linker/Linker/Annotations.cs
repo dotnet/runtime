@@ -717,5 +717,7 @@ namespace Mono.Linker
 			if (FlowAnnotations.RequiresVirtualMethodDataFlowAnalysis (method) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
+
+		internal IEnumerable<object> GetRecusiveInterfaces (TypeDefinition type) => TypeMapInfo.GetRecursiveInterfaces (type);
 	}
 }

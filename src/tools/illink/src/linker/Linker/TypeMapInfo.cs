@@ -30,10 +30,12 @@
 //
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -123,7 +125,7 @@ namespace Mono.Linker
 
 		public void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
 		{
-			Debug.Assert(@base.DeclaringType.IsInterface);
+			Debug.Assert (@base.DeclaringType.IsInterface);
 			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
 				implementations = new List<OverrideInformation> ();
 				default_interface_implementations.Add (@base, implementations);
@@ -145,84 +147,55 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		record IFaceImplr(TypeDefinition ImplementingType, TypeDefinition InterfaceImplProvider, TypeDefinition InterfaceType, ImplNode InterfaceImplChain);
-		readonly Dictionary<TypeDefinition, List<IFaceImplr>> _ifaces = new ();
-		record ImplNode (InterfaceImplementation Value, ImplNode? Next)
-		{
-			public InterfaceImplementation GetLast ()
-			{
-				var curr = this;
-				while (curr.Next is not null) {
-					curr = curr.Next;
-				}
-				return curr.Value;
-			}
-			public InterfaceImplementation[] ToArray()
-			{
-				List<InterfaceImplementation> builder = new();
-				var curr = this;
-				while (curr is not null) {
-					builder.Add (curr.Value);
-					curr = curr.Next;
-				}
-				return builder.ToArray ();
-			}
-		}
+		public sealed record IFaceImplr(TypeDefinition ImplementingType, TypeDefinition InterfaceImplProvider, TypeDefinition? InterfaceType, ImplNode InterfaceImplChain);
+		readonly Dictionary<TypeDefinition, List<InterfaceImplementor>> _ifaces = new ();
 		protected void MapInterfacesOnType (TypeDefinition type)
 		{
 			if (_ifaces.ContainsKey (type))
 				return;
 
-			List<IFaceImplr> implrs = [];
+			List<InterfaceImplementor> implrs = [];
 			HashSet<TypeDefinition> interfacesSeen = [];
-			foreach (var iface in type.Interfaces) {
-				var ifaceType = context.Resolve (iface.InterfaceType);
-				Debug.Assert (ifaceType is not null);
-				implrs.Add (new (type, type, ifaceType, new ImplNode (iface, null)));
-				interfacesSeen.Add (ifaceType);
+
+			// Use GetInflatedInterfaces
+			foreach (var pair in GetInflatedInterfaces(type)) {
+				var iface = pair.OriginalImpl;
+				var inflatedIface = pair.InflatedInterface;
+				var ifaceType = context.Resolve (iface.Value.InterfaceType);
+				implrs.Add (new (type, ifaceType, inflatedIface, new ImplNode (type, iface, null)));
+				if (ifaceType is not null)
+					interfacesSeen.Add (ifaceType);
 			}
 			if (type.BaseType is { } baseType && context.Resolve (baseType) is { } baseDef) {
-
 				MapInterfacesOnType (baseDef);
 				var baseInterfaces = _ifaces[baseDef];
-				foreach(var item in baseInterfaces) {
-					if (interfacesSeen.Add(item.InterfaceType)) {
-						implrs.Add (item with { ImplementingType = type });
-						interfacesSeen.Add (item.InterfaceType);
+				foreach (var item in baseInterfaces) {
+					if (item.InterfaceType is null || interfacesSeen.Add (item.InterfaceType)) {
+						implrs.Add (new (type, item.InterfaceType, item.InflatedInterface, item.InterfaceImplChain));
+						if (item.InterfaceType is not null)
+							interfacesSeen.Add (item.InterfaceType);
 					}
 				}
 			}
 			// Look into all interfaces for other interfaces this type might implement
-			Queue<TypeDefinition> typeDefinitions = new();
-			foreach(var iface in implrs) {
+			var directImplrs = implrs.ToArray ();
+			foreach (var iface in directImplrs) {
+				if (iface.InterfaceType is null)
+					continue;
 				MapInterfacesOnType (iface.InterfaceType);
 				var baseInterfaces = _ifaces[iface.InterfaceType];
-				foreach(var item in baseInterfaces) {
-					if (interfacesSeen.Add(item.InterfaceType)) {
-						// Don't add these to the seen interfaces list - we need to keep all of these to be able to find the most specific DIMs
-						implrs.Add (item with {
-							ImplementingType = type,
-							InterfaceImplChain = new ImplNode (iface.InterfaceImplChain.Value, item.InterfaceImplChain)
-						});
+				foreach (var item in baseInterfaces) {
+					if (item.InterfaceType is null)
+						continue;
+					if (interfacesSeen.Add (item.InterfaceType)) {
+						implrs.Add (new InterfaceImplementor (type, item.InterfaceType, item.InflatedInterface, new ImplNode (iface.InterfaceImplChain.Value, iface.InterfaceType, item.InterfaceImplChain)));
 					}
 				}
 			}
 			_ifaces.Add (type, implrs);
 		}
 
-		IEqualityComparer<TypeReference>? _inflatedInterfaceComparer;
-		IEqualityComparer<TypeReference> InflatedInterfaceComparer => _inflatedInterfaceComparer ??= EqualityComparer<TypeReference>.Create ((a, b) => {
-			Debug.Assert (a is not null && b is not null);
-			// Skip comparing generic parameters since it's difficult to compare them correctly
-			if (a is TypeSpecification || b is TypeSpecification)
-				return false;
-			var retval =  context.Resolve (a) is { } aDef && context.Resolve (b) is { } bDef && aDef == bDef;
-			if (retval)
-				_ = 0;
-			return retval;
-		}, obj => context.Resolve(obj)?.GetHashCode() ?? 0);
-
-		public IEnumerable<(TypeReference InflatedInterface, ImplNode OriginalImpl)> GetInflatedInterfaces (TypeReference typeRef)
+		IEnumerable<(TypeReference InflatedInterface, ImplNode OriginalImpl)> GetInflatedInterfaces (TypeReference typeRef)
 		{
 			var typeDef = context.TryResolve (typeRef);
 
@@ -233,11 +206,11 @@ namespace Mono.Linker
 				foreach (var interfaceImpl in _ifaces[typeDef]) {
 					// InflateGenericType only returns null when inflating generic parameters (and the generic instance type doesn't resolve).
 					// Here we are not inflating a generic parameter but an interface type reference.
-					yield return (TypeReferenceExtensions.InflateGenericType (genericInstance, interfaceImpl.InterfaceType, context), interfaceImpl.InterfaceImplChain)!;
+					yield return (TypeReferenceExtensions.InflateGenericType (genericInstance, interfaceImpl.InterfaceImplChain.GetLast().InterfaceType, context), interfaceImpl.InterfaceImplChain)!;
 				}
 			} else {
 				foreach (var interfaceImpl in _ifaces[typeDef])
-					yield return (interfaceImpl.InterfaceType, interfaceImpl.InterfaceImplChain);
+					yield return (interfaceImpl.InterfaceImplChain.GetLast().InterfaceType, interfaceImpl.InterfaceImplChain);
 			}
 		}
 
@@ -248,6 +221,42 @@ namespace Mono.Linker
 
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.
+			var allInflatedInterface = _ifaces[type];
+			foreach(var interfaceImplementor in allInflatedInterface) {
+				foreach (MethodReference interfaceMethod in interfaceImplementor.InflatedInterface.GetMethods (context)) {
+					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
+					if (resolvedInterfaceMethod == null)
+						continue;
+
+					// TODO-NICE: if the interface method is implemented explicitly (with an override),
+					// we shouldn't need to run the below logic. This results in ILLink potentially
+					// keeping more methods than needed.
+
+					if (!resolvedInterfaceMethod.IsVirtual
+						|| resolvedInterfaceMethod.IsFinal)
+						continue;
+
+					// Static methods on interfaces must be implemented only via explicit method-impl record
+					// not by a signature match. So there's no point in running this logic for static methods.
+					if (!resolvedInterfaceMethod.IsStatic) {
+						// Try to find an implementation with a name/sig match on the current type
+						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
+						if (exactMatchOnType != null) {
+							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, interfaceImplementor);
+							continue;
+						}
+
+						// Next try to find an implementation with a name/sig match in the base hierarchy
+						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
+						if (@base != null) {
+							AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImplementor);
+							continue;
+						}
+					}
+					// Look along the chain of interfaceImpls to find the closest implementing
+				}
+			}
+			// Use _ifaces map to get all interfaces on the type, base types, and base interfaces
 			foreach (var interfaceImpl in GetInflatedInterfaces (type)) {
 				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
 					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
@@ -268,70 +277,20 @@ namespace Mono.Linker
 						// Try to find an implementation with a name/sig match on the current type
 						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
 						if (exactMatchOnType != null) {
-							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, new (type, interfaceImpl.OriginalImpl.ToArray(), resolvedInterfaceMethod.DeclaringType));
+							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, new (type, context.Resolve(interfaceImpl.), resolvedInterfaceMethod.DeclaringType));
 							continue;
 						}
 
 						// Next try to find an implementation with a name/sig match in the base hierarchy
 						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
 						if (@base != null) {
-							AnnotateMethods (resolvedInterfaceMethod, @base, new (type, interfaceImpl.OriginalImpl.ToArray(), resolvedInterfaceMethod.DeclaringType));
+							AnnotateMethods (resolvedInterfaceMethod, @base, new (type, interfaceImpl.OriginalImpl.ToArray (), resolvedInterfaceMethod.DeclaringType));
 							continue;
 						}
 					}
 
 					// Look for a default implementation last.
-					FindAndAddDefaultInterfaceImplementations (type, type, resolvedInterfaceMethod, interfaceImpl.OriginalImpl);
-				}
-			}
-			Queue<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> ifacesToVisit = new (type.GetInflatedInterfaces(context));
-
-			HashSet<TypeReference> visitedIfaces = new([], InflatedInterfaceComparer);
-
-			List<InterfaceImplementation> interfaceImplementations = new (16);
-			while (ifacesToVisit.Count > 0) {
-				var interfaceImpl = ifacesToVisit.Dequeue ();
-				foreach(var iface in interfaceImpl.InflatedInterface.GetInflatedInterfaces (context)) {
-					ifacesToVisit.Enqueue (iface);
-				}
-				if (!visitedIfaces.Add (interfaceImpl.InflatedInterface))
-					continue;
-
-				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
-					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
-					if (resolvedInterfaceMethod == null)
-						continue;
-
-					// TODO-NICE: if the interface method is implemented explicitly (with an override),
-					// we shouldn't need to run the below logic. This results in ILLink potentially
-					// keeping more methods than needed.
-
-					if (!resolvedInterfaceMethod.IsVirtual
-						|| resolvedInterfaceMethod.IsFinal)
-						continue;
-
-					// Static methods on interfaces must be implemented only via explicit method-impl record
-					// not by a signature match. So there's no point in running this logic for static methods.
-					if (!resolvedInterfaceMethod.IsStatic) {
-						// Try to find an implementation with a name/sig match on the current type
-						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
-						if (exactMatchOnType != null) {
-							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, new (type, [interfaceImpl.OriginalImpl], resolvedInterfaceMethod.DeclaringType));
-							continue;
-						}
-
-						// Next try to find an implementation with a name/sig match in the base hierarchy
-						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
-						if (@base != null) {
-							AnnotateMethods (resolvedInterfaceMethod, @base, new (type, [interfaceImpl.OriginalImpl], resolvedInterfaceMethod.DeclaringType));
-							continue;
-						}
-					}
-
-					// Look for a default implementation last.
-					interfaceImplementations.Clear();
-					interfaceImplementations.Add (interfaceImpl.OriginalImpl);
-					FindAndAddDefaultInterfaceImplementations (type, type, resolvedInterfaceMethod, [interfaceImpl.OriginalImpl]);
+					FindAndAddDefaultInterfaceImplementations (type, resolvedInterfaceMethod, interfaceImpl.OriginalImpl);
 				}
 			}
 		}
@@ -361,7 +320,7 @@ namespace Mono.Linker
 			if (@base == null)
 				return;
 
-			Debug.Assert(!@base.DeclaringType.IsInterface);
+			Debug.Assert (!@base.DeclaringType.IsInterface);
 
 			AnnotateMethods (@base, method);
 		}
@@ -448,7 +407,42 @@ namespace Mono.Linker
 		/// <param name="implOfInterface">
 		/// The InterfaceImplementation on <paramref name="type"/> that points to the DeclaringType of <paramref name="interfaceMethod"/>.
 		/// </param>
-		void FindAndAddDefaultInterfaceImplementations (TypeDefinition typeThatImplementsInterface, TypeDefinition typeThatMayHaveDIM, MethodDefinition interfaceMethodToBeImplemented, List<InterfaceImplementation> originalInterfaceImpl)
+		void FindAndAddDefaultInterfaceImplementations (TypeDefinition typeThatImplementsInterface, MethodDefinition interfaceMethodToBeImplemented, ImplNode originalInterfaceImpl)
+		{
+			// Can I maybe only look at types in the implNode chain? I'd need all the chains that lead to the interfaceType, but it could be possible.
+			bool foundImpl = false;
+			foreach (var iface in _ifaces[typeThatImplementsInterface]) {
+				if (iface.InterfaceType is null)
+					continue;
+				if (_ifaces[iface.InterfaceType].Any (implr => implr.InterfaceType == interfaceMethodToBeImplemented.DeclaringType)) {
+					foreach (var potentialImplMethod in iface.InterfaceType.Methods) {
+						if (potentialImplMethod == interfaceMethodToBeImplemented &&
+							!potentialImplMethod.IsAbstract) {
+							AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl.ToArray (), interfaceMethodToBeImplemented.DeclaringType), potentialImplMethod);
+							foundImpl = true;
+							break;
+						}
+
+						if (!potentialImplMethod.HasOverrides)
+							continue;
+
+						// This method is an override of something. Let's see if it's the method we are looking for.
+						foreach (var baseMethod in potentialImplMethod.Overrides) {
+							if (context.TryResolve (baseMethod) == interfaceMethodToBeImplemented) {
+								AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl.ToArray (), interfaceMethodToBeImplemented.DeclaringType), @potentialImplMethod);
+								foundImpl = true;
+								break;
+							}
+						}
+						if (foundImpl) {
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		void Nothing (TypeDefinition typeThatImplementsInterface, TypeDefinition typeThatMayHaveDIM, MethodDefinition interfaceMethodToBeImplemented, List<InterfaceImplementation> originalInterfaceImpl)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
@@ -462,7 +456,7 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethodToBeImplemented &&
 						!potentialImplMethod.IsAbstract) {
-						AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl.ToArray(), interfaceMethodToBeImplemented.DeclaringType), potentialImplMethod);
+						AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl.ToArray (), interfaceMethodToBeImplemented.DeclaringType), potentialImplMethod);
 						foundImpl = true;
 						break;
 					}
@@ -473,7 +467,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var baseMethod in potentialImplMethod.Overrides) {
 						if (context.TryResolve (baseMethod) == interfaceMethodToBeImplemented) {
-							AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl.ToArray(), interfaceMethodToBeImplemented.DeclaringType), @potentialImplMethod);
+							AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl.ToArray (), interfaceMethodToBeImplemented.DeclaringType), @potentialImplMethod);
 							foundImpl = true;
 							break;
 						}
@@ -489,8 +483,8 @@ namespace Mono.Linker
 				if (!foundImpl) {
 					var oldLength = originalInterfaceImpl.Count;
 					originalInterfaceImpl.Add (interfaceImpl);
-					FindAndAddDefaultInterfaceImplementations (typeThatImplementsInterface, potentialImplInterface, interfaceMethodToBeImplemented, originalInterfaceImpl);
-					originalInterfaceImpl.RemoveRange(oldLength, originalInterfaceImpl.Count -  oldLength);
+					//FindAndAddDefaultInterfaceImplementations (typeThatImplementsInterface, potentialImplInterface, interfaceMethodToBeImplemented, originalInterfaceImpl);
+					originalInterfaceImpl.RemoveRange (oldLength, originalInterfaceImpl.Count - oldLength);
 				}
 			}
 		}
@@ -653,5 +647,7 @@ namespace Mono.Linker
 
 			return a.FullName == b.FullName;
 		}
+
+		internal List<IFaceImplr> GetRecursiveInterfaces (TypeDefinition type) => _ifaces.TryGetValue(type, out var value) ? value : [];
 	}
 }
