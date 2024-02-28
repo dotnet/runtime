@@ -456,7 +456,7 @@
 
     <!-- https://github.com/dotnet/runtime/issues/94653 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj"
-                       Condition="'$(TargetsLinuxMusl)' == 'true' />
+                       Condition="'$(TargetsLinuxMusl)' == 'true'" />
 
     <!-- Not applicable to NativeAOT -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
