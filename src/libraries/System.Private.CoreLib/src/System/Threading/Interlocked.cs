@@ -92,7 +92,9 @@ namespace System.Threading
             uint mask = ~((uint)byte.MaxValue << bitOffset);
             uint shiftedValue = (uint)value << bitOffset;
 
-            uint originalValue = 0, newValue;
+            // this doesn't need to be volatile since CompareExchange will update stale values
+            uint originalValue = alignedRef;
+            uint newValue;
             do
             {
                 // make sure the ref is still aligned
@@ -129,7 +131,9 @@ namespace System.Threading
             uint mask = ~((uint)ushort.MaxValue << bitOffset);
             uint shiftedValue = (uint)value << bitOffset;
 
-            uint originalValue = 0, newValue;
+            // this doesn't need to be volatile since CompareExchange will update stale values
+            uint originalValue = alignedRef;
+            uint newValue;
             do
             {
                 // make sure the ref is still aligned
@@ -267,7 +271,8 @@ namespace System.Threading
             uint shiftedValue = (uint)value << bitOffset;
             uint shiftedComparand = (uint)comparand << bitOffset;
 
-            uint originalValue = Volatile.Read(ref alignedRef);
+            // this doesn't need to be volatile since CompareExchange will update stale values
+            uint originalValue = alignedRef;
             uint fullComparand, newValue;
             do
             {
@@ -309,7 +314,8 @@ namespace System.Threading
             uint shiftedValue = (uint)value << bitOffset;
             uint shiftedComparand = (uint)comparand << bitOffset;
 
-            uint originalValue = Volatile.Read(ref alignedRef);
+            // this doesn't need to be volatile since CompareExchange will update stale values
+            uint originalValue = alignedRef;
             uint fullComparand, newValue;
             do
             {
