@@ -105,7 +105,7 @@ namespace ILCompiler
             }
             else
             {
-                throw new InternalCompilerErrorException($"Unknown architecture ---> {architecture}");
+                throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");
             }
 
             return potentialType.Name;
