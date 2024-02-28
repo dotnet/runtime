@@ -94,7 +94,6 @@ set( JIT_SOURCES
   bitset.cpp
   block.cpp
   buildstring.cpp
-  layout.cpp
   codegencommon.cpp
   codegenlinear.cpp
   compiler.cpp
@@ -123,20 +122,23 @@ set( JIT_SOURCES
   gentree.cpp
   gschecks.cpp
   hashbv.cpp
-  hwintrinsic.cpp
-  hostallocator.cpp
-  ifconversion.cpp
   helperexpansion.cpp
-  indirectcalltransformer.cpp
-  importercalls.cpp
+  hostallocator.cpp
+  hwintrinsic.cpp
+  ifconversion.cpp
   importer.cpp
+  importercalls.cpp
   importervectorization.cpp
+  indirectcalltransformer.cpp
+  inductionvariableopts.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
+  jitmetadata.cpp
+  layout.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -151,7 +153,6 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
-  switchrecognition.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -164,6 +165,7 @@ set( JIT_SOURCES
   regalloc.cpp
   registerargconvention.cpp
   regset.cpp
+  scev.cpp
   scopeinfo.cpp
   sideeffects.cpp
   sm.cpp
@@ -172,6 +174,7 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
+  switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
   utils.cpp
@@ -334,6 +337,8 @@ set( JIT_HEADERS
   jitexpandarray.h
   jitgcinfo.h
   jithashtable.h
+  jitmetadata.h
+  jitmetadatalist.h
   jitpch.h
   jitstd.h
   lir.h
@@ -356,6 +361,7 @@ set( JIT_HEADERS
   registerargconvention.h
   register.h
   regset.h
+  scev.h
   sideeffects.h
   simd.h
   simdashwintrinsic.h
@@ -402,6 +408,7 @@ set( JIT_ARM64_HEADERS
     emitfmtsarm64.h
     emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
+    hwintrinsiclistarm64sve.h
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h

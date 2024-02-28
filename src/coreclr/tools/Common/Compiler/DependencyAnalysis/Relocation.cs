@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
 
         // Linux arm32
         IMAGE_REL_ARM_PREL31                 = 0x10D,
+        IMAGE_REL_ARM_JUMP24                 = 0x10E,
 
         //
         // Relocations for R2R image production
@@ -163,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         // Returns whether the offset fits into bl instruction
         //*****************************************************************************
-        private static bool FitsInThumb2BlRel24(int imm24)
+        public static bool FitsInThumb2BlRel24(int imm24)
         {
             return ((imm24 << 7) >> 7) == imm24;
         }
@@ -486,7 +487,10 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
                     *(int*)location = (int)value;
+                    break;
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     *(long*)location = value;
@@ -502,9 +506,11 @@ namespace ILCompiler.DependencyAnalysis
                     PutArm64Rel28((uint*)location, value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
                     PutArm64Rel21((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:

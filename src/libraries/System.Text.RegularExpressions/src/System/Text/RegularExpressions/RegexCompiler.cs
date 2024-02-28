@@ -460,6 +460,8 @@ namespace System.Text.RegularExpressions
             {
                 case FindNextStartingPositionMode.LeadingString_LeftToRight:
                 case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
                 case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
                     EmitIndexOfString_LeftToRight();
                     break;
@@ -745,15 +747,19 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // Emits a case-sensitive left-to-right search for a substring.
+            // Emits a case-sensitive left-to-right search for a substring or substrings.
             void EmitIndexOfString_LeftToRight()
             {
                 RegexFindOptimizations opts = _regexTree.FindOptimizations;
-                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or FindNextStartingPositionMode.FixedDistanceString_LeftToRight);
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or
+                                              FindNextStartingPositionMode.FixedDistanceString_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingStrings_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight);
 
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = inputSpan.Slice(pos).IndexOf(prefix);
+                // int i = inputSpan.Slice(pos)...
                 Ldloca(inputSpan);
                 Ldloc(pos);
                 if (opts.FindMode is FindNextStartingPositionMode.FixedDistanceString_LeftToRight &&
@@ -763,11 +769,21 @@ namespace System.Text.RegularExpressions
                     Add();
                 }
                 Call(s_spanSliceIntMethod);
-                string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
-                    opts.LeadingPrefix :
-                    opts.FixedDistanceLiteral.String!;
-                LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-                Call(s_spanIndexOfAnySearchValuesString);
+
+                // ...IndexOf(prefix);
+                if (opts.FindMode is FindNextStartingPositionMode.LeadingStrings_LeftToRight or FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight)
+                {
+                    LoadSearchValues(opts.LeadingPrefixes, opts.FindMode is FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    Call(s_spanIndexOfAnySearchValuesString);
+                }
+                else
+                {
+                    string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
+                        opts.LeadingPrefix :
+                        opts.FixedDistanceLiteral.String!;
+                    LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    Call(s_spanIndexOfAnySearchValuesString);
+                }
                 Stloc(i);
 
                 // if (i < 0) goto ReturnFalse;
@@ -920,20 +936,10 @@ namespace System.Text.RegularExpressions
                                 Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
                                 break;
 
-                            case 4 or 5:
-                                // tmp = ...IndexOfAny("abcd");
-                                // Note that this case differs slightly from the source generator, where it might choose to use
-                                // SearchValues instead of a literal, but there's extra cost to doing so for RegexCompiler so
-                                // it just always uses IndexOfAny(span).
-                                Ldstr(new string(primarySet.Chars));
-                                Call(s_stringAsSpanMethod);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
-                                break;
-
                             default:
+                                // tmp = ...IndexOfAny(setChars);
                                 // tmp = ...IndexOfAny(s_searchValues);
-                                LoadSearchValues(primarySet.Chars);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                                EmitIndexOfAnyWithSearchValuesOrLiteral(new string(primarySet.Chars), except: primarySet.Negated);
                                 break;
                         }
                     }
@@ -2233,9 +2239,18 @@ namespace System.Text.RegularExpressions
                 Stloc(startingPos);
                 int startingSliceStaticPos = sliceStaticPos;
 
-                // Emit the child. The condition expression is a zero-width assertion, which is atomic,
+                // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
-                EmitNode(condition);
+                if (analysis.MayBacktrack(condition))
+                {
+                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                    // so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(condition);
+                }
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
@@ -2803,8 +2818,8 @@ namespace System.Text.RegularExpressions
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
-                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
 
                 RegexNode child = node.Child(0);
 
@@ -3619,9 +3634,7 @@ namespace System.Text.RegularExpressions
 
                             case (true, _):
                                 // startingPos = slice.IndexOfAny(literal.SetChars);
-                                Ldstr(literal.SetChars);
-                                Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                EmitIndexOfAnyWithSearchValuesOrLiteral(literal.SetChars);
                                 break;
 
                             case (false, 2):
@@ -3634,9 +3647,7 @@ namespace System.Text.RegularExpressions
 
                             case (false, _):
                                 // startingPos = slice.IndexOfAny($"{node.Ch}{literal.SetChars}");
-                                Ldstr($"{node.Ch}{literal.SetChars}");
-                                Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                EmitIndexOfAnyWithSearchValuesOrLiteral($"{node.Ch}{literal.SetChars}");
                                 break;
                         }
                     }
@@ -3650,8 +3661,7 @@ namespace System.Text.RegularExpressions
                             Array.Resize(ref asciiChars, asciiChars.Length + 1);
                             asciiChars[^1] = node.Ch;
                         }
-                        LoadSearchValues(asciiChars);
-                        Call(s_spanIndexOfAnySearchValues);
+                        EmitIndexOfAnyWithSearchValuesOrLiteral(new string(asciiChars));
                     }
                     else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One
                     {
@@ -4134,6 +4144,8 @@ namespace System.Text.RegularExpressions
                     // Determine where to branch, either back to the lazy loop body to add an additional iteration,
                     // or to the last backtracking label.
 
+                    Label jumpToDone = DefineLabel();
+
                     if (iterationMayBeEmpty)
                     {
                         // if (sawEmpty != 0)
@@ -4152,7 +4164,7 @@ namespace System.Text.RegularExpressions
                         Ldc(0);
                         Stloc(sawEmpty!);
 
-                        BrFar(doneLabel);
+                        Br(jumpToDone);
                         MarkLabel(sawEmptyZero);
                     }
 
@@ -4161,11 +4173,31 @@ namespace System.Text.RegularExpressions
                         // if (iterationCount >= maxIterations) goto doneLabel;
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
-                        BgeFar(doneLabel);
+                        Bge(jumpToDone);
                     }
 
                     // goto body;
                     BrFar(body);
+
+                    MarkLabel(jumpToDone);
+
+                    // We're backtracking, which could either be to something prior to the lazy loop or to something
+                    // inside of the lazy loop.  If it's to something inside of the lazy loop, then either the loop
+                    // will eventually succeed or we'll eventually end up unwinding back through the iterations all
+                    // the way back to the loop not matching at all, in which case the state we first pushed on at the
+                    // beginning of the !isAtomic section will get popped off. But if here we're instead going to jump
+                    // to something prior to the lazy loop, then we need to pop off that state here.
+                    if (doneLabel == originalDoneLabel)
+                    {
+                        // stackpos -= entriesPerIteration;
+                        Ldloc(stackpos);
+                        Ldc(entriesPerIteration);
+                        Sub();
+                        Stloc(stackpos);
+                    }
+
+                    // goto done;
+                    BrFar(doneLabel);
 
                     doneLabel = backtrack;
                     MarkLabel(skipBacktrack);
@@ -5252,15 +5284,7 @@ namespace System.Text.RegularExpressions
                                 return;
 
                             default:
-                                Ldstr(setChars.ToString());
-                                Call(s_stringAsSpanMethod);
-                                Call((useLast, negated) switch
-                                {
-                                    (false, false) => s_spanIndexOfAnySpan,
-                                    (false, true) => s_spanIndexOfAnyExceptSpan,
-                                    (true, false) => s_spanLastIndexOfAnySpan,
-                                    (true, true) => s_spanLastIndexOfAnyExceptSpan,
-                                });
+                                EmitIndexOfAnyWithSearchValuesOrLiteral(setChars.ToString(), last: useLast, except: negated);
                                 return;
                         }
                     }
@@ -5268,14 +5292,7 @@ namespace System.Text.RegularExpressions
                     // IndexOfAny{Except}(SearchValues<char>)
                     if (RegexCharClass.TryGetAsciiSetChars(node.Str, out char[]? asciiChars))
                     {
-                        LoadSearchValues(asciiChars);
-                        Call((useLast, negated) switch
-                        {
-                            (false, false) => s_spanIndexOfAnySearchValues,
-                            (false, true) => s_spanIndexOfAnyExceptSearchValues,
-                            (true, false) => s_spanLastIndexOfAnySearchValues,
-                            (true, true) => s_spanLastIndexOfAnyExceptSearchValues,
-                        });
+                        EmitIndexOfAnyWithSearchValuesOrLiteral(new string(asciiChars), last: useLast, except: negated);
                         return;
                     }
                 }
@@ -6167,6 +6184,38 @@ namespace System.Text.RegularExpressions
                 // base.CheckTimeout();
                 Ldthis();
                 Call(s_checkTimeoutMethod);
+            }
+        }
+
+        /// <summary>Emits a call to either IndexOfAny("abcd") or IndexOfAny(SearchValues) depending on the <paramref name="chars"/>.</summary>
+        private void EmitIndexOfAnyWithSearchValuesOrLiteral(string chars, bool last = false, bool except = false)
+        {
+            Debug.Assert(chars.Length > 3);
+
+            // SearchValues<char> is faster than a regular IndexOfAny("abcd") for sets of 4/5 values iff they are ASCII.
+            // Only emit SearchValues instances when we know they'll be faster to avoid increasing the startup cost too much.
+            if (chars.Length is 4 or 5 && !RegexCharClass.IsAscii(chars))
+            {
+                Ldstr(chars);
+                Call(s_stringAsSpanMethod);
+                Call((last, except) switch
+                {
+                    (false, false) => s_spanIndexOfAnySpan,
+                    (false, true) => s_spanIndexOfAnyExceptSpan,
+                    (true, false) => s_spanLastIndexOfAnySpan,
+                    (true, true) => s_spanLastIndexOfAnyExceptSpan,
+                });
+            }
+            else
+            {
+                LoadSearchValues(chars.ToCharArray());
+                Call((last, except) switch
+                {
+                    (false, false) => s_spanIndexOfAnySearchValues,
+                    (false, true) => s_spanIndexOfAnyExceptSearchValues,
+                    (true, false) => s_spanLastIndexOfAnySearchValues,
+                    (true, true) => s_spanLastIndexOfAnyExceptSearchValues,
+                });
             }
         }
 

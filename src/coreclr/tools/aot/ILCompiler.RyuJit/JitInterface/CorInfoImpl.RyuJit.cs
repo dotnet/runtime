@@ -542,8 +542,14 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_MEMZERO:
+                    id = ReadyToRunHelper.MemZero;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_MEMCPY:
                     id = ReadyToRunHelper.MemCpy;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NATIVE_MEMSET:
+                    id = ReadyToRunHelper.NativeMemSet;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
@@ -1329,9 +1335,27 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (!targetMethod.IsVirtual ||
-                    // Final/sealed has no meaning for interfaces, but lets us devirtualize otherwise
-                    !targetMethod.OwningType.IsInterface && (targetMethod.IsFinal || targetMethod.OwningType.IsSealed()))
+                // We can devirtualize the callvirt if the method is not virtual to begin with
+                bool canDevirt = !targetMethod.IsVirtual;
+
+                // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
+                if (!canDevirt && !targetMethod.OwningType.IsInterface)
+                {
+                    // Check if we can devirt per metadata
+                    canDevirt = targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
+
+                    // We might be able to devirt based on whole program view
+                    if (!canDevirt
+                        // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
+                        // during scanning (i.e. compiling a shared method body and we need to call another shared body
+                        // with a method generic dictionary argument).
+                        && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
+                    {
+                        canDevirt = _compilation.IsEffectivelySealed(targetMethod);
+                    }
+                }
+
+                if (canDevirt)
                 {
                     resolvedCallVirt = true;
                     directCall = true;
@@ -1818,7 +1842,7 @@ namespace Internal.JitInterface
 
             // Normalize to the slot defining method. We don't have slot information for the overrides.
             methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
-            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable());
+            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable(_compilation.NodeFactory));
 
             // Avoid asking about slots on types like Foo<object, __Canon>. We might not have that information.
             // Canonically-equivalent types have the same slots, so ask for Foo<__Canon, __Canon>.
@@ -1988,20 +2012,22 @@ namespace Internal.JitInterface
             get
             {
                 // struct PInvokeTransitionFrame:
-                // #ifdef _TARGET_ARM_
-                //  m_ChainPointer
-                // #endif
-                //  m_RIP
-                //  m_FramePointer
+                //  m_RIP (1)
+                //  m_FramePointer (1)
                 //  m_pThread
                 //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
-                //  m_PreserverRegs - RSP
+                //  m_PreservedRegs - RSP / R9 (2)
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
+                //
+                // (1) On ARM32/ARM64 the order of m_RIP and m_FramePointer is reverse
+                // (2) R9 is saved for ARM32 because it needs to be preserved for methods with stackalloc
                 int size = 5 * this.PointerSize;
 
                 if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
-                    size += this.PointerSize; // m_ChainPointer
+                {
+                    size += this.PointerSize; // R9 (REG_SAVED_LOCALLOC_SP)
+                }
 
                 return size;
             }
@@ -2157,7 +2183,10 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        if ((MethodBeingCompiled.Context.Target.IsWindows || MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Linux) && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        var target = MethodBeingCompiled.Context.Target;
+                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64) ||
+                            ((target.OperatingSystem == TargetOS.Linux) &&
+                            (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {
                             ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)

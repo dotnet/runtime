@@ -16,7 +16,6 @@
 // * IR based heuristics (perhaps)
 // * During Cp, avoid repeatedly propagating through nested loops
 // * Fake BB0 or always force scratch BB
-// * Reconcile with our other loop finding stuff
 // * Stop the upweight/downweight of loops in rest of jit
 // * Durable edge properties (exit, back)
 // * Tweak RunRarely to be at or near zero
@@ -191,7 +190,7 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // AssignLikelihoodJump: update edge likelihood for a block that always
-//   transfers control to bbTarget
+//   transfers control to its target block
 //
 // Arguments;
 //   block -- block in question
@@ -649,12 +648,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
     for (BasicBlock* const block : m_comp->Blocks())
     {
         unsigned const N = block->NumSucc(m_comp);
-
-        if (N < 2)
-        {
-            continue;
-        }
-
         likelihoods.clear();
         likelihoods.reserve(N);
 

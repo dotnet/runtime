@@ -140,7 +140,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
         PRECONDITION(CheckPointer(handle));
         PRECONDITION(CheckPointer(this->context.pInfoModule));
-        PRECONDITION(!handle.HasUnrestoredTypeKey());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -303,7 +302,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         PRECONDITION(CheckPointer(pZapSigContext->pInfoModule));
         PRECONDITION(CheckPointer(handle));
         PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(!handle.HasUnrestoredTypeKey());
     }
     CONTRACT_END
 
@@ -1343,6 +1341,9 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
+
+            pSigBuilder->AppendData(inst.GetNumArgs());
+
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];

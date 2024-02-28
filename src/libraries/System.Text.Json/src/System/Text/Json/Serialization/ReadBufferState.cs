@@ -28,9 +28,9 @@ namespace System.Text.Json.Serialization
             _isFinalBlock = false;
         }
 
-        public bool IsFinalBlock => _isFinalBlock;
+        public readonly bool IsFinalBlock => _isFinalBlock;
 
-        public ReadOnlySpan<byte> Bytes => _buffer.AsSpan(_offset, _count);
+        public readonly ReadOnlySpan<byte> Bytes => _buffer.AsSpan(_offset, _count);
 
         /// <summary>
         /// Read from the stream until either our buffer is filled or we hit EOF.

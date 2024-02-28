@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -513,7 +513,7 @@ export class WasmBuilder {
         // import the native heap
         this.appendName("m");
         this.appendName("h");
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             // memtype (limits = 0x03 n:u32 m:u32    => {min n, max m, shared})
             this.appendU8(0x02);
             this.appendU8(0x03);
@@ -1321,6 +1321,9 @@ class Cfg {
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
@@ -1557,7 +1560,6 @@ export function getWasmFunctionTable() {
 
 export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
     mono_assert(f, "Attempting to set null function into table");
-    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
     const index = cwraps.mono_jiterp_allocate_table_entry(table);
     if (index > 0) {
@@ -1821,7 +1823,7 @@ let observedTaintedZeroPage: boolean | undefined;
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
-    if (MonoWasmThreads)
+    if (WasmEnableThreads)
         return false;
 
     if (!cwraps.mono_wasm_is_zero_page_reserved())
@@ -1991,7 +1993,7 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
     // In threaded builds we need to populate all the reserved slots with safe placeholder functions
     // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
     //  be safe, since it was previously not necessary)
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
         //  so that additional work doesn't have to be done by the runtime for the following table sets
         const preparedValue = wasmTable.get(firstIndex);
@@ -2017,8 +2019,8 @@ export function jiterpreter_allocate_tables() {
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
     const traceTableSize = options.tableSize,
-        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
-        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
+        jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable();

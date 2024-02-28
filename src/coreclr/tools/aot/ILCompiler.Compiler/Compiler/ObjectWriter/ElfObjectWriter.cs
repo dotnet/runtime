@@ -224,6 +224,16 @@ namespace ILCompiler.ObjectWriter
                         Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
                     }
                     addend = 0;
+
+                    // Determine if this is call (BL[X]) or jump (B) since they use different
+                    // relocation codes in ELF.
+                    // B.W     1111 0Sii iiii iiii  10J1 Jiii iiii iiii
+                    // BL      1111 0Sii iiii iiii  11J1 Jiii iiii iiii
+                    // BLX     1111 0Sii iiii iiii  11J0 Jiii iiii iii0
+                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && (pData[3] & 0x40) != 0x40)
+                    {
+                        relocType = IMAGE_REL_ARM_JUMP24;
+                    }
                 }
             }
 
@@ -378,6 +388,7 @@ namespace ILCompiler.ObjectWriter
                         IMAGE_REL_BASED_THUMB_MOV32 => R_ARM_THM_MOVW_ABS_NC,
                         IMAGE_REL_BASED_THUMB_MOV32_PCREL => R_ARM_THM_MOVW_PREL_NC,
                         IMAGE_REL_BASED_THUMB_BRANCH24 => R_ARM_THM_CALL,
+                        IMAGE_REL_ARM_JUMP24 => R_ARM_THM_JUMP24,
                         IMAGE_REL_ARM_PREL31 => R_ARM_PREL31,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
@@ -454,6 +465,7 @@ namespace ILCompiler.ObjectWriter
                 attributesBuilder.WriteAttribute(Tag_ABI_FP_number_model, 3); // IEEE 754
                 attributesBuilder.WriteAttribute(Tag_ABI_align_needed, 1); // 8-byte
                 attributesBuilder.WriteAttribute(Tag_ABI_align_preserved, 1); // 8-byte
+                attributesBuilder.WriteAttribute(Tag_ABI_VFP_args, 1); // FP parameters passes in VFP registers
                 attributesBuilder.WriteAttribute(Tag_CPU_unaligned_access, 0); // None
                 attributesBuilder.EndSection();
             }

@@ -169,8 +169,9 @@ namespace ILCompiler.ObjectWriter
                     // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
                     long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
                     long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
+                    long adjustedAddend = addend;
 
-                    addend -= relocType switch
+                    adjustedAddend -= relocType switch
                     {
                         IMAGE_REL_BASED_REL32 => 4,
                         IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
@@ -178,11 +179,19 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    addend += definedSymbol.Value & ~maskThumbBitOut;
-                    addend += Relocation.ReadValue(relocType, (void*)pData);
-                    addend |= definedSymbol.Value & maskThumbBitIn;
-                    addend -= offset;
-                    Relocation.WriteValue(relocType, (void*)pData, addend);
+                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
+                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
+                    adjustedAddend -= offset;
+
+                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
+                    {
+                        EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+                    }
+                    else
+                    {
+                        Relocation.WriteValue(relocType, (void*)pData, adjustedAddend);
+                    }
                 }
             }
             else
@@ -328,6 +337,13 @@ namespace ILCompiler.ObjectWriter
             SymbolDefinition methodSymbol,
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
+
+        private protected virtual void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+        }
 
         private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
@@ -481,15 +497,21 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode and IMethodNode methodNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                     {
-                        bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
                         string methodName = GetMangledName(symbolDefinitionNode);
-
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            if (node is IMethodNode methodNode)
+                            {
+                                bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
+                                uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
+                                EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            }
+                            else
+                            {
+                                EmitDebugThunkInfo(methodName, methodSymbol, debugNode);
+                            }
                         }
                     }
                 }

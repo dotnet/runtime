@@ -140,13 +140,11 @@ namespace System.Net.Http
                 using (var operationRegistration = cancellationToken.Register(static s =>
                 {
                     (Task _promise, JSObject _jsController) = ((Task, JSObject))s!;
-                    CancelablePromise.CancelPromise(_promise, static (JSObject __jsController) =>
+                    CancelablePromise.CancelPromise(_promise);
+                    if (!_jsController.IsDisposed)
                     {
-                        if (!__jsController.IsDisposed)
-                        {
-                            AbortResponse(__jsController);
-                        }
-                    }, _jsController);
+                        AbortResponse(_jsController);
+                    }
                 }, (promise, jsController)))
                 {
                     await promise.ConfigureAwait(true);
