@@ -20,41 +20,10 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - linux_arm
-          - linux_x64
-          - linux_arm64
-          - osx_arm64
-          - osx_x64
-          - windows_x86
-          - windows_x64
-          - windows_arm64
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: outerloop
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: Release
-          platforms:
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - osx_arm64
-          - windows_x86
-          - windows_x64
-          jobParameters:
-            testGroup: outerloop
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: Release
-          platforms:
-          - linux_arm
           - linux_arm64
           - linux_x64
           - osx_arm64
@@ -62,10 +31,23 @@ extends:
           - windows_x86
           - windows_x64
           - windows_arm64
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
-            isOfficialBuild: false
-            liveRuntimeBuildConfig: Release
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: Checked_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: outerloop
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -95,6 +77,7 @@ extends:
             compositeBuildMode: true
             displayNameArgs: R2R_Composite
             liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       # Outerloop testing in non-composite mode
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -116,6 +99,34 @@ extends:
             readyToRun: true
             displayNameArgs: R2R
             liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+
+      # Build release CoreCLR for Crossgen2 baseline generation
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - osx_arm64
+          - osx_x64
+          - windows_x86
+          - windows_x64
+          - windows_arm64
+          jobParameters:
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
 
       # Build Crossgen2 baselines
       # These are the various crossgen2 targets that are supported, and cover all major

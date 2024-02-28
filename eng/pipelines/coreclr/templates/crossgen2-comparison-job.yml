@@ -12,12 +12,6 @@ parameters:
   pool: ''
   targetarch: ''
   targetos: ''
-
-  # When set to a non-empty value (Debug / Release), it determines libraries
-  # build configuration to use for the tests. Setting this property implies
-  # a dependency of this job on the appropriate libraries build and is used
-  # to construct the name of the Azure artifact representing libraries build
-  # to use for building the tests.
   liveLibrariesBuildConfig: ''
 
 ### Crossgen-comparison job
@@ -84,9 +78,7 @@ jobs:
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('test_crossgen2_comparison_build_{0}_{1}_Release', parameters.targetos, parameters.targetarch)}}
-    - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    - build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -98,20 +90,10 @@ jobs:
     # Download product build
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+        artifactName: 'Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)'
         displayName: 'product build'
-
-    # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
 
     # Populate Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly

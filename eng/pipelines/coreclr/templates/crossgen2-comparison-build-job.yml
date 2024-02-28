@@ -82,9 +82,7 @@ jobs:
 
     # Test job depends on the corresponding build job
     dependsOn:
-    - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    - build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -96,20 +94,10 @@ jobs:
     # Download product build
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+        artifactName: 'Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)'
         displayName: 'product build'
-
-    # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
 
     # Populate Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
