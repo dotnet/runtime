@@ -5675,6 +5675,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D,
                               INS_SCALABLE_OPTS_UNPREDICATED); // ORR <Zd>.D, <Zn>.D, <Zm>.D
 
+    // IF_SVE_AV_3A
+    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
+                              INS_OPTS_SCALABLE_D); // BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+    theEmitter->emitIns_R_R_R(INS_sve_bsl, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
+                              INS_OPTS_SCALABLE_D); // BSL <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+    theEmitter->emitIns_R_R_R(INS_sve_bsl1n, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
+                              INS_OPTS_SCALABLE_D); // BSL1N <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+    theEmitter->emitIns_R_R_R(INS_sve_bsl2n, EA_SCALABLE, REG_V9, REG_V10, REG_V11,
+                              INS_OPTS_SCALABLE_D); // BSL2N <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14,
+                              INS_OPTS_SCALABLE_D); // EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+    theEmitter->emitIns_R_R_R(INS_sve_nbsl, EA_SCALABLE, REG_V15, REG_V16, REG_V17,
+                              INS_OPTS_SCALABLE_D); // NBSL <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}

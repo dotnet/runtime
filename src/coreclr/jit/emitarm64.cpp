@@ -1211,6 +1211,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_HD_3A:   // ...........mmmmm ......nnnnnddddd -- SVE floating point matrix multiply accumulate
         case IF_SVE_HD_3A_A: // ...........mmmmm ......nnnnnddddd -- SVE floating point matrix multiply accumulate
         case IF_SVE_HK_3B:   // ...........mmmmm ......nnnnnddddd -- SVE floating-point arithmetic (unpredicated)
+        case IF_SVE_AV_3A:   // ...........mmmmm ......kkkkkddddd -- SVE2 bitwise ternary operations
             assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
@@ -12119,6 +12120,19 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isLowPredicateRegister(reg2)); // ggg
                 fmt = IF_SVE_HL_3B;
             }
+            break;
+
+        case INS_sve_bsl:
+        case INS_sve_eor3:
+        case INS_sve_bcax:
+        case INS_sve_bsl1n:
+        case INS_sve_bsl2n:
+        case INS_sve_nbsl:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // mmmmm
+            assert(isVectorRegister(reg3)); // kkkkk
+            fmt = IF_SVE_AV_3A;
             break;
 
         case INS_sve_frintn:
@@ -23874,6 +23888,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_AV_3A: // ...........mmmmm ......kkkkkddddd -- SVE2 bitwise ternary operations
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_20_to_16(id->idReg2()); // mmmmm
+            code |= insEncodeReg_V_9_to_5(id->idReg3());   // kkkkk
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
@@ -27620,6 +27642,14 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn/mmmmm
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
+            break;
+
+        // <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        case IF_SVE_AV_3A: // ...........mmmmm ......kkkkkddddd -- SVE2 bitwise ternary operations
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // mmmmm
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // kkkkk
             break;
 
         // <Zda>.H, <Zn>.B, <Zm>.B
@@ -31424,6 +31454,28 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_sve_bfmlslt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
                     result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_AV_3A: // ...........mmmmm ......kkkkkddddd -- SVE2 bitwise ternary operations
+            switch (ins)
+            {
+                case INS_sve_eor3:
+                case INS_sve_bcax:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+                case INS_sve_bsl:
+                case INS_sve_bsl1n:
+                case INS_sve_bsl2n:
+                case INS_sve_nbsl:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
                 default:
                     // all other instructions
