@@ -267,16 +267,17 @@ namespace System.Threading
             uint shiftedValue = (uint)value << bitOffset;
             uint shiftedComparand = (uint)comparand << bitOffset;
 
-            uint originalValue, fullComparand, newValue;
+            uint originalValue = Volatile.Read(ref alignedRef);
+            uint fullComparand, newValue;
             do
             {
                 // make sure the ref is still aligned
                 Debug.Assert((nuint)Unsafe.AsPointer(ref alignedRef) % sizeof(uint) == 0);
-                originalValue = Volatile.Read(ref alignedRef);
                 uint otherMemory = originalValue & mask;
                 fullComparand = otherMemory | shiftedComparand;
                 newValue = otherMemory | shiftedValue;
-            } while (originalValue != CompareExchange(ref alignedRef, newValue, fullComparand));
+            } while (originalValue !=
+                     (originalValue = CompareExchange(ref alignedRef, newValue, fullComparand)));
 
             // verify the GC hasn't broken the ref
             Debug.Assert((nuint)Unsafe.ByteOffset(ref Unsafe.As<uint, byte>(ref alignedRef), ref location1) == offset);
@@ -308,16 +309,17 @@ namespace System.Threading
             uint shiftedValue = (uint)value << bitOffset;
             uint shiftedComparand = (uint)comparand << bitOffset;
 
-            uint originalValue, fullComparand, newValue;
+            uint originalValue = Volatile.Read(ref alignedRef);
+            uint fullComparand, newValue;
             do
             {
                 // make sure the ref is still aligned
                 Debug.Assert((nuint)Unsafe.AsPointer(ref alignedRef) % sizeof(uint) == 0);
-                originalValue = Volatile.Read(ref alignedRef);
                 uint otherMemory = originalValue & mask;
                 fullComparand = otherMemory | shiftedComparand;
                 newValue = otherMemory | shiftedValue;
-            } while (originalValue != CompareExchange(ref alignedRef, newValue, fullComparand));
+            } while (originalValue !=
+                     (originalValue = CompareExchange(ref alignedRef, newValue, fullComparand)));
 
             // verify the GC hasn't broken the ref
             Debug.Assert((nuint)Unsafe.ByteOffset(ref Unsafe.As<uint, ushort>(ref alignedRef), ref location1) == offset);
