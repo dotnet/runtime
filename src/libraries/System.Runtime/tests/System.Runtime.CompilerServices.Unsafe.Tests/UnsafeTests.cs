@@ -462,13 +462,13 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(new IntPtr(-3), Unsafe.ByteOffset(ref byte4.B3, ref byte4.B0));
         }
 
-        private static class StaticReadonlyHolder
+        private static unsafe class StaticReadonlyHolder
         {
             public static readonly void* Pointer = (void*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BitcastDisasm), 1);
         }
 
         [Fact]
-        public static void ByteOffsetConstantRef()
+        public static unsafe void ByteOffsetConstantRef()
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
             static nint NullTest(ref byte origin) => Unsafe.ByteOffset(ref origin, ref Unsafe.NullRef<byte>());
