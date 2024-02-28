@@ -6206,6 +6206,21 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_fmlslt, EA_SCALABLE, REG_V14, REG_V15, REG_V7, 7,
                                 INS_OPTS_SCALABLE_H); // FMLSLT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
 
+    // IF_SVE_HA_3A
+    theEmitter->emitIns_R_R_R(INS_sve_bfdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
+                              INS_OPTS_SCALABLE_H); // BFDOT <Zda>.S, <Zn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R(INS_sve_fdot, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
+                              INS_OPTS_SCALABLE_H); // FDOT <Zda>.S, <Zn>.H, <Zm>.H
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    // IF_SVE_HA_3A_E
+    theEmitter->emitIns_R_R_R(INS_sve_fdot, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
+                              INS_OPTS_SCALABLE_B); // FDOT <Zda>.H, <Zn>.B, <Zm>.B
+
+    // IF_SVE_HA_3A_F
+    theEmitter->emitIns_R_R_R(INS_sve_fdot, EA_SCALABLE, REG_V9, REG_V10, REG_V11); // FDOT <Zda>.S, <Zn>.B, <Zm>.B
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+
     // IF_SVE_HE_3A
     theEmitter->emitIns_R_R_R(INS_sve_faddv, EA_2BYTE, REG_V21, REG_P7, REG_V7,
                               INS_OPTS_SCALABLE_H); // FADDV   <V><d>, <Pg>, <Zn>.<T>

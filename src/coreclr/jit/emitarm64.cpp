@@ -1190,20 +1190,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm7(emitGetInsSC(id)));       // iiiii
             break;
 
-        case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
-        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
-        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
-        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
-        case IF_SVE_FO_3A: // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
-        case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
-        case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
-        case IF_SVE_BD_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
-        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
-        case IF_SVE_EI_3A: // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
-        case IF_SVE_GJ_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
-        case IF_SVE_GN_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
-        case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
-        case IF_SVE_GW_3B: // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_BR_3B:   // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_EW_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_EW_3B:   // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_FN_3B:   // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+        case IF_SVE_FO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
+        case IF_SVE_AT_3B:   // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AU_3A:   // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
+        case IF_SVE_BD_3B:   // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_EF_3A:   // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
+        case IF_SVE_EI_3A:   // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
+        case IF_SVE_GJ_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
+        case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
+        case IF_SVE_GO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_GW_3B:   // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HA_3A:   // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_HA_3A_E: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
             assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
@@ -11384,6 +11387,39 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmmmm
             fmt = IF_SVE_GW_3B;
+            break;
+
+        case INS_sve_bfdot:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_HA_3A;
+            break;
+
+        case INS_sve_fdot:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                fmt = IF_SVE_HA_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_B)
+            {
+                unreached(); // TODO-SVE: Not yet supported.
+                fmt = IF_SVE_HA_3A_E;
+            }
+            else
+            {
+                unreached(); // TODO-SVE: Not yet supported.
+                assert(insOptsNone(opt));
+                fmt = IF_SVE_HA_3A_F;
+
+                // opt is set only for convenience in emitDispInsHelp
+                opt = INS_OPTS_SCALABLE_B;
+            }
             break;
 
         case INS_sve_eorbt:
@@ -23759,19 +23795,22 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
-        case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
-        case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
-        case IF_SVE_FO_3A: // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
-        case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
-        case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
-        case IF_SVE_BD_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
-        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
-        case IF_SVE_EI_3A: // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
-        case IF_SVE_GJ_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
-        case IF_SVE_GN_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
-        case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
-        case IF_SVE_GW_3B: // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_EW_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_BR_3B:   // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_FN_3B:   // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+        case IF_SVE_FO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
+        case IF_SVE_AT_3B:   // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AU_3A:   // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
+        case IF_SVE_BD_3B:   // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_EF_3A:   // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
+        case IF_SVE_EI_3A:   // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
+        case IF_SVE_GJ_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 crypto constructive binary operations
+        case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
+        case IF_SVE_GO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_GW_3B:   // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HA_3A:   // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_HA_3A_E: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
@@ -27526,7 +27565,8 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Zda>.H, <Zn>.B, <Zm>.B
-        case IF_SVE_GN_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
+        case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
+        case IF_SVE_HA_3A_E: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_H, true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmmmm
@@ -27785,9 +27825,11 @@ void emitter::emitDispInsHelp(
 
         // <Zda>.S, <Zn>.H, <Zm>.H
         case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
+        case IF_SVE_HA_3A: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
         // <Zda>.S, <Zn>.B, <Zm>.B
-        case IF_SVE_EI_3A: // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
-        case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_EI_3A:   // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
+        case IF_SVE_GO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmmmm
@@ -31288,19 +31330,39 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SVE_GU_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply-add (indexed)
-        case IF_SVE_GX_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply (indexed)
-        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
-        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
-        case IF_SVE_CA_3A: // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
-        case IF_SVE_EV_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer clamp
-        case IF_SVE_EX_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector elements (quadwords)
-        case IF_SVE_GW_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
-        case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
-        case IF_SVE_AB_3B: // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
-        case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
-        case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
-        case IF_SVE_GW_3B: // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HA_3A: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+            switch (ins)
+            {
+                case INS_sve_fdot:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_bfdot:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_GU_3C:   // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply-add (indexed)
+        case IF_SVE_GX_3C:   // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply (indexed)
+        case IF_SVE_EW_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_EW_3B:   // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_CA_3A:   // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
+        case IF_SVE_EV_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer clamp
+        case IF_SVE_EX_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector elements (quadwords)
+        case IF_SVE_GW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_AT_3B:   // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_AB_3B:   // ................ ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
+        case IF_SVE_HL_3B:   // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
+        case IF_SVE_GO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
+        case IF_SVE_GW_3B:   // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
+        case IF_SVE_HA_3A_E: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
