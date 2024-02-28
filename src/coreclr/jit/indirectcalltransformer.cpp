@@ -1030,7 +1030,7 @@ private:
             // The second one (given that we've already checked the first and failed)
             // is (0.3) / (1.0 - 0.5) = 0.6.
             //
-            // The third one is (0.1) / (1.0 - (0.5 + 0.2)) = 0.5
+            // The third one is (0.1) / (1.0 - (0.5 + 0.3)) = (0.1)/(0.2) = 0.5
             //
             // So to figure out the proper divisor, we start with 1.0 and subtract off each
             // preceeding test's likelihood of success.
