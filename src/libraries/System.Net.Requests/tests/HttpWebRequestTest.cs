@@ -2267,9 +2267,22 @@ namespace System.Net.Tests
                     // URI shouldn't matter because it should throw exception before connection open.
                     HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
                     request.ServicePoint.BindIPEndPointDelegate = (_, _, _) => (IPEndPoint)socket.LocalEndPoint!;
-                    var exception = await Assert.ThrowsAsync<WebException>(() =>
-                        bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
-                    Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
+                    try
+                    {
+                        if (bool.Parse(async))
+                        {
+                            await request.GetResponseAsync();
+                        }
+                        else
+                        {
+                            request.GetResponse();
+                        }
+                        Assert.Fail("Should throw OverflowException");
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.IsType<OverflowException>(ex.InnerException?.InnerException);
+                    }
                 }
                 finally
                 {
