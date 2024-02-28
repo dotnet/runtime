@@ -676,11 +676,11 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> %s (fltret)", dspBlockNum(bbTarget));
+            printf(" -> %s (fltret)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> %s (cret)", dspBlockNum(bbTarget));
+            printf(" -> %s (cret)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_THROW:
@@ -694,28 +694,28 @@ void BasicBlock::dspKind() const
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> %s (ALWAYS)", dspBlockNum(bbTarget));
+                printf(" -> %s (ALWAYS)", dspBlockNum(GetTarget()));
             }
             else
             {
-                printf(" -> %s (always)", dspBlockNum(bbTarget));
+                printf(" -> %s (always)", dspBlockNum(GetTarget()));
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> %s (leave)", dspBlockNum(bbTarget));
+            printf(" -> %s (leave)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> %s (callf)", dspBlockNum(bbTarget));
+            printf(" -> %s (callf)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_CALLFINALLYRET:
-            printf(" -> %s (callfr)", dspBlockNum(bbTarget));
+            printf(" -> %s (callfr)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_COND:
-            printf(" -> %s,%s (cond)", dspBlockNum(bbTrueTarget), dspBlockNum(bbFalseTarget));
+            printf(" -> %s,%s (cond)", dspBlockNum(GetTrueTarget()), dspBlockNum(GetFalseTarget()));
             break;
 
         case BBJ_SWITCH:
@@ -857,11 +857,16 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             SetEhf(from->GetEhfTargets());
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
+
+        // TransferTarget may be called after setting the source block of `from`'s
+        // successor edges to this block.
+        // This means calling GetTarget/GetTrueTarget/GetFalseTarget would trigger asserts.
+        // Avoid this by accessing the edges directly.
         case BBJ_COND:
-            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
+            SetCond(from->bbTrueEdge, from->bbFalseEdge);
             break;
         case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(BBJ_ALWAYS, from->bbTargetEdge);
             CopyFlags(from, BBF_NONE_QUIRK);
             break;
         case BBJ_CALLFINALLY:
@@ -869,10 +874,10 @@ void BasicBlock::TransferTarget(BasicBlock* from)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(from->GetKind(), from->bbTargetEdge);
             break;
         default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
+            SetKindAndTargetEdge(from->GetKind()); // Clear the target
             break;
     }
     assert(KindIs(from->GetKind()));
@@ -985,7 +990,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
-    return KindIs(BBJ_ALWAYS) ? bbTarget : nullptr;
+    return KindIs(BBJ_ALWAYS) ? GetTarget() : nullptr;
 }
 
 // Static vars.
@@ -1145,7 +1150,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTrueTarget == bbFalseTarget)
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1199,18 +1204,18 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTarget();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseTarget();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueTarget();
             }
 
         case BBJ_EHFINALLYRET:
@@ -1270,7 +1275,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTrueTarget == bbFalseTarget)
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1309,8 +1314,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     {
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == bbTarget);
-            return bbTarget;
+            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
+            return GetTarget();
 
         case BBJ_EHFINALLYRET:
             assert(bbEhfTargets != nullptr);
@@ -1322,18 +1327,18 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTarget();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseTarget();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueTarget();
             }
 
         case BBJ_SWITCH:
@@ -1585,15 +1590,10 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-
-    // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
-    // yet.
-    // The checks will be done any time the jump kind/target is read or written to after initialization.
-    block->bbKind   = kind;
-    block->bbTarget = target;
+    block->bbKind     = kind;
 
     if (block->KindIs(BBJ_THROW))
     {
