@@ -144,7 +144,7 @@ function InitializeDotNetCli {
   if [[ $global_json_has_runtimes == false && -n "${DOTNET_INSTALL_DIR:-}" && -d "$DOTNET_INSTALL_DIR/sdk/$dotnet_sdk_version" ]]; then
     dotnet_root="$DOTNET_INSTALL_DIR"
   else
-    dotnet_root="$repo_root/.dotnet"
+    dotnet_root="${repo_root}.dotnet"
 
     export DOTNET_INSTALL_DIR="$dotnet_root"
 
