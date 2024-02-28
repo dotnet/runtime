@@ -1094,6 +1094,50 @@ namespace System.Linq.Tests
             }
         }
 
+        [Fact]
+        public void WhereFirstLast()
+        {
+            Assert.All(IdentityTransforms<int>(), transform =>
+            {
+                IEnumerable<int> data = transform(Enumerable.Range(0, 10));
+
+                Assert.Equal(3, data.Where(i => i == 3).First());
+                Assert.Equal(0, data.Where(i => i % 2 == 0).First());
+
+                Assert.Equal(3, data.Where(i => i == 3).Last());
+                Assert.Equal(8, data.Where(i => i % 2 == 0).Last());
+
+                Assert.Equal(3, data.Where(i => i == 3).ElementAt(0));
+                Assert.Equal(8, data.Where(i => i % 2 == 0).ElementAt(4));
+
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).First());
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => data.Where(i => i == 10).ElementAt(0));
+            });
+        }
+
+        [Fact]
+        public void WhereSelectFirstLast()
+        {
+            Assert.All(IdentityTransforms<int>(), transform =>
+            {
+                IEnumerable<int> data = transform(Enumerable.Range(0, 10));
+
+                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).First());
+                Assert.Equal(0, data.Where(i => i % 2 == 0).Select(i => i * 2).First());
+
+                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).Last());
+                Assert.Equal(16, data.Where(i => i % 2 == 0).Select(i => i * 2).Last());
+
+                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).ElementAt(0));
+                Assert.Equal(16, data.Where(i => i % 2 == 0).Select(i => i * 2).ElementAt(4));
+
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Select(i => i * 2).First());
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Select(i => i * 2).Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => data.Where(i => i == 10).Select(i => i * 2).ElementAt(0));
+            });
+        }
+
         public static IEnumerable<object[]> ToCollectionData()
         {
             IEnumerable<int> seq = GenerateRandomSequnce(seed: 0xdeadbeef, count: 10);

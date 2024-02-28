@@ -251,6 +251,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Max(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<float>().Max());
             Assert.Throws<InvalidOperationException>(() => new List<float>().Max());
         }
@@ -331,6 +333,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Max(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<double>().Max());
             Assert.Throws<InvalidOperationException>(() => new List<double>().Max());
         }
@@ -397,6 +401,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Max(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<decimal>().Max());
             Assert.Throws<InvalidOperationException>(() => new List<decimal>().Max(x => x));
         }
@@ -622,6 +628,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max(i => i));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Max(i => i));
         }
 
         public static IEnumerable<object[]> Max_String_TestData()
@@ -888,6 +896,7 @@ namespace System.Linq.Tests
         public void Max_Boolean_EmptySource_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<bool>().Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<bool>()).Max());
         }
 
         [Fact]
