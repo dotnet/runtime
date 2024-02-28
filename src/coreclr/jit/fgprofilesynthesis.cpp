@@ -190,7 +190,7 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // AssignLikelihoodJump: update edge likelihood for a block that always
-//   transfers control to bbTarget
+//   transfers control to its target block
 //
 // Arguments;
 //   block -- block in question

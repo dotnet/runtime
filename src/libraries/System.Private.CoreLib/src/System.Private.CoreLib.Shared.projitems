@@ -1084,6 +1084,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\CryptographicException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IPermission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\ISecurityEncodable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IStackWalk.cs" />

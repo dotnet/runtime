@@ -332,7 +332,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #endif // !FEATURE_EH_FUNCLETS
 
     // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTarget - that is already used to point
+    // jump target using bbTargetEdge - that is already used to point
     // to the finally block. So just skip past the BBJ_CALLFINALLYRET unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))
@@ -2183,7 +2183,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -3057,7 +3056,7 @@ ALLOC_DONE:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
-    assert(storeBlkNode->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(storeBlkNode->OperIs(GT_STORE_BLK));
 
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
@@ -10806,9 +10805,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindEndProlog();
 
     // TODO We may need EBP restore sequence here if we introduce PSPSym
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+#endif
 }
 
 /*****************************************************************************
@@ -10827,8 +10829,10 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
+#ifdef UNIX_X86_ABI
     // Revert a padding that was added for 16-byte alignment
     inst_RV_IV(INS_add, REG_SPBASE, 12, EA_PTRSIZE);
+#endif
 
     instGen_Return(0);
 }
