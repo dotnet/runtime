@@ -24,7 +24,6 @@ parameters:
   iOSLlvmBuild: 'False'
   iOSStripSymbols: 'False'
   hybridGlobalization: 'False'
-  skipLiveLibrariesDownload: false
   collectHelixLogsScript: ''
   timeoutInMinutes: 320
   compare: false
@@ -79,11 +78,9 @@ jobs:
     ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
       dependsOn:
       - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT', 'wasm')) }}:
-        - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, 'coreclr') }}
       - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
-        - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, 'mono') }}
       - ${{ if eq(parameters.runtimeType, 'wasm')}}:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'browser', '', 'wasm', 'linux', parameters.buildConfig, parameters.runtimeType) }}
       - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
@@ -150,35 +147,6 @@ jobs:
         $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables
       displayName: Add Properties To Pipeline Env
 
-    # Optionally download live-built libraries
-    - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
-
-    # Download coreclr
-    - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT', 'wasm')) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(buildProductRootFolderPath)
-          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-          artifactName: '$(buildProductArtifactName)'
-          displayName: 'Coreclr product build'
-
-    # Download mono
-    - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)
-          cleanUnpackFolder: false
-          artifactFileName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
-          artifactName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
-          displayName: 'Mono runtime'
-
     # Download wasm
     - ${{ if eq(parameters.runtimeType, 'wasm') }}:
       - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
@@ -206,9 +174,15 @@ jobs:
           find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
+    - ${{ elseif eq(parameters.codeGenType, 'AOT') }}:
+      # Download mono AOT
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+          artifactName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr'
+          displayName: 'Runtime artifacts'
 
-    # Download mono AOT
-    - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/LinuxMonoAOT
@@ -218,9 +192,16 @@ jobs:
 
       - script: "mkdir -p $(librariesDownloadDir)/bin/aot;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/mono/linux.${{ parameters.archType }}.Release/cross/linux-${{ parameters.archType }}/* $(librariesDownloadDir)/bin/aot;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
         displayName: "Create aot directory (Linux)"
+    - ${{ elseif in(parameters.runtimeType, 'coreclr', 'mono') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+          artifactName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_${{ parameters.runtimeType }}'
+          displayName: 'Runtime artifacts'
 
-    # Download artifacts for Android Testing
-    - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
+    - ${{ elseif eq(parameters.runtimeType, 'AndroidMono')}}:
+      # Download artifacts for Android Testing
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/androidHelloWorld
@@ -237,7 +218,7 @@ jobs:
           displayName: 'Mono Android BDN Apk'
 
     # Download iOSMono and Native AOT tests
-    - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:
+    - ${{ elseif or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
@@ -286,12 +267,3 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
       displayName: Create Core_Root
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
-
-    # Copy the runtime directory into the testhost folder to include OOBs.
-    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\$(productVersion) /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\$(productVersion)\\corerun.exe"
-      displayName: "Create mono dotnet (Windows)"
-      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
-
-    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/$(productVersion) -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/$(productVersion)/corerun"
-      displayName: "Create mono dotnet (Linux)"
-      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))

@@ -5,7 +5,7 @@ jobs:
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
       platforms:
       - linux_x64
@@ -13,7 +13,19 @@ jobs:
       - windows_x86
       - linux_musl_x64
       jobParameters:
-        testGroup: perf
+        nameSuffix: coreclr
+        buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+        isOfficialBuild: false
+        postBuildSteps:
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+            displayName: Build Assets
 
   # build mono for AOT
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -64,11 +76,25 @@ jobs:
   # build mono
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-      runtimeFlavor: mono
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
+      runtimeFlavor: mono
       platforms:
       - linux_x64
+      jobParameters:
+        nameSuffix: mono
+        buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
+        isOfficialBuild: false
+        postBuildSteps:
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
+            displayName: Build Assets
 
   # Build and run iOS Mono and NativeAOT scenarios
   - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml

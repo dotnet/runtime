@@ -100,9 +100,6 @@ jobs:
         - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_osArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
-        # we need to override this value to support build-coreclr-and-libraries-job.yml
-        - _BuildConfig: ${{ parameters.buildConfig }}
-
       dependsOn:
       - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
         - evaluate_paths
