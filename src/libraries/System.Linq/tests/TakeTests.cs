@@ -2033,7 +2033,7 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         public void SkipTakeOnIListIsIList()
         {
             IList<int> list = new ReadOnlyCollection<int>(Enumerable.Range(0, 100).ToList());
