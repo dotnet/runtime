@@ -254,6 +254,13 @@ namespace System
             if (len == 0)
                 return;
 
+            // Mono works faster with Unsafe.InitBlockUnaligned
+#if MONO
+            if (len > 768)
+                goto PInvoke;
+            Unsafe.InitBlockUnaligned(ref dest, 0, (uint)len);
+            return;
+#else
             ref byte destEnd = ref Unsafe.Add(ref dest, len);
 
             if (len <= 16)
@@ -427,6 +434,7 @@ namespace System
             Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref destEnd, -4), 0);
 #endif
             return;
+#endif // MONO
 
         PInvoke:
             // Implicit nullchecks
@@ -498,24 +506,16 @@ namespace System
                 nuint stopLoopAtOffset = len & ~(nuint)7;
                 do
                 {
-                    Unsafe.Add(ref dest, (nint)i + 0) = value;
-                    Unsafe.Add(ref dest, (nint)i + 1) = value;
-                    Unsafe.Add(ref dest, (nint)i + 2) = value;
-                    Unsafe.Add(ref dest, (nint)i + 3) = value;
-                    Unsafe.Add(ref dest, (nint)i + 4) = value;
-                    Unsafe.Add(ref dest, (nint)i + 5) = value;
-                    Unsafe.Add(ref dest, (nint)i + 6) = value;
-                    Unsafe.Add(ref dest, (nint)i + 7) = value;
+                    // broadcast the value to all 8 bytes of the ulong and write it to memory
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, i), value * 0x101010101010101ul);
                 } while ((i += 8) < stopLoopAtOffset);
             }
 
             // Write next 4 elements if needed
             if ((len & 4) != 0)
             {
-                Unsafe.Add(ref dest, (nint)i + 0) = value;
-                Unsafe.Add(ref dest, (nint)i + 1) = value;
-                Unsafe.Add(ref dest, (nint)i + 2) = value;
-                Unsafe.Add(ref dest, (nint)i + 3) = value;
+                // broadcast the value to all 4 bytes of the uint and write it to memory
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, i), value * 0x1010101u);
                 i += 4;
             }
 

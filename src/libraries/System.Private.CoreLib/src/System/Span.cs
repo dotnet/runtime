@@ -300,6 +300,15 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Fill(T value)
         {
+            // Mono works faster with Unsafe.InitBlockUnaligned
+#if MONO
+            if (sizeof(T) == 1)
+            {
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), *(byte*)&value, (uint)_length);
+                return;
+            }
+#endif
+
             SpanHelpers.Fill(ref _reference, (uint)_length, value);
         }
 
