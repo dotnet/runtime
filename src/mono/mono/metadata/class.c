@@ -642,8 +642,6 @@ mono_type_is_valid_generic_argument (MonoType *type)
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_TYPEDBYREF:
 		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return !m_class_is_byreflike (type->data.klass);
 	default:
 		return TRUE;
 	}

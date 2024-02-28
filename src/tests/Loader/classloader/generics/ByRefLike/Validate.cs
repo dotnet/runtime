@@ -12,7 +12,6 @@ using Xunit;
 public class Validate
 {
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void Validate_TypeLoad()
     {
         Console.WriteLine($"{nameof(Validate_TypeLoad)}...");

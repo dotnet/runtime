@@ -12,7 +12,6 @@ using Xunit;
 public class GenericTypeSubstitution
 {
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void AllowByRefLike_Substituted_For_AllowByRefLike()
     {
         Console.WriteLine($"{nameof(AllowByRefLike_Substituted_For_AllowByRefLike)}...");
@@ -23,7 +22,6 @@ public class GenericTypeSubstitution
     }
 
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void NonByRefLike_Substituted_For_AllowByRefLike()
     {
         Console.WriteLine($" -- Instantiate: {Exec.TypeSubstitutionInterfaceImplementationNonByRefLike()}");
