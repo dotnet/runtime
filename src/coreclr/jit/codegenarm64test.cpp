@@ -6059,6 +6059,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_fmlalt, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
                               INS_OPTS_SCALABLE_B); // FMLALT <Zda>.H, <Zn>.B, <Zm>.B
 
+    // IF_SVE_GO_3A
+    theEmitter->emitIns_R_R_R(INS_sve_fmlallbb, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
+                              INS_OPTS_SCALABLE_B); // FMLALLBB <Zda>.S, <Zn>.B, <Zm>.B
+    theEmitter->emitIns_R_R_R(INS_sve_fmlallbt, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
+                              INS_OPTS_SCALABLE_B); // FMLALLBT <Zda>.S, <Zn>.B, <Zm>.B
+    theEmitter->emitIns_R_R_R(INS_sve_fmlalltb, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
+                              INS_OPTS_SCALABLE_B); // FMLALLTB <Zda>.S, <Zn>.B, <Zm>.B
+    theEmitter->emitIns_R_R_R(INS_sve_fmlalltt, EA_SCALABLE, REG_V9, REG_V10, REG_V11,
+                              INS_OPTS_SCALABLE_B); // FMLALLTT <Zda>.S, <Zn>.B, <Zm>.B
+
     // IF_SVE_GS_3A
     theEmitter->emitIns_R_R_R(INS_sve_faddqv, EA_8BYTE, REG_V16, REG_P0, REG_V12,
                               INS_OPTS_SCALABLE_H); // FADDQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
