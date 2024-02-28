@@ -517,8 +517,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT_ConvertToDouble:
         {
             if ((varTypeIsLong(simdBaseType) && IsBaselineVector512IsaSupportedOpportunistically()) ||
-                (simdBaseType == TYP_FLOAT && (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                 (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically())))
+                (simdBaseType == TYP_FLOAT && ((simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                                               (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically()))))
             {
                 break;
             }
