@@ -571,15 +571,20 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
-        try
+        //
+        // The certificate validation is an expensive operation and we don't want to delay MsQuic
+        // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
+        // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
+        // worker threads.
+        //
+
+        var task = _sslConnectionOptions.StartAsyncCertificateValidation((IntPtr)data.Certificate, (IntPtr)data.Chain);
+        if (task.IsCompletedSuccessfully)
         {
-            return _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
+            return task.Result ? QUIC_STATUS_SUCCESS : QUIC_STATUS_BAD_CERTIFICATE;
         }
-        catch (Exception ex)
-        {
-            _connectedTcs.TrySetException(ex);
-            return QUIC_STATUS_HANDSHAKE_FAILURE;
-        }
+
+        return QUIC_STATUS_PENDING;
     }
 
     private unsafe int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
