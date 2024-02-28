@@ -9,12 +9,12 @@
 #endif
 
 #if defined(_WIN32)
-extern "C" int __managed__Main(int argc, wchar_t* argv[]);
+extern "C" int __cdecl __managed__Main(int argc, wchar_t* argv[]);
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
 #endif
 
-extern "C" void IncrementExitCode(int32_t amount);
+extern "C" void __cdecl IncrementExitCode(int32_t amount);
 
 #if defined(_WIN32)
 int __cdecl wmain(int argc, wchar_t* argv[])

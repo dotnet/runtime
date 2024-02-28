@@ -216,15 +216,15 @@ static CrstStatic g_sListLock;
 static AllocHeap * g_pAllocHeap = NULL;
 
 // Each cache size has an associated stub used to perform lookup over that cache.
-extern "C" void RhpInterfaceDispatch1();
-extern "C" void RhpInterfaceDispatch2();
-extern "C" void RhpInterfaceDispatch4();
-extern "C" void RhpInterfaceDispatch8();
-extern "C" void RhpInterfaceDispatch16();
-extern "C" void RhpInterfaceDispatch32();
-extern "C" void RhpInterfaceDispatch64();
+extern "C" void __cdecl RhpInterfaceDispatch1();
+extern "C" void __cdecl RhpInterfaceDispatch2();
+extern "C" void __cdecl RhpInterfaceDispatch4();
+extern "C" void __cdecl RhpInterfaceDispatch8();
+extern "C" void __cdecl RhpInterfaceDispatch16();
+extern "C" void __cdecl RhpInterfaceDispatch32();
+extern "C" void __cdecl RhpInterfaceDispatch64();
 
-extern "C" void RhpVTableOffsetDispatch();
+extern "C" void __cdecl RhpVTableOffsetDispatch();
 
 typedef void (*InterfaceDispatchStub)();
 

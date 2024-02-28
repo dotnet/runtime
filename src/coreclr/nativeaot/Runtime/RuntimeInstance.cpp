@@ -344,7 +344,7 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void REDHAWK_CALLCONV RhpInitialDynamicInterfaceDispatch();
 
 COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterface, int32_t slotNumber))
 {

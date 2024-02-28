@@ -30,10 +30,6 @@
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
-
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
 
@@ -1132,7 +1128,7 @@ void Thread::ValidateExInfoStack()
 #ifndef DACCESS_COMPILE
 
 #ifndef TARGET_UNIX
-EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
+PREEMPT_PINVOKE_CDECL_HELPER(uint32_t, RhCompatibleReentrantWaitAny, (UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles))
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }

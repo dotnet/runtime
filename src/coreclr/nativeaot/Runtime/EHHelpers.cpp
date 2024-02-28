@@ -201,10 +201,10 @@ struct EXCEPTION_REGISTRATION_RECORD
 };
 #endif // HOST_X86
 
-EXTERN_C void __cdecl RhpFailFastForPInvokeExceptionPreemp(intptr_t PInvokeCallsiteReturnAddr,
-                                                           void* pExceptionRecord, void* pContextRecord);
-EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(intptr_t PInvokeCallsiteReturnAddr,
-                                                                  void* pExceptionRecord, void* pContextRecord);
+PREEMPT_PINVOKE_CDECL_HELPER(void, RhpFailFastForPInvokeExceptionPreemp, (intptr_t PInvokeCallsiteReturnAddr,
+                                                                          void* pExceptionRecord, void* pContextRecord));
+COOP_PINVOKE_HELPER_IMPORT(void, RhpFailFastForPInvokeExceptionCoop, (intptr_t PInvokeCallsiteReturnAddr,
+                                                                      void* pExceptionRecord, void* pContextRecord));
 int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
 EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
@@ -258,7 +258,7 @@ EXTERN_C int32_t RhpPInvokeExceptionGuard()
 #endif
 
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhpThrowHwEx();
+COOP_PINVOKE_HELPER(void, RhpThrowHwEx, (int exceptionCode, TADDR faultingIP));
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
 {

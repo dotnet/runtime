@@ -18,7 +18,7 @@
 // in a read on another thread getting incorrect data.
 // Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
 // USAGE:  The caller is responsible for null-checking the reference.
-COOP_PINVOKE_CDECL_HELPER(void *, RhpGcSafeZeroMemory, (void * mem, size_t size))
+COOP_PINVOKE_HELPER(void *, RhpGcSafeZeroMemory, (void * mem, size_t size))
 {
     // The caller must do the null-check because we cannot take an AV in the runtime and translate it to managed.
     ASSERT(mem != nullptr);

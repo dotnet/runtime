@@ -84,6 +84,7 @@ namespace System.Runtime
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static partial void RhWaitForPendingFinalizers(int allowReentrantWait);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -97,6 +98,7 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.
@@ -257,9 +259,11 @@ namespace System.Runtime
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
 
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -449,6 +453,7 @@ namespace System.Runtime
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -845,6 +850,307 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
+#if TARGET_X86
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double acos(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float acosf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double acosh(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float acoshf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double asin(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float asinf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double asinh(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float asinhf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double atan(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float atanf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double atan2(double y, double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float atan2f(float y, float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double atanh(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float atanhf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double cbrt(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float cbrtf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double ceil(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float ceilf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double cos(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float cosf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double cosh(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float coshf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double exp(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float expf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double floor(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float floorf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double log(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float logf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double log2(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float log2f(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double log10(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float log10f(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double pow(double x, double y);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float powf(float x, float y);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double sin(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float sinf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double sinh(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float sinhf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double sqrt(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float sqrtf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double tan(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float tanf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double tanh(double x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float tanhf(float x);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double fmod(double x, double y);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float fmodf(float x, float y);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double fma(double x, double y, double z);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float fmaf(float x, float y, float z);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static unsafe partial double modf(double x, double* intptr);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static unsafe partial float modff(float x, float* intptr);
+#else
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "acos")]
@@ -1094,11 +1400,14 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
+#endif
 
         [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
 
         [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
 #if TARGET_X86 || TARGET_AMD64

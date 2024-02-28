@@ -120,13 +120,11 @@ _RhpVTableOffsetDispatch endp
 
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-_RhpInitialInterfaceDispatch proc public
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
+ALTERNATE_ENTRY _RhpInitialInterfaceDispatch
 
         jmp RhpInterfaceDispatchSlow
-
-_RhpInitialInterfaceDispatch endp
-
+FASTCALL_ENDFUNC
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 
