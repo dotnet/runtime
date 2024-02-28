@@ -91,7 +91,11 @@ namespace System.Runtime.InteropServices
 
             list._version++;
 
-            if (count > list.Capacity)
+            if (list.Capacity == 0)
+            {
+                list._items = new T[count];
+            }
+            else if (count > list.Capacity)
             {
                 list.Grow(count);
             }
