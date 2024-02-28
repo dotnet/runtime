@@ -1713,8 +1713,8 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
 
-                            BindHelper(servicePoint, addresses, socket, context.DnsEndPoint.Port);
-                            static void BindHelper(ServicePoint servicePoint, IPAddress[] addresses, Socket socket, int port)
+                            BindHelper(servicePoint, ref addresses, socket, context.DnsEndPoint.Port);
+                            static void BindHelper(ServicePoint servicePoint, ref IPAddress[] addresses, Socket socket, int port)
                             {
                                 if (servicePoint.BindIPEndPointDelegate is null)
                                 {
@@ -1736,6 +1736,7 @@ namespace System.Net
                                         try
                                         {
                                             socket.Bind(endPoint);
+                                            addresses = [address];
                                             return; // Bind successful, exit loops.
                                         }
                                         catch
