@@ -1942,7 +1942,8 @@ interp_reorder_bblocks (TransformData *td)
 				InterpInst *last_ins = interp_last_ins (in_bb);
 				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
 						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
-						last_ins->info.target_bb == bb) {
+						last_ins->info.target_bb == bb &&
+						in_bb != bb) {
 					InterpBasicBlock *target_bb = first->info.target_bb;
 					last_ins->info.target_bb = target_bb;
 					interp_unlink_bblocks (in_bb, bb);
