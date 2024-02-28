@@ -278,7 +278,13 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     memcpy((BYTE*)pMT - cbGC, (BYTE*) pOldMT - cbGC, cbGC);
 
     // Allocate the private data block
-    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
+    MethodTableStaticsFlags staticsFlags = MethodTableStaticsFlags::None;
+    if (fHasGenericsStaticsInfo)
+        staticsFlags |= MethodTableStaticsFlags::Generic | MethodTableStaticsFlags::Present;
+    if (pOldMT->GetNumThreadStaticFields() > 0)
+        staticsFlags |= MethodTableStaticsFlags::Thread;
+
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, staticsFlags);
     pMT->SetModule(pOldMT->GetModule());
 
     // This also disables IBC logging until the type is sufficiently initialized so
@@ -336,15 +342,16 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (fContainsGenericVariables)
         pMT->SetContainsGenericVariables();
 
-    if (fHasGenericsStaticsInfo)
-        pMT->SetDynamicStatics(TRUE);
-
     // Since we are fabricating a new MT based on an existing one, the per-inst info should
     // be non-null
     _ASSERTE(pOldMT->HasPerInstInfo());
 
     // Fill in per-inst map pointer (which points to the array of generic dictionary pointers)
     pMT->SetPerInstInfo((MethodTable::PerInstInfoElem_t *) (pMemory + cbMT + cbOptional + cbIMap + sizeof(GenericsDictInfo)));
+
+    if (fHasGenericsStaticsInfo)
+        pMT->SetDynamicStatics();
+
     _ASSERTE(FitsIn<WORD>(pOldMT->GetNumDicts()));
     _ASSERTE(FitsIn<WORD>(pOldMT->GetNumGenericArgs()));
     pMT->SetDictInfo(static_cast<WORD>(pOldMT->GetNumDicts()), static_cast<WORD>(pOldMT->GetNumGenericArgs()));

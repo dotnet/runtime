@@ -123,18 +123,19 @@ enum CrstType
     CrstSystemDomain = 105,
     CrstSystemDomainDelayedUnloadList = 106,
     CrstThreadIdDispenser = 107,
-    CrstThreadStore = 108,
-    CrstTieredCompilation = 109,
-    CrstTypeEquivalenceMap = 110,
-    CrstTypeIDMap = 111,
-    CrstUMEntryThunkCache = 112,
-    CrstUMEntryThunkFreeListLock = 113,
-    CrstUniqueStack = 114,
-    CrstUnresolvedClassLock = 115,
-    CrstUnwindInfoTableLock = 116,
-    CrstVSDIndirectionCellLock = 117,
-    CrstWrapperTemplate = 118,
-    kNumberOfCrstTypes = 119
+    CrstThreadLocalStorageLock = 108,
+    CrstThreadStore = 109,
+    CrstTieredCompilation = 110,
+    CrstTypeEquivalenceMap = 111,
+    CrstTypeIDMap = 112,
+    CrstUMEntryThunkCache = 113,
+    CrstUMEntryThunkFreeListLock = 114,
+    CrstUniqueStack = 115,
+    CrstUnresolvedClassLock = 116,
+    CrstUnwindInfoTableLock = 117,
+    CrstVSDIndirectionCellLock = 118,
+    CrstWrapperTemplate = 119,
+    kNumberOfCrstTypes = 120
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -253,6 +254,7 @@ int g_rgCrstLevelMap[] =
     15,         // CrstSystemDomain
     0,          // CrstSystemDomainDelayedUnloadList
     0,          // CrstThreadIdDispenser
+    5,          // CrstThreadLocalStorageLock
     14,         // CrstThreadStore
     8,          // CrstTieredCompilation
     4,          // CrstTypeEquivalenceMap
@@ -377,6 +379,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstSystemDomain",
     "CrstSystemDomainDelayedUnloadList",
     "CrstThreadIdDispenser",
+    "CrstThreadLocalStorageLock",
     "CrstThreadStore",
     "CrstTieredCompilation",
     "CrstTypeEquivalenceMap",

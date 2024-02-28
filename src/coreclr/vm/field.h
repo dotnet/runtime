@@ -384,20 +384,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetNumGenericArgs();
     }
 
-   PTR_BYTE GetBaseInDomainLocalModule(DomainLocalModule * pLocalModule)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (GetFieldType() == ELEMENT_TYPE_CLASS || GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-        {
-            return pLocalModule->GetGCStaticsBasePointer(GetEnclosingMethodTable());
-        }
-        else
-        {
-            return pLocalModule->GetNonGCStaticsBasePointer(GetEnclosingMethodTable());
-        }
-    }
-
     PTR_BYTE GetBase()
     {
         CONTRACTL
@@ -409,7 +395,14 @@ public:
 
         MethodTable *pMT = GetEnclosingMethodTable();
 
-        return GetBaseInDomainLocalModule(pMT->GetDomainLocalModule());
+        if (GetFieldType() == ELEMENT_TYPE_CLASS || GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            return pMT->GetGCStaticsBasePointer();
+        }
+        else
+        {
+            return pMT->GetNonGCStaticsBasePointer();
+        }
     }
 
     // returns the address of the field
@@ -513,7 +506,10 @@ public:
         else {
             PTR_BYTE base = 0;
             if (!IsRVA()) // for RVA the base is ignored
+            {
+                GetEnclosingMethodTable()->EnsureStaticDataAllocated();
                 base = GetBase();
+            }
             return GetStaticAddress((void *)dac_cast<TADDR>(base));
         }
     }

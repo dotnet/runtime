@@ -1,361 +1,170 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// ThreadStatics.cpp
-//
-
-//
-//
-
-
 #include "common.h"
-
 #include "threadstatics.h"
-#include "field.h"
 
+struct TLSArray
+{
+    int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
+    TADDR pTLSArrayData; // Points at the Thread local array data.
+};
+typedef DPTR(TLSArray) PTR_TLSArray;
 
+// Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
+struct InFlightTLSData;
+typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
+struct InFlightTLSData
+{
 #ifndef DACCESS_COMPILE
+    InFlightTLSData(TLSIndex index, TADDR pTLSData) : pNext(NULL), tlsIndex(index), pTLSData(pTLSData) { }
+#endif // !DACCESS_COMPILE
+    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
+    TLSIndex tlsIndex; // The TLS index for the static
+    TADDR pTLSData; // The TLS data for the static
+};
 
-void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
+
+struct ThreadLocalLoaderAllocator
 {
-    CONTRACTL
+    ThreadLocalLoaderAllocator* pNext; // Points at the next thread local loader allocator
+    LoaderAllocator* pLoaderAllocator; // The loader allocator that has a TLS used in this thread
+};
+typedef DPTR(ThreadLocalLoaderAllocator) PTR_ThreadLocalLoaderAllocator;
+
+struct ThreadLocalData
+{
+    TLSArray tlsArray; // TLS data
+    Thread *pThread;
+    PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
+};
+
+// This can be used for out of thread access to TLS data. Since that isn't safe in general, we only support it for DAC.
+PTR_VOID GetThreadLocalStaticBaseNoCreate(PTR_ThreadLocalData pThreadLocalData, TLSIndex index)
+{
+    LIMITED_METHOD_CONTRACT;
+    TADDR pTLSBaseAddress = NULL;
+    PTR_TLSArray pTLSArray = dac_cast<PTR_TLSArray>(dac_cast<PTR_BYTE>(pThreadLocalData) + index.GetTLSArrayOffset());
+
+    int32_t cTLSData = pTLSArray->cTLSData;
+    if (cTLSData < index.GetByteIndex())
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        return NULL;
     }
-    CONTRACTL_END;
 
-    PTR_ThreadLocalModule pThreadLocalModule;
-
+    TADDR pTLSArrayData = pTLSArray->pTLSArrayData;
+    pTLSBaseAddress = *dac_cast<PTR_TADDR>(dac_cast<PTR_BYTE>(pTLSArrayData) + index.GetByteIndex());
+    if (pTLSBaseAddress == NULL)
     {
-        SpinLock::Holder lock(&m_TLMTableLock);
-
-        if ((m_pTLMTable == NULL) || (i >= m_TLMTableSize))
+        // Maybe it is in the InFlightData
+        PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
+        while (pInFlightData != NULL)
         {
-            return;
-        }
-        pThreadLocalModule = m_pTLMTable[i].pTLM;
-        m_pTLMTable[i].pTLM = NULL;
-    }
-
-    if (pThreadLocalModule != NULL)
-    {
-        if (pThreadLocalModule->m_pDynamicClassTable != NULL)
-        {
-            for (DWORD k = 0; k < pThreadLocalModule->m_aDynamicEntries; ++k)
+            if (pInFlightData->tlsIndex == index)
             {
-                if (pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry != NULL)
-                {
-                    if (isThreadShuttingdown && (pThreadLocalModule->m_pDynamicClassTable[k].m_dwFlags & ClassInitFlags::COLLECTIBLE_FLAG))
-                    {
-                        ThreadLocalModule::CollectibleDynamicEntry *entry = (ThreadLocalModule::CollectibleDynamicEntry*)pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
-                        PTR_LoaderAllocator pLoaderAllocator = entry->m_pLoaderAllocator;
-
-                        if (entry->m_hGCStatics != NULL)
-                        {
-                            pLoaderAllocator->FreeHandle(entry->m_hGCStatics);
-                        }
-                        if (entry->m_hNonGCStatics != NULL)
-                        {
-                            pLoaderAllocator->FreeHandle(entry->m_hNonGCStatics);
-                        }
-                    }
-                    delete pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
-                    pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry = NULL;
-                }
+                pTLSBaseAddress = pInFlightData->pTLSData;
+                break;
             }
-            delete[] pThreadLocalModule->m_pDynamicClassTable;
-            pThreadLocalModule->m_pDynamicClassTable = NULL;
+            pInFlightData = pInFlightData->pNext;
         }
-
-        delete pThreadLocalModule;
     }
+    return dac_cast<PTR_VOID>(pTLSBaseAddress);
 }
 
-void ThreadLocalBlock::FreeTable()
+GPTR_IMPL(TLSIndexToMethodTableMap, g_pThreadStaticTypeIndices);
+ 
+PTR_MethodTable LookupMethodTableForThreadStatic(TLSIndex index)
 {
-    CONTRACTL
+    // TODO, if and when we get array indices, we should be pickier.
+    TADDR flagsUnused;
+    return g_pThreadStaticTypeIndices->GetElement(index.TLSIndexRawIndex, &flagsUnused);
+}
+
+TADDR isGCFlag = 0x1;
+
+PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pIsGCStatic)
+{
+    // TODO, if and when we get array indices, we should be pickier.
+    TADDR flags;
+    PTR_MethodTable retVal = g_pThreadStaticTypeIndices->GetElement(index.TLSIndexRawIndex, &flags);
+    *pIsGCStatic = flags == isGCFlag;
+    return retVal;
+}
+
+void ScanThreadStaticRoots(PTR_ThreadLocalData pThreadLocalData, promote_func* fn, ScanContext* sc)
+{
+    PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
+    while (pInFlightData != NULL)
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        fn(dac_cast<PTR_PTR_Object>(pInFlightData->pTLSData), sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
+        pInFlightData = pInFlightData->pNext;
     }
-    CONTRACTL_END;
-    // Free the TLM table
-    if (m_pTLMTable != NULL)
+    PTR_BYTE pTLSArrayData = dac_cast<PTR_BYTE>(pThreadLocalData->tlsArray.pTLSArrayData);
+    int32_t cTLSData = pThreadLocalData->tlsArray.cTLSData;
+    for (int32_t i = 0; i < cTLSData; i += sizeof(TADDR))
     {
-        // Iterate over the table and free each TLM
-        for (SIZE_T i = 0; i < m_TLMTableSize; ++i)
+        TLSIndex index(i);
+        bool isGCStatic;
+        MethodTable *pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic);
+        if (pMT == NULL)
         {
-            if (m_pTLMTable[i].pTLM != NULL)
-            {
-                FreeTLM(i, TRUE /* isThreadShuttingDown */);
-            }
+            continue;
         }
-
-        SpinLock::Holder lock(&m_TLMTableLock);
-
-        // Free the table itself
-        delete[] m_pTLMTable;
-        m_pTLMTable = NULL;
-    }
-
-    // Set table size to zero
-    m_TLMTableSize = 0;
-
-    // Free the ThreadStaticHandleTable
-    if (m_pThreadStaticHandleTable != NULL)
-    {
-        delete m_pThreadStaticHandleTable;
-        m_pThreadStaticHandleTable = NULL;
-    }
-}
-
-void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (m_TLMTableSize > index.m_dwIndex)
-    {
-        _ASSERTE(m_pTLMTable != NULL);
-        return;
-    }
-
-    SIZE_T aModuleIndices = max(16, m_TLMTableSize);
-    while (aModuleIndices <= index.m_dwIndex)
-    {
-        aModuleIndices *= 2;
-    }
-
-    // If this allocation fails, we will throw. If it succeeds,
-    // then we are good to go
-    PTR_TLMTableEntry pNewModuleSlots = new TLMTableEntry[aModuleIndices];
-
-    // Zero out the new TLM table
-    memset(pNewModuleSlots, 0 , sizeof(TLMTableEntry) * aModuleIndices);
-
-    PTR_TLMTableEntry pOldModuleSlots = m_pTLMTable;
-
-    {
-        SpinLock::Holder lock(&m_TLMTableLock);
-
-        if (m_pTLMTable != NULL)
+        TADDR *pTLSBaseAddress = dac_cast<PTR_TADDR>(pTLSArrayData + i);
+        if (pTLSBaseAddress != NULL)
         {
-            memcpy(pNewModuleSlots, m_pTLMTable, sizeof(TLMTableEntry) * m_TLMTableSize);
+            fn(dac_cast<PTR_PTR_Object>(pTLSBaseAddress), sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
         }
-        else
-        {
-            _ASSERTE(m_TLMTableSize == 0);
-        }
-
-        m_pTLMTable = pNewModuleSlots;
-        m_TLMTableSize = aModuleIndices;
-    }
-
-    if (pOldModuleSlots != NULL)
-        delete[] pOldModuleSlots;
-}
-
-#endif
-
-void ThreadLocalBlock::SetModuleSlot(ModuleIndex index, PTR_ThreadLocalModule pLocalModule)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    // This method will not grow the table. You need to grow
-    // the table explicitly before calling SetModuleSlot()
-
-    _ASSERTE(index.m_dwIndex < m_TLMTableSize);
-
-    m_pTLMTable[index.m_dwIndex].pTLM = pLocalModule;
-}
-
-#ifdef DACCESS_COMPILE
-
-void
-ThreadLocalModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // Enumerate the ThreadLocalModule itself. TLMs are allocated to be larger than
-    // sizeof(ThreadLocalModule) to make room for ClassInit flags and non-GC statics.
-    // "DAC_ENUM_DTHIS()" probably does not account for this, so we might not enumerate
-    // all of the ClassInit flags and non-GC statics.
-    DAC_ENUM_DTHIS();
-
-    if (m_pDynamicClassTable != NULL)
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_pDynamicClassTable),
-                            m_aDynamicEntries * sizeof(DynamicClassInfo));
-
-        for (SIZE_T i = 0; i < m_aDynamicEntries; i++)
-        {
-            PTR_DynamicEntry entry = dac_cast<PTR_DynamicEntry>(m_pDynamicClassTable[i].m_pDynamicEntry);
-            if (entry.IsValid())
-            {
-                entry.EnumMem();
-            }
-        }
-    }
-}
-
-void
-ThreadLocalBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // Enumerate the ThreadLocalBlock itself
-    DAC_ENUM_DTHIS();
-
-    if (m_pTLMTable.IsValid())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_pTLMTable),
-                            m_TLMTableSize * sizeof(TADDR));
-
-        for (SIZE_T i = 0; i < m_TLMTableSize; i++)
-        {
-            PTR_ThreadLocalModule domMod = m_pTLMTable[i].pTLM;
-            if (domMod.IsValid())
-            {
-                domMod->EnumMemoryRegions(flags);
-            }
-        }
-    }
-}
-
-#endif
-
-DWORD ThreadLocalModule::GetClassFlags(MethodTable* pMT, DWORD iClassIndex) // iClassIndex defaults to (DWORD)-1
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (pMT->IsDynamicStatics())
-    {
-        DWORD dynamicClassID = pMT->GetModuleDynamicEntryID();
-        if(m_aDynamicEntries <= dynamicClassID)
-            return FALSE;
-        return (m_pDynamicClassTable[dynamicClassID].m_dwFlags);
-    }
-    else
-    {
-        if (iClassIndex == (DWORD)-1)
-            iClassIndex = pMT->GetClassIndex();
-        return GetPrecomputedStaticsClassData()[iClassIndex];
     }
 }
 
 #ifndef DACCESS_COMPILE
+#ifdef _MSC_VER
+__declspec(thread)  ThreadLocalData t_ThreadStatics;
+#else
+__thread ThreadLocalData t_ThreadStatics;
+#endif // _MSC_VER
 
-void ThreadLocalModule::SetClassFlags(MethodTable* pMT, DWORD dwFlags)
+void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
 {
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
+    TADDR pTLSBaseAddress = NULL;
+    TLSArray* pTLSArray = reinterpret_cast<TLSArray*>((uint8_t*)&t_ThreadStatics + index.GetTLSArrayOffset());
 
-    if (pMT->IsDynamicStatics())
+    int32_t cTLSData = pTLSArray->cTLSData;
+    if (cTLSData < index.GetByteIndex())
     {
-        DWORD dwID = pMT->GetModuleDynamicEntryID();
-        EnsureDynamicClassIndex(dwID);
-        m_pDynamicClassTable[dwID].m_dwFlags |= dwFlags;
+        return NULL;
     }
-    else
-    {
-        GetPrecomputedStaticsClassData()[pMT->GetClassIndex()] |= dwFlags;
-    }
+
+    TADDR pTLSArrayData = pTLSArray->pTLSArrayData;
+    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
+    return reinterpret_cast<void*>(pTLSBaseAddress);
 }
 
-void ThreadLocalBlock::AllocateThreadStaticHandles(Module * pModule, PTR_ThreadLocalModule pThreadLocalModule)
+uint32_t g_NextTLSSlot = (uint32_t)sizeof(TADDR);
+CrstStatic g_TLSCrst;
+
+void InitializeThreadStaticData()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pThreadLocalModule->GetPrecomputedGCStaticsBaseHandleAddress() != NULL);
-    _ASSERTE(pThreadLocalModule->GetPrecomputedGCStaticsBaseHandle() == NULL);
-
-    if (pModule->GetNumGCThreadStaticHandles() > 0)
-    {
-        AllocateStaticFieldObjRefPtrs(pModule->GetNumGCThreadStaticHandles(),
-                                      pThreadLocalModule->GetPrecomputedGCStaticsBaseHandleAddress());
-
-        // We should throw if we fail to allocate and never hit this assert
-        _ASSERTE(pThreadLocalModule->GetPrecomputedGCStaticsBaseHandle() != NULL);
-        _ASSERTE(pThreadLocalModule->GetPrecomputedGCStaticsBasePointer() != NULL);
-    }
+    g_pThreadStaticTypeIndices = new TLSIndexToMethodTableMap();
+    g_pThreadStaticTypeIndices->supportedFlags = isGCFlag;
+    g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
 
-OBJECTHANDLE ThreadLocalBlock::AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTHANDLE * ppLazyAllocate)
+void InitializeCurrentThreadsStaticData(Thread* pThread)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION((nRequested > 0));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (ppLazyAllocate && *ppLazyAllocate)
-    {
-        // Allocation already happened
-        return *ppLazyAllocate;
-    }
-
-    // Make sure the large heap handle table is initialized.
-    if (!m_pThreadStaticHandleTable)
-        InitThreadStaticHandleTable();
-
-    // Allocate the handles.
-    OBJECTHANDLE result = m_pThreadStaticHandleTable->AllocateHandles(nRequested);
-
-    if (ppLazyAllocate)
-    {
-        *ppLazyAllocate = result;
-    }
-
-    return result;
+    pThread->m_pThreadLocalData = &t_ThreadStatics;
+    t_ThreadStatics.pThread = pThread;
 }
 
-void ThreadLocalBlock::InitThreadStaticHandleTable()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(m_pThreadStaticHandleTable==NULL);
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // If the allocation fails this will throw; callers need
-    // to account for this possibility
-    m_pThreadStaticHandleTable = new ThreadStaticHandleTable(GetAppDomain());
-}
-
-void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
+void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pMT->GetNumBoxedThreadStatics() > 0);
+        PRECONDITION(pMT->GetClass()->GetNumBoxedThreadStatics() > 0); // TODO, should be HasBoxedThreadStatics()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -379,289 +188,281 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
             MethodTable* pFieldMT = th.GetMethodTable();
 
             OBJECTREF obj = MethodTable::AllocateStaticBox(pFieldMT, pMT->HasFixedAddressVTStatics());
-
-            PTR_BYTE pStaticBase = pMT->GetGCThreadStaticsBasePointer();
-            _ASSERTE(pStaticBase != NULL);
-
-            SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj );
+            (*ppRef)->SetAt(pField->GetOffset(), obj);
         }
 
         pField++;
     }
 }
 
-#endif
+void FreeCurrentThreadStaticData()
+{
+    delete[] (uint8_t*)t_ThreadStatics.tlsArray.pTLSArrayData;
 
-#ifndef DACCESS_COMPILE
+    t_ThreadStatics.tlsArray.pTLSArrayData = 0;
 
-void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
+    while (t_ThreadStatics.pInFlightData != NULL)
+    {
+        InFlightTLSData* pInFlightData = t_ThreadStatics.pInFlightData;
+        t_ThreadStatics.pInFlightData = pInFlightData->pNext;
+        delete pInFlightData;
+    }
+
+    t_ThreadStatics.pThread = NULL;
+}
+
+void* GetThreadLocalStaticBase(TLSIndex index)
 {
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    if (dwID < m_aDynamicEntries)
+    TLSArray* pTLSArray = reinterpret_cast<TLSArray*>((uint8_t*)&t_ThreadStatics + index.GetTLSArrayOffset());
+
+    int32_t cTLSData = pTLSArray->cTLSData;
+    if (cTLSData < index.GetByteIndex())
     {
-        _ASSERTE(m_pDynamicClassTable != NULL);
+        // Grow the underlying TLS array
+        CrstHolder ch(&g_TLSCrst);
+        int32_t newcTLSData = index.GetByteIndex() + sizeof(TADDR) * 8; // Leave a bit of margin
+        uint8_t* pNewTLSArrayData = new uint8_t[newcTLSData];
+        memset(pNewTLSArrayData, 0, newcTLSData);
+        if (cTLSData > 0)
+            memcpy(pNewTLSArrayData, (void*)pTLSArray->pTLSArrayData, cTLSData + 1);
+        uint8_t* pOldArray = (uint8_t*)pTLSArray->pTLSArrayData;
+        pTLSArray->pTLSArrayData = (TADDR)pNewTLSArrayData;
+        cTLSData = newcTLSData - 1;
+        pTLSArray->cTLSData = cTLSData;
+        delete[] pOldArray;
+    }
+
+    TADDR pTLSArrayData = pTLSArray->pTLSArrayData;
+    TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
+    TADDR pTLSBaseAddress = *ppTLSBaseAddress;
+
+    if (pTLSBaseAddress == NULL)
+    {
+        // Maybe it is in the InFlightData
+        InFlightTLSData* pInFlightData = t_ThreadStatics.pInFlightData;
+        InFlightTLSData** ppOldNextPtr = &t_ThreadStatics.pInFlightData;
+        while (pInFlightData != NULL)
+        {
+            if (pInFlightData->tlsIndex == index)
+            {
+                pTLSBaseAddress = pInFlightData->pTLSData;
+                MethodTable *pMT = LookupMethodTableForThreadStatic(index);
+                if (pMT->IsClassInited())
+                {
+                    *ppTLSBaseAddress = pTLSBaseAddress;
+                    *ppOldNextPtr = pInFlightData->pNext;
+                    delete pInFlightData;
+                }
+                break;
+            }
+            ppOldNextPtr = &pInFlightData->pNext;
+            pInFlightData = pInFlightData->pNext;
+        }
+        if (pTLSBaseAddress == NULL)
+        {
+            // Now we need to actually allocate the TLS data block
+            bool isGCStatic;
+            MethodTable *pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic);
+            struct 
+            {
+                PTRARRAYREF ptrRef;
+                OBJECTREF tlsEntry;
+            } gc;
+            memset(&gc, 0, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+            if (isGCStatic)
+            {
+                gc.ptrRef = AllocateObjectArray(pMT->GetClass()->GetNumHandleThreadStatics(), g_pObjectClass);
+                if (pMT->GetClass()->GetNumBoxedThreadStatics() > 0)
+                {
+                    AllocateThreadStaticBoxes(pMT, &gc.ptrRef);
+                }
+                gc.tlsEntry = (OBJECTREF)gc.ptrRef;
+            }
+            else
+            {
+                gc.tlsEntry = AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(pMT->GetClass()->GetNonGCThreadStaticFieldBytes()));
+            }
+
+            {
+                GCX_FORBID();
+                pTLSBaseAddress = (TADDR)OBJECTREFToObject(gc.tlsEntry);
+                if (pMT->IsClassInited())
+                {
+                    *ppTLSBaseAddress = pTLSBaseAddress;
+                }
+                else
+                {
+                    InFlightTLSData* pInFlightData = new InFlightTLSData(index, pTLSBaseAddress);
+                    pInFlightData->pNext = t_ThreadStatics.pInFlightData;
+                    t_ThreadStatics.pInFlightData = pInFlightData;
+                }
+            }
+            GCPROTECT_END();
+        }
+    }
+    _ASSERTE(pTLSBaseAddress != NULL);
+    return reinterpret_cast<void*>(pTLSBaseAddress);
+}
+
+void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex)
+{
+    WRAPPER_NO_CONTRACT;
+    CrstHolder ch(&g_TLSCrst);
+    if (pIndex->IsAllocated())
+    {
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, m_aDynamicEntries);
-    while (aDynamicEntries <= dwID)
-    {
-        aDynamicEntries *= 2;
-    }
+    uint32_t tlsRawIndex = g_NextTLSSlot;
+    g_NextTLSSlot += (uint32_t)sizeof(TADDR);
+    g_pThreadStaticTypeIndices->AddElement(g_pObjectClass->GetModule(), tlsRawIndex, pMT, (gcStatic ? isGCFlag : 0));
 
-    DynamicClassInfo* pNewDynamicClassTable;
-
-    // If this allocation fails, we throw. If it succeeds,
-    // then we are good to go
-    pNewDynamicClassTable = new DynamicClassInfo[aDynamicEntries];
-
-    // Zero out the dynamic class table
-    memset(pNewDynamicClassTable, 0, sizeof(DynamicClassInfo) * aDynamicEntries);
-
-    // We might always be guaranteed that this will be non-NULL, but just to be safe
-    if (m_pDynamicClassTable != NULL)
-    {
-        memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * m_aDynamicEntries);
-    }
-    else
-    {
-        _ASSERTE(m_aDynamicEntries == 0);
-    }
-
-    _ASSERTE(m_aDynamicEntries%2 == 0);
-
-    DynamicClassInfo* pOldDynamicClassTable = m_pDynamicClassTable;
-
-    m_pDynamicClassTable = pNewDynamicClassTable;
-    m_aDynamicEntries = aDynamicEntries;
-
-    if (pOldDynamicClassTable != NULL)
-        delete[] pOldDynamicClassTable;
+    // TODO Handle collectible cases
+    *pIndex = TLSIndex(tlsRawIndex);
 }
 
-void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
+#if defined(TARGET_WINDOWS)
+EXTERN_C uint32_t _tls_index;
+/*********************************************************************/
+static uint32_t ThreadLocalOffset(void* p)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-    _ASSERTE(pMT->IsDynamicStatics());
-
-    DWORD dwID = pMT->GetModuleDynamicEntryID();
-
-    EnsureDynamicClassIndex(dwID);
-
-    _ASSERTE(m_aDynamicEntries > dwID);
-
-    EEClass *pClass = pMT->GetClass();
-    DWORD dwStaticBytes = pClass->GetNonGCThreadStaticFieldBytes();
-    DWORD dwNumHandleStatics = pClass->GetNumHandleThreadStatics();
-
-    _ASSERTE(!IsClassAllocated(pMT));
-    _ASSERTE(!IsClassInitialized(pMT));
-    _ASSERTE(!IsClassInitError(pMT));
-
-    DynamicEntry *pDynamicStatics = m_pDynamicClassTable[dwID].m_pDynamicEntry;
-
-    // We need this check because maybe a class had a cctor but no statics
-    if (dwStaticBytes > 0 || dwNumHandleStatics > 0)
-    {
-        if (pDynamicStatics == NULL)
-        {
-            // If these allocations fail, we will throw
-            if (pMT->Collectible())
-            {
-                pDynamicStatics = new CollectibleDynamicEntry(pMT->GetLoaderAllocator());
-            }
-            else
-            {
-                pDynamicStatics = new({dwStaticBytes}) NormalDynamicEntry();
-            }
-
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // The memory block has be aligned at MAX_PRIMITIVE_FIELD_SIZE to guarantee alignment of statics
-            static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
-            _ASSERTE(IS_ALIGNED(pDynamicStatics, MAX_PRIMITIVE_FIELD_SIZE));
-#endif
-
-            // Save the DynamicEntry in the DynamicClassTable
-            m_pDynamicClassTable[dwID].m_pDynamicEntry = pDynamicStatics;
-        }
-
-        if (pMT->Collectible() && (dwStaticBytes != 0))
-        {
-            OBJECTREF nongcStaticsArray = NULL;
-            GCPROTECT_BEGIN(nongcStaticsArray);
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // Allocate memory with extra alignment only if it is really necessary
-            if (dwStaticBytes >= MAX_PRIMITIVE_FIELD_SIZE)
-                nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_I8, (dwStaticBytes + (sizeof(CLR_I8) - 1)) / (sizeof(CLR_I8)));
-            else
-#endif
-                nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_U1, dwStaticBytes);
-
-            ((CollectibleDynamicEntry *)pDynamicStatics)->m_hNonGCStatics = pMT->GetLoaderAllocator()->AllocateHandle(nongcStaticsArray);
-            GCPROTECT_END();
-        }
-
-        if (dwNumHandleStatics > 0)
-        {
-            if (!pMT->Collectible())
-            {
-                GetThread()->m_ThreadLocalBlock.AllocateStaticFieldObjRefPtrs(dwNumHandleStatics,
-                        &((NormalDynamicEntry *)pDynamicStatics)->m_pGCStatics);
-            }
-            else
-            {
-                OBJECTREF gcStaticsArray = NULL;
-                GCPROTECT_BEGIN(gcStaticsArray);
-                gcStaticsArray = AllocateObjectArray(dwNumHandleStatics, g_pObjectClass);
-                ((CollectibleDynamicEntry *)pDynamicStatics)->m_hGCStatics = pMT->GetLoaderAllocator()->AllocateHandle(gcStaticsArray);
-                GCPROTECT_END();
-            }
-        }
-    }
+    PTEB Teb = NtCurrentTeb();
+    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
+    uint8_t* pOurTls = pTls[_tls_index];
+    return (uint32_t)((uint8_t*)p - pOurTls);
 }
+#elif defined(TARGET_OSX)
+extern "C" void* GetThreadVarsAddress();
 
-void ThreadLocalModule::PopulateClass(MethodTable *pMT)
+static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
+    _ASSERT(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d);
 
-    _ASSERTE(this != NULL);
-    _ASSERTE(pMT != NULL);
-    _ASSERTE(!IsClassAllocated(pMT));
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 3;
 
-    // If this is a dynamic class then we need to allocate
-    // an entry in our dynamic class table
-    if (pMT->IsDynamicStatics())
-        AllocateDynamicClass(pMT);
-
-    if (pMT->Collectible())
-    {
-        SetClassFlags(pMT, ClassInitFlags::COLLECTIBLE_FLAG);
-    }
-
-    // We need to allocate boxes any value-type statics that are not
-    // primitives or enums, because these statics may contain references
-    // to objects on the GC heap
-    if (pMT->GetNumBoxedThreadStatics() > 0)
-    {
-        PTR_ThreadLocalBlock pThreadLocalBlock = ThreadStatics::GetCurrentTLB();
-        _ASSERTE(pThreadLocalBlock != NULL);
-        pThreadLocalBlock->AllocateThreadStaticBoxes(pMT);
-    }
-
-    // Mark the class as allocated
-    SetClassAllocated(pMT);
+    // The descriptor address is located at *p at this point.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
 }
 
-PTR_ThreadLocalModule ThreadStatics::AllocateAndInitTLM(ModuleIndex index, PTR_ThreadLocalBlock pThreadLocalBlock, Module * pModule) //static
+static void* GetThreadVarsSectionAddress()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    pThreadLocalBlock->EnsureModuleIndex(index);
-
-    _ASSERTE(pThreadLocalBlock != NULL);
-    _ASSERTE(pModule != NULL);
-
-    NewHolder<ThreadLocalModule> pThreadLocalModule = AllocateTLM(pModule);
-
-    pThreadLocalBlock->AllocateThreadStaticHandles(pModule, pThreadLocalModule);
-
-    pThreadLocalBlock->SetModuleSlot(index, pThreadLocalModule);
-    pThreadLocalModule.SuppressRelease();
-
-    return pThreadLocalModule;
+#ifdef TARGET_AMD64
+    // On x64, the address is related to rip, so, disassemble the function,
+    // read the offset, and then relative to the IP, find the final address of
+    // __thread_vars section.
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
+    return GetThreadVarsSectionAddressFromDesc(p);
+#else
+    return GetThreadVarsAddress();
+#endif // TARGET_AMD64
 }
 
+#else
 
-PTR_ThreadLocalModule ThreadStatics::GetTLM(ModuleIndex index, Module * pModule) //static
+// Linux
+
+#ifdef TARGET_AMD64
+
+extern "C" void* GetTlsIndexObjectDescOffset();
+
+static void* GetThreadStaticDescriptor(uint8_t* p)
 {
-    CONTRACTL
+    if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Get the TLM if it already exists
-    PTR_ThreadLocalModule pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM does not exist, create it now
-    if (pThreadLocalModule == NULL)
-    {
-        // Get the current ThreadLocalBlock
-        PTR_ThreadLocalBlock pThreadLocalBlock = ThreadStatics::GetCurrentTLB();
-        _ASSERTE(pThreadLocalBlock != NULL);
-
-        // Allocate and initialize the TLM, and add it to the TLB's table
-        pThreadLocalModule = AllocateAndInitTLM(index, pThreadLocalBlock, pModule);
+        // The optimization is disabled if coreclr is not compiled in .so format.
+        _ASSERTE(false && "Unexpected code sequence");
+        return nullptr;
     }
 
-    return pThreadLocalModule;
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 4;
+
+    // The descriptor address is located at *p at this point. Read that and add
+    // it to the instruction pointer to locate the address of `ti` that will be used
+    // to pass to __tls_get_addr during execution.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
 }
 
-PTR_ThreadLocalModule ThreadStatics::GetTLM(MethodTable * pMT) //static
+static void* GetTlsIndexObjectAddress()
 {
-    Module * pModule = pMT->GetModuleForStatics();
-    return GetTLM(pModule->GetModuleIndex(), pModule);
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
+    return GetThreadStaticDescriptor(p);
 }
 
-PTR_ThreadLocalModule ThreadStatics::AllocateTLM(Module * pModule)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+extern "C" size_t GetThreadStaticsVariableOffset();
+
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_WINDOWS
+
+void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
+    size_t threadStaticBaseOffset = 0;
 
+#if defined(TARGET_WINDOWS)
+    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
+    pInfo->tlsIndex.accessType = IAT_VALUE;
 
-    SIZE_T size = pModule->GetThreadLocalModuleSize();
+    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+    threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
 
-    PTR_ThreadLocalModule pThreadLocalModule = new({ pModule }) ThreadLocalModule;
+#elif defined(TARGET_OSX)
 
-    // We guarantee alignment for 64-bit regular thread statics on 32-bit platforms even without FEATURE_64BIT_ALIGNMENT for performance reasons.
+    pInfo->threadVarsSection = GetThreadVarsSectionAddress();
 
-    // The memory block has to be aligned at MAX_PRIMITIVE_FIELD_SIZE to guarantee alignment of statics
-    _ASSERTE(IS_ALIGNED(pThreadLocalModule, MAX_PRIMITIVE_FIELD_SIZE));
+#elif defined(TARGET_AMD64)
 
-    // Zero out the part of memory where the TLM resides
-    memset(pThreadLocalModule, 0, size);
+    // For Linux/x64, get the address of tls_get_addr system method and the base address
+    // of struct that we will pass to it.
+    pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
+    pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
 
-    return pThreadLocalModule;
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+    // For Linux arm64/loongarch64/riscv64, just get the offset of thread static variable, and during execution,
+    // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
+    // this offset, loongarch64 taken from $tp register gives back the thread variable address.
+    threadStaticBaseOffset = GetThreadStaticsVariableOffset();
+
+#else
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+#endif // TARGET_WINDOWS
+
+    pInfo->offsetOfThreadStaticBlocks = (uint32_t)threadStaticBaseOffset;
 }
+#endif // !DACCESS_COMPILE
 
-#endif
+#ifdef DACCESS_COMPILE
+void EnumThreadMemoryRegions(PTR_ThreadLocalData pThreadLocalData, CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData), sizeof(ThreadLocalData), flags);
+    DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData->tlsArray.pTLSArrayData), pThreadLocalData->tlsArray.cTLSData, flags);
+    PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
+    while (pInFlightData != NULL)
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(pInFlightData), sizeof(InFlightTLSData), flags);
+        pInFlightData = pInFlightData->pNext;
+    }
+}
+#endif // DACCESS_COMPILE

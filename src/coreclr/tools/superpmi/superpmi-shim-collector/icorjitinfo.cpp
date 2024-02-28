@@ -541,16 +541,6 @@ void interceptor_ICJI::LongLifetimeFree(void* obj)
     original_ICorJitInfo->LongLifetimeFree(obj);
 }
 
-size_t interceptor_ICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
-                                                    CORINFO_MODULE_HANDLE* pModule,
-                                                    void**                 ppIndirection)
-{
-    mc->cr->AddCall("getClassModuleIdForStatics");
-    size_t temp = original_ICorJitInfo->getClassModuleIdForStatics(cls, pModule, ppIndirection);
-    mc->recGetClassModuleIdForStatics(cls, pModule, ppIndirection, temp);
-    return temp;
-}
-
 bool interceptor_ICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
                                                    CORINFO_CONST_LOOKUP* addr,
                                                    int*                  offset)
@@ -1073,11 +1063,11 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, b
     return result;
 }
 
-void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
-    mc->recGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    mc->recGetThreadLocalStaticBlocksInfo(pInfo);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1608,15 +1598,6 @@ void interceptor_ICJI::getCallInfo(
         mc->recGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
                            exceptionCode);
     });
-}
-
-// returns the class's domain ID for accessing shared statics
-unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
-{
-    mc->cr->AddCall("getClassDomainID");
-    unsigned temp = original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
-    mc->recGetClassDomainID(cls, ppIndirection, temp);
-    return temp;
 }
 
 bool interceptor_ICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)

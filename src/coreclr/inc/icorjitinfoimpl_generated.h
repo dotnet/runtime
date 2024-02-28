@@ -211,11 +211,6 @@ void* LongLifetimeMalloc(
 void LongLifetimeFree(
           void* obj) override;
 
-size_t getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection) override;
-
 bool getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
@@ -399,8 +394,7 @@ uint32_t getThreadLocalFieldInfo(
           bool isGCtype) override;
 
 void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType) override;
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
@@ -581,10 +575,6 @@ void getCallInfo(
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CALLINFO_FLAGS flags,
           CORINFO_CALL_INFO* pResult) override;
-
-unsigned getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection) override;
 
 bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,

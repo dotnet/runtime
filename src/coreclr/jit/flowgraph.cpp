@@ -708,56 +708,46 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // We need the return type.
     switch (helper)
     {
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             // type = TYP_BYREF;
             break;
 
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             type = TYP_I_IMPL;
+            break;
+
+        case CORINFO_HELP_INITCLASS:
+            type = TYP_VOID;
             break;
 
         default:
             assert(!"unknown shared statics helper");
             break;
     }
-
-    GenTree* opModuleIDArg;
-    GenTree* opClassIDArg;
-
-    // Get the class ID
-    unsigned clsID;
-    size_t   moduleID;
-    void*    pclsID;
-    void*    pmoduleID;
-
-    clsID = info.compCompHnd->getClassDomainID(cls, &pclsID);
-
-    moduleID = info.compCompHnd->getClassModuleIdForStatics(cls, nullptr, &pmoduleID);
 
     if (!(callFlags & GTF_CALL_HOISTABLE))
     {
@@ -767,37 +757,16 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
     }
 
-    if (pmoduleID)
-    {
-        opModuleIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pmoduleID, GTF_ICON_CIDMID_HDL, true);
-    }
-    else
-    {
-        opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
-    }
-
     GenTreeCall* result;
-    if (bNeedClassID)
-    {
-        if (pclsID)
-        {
-            opClassIDArg = gtNewIndOfIconHandleNode(TYP_INT, (size_t)pclsID, GTF_ICON_CIDMID_HDL, true);
-        }
-        else
-        {
-            opClassIDArg = gtNewIconNode(clsID, TYP_INT);
-        }
 
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
-    }
-    else if ((helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-             (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+    if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+             (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
     else
     {
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg);
+        result = gtNewHelperCallNode(helper, type, gtNewIconEmbClsHndNode(cls)); // TODO, handle the PINNED/DYNAMIC cases
     }
 
     if (IsStaticHelperEligibleForExpansion(result))

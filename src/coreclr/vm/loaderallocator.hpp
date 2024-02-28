@@ -730,6 +730,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_nGCCount;
     }
+    void AllocateBytesForStaticVariables(uint8_t** ppbMem, uint32_t cbMem);
+    void AllocateGCHandlesBytesForStaticVariables(PTR_OBJECTREF* ppbObjectMem, uint32_t cSlots, MethodTable* pMTWithStaticBoxes);
 
     static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 

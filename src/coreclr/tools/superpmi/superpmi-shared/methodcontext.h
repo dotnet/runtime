@@ -478,9 +478,9 @@ public:
     void     dmpGetThreadLocalFieldInfo(DLD key, DWORD value);
     uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType);
 
-    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
-    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
@@ -581,10 +581,6 @@ public:
     void recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result);
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
-
-    void recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result);
-    void dmpGetClassDomainID(DWORDLONG key, DLD value);
-    unsigned repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection);
 
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
@@ -975,7 +971,7 @@ enum mcPackets
     Packet_GetChildType = 39,
     Packet_GetClassAlignmentRequirement = 40,
     Packet_GetClassAttribs = 41,
-    Packet_GetClassDomainID = 42,
+    //Packet_GetClassDomainID = 42,
     Packet_GetClassGClayout = 43,
     Packet_GetClassModuleIdForStatics = 44,
     Packet_GetClassName = 45,

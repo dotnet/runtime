@@ -464,14 +464,6 @@ void MyICJI::LongLifetimeFree(void* obj)
     DebugBreakorAV(33);
 }
 
-size_t MyICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
-                                          CORINFO_MODULE_HANDLE* pModule,
-                                          void**                 ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getClassModuleIdForStatics");
-    return jitInstance->mc->repGetClassModuleIdForStatics(cls, pModule, ppIndirection);
-}
-
 bool MyICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
                                          CORINFO_CONST_LOOKUP* addr,
                                          int*                  offset)
@@ -891,10 +883,10 @@ uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCTy
     return jitInstance->mc->repGetThreadLocalFieldInfo(field, isGCType);
 }
 
-void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1380,13 +1372,6 @@ void MyICJI::getCallInfo(
                                     &exceptionCode);
     if (exceptionCode != 0)
         ThrowRecordedException(exceptionCode);
-}
-
-// returns the class's domain ID for accessing shared statics
-unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getClassDomainID");
-    return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
 bool MyICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)

@@ -3006,7 +3006,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         MethodTable * pMT = GetMethodTable();
         // Try to avoid touching the EEClass if possible
-        if (pMT->IsClassPreInited())
+        if (!pMT->HasClassConstructor())
             return FALSE;
         return !pMT->GetClass()->IsBeforeFieldInit();
     }

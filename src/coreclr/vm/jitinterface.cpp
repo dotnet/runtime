@@ -1154,22 +1154,20 @@ static CorInfoHelpFunc getGenericStaticsHelper(FieldDesc * pField)
 {
     STANDARD_VM_CONTRACT;
 
-    int helper = CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE;
+    int helper = CORINFO_HELP_GET_NONGCSTATIC_BASE;
 
     if (pField->GetFieldType() == ELEMENT_TYPE_CLASS ||
         pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
     {
-        helper = CORINFO_HELP_GETGENERICS_GCSTATIC_BASE;
+        helper = CORINFO_HELP_GET_GCSTATIC_BASE;
     }
 
     if (pField->IsThreadStatic())
     {
-        const int delta = CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE - CORINFO_HELP_GETGENERICS_GCSTATIC_BASE;
-
-        static_assert_no_msg(CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE
-            == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE + delta);
-
-        helper += (CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE - CORINFO_HELP_GETGENERICS_GCSTATIC_BASE);
+        if (helper == CORINFO_HELP_GET_NONGCSTATIC_BASE)
+            helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE;
+        else
+            helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE;
     }
 
     return (CorInfoHelpFunc)helper;
@@ -1179,53 +1177,48 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
 {
     STANDARD_VM_CONTRACT;
 
-    int helper = CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE;
-
-    if (pField->GetFieldType() == ELEMENT_TYPE_CLASS ||
-        pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+    bool GCStatic = (pField->GetFieldType() == ELEMENT_TYPE_CLASS ||
+                  pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE);
+    bool noCtor = ((!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics()) || pFieldMT->IsClassInited());
+    bool threadStatic = pField->IsThreadStatic();
+    CorInfoHelpFunc helper;
+    
+    if (threadStatic)
     {
-        helper = CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-    }
-
-    if (pFieldMT->IsDynamicStatics())
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS
-            == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE + delta);
-
-        helper += delta;
+        if (GCStatic)
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE;
+        }
+        else
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE;
+        }
     }
     else
-    if ((!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics()) || pFieldMT->IsClassInited())
     {
-        const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR
-            == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE + delta);
-
-        helper += delta;
+        if (GCStatic)
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_GCSTATIC_BASE;
+        }
+        else
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_NONGCSTATIC_BASE;
+        }
     }
 
-    if (pField->IsThreadStatic())
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE
-            == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE + delta);
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR
-            == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR + delta);
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR
-            == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR + delta);
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS
-            == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS + delta);
-        static_assert_no_msg(CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS
-            == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS + delta);
-
-        helper += delta;
-    }
-
-    return (CorInfoHelpFunc)helper;
+    return helper;
 }
 
 static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS_FLAGS flags)
@@ -1307,14 +1300,16 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
+    MethodTable *pMT = fieldDesc->GetEnclosingMethodTable();
+    pMT->EnsureTlsIndexAllocated();
 
     if (isGCType)
     {
-        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+        typeIndex = MethodTableAuxiliaryData::GetThreadStaticsInfo(pMT->GetAuxiliaryData())->GCTlsIndex.TLSIndexRawIndex;
     }
     else
     {
-        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+        typeIndex = MethodTableAuxiliaryData::GetThreadStaticsInfo(pMT->GetAuxiliaryData())->NonGCTlsIndex.TLSIndexRawIndex;
     }
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
@@ -1323,91 +1318,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     return typeIndex;
 }
 
-#if defined(TARGET_WINDOWS)
-/*********************************************************************/
-static uint32_t ThreadLocalOffset(void* p)
-{
-    PTEB Teb = NtCurrentTeb();
-    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
-    uint8_t* pOurTls = pTls[_tls_index];
-    return (uint32_t)((uint8_t*)p - pOurTls);
-}
-#elif defined(TARGET_OSX)
-extern "C" void* GetThreadVarsAddress();
-
-static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
-{
-    _ASSERT(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d);
-
-    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
-    // These opcodes are patched by the dynamic linker.
-    // Move beyond the opcodes that we have already checked above.
-    p += 3;
-
-    // The descriptor address is located at *p at this point.
-    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
-    // add it to the `instruction pointer` to find out the address.
-    return *(uint32_t*)p + (p + 4);
-}
-
-static void* GetThreadVarsSectionAddress()
-{
-#ifdef TARGET_AMD64
-    // On x64, the address is related to rip, so, disassemble the function,
-    // read the offset, and then relative to the IP, find the final address of
-    // __thread_vars section.
-    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
-    return GetThreadVarsSectionAddressFromDesc(p);
-#else
-    return GetThreadVarsAddress();
-#endif // TARGET_AMD64
-}
-
-#else
-
-// Linux
-
-#ifdef TARGET_AMD64
-
-extern "C" void* GetTlsIndexObjectDescOffset();
-
-static void* GetThreadStaticDescriptor(uint8_t* p)
-{
-    if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
-    {
-        // The optimization is disabled if coreclr is not compiled in .so format.
-        _ASSERTE(false && "Unexpected code sequence");
-        return nullptr;
-    }
-
-    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
-    // These opcodes are patched by the dynamic linker.
-    // Move beyond the opcodes that we have already checked above.
-    p += 4;
-
-    // The descriptor address is located at *p at this point. Read that and add
-    // it to the instruction pointer to locate the address of `ti` that will be used
-    // to pass to __tls_get_addr during execution.
-    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
-    // add it to the `instruction pointer` to find out the address.
-    return *(uint32_t*)p + (p + 4);
-}
-
-static void* GetTlsIndexObjectAddress()
-{
-    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
-    return GetThreadStaticDescriptor(p);
-}
-
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-extern "C" size_t GetThreadStaticsVariableOffset();
-
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-#endif // TARGET_WINDOWS
-
-
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CONTRACTL {
         NOTHROW;
@@ -1416,50 +1327,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION_LEAF();
-
-    size_t threadStaticBaseOffset = 0;
-
-#if defined(TARGET_WINDOWS)
-    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
-    pInfo->tlsIndex.accessType = IAT_VALUE;
-
-    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
-
-#elif defined(TARGET_OSX)
-
-    pInfo->threadVarsSection = GetThreadVarsSectionAddress();
-
-#elif defined(TARGET_AMD64)
-
-    // For Linux/x64, get the address of tls_get_addr system method and the base address
-    // of struct that we will pass to it.
-    pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
-    pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
-
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    // For Linux arm64/loongarch64/riscv64, just get the offset of thread static variable, and during execution,
-    // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
-    // this offset, loongarch64 taken from $tp register gives back the thread variable address.
-    threadStaticBaseOffset = GetThreadStaticsVariableOffset();
-
-#else
-    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
-#endif // TARGET_WINDOWS
-
-    if (isGCType)
-    {
-        pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCMaxThreadStaticBlocks));
-        pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCThreadStaticBlocks));
-    }
-    else
-    {
-        pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCMaxThreadStaticBlocks));
-        pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCThreadStaticBlocks));
-    }
-    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
-
+    GetThreadLocalStaticBlocksInfo(pInfo);
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
@@ -1587,17 +1455,21 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     // For windows x64/x86/arm64, linux x64/arm64/loongarch64/riscv64:
                     // We convert the TLS access to the optimized helper where we will store
                     // the static blocks in TLS directly and access them via inline code.
-                    if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                        (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                    if ((pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                        (pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE) ||
+                        (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                        (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE))
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                        pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                     }
-                    else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
-                                (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
+                    else if ((pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR) ||
+                            (pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE) ||
+                            (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR) ||
+                            (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE))
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                        pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                     }
                 }
 #endif // TARGET_ARM
@@ -1608,8 +1480,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                 // Allocate space for the local class if necessary, but don't trigger
                 // class construction.
-                DomainLocalModule* pLocalModule = pFieldMT->GetDomainLocalModule();
-                pLocalModule->PopulateClass(pFieldMT);
+                pFieldMT->EnsureStaticDataAllocated();
 
                 // We are not going through a helper. The constructor has to be triggered explicitly.
                 if (!pFieldMT->IsClassInited())
@@ -3692,37 +3563,6 @@ void CEEInfo::LongLifetimeFree(void* obj)
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
-/*********************************************************************/
-size_t CEEInfo::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_MODULE_HANDLE *pModuleHandle, void **ppIndirection)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    size_t result = 0;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    TypeHandle     VMClsHnd(clsHnd);
-    Module *pModule = VMClsHnd.AsMethodTable()->GetModuleForStatics();
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    // The zapper needs the module handle. The jit should not use it at all.
-    if (pModuleHandle)
-        *pModuleHandle = CORINFO_MODULE_HANDLE(pModule);
-
-    result = pModule->GetModuleID();
-
-    _ASSERTE(result);
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
 
 /*********************************************************************/
 bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
@@ -3739,20 +3579,7 @@ bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONS
 
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
-
-    // Impl is based on IsPrecomputedClassInitialized()
-    UINT32 clsIndex = 0;
-    if (pMT->IsDynamicStatics())
-    {
-        clsIndex = (UINT32)pMT->GetModuleDynamicEntryID();
-    }
-    else
-    {
-        clsIndex = (UINT32)pMT->GetClassIndex();
-    }
-
-    size_t moduleId = pMT->GetModuleForStatics()->GetModuleID();
-    addr->addr = (UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex;
+    addr->addr = (UINT8*)pMT->getIsClassInitedFlagAddress();
     addr->accessType = IAT_VALUE;
     *offset = 0;
 
@@ -3963,6 +3790,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
+    pTypeToInitMT->AttemptToPreinit();
     if (pTypeToInitMT->IsClassInited())
     {
         // If the type is initialized there really is nothing to do.
@@ -4076,8 +3904,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     // Allocate space for the local class if necessary, but don't trigger
     // class construction.
-    DomainLocalModule *pModule = pTypeToInitMT->GetDomainLocalModule();
-    pModule->PopulateClass(pTypeToInitMT);
+    pTypeToInitMT->EnsureStaticDataAllocated();
 
     if (pTypeToInitMT->IsClassInited())
     {
@@ -5665,39 +5492,6 @@ void CEEInfo::getCallInfo(
 }
 
 
-/***********************************************************************/
-unsigned CEEInfo::getClassDomainID (CORINFO_CLASS_HANDLE clsHnd,
-                                    void **ppIndirection)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    unsigned result = 0;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle  VMClsHnd(clsHnd);
-
-    if (VMClsHnd.AsMethodTable()->IsDynamicStatics())
-    {
-        result = (unsigned)VMClsHnd.AsMethodTable()->GetModuleDynamicEntryID();
-    }
-    else
-    {
-        result = (unsigned)VMClsHnd.AsMethodTable()->GetClassIndex();
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Used by the JIT to determine whether the profiler or IBC is tracking object
@@ -6051,22 +5845,13 @@ CorInfoHelpFunc CEEInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CorInfoHelpFunc result = CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE;
+    TypeHandle VMClsHnd(clsHnd);
 
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    TypeHandle cls(clsHnd);
-    MethodTable* pMT = cls.AsMethodTable();
-
-    if (pMT->IsDynamicStatics())
-    {
-        _ASSERTE(!cls.ContainsGenericVariables());
-        _ASSERTE(pMT->GetModuleDynamicEntryID() != (unsigned) -1);
-
-        result = CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
+    CorInfoHelpFunc result;
+    if (VMClsHnd.GetMethodTable()->IsDynamicStatics())
+        result = CORINFO_HELP_GET_NONGCSTATIC_BASE;
+    else
+        result = CORINFO_HELP_INITCLASS;
 
     return result;
 }
@@ -11643,8 +11428,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
 
     // Allocate space for the local class if necessary, but don't trigger
     // class construction.
-    DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
-    pLocalModule->PopulateClass(pEnclosingMT);
+    pEnclosingMT->EnsureStaticDataAllocated();
 
     if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
     {
@@ -11826,8 +11610,7 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
         {
             // Allocate space for the local class if necessary, but don't trigger
             // class construction.
-            DomainLocalModule *pLocalModule = pEnclosingMT->GetDomainLocalModule();
-            pLocalModule->PopulateClass(pEnclosingMT);
+            pEnclosingMT->EnsureStaticDataAllocated();
 
             GCX_COOP();
 
@@ -13587,33 +13370,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             result = pMgr->GetCallStub(ownerType, slot);
         }
         break;
-
-    case ENCODE_CLASS_ID_FOR_STATICS:
-        {
-            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
-
-            MethodTable * pMT = th.AsMethodTable();
-            if (pMT->IsDynamicStatics())
-            {
-                result = pMT->GetModuleDynamicEntryID();
-            }
-            else
-            {
-                result = pMT->GetClassIndex();
-            }
-        }
-        break;
-
-    case ENCODE_MODULE_ID_FOR_GENERIC_STATICS:
-        {
-            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
-
-            MethodTable * pMT = th.AsMethodTable();
-
-            result = pMT->GetModuleForStatics()->GetModuleID();
-        }
-        break;
-
 #ifdef FEATURE_READYTORUN
     case ENCODE_READYTORUN_HELPER:
         {

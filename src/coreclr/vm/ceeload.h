@@ -56,7 +56,6 @@ class Assembly;
 class BaseDomain;
 class AppDomain;
 class DomainModule;
-struct DomainLocalModule;
 class SystemDomain;
 class Module;
 class SString;
@@ -422,8 +421,6 @@ typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 #ifdef FEATURE_READYTORUN
 typedef DPTR(class ReadyToRunInfo)      PTR_ReadyToRunInfo;
 #endif
-
-struct ThreadLocalModule;
 
 // A ModuleBase represents the ability to reference code via tokens
 // This abstraction exists to allow the R2R manifest metadata to have
@@ -1523,72 +1520,10 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    // This helper returns to offsets for the slots/bytes/handles. They return the offset in bytes from the beginning
-    // of the 1st GC pointer in the statics block for the module.
-    void        GetOffsetsForRegularStaticData(
-                    mdTypeDef cl,
-                    BOOL bDynamic,
-                    DWORD dwGCStaticHandles,
-                    DWORD dwNonGCStaticBytes,
-                    DWORD * pOutStaticHandleOffset,
-                    DWORD * pOutNonGCStaticOffset);
-
-    void        GetOffsetsForThreadStaticData(
-                    mdTypeDef cl,
-                    BOOL bDynamic,
-                    DWORD dwGCStaticHandles,
-                    DWORD dwNonGCStaticBytes,
-                    DWORD * pOutStaticHandleOffset,
-                    DWORD * pOutNonGCStaticOffset);
-
-
-    BOOL        IsStaticStoragePrepared(mdTypeDef tkType);
-
-    DWORD       GetNumGCThreadStaticHandles()
-    {
-        return m_dwMaxGCThreadStaticHandles;;
-    }
-
     CrstBase*           GetFixupCrst()
     {
         return &m_FixupCrst;
     }
-
-    void                AllocateRegularStaticHandles(AppDomain* pDomainMT);
-
-    void                FreeModuleIndex();
-
-    DWORD               GetDomainLocalModuleSize()
-    {
-        return m_dwRegularStaticsBlockSize;
-    }
-
-    DWORD               GetThreadLocalModuleSize()
-    {
-        return m_dwThreadStaticsBlockSize;
-    }
-
-    DWORD               AllocateDynamicEntry(MethodTable *pMT);
-
-    // We need this for the jitted shared case,
-    inline MethodTable* GetDynamicClassMT(DWORD dynamicClassID);
-
-    static ModuleIndex AllocateModuleIndex();
-    static void FreeModuleIndex(ModuleIndex index);
-
-    ModuleIndex          GetModuleIndex()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_ModuleIndex;
-    }
-
-    SIZE_T               GetModuleID()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<TADDR>(m_ModuleID);
-    }
-
-    PTR_DomainLocalModule   GetDomainLocalModule();
 
     // LoaderHeap for storing IJW thunks
     PTR_LoaderHeap           m_pThunkHeap;
@@ -1603,46 +1538,7 @@ public:
 
 protected:
 
-    void            BuildStaticsOffsets     (AllocMemTracker *pamTracker);
-    void            AllocateStatics         (AllocMemTracker *pamTracker);
-
-    // ModuleID is quite ugly. We should try to switch to using ModuleIndex instead
-    // where appropriate, and we should clean up code that uses ModuleID
-    PTR_DomainLocalModule   m_ModuleID;       // MultiDomain case: tagged (low bit 1) ModuleIndex
-                                              // SingleDomain case: pointer to domain local module
-
-    ModuleIndex             m_ModuleIndex;
-
-    // reusing the statics area of a method table to store
-    // these for the non domain neutral case, but they're now unified
-    // it so that we don't have different code paths for this.
-    PTR_DWORD               m_pRegularStaticOffsets;        // Offset of statics in each class
-    PTR_DWORD               m_pThreadStaticOffsets;         // Offset of ThreadStatics in each class
-
-    // All types with RID <= this value have static storage allocated within the module by AllocateStatics
-    // If AllocateStatics hasn't run yet, the value is 0
-    RID                     m_maxTypeRidStaticsAllocated;
-
-    // @NICE: see if we can remove these fields
-    DWORD                   m_dwMaxGCRegularStaticHandles;  // Max number of handles we can have.
-    DWORD                   m_dwMaxGCThreadStaticHandles;
-
-    // Size of the precomputed statics block. This includes class init bytes, gc handles and non gc statics
-    DWORD                   m_dwRegularStaticsBlockSize;
-    DWORD                   m_dwThreadStaticsBlockSize;
-
-    // For 'dynamic' statics (Reflection and generics)
-    SIZE_T                  m_cDynamicEntries;              // Number of used entries in DynamicStaticsInfo table
-    SIZE_T                  m_maxDynamicEntries;            // Size of table itself, including unused entries
-
-    // Info we need for dynamic statics that we can store per-module (ie, no need for it to be duplicated
-    // per appdomain)
-    struct DynamicStaticsInfo
-    {
-        MethodTable*        pEnclosingMT;                   // Enclosing type; necessarily in this loader module
-    };
-    DynamicStaticsInfo*     m_pDynamicStaticsInfo;          // Table with entry for each dynamic ID
-
+    PTR_DomainAssembly      m_pDomainAssembly;
 
 public:
     //-----------------------------------------------------------------------------------------

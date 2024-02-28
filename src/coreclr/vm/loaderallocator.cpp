@@ -2198,3 +2198,37 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 #endif //
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifndef DACCESS_COMPILE
+void LoaderAllocator::AllocateBytesForStaticVariables(uint8_t** ppbMem, uint32_t cbMem)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    if (cbMem > 0)
+    {
+        uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
+        InterlockedCompareExchangeT(ppbMem, pbMem, NULL);
+    }
+}
+
+void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(PTR_OBJECTREF* ppbObjectMem, uint32_t cSlots, MethodTable* pMTWithStaticBoxes)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    if (cSlots > 0)
+    {
+        GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, (OBJECTREF**)ppbObjectMem, pMTWithStaticBoxes);
+    }
+}
+#endif // !DACCESS_COMPILE

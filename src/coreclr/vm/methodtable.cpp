@@ -371,51 +371,6 @@ BOOL MethodTable::ValidateWithPossibleAV()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-BOOL  MethodTable::IsClassInited()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsClassPreInited())
-        return TRUE;
-
-    if (IsSharedByGenericInstantiations())
-        return FALSE;
-
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
-
-    _ASSERTE(pLocalModule != NULL);
-
-    return pLocalModule->IsClassInitialized(this);
-}
-
-//==========================================================================================
-BOOL  MethodTable::IsInitError()
-{
-    WRAPPER_NO_CONTRACT;
-
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
-    _ASSERTE(pLocalModule != NULL);
-
-    return pLocalModule->IsClassInitError(this);
-}
-
-//==========================================================================================
-// mark the class as having its .cctor run
-void MethodTable::SetClassInited()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!IsClassPreInited());
-    GetDomainLocalModule()->SetClassInitialized(this);
-}
-
-//==========================================================================================
-void MethodTable::SetClassInitError()
-{
-    WRAPPER_NO_CONTRACT;
-    GetDomainLocalModule()->SetClassInitError(this);
-}
-
-//==========================================================================================
 // mark the class as having been restored.
 void MethodTable::SetIsRestored()
 {
@@ -703,16 +658,30 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
-void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
+void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, MethodTableStaticsFlags staticsFlags, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
 {
     S_SIZE_T cbAuxiliaryData = S_SIZE_T(sizeof(MethodTableAuxiliaryData));
 
-    size_t prependedAllocationSpace = 0;
+    size_t prependedAllocationSpace = nonVirtualSlots * sizeof(TADDR);
 
-    prependedAllocationSpace = nonVirtualSlots * sizeof(TADDR);
+    int16_t sizeofStaticsStructure = 0;
 
-    if (hasGenericStatics)
-        prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
+    if (HasFlag(staticsFlags, MethodTableStaticsFlags::Thread))
+    {
+        _ASSERTE(HasFlag(staticsFlags, MethodTableStaticsFlags::Present));
+        sizeofStaticsStructure = sizeof(ThreadStaticsInfo);
+    }
+    else if (HasFlag(staticsFlags, MethodTableStaticsFlags::Generic))
+    {
+        _ASSERTE(HasFlag(staticsFlags, MethodTableStaticsFlags::Present));
+        sizeofStaticsStructure = sizeof(GenericsStaticsInfo);
+    }
+    else if (HasFlag(staticsFlags, MethodTableStaticsFlags::Present))
+    {
+        sizeofStaticsStructure = sizeof(DynamicStaticsInfo);
+    }
+
+    prependedAllocationSpace = prependedAllocationSpace + sizeofStaticsStructure;
     
     cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
     if (cbAuxiliaryData.IsOverflow())
@@ -725,8 +694,13 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
     pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
 
     pMTAuxiliaryData->SetLoaderModule(pLoaderModule);
-    pMTAuxiliaryData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -(int16_t)sizeof(GenericsStaticsInfo) : 0);
+    pMTAuxiliaryData->SetOffsetToNonVirtualSlots(-sizeofStaticsStructure);
     m_pAuxiliaryData = pMTAuxiliaryData;
+
+    if (HasFlag(staticsFlags, MethodTableStaticsFlags::Present))
+    {
+        MethodTableAuxiliaryData::GetDynamicStaticsInfo(pMTAuxiliaryData)->m_pMethodTable = this;
+    }
 }
 
 
@@ -1071,22 +1045,7 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
     }
     CONTRACTL_END;
 
-    // No need to generate IDs for open types.  Indeed since we don't save them
-    // in the NGEN image it would be actively incorrect to do so.  However
-    // we still leave the optional member in the MethodTable holding the value -1 for the ID.
-
     GenericsStaticsInfo *pInfo = GetGenericsStaticsInfo();
-    if (!ContainsGenericVariables() && !IsSharedByGenericInstantiations())
-    {
-        Module * pModuleForStatics = GetLoaderModule();
-
-        pInfo->m_DynamicTypeID = pModuleForStatics->AllocateDynamicEntry(this);
-    }
-    else
-    {
-        pInfo->m_DynamicTypeID = (SIZE_T)-1;
-    }
-
     pInfo->m_pFieldDescs = pStaticFieldDescs;
 }
 
@@ -1124,43 +1083,6 @@ void MethodTable::EnumMemoryRegionsForExtraInterfaceInfo()
     DacEnumMemoryRegion(*GetExtraInterfaceInfoPtr(), GetExtraInterfaceInfoSize(GetNumInterfaces()));
 }
 #endif // DACCESS_COMPILE
-
-//==========================================================================================
-Module* MethodTable::GetModuleForStatics()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    if (HasGenericsStaticsInfo())
-    {
-        DWORD dwDynamicClassDomainID;
-        return GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-    }
-    else
-    {
-        return GetLoaderModule();
-    }
-}
-
-//==========================================================================================
-DWORD  MethodTable::GetModuleDynamicEntryID()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    _ASSERTE(IsDynamicStatics() && "Only memory reflection emit types and generics can have a dynamic ID");
-
-    if (HasGenericsStaticsInfo())
-    {
-        DWORD dwDynamicClassDomainID;
-        GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-        return dwDynamicClassDomainID;
-    }
-    else
-    {
-        return GetClass()->GetModuleDynamicID();
-    }
-}
 
 #ifndef DACCESS_COMPILE
 
@@ -2052,42 +1974,6 @@ DWORD MethodTable::GetIndexForFieldDesc(FieldDesc *pField)
         return DWORD(pField - pFields);
     }
 }
-
-//==========================================================================================
-#ifdef _MSC_VER
-#pragma optimize("t", on)
-#endif // _MSC_VER
-// compute whether the type can be considered to have had its
-// static initialization run without doing anything at all, i.e. whether we know
-// immediately that the type requires nothing to do for initialization
-//
-// If a type used as a representiative during JITting is PreInit then
-// any types that it may represent within a code-sharing
-// group are also PreInit.   For example, if List<object> is PreInit then List<string>
-// and List<MyType> are also PreInit.  This is because the dynamicStatics, staticRefHandles
-// and hasCCtor are all identical given a head type, and weakening the domainNeutrality
-// to DomainSpecific only makes more types PreInit.
-BOOL MethodTable::IsClassPreInited()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (ContainsGenericVariables())
-        return TRUE;
-
-    if (HasClassConstructor())
-        return FALSE;
-
-    if (HasBoxedRegularStatics())
-        return FALSE;
-
-    if (IsDynamicStatics())
-        return FALSE;
-
-    return TRUE;
-}
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif // _MSC_VER
 
 //========================================================================================
 
@@ -4065,26 +3951,20 @@ _End_arg:
 
 #if !defined(DACCESS_COMPILE)
 //==========================================================================================
-void MethodTable::AllocateRegularStaticBoxes()
+void MethodTable::AllocateRegularStaticBoxes(OBJECTREF** ppStaticBase)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(!ContainsGenericVariables());
-        PRECONDITION(HasBoxedRegularStatics());
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Instantiating static handles for %s\n", GetDebugClassName()));
 
-    GCX_COOP();
-
-    PTR_BYTE pStaticBase = GetGCStaticsBasePointer();
-
-    GCPROTECT_BEGININTERIOR(pStaticBase);
-
+    if (HasBoxedRegularStatics())
     {
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
@@ -4096,13 +3976,12 @@ void MethodTable::AllocateRegularStaticBoxes()
 
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                AllocateRegularStaticBox(pField, (Object**)(pStaticBase + pField->GetOffset()));
+                AllocateRegularStaticBox(pField, (Object**)(((PTR_BYTE)*ppStaticBase) + pField->GetOffset()));
             }
 
             pField++;
         }
     }
-    GCPROTECT_END();
 }
 
 void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle)
@@ -4396,11 +4275,7 @@ void MethodTable::DoRunClassInitThrowing()
         {
             if (pEntry->m_hrResultCode == S_FALSE)
             {
-                if (HasBoxedRegularStatics())
-                {
-                    // First, instantiate any objects needed for value type statics
-                    AllocateRegularStaticBoxes();
-                }
+                EnsureStaticDataAllocated();
 
                 // Nobody has run the .cctor yet
                 if (HasClassConstructor())
@@ -4470,9 +4345,7 @@ void MethodTable::DoRunClassInitThrowing()
 
                 pEntry->m_hrResultCode = S_OK;
 
-                // Set the initialization flags in the DLS and on domain-specific types.
-                // Note we also set the flag for dynamic statics, which use the DynamicStatics part
-                // of the DLS irrespective of whether the type is domain neutral or not.
+                // Set the initialization flag
                 SetClassInited();
 
             }
@@ -4535,24 +4408,78 @@ void MethodTable::CheckRunClassInitThrowing()
     // To find GC hole easier...
     TRIGGERSGC();
 
-    if (IsClassPreInited())
-        return;
-
     // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>)
     if (IsSharedByGenericInstantiations())
         return;
 
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
-    _ASSERTE(pLocalModule);
+    EnsureStaticDataAllocated();
+    DoRunClassInitThrowing();
+}
 
-    DWORD iClassIndex = GetClassIndex();
+void MethodTable::EnsureStaticDataAllocated()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
+    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics())
+    {
+        DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
+        // Allocate space for normal statics if we might have them
+        if (pDynamicStaticsInfo->m_pNonGCStatics == NULL)
+            GetLoaderAllocator()->AllocateBytesForStaticVariables(&pDynamicStaticsInfo->m_pNonGCStatics, GetClass()->GetNonGCRegularStaticFieldBytes());
 
-    // Check to see if we have already run the .cctor for this class.
-    if (!pLocalModule->IsClassAllocated(this, iClassIndex))
-        pLocalModule->PopulateClass(this);
+        if (pDynamicStaticsInfo->m_pGCStatics == NULL)
+            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(&pDynamicStaticsInfo->m_pGCStatics, GetClass()->GetNumHandleRegularStatics(), this);
+    }
+    pAuxiliaryData->SetIsStaticDataAllocated();
+}
 
-    if (!pLocalModule->IsClassInitialized(this, iClassIndex))
-        DoRunClassInitThrowing();
+void MethodTable::AttemptToPreinit()
+{
+    if (IsClassInited())
+        return;
+
+    if (HasClassConstructor())
+    {
+        // If there is a class constructor, then the class cannot be preinitted.
+        return;
+    }
+    
+    if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
+    {
+        // If there are static fields that are not thread statics, then the class is preinitted.
+        SetClassInited();
+        return;
+    }
+
+    // At this point, we are looking at a class that has no class constructor, but does have static fields
+
+    if (IsSharedByGenericInstantiations())
+    {
+        // If we don't know the exact type, we can't pre-allocate the fields
+        return;
+    }
+
+    // All this class needs to be initialized is to allocate the memory for the static fields. Do so, and mark the type as initialized
+    EnsureStaticDataAllocated();
+    SetClassInited();
+    return;
+}
+
+void MethodTable::EnsureTlsIndexAllocated()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
+    if (!pAuxiliaryData->IsTlsIndexAllocated() && GetNumThreadStaticFields() > 0)
+    {
+        ThreadStaticsInfo *pThreadStaticsInfo = MethodTableAuxiliaryData::GetThreadStaticsInfo(GetAuxiliaryDataForWrite());
+        // Allocate space for normal statics if we might have them
+        if (!pThreadStaticsInfo->NonGCTlsIndex.IsAllocated() && GetClass()->GetNonGCThreadStaticFieldBytes() > 0)
+            GetTLSIndexForThreadStatic(this, false, &pThreadStaticsInfo->NonGCTlsIndex);
+
+        if (!pThreadStaticsInfo->GCTlsIndex.IsAllocated() && GetClass()->GetNumHandleThreadStatics() > 0)
+            GetTLSIndexForThreadStatic(this, true, &pThreadStaticsInfo->GCTlsIndex);
+    }
+    pAuxiliaryData->SetIsTlsIndexAllocated();
 }
 
 //==========================================================================================
@@ -9413,3 +9340,17 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     RETURN (pResult);
 }
 #endif // DACCESS_COMPILE
+
+void MethodTable::GetStaticsOffsets(StaticsOffsetType offsetType, bool fGenericStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset)
+{
+    if (offsetType == StaticsOffsetType::Normal)
+    {
+        *dwNonGCOffset = 0;
+        *dwGCOffset = 0;
+    }
+    else
+    {
+        *dwNonGCOffset = (uint32_t)sizeof(TADDR) * 2;
+        *dwGCOffset = (uint32_t)sizeof(TADDR) * 2;
+    }
+}

@@ -206,7 +206,6 @@ private:
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
-    void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); }
@@ -2954,6 +2953,7 @@ private:
                                 BOOL isIFace,
                                 BOOL fDynamicStatics,
                                 BOOL fHasGenericsStaticsInfo,
+                                bool fHasThreadStatics,
                                 BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap

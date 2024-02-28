@@ -469,17 +469,6 @@ void WrapICorJitInfo::LongLifetimeFree(
     API_LEAVE(LongLifetimeFree);
 }
 
-size_t WrapICorJitInfo::getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection)
-{
-    API_ENTER(getClassModuleIdForStatics);
-    size_t temp = wrapHnd->getClassModuleIdForStatics(cls, pModule, ppIndirection);
-    API_LEAVE(getClassModuleIdForStatics);
-    return temp;
-}
-
 bool WrapICorJitInfo::getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
@@ -942,11 +931,10 @@ uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
 }
 
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     API_ENTER(getThreadLocalStaticBlocksInfo);
-    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 
@@ -1378,16 +1366,6 @@ void WrapICorJitInfo::getCallInfo(
     API_ENTER(getCallInfo);
     wrapHnd->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
     API_LEAVE(getCallInfo);
-}
-
-unsigned WrapICorJitInfo::getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection)
-{
-    API_ENTER(getClassDomainID);
-    unsigned temp = wrapHnd->getClassDomainID(cls, ppIndirection);
-    API_LEAVE(getClassDomainID);
-    return temp;
 }
 
 bool WrapICorJitInfo::getStaticFieldContent(

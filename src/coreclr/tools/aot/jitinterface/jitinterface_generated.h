@@ -58,7 +58,6 @@ struct JitInterfaceCallbacks
     const char* (* getAssemblyName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASSEMBLY_HANDLE assem);
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
-    size_t (* getClassModuleIdForStatics)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, void** ppIndirection);
     bool (* getIsClassInitedFlagAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
     bool (* getStaticBaseAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -106,7 +105,7 @@ struct JitInterfaceCallbacks
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
     uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
-    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -151,7 +150,6 @@ struct JitInterfaceCallbacks
     CORINFO_JUST_MY_CODE_HANDLE (* getJustMyCodeHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection);
     void (* GetProfilingHandle)(void * thisHandle, CorInfoExceptionClass** ppException, bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
     void (* getCallInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult);
-    unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
     bool (* getStaticFieldContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
     bool (* getObjectContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
@@ -654,17 +652,6 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual size_t getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    size_t temp = _callbacks->getClassModuleIdForStatics(_thisHandle, &pException, cls, pModule, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual bool getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
@@ -1127,11 +1114,10 @@ public:
 }
 
     virtual void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo, isGCType);
+    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo);
     if (pException != nullptr) throw pException;
 }
 
@@ -1551,16 +1537,6 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getCallInfo(_thisHandle, &pException, pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
     if (pException != nullptr) throw pException;
-}
-
-    virtual unsigned getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    unsigned temp = _callbacks->getClassDomainID(_thisHandle, &pException, cls, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual bool getStaticFieldContent(

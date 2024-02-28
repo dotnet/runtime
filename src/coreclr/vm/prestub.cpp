@@ -3206,21 +3206,6 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
 
     CorInfoHelpFunc helpFunc = CEEInfo::getSharedStaticsHelper(pFD, pMT);
 
-    TADDR moduleID = pMT->GetModuleForStatics()->GetModuleID();
-
-    TADDR classID = 0;
-    if (helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR && helpFunc != CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR)
-    {
-        if (pMT->IsDynamicStatics())
-        {
-            classID = pMT->GetModuleDynamicEntryID();
-        }
-        else
-        {
-            classID = pMT->GetClassIndex();
-        }
-    }
-
     bool fUnbox = (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE);
 
     AllocMemTracker amTracker;
@@ -3230,8 +3215,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
     pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
-    pArgs->arg0 = moduleID;
-    pArgs->arg1 = classID;
+    pArgs->arg0 = (TADDR)pMT;
     pArgs->offset = pFD->GetOffset();
 
     PCODE pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pArgs,
@@ -3246,52 +3230,49 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
 {
     STANDARD_VM_CONTRACT;
 
-    int helpFunc = CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE;
+    bool GCStatic = (kind == ENCODE_STATIC_BASE_GC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
+    bool noCtor = (!pMT->HasClassConstructor() && !pMT->HasBoxedRegularStatics());
+    bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
-    if (kind == ENCODE_STATIC_BASE_GC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER)
+    CorInfoHelpFunc helper;
+    
+    if (threadStatic)
     {
-        helpFunc = CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-    }
-
-    if (pMT->IsDynamicStatics())
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-        helpFunc += delta;
-    }
-    else
-    if (!pMT->HasClassConstructor() && !pMT->HasBoxedRegularStatics())
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-        helpFunc += delta;
-    }
-
-    if (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER)
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-        helpFunc += delta;
-    }
-
-    PCODE pHelper;
-    if (helpFunc == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR || helpFunc == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR)
-    {
-        pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), pMT->GetModule()->GetModuleID(), CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc));
-    }
-    else
-    {
-        TADDR moduleID = pMT->GetModuleForStatics()->GetModuleID();
-
-        TADDR classID;
-        if (pMT->IsDynamicStatics())
+        if (GCStatic)
         {
-            classID = pMT->GetModuleDynamicEntryID();
+            if (noCtor)
+                helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE;
         }
         else
         {
-            classID = pMT->GetClassIndex();
+            if (noCtor)
+                helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE;
         }
-
-        pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), moduleID, classID, CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc));
     }
+    else
+    {
+        if (GCStatic)
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_GCSTATIC_BASE;
+        }
+        else
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_NONGCSTATIC_BASE;
+        }
+    }
+
+    PCODE pHelper;
+    pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pMT, CEEJitInfo::getHelperFtnStatic(helper));
 
     return pHelper;
 }
@@ -3848,11 +3829,9 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
             result = (SIZE_T)th.AsMethodTable()->GetGCStaticsBasePointer();
             break;
         case ENCODE_THREAD_STATIC_BASE_NONGC_HELPER:
-            ThreadStatics::GetTLM(th.AsMethodTable())->EnsureClassAllocated(th.AsMethodTable());
             result = (SIZE_T)th.AsMethodTable()->GetNonGCThreadStaticsBasePointer();
             break;
         case ENCODE_THREAD_STATIC_BASE_GC_HELPER:
-            ThreadStatics::GetTLM(th.AsMethodTable())->EnsureClassAllocated(th.AsMethodTable());
             result = (SIZE_T)th.AsMethodTable()->GetGCThreadStaticsBasePointer();
             break;
         case ENCODE_CCTOR_TRIGGER:

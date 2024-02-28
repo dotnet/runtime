@@ -479,6 +479,10 @@ End
 Crst SystemDomainDelayedUnloadList
 End
 
+Crst ThreadLocalStorageLock
+    AcquiredBefore ModuleLookupTable
+End
+
 Crst ThreadIdDispenser
 End
 

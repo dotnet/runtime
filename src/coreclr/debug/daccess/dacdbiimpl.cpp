@@ -1584,16 +1584,8 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
                                          PTR_BYTE *  ppNonGCStaticsBase)
  {
     MethodTable * pMT = thExact.GetMethodTable();
-    Module * pModuleForStatics = pMT->GetModuleForStatics();
-    if (pModuleForStatics != NULL)
-    {
-        PTR_DomainLocalModule pLocalModule = pModuleForStatics->GetDomainLocalModule();
-        if (pLocalModule != NULL)
-        {
-            *ppGCStaticsBase = pLocalModule->GetGCStaticsBasePointer(pMT);
-            *ppNonGCStaticsBase = pLocalModule->GetNonGCStaticsBasePointer(pMT);
-        }
-    }
+    *ppGCStaticsBase = pMT->GetGCStaticsBasePointer();
+    *ppNonGCStaticsBase = pMT->GetNonGCStaticsBasePointer();
 } // DacDbiInterfaceImpl::GetStaticsBases
 
 //-----------------------------------------------------------------------------

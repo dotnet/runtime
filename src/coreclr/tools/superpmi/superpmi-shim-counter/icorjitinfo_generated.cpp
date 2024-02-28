@@ -390,15 +390,6 @@ void interceptor_ICJI::LongLifetimeFree(
     original_ICorJitInfo->LongLifetimeFree(obj);
 }
 
-size_t interceptor_ICJI::getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection)
-{
-    mcs->AddCall("getClassModuleIdForStatics");
-    return original_ICorJitInfo->getClassModuleIdForStatics(cls, pModule, ppIndirection);
-}
-
 bool interceptor_ICJI::getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
@@ -770,11 +761,10 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
 }
 
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     mcs->AddCall("getThreadLocalStaticBlocksInfo");
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
 }
 
 bool interceptor_ICJI::isFieldStatic(
@@ -1131,14 +1121,6 @@ void interceptor_ICJI::getCallInfo(
 {
     mcs->AddCall("getCallInfo");
     original_ICorJitInfo->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
-}
-
-unsigned interceptor_ICJI::getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection)
-{
-    mcs->AddCall("getClassDomainID");
-    return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
 bool interceptor_ICJI::getStaticFieldContent(

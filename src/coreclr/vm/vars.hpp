@@ -626,34 +626,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
 
-// Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
-// neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
-// can be reused.
-
-// ModuleIndexes are not the same as ModuleIDs. The main purpose of a ModuleIndex is
-// to have a compact way to refer to any Module (domain neutral or domain specific).
-// The main purpose of a ModuleID is to facilitate looking up the DomainLocalModule
-// that corresponds to a given Module in a given AppDomain.
-
-struct ModuleIndex
-{
-    SIZE_T m_dwIndex;
-    ModuleIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit ModuleIndex (SIZE_T id)
-    : m_dwIndex(id)
-    { LIMITED_METHOD_DAC_CONTRACT; }
-    BOOL operator==(const ModuleIndex& ad) const
-    {
-        return m_dwIndex == ad.m_dwIndex;
-    }
-    BOOL operator!=(const ModuleIndex& ad) const
-    {
-        return m_dwIndex != ad.m_dwIndex;
-    }
-};
-
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns
 //-----------------------------------------------------------------------------

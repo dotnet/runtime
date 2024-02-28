@@ -489,12 +489,15 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     CorInfoHelpFunc helper = call->GetHelperNum();
 
-    if ((helper != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
-        (helper != CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+    if ((helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
     {
         return false;
     }
 
+    // TODO ... actually implement this stuff.
+    return false;
+    /*
     assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
@@ -832,7 +835,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
     assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
-    return true;
+    return true;*/
 }
 
 //------------------------------------------------------------------------------

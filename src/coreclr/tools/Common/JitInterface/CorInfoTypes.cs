@@ -1152,9 +1152,7 @@ namespace Internal.JitInterface
         public nuint tlsIndexObject;
         public nuint threadVarsSection;
         public uint offsetOfThreadLocalStoragePointer;
-        public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
-        public uint offsetOfGCDataPointer;
     };
 
     // System V struct passing

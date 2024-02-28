@@ -1640,8 +1640,8 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->bIsReflection = pModule->IsReflection();
     ModuleData->bIsPEFile = pModule->IsPEFile();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
-    ModuleData->dwModuleID = pModule->GetModuleID();
-    ModuleData->dwModuleIndex = pModule->GetModuleIndex().m_dwIndex;
+    ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
+    ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
     ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
     ModuleData->ThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
@@ -3171,47 +3171,16 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 HRESULT
 ClrDataAccess::GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
 {
-    if (addr == 0 || pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(TO_TADDR(addr));
-
-    pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-    pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-    pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-    pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use domain local modules anymore
+    return E_NOTIMPL;
 }
 
 
 HRESULT
 ClrDataAccess::GetDomainLocalModuleDataFromModule(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
 {
-    if (addr == 0 || pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    Module* pModule = PTR_Module(TO_TADDR(addr));
-    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(pModule->GetDomainLocalModule());
-    if (!pLocalModule)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-    }
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use domain local modules anymore
+    return E_NOTIMPL;
 }
 
 HRESULT
@@ -3224,31 +3193,8 @@ ClrDataAccess::GetDomainLocalModuleDataFromAppDomain(CLRDATA_ADDRESS appDomainAd
 HRESULT
 ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int index, struct DacpThreadLocalModuleData *pLocalModuleData)
 {
-    if (pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    pLocalModuleData->threadAddr = thread;
-    pLocalModuleData->ModuleIndex = index;
-
-    PTR_Thread pThread = PTR_Thread(TO_TADDR(thread));
-    PTR_ThreadLocalBlock pLocalBlock = ThreadStatics::GetCurrentTLB(pThread);
-    PTR_ThreadLocalModule pLocalModule = pLocalBlock->GetTLMIfExists(ModuleIndex(index));
-    if (!pLocalModule)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable);
-        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(ThreadLocalModule, pLocalModule, m_pDataBlob));
-    }
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use thread local modules anymore
+    return E_NOTIMPL;
 }
 
 

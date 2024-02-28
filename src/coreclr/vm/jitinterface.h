@@ -101,26 +101,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #endif // TARGET_X86
 
-// thread local struct to store the "thread static blocks"
-struct ThreadStaticBlockInfo
-{
-    uint32_t NonGCMaxThreadStaticBlocks;
-    void** NonGCThreadStaticBlocks;
-
-    uint32_t GCMaxThreadStaticBlocks;
-    void** GCThreadStaticBlocks;
-};
-
-#ifdef _MSC_VER
-EXTERN_C __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-EXTERN_C __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-EXTERN_C __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
-#else
-EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
-EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
-EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
-#endif // _MSC_VER
-
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
 //
@@ -175,30 +155,53 @@ EXTERN_C FCDECL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic, AwareLock *lock);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic_Portable, AwareLock *lock);
 
-
-#ifndef JIT_GetSharedGCStaticBase
-#define JIT_GetSharedGCStaticBase JIT_GetSharedGCStaticBase_Portable
+#ifndef JIT_GetGCStaticBase
+#define JIT_GetGCStaticBase JIT_GetGCStaticBase_Portable
 #endif
-EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
-EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, MethodTable *pMT);
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Portable, MethodTable *pMT);
 
-#ifndef JIT_GetSharedNonGCStaticBase
-#define JIT_GetSharedNonGCStaticBase JIT_GetSharedNonGCStaticBase_Portable
+#ifndef JIT_GetNonGCStaticBase
+#define JIT_GetNonGCStaticBase JIT_GetNonGCStaticBase_Portable
 #endif
-EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
-EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, MethodTable *pMT);
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable *pMT);
 
-#ifndef JIT_GetSharedGCStaticBaseNoCtor
-#define JIT_GetSharedGCStaticBaseNoCtor JIT_GetSharedGCStaticBaseNoCtor_Portable
+#ifndef JIT_GetGCStaticBaseNoCtor
+#define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor, DomainLocalModule *pLocalModule);
-EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule);
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBaseNoCtor, MethodTable *pMT);
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable *pMT);
 
-#ifndef JIT_GetSharedNonGCStaticBaseNoCtor
-#define JIT_GetSharedNonGCStaticBaseNoCtor JIT_GetSharedNonGCStaticBaseNoCtor_Portable
+#ifndef JIT_GetNonGCStaticBaseNoCtor
+#define JIT_GetNonGCStaticBaseNoCtor JIT_GetNonGCStaticBaseNoCtor_Portable
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor, DomainLocalModule *pLocalModule);
-EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule);
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor, MethodTable *pMT);
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable *pMT);
+
+#ifndef JIT_GetDynamicGCStaticBase
+#define JIT_GetDynamicGCStaticBase JIT_GetDynamicGCStaticBase_Portable
+#endif
+EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
+EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo);
+
+#ifndef JIT_GetDynamicNonGCStaticBase
+#define JIT_GetDynamicNonGCStaticBase JIT_GeDynamictNonGCStaticBase_Portable
+#endif
+EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
+EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo);
+
+#ifndef JIT_GetDynamicGCStaticBaseNoCtor
+#define JIT_GetDynamicGCStaticBaseNoCtor JIT_GetDynamicGCStaticBaseNoCtor_Portable
+#endif
+EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
+EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
+
+#ifndef JIT_GetDynamicNonGCStaticBaseNoCtor
+#define JIT_GetDynamicNonGCStaticBaseNoCtor JIT_GetDynamicNonGCStaticBaseNoCtor_Portable
+#endif
+EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
+EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
 extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
@@ -219,8 +222,8 @@ EXTERN_C FCDECL_MONHELPER(JITutil_MonSignal, AwareLock* lock);
 EXTERN_C FCDECL_MONHELPER(JITutil_MonContention, AwareLock* awarelock);
 EXTERN_C FCDECL2(void, JITutil_MonReliableContention, AwareLock* awarelock, BYTE* pbLockTaken);
 
-EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID);
-EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID);
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable *pMT);
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 
 EXTERN_C void DoJITFailFast ();
 EXTERN_C FCDECL0(void, JIT_FailFast);
@@ -1113,13 +1116,12 @@ struct VirtualFunctionPointerArgs
 
 FCDECL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUNSAFE, VirtualFunctionPointerArgs * pArgs);
 
-typedef HCCALL2_PTR(TADDR, FnStaticBaseHelper, TADDR arg0, TADDR arg1);
+typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
 
 struct StaticFieldAddressArgs
 {
     FnStaticBaseHelper staticBaseHelper;
     TADDR arg0;
-    TADDR arg1;
     SIZE_T offset;
 };
 

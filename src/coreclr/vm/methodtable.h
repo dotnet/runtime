@@ -26,6 +26,7 @@
 #include "generics.h"
 #include "gcinfotypes.h"
 #include "enum_class_flags.h"
+#include "threadstatics.h"
 
 /*
  * Forward Declarations
@@ -68,6 +69,12 @@ struct MethodTableAuxiliaryData;
 typedef DPTR(MethodTableAuxiliaryData) PTR_MethodTableAuxiliaryData;
 typedef DPTR(MethodTableAuxiliaryData const) PTR_Const_MethodTableAuxiliaryData;
 
+enum class StaticsOffsetType
+{
+    Normal,
+    ThreadLocal
+};
+
 enum class ResolveVirtualStaticMethodFlags
 {
     None = 0,
@@ -86,6 +93,16 @@ enum class FindDefaultInterfaceImplementationFlags
     AllowVariance = 1,
     ThrowOnConflict = 2,
     InstantiateFoundMethodDesc = 4,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
+
+enum class MethodTableStaticsFlags
+{
+    None = 0,
+    Present = 0x1,
+    Generic = 0x2,
+    Thread = 0x4,
 
     support_use_as_flags // Enable the template functions in enum_class_flags.h
 };
@@ -271,15 +288,16 @@ struct GenericsDictInfo
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
-struct GenericsStaticsInfo
-{
-    // Pointer to field descs for statics
-    PTR_FieldDesc       m_pFieldDescs;
 
-    // Method table ID for statics
-    SIZE_T              m_DynamicTypeID;
+// These various statics structures exist directly before the MethodTableAuxiliaryData
 
-};  // struct GenericsStaticsInfo
+// Any MethodTable which has static variables has this structure
+struct DynamicStaticsInfo;
+struct ThreadStaticsInfo;
+struct GenericsStaticsInfo;
+
+typedef DPTR(DynamicStaticsInfo) PTR_DynamicStaticsInfo;
+typedef DPTR(ThreadStaticsInfo) PTR_ThreadStaticsInfo;
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
 //
@@ -301,7 +319,7 @@ struct MethodTableAuxiliaryData
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
 
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0001,     // Is any field type or sub field type overrode Equals or GetHashCode
+        enum_flag_Initialized             = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
 
         enum_flag_Unrestored                = 0x0004,
@@ -310,10 +328,10 @@ struct MethodTableAuxiliaryData
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
-        // enum_unused                      = 0x0100,
-        // enum_unused                      = 0x0200,
-        // enum_unused                      = 0x0400,
-        // enum_unused                      = 0x0800,
+        enum_flag_IsInitError               = 0x0100,
+        enum_flag_IsStaticDataAllocated     = 0x0200,
+        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0400,     // Is any field type or sub field type overrode Equals or GetHashCode
+        enum_flag_IsTlsIndexAllocated       = 0x0800,
         // enum_unused                      = 0x1000,
         // enum_unused                      = 0x2000,
 
@@ -380,6 +398,67 @@ public:
     }
 #endif
 
+    inline BOOL IsInitError() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (VolatileLoad(&m_dwFlags) & enum_flag_IsInitError);
+    }
+
+#ifndef DACCESS_COMPILE
+    inline void SetInitError()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_IsInitError);
+    }
+#endif
+
+    inline BOOL IsTlsIndexAllocated() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated);
+    }
+
+#ifndef DACCESS_COMPILE
+    inline void SetIsTlsIndexAllocated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_IsTlsIndexAllocated);
+    }
+#endif
+
+    DWORD* getIsClassInitedFlagAddress()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(enum_flag_Initialized == 1); // This is an assumption in the JIT and in hand-written assembly at this time.
+        return &m_dwFlags;
+    }
+
+    inline BOOL IsClassInited() const
+    {
+        return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
+    }
+
+#ifndef DACCESS_COMPILE
+    inline void SetClassInited()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_Initialized);
+    }
+#endif
+
+    inline BOOL IsStaticDataAllocated() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated);
+    }
+
+#ifndef DACCESS_COMPILE
+    inline void SetIsStaticDataAllocated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_IsStaticDataAllocated);
+    }
+#endif
 
     inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
     {
@@ -437,11 +516,56 @@ public:
         m_offsetToNonVirtualSlots = offset;
     }
 
-    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
-    {
-        return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(GenericsStaticsInfo));
-    }
+    static inline PTR_DynamicStaticsInfo GetDynamicStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+    static inline PTR_ThreadStaticsInfo GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
 };  // struct MethodTableAuxiliaryData
+
+// Any Generic MethodTable which has static variables has this structure. Note that it ends
+// with a DynamicStatics structure so that lookups for just DynamicStatics will find that structure
+// when looking for statics pointers
+struct DynamicStaticsInfo
+{
+    PTR_OBJECTREF m_pGCStatics;
+    PTR_BYTE m_pNonGCStatics;
+    PTR_MethodTable m_pMethodTable;
+    MethodTableAuxiliaryData m_AuxData;
+    bool IsClassInited() const { return m_AuxData.IsClassInited(); }
+    PTR_MethodTable GetMethodTable() const { return m_pMethodTable; }
+};
+
+/* static */ inline PTR_DynamicStaticsInfo MethodTableAuxiliaryData::GetDynamicStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
+{
+    return dac_cast<PTR_DynamicStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(DynamicStaticsInfo));
+}
+
+struct GenericsStaticsInfo
+{
+    // Pointer to field descs for statics
+    PTR_FieldDesc       m_pFieldDescs;
+
+    DynamicStaticsInfo      m_DynamicStatics;
+};  // struct GenericsStaticsInfo
+
+/* static */ inline PTR_GenericsStaticsInfo MethodTableAuxiliaryData::GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
+{
+    return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(GenericsStaticsInfo));
+}
+
+// And MethodTable with Thread Statics has this structure. NOTE: This structure includes
+// GenericsStatics which may not actually have the m_pFieldDescs filled in if the MethodTable
+// is not actually Generic
+struct ThreadStaticsInfo
+{
+    TLSIndex NonGCTlsIndex;
+    TLSIndex GCTlsIndex;
+    GenericsStaticsInfo m_genericStatics;
+};
+
+/* static */ inline PTR_ThreadStaticsInfo MethodTableAuxiliaryData::GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
+{
+    return dac_cast<PTR_ThreadStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(ThreadStaticsInfo));
+}
 
 #ifdef UNIX_AMD64_ABI_ITF
 inline
@@ -640,15 +764,10 @@ public:
     // is accessed lives in a "loader module". The rule for determining the loader module must ensure
     // that a type never outlives its loader module with respect to app-domain unloading
     //
-    // GetModuleForStatics() is the third kind of module. GetModuleForStatics() is module that
-    // statics are attached to.
     PTR_Module GetLoaderModule();
     PTR_LoaderAllocator GetLoaderAllocator();
 
     void SetLoaderAllocator(LoaderAllocator* pAllocator);
-
-    // Get the domain local module - useful for static init checks
-    PTR_DomainLocalModule   GetDomainLocalModule();
 
     MethodTable *LoadEnclosingMethodTable(ClassLoadLevel targetLevel = CLASS_DEPENDENCIES_LOADED);
 
@@ -808,14 +927,6 @@ public:
 
     BOOL HasExplicitOrImplicitPublicDefaultConstructor();
 
-    //-------------------------------------------------------------------
-    // THE CLASS INITIALIZATION CONDITION
-    //  (and related DomainLocalModule storage)
-    //
-    // - populate the DomainLocalModule if needed
-    // - run the cctor
-    //
-
 public:
 
     // checks whether the class initialiser should be run on this class, and runs it if necessary
@@ -853,15 +964,35 @@ public:
     // Init the m_dwFlags field for an array
     void SetIsArray(CorElementType arrayType);
 
-    BOOL IsClassPreInited();
-
     // mark the class as having its cctor run.
 #ifndef DACCESS_COMPILE
-    void SetClassInited();
-    BOOL  IsClassInited();
+    void SetClassInited()
+    {
+        GetAuxiliaryDataForWrite()->SetClassInited();
+    }
 
-    BOOL IsInitError();
-    void SetClassInitError();
+    void AttemptToPreinit();
+#endif
+
+    BOOL  IsClassInited()
+    {
+        return GetAuxiliaryDataForWrite()->IsClassInited();
+    }
+
+    // Allocate any memory needed for statics, acquire TLSIndex for TLS statics, and check to see if the class can be considered pre-inited, and if so, set the initialized flag
+    void EnsureStaticDataAllocated();
+    void EnsureTlsIndexAllocated();
+
+    BOOL IsInitError()
+    {
+        return GetAuxiliaryData()->IsInitError();
+    }
+
+#ifndef DACCESS_COMPILE
+    void SetClassInitError()
+    {
+        return GetAuxiliaryDataForWrite()->SetInitError();
+    }
 #endif
 
     inline BOOL IsGlobalClass()
@@ -870,9 +1001,6 @@ public:
         return (GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN));
     }
 
-    // uniquely identifes this type in the Domain table
-    DWORD GetClassIndex();
-
 private:
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -880,12 +1008,6 @@ private:
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache);
 #endif // defined(UNIX_AMD64_ABI_ITF)
-
-    DWORD   GetClassIndexFromToken(mdTypeDef typeToken)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return RidFromToken(typeToken) - 1;
-    }
 
     // called from CheckRunClassInitThrowing().  The type wasn't marked as
     // inited while we were there, so let's attempt to do the work.
@@ -914,7 +1036,7 @@ public:
     // The pending list is required for restoring types that reference themselves through
     // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
 
-    void AllocateRegularStaticBoxes();
+    void AllocateRegularStaticBoxes(OBJECTREF** ppStaticBase);
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
     static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
@@ -2267,27 +2389,27 @@ public:
     DWORD  GetOffsetOfFirstStaticHandle();
     DWORD  GetOffsetOfFirstStaticMT();
 
-#ifndef DACCESS_COMPILE
     inline PTR_BYTE GetNonGCStaticsBasePointer();
     inline PTR_BYTE GetGCStaticsBasePointer();
+#ifndef DACCESS_COMPILE
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
-    inline PTR_BYTE GetGCThreadStaticsBaseHandle();
 #endif //!DACCESS_COMPILE
 
+    // Do not use except in DAC and profiler scenarios
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 
     inline DWORD IsDynamicStatics()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return !TestFlagWithMask(enum_flag_StaticsMask, enum_flag_StaticsMask_NonDynamic);
+        return GetFlag(enum_flag_DynamicStatics);
     }
 
-    inline void SetDynamicStatics(BOOL fGeneric)
+    inline void SetDynamicStatics()
     {
         LIMITED_METHOD_CONTRACT;
-        SetFlag(fGeneric ? enum_flag_StaticsMask_Generics : enum_flag_StaticsMask_Dynamic);
+        SetFlag(enum_flag_DynamicStatics);
     }
 
     inline void SetHasBoxedRegularStatics()
@@ -2317,7 +2439,7 @@ public:
     BOOL HasGenericsStaticsInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_StaticsMask_Generics);
+        return IsDynamicStatics() && HasInstantiation();
     }
 
     PTR_FieldDesc GetGenericsStaticFieldDescs()
@@ -2327,26 +2449,9 @@ public:
         return GetGenericsStaticsInfo()->m_pFieldDescs;
     }
 
-    BOOL HasCrossModuleGenericStaticsInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TestFlagWithMask(enum_flag_StaticsMask, enum_flag_StaticsMask_CrossModuleGenerics);
-    }
-
-    PTR_Module GetGenericsStaticsModuleAndID(DWORD * pID);
-
     WORD GetNumHandleRegularStatics();
-
     WORD GetNumBoxedRegularStatics ();
     WORD GetNumBoxedThreadStatics ();
-
-    //-------------------------------------------------------------------
-    // DYNAMIC ID
-    //
-
-    // Used for generics and reflection emit in memory
-    DWORD GetModuleDynamicEntryID();
-    Module* GetModuleForStatics();
 
     //-------------------------------------------------------------------
     // GENERICS DICT INFO
@@ -2709,7 +2814,7 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    void AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics = false, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
+    void AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, MethodTableStaticsFlags staticsFlags = MethodTableStaticsFlags::None, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
 #endif
 
     inline PTR_Const_MethodTableAuxiliaryData GetAuxiliaryData() const
@@ -2722,6 +2827,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pAuxiliaryData;
+    }
+
+    DWORD* getIsClassInitedFlagAddress()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetAuxiliaryDataForWrite()->getIsClassInitedFlagAddress();
     }
 
     //-------------------------------------------------------------------
@@ -3282,12 +3393,6 @@ private:
         enum_flag_UNUSED_ComponentSize_1    = 0x00000001,
         // GC depends on this bit
         enum_flag_HasCriticalFinalizer      = 0x00000002, // finalizer must be run on Appdomain Unload
-        enum_flag_StaticsMask               = 0x0000000C,
-        enum_flag_StaticsMask_NonDynamic    = 0x00000000,
-        enum_flag_StaticsMask_Dynamic       = 0x00000008,   // dynamic statics (EnC, reflection.emit)
-        enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x0000000C, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000008, // helper constant to get rid of unnecessary check
 
 
         enum_flag_GenericsMask              = 0x00000030,
@@ -3333,7 +3438,6 @@ private:
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
         enum_flag_StringArrayValues = SET_FALSE(enum_flag_HasCriticalFinalizer) |
-                                      SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
                                       SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
@@ -3426,9 +3530,8 @@ private:
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
 
-        // The following bits describe usage of optional slots. They have to stay
-        // together because of we index using them into offset arrays.
-        enum_flag_HasPerInstInfo            = 0x0001,
+        enum_flag_DynamicStatics            = 0x0001,
+        enum_flag_HasPerInstInfo            = 0x0002,
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_HasBoxedRegularStatics    = 0x0008, // GetNumBoxedRegularStatics() != 0
@@ -3580,8 +3683,25 @@ private:
     PTR_GenericsStaticsInfo GetGenericsStaticsInfo()
     {
         PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
+        _ASSERTE(HasGenericsStaticsInfo());
         return MethodTableAuxiliaryData::GetGenericStaticsInfo(AuxiliaryData);
     }
+
+public:
+    PTR_DynamicStaticsInfo GetDynamicStaticsInfo()
+    {
+        PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
+        _ASSERTE(IsDynamicStatics());
+        return MethodTableAuxiliaryData::GetDynamicStaticsInfo(AuxiliaryData);
+    }
+
+    PTR_ThreadStaticsInfo GetThreadStaticsInfo()
+    {
+        PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
+        _ASSERTE(GetNumThreadStaticFields() > 0);
+        return MethodTableAuxiliaryData::GetThreadStaticsInfo(AuxiliaryData);
+    }
+private:
 
     // Optional members.  These are used for fields in the data structure where
     // the fields are (a) known when MT is created and (b) there is a default
@@ -3660,6 +3780,8 @@ private:
 public:
 
     BOOL Validate ();
+
+    static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 };  // class MethodTable
 
 #ifndef CROSSBITNESS_COMPILE

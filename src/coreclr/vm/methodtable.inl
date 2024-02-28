@@ -1078,72 +1078,50 @@ inline DWORD MethodTable::GetOptionalMembersSize()
     return GetEndOffsetOfOptionalMembers() - GetStartOffsetOfOptionalMembers();
 }
 
-#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCStaticsBasePointer()
 {
     WRAPPER_NO_CONTRACT;
-    return GetDomainLocalModule()->GetNonGCStaticsBasePointer(this);
+    if (!IsDynamicStatics())
+    {
+        return NULL;
+    }
+    else
+    {
+        return GetDynamicStaticsInfo()->m_pNonGCStatics;
+    }
 }
 
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
 {
     WRAPPER_NO_CONTRACT;
-    return GetDomainLocalModule()->GetGCStaticsBasePointer(this);
+    if (!IsDynamicStatics())
+    {
+        return NULL;
+    }
+    else
+    {
+        return (PTR_BYTE)GetDynamicStaticsInfo()->m_pGCStatics;
+    }
 }
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
-
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
-        return NULL;
-
-    return pTLM->GetNonGCStaticsBasePointer(this);
-}
-
-//==========================================================================================
-inline PTR_BYTE MethodTable::GetGCThreadStaticsBaseHandle()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
-
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
-        return NULL;
-
-    return dac_cast<PTR_BYTE>(pTLM->GetPrecomputedGCStaticsBaseHandle());
+    EnsureTlsIndexAllocated();
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->NonGCTlsIndex;
+    return (PTR_BYTE)GetThreadLocalStaticBase(tlsIndex);
 }
 
 //==========================================================================================
@@ -1151,25 +1129,15 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
-
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
-        return NULL;
-
-    return pTLM->GetGCStaticsBasePointer(this);
+    EnsureTlsIndexAllocated();
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->GCTlsIndex;
+    return (PTR_BYTE)GetThreadLocalStaticBase(tlsIndex);
 }
 
 #endif //!DACCESS_COMPILE
@@ -1179,16 +1147,15 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->NonGCTlsIndex;
+    if (!tlsIndex.IsAllocated())
         return NULL;
 
-    return pTLM->GetNonGCStaticsBasePointer(this);
+    PTR_ThreadLocalData pThreadLocalData = pThread->GetThreadLocalDataPtr();
+    if (pThreadLocalData == NULL)
+        return NULL;
+
+    return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThreadLocalData, tlsIndex);
 }
 
 //==========================================================================================
@@ -1196,23 +1163,15 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->GCTlsIndex;
+    if (!tlsIndex.IsAllocated())
         return NULL;
 
-    return pTLM->GetGCStaticsBasePointer(this);
-}
+    PTR_ThreadLocalData pThreadLocalData = pThread->GetThreadLocalDataPtr();
+    if (pThreadLocalData == NULL)
+        return NULL;
 
-//==========================================================================================
-inline PTR_DomainLocalModule MethodTable::GetDomainLocalModule()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetModuleForStatics()->GetDomainLocalModule();
+    return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThreadLocalData, tlsIndex);
 }
 
 //==========================================================================================
@@ -1236,13 +1195,6 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     return AllocateObject(this);
 }
 
-
-//==========================================================================================
-inline DWORD MethodTable::GetClassIndex()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetClassIndexFromToken(GetCl());
-}
 
 #ifndef DACCESS_COMPILE
 //==========================================================================================
@@ -1296,27 +1248,6 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     }
 }
 #endif
-
-//==========================================================================================
-FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    _ASSERTE(HasGenericsStaticsInfo());
-
-    PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
-    PTR_GenericsStaticsInfo staticsInfo = MethodTableAuxiliaryData::GetGenericStaticsInfo(AuxiliaryData);
-    _ASSERTE(FitsIn<DWORD>(staticsInfo->m_DynamicTypeID) || staticsInfo->m_DynamicTypeID == (SIZE_T)-1);
-    *pID = (DWORD)staticsInfo->m_DynamicTypeID;
-    return AuxiliaryData->GetLoaderModule();
-}
 
 //==========================================================================================
 inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()

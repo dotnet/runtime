@@ -1296,9 +1296,8 @@ HCIMPL1(void, JIT_InitClass, CORINFO_CLASS_HANDLE typeHnd_)
 
     TypeHandle typeHnd(typeHnd_);
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(!pMT->IsClassPreInited());
 
-    if (pMT->GetDomainLocalModule()->IsClassInitialized(pMT))
+    if (pMT->IsClassInited())
         return;
 
     // Tailcall to the slow helper
@@ -1349,57 +1348,103 @@ HCIMPLEND
 
 #include <optsmallperfcritical.h>
 
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    // If type doesn't have a class constructor, the contents of this if statement may
-    // still get executed.  JIT_GetSharedNonGCStaticBaseNoCtor should be used in this case.
-    if (pLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
+    if (pMT->IsClassInited())
     {
-        return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+        return pMT->GetDynamicStaticsInfo()->m_pNonGCStatics;
     }
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedNonGCStaticBase_Helper, pLocalModule, dwClassDomainID);
+    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+
+HCIMPL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    if (pStaticsInfo->IsClassInited())
+    {
+        return pStaticsInfo->m_pNonGCStatics;
+    }
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
+}
+HCIMPLEND
+// No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
+// been initialized.
+HCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
+{
+    FCALL_CONTRACT;
+
+    return pMT->GetDynamicStaticsInfo()->m_pNonGCStatics;
 }
 HCIMPLEND
 
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
-HCIMPL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule)
+HCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
 {
     FCALL_CONTRACT;
 
-    return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+    return pDynamicStaticsInfo->m_pNonGCStatics;
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_GetSharedGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetGCStaticBase_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    // If type doesn't have a class constructor, the contents of this if statement may
-    // still get executed.  JIT_GetSharedGCStaticBaseNoCtor should be used in this case.
-    if (pLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
+    if (pMT->IsClassInited())
     {
-        return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
+        return pMT->GetDynamicStaticsInfo()->m_pGCStatics;
     }
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedGCStaticBase_Helper, pLocalModule, dwClassDomainID);
+    return HCCALL1(JIT_GetGCStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+HCIMPL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    if (pStaticsInfo->IsClassInited())
+    {
+        return pStaticsInfo->m_pGCStatics;
+    }
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
 }
 HCIMPLEND
 
 // No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
 // initialized.
-HCIMPL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule)
+HCIMPL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
+    return pMT->GetDynamicStaticsInfo()->m_pGCStatics;
+}
+HCIMPLEND
+
+// No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
+// initialized.
+HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    return pDynamicStaticsInfo->m_pGCStatics;
 }
 HCIMPLEND
 
@@ -1408,302 +1453,33 @@ HCIMPLEND
 
 // The following two functions can be tail called from platform dependent versions of
 // JIT_GetSharedGCStaticBase and JIT_GetShareNonGCStaticBase
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Obtain Method table
-    MethodTable * pMT = pLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
 
     PREFIX_ASSUME(pMT != NULL);
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
 
-    return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+    return (void*)pMT->GetDynamicStaticsInfo()->m_pNonGCStatics;
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_GetSharedGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetGCStaticBase_Helper, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Obtain Method table
-    MethodTable * pMT = pLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
 
     PREFIX_ASSUME(pMT != NULL);
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
 
-    return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
+    return (void*)pMT->GetDynamicStaticsInfo()->m_pGCStatics;
 }
 HCIMPLEND
-
-/*********************************************************************/
-// Slow helper to tail call from the fast one
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass_Helper, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    void* result = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT);
-
-    pMT->CheckRunClassInitThrowing();
-
-    result = (void*)pLocalModule->GetDynamicEntryNonGCStaticsBasePointer(dwDynamicClassDomainID, pMT->GetLoaderAllocator());
-    HELPER_METHOD_FRAME_END();
-
-    return result;
-}
-HCIMPLEND
-
-/*************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedNonGCStaticBaseDynamicClass_Helper, pLocalModule, dwDynamicClassDomainID);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*************************************************************/
-// Slow helper to tail call from the fast one
-HCIMPL2(void, JIT_ClassInitDynamicClass_Helper, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT);
-
-    pMT->CheckRunClassInitThrowing();
-
-    HELPER_METHOD_FRAME_END();
-
-    return;
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void, JIT_ClassInitDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        return;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_ClassInitDynamicClass_Helper, pLocalModule, dwDynamicClassDomainID);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*************************************************************/
-// Slow helper to tail call from the fast one
-HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass_Helper, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    void* result = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT);
-
-    pMT->CheckRunClassInitThrowing();
-
-    result = (void*)pLocalModule->GetDynamicEntryGCStaticsBasePointer(dwDynamicClassDomainID, pMT->GetLoaderAllocator());
-    HELPER_METHOD_FRAME_END();
-
-    return result;
-}
-HCIMPLEND
-
-/*************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedGCStaticBaseDynamicClass_Helper, pLocalModule, dwDynamicClassDomainID);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-// Slow helper to tail call from the fast one
-NOINLINE HCIMPL1(void*, JIT_GetGenericsGCStaticBase_Framed, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    void* base = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    pMT->CheckRestore();
-
-    pMT->CheckRunClassInitThrowing();
-
-    base = (void*) pMT->GetGCStaticsBasePointer();
-    CONSISTENCY_CHECK(base != NULL);
-
-    HELPER_METHOD_FRAME_END();
-
-    return base;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsGCStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModuleForStatics = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    DomainLocalModule *pLocalModule = pModuleForStatics->GetDomainLocalModule();
-    _ASSERTE(pLocalModule);
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGenericsGCStaticBase_Framed, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-// Slow helper to tail call from the fast one
-NOINLINE HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase_Framed, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    void* base = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    pMT->CheckRestore();
-
-    // If pMT refers to a method table that requires some initialization work,
-    // then pMT cannot to a method table that is shared by generic instantiations,
-    // because method tables that are shared by generic instantiations do not have
-    // a base for statics to live in.
-    _ASSERTE(pMT->IsClassPreInited() || !pMT->IsSharedByGenericInstantiations());
-
-    pMT->CheckRunClassInitThrowing();
-
-    // We could just return null here instead of returning base when this helper is called just to trigger the cctor
-    base = (void*) pMT->GetNonGCStaticsBasePointer();
-
-    HELPER_METHOD_FRAME_END();
-
-    return base;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    // This fast path will typically always be taken once the slow framed path below
-    // has executed once.  Sometimes the slow path will be executed more than once,
-    // e.g. if static fields are accessed during the call to CheckRunClassInitThrowing()
-    // in the slow path.
-
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModuleForStatics = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    DomainLocalModule *pLocalModule = pModuleForStatics->GetDomainLocalModule();
-    _ASSERTE(pLocalModule);
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGenericsNonGCStaticBase_Framed, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
 
 //========================================================================
 //
@@ -1726,16 +1502,8 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    pMT->CheckRunClassInitThrowing();
 
     // Lookup the non-GC statics base pointer
     base = (void*) pMT->GetNonGCThreadStaticsBasePointer();
@@ -1758,16 +1526,8 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    pMT->CheckRunClassInitThrowing();
 
     // Lookup the GC statics base pointer
     base = (void*) pMT->GetGCThreadStaticsBasePointer();
@@ -1779,14 +1539,6 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-#ifdef _MSC_VER
-__declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
-#else
-__thread uint32_t t_NonGCThreadStaticBlocksSize;
-__thread uint32_t t_GCThreadStaticBlocksSize;
-#endif // !_MSC_VER
-
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
 //     if the class constructor has been run, we have a separate helper ID for the "no ctor"
@@ -1794,30 +1546,33 @@ __thread uint32_t t_GCThreadStaticBlocksSize;
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetNonGCThreadStaticBase, MethodTable *pMT)
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
-        return (void*)pThreadLocalModule->GetPrecomputedNonGCStaticsBasePointer();
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pMT->GetThreadStaticsInfo()->NonGCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
 
     ENDFORBIDGC();
     return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+HCIMPL1(void*, JIT_GetDynamicNonGCThreadStaticBase, ThreadStaticsInfo *pThreadStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pThreadStaticsInfo->NonGCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
+
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pThreadStaticsInfo->m_genericStatics.m_DynamicStatics.GetMethodTable());
 }
 HCIMPLEND
 
@@ -1825,53 +1580,20 @@ HCIMPLEND
 //      Even though we always check if the class constructor has been run, we have a separate
 //      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
 //      otherwise wouldn't be possible.
-HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
+HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 {
     void* staticBlock = nullptr;
 
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupNonGCThreadStaticBlockType(staticBlockIndex);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
+    TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    MethodTable *pMT = LookupMethodTableForThreadStatic(tlsIndex);
+    pMT->CheckRunClassInitThrowing();
 
     // Lookup the non-GC statics base pointer
     staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
-    CONSISTENCY_CHECK(staticBlock != NULL);
-
-    if (t_NonGCThreadStaticBlocksSize <= staticBlockIndex)
-    {
-        UINT32 newThreadStaticBlocksSize = max(2 * t_NonGCThreadStaticBlocksSize, staticBlockIndex + 1);
-        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(newThreadStaticBlocks + t_NonGCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_NonGCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
-
-        if (t_NonGCThreadStaticBlocksSize > 0)
-        {
-            memcpy(newThreadStaticBlocks, t_ThreadStatics.NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-        }
-
-        t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_ThreadStatics.NonGCThreadStaticBlocks = newThreadStaticBlocks;
-    }
-
-    void* currentEntry = t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex];
-    // We could be coming here 2nd time after running the ctor when we try to get the static block.
-    // In such case, just avoid adding the same entry.
-    if (currentEntry != staticBlock)
-    {
-        _ASSERTE(currentEntry == nullptr);
-        t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_ThreadStatics.NonGCMaxThreadStaticBlocks = max(t_ThreadStatics.NonGCMaxThreadStaticBlocks, staticBlockIndex);
-    }
     HELPER_METHOD_FRAME_END();
 
     return staticBlock;
@@ -1887,39 +1609,43 @@ HCIMPLEND
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetGCThreadStaticBase, MethodTable *pMT)
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the GC statics base and return
-    if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
-        return (void*)pThreadLocalModule->GetPrecomputedGCStaticsBasePointer();
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pMT->GetThreadStaticsInfo()->GCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
 
     ENDFORBIDGC();
     return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
 }
 HCIMPLEND
+
+HCIMPL1(void*, JIT_GetDynamicGCThreadStaticBase, ThreadStaticsInfo *pThreadStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pThreadStaticsInfo->GCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
+
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pThreadStaticsInfo->m_genericStatics.m_DynamicStatics.GetMethodTable());
+}
+HCIMPLEND
+
 #include <optdefault.h>
 
 // *** This helper corresponds CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
 //      Even though we always check if the class constructor has been run, we have a separate
 //      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
 //      otherwise wouldn't be possible.
-HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
+HCIMPL1(void*, JIT_GetGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 {
     void* staticBlock = nullptr;
 
@@ -1927,253 +1653,18 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupGCThreadStaticBlockType(staticBlockIndex);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
+    TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    MethodTable *pMT = LookupMethodTableForThreadStatic(tlsIndex);
+    pMT->CheckRunClassInitThrowing();
 
-    // Lookup the GC statics base handle and cache it
-    staticBlock = (void*) pMT->GetGCThreadStaticsBaseHandle();
-    CONSISTENCY_CHECK(staticBlock != NULL);
-
-    if (t_GCThreadStaticBlocksSize <= staticBlockIndex)
-    {
-        UINT32 newThreadStaticBlocksSize = max(2 * t_GCThreadStaticBlocksSize, staticBlockIndex + 1);
-        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(newThreadStaticBlocks + t_GCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_GCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
-
-        if (t_GCThreadStaticBlocksSize > 0)
-        {
-            memcpy(newThreadStaticBlocks, t_ThreadStatics.GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete[] t_ThreadStatics.GCThreadStaticBlocks;
-        }
-
-        t_GCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_ThreadStatics.GCThreadStaticBlocks = newThreadStaticBlocks;
-    }
-
-    void* currentEntry = t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex];
-    // We could be coming here 2nd time after running the ctor when we try to get the static block.
-    // In such case, just avoid adding the same entry.
-    if (currentEntry != staticBlock)
-    {
-        _ASSERTE(currentEntry == nullptr);
-        t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_ThreadStatics.GCMaxThreadStaticBlocks = max(t_ThreadStatics.GCMaxThreadStaticBlocks, staticBlockIndex);
-    }
-
-    // Get the data pointer of static block
+    // Lookup the non-GC statics base pointer
     staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
-
     HELPER_METHOD_FRAME_END();
 
     return staticBlock;
 }
 HCIMPLEND
-
-// *** This helper corresponds to CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule *pDomainLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                                            pLocalInfo,
-                                                            &retval);
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT != NULL);
-    _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
-
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// *** This helper corresponds to CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *pDomainLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                                         pLocalInfo,
-                                                         &retval);
-
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT != NULL);
-    _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// *** This helper corresponds to CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsNonGCThreadStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    // This fast path will typically always be taken once the slow framed path below
-    // has executed once.  Sometimes the slow path will be executed more than once,
-    // e.g. if static fields are accessed during the call to CheckRunClassInitThrowing()
-    // in the slow path.
-
-    // Get the Module and dynamic class ID
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModule = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    // Get ModuleIndex
-    ModuleIndex index = pModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                                      pLocalInfo,
-                                                      &retval);
-
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// *** This helper corresponds to CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsGCThreadStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    // This fast path will typically always be taken once the slow framed path below
-    // has executed once.  Sometimes the slow path will be executed more than once,
-    // e.g. if static fields are accessed during the call to CheckRunClassInitThrowing()
-    // in the slow path.
-
-    // Get the Module and dynamic class ID
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModule = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    // Get ModuleIndex
-    ModuleIndex index = pModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                                         pLocalInfo,
-                                                         &retval);
-
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
 
 //========================================================================
 //
@@ -2186,7 +1677,7 @@ HCIMPL1_RAW(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArg
 {
     FCALL_CONTRACT;
 
-    TADDR base = HCCALL2(pArgs->staticBaseHelper, pArgs->arg0, pArgs->arg1);
+    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
     return base + pArgs->offset;
 }
 HCIMPLEND_RAW
@@ -2197,7 +1688,7 @@ HCIMPL1_RAW(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs *
 {
     FCALL_CONTRACT;
 
-    TADDR base = HCCALL2(pArgs->staticBaseHelper, pArgs->arg0, pArgs->arg1);
+    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
     return *(TADDR *)(base + pArgs->offset) + Object::GetOffsetOfFirstField();
 }
 HCIMPLEND_RAW
