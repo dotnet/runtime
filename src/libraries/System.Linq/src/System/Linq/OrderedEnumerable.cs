@@ -9,54 +9,25 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal abstract partial class OrderedEnumerable<TElement> : Iterator<TElement>, IOrderedEnumerable<TElement>
+        internal abstract partial class OrderedIterator<TElement> : Iterator<TElement>, IOrderedEnumerable<TElement>
         {
             internal readonly IEnumerable<TElement> _source;
 
-            protected OrderedEnumerable(IEnumerable<TElement> source) => _source = source;
+            protected OrderedIterator(IEnumerable<TElement> source) => _source = source;
 
             private protected int[] SortedMap(TElement[] buffer) => GetEnumerableSorter().Sort(buffer, buffer.Length);
 
-            private int[] SortedMap(TElement[] buffer, int minIdx, int maxIdx) =>
+            internal int[] SortedMap(TElement[] buffer, int minIdx, int maxIdx) =>
                 GetEnumerableSorter().Sort(buffer, buffer.Length, minIdx, maxIdx);
 
-            internal IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
-            {
-                TElement[] buffer = _source.ToArray();
-                int count = buffer.Length;
-                if (count > minIdx)
-                {
-                    if (count <= maxIdx)
-                    {
-                        maxIdx = count - 1;
-                    }
-
-                    if (minIdx == maxIdx)
-                    {
-                        yield return GetEnumerableSorter().ElementAt(buffer, count, minIdx);
-                    }
-                    else
-                    {
-                        int[] map = SortedMap(buffer, minIdx, maxIdx);
-                        while (minIdx <= maxIdx)
-                        {
-                            yield return buffer[map[minIdx]];
-                            ++minIdx;
-                        }
-                    }
-                }
-            }
-
-            private EnumerableSorter<TElement> GetEnumerableSorter() => GetEnumerableSorter(null);
-
-            internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next);
+            internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next = null);
 
             internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer = null);
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             IOrderedEnumerable<TElement> IOrderedEnumerable<TElement>.CreateOrderedEnumerable<TKey>(Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending) =>
-                new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, @descending, this);
+                new OrderedIterator<TElement, TKey>(_source, keySelector, comparer, @descending, this);
 
             public TElement? TryGetLast(Func<TElement, bool> predicate, out bool found)
             {
@@ -92,16 +63,16 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
+        internal sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
         {
-            private readonly OrderedEnumerable<TElement>? _parent;
+            private readonly OrderedIterator<TElement>? _parent;
             private readonly Func<TElement, TKey> _keySelector;
             private readonly IComparer<TKey> _comparer;
             private readonly bool _descending;
             private TElement[]? _buffer;
             private int[]? _map;
 
-            internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending, OrderedEnumerable<TElement>? parent) :
+            internal OrderedIterator(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending, OrderedIterator<TElement>? parent) :
                 base(source)
             {
                 if (source is null)
@@ -119,7 +90,7 @@ namespace System.Linq
                 _descending = descending;
             }
 
-            public override Iterator<TElement> Clone() => new OrderedEnumerable<TElement, TKey>(_source, _keySelector, _comparer, _descending, _parent);
+            public override Iterator<TElement> Clone() => new OrderedIterator<TElement, TKey>(_source, _keySelector, _comparer, _descending, _parent);
 
             internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next)
             {
@@ -194,12 +165,12 @@ namespace System.Linq
         }
 
         /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
-        internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+        internal sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
         {
             private readonly bool _descending;
             private TElement[]? _buffer;
 
-            public OrderedImplicitlyStableEnumerable(IEnumerable<TElement> source, bool descending) : base(source)
+            public ImplicitlyStableOrderedIterator(IEnumerable<TElement> source, bool descending) : base(source)
             {
                 Debug.Assert(TypeIsImplicitlyStable<TElement>());
 
@@ -211,7 +182,7 @@ namespace System.Linq
                 _descending = descending;
             }
 
-            public override Iterator<TElement> Clone() => new OrderedImplicitlyStableEnumerable<TElement>(_source, _descending);
+            public override Iterator<TElement> Clone() => new ImplicitlyStableOrderedIterator<TElement>(_source, _descending);
 
             internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
                 childComparer == null ?

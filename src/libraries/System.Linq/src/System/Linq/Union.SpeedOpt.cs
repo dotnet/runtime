@@ -7,7 +7,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private abstract partial class UnionIterator<TSource> : IIListProvider<TSource>
+        private abstract partial class UnionIterator<TSource>
         {
             private HashSet<TSource> FillSet()
             {
@@ -24,11 +24,27 @@ namespace System.Linq
                 }
             }
 
-            public TSource[] ToArray() => HashSetToArray(FillSet());
+            public override TSource[] ToArray() => HashSetToArray(FillSet());
 
-            public List<TSource> ToList() => new List<TSource>(FillSet());
+            public override List<TSource> ToList() => new List<TSource>(FillSet());
 
-            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
+            public override int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                IEnumerable<TSource>? source;
+                for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                {
+                    TSource? result = source.TryGetFirst(out found);
+                    if (found)
+                    {
+                        return result;
+                    }
+                }
+
+                found = false;
+                return default;
+            }
         }
     }
 }
