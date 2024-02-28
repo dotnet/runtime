@@ -1,3 +1,10 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// This file is shared between CoreCLR and NativeAOT. Some of the differences are handled
+// with the FEATURE_NATIVEAOT and FEATURE_EH_FUNCLETS defines. There are three main methods
+// that are used by both runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
+
 #define RETURN_ADDR_OFFS        1       // in DWORDS
 
 #define X86_INSTR_TEST_ESP_SIB          0x24
@@ -359,6 +366,7 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     return position * sizeof(TADDR);
 }
 
+#ifndef FEATURE_NATIVEAOT
 inline
 size_t GetParamTypeArgOffset(hdrInfo * info)
 {
@@ -654,6 +662,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
 }
+#endif
 
 /*****************************************************************************/
 static
@@ -702,7 +711,7 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
     _ASSERTE(*castto(table, unsigned short *) == 0xBABE);
 #endif
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(CONSISTENCY_CHECK_MSGF)
     if (info.argTabOffset != INVALID_ARGTAB_OFFSET)
     {
         CONSISTENCY_CHECK_MSGF((info.argTabOffset == (unsigned) (table - tableStart)),
@@ -1758,7 +1767,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
                 if  (argOfs >= MAX_PTRARG_OFS)
                 {
-                     _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
+                    _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
                 }
                 else
                 {
@@ -2328,7 +2337,18 @@ const RegMask CALLEE_SAVED_REGISTERS_MASK[] =
 
 static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 {
-#ifdef FEATURE_EH_FUNCLETS
+#if defined(FEATURE_NATIVEAOT)
+    static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
+    {
+        offsetof(REGDISPLAY, pRdi), // first register to be pushed
+        offsetof(REGDISPLAY, pRsi),
+        offsetof(REGDISPLAY, pRbx),
+        offsetof(REGDISPLAY, pRbp), // last register to be pushed
+    };
+
+    SIZE_T offsetOfRegPtr = OFFSET_OF_CALLEE_SAVED_REGISTERS[ind];
+    *(LPVOID*)(PBYTE(pRD) + offsetOfRegPtr) = loc;
+#elif defined(FEATURE_EH_FUNCLETS)
     static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
     {
         offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, Edi), // first register to be pushed
@@ -2359,7 +2379,7 @@ void UnwindEspFrameEpilog(
         PREGDISPLAY pContext,
         hdrInfo * info,
         PTR_CBYTE epilogBase,
-        unsigned flags)
+        bool updateAllRegs)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -2415,7 +2435,7 @@ void UnwindEspFrameEpilog(
         {
             /* We have NOT yet popped off the register.
                Get the value from the stack if needed */
-            if ((flags & UpdateAllRegs) || (regMask == RM_EBP))
+            if (updateAllRegs || (regMask == RM_EBP))
             {
                 SetLocation(pContext, i - 1, PTR_DWORD((TADDR)ESP));
             }
@@ -2433,8 +2453,7 @@ void UnwindEspFrameEpilog(
         || CheckInstrWord(*PTR_WORD(epilogBase + offset), X86_INSTR_w_JMP_FAR_IND_IMM)); //jmp [addr32]
 
     /* Finally we can set pPC */
-    pContext->PCTAddr = (TADDR)ESP;
-    pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+    SetRegdisplayPCTAddr(pContext, (TADDR)ESP);
 
     pContext->SP = ESP;
 }
@@ -2445,7 +2464,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         PREGDISPLAY pContext,
         hdrInfo * info,
         PTR_CBYTE epilogBase,
-        unsigned flags)
+        bool updateAllRegs)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -2538,7 +2557,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
 
         if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
         {
-            if (flags & UpdateAllRegs)
+            if (updateAllRegs)
             {
                 SetLocation(pContext, i - 1, PTR_DWORD((TADDR)ESP));
             }
@@ -2564,8 +2583,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
     }
     offset = SKIP_POP_REG(epilogBase, offset);
 
-    pContext->PCTAddr = (TADDR)ESP;
-    pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+    SetRegdisplayPCTAddr(pContext, (TADDR)ESP);
 
     pContext->SP = ESP;
 }
@@ -2592,7 +2610,7 @@ void UnwindEpilog(
         PREGDISPLAY pContext,
         hdrInfo * info,
         PTR_CBYTE epilogBase,
-        unsigned flags)
+        bool updateAllRegs)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -2602,15 +2620,15 @@ void UnwindEpilog(
 
     if  (info->ebpFrame || info->doubleAlign)
     {
-        UnwindEbpDoubleAlignFrameEpilog(pContext, info, epilogBase, flags);
+        UnwindEbpDoubleAlignFrameEpilog(pContext, info, epilogBase, updateAllRegs);
     }
     else
     {
-        UnwindEspFrameEpilog(pContext, info, epilogBase, flags);
+        UnwindEspFrameEpilog(pContext, info, epilogBase, updateAllRegs);
     }
 
 #ifdef _DEBUG
-    if (flags & UpdateAllRegs)
+    if (updateAllRegs)
         TRASH_CALLEE_UNSAVED_REGS(pContext);
 #endif
 
@@ -2625,7 +2643,7 @@ void UnwindEspFrameProlog(
         PREGDISPLAY pContext,
         hdrInfo * info,
         PTR_CBYTE methodStart,
-        unsigned flags)
+        bool updateAllRegs)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -2687,14 +2705,15 @@ void UnwindEspFrameProlog(
     //
 
     // Poison the value, we don't set it properly at the end of the prolog
-    INDEBUG(offset = 0xCCCCCCCC);
-
+#ifdef _DEBUG
+    offset = 0xCCCCCCCC;
+#endif
 
     // Always restore EBP
     if (regsMask & RM_EBP)
         pContext->SetEbpLocation(savedRegPtr++);
 
-    if (flags & UpdateAllRegs)
+    if (updateAllRegs)
     {
         if (regsMask & RM_EBX)
             pContext->SetEbxLocation(savedRegPtr++);
@@ -2775,8 +2794,7 @@ void UnwindEspFrame(
 
     /* we can now set the (address of the) return address */
 
-    pContext->PCTAddr = (TADDR)ESP;
-    pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+    SetRegdisplayPCTAddr(pContext, (TADDR)ESP);
 
     /* Now adjust stack pointer */
 
@@ -2790,7 +2808,7 @@ void UnwindEbpDoubleAlignFrameProlog(
         PREGDISPLAY pContext,
         hdrInfo * info,
         PTR_CBYTE methodStart,
-        unsigned flags)
+        bool updateAllRegs)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2828,8 +2846,7 @@ void UnwindEbpDoubleAlignFrameProlog(
 
         /* Stack pointer points to return address */
 
-        pContext->PCTAddr = (TADDR)pContext->SP;
-        pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+        SetRegdisplayPCTAddr(pContext, (TADDR)pContext->SP);
 
         /* EBP and callee-saved registers still have the correct value */
 
@@ -2847,7 +2864,7 @@ void UnwindEbpDoubleAlignFrameProlog(
 
     const unsigned curEBP = GetRegdisplayFP(pContext);
 
-    if (flags & UpdateAllRegs)
+    if (updateAllRegs)
     {
         PTR_DWORD pSavedRegs = PTR_DWORD((TADDR)curEBP);
 
@@ -2895,20 +2912,20 @@ void UnwindEbpDoubleAlignFrameProlog(
 
     /* Stack pointer points to return address */
 
-    pContext->PCTAddr = (TADDR)pContext->SP;
-    pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+    SetRegdisplayPCTAddr(pContext, (TADDR)pContext->SP);
 }
 
 /*****************************************************************************/
 
 bool UnwindEbpDoubleAlignFrame(
         PREGDISPLAY     pContext,
-        EECodeInfo     *pCodeInfo,
         hdrInfo        *info,
         PTR_CBYTE       table,
         PTR_CBYTE       methodStart,
         DWORD           curOffs,
-        unsigned        flags)
+        IN_EH_FUNCLETS_COMMA(PTR_CBYTE       funcletStart)
+        IN_EH_FUNCLETS_COMMA(bool            isFunclet)
+        bool            updateAllRegs)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -2930,7 +2947,7 @@ bool UnwindEbpDoubleAlignFrame(
         // TODO If funclet frame layout is changed from CodeGen::genFuncletProlog() and genFuncletEpilog(),
         //      we need to change here accordingly. It is likely to have changes when introducing PSPSym.
         // TODO Currently we assume that ESP of funclet frames is always fixed but actually it could change.
-        if (pCodeInfo->IsFunclet())
+        if (isFunclet)
         {
             baseSP = curESP;
             // Set baseSP as initial SP
@@ -2944,13 +2961,11 @@ bool UnwindEbpDoubleAlignFrame(
             //           ret
             // SP alignment padding should be added for all instructions except the first one and the last one.
             // Epilog may not exist (unreachable), so we need to check the instruction code.
-            const TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
-            if (funcletStart != pCodeInfo->GetCodeAddress() && methodStart[pCodeInfo->GetRelOffset()] != X86_INSTR_RETN)
+            if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
                 baseSP += 12;
 #endif
 
-            pContext->PCTAddr = baseSP;
-            pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+            SetRegdisplayPCTAddr(pContext, (TADDR)baseSP);
 
             pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
 
@@ -2977,8 +2992,7 @@ bool UnwindEbpDoubleAlignFrame(
 
         if (frameType == FR_FILTER)
         {
-            pContext->PCTAddr = baseSP;
-            pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+            SetRegdisplayPCTAddr(pContext, (TADDR)baseSP);
 
             pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
 
@@ -2989,7 +3003,7 @@ bool UnwindEbpDoubleAlignFrame(
                update callee-saved registers.
              */
 
-            if (flags & UpdateAllRegs)
+            if (updateAllRegs)
             {
                 static DWORD s_badData = 0xDEADBEEF;
 
@@ -3014,7 +3028,7 @@ bool UnwindEbpDoubleAlignFrame(
 
     if (info->prologOffs != hdrInfo::NOT_IN_PROLOG)
     {
-        UnwindEbpDoubleAlignFrameProlog(pContext, info, methodStart, flags);
+        UnwindEbpDoubleAlignFrameProlog(pContext, info, methodStart, updateAllRegs);
 
         /* Now adjust stack pointer. */
 
@@ -3022,7 +3036,7 @@ bool UnwindEbpDoubleAlignFrame(
         return true;
     }
 
-    if (flags & UpdateAllRegs)
+    if (updateAllRegs)
     {
         // Get to the first callee-saved register
         PTR_DWORD pSavedRegs = PTR_DWORD((TADDR)curEBP);
@@ -3046,8 +3060,7 @@ bool UnwindEbpDoubleAlignFrame(
 
     /* The caller's saved EIP is right after our EBP */
 
-    pContext->PCTAddr = (TADDR)curEBP + RETURN_ADDR_OFFS * sizeof(TADDR);
-    pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+    SetRegdisplayPCTAddr(pContext, (TADDR)curEBP + RETURN_ADDR_OFFS * sizeof(TADDR));
 
     /* The caller's saved EBP is pointed to by our EBP */
 
@@ -3055,45 +3068,22 @@ bool UnwindEbpDoubleAlignFrame(
     return true;
 }
 
-bool UnwindStackFrame(PREGDISPLAY     pContext,
-                      EECodeInfo     *pCodeInfo,
-                      unsigned        flags,
-                      CodeManState   *pState)
+bool UnwindStackFrameX86(PREGDISPLAY     pContext,
+                         PTR_CBYTE       methodStart,
+                         DWORD           curOffs,
+                         hdrInfo *       info,
+                         PTR_CBYTE       table,
+                         IN_EH_FUNCLETS_COMMA(PTR_CBYTE       funcletStart)
+                         IN_EH_FUNCLETS_COMMA(bool            isFunclet)
+                         bool            updateAllRegs)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        HOST_NOCALLS;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    // Address where the method has been interrupted
-    PCODE       breakPC = pContext->ControlPC;
-    _ASSERTE(PCODEToPINSTR(breakPC) == pCodeInfo->GetCodeAddress());
-
-    PTR_CBYTE methodStart = PTR_CBYTE(pCodeInfo->GetSavedMethodCode());
-
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    PTR_VOID    methodInfoPtr = gcInfoToken.Info;
-    DWORD       curOffs = pCodeInfo->GetRelOffset();
-
-    _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
-    CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
-
-    if (pState->dwIsSet == 0)
+#ifndef FEATURE_NATIVEAOT
+    if (pUnwindInfo != NULL)
     {
-        /* Extract the necessary information from the info block header */
-
-        stateBuf->hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken,
-                                                          curOffs,
-                                                          &stateBuf->hdrInfoBody);
+        pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
+        pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
     }
-
-    PTR_CBYTE table = dac_cast<PTR_CBYTE>(methodInfoPtr) + stateBuf->hdrInfoSize;
-
-    hdrInfo * info = &stateBuf->hdrInfoBody;
-
-    info->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
+#endif
 
     if  (info->epilogOffs != hdrInfo::NOT_IN_EPILOG)
     {
@@ -3102,7 +3092,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          */
 
         PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
-        UnwindEpilog(pContext, info, epilogBase, flags);
+        UnwindEpilog(pContext, info, epilogBase, updateAllRegs);
     }
     else if (!info->ebpFrame && !info->doubleAlign)
     {
@@ -3110,7 +3100,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  Now handle ESP frames
          */
 
-        UnwindEspFrame(pContext, info, table, methodStart, curOffs, flags);
+        UnwindEspFrame(pContext, info, table, methodStart, curOffs, updateAllRegs);
         return true;
     }
     else
@@ -3119,7 +3109,14 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  Now we know that have an EBP frame
          */
 
-        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, table, methodStart, curOffs, flags))
+        if (!UnwindEbpDoubleAlignFrame(pContext,
+                                       info,
+                                       table,
+                                       methodStart,
+                                       curOffs,
+                                       IN_EH_FUNCLETS_COMMA(funcletStart)
+                                       IN_EH_FUNCLETS_COMMA(isFunclet)
+                                       updateAllRegs))
             return false;
     }
 
@@ -3136,18 +3133,18 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
     return true;
 }
 
-bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
-                                EECodeInfo     *pCodeInfo,
-                                unsigned        flags,
-                                GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack,
-                                DWORD           relOffsetOverride)
+bool EnumGcRefsX86(PREGDISPLAY     pContext,
+                   PTR_CBYTE       methodStart,
+                   DWORD           curOffs,
+                   GCInfoToken     gcInfoToken,
+                   IN_EH_FUNCLETS_COMMA(PTR_CBYTE       funcletStart)
+                   IN_EH_FUNCLETS_COMMA(bool            isFunclet)
+                   IN_EH_FUNCLETS_COMMA(bool            isFilterFunclet)
+                   unsigned        flags,
+                   GCEnumCallback  pCallBack,
+                   LPVOID          hCallBack
+                   NOT_IN_NATIVEAOT_PRE_COMMA(MethodDesc *    methodDesc))
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
 #ifdef FEATURE_EH_FUNCLETS
     if (flags & ParentOfFuncletStackFrame)
     {
@@ -3155,9 +3152,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         return true;
     }
 #endif // FEATURE_EH_FUNCLETS
-
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    unsigned  curOffs = pCodeInfo->GetRelOffset();
 
     unsigned  EBP     = GetRegdisplayFP(pContext);
     unsigned  ESP     = pContext->SP;
@@ -3242,9 +3236,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
 #endif // _DEBUG
 
-#ifndef FEATURE_EH_FUNCLETS
     /* What kind of a frame is this ? */
 
+#ifndef FEATURE_EH_FUNCLETS
     FrameType   frameType = FR_NORMAL;
     TADDR       baseSP = 0;
 
@@ -3340,11 +3334,13 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         // the type context via "this" need to report "this".
         // If its reported for other methods, its probably
         // done incorrectly. So flag such cases.
+#ifndef FEATURE_NATIVEAOT
         _ASSERTE(info.thisPtrResult == REGI_NA ||
-                 pCodeInfo->GetMethodDesc()->IsSynchronized() ||
-                 pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis());
+                 methodDesc->IsSynchronized()   ||
+                 methodDesc->AcquiresInstMethodTableFromThis());
+#endif
 
-            /* now report registers and arguments if we are not interrupted */
+        /* now report registers and arguments if we are not interrupted */
 
         if  (willContinueExecution)
         {
@@ -3382,9 +3378,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                 // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
                 // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
                 // See UnwindStackFrame for details.
-                if (pCodeInfo->IsFunclet())
+                if (isFunclet)
                 {
-                    PTR_CBYTE methodStart = PTR_CBYTE(pCodeInfo->GetSavedMethodCode());
                     TADDR baseSP = ESP;
                     // Set baseSP as initial SP
                     baseSP += GetPushedArgSize(&info, table, curOffs);
@@ -3397,7 +3392,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                     //           ret
                     // SP alignment padding should be added for all instructions except the first one and the last one.
                     // Epilog may not exist (unreachable), so we need to check the instruction code.
-                    const PTR_CBYTE funcletStart = PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo));
                     if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
                         baseSP += 12;
 #endif
@@ -3500,10 +3494,11 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         // the type context via "this" need to report "this".
         // If its reported for other methods, its probably
         // done incorrectly. So flag such cases.
+#ifndef FEATURE_NATIVEAOT
         _ASSERTE(info.thisPtrResult == REGI_NA ||
-                 pCodeInfo->GetMethodDesc()->IsSynchronized()   ||
-                 pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis());
-
+                 methodDesc->IsSynchronized()   ||
+                 methodDesc->AcquiresInstMethodTableFromThis());
+#endif
 
         /* now report registers and arguments if we are not interrupted */
 
@@ -3635,7 +3630,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
-    if (!pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
+    if (!isFilterFunclet)
 #endif // FEATURE_EH_FUNCLETS
     {
         count = info.untrackedCnt;
@@ -3828,7 +3823,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
     // taken care of by the parent method and the funclet should access those arguments
     // by way of the parent method's stack frame.
     //
-    if(pCodeInfo->IsFunclet())
+    if (isFunclet)
     {
         return true;
     }
@@ -3840,6 +3835,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
        were statically declared */
 
     if (info.varargs) {
+#ifdef FEATURE_NATIVEAOT
+        PORTABILITY_ASSERT("EnumGCRefs: VarArgs");
+#else
         LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));
 
         PTR_BYTE argsStart;
@@ -3860,6 +3858,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         PTR_VASigCookie varArgSig = *PTR_PTR_VASigCookie(argsStart);
 
         promoteVarArgs(argsStart, varArgSig, pCtx);
+#endif
     }
 
     return true;
