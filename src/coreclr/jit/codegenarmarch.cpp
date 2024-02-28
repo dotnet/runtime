@@ -3498,7 +3498,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     emitAttr              secondRetSize = EA_UNKNOWN;
 
     // unused values are of no interest to GC.
-    if (!call->IsUnusedValue())
+    // if (!call->IsUnusedValue())
     {
         if (call->HasMultiRegRetVal())
         {
