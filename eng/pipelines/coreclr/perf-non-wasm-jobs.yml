@@ -144,41 +144,41 @@ jobs:
   #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
   #       logicalmachine: 'perftiger'
 
-  # # run coreclr perftiger microbenchmarks perf job
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: coreclr
-  #     platforms:
-  #     - linux_x64
-  #     - windows_x64
-  #     - windows_x86
-  #     - linux_musl_x64
-  #     jobParameters:
-  #       testGroup: perf
-  #       liveLibrariesBuildConfig: Release
-  #       projectFile: microbenchmarks.proj
-  #       runKind: micro
-  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-  #       logicalmachine: 'perftiger'
+  # run coreclr perftiger microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      # - linux_x64
+      - windows_x64
+      - windows_x86
+      # - linux_musl_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
 
-  # # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: coreclr
-  #     platforms:
-  #     - windows_x64
-  #     jobParameters:
-  #       testGroup: perf
-  #       liveLibrariesBuildConfig: Release
-  #       projectFile: microbenchmarks.proj
-  #       runKind: micro
-  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-  #       logicalmachine: 'perftiger'
-  #       pgoRunType: -NoDynamicPGO
+  # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -NoDynamicPGO
 
   # - template: /eng/pipelines/common/platform-matrix.yml
   #   parameters:
@@ -196,22 +196,22 @@ jobs:
   #       logicalmachine: 'perftiger'
   #       pgoRunType: --nodynamicpgo
 
-  # # run coreclr perftiger microbenchmarks no R2R perf jobs
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: coreclr
-  #     platforms:
-  #     - windows_x64
-  #     jobParameters:
-  #       testGroup: perf
-  #       liveLibrariesBuildConfig: Release
-  #       projectFile: microbenchmarks.proj
-  #       runKind: micro
-  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-  #       logicalmachine: 'perftiger'
-  #       r2rRunType: -NoR2R
+  # run coreclr perftiger microbenchmarks no R2R perf jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        r2rRunType: -NoR2R
 
   # - template: /eng/pipelines/common/platform-matrix.yml
   #   parameters:
@@ -229,22 +229,22 @@ jobs:
   #       logicalmachine: 'perftiger'
   #       r2rRunType: --nor2r
 
-  # # run coreclr perftiger microbenchmarks memory randomization jobs
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: coreclr
-  #     platforms:
-  #     - windows_x64
-  #     jobParameters:
-  #       testGroup: perf
-  #       liveLibrariesBuildConfig: Release
-  #       projectFile: microbenchmarks.proj
-  #       runKind: micro
-  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-  #       logicalmachine: 'perftiger'
-  #       experimentName: 'memoryRandomization'
+  # run coreclr perftiger microbenchmarks memory randomization jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        experimentName: 'memoryRandomization'
 
   # # run coreclr perfowl microbenchmarks perf job
   # - template: /eng/pipelines/common/platform-matrix.yml
@@ -263,22 +263,22 @@ jobs:
   #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
   #       logicalmachine: 'perfowl'
   
-  # run coreclr perfviper microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfviper'
+  # # run coreclr perfviper microbenchmarks perf job
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: coreclr
+  #     platforms:
+  #     - linux_x64
+  #     - windows_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       liveLibrariesBuildConfig: Release
+  #       projectFile: microbenchmarks.proj
+  #       runKind: micro
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+  #       logicalmachine: 'perfviper'
 
   # # run coreclr perfowl microbenchmarks perf gdv3 jobs
   # - template: /eng/pipelines/common/platform-matrix.yml
@@ -316,23 +316,23 @@ jobs:
   #       logicalmachine: 'perfowl'
   #       experimentName: 'rlcse'
 
-  # # run coreclr crossgen perf job
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: coreclr
-  #     platforms:
-  #     - linux_x64
-  #     - windows_x64
-  #     - windows_x86
-  #     jobParameters:
-  #       testGroup: perf
-  #       liveLibrariesBuildConfig: Release
-  #       projectFile: crossgen_perf.proj
-  #       runKind: crossgen_scenarios
-  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-  #       logicalmachine: 'perftiger_crossgen'
+  # run coreclr crossgen perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      # - linux_x64
+      - windows_x64
+      - windows_x86
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: crossgen_perf.proj
+        runKind: crossgen_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perftiger_crossgen'
 
   # build mono runtime packs
   - template: /eng/pipelines/common/platform-matrix.yml
