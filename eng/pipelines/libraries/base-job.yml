@@ -23,6 +23,7 @@ parameters:
   pool: ''
   runTests: false
   SuperPmiCollect: false
+  unifiedArtifactsName: '' 
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -117,7 +118,7 @@ jobs:
         clean: true
         fetchDepth: $(checkoutFetchDepth)
 
-      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
+      - ${{ if and(eq(parameters.unifiedArtifactsName, ''), ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_runtimeDownloadPath)

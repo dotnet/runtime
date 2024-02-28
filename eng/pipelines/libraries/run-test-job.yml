@@ -19,14 +19,13 @@ parameters:
   condition: true
   shouldContinueOnError: false
   variables: {}
-  # coreclrTestGroup: if empty, then a normal, default test run is created. If set, it indicates a set of
-  # stress modes that each test will be run with. This is the same usage as 'testGroup' in
-  # eng/pipelines/common/templates/runtimes/run-test-job.yml.
-  coreclrTestGroup: ''
+  scenarios: []
   SuperPmiCollect: false
   SuperPmiCollectionType: 'run'
   SuperPmiCollectionName: 'libraries_tests'
   dependsOn: []
+  unifiedArtifactsName: ''
+  helixArtifactsName: ''
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -46,6 +45,7 @@ jobs:
       condition: ${{ parameters.condition }}
       testScope: ${{ parameters.testScope }}
       SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      unifiedArtifactsName: ${{ parameters.unifiedArtifactsName }}
       runTests: true
       ${{ if eq(parameters.SuperPmiCollect, true) }}:
         displayName: ${{ format('SuperPMI collection {0} {1} {2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
@@ -68,12 +68,12 @@ jobs:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
       - ${{ if eq(parameters.dependsOn[0], '') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
-      # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
-      - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', 'coreclr', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
+        - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
+          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
+        - ${{ else }}:
+          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+            - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
 
@@ -94,43 +94,50 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-
-        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe on AzDO machine; see `SuperPmiMcsPath`.
-        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              unpackFolder: $(_runtimeX64DownloadPath)
-              artifactFileName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
-              artifactName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
-              displayName: 'CoreCLR product build (x64)'
-
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            displayName: Build Assets
-            cleanUnpackFolder: false
-            artifactName: $(librariesBuildArtifactName)
-            artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
-            unpackFolder: $(Build.SourcesDirectory)/artifacts
-
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            displayName: Test Assets
-            cleanUnpackFolder: false
-            artifactName: $(librariesTestsArtifactName)
-            artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
-            unpackFolder: $(Build.SourcesDirectory)/artifacts
-
         - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
-        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - script: $(_buildScript)
-                    -subset host.native+libs.pretest
-                    $(_buildArguments)
-                    /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
-            displayName: Prepare TestHost with runtime $(runtimeFlavorName)
+        - ${{ if ne(parameters.unifiedArtifactsName, '') }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+              artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+              artifactName: '${{ parameters.unifiedArtifactsName }}'
+              displayName: 'unified artifacts'
+
+        - ${{ else }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              displayName: Build Assets
+              cleanUnpackFolder: false
+              artifactName: $(librariesBuildArtifactName)
+              artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
+              unpackFolder: $(Build.SourcesDirectory)/artifacts
+
+            - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+              - script: $(_buildScript)
+                        -subset host.native+libs.pretest
+                        $(_buildArguments)
+                        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+                        /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
+                displayName: Prepare TestHost with runtime $(runtimeFlavorName)
+
+        - ${{ if ne(parameters.helixArtifactsName, '') }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              displayName: Test Assets
+              artifactName: ${{ parameters.helixArtifactsName }}
+              artifactFileName: '${{ parameters.helixArtifactsName }}$(archiveExtension)'
+              unpackFolder: $(Build.SourcesDirectory)/artifacts/helix
+        - ${{ else }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              displayName: Test Assets
+              cleanUnpackFolder: false
+              artifactName: $(librariesTestsArtifactName)
+              artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
+              unpackFolder: $(Build.SourcesDirectory)/artifacts
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
@@ -148,13 +155,9 @@ jobs:
             SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
             SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
             SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-
-            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection') }}:
-              scenarios:
-              - normal
-            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection_no_tiered_compilation') }}:
-              scenarios:
-              - no_tiered_compilation
+            
+            ${{ if ne(parameters.scenarios[0], '') }}:
+              scenarios: ${{ parameters.scenarios }}
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
           - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml

@@ -4,9 +4,12 @@ parameters:
   shouldContinueOnError: false
   archParameter: $(_archParameter)
   displayName: Build product
+  container: ''
 
 steps:
   - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci ${{ parameters.archParameter }} $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
     displayName: ${{ parameters.displayName }}
     ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
       continueOnError: ${{ parameters.shouldContinueOnError }}
+    ${{ if ne(parameters.container, '') }}:
+      container: ${{ parameters.container }}
