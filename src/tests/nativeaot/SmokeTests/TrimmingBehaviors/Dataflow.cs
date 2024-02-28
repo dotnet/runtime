@@ -26,6 +26,8 @@ class Dataflow
         TestDynamicDependency.Run();
         TestDynamicDependencyWithGenerics.Run();
         TestObjectGetTypeDataflow.Run();
+        TestMakeGenericDataflow.Run();
+        TestMakeGenericDataflowInvalid.Run();
         TestMarshalIntrinsics.Run();
         Regression97758.Run();
 
@@ -585,6 +587,117 @@ class Dataflow
             Assert.Equal(1, s_baseWithMixKept.GetType().CountPublicMethods());
             Assert.Equal(2, s_baseWithMixKept.GetType().CountPublicConstructors());
             Assert.Equal(2, s_baseWithMixKept.GetType().CountConstructors());
+        }
+    }
+
+    class TestMakeGenericDataflow
+    {
+        class Gen1<T, U>
+        {
+            public static void Bridge() { }
+        }
+
+        class Gen1
+        {
+            public static void Bridge<T, U>() { }
+        }
+
+
+        class Gen2<T>
+        {
+            public static void Bridge() { }
+        }
+
+        class Gen2
+        {
+            public static void Bridge<T>() { }
+        }
+
+        struct MyStruct<T> { }
+
+        static void DoBridgeT1<T, U>() => typeof(Gen1<,>).MakeGenericType([typeof(T), typeof(U)]).GetMethod(nameof(Gen1<T, U>.Bridge)).Invoke(null, []);
+
+        static void DoBridgeT2<T>() => typeof(Gen2<>).MakeGenericType([typeof(MyStruct<T>)]).GetMethod(nameof(Gen2<T>.Bridge)).Invoke(null, []);
+
+        static void DoBridgeM1<T, U>() => typeof(Gen1).GetMethod(nameof(Gen1.Bridge)).MakeGenericMethod([typeof(T), typeof(U)]).Invoke(null, []);
+
+        static void DoBridgeM2<T>() => typeof(Gen2).GetMethod(nameof(Gen2.Bridge)).MakeGenericMethod([typeof(MyStruct<T>)]).Invoke(null, []);
+
+        public static void Run()
+        {
+            DoBridgeT1<string, string>();
+            DoBridgeT1<string, int>();
+            DoBridgeT1<int, int>();
+
+            DoBridgeT2<string>();
+            DoBridgeT2<int>();
+
+            DoBridgeM1<string, string>();
+            DoBridgeM1<string, int>();
+            DoBridgeM1<int, int>();
+
+            DoBridgeM2<string>();
+            DoBridgeM2<int>();
+
+            typeof(Gen1<,>).MakeGenericType([typeof(float), typeof(string)]).GetMethod(nameof(Gen1<float, string>.Bridge)).Invoke(null, []);
+            typeof(Gen2<>).MakeGenericType([typeof(MyStruct<float>)]).GetMethod(nameof(Gen2<float>.Bridge)).Invoke(null, []);
+            typeof(Gen1).GetMethod(nameof(Gen1.Bridge)).MakeGenericMethod([typeof(float), typeof(string)]).Invoke(null, []);
+            typeof(Gen2).GetMethod(nameof(Gen2.Bridge)).MakeGenericMethod([typeof(MyStruct<float>)]).Invoke(null, []);
+        }
+    }
+
+    class TestMakeGenericDataflowInvalid
+    {
+        class Gen<T> { }
+
+        class Gen
+        {
+            public static void Bridge<T>() { }
+        }
+
+        public static void Run()
+        {
+            try
+            {
+                typeof(Gen<>).MakeGenericType(null);
+            }
+            catch (ArgumentException) { }
+
+            try
+            {
+                typeof(Gen<>).MakeGenericType([]);
+            }
+            catch (ArgumentException) { }
+
+            try
+            {
+                typeof(Gen<>).MakeGenericType([typeof(float), typeof(double)]);
+            }
+            catch (ArgumentException) { }
+
+            try
+            {
+                typeof(Gen<>).MakeGenericType([typeof(Gen<>)]);
+            }
+            catch (ArgumentException) { }
+
+            try
+            {
+                typeof(Gen).GetMethod("Bridge").MakeGenericMethod(null);
+            }
+            catch (ArgumentException) { }
+
+            try
+            {
+                typeof(Gen).GetMethod("Bridge").MakeGenericMethod([]);
+            }
+            catch (ArgumentException) { }
+
+            try
+            {
+                typeof(Gen).GetMethod("Bridge").MakeGenericMethod([typeof(float), typeof(double)]);
+            }
+            catch (ArgumentException) { }
         }
     }
 

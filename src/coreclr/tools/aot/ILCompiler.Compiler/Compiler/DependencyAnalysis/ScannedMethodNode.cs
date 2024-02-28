@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool InterestingForDynamicDependencyAnalysis => _method.HasInstantiation || _method.OwningType.HasInstantiation;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => CodeBasedDependencyAlgorithm.HasConditionalDependenciesDueToMethodCodePresence(_method);
 
