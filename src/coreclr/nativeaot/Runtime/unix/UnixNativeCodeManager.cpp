@@ -196,8 +196,10 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     if (decoder.IsInterruptible())
         return true;
 
+#ifndef TARGET_ARM
     if (decoder.IsInterruptibleSafePoint())
         return true;
+#endif
 
     return false;
 }
