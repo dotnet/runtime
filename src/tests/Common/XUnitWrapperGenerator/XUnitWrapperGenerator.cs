@@ -908,9 +908,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsTailcallStress");
         }
-        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.ZapDisable))
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.DisableR2R))
         {
-            conditions.Add($"!{ConditionClass}.IsZapDisable");
+            conditions.Add($"!{ConditionClass}.IsDisableR2R");
         }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))

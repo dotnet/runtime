@@ -507,12 +507,12 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary =
-                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
             intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
             newEdge->setLikelihood(1.0);
+            intermediary->SetTargetEdge(newEdge);
             SetModifiedFlow();
 
             while (criticalPreds.Height() > 0)
@@ -1679,12 +1679,12 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary =
-                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
             intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
             newEdge->setLikelihood(1.0);
+            intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
 
@@ -1947,7 +1947,7 @@ public:
         if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
         {
             const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
-            if ((ni == NI_System_Buffer_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+            if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
             {
                 m_functor(m_compiler, node);
             }
@@ -2274,7 +2274,7 @@ public:
             return;
         }
 
-        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_Buffer_Memmove) ||
+        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
                node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
@@ -2540,10 +2540,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
             // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
             // In other cases they have large managed implementations we want to profile.
             case NI_System_String_Equals:
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
 
             // Same here, these are only folded when JIT knows the exact types
             case NI_System_Type_IsAssignableFrom:
@@ -4030,7 +4033,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
+    // to just yet (specially, in WalkSpanningTree, we may not add the target of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit

@@ -105,5 +105,24 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Fact]
+        public void First_Last_ElementAt()
+        {
+            IEnumerable<int> nonEmpty = Enumerable.Range(1, 3);
+            Assert.Equal(1, nonEmpty.First());
+            Assert.Equal(3, nonEmpty.Last());
+            Assert.Equal(1, nonEmpty.ElementAt(0));
+            Assert.Equal(2, nonEmpty.ElementAt(1));
+            Assert.Equal(3, nonEmpty.ElementAt(2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => nonEmpty.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => nonEmpty.ElementAt(4));
+
+            IEnumerable<int> empty = Enumerable.Empty<int>();
+            Assert.Equal(42, empty.DefaultIfEmpty(42).First());
+            Assert.Equal(42, empty.DefaultIfEmpty(42).Last());
+            Assert.Equal(42, empty.DefaultIfEmpty(42).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => empty.DefaultIfEmpty(42).ElementAt(1));
+        }
     }
 }
