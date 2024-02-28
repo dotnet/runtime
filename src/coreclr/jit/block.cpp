@@ -51,17 +51,6 @@ FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
     return head;
 }
 
-void FlowEdge::setLikelihood(weight_t likelihood)
-{
-    assert(likelihood >= 0.0);
-    assert(likelihood <= 1.0);
-    m_likelihoodSet = true;
-    m_likelihood    = likelihood;
-
-    JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum, m_destBlock->bbNum,
-            m_likelihood);
-}
-
 unsigned SsaStressHashHelper()
 {
     // hash = 0: turned off, hash = 1: use method hash, hash = *: use custom hash.
@@ -78,6 +67,24 @@ unsigned SsaStressHashHelper()
     return ((hash >> 16) == 0) ? ((hash << 16) | hash) : hash;
 }
 #endif
+
+//------------------------------------------------------------------------
+// setLikelihood: set the likelihood of aflow edge
+//
+// Arguments:
+//   likelihood -- value in range [0.0, 1.0] indicating how likely
+//     the source block is to transfer control along this edge.
+//
+void FlowEdge::setLikelihood(weight_t likelihood)
+{
+    assert(likelihood >= 0.0);
+    assert(likelihood <= 1.0);
+    m_likelihoodSet = true;
+    m_likelihood    = likelihood;
+
+    JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum, m_destBlock->bbNum,
+            m_likelihood);
+}
 
 //------------------------------------------------------------------------
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
