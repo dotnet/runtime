@@ -28,7 +28,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		public static void Main ()
 		{
 			DefineFeatureCheck.Test ();
-			GuardBodyValidation.Test ();
+			ValidGuardBodies.Test ();
+			InvalidGuardBodies.Test ();
 			InvalidFeatureChecks.Test ();
 		}
 
@@ -137,16 +138,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class GuardBodyValidation {
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool ReturnTrueGuard => true;
-
-			static void TestReturnTrueGuard ()
-			{
-				if (ReturnTrueGuard)
-					RequiresUnreferencedCode ();
-			}
+		class ValidGuardBodies {
 
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ReturnFalseGuard => false;
@@ -154,16 +146,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void TestReturnFalseGuard ()
 			{
 				if (ReturnFalseGuard)
-					RequiresUnreferencedCode ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool OtherConditionGuard => OtherCondition ();
-
-			static void TestOtherConditionGuard ()
-			{
-				if (OtherConditionGuard)
 					RequiresUnreferencedCode ();
 			}
 
@@ -207,26 +189,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool OrGuard => TestFeatures.IsUnreferencedCodeSupported || OtherCondition ();
-
-			static void TestOrGuard ()
-			{
-				if (OrGuard)
-					RequiresUnreferencedCode ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool NotGuard => !TestFeatures.IsUnreferencedCodeSupported;
-
-			static void TestNotGuard ()
-			{
-				if (NotGuard)
-					RequiresUnreferencedCode ();
-			}
-
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool NotNotGuard => !!TestFeatures.IsUnreferencedCodeSupported;
 
@@ -245,16 +207,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool EqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported == false;
-
-			static void TestEqualsFalseGuard ()
-			{
-				if (EqualsFalseGuard)
-					RequiresUnreferencedCode ();
-			}
-
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool TrueEqualsGuard => true == TestFeatures.IsUnreferencedCodeSupported;
 
@@ -264,42 +216,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool FalseEqualsGuard => false == TestFeatures.IsUnreferencedCodeSupported;
-
-			static void TestFalseEqualsGuard ()
-			{
-				if (FalseEqualsGuard)
-					RequiresUnreferencedCode ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool NotEqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported != true;
-
-			static void TestNotEqualsTrueGuard ()
-			{
-				if (NotEqualsTrueGuard)
-					RequiresUnreferencedCode ();
-			}
-
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool NotEqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported != false;
 
 			static void TestNotEqualsFalseGuard ()
 			{
 				if (NotEqualsFalseGuard)
-					RequiresUnreferencedCode ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool TrueNotEqualsGuard => true != TestFeatures.IsUnreferencedCodeSupported;
-
-			static void TestTrueNotEqualsGuard ()
-			{
-				if (TrueNotEqualsGuard)
 					RequiresUnreferencedCode ();
 			}
 
@@ -321,16 +243,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool IsNotTrueGuard => TestFeatures.IsUnreferencedCodeSupported is not true;
-
-			static void TestIsNotTrueGuard ()
-			{
-				if (IsNotTrueGuard)
-					RequiresUnreferencedCode ();
-			}
-
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IsNotFalseGuard => TestFeatures.IsUnreferencedCodeSupported is not false;
 
@@ -342,18 +254,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool IsFalseGuard => TestFeatures.IsUnreferencedCodeSupported is false;
-
-			static void TestIsFalseGuard ()
-			{
-				if (IsFalseGuard)
-					RequiresUnreferencedCode ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool IfGuard {
+			static bool IfReturnTrueGuard {
 				get {
 					if (TestFeatures.IsUnreferencedCodeSupported)
 						return true;
@@ -361,16 +262,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			static void TestIfGuard ()
-			{
-				if (IfGuard)
-					RequiresUnreferencedCode ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool ElseGuard {
+			static bool ElseReturnTrueGuard {
 				get {
 					if (!TestFeatures.IsUnreferencedCodeSupported)
 						return false;
@@ -379,9 +273,73 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			static void TestElseGuard ()
+			static void TestElseReturnTrueGuard ()
 			{
-				if (ElseGuard)
+				if (ElseReturnTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			static void TestIfReturnTrueGuard ()
+			{
+				if (IfReturnTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool AssertReturnFalseGuard {
+				 get {
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
+					return false;
+				 }
+			}
+
+			static void TestAssertReturnFalseGuard ()
+			{
+				if (AssertReturnFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool AssertNotReturnFalseGuard {
+				 get {
+					Debug.Assert (!TestFeatures.IsUnreferencedCodeSupported);
+					return false;
+				 }
+			}
+
+			static void TestAssertNotReturnFalseGuard ()
+			{
+				if (AssertNotReturnFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool AssertReturnTrueGuard {
+				 get {
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
+					return true;
+				 }
+			}
+
+			static void TestAssertReturnTrueGuard ()
+			{
+				if (AssertReturnTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool ThrowGuard {
+				get {
+					if (!TestFeatures.IsUnreferencedCodeSupported)
+						throw new Exception ();
+					return false;
+				}
+			}
+
+			static void TestThrowGuard ()
+			{
+				if (ThrowGuard)
 					RequiresUnreferencedCode ();
 			}
 
@@ -407,31 +365,194 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				TestReturnTrueGuard ();
-				TestReturnFalseGuard ();
-				TestOtherConditionGuard ();
 				TestDirectGuard ();
 				TestIndirectGuard ();
+
+				TestReturnFalseGuard ();
 				TestAndGuard ();
-				TestOrGuard ();
-				TestNotGuard ();
 				TestNotNotGuard ();
 				TestEqualsTrueGuard ();
-				TestEqualsFalseGuard ();
 				TestTrueEqualsGuard ();
-				TestFalseEqualsGuard ();
-				TestNotEqualsTrueGuard ();
 				TestNotEqualsFalseGuard ();
-				TestTrueNotEqualsGuard ();
 				TestFalseNotEqualsGuard ();
 				TestIsTrueGuard ();
-				TestIsFalseGuard ();
-				TestIsNotTrueGuard ();
 				TestIsNotFalseGuard ();
-				TestIfGuard ();
-				TestElseGuard ();
+				TestIfReturnTrueGuard ();
+				TestElseReturnTrueGuard ();
+				TestAssertReturnFalseGuard ();
+				TestAssertNotReturnFalseGuard ();
+				TestAssertReturnTrueGuard ();
+				TestThrowGuard ();
 				TestTernaryIfGuard ();
 				TestTernaryElseGuard ();
+			}
+		}
+
+		class InvalidGuardBodies {
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool ReturnTrueGuard => true;
+
+			static void TestReturnTrueGuard ()
+			{
+				if (ReturnTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool OtherConditionGuard => OtherCondition ();
+
+			static void TestOtherConditionGuard ()
+			{
+				if (OtherConditionGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool OrGuard => TestFeatures.IsUnreferencedCodeSupported || OtherCondition ();
+
+			static void TestOrGuard ()
+			{
+				if (OrGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool NotGuard => !TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestNotGuard ()
+			{
+				if (NotGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool EqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported == false;
+
+			static void TestEqualsFalseGuard ()
+			{
+				if (EqualsFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool FalseEqualsGuard => false == TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestFalseEqualsGuard ()
+			{
+				if (FalseEqualsGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool NotEqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported != true;
+
+			static void TestNotEqualsTrueGuard ()
+			{
+				if (NotEqualsTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool TrueNotEqualsGuard => true != TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestTrueNotEqualsGuard ()
+			{
+				if (TrueNotEqualsGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IsNotTrueGuard => TestFeatures.IsUnreferencedCodeSupported is not true;
+
+			static void TestIsNotTrueGuard ()
+			{
+				if (IsNotTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IsFalseGuard => TestFeatures.IsUnreferencedCodeSupported is false;
+
+			static void TestIsFalseGuard ()
+			{
+				if (IsFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IfReturnFalseGuard {
+				get {
+					if (TestFeatures.IsUnreferencedCodeSupported)
+						return false;
+					return true;
+				}
+			}
+
+			static void TestIfReturnFalseGuard ()
+			{
+				if (IfReturnFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool ElseReturnFalseGuard {
+				get {
+					if (!TestFeatures.IsUnreferencedCodeSupported)
+						return true;
+					else
+						return false;
+				}
+			}
+
+			static void TestElseReturnFalseGuard ()
+			{
+				if (ElseReturnFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool AssertNotReturnTrueGuard {
+				 get {
+					Debug.Assert (!TestFeatures.IsUnreferencedCodeSupported);
+					return true;
+				 }
+			}
+
+			static void TestAssertNotReturnTrueGuard ()
+			{
+				if (AssertNotReturnTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			public static void Test ()
+			{
+				TestOtherConditionGuard ();
+
+				TestReturnTrueGuard ();
+				TestOrGuard ();
+				TestNotGuard ();
+				TestEqualsFalseGuard ();
+				TestFalseEqualsGuard ();
+				TestNotEqualsTrueGuard ();
+				TestTrueNotEqualsGuard ();
+				TestIsNotTrueGuard ();
+				TestIsFalseGuard ();
+				TestIfReturnFalseGuard ();
+				TestElseReturnFalseGuard ();
+				TestAssertNotReturnTrueGuard ();
 			}
 		}
 
