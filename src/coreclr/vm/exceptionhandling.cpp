@@ -6624,6 +6624,13 @@ bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * p
 
     // Remember that sfLowerBound and sfUpperBound are in the "OS format".
     // Refer to the comment for CallerStackFrame for more information.
+
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        // The new exception handling sets the ranges always to the SP of the unwound frame
+        return (sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound);
+    }
+
 #ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
     if ((sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound))
 #else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
