@@ -530,12 +530,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT_ConvertToUInt32:
         case NI_VectorT_ConvertToUInt64:
         {
-#if !defined(TARGET_AMD64)
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 break;
             }
-#endif //! TARGET_AMD64
             return nullptr;
         }
 
