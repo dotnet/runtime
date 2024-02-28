@@ -346,6 +346,7 @@ namespace PInvokeTests
             TestForwardDelegateWithUnmanagedCallersOnly();
             TestDecimal();
             TestDifferentModopts();
+            TestGenericCaller<int>();
             TestGenericCaller<string>();
             TestFunctionPointers();
 

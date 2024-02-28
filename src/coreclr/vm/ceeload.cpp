@@ -4715,7 +4715,6 @@ static bool TypeSignatureContainsGenericVariables(SigParser& sp)
                         IfFailThrow(sp.GetData(NULL)); // Skip lower bounds
                     }
                 }
-
             }
             return false;
 
@@ -4734,6 +4733,8 @@ static bool TypeSignatureContainsGenericVariables(SigParser& sp)
             }
             return false;
 
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
         default:
             // Return conservative answer for unhandled elements
             return true;
