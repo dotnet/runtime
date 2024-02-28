@@ -1201,7 +1201,7 @@
     <value>Return value does not match FeatureCheckAttribute '{1}'.</value>
   </data>
   <data name="ReturnValueDoesNotMatchFeatureChecksTitle" xml:space="preserve">
-    <value>Return value does not match feature check annotations of the property.</value>
+    <value>Return value does not match FeatureCheck annotations of the property. The check should return false whenever any of the features referenced in the FeatureCheck annotations is disabled.</value>
   </data>
   <data name="InvalidFeatureCheckMessage" xml:space="preserve">
     <value>Invalid FeatureCheckAttribute. The attribute must be placed on a static boolean property with only a 'get' accessor.</value>

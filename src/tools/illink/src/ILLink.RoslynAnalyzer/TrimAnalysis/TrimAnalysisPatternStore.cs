@@ -17,7 +17,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
-		readonly Dictionary<IOperation, TrimAnalysisReturnValuePattern> ReturnValuePatterns;
+		readonly Dictionary<IOperation, FeatureCheckReturnValuePattern> FeatureCheckReturnValuePatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly FeatureContextLattice FeatureContextLattice;
 
@@ -30,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
-			ReturnValuePatterns = new Dictionary<IOperation, TrimAnalysisReturnValuePattern> ();
+			FeatureCheckReturnValuePatterns = new Dictionary<IOperation, FeatureCheckReturnValuePattern> ();
 			Lattice = lattice;
 			FeatureContextLattice = featureContextLattice;
 		}
@@ -93,10 +93,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
-		public void Add (TrimAnalysisReturnValuePattern pattern)
+		public void Add (FeatureCheckReturnValuePattern pattern)
 		{
-			if (!ReturnValuePatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
-				ReturnValuePatterns.Add (pattern.Operation, pattern);
+			if (!FeatureCheckReturnValuePatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				FeatureCheckReturnValuePatterns.Add (pattern.Operation, pattern);
 				return;
 			}
 
@@ -130,7 +130,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					yield return diagnostic;
 			}
 
-			foreach (var returnValuePattern in ReturnValuePatterns.Values) {
+			foreach (var returnValuePattern in FeatureCheckReturnValuePatterns.Values) {
 				foreach (var diagnostic in returnValuePattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}

@@ -448,7 +448,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisReturnValuePattern (returnConditionValue, featureCheckAnnotations, operation, propertySymbol));
+				new FeatureCheckReturnValuePattern (returnConditionValue, featureCheckAnnotations, operation, propertySymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, in FeatureContext featureContext)
