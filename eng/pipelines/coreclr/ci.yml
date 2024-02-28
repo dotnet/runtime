@@ -44,7 +44,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/templates/global-build-job.yml
           buildConfig: debug
           platforms:
           - linux_arm
@@ -56,29 +56,20 @@ extends:
           - osx_x64
           - windows_arm64
           jobParameters:
-            testGroup: outerloop
-
-      #
-      # Checked builds
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: checked
-          platformGroup: all
-          platforms:
-          # It is too early to include osx_arm64 in platform group all
-          # Adding it here will enable it also
-          - osx_arm64
-          jobParameters:
-            testGroup: outerloop
+            buildArgs: -s clr -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: outerloop
 
       #
       # Release builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/templates/global-build-job.yml
           buildConfig: release
           platforms:
           - linux_arm
@@ -88,23 +79,43 @@ extends:
           - osx_x64
           - windows_x86
           jobParameters:
-            testGroup: outerloop
+            buildArgs: -s clr -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: outerloop
 
       #
-      # Release library builds
+      # Checked builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: Release
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
           platformGroup: all
           platforms:
           # It is too early to include osx_arm64 in platform group all
           # Adding it here will enable it also
           - osx_arm64
           jobParameters:
-            isOfficialBuild: false
-            liveRuntimeBuildConfig: checked
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: outerloop
 
       #
       # Checked test builds
@@ -134,6 +145,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       #
       # Checked R2R test runs
@@ -158,6 +170,7 @@ extends:
             readyToRun: true
             displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       #
       # Formatting
