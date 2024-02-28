@@ -332,6 +332,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+                // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime is constructed using the user specifed values, not a combination of different sources.
                 this = new DateTime(year, month, day, hour, minute, 59);
                 ValidateLeapSecond();
             }

@@ -193,7 +193,7 @@ namespace System.Management
                 throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
 
-
+            // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime not constructed from multiple elements - it's parsed from a string.
             var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Local);
             // Then add the ticks calculated from the microseconds
             datetime = datetime.AddTicks(ticks);

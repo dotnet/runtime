@@ -396,6 +396,7 @@ namespace System.Xml.Schema
             {
                 case DateTimeTypeCode.GMonth:
                 case DateTimeTypeCode.GDay:
+                    // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime not constructed from multiple elements - it's converted from an XsdDateTime.
                     result = new DateTime(DateTime.Now.Year, xdt.Month, xdt.Day);
                     break;
                 case DateTimeTypeCode.Time:
