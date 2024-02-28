@@ -18,31 +18,31 @@ extends:
     stages:
     - stage: Build
       jobs:
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
 
-      #
-      # Build CoreCLR checked and libraries Release
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
-          platformGroup: gcstress
-
-      #
-      # Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platformGroup: gcstress
           helixQueueGroup: libraries
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          platformGroup: gcstress
           jobParameters:
             # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
-            timeoutInMinutes: 600
-            testScope: innerloop
-            liveRuntimeBuildConfig: checked
-            dependsOnTestBuildConfiguration: Release
-            dependsOnTestArchitecture: x64
-            coreclrTestGroup: gcstress0x3-gcstress0xc
+            timeoutInMinutes: 660
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  extraHelixArguments: /maxcpucount:10
+                  scenarios:
+                    # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
+                    # gcstress0xc runs are clean. Tracking issue: https://github.com/dotnet/runtime/issues/38903.
+                    # - gcstress0x3
+                    - gcstress0xc

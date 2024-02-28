@@ -18,42 +18,35 @@ extends:
     - stage: Build
       jobs:
 
-      #
-      # Build CoreCLR checked and libraries Release
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
-          platforms:
-          - linux_x64
-          - linux_arm
-          - linux_arm64
-          - windows_x86
-          - windows_x64
-          - windows_arm64
-
-      #
-      # Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platforms:
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_arm64
-          - windows_x64
-          - windows_x86
           helixQueueGroup: libraries
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          platforms:
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - windows_x86
+          - windows_x64
+          - windows_arm64
           jobParameters:
             # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
-            timeoutInMinutes: 300
-            testScope: innerloop
-            liveRuntimeBuildConfig: checked
-            dependsOnTestBuildConfiguration: Release
-            dependsOnTestArchitecture: x64
-            coreclrTestGroup: jitstress2-jitstressregs
+            timeoutInMinutes: 360
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  extraHelixArguments: /maxcpucount:10
+                  scenarios:
+                    - jitstress2_jitstressregs1
+                    - jitstress2_jitstressregs2
+                    - jitstress2_jitstressregs3
+                    - jitstress2_jitstressregs4
+                    - jitstress2_jitstressregs8
+                    - jitstress2_jitstressregs0x10
+                    - jitstress2_jitstressregs0x80
+                    - jitstress2_jitstressregs0x1000
+                    - jitstress2_jitstressregs0x2000
