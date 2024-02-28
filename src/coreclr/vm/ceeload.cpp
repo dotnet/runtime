@@ -4659,6 +4659,113 @@ PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
 // VASigCookies
 // ===========================================================================
 
+static bool TypeSignatureContainsGenericVariables(SigParser& sp);
+static bool MethodSignatureContainsGenericVariables(SigParser& sp);
+
+static bool TypeSignatureContainsGenericVariables(SigParser& sp)
+{
+    STANDARD_VM_CONTRACT;
+
+    CorElementType et = ELEMENT_TYPE_END;
+    IfFailThrow(sp.GetElemType(&et));
+
+    if (CorIsPrimitiveType(et))
+        return false;
+
+    switch (et)
+    {
+        case ELEMENT_TYPE_OBJECT:
+        case ELEMENT_TYPE_STRING:
+        case ELEMENT_TYPE_TYPEDBYREF:
+            return false;
+
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+        case ELEMENT_TYPE_SZARRAY:
+            return TypeSignatureContainsGenericVariables(sp);
+
+        case ELEMENT_TYPE_VALUETYPE:
+        case ELEMENT_TYPE_CLASS:
+            IfFailThrow(sp.GetToken(NULL)); // Skip RID
+            return false;
+
+        case ELEMENT_TYPE_FNPTR:
+            return MethodSignatureContainsGenericVariables(sp);
+
+        case ELEMENT_TYPE_ARRAY:
+            {
+                if (TypeSignatureContainsGenericVariables(sp))
+                    return true;
+
+                uint32_t rank;
+                IfFailThrow(sp.GetData(&rank)); // Get rank
+                if (rank)
+                {
+                    uint32_t nsizes;
+                    IfFailThrow(sp.GetData(&nsizes)); // Get # of sizes
+                    while (nsizes--)
+                    {
+                        IfFailThrow(sp.GetData(NULL)); // Skip size
+                    }
+
+                    uint32_t nlbounds;
+                    IfFailThrow(sp.GetData(&nlbounds)); // Get # of lower bounds
+                    while (nlbounds--)
+                    {
+                        IfFailThrow(sp.GetData(NULL)); // Skip lower bounds
+                    }
+                }
+
+            }
+            return false;
+
+        case ELEMENT_TYPE_GENERICINST:
+            {
+                if (TypeSignatureContainsGenericVariables(sp))
+                    return true;
+
+                uint32_t argCnt;
+                IfFailThrow(sp.GetData(&argCnt)); // Get number of parameters
+                while (argCnt--)
+                {
+                    if (TypeSignatureContainsGenericVariables(sp))
+                        return true;
+                }
+            }
+            return false;
+
+        default:
+            // Return conservative answer for unhandled elements
+            return true;
+    }
+}
+
+static bool MethodSignatureContainsGenericVariables(SigParser& sp)
+{
+    STANDARD_VM_CONTRACT;
+
+    uint32_t callConv = 0;
+    IfFailThrow(sp.GetCallingConvInfo(&callConv));
+
+    if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Generic signatures should never show up here, return conservative answer.
+        return true;
+    }
+
+    uint32_t numArgs = 0;
+    IfFailThrow(sp.GetData(&numArgs));
+
+    // iterate over the return type and parameters
+    for (uint32_t i = 0; i <= numArgs; i++)
+    {
+        if (TypeSignatureContainsGenericVariables(sp))
+            return true;
+    }
+
+    return false;
+}
+
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
@@ -4667,15 +4774,35 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
     CONTRACT(VASigCookie*)
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACT_END;
 
-    Module* pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+    SigTypeContext emptyContext;
+
+    Module* pLoaderModule = this;
+    if (!typeContext->IsEmpty())
+    {
+        // Strip the generic context if it is not actually used by the signature. It is nececessary for both:
+        // - Performance: allow more sharing of vasig cookies
+        // - Functionality: built-in runtime marshalling is disallowed for generic signatures
+        if (MethodSignatureContainsGenericVariables(vaSignature.CreateSigParser()))
+        {
+            pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+        }
+        else
+        {
+            typeContext = &emptyContext;
+        }
+    }
+    else
+    {
+        // The method signature should not contain any generic variables if the generic context is not provided.
+        _ASSERTE(!MethodSignatureContainsGenericVariables(vaSignature.CreateSigParser()));
+    }
+
     VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
 
     RETURN pCookie;
@@ -4685,9 +4812,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 {
     CONTRACT(VASigCookie*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }

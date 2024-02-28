@@ -346,6 +346,7 @@ namespace PInvokeTests
             TestForwardDelegateWithUnmanagedCallersOnly();
             TestDecimal();
             TestDifferentModopts();
+            TestGenericCaller<string>();
             TestFunctionPointers();
 
             return 100;
@@ -1167,6 +1168,17 @@ namespace PInvokeTests
                 // Do not actually call this because the calling convention is wrong. We just check the compiler didn't crash.
                 refStdcallSuppressTransition(ref storage, 56);
             }
+        }
+
+        public static unsafe void TestGenericCaller<T>()
+        {
+            byte storage;
+
+            delegate* unmanaged<byte*, byte, void> unmanagedMethod = &UnmanagedMethod;
+
+            var outUnmanagedMethod = (delegate* unmanaged<out byte, byte, void>)unmanagedMethod;
+            outUnmanagedMethod(out storage, 12);
+            ThrowIfNotEquals(storage, 12, "Out unmanaged call failed.");
         }
     }
 
