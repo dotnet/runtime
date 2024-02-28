@@ -53,9 +53,10 @@ if ($Internal) {
         "perftiger" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
         "perftiger_crossgen" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
         "perfowl" { $Queue = "Windows.11.Amd64.Owl.Perf" }
-        "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf" }
+        "perfsurf" { $Queue = "Windows.11.Arm64.Perf.Surf" }
         "perfpixel4a" { $Queue = "Windows.11.Amd64.Pixel.Perf" }
         "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
+        "perfviper" { $Queue = "Windows.11.Amd64.Viper.Perf" }
         "cloudvm" { $Queue = "Windows.10.Amd64" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
