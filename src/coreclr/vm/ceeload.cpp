@@ -4739,8 +4739,11 @@ static bool TypeSignatureContainsGenericVariables(SigParser& sp)
 
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
+            return true;
+
         default:
             // Return conservative answer for unhandled elements
+            _ASSERTE(!"Unexpected element type.");
             return true;
     }
 }
@@ -4755,6 +4758,7 @@ static bool MethodSignatureContainsGenericVariables(SigParser& sp)
     if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
     {
         // Generic signatures should never show up here, return conservative answer.
+        _ASSERTE(!"Unexpected generic signature.");
         return true;
     }
 
