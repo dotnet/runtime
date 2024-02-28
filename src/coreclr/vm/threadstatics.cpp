@@ -164,7 +164,7 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pMT->GetClass()->GetNumBoxedThreadStatics() > 0); // TODO, should be HasBoxedThreadStatics()
+        PRECONDITION(pMT->HasBoxedThreadStatics());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -281,7 +281,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             if (isGCStatic)
             {
                 gc.ptrRef = AllocateObjectArray(pMT->GetClass()->GetNumHandleThreadStatics(), g_pObjectClass);
-                if (pMT->GetClass()->GetNumBoxedThreadStatics() > 0)
+                if (pMT->HasBoxedThreadStatics())
                 {
                     AllocateThreadStaticBoxes(pMT, &gc.ptrRef);
                 }
