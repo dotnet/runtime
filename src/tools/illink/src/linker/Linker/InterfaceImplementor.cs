@@ -38,16 +38,6 @@ namespace Mono.Linker
 					return new InterfaceImplementor(implementor, iface, interfaceType);
 				}
 			}
-			var baseTypeRef = implementor.BaseType;
-			while (baseTypeRef is not null) {
-				var baseType = resolver.Resolve (baseTypeRef);
-				foreach(InterfaceImplementation iface in baseType.Interfaces) {
-					if (resolver.Resolve(iface.InterfaceType) == interfaceType) {
-						return new InterfaceImplementor(implementor, iface, interfaceType);
-					}
-				}
-				baseTypeRef = baseType.BaseType;
-			}
 
 			Queue<TypeDefinition> ifacesToCheck = new ();
 			ifacesToCheck.Enqueue(implementor);

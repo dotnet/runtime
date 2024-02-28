@@ -224,13 +224,10 @@ namespace Mono.Linker
 				MethodDefinition? baseMethod = context.TryResolve (baseMethodRef);
 				if (baseMethod == null)
 					continue;
-				if (!baseMethod.DeclaringType.IsInterface)
-				{
-					AnnotateMethods (baseMethod, method);
-				}
-				else
-				{
+				if (baseMethod.DeclaringType.IsInterface) {
 					AnnotateMethods (baseMethod, method, InterfaceImplementor.Create (method.DeclaringType, baseMethod.DeclaringType, context));
+				} else {
+					AnnotateMethods (baseMethod, method);
 				}
 			}
 		}
