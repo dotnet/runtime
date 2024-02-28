@@ -1713,80 +1713,60 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
 
-                            socket.NoDelay = !servicePoint.UseNagleAlgorithm;
-
-                            if (servicePoint.BindIPEndPointDelegate is not null)
+                            BindHelper(servicePoint, addresses, socket, context.DnsEndPoint.Port);
+                            static void BindHelper(ServicePoint servicePoint, IPAddress[] addresses, Socket socket, int port)
                             {
+                                if (servicePoint.BindIPEndPointDelegate is null)
+                                {
+                                    return;
+                                }
+
+                                const int MaxRetries = 100;
                                 foreach (IPAddress address in addresses)
                                 {
-                                    IPEndPoint remoteEp = new IPEndPoint(address, context.DnsEndPoint.Port);
-                                    BindHelper(servicePoint, remoteEp, socket);
-                                    if (parameters.Async)
+                                    int retryCount = 0;
+                                    for (; retryCount < MaxRetries; retryCount++)
                                     {
-                                        await socket.ConnectAsync(remoteEp, cancellationToken).ConfigureAwait(false);
-                                    }
-                                    else
-                                    {
-                                        using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
+                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, port), retryCount);
+                                        if (endPoint is null) // Get other address to try
                                         {
-                                            socket.Connect(remoteEp);
+                                            break;
                                         }
 
-                                        // Throw in case cancellation caused the socket to be disposed after the Connect completed
-                                        cancellationToken.ThrowIfCancellationRequested();
+                                        try
+                                        {
+                                            socket.Bind(endPoint);
+                                            return; // Bind successful, exit loops.
+                                        }
+                                        catch
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    if (retryCount >= MaxRetries)
+                                    {
+                                        throw new OverflowException(SR.net_maximumbindretries);
                                     }
                                 }
                             }
-                            static void BindHelper(ServicePoint servicePoint, IPEndPoint remoteEp, Socket socket)
-                            {
-                                const int MaxRetries = 100;
-                                int retryCount = 0;
-                                for (; retryCount < MaxRetries; retryCount++)
-                                {
-                                    IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate!(servicePoint, remoteEp, retryCount);
-                                    if (endPoint is null) // Get other address to try
-                                    {
-                                        return;
-                                    }
+                        }
 
-                                    try
-                                    {
-                                        socket.Bind(endPoint);
-                                        return;
-                                    }
-                                    catch
-                                    {
-                                        continue;
-                                    }
-                                }
+                        socket.NoDelay = !(parameters.ServicePoint?.UseNagleAlgorithm) ?? true;
 
-                                if (retryCount >= MaxRetries)
-                                {
-                                    throw new OverflowException(SR.net_maximumbindretries);
-                                }
-                            }
+                        if (parameters.Async)
+                        {
+                            await socket.ConnectAsync(addresses, context.DnsEndPoint.Port, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
-                            socket.NoDelay = true;
-                        }
-
-                        if (!socket.Connected)
-                        {
-                            if (parameters.Async)
+                            using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
                             {
-                                await socket.ConnectAsync(addresses, context.DnsEndPoint.Port, cancellationToken).ConfigureAwait(false);
+                                socket.Connect(addresses, context.DnsEndPoint.Port);
                             }
-                            else
-                            {
-                                using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
-                                {
-                                    socket.Connect(addresses, context.DnsEndPoint.Port);
-                                }
 
-                                // Throw in case cancellation caused the socket to be disposed after the Connect completed
-                                cancellationToken.ThrowIfCancellationRequested();
-                            }
+                            // Throw in case cancellation caused the socket to be disposed after the Connect completed
+                            cancellationToken.ThrowIfCancellationRequested();
                         }
 
                         if (parameters.ReadWriteTimeout > 0) // default is 5 minutes, so this is generally going to be true
