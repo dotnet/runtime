@@ -5322,10 +5322,9 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED_WIDE); // LSR     <Zd>.<T>, <Zn>.<T>, <Zm>.D
 
     // IF_SVE_BH_3A
-    theEmitter->emitInsSve_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V4, REG_V2, REG_V0, 0, INS_OPTS_SCALABLE_D, EA_UNKNOWN,
+    theEmitter->emitInsSve_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V4, REG_V2, REG_V0, 0, INS_OPTS_SCALABLE_D,
                                    INS_SCALABLE_OPTS_LSL_N); // ADR     <Zd>.<T>, [<Zn>.<T>, <Zm>.<T>{, <mod><amount>}]
     theEmitter->emitInsSve_R_R_R_I(INS_sve_adr, EA_SCALABLE, REG_V29, REG_V1, REG_V10, 1, INS_OPTS_SCALABLE_S,
-                                   EA_UNKNOWN,
                                    INS_SCALABLE_OPTS_LSL_N); // ADR     <Zd>.<T>, [<Zn>.<T>, <Zm>.<T>{, <mod><amount>}]
 
     // IF_SVE_BH_3B
