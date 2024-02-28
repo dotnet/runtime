@@ -603,28 +603,25 @@ private:
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
                 checkFallsThrough          = false;
 
-                // Calculate the total likelihood for this check as a sum of likelihoods
-                // of all previous candidates (thenBlocks)
-                unsigned checkLikelihood = 100;
-                for (uint8_t previousCandidate = 0; previousCandidate < checkIdx; previousCandidate++)
-                {
-                    checkLikelihood -= origCall->GetGDVCandidateInfo(previousCandidate)->likelihood;
-                }
-
-                // Make sure we didn't overflow
-                assert(checkLikelihood <= 100);
-                weight_t checkLikelihoodWt = ((weight_t)checkLikelihood) / 100.0;
-
-                JITDUMP("Level %u Check block " FMT_BB " success likelihood " FMT_WT "\n", checkIdx, checkBlock->bbNum,
-                        checkLikelihoodWt);
-
-                // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
+                // We computed the "then" likelihood in CreateThen, so we
+                // just use that to figure out the "else" likelihood.
+                //
                 assert(prevCheckBlock->KindIs(BBJ_ALWAYS));
                 assert(prevCheckBlock->JumpsToNext());
-                FlowEdge* const checkEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
-                checkEdge->setLikelihood(checkLikelihoodWt);
-                checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
-                prevCheckBlock->SetCond(checkEdge, prevCheckBlock->GetTargetEdge());
+                FlowEdge* const prevCheckThenEdge = prevCheckBlock->GetTargetEdge();
+                assert(prevCheckThenEdge->hasLikelihood());
+                weight_t checkLikelihood = max(0.0, 1.0 - prevCheckThenEdge->getLikelihood());
+
+                JITDUMP("Level %u Check block " FMT_BB " success likelihood " FMT_WT "\n", checkIdx, checkBlock->bbNum,
+                        checkLikelihood);
+
+                // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
+                //
+                FlowEdge* const prevCheckCheckEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
+                prevCheckCheckEdge->setLikelihood(checkLikelihood);
+                checkBlock->inheritWeight(prevCheckBlock);
+                checkBlock->scaleBBWeight(checkLikelihood);
+                prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -1060,7 +1057,7 @@ private:
             thenBlock->inheritWeight(currBlock);
             thenBlock->scaleBBWeight(adjustedThenLikelihood);
             FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-			thenBlock->setTargetEdge(thenRemainderEdge);
+            thenBlock->SetTargetEdge(thenRemainderEdge);
             thenRemainderEdge->setLikelihood(1.0);
 
             // thenBlock has a single pred - last checkBlock.
@@ -1091,8 +1088,7 @@ private:
             // just use that to figure out the "else" likelihood.
             //
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            BasicBlock* const thenBlock = checkBlock->GetTarget();
-            FlowEdge* const   checkThenEdge  = compiler->fgGetPredForBlock(thenBlock, checkBlock);
+            FlowEdge* const checkThenEdge = checkBlock->GetTargetEdge();
             assert(checkThenEdge->hasLikelihood());
             weight_t elseLikelihood = max(0.0, 1.0 - checkThenEdge->getLikelihood());
 
@@ -1105,7 +1101,7 @@ private:
                 assert(checkBlock->JumpsToNext());
                 FlowEdge* const checkElseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
                 checkElseEdge->setLikelihood(elseLikelihood);
-                checkBlock->SetCond(checkElseEdge, checkBlock->GetTargetEdge());
+                checkBlock->SetCond(checkElseEdge, checkThenEdge);
             }
             else
             {
