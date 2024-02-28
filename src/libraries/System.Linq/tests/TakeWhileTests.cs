@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
@@ -9,6 +8,13 @@ namespace System.Linq.Tests
 {
     public class TakeWhileTests : EnumerableTests
     {
+        [Fact]
+        public void Empty()
+        {
+            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<int>().TakeWhile(i => i < 40));
+            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<int>().TakeWhile((i, index) => i < 40));
+        }
+
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {

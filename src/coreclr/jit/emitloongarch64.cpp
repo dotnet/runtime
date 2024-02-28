@@ -4598,7 +4598,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         int   offset = 0;
         DWORD lsl    = 0;
 
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             offset = addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)
@@ -4980,7 +4980,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
     }
-    else if (dst->OperGet() == GT_MUL)
+    else if (dst->OperIs(GT_MUL))
     {
         if (!needCheckOv)
         {
@@ -5048,10 +5048,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         // TODO-LOONGARCH64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
         if (EA_SIZE(attr) == EA_4BYTE)
+        {
             emitIns_R_R_I(INS_slli_w, attr, dst->GetRegNum(), dst->GetRegNum(), 0);
+        }
     }
     else
     {
+        assert(dst->OperIs(GT_ADD, GT_SUB));
+
         regNumber regOp1       = src1->GetRegNum();
         regNumber regOp2       = src2->GetRegNum();
         regNumber saveOperReg1 = REG_NA;
@@ -5064,26 +5068,38 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(REG_R21 != dst->GetRegNum());
             assert(REG_RA != dst->GetRegNum());
 
-            if (dst->GetRegNum() == regOp1)
+            if (dst->OperIs(GT_ADD))
             {
-                assert(REG_R21 != regOp1);
-                assert(REG_RA != regOp1);
-                saveOperReg1 = REG_R21;
-                saveOperReg2 = regOp2;
-                emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
-            }
-            else if (dst->GetRegNum() == regOp2)
-            {
-                assert(REG_R21 != regOp2);
-                assert(REG_RA != regOp2);
-                saveOperReg1 = regOp1;
-                saveOperReg2 = REG_R21;
-                emitIns_R_R_R(INS_or, attr, REG_R21, regOp2, REG_R0);
+                saveOperReg1 = (dst->GetRegNum() == regOp1) ? regOp2 : regOp1;
             }
             else
             {
-                saveOperReg1 = regOp1;
-                saveOperReg2 = regOp2;
+                if (dst->GetRegNum() == regOp1)
+                {
+                    assert(REG_R21 != regOp1);
+                    assert(REG_RA != regOp1);
+                    saveOperReg1 = REG_R21;
+                    emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
+                }
+                else
+                {
+                    saveOperReg1 = regOp1;
+                }
+            }
+
+            if ((dst->gtFlags & GTF_UNSIGNED) == 0)
+            {
+                saveOperReg2 = dst->GetSingleTempReg();
+                assert((saveOperReg2 != REG_RA) && (saveOperReg2 != REG_R21));
+                assert(REG_RA != regOp1);
+                assert(saveOperReg2 != regOp2);
+
+                ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
+                if (dst->OperIs(GT_ADD))
+                {
+                    emitIns_R_R_I(INS_srli_d, attr, REG_RA, regOp1, ui6);
+                }
+                emitIns_R_R_I(INS_srli_d, attr, saveOperReg2, regOp2, ui6);
             }
         }
 
@@ -5091,86 +5107,56 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            if (dst->OperGet() == GT_ADD || dst->OperGet() == GT_SUB)
+            // ADD : A = B + C
+            // SUB : A = B - C <=> B = A + C
+            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
             {
-                ssize_t   imm;
-                regNumber tempReg1;
-                regNumber tempReg2;
-                // ADD : A = B + C
-                // SUB : C = A - B
-                if ((dst->gtFlags & GTF_UNSIGNED) != 0)
-                {
-                    // if A < B, goto overflow
-                    if (dst->OperGet() == GT_ADD)
-                    {
-                        tempReg1 = dst->GetRegNum();
-                        tempReg2 = saveOperReg1;
-                    }
-                    else
-                    {
-                        tempReg1 = saveOperReg1;
-                        tempReg2 = saveOperReg2;
-                    }
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, tempReg1, nullptr, tempReg2);
-                }
-                else
-                {
-                    tempReg1 = REG_RA;
-                    tempReg2 = dst->GetSingleTempReg();
-                    assert(tempReg1 != tempReg2);
-                    assert(tempReg1 != saveOperReg1);
-                    assert(tempReg2 != saveOperReg2);
-
-                    ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
-                    if (dst->OperGet() == GT_ADD)
-                    {
-                        emitIns_R_R_I(INS_srli_d, attr, tempReg1, saveOperReg1, ui6);
-                    }
-                    else
-                    {
-                        emitIns_R_R_I(INS_srli_d, attr, tempReg1, dst->GetRegNum(), ui6);
-                    }
-                    emitIns_R_R_I(INS_srli_d, attr, tempReg2, saveOperReg2, ui6);
-
-                    emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);
-                    if (attr == EA_4BYTE)
-                    {
-                        imm = 1;
-                        emitIns_R_R_I(INS_andi, attr, tempReg1, tempReg1, imm);
-                        emitIns_R_R_I(INS_andi, attr, tempReg2, tempReg2, imm);
-                    }
-                    // if (B > 0 && C < 0) || (B < 0  && C > 0), skip overflow
-                    BasicBlock* tmpLabel  = codeGen->genCreateTempLabel();
-                    BasicBlock* tmpLabel2 = codeGen->genCreateTempLabel();
-                    BasicBlock* tmpLabel3 = codeGen->genCreateTempLabel();
-
-                    emitIns_J_cond_la(INS_bne, tmpLabel, tempReg1, REG_R0);
-
-                    emitIns_J_cond_la(INS_bne, tmpLabel3, tempReg2, REG_R0);
-
-                    // B > 0 and C > 0, if A < B, goto overflow
-                    emitIns_J_cond_la(INS_bge, tmpLabel, dst->OperGet() == GT_ADD ? dst->GetRegNum() : saveOperReg1,
-                                      dst->OperGet() == GT_ADD ? saveOperReg1 : saveOperReg2);
-
-                    codeGen->genDefineTempLabel(tmpLabel2);
-
-                    codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
-
-                    codeGen->genDefineTempLabel(tmpLabel3);
-
-                    // B < 0 and C < 0, if A > B, goto overflow
-                    emitIns_J_cond_la(INS_blt, tmpLabel2, dst->OperGet() == GT_ADD ? saveOperReg1 : saveOperReg2,
-                                      dst->OperGet() == GT_ADD ? dst->GetRegNum() : saveOperReg1);
-
-                    codeGen->genDefineTempLabel(tmpLabel);
-                }
+                // ADD: if A < B, goto overflow
+                // SUB: if B < A, goto overflow
+                codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu,
+                                                 dst->OperIs(GT_ADD) ? dst->GetRegNum() : saveOperReg1, nullptr,
+                                                 dst->OperIs(GT_ADD) ? saveOperReg1 : dst->GetRegNum());
             }
             else
             {
-#ifdef DEBUG
-                printf("---------[LOONGARCH64]-NOTE: UnsignedOverflow instruction %d\n", ins);
-#endif
-                assert(!"unimplemented on LOONGARCH yet");
+                if (dst->OperIs(GT_SUB))
+                {
+                    emitIns_R_R_I(INS_srli_d, attr, REG_RA, dst->GetRegNum(), (attr == EA_4BYTE) ? 31 : 63);
+                }
+
+                emitIns_R_R_R(INS_xor, attr, REG_RA, REG_RA, saveOperReg2);
+                if (attr == EA_4BYTE)
+                {
+                    emitIns_R_R_I(INS_andi, attr, REG_RA, REG_RA, 1);
+                    emitIns_R_R_I(INS_andi, attr, saveOperReg2, saveOperReg2, 1);
+                }
+                // ADD: if (B > 0 && C < 0) || (B < 0  && C > 0), skip overflow
+                // SUB: if (A > 0 && C < 0) || (A < 0  && C > 0), skip overflow
+                BasicBlock* tmpLabel1 = codeGen->genCreateTempLabel();
+                BasicBlock* tmpLabel2 = codeGen->genCreateTempLabel();
+                BasicBlock* tmpLabel3 = codeGen->genCreateTempLabel();
+
+                emitIns_J_cond_la(INS_bne, tmpLabel1, REG_RA, REG_R0);
+
+                emitIns_J_cond_la(INS_bne, tmpLabel3, saveOperReg2, REG_R0);
+
+                // ADD: B > 0 and C > 0, if A < B, goto overflow
+                // SUB: A > 0 and C > 0, if B < A, goto overflow
+                emitIns_J_cond_la(INS_bge, tmpLabel1, dst->OperIs(GT_ADD) ? dst->GetRegNum() : saveOperReg1,
+                                  dst->OperIs(GT_ADD) ? saveOperReg1 : dst->GetRegNum());
+
+                codeGen->genDefineTempLabel(tmpLabel2);
+
+                codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
+
+                codeGen->genDefineTempLabel(tmpLabel3);
+
+                // ADD: B < 0 and C < 0, if A > B, goto overflow
+                // SUB: A < 0 and C < 0, if B > A, goto overflow
+                emitIns_J_cond_la(INS_blt, tmpLabel2, dst->OperIs(GT_ADD) ? saveOperReg1 : dst->GetRegNum(),
+                                  dst->OperIs(GT_ADD) ? dst->GetRegNum() : saveOperReg1);
+
+                codeGen->genDefineTempLabel(tmpLabel1);
             }
         }
     }

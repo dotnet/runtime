@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -51,6 +49,14 @@ namespace System.Linq.Tests
                     select new { a1 = x3, a2 = x4 };
 
             Assert.Equal(q.ToLookup(e => e.a1), q.ToLookup(e => e.a1));
+        }
+
+        [Fact]
+        public void Empty()
+        {
+            AssertMatches(Enumerable.Empty<int>(), Enumerable.Empty<int>(), Enumerable.Empty<int>().ToLookup(i => i));
+            Assert.False(Enumerable.Empty<int>().ToLookup(i => i).Contains(0));
+            Assert.Empty(Enumerable.Empty<int>().ToLookup(i => i)[0]);
         }
 
         [Fact]
@@ -289,6 +295,18 @@ namespace System.Linq.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public void ApplyResultSelector()
+        {
+            Lookup<int, int> lookup = (Lookup<int, int>)new int[] { 1, 2, 2, 3, 3, 3 }.ToLookup(i => i);
+            IEnumerable<int> sums = lookup.ApplyResultSelector((key, elements) =>
+            {
+                Assert.Equal(key, elements.Count());
+                return elements.Sum();
+            });
+            Assert.Equal([1, 4, 9], sums);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -302,6 +320,7 @@ namespace System.Linq.Tests
 
             var collection = (ICollection<IGrouping<string, int>>)Enumerable.Range(0, count).ToLookup(i => i.ToString());
             Assert.Equal(count, collection.Count);
+            Assert.True(collection.IsReadOnly);
             Assert.Throws<NotSupportedException>(() => collection.Add(null));
             Assert.Throws<NotSupportedException>(() => collection.Remove(null));
             Assert.Throws<NotSupportedException>(() => collection.Clear());
@@ -313,12 +332,20 @@ namespace System.Linq.Tests
                 Assert.True(collection.Contains(first));
                 Assert.True(collection.Contains(last));
             }
+            Assert.False(collection.Contains(new NopGrouping()));
 
             IGrouping<string, int>[] items = new IGrouping<string, int>[count];
             collection.CopyTo(items, 0);
             Assert.Equal(collection.Select(i => i), items);
             Assert.Equal(items, Enumerable.Range(0, count).ToLookup(i => i.ToString()).ToArray());
             Assert.Equal(items, Enumerable.Range(0, count).ToLookup(i => i.ToString()).ToList());
+        }
+
+        private sealed class NopGrouping : IGrouping<string, int>
+        {
+            public string Key => "";
+            public IEnumerator<int> GetEnumerator() => ((IList<int>)Array.Empty<int>()).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         public class Membership

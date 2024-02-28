@@ -255,6 +255,7 @@ namespace System.Linq.Tests
                 Assert.Throws<NotSupportedException>(() => list.Insert(0, 42));
                 Assert.Throws<NotSupportedException>(() => list.Clear());
                 Assert.Throws<NotSupportedException>(() => list.Remove(42));
+                Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
                 Assert.Throws<NotSupportedException>(() => list[0] = 42);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[-1]);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[expected.Length]);
@@ -267,6 +268,8 @@ namespace System.Linq.Tests
 
                 Assert.False(list.Contains(expected[0] - 1));
                 Assert.False(list.Contains(expected[^1] + 1));
+                Assert.Equal(-1, list.IndexOf(expected[0] - 1));
+                Assert.Equal(-1, list.IndexOf(expected[^1] + 1));
                 Assert.All(expected, i => Assert.True(list.Contains(i)));
                 Assert.All(expected, i => Assert.Equal(Array.IndexOf(expected, i), list.IndexOf(i)));
                 for (int i = 0; i < expected.Length; i++)

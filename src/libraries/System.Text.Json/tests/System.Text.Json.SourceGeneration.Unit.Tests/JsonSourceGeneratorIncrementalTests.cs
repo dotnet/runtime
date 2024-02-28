@@ -13,6 +13,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
     public static class JsonSourceGeneratorIncrementalTests
     {
         [Theory]

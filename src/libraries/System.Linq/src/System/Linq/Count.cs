@@ -20,10 +20,12 @@ namespace System.Linq
                 return collectionoft.Count;
             }
 
-            if (source is IIListProvider<TSource> listProv)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                return listProv.GetCount(onlyIfCheap: false);
+                return iterator.GetCount(onlyIfCheap: false);
             }
+#endif
 
             if (source is ICollection collection)
             {
@@ -105,15 +107,17 @@ namespace System.Linq
                 return true;
             }
 
-            if (source is IIListProvider<TSource> listProv)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                int c = listProv.GetCount(onlyIfCheap: true);
+                int c = iterator.GetCount(onlyIfCheap: true);
                 if (c >= 0)
                 {
                     count = c;
                     return true;
                 }
             }
+#endif
 
             if (source is ICollection collection)
             {
