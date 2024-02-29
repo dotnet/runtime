@@ -9779,6 +9779,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
             else
             {
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
                 fmt = IF_SVE_BV_2A;
             }
             // MOV is an alias for CPY, and is always the preferred disassembly.
