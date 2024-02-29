@@ -529,6 +529,7 @@ void interceptor_ICJI::LongLifetimeFree(void* obj)
     original_ICorJitInfo->LongLifetimeFree(obj);
 }
 
+
 bool interceptor_ICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
                                                    CORINFO_CONST_LOOKUP* addr,
                                                    int*                  offset)
@@ -1608,6 +1609,22 @@ void interceptor_ICJI::getCallInfo(
         mc->recGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
                            exceptionCode);
     });
+}
+
+size_t interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getClassStaticDynamicInfo");
+    size_t temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
+    mc->recGetClassStaticDynamicInfo(cls, temp);
+    return temp;
+}
+
+size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getClassThreadStaticDynamicInfo");
+    size_t temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
+    mc->recGetClassThreadStaticDynamicInfo(cls, temp);
+    return temp;
 }
 
 bool interceptor_ICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)

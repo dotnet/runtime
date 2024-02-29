@@ -58,6 +58,8 @@ struct JitInterfaceCallbacks
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
     bool (* getIsClassInitedFlagAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
+    size_t (* getClassThreadStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
+    size_t (* getClassStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
     bool (* getStaticBaseAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getHeapClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -651,6 +653,24 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getIsClassInitedFlagAddress(_thisHandle, &pException, cls, addr, offset);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual size_t getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    size_t temp = _callbacks->getClassThreadStaticDynamicInfo(_thisHandle, &pException, clr);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual size_t getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    size_t temp = _callbacks->getClassStaticDynamicInfo(_thisHandle, &pException, clr);
     if (pException != nullptr) throw pException;
     return temp;
 }

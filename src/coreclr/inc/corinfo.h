@@ -2424,6 +2424,14 @@ public:
             int*                  offset
             ) = 0;
 
+    virtual size_t getClassStaticDynamicInfo (
+            CORINFO_CLASS_HANDLE    cls
+            ) = 0;
+
+    virtual size_t getClassThreadStaticDynamicInfo (
+            CORINFO_CLASS_HANDLE    cls
+            ) = 0;
+            
     virtual bool getStaticBaseAddress(
             CORINFO_CLASS_HANDLE  cls,
             bool                  isGc,

@@ -212,6 +212,12 @@ bool getIsClassInitedFlagAddress(
           CORINFO_CONST_LOOKUP* addr,
           int* offset) override;
 
+size_t getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr) override;
+
+size_t getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr) override;
+
 bool getStaticBaseAddress(
           CORINFO_CLASS_HANDLE cls,
           bool isGc,

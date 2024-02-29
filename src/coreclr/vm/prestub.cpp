@@ -3230,8 +3230,9 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
 {
     STANDARD_VM_CONTRACT;
 
+    pMT->AttemptToPreinit();
     bool GCStatic = (kind == ENCODE_STATIC_BASE_GC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
-    bool noCtor = (!pMT->HasClassConstructor() && !pMT->HasBoxedRegularStatics());
+    bool noCtor = pMT->IsClassInited();
     bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
     CorInfoHelpFunc helper;

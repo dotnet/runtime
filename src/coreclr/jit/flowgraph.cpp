@@ -737,9 +737,27 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE)
+    {
+        result = gtNewHelperCallNode(helper, type, gtNewIconNode((size_t)info.compCompHnd->getClassThreadStaticDynamicInfo(cls), TYP_I_IMPL));
+    }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
+    {
+        result = gtNewHelperCallNode(helper, type, gtNewIconNode(info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
+    }
     else
     {
-        result = gtNewHelperCallNode(helper, type, gtNewIconEmbClsHndNode(cls)); // TODO, handle the PINNED/DYNAMIC cases
+        result = gtNewHelperCallNode(helper, type, gtNewIconEmbClsHndNode(cls));
     }
 
     if (IsStaticHelperEligibleForExpansion(result))

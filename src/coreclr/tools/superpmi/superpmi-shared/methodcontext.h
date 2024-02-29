@@ -586,6 +586,14 @@ public:
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
 
+    void recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value);
+    size_t repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+
+    void recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value);
+    size_t repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
     void repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
@@ -1150,6 +1158,8 @@ enum mcPackets
     Packet_HaveSameMethodDefinition = 213,
     Packet_NotifyMethodInfoUsage = 214,
     Packet_IsExactType = 215,
+    Packet_GetClassStaticDynamicInfo = 216,
+    Packet_GetClassThreadStaticDynamicInfo = 217,
 };
 
 void SetDebugDumpVariables();

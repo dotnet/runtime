@@ -470,6 +470,24 @@ bool WrapICorJitInfo::getIsClassInitedFlagAddress(
     return temp;
 }
 
+size_t WrapICorJitInfo::getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    API_ENTER(getClassThreadStaticDynamicInfo);
+    size_t temp = wrapHnd->getClassThreadStaticDynamicInfo(clr);
+    API_LEAVE(getClassThreadStaticDynamicInfo);
+    return temp;
+}
+
+size_t WrapICorJitInfo::getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    API_ENTER(getClassStaticDynamicInfo);
+    size_t temp = wrapHnd->getClassStaticDynamicInfo(clr);
+    API_LEAVE(getClassStaticDynamicInfo);
+    return temp;
+}
+
 bool WrapICorJitInfo::getStaticBaseAddress(
           CORINFO_CLASS_HANDLE cls,
           bool isGc,
