@@ -169,6 +169,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="Interval">
+    <DisplayString Condition="this->isUpperVector">[U{this->relatedInterval->varNum,d}, #{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
     <DisplayString Condition="this->isLocalVar">[V{this->varNum,d}, #{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
     <DisplayString Condition="this->isConstant">[C{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
     <DisplayString>[I{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>

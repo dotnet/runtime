@@ -1479,8 +1479,27 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_TRASH) != RBM_NONE);
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_SAVED) == RBM_NONE);
 
-        // We only need to save the upper half of any large vector vars that are currently live.
-        VARSET_TP       liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
+        // We should only save the upper half of any large vector vars that are currently live.
+        // However, the liveness information may not be accurate, specially around the place where
+        // we load the LCL_VAR and the node that uses it. Hence, as a conservative approach, we will
+        // add all variables that are live-in/defined in the block. We need to add variable although
+        // it is not in the live-out set, because a variable may get defined before the call and
+        // (last) used after the call.
+        //
+        // This will create more UpperSave/UpperRestore RefPositions then needed, but we need to do
+        // this for correctness anyway.
+        VARSET_TP bbLiveDefs(
+            VarSetOps::Union(compiler, compiler->compCurBB->bbLiveIn, compiler->compCurBB->bbVarDef));
+
+        VARSET_TP liveLargeVectors(VarSetOps::Intersection(compiler, bbLiveDefs, largeVectorVars));
+
+#ifdef DEBUG
+        // Make sure that `liveLargeVectors` captures the currentLiveVars as well.
+        VARSET_TP oldLiveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
+        assert(VarSetOps::IsEmpty(compiler, oldLiveLargeVectors) ||
+               VarSetOps::IsSubset(compiler, oldLiveLargeVectors, liveLargeVectors));
+#endif
+
         VarSetOps::Iter iter(compiler, liveLargeVectors);
         unsigned        varIndex = 0;
         bool            blockAlwaysReturn =

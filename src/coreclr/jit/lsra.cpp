@@ -5922,7 +5922,15 @@ void LinearScan::allocateRegisters()
             assert(lclVarInterval->isLocalVar);
             if (refType == RefTypeUpperVectorSave)
             {
+                assert(currentInterval->recentRefPosition == &currentRefPosition);
+
+                // For a given RefTypeUpperVectorSave, there should be a matching RefTypeUpperVectorRestore
+                // If not, probably, this was an extra one we added conservatively and should not need a register.
+                RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
+                bool isExtraUpperVectorSave  = (nextRefPosition == nullptr) || (nextRefPosition->refType != RefTypeUpperVectorRestore);
+
                 if ((lclVarInterval->physReg == REG_NA) ||
+                    isExtraUpperVectorSave ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
                     allocate = false;
