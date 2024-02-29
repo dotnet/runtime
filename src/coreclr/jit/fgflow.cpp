@@ -516,8 +516,8 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         BBswtDesc* const swtDesc = switchBlk->GetSwitchTargets();
         for (unsigned i = 0; i < swtDesc->bbsCount; i++)
         {
-            FlowEdge* const succEdge = swtDesc->bbsDstTab[i];
-            BasicBlock* const targ = succEdge->getDestinationBlock();
+            FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
+            BasicBlock* const targ     = succEdge->getDestinationBlock();
             if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
                 nonDups[nonDupInd] = succEdge;

@@ -4056,8 +4056,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
             BasicBlock* const succBlock = succEdge->getDestinationBlock();
-            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum, succBlock->bbNum,
-                    equalLikelihood);
+            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
+                    succBlock->bbNum, equalLikelihood);
             succEdge->setLikelihood(equalLikelihood);
         }
 

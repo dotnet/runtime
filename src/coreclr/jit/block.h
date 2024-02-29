@@ -1824,7 +1824,9 @@ public:
     class BBSuccList : private SuccList
     {
     public:
-        BBSuccList(const BasicBlock* block) : SuccList(block) {}
+        BBSuccList(const BasicBlock* block) : SuccList(block)
+        {
+        }
 
         BBArrayIterator begin() const
         {
@@ -1844,7 +1846,9 @@ public:
     class BBSuccEdgeList : private SuccList
     {
     public:
-        BBSuccEdgeList(const BasicBlock* block) : SuccList(block) {}
+        BBSuccEdgeList(const BasicBlock* block) : SuccList(block)
+        {
+        }
 
         FlowEdgeArrayIterator begin() const
         {

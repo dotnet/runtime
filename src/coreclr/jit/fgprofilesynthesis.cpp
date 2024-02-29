@@ -369,7 +369,7 @@ weight_t ProfileSynthesis::SumOutgoingLikelihoods(BasicBlock* block, WeightVecto
 
     for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
     {
-        weight_t        likelihood = succEdge->getLikelihood();
+        weight_t likelihood = succEdge->getLikelihood();
         if (likelihoods != nullptr)
         {
             likelihoods->push_back(likelihood);
@@ -560,8 +560,8 @@ void ProfileSynthesis::BlendLikelihoods()
                 iter = likelihoods.begin();
                 for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
                 {
-                    weight_t        newLikelihood = succEdge->getLikelihood();
-                    weight_t        oldLikelihood = *iter;
+                    weight_t newLikelihood = succEdge->getLikelihood();
+                    weight_t oldLikelihood = *iter;
 
                     succEdge->setLikelihood((blendFactor * oldLikelihood) + ((1.0 - blendFactor) * newLikelihood));
                     BasicBlock* const succBlock = succEdge->getDestinationBlock();

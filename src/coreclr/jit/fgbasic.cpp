@@ -4739,7 +4739,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
         {
             // For non-switch blocks, successor iterator should not iterate duplicates.
             assert(succEdge->getSourceBlock() != newBlock);
-            
+
             BasicBlock* const succBlock = succEdge->getDestinationBlock();
             JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succBlock->bbNum, curr->bbNum,
                     newBlock->bbNum);
