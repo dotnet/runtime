@@ -4277,6 +4277,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                         j++;
                     } while ((j < slots) && layout->IsGCPtr(j));
 
+                    // Limit the max size of a batch, we don't want to get stuck in the write-barrier
+                    // moving a huge batch while GC is suspending threads.
+                    gcSlotCount = min(gcSlotCount, 256);
+
                     // Use a batched version of write-barrier if there are more than 1 continuous GC slots
                     if (gcSlotCount > 1)
                     {
