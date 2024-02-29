@@ -99,7 +99,10 @@ namespace Internal.JitInterface
                 List<CorInfoType> loweredTypes = new();
                 foreach (var interval in Intervals)
                 {
-                    Debug.Assert(interval.Tag != LoweredType.Empty, "Empty intervals should have been removed.");
+                    // Empty intervals at this point don't need to be represented in the lowered type sequence.
+                    // We want to skip over them.
+                    if (interval.Tag == LoweredType.Empty)
+                        continue;
 
                     if (interval.Tag == LoweredType.Float)
                         loweredTypes.Add(CorInfoType.CORINFO_TYPE_FLOAT);

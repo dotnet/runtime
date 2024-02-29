@@ -123,11 +123,10 @@ namespace Internal.TypeSystem
         {
             if (NeedsRecursiveLayout(offset, fieldType))
             {
-                List<FieldLayoutInterval> nestedIntervals = new List<FieldLayoutInterval>();
                 foreach (FieldDesc field in fieldType.GetFields())
                 {
                     int fieldOffset = offset + field.Offset.AsInt;
-                    AddToFieldLayout(nestedIntervals, fieldOffset, field.FieldType);
+                    AddToFieldLayout(fieldLayout, fieldOffset, field.FieldType);
                 }
             }
             else

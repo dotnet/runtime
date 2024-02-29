@@ -1513,5 +1513,16 @@ namespace Internal.JitInterface
         public Span<CorInfoType> LoweredElements => _loweredElements;
 
         public nint numLoweredElements;
+
+        // Override for a better unit test experience
+        public override string ToString()
+        {
+            if (byReference)
+            {
+                return "byReference";
+            }
+
+            return string.Join(", ", LoweredElements[0..(int)numLoweredElements].ToArray());
+        }
     }
 }

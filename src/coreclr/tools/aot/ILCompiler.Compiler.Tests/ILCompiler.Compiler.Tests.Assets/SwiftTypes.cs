@@ -25,3 +25,34 @@ public struct I64_D_I8_I32_UI8
     public int i32;
     public byte u8;
 }
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int16)]
+public struct F5_S1_S0
+{
+    public short F0;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int16, ExpectedLoweringAttribute.Lowered.Int64)]
+public struct F5_S1
+{
+    public ulong F0;
+    public long F1;
+    public F5_S1_S0 F2;
+    public long F3;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int32)]
+public struct F5_S2_S0
+{
+    public short F0;
+    public byte F1;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int32, ExpectedLoweringAttribute.Lowered.Int64)]
+public struct F5_S2
+{
+    public ulong F0;
+    public long F1;
+    public F5_S2_S0 F2;
+    public long F3;
+}
