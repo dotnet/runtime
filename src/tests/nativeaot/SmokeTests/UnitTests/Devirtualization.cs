@@ -111,7 +111,8 @@ class Devirtualization
             TestIntf1((IIntf1)new Intf1CastableImpl(), 456);
 
             TestIntf2(new Intf2Impl1(), 123);
-            TestIntf2((IIntf2)Activator.CreateInstance(typeof(Intf2Impl2<>).MakeGenericType(typeof(object))), 456);
+            TestIntf2((IIntf2)Activator.CreateInstance(typeof(Intf2Impl2<>).MakeGenericType(GetObject())), 456);
+            static Type GetObject() => typeof(object);
         }
     }
 

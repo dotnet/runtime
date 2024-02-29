@@ -1051,11 +1051,13 @@ class TestSharedCode
             int val = AccessCookie<C1>();
             Assert.AreEqual(42, val);
 
-            val = (int)typeof(ClassWithTemplate<>).MakeGenericType(typeof(C2)).GetField("Cookie").GetValue(null);
+            val = (int)typeof(ClassWithTemplate<>).MakeGenericType(GetC2()).GetField("Cookie").GetValue(null);
             Assert.AreEqual(42, val);
+            static Type GetC2() => typeof(C2);
 
-            val = (int)typeof(TestSharedCode).GetMethod(nameof(AccessCookie)).MakeGenericMethod(typeof(C3)).Invoke(null, Array.Empty<object>());
+            val = (int)typeof(TestSharedCode).GetMethod(nameof(AccessCookie)).MakeGenericMethod(GetC3()).Invoke(null, Array.Empty<object>());
             Assert.AreEqual(42, val);
+            static Type GetC3() => typeof(C3);
         }
 
         {
@@ -1063,13 +1065,15 @@ class TestSharedCode
             object val = AccessArray<C1>();
             Assert.AreEqual(int.MaxValue, GC.GetGeneration(val));
 
-            val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
+            val = typeof(ClassWithTemplate<>).MakeGenericType(GetC4()).GetField("Array").GetValue(null);
             Assert.AreEqual(0, GC.GetGeneration(val));
             Assert.AreEqual(nameof(C4), val.GetType().GetElementType().Name);
+            static Type GetC4() => typeof(C4);
 
-            val = typeof(TestSharedCode).GetMethod(nameof(AccessArray)).MakeGenericMethod(typeof(C5)).Invoke(null, Array.Empty<object>());
+            val = typeof(TestSharedCode).GetMethod(nameof(AccessArray)).MakeGenericMethod(GetC5()).Invoke(null, Array.Empty<object>());
             Assert.AreEqual(0, GC.GetGeneration(val));
             Assert.AreEqual(nameof(C5), val.GetType().GetElementType().Name);
+            static Type GetC5() => typeof(C5);
         }
     }
 }

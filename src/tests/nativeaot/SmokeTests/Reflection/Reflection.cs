@@ -187,13 +187,6 @@ internal static class ReflectionTest
         {
             Console.WriteLine(nameof(TestReflectionInvoke));
 
-            // Ensure things we reflect on are in the static callgraph
-            if (string.Empty.Length > 0)
-            {
-                InvokeTests.GetHelloGeneric<int>(0);
-                new InvokeTestsGeneric<int>().GetHelloGeneric<double>(0);
-            }
-
             {
                 object? arg = "world";
                 MethodInfo helloMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHello");
@@ -1824,9 +1817,10 @@ internal static class ReflectionTest
                 typeof(GenericType<>).MakeGenericType(typeof(object)).GetMethod("Gimme");
             }
 
-            var t = (Type)s_type.MakeGenericType(typeof(double)).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
+            var t = (Type)s_type.MakeGenericType(GetDouble()).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
             if (t != typeof(double))
                 throw new Exception();
+            static Type GetDouble() => typeof(double);
         }
     }
 
@@ -2432,9 +2426,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2446,9 +2441,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
