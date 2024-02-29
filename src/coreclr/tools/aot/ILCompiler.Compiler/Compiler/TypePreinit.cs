@@ -1633,6 +1633,9 @@ namespace ILCompiler
                                 if (type.IsNullable)
                                     return Status.Fail(methodIL.OwningMethod, opcode);
 
+                                if (type.RequiresAlign8())
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+
                                 Value value = stack.PopIntoLocation(type);
                                 AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
                                 if (!ObjectInstance.TryBox((DefType)type, value, allocSite, out ObjectInstance boxedResult))
