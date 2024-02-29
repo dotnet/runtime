@@ -4,7 +4,6 @@ parameters:
   osSubgroup: ''
   archType: ''
   targetRid: ''
-  framework: 'net9.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -30,43 +29,34 @@ parameters:
   unifiedBuildConfigOverride: ''
 
 jobs:
-  - template: /eng/pipelines/libraries/base-job.yml
+  - template: /eng/common/templates/job/job.yml
     parameters:
-      buildConfig: ${{ parameters.buildConfig }}
-      osGroup:  ${{ parameters.osGroup }}
-      osSubgroup:  ${{ parameters.osSubgroup }}
-      archType:  ${{ parameters.archType }}
-      crossBuild: ${{ parameters.crossBuild }}
-      framework:  ${{ parameters.framework }}
-      isOfficialBuild: ${{ parameters.isOfficialBuild }}
-      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
-      runtimeVariant: ${{ parameters.runtimeVariant }}
+      enablePublishBuildArtifacts: true
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
-      condition: ${{ parameters.condition }}
-      testScope: ${{ parameters.testScope }}
-      SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
-      unifiedArtifactsName: ${{ parameters.unifiedArtifactsName }}
-      runTests: true
+      condition: and(succeeded(), ${{ parameters.condition }})
+      helixRepo: dotnet/runtime
       ${{ if eq(parameters.SuperPmiCollect, true) }}:
-        displayName: ${{ format('SuperPMI collection {0} {1} {2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-        name: ${{ format('spmi_{0}_{1}_{2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        displayName: ${{ format('Libraries SuperPMI collection {0} {1} {2} {3}{4} {5} {6}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('spmi_{0}_{1}_{2}_{3}{4}_{5}_{6}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ else }}:
         ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-          name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+          displayName: ${{ format('Test Run {0} {1} {2}{3} {4} {5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          name: ${{ format('test_run_{0}_{1}_{2}{3}_{4}_{5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
           displayName: 'Test Run'
           name: test_run
-      ${{ if eq(parameters.interpreter, 'true') }}:
-        testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       # To run the tests we just send to helix and wait, use ubuntu hosted pools for faster providing and to not back up our build pools
       pool: ${{ parameters.pool }}
 
-      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+      # Disable component governance if requested or on musl machines where it does not work well
+      ${{ if or(eq(parameters.disableComponentGovernance, true), eq(parameters.osSubGroup, '_musl')) }}:
+        disableComponentGovernance: true
+
       dependsOn:
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
       - ${{ if eq(parameters.dependsOn[0], '') }}:
@@ -77,7 +67,13 @@ jobs:
           - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
             - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
+      workspace:
+        clean: all
+
       variables:
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
@@ -96,50 +92,45 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
+
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - task: Bash@3
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - task: PowerShell@2
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+              arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+
         - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
-        - ${{ if ne(parameters.unifiedArtifactsName, '') }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-              artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
-              artifactName: '${{ parameters.unifiedArtifactsName }}'
-              displayName: 'unified artifacts'
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+            artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+            artifactName: '${{ parameters.unifiedArtifactsName }}'
+            displayName: 'unified artifacts'
 
-        - ${{ else }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              displayName: Build Assets
-              cleanUnpackFolder: false
-              artifactName: $(librariesBuildArtifactName)
-              artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
-              unpackFolder: $(Build.SourcesDirectory)/artifacts
-
-            - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-              - script: $(_buildScript)
-                        -subset host.native+libs.pretest
-                        $(_buildArguments)
-                        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-                        /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
-                displayName: Prepare TestHost with runtime $(runtimeFlavorName)
-
-        - ${{ if ne(parameters.helixArtifactsName, '') }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              displayName: Test Assets
-              artifactName: ${{ parameters.helixArtifactsName }}
-              artifactFileName: '${{ parameters.helixArtifactsName }}$(archiveExtension)'
-              unpackFolder: $(Build.SourcesDirectory)/artifacts/helix
-        - ${{ else }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              displayName: Test Assets
-              cleanUnpackFolder: false
-              artifactName: $(librariesTestsArtifactName)
-              artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
-              unpackFolder: $(Build.SourcesDirectory)/artifacts
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            displayName: Test Assets
+            artifactName: ${{ parameters.helixArtifactsName }}
+            artifactFileName: '${{ parameters.helixArtifactsName }}$(archiveExtension)'
+            unpackFolder: $(Build.SourcesDirectory)/artifacts/helix
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
@@ -153,7 +144,10 @@ jobs:
             interpreter: ${{ parameters.interpreter }}
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             creator: dotnet-bot
-            testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
+            ${{ if eq(parameters.interpreter, 'true') }}:
+              testRunNamePrefixSuffix: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
+            ${{ else }}:
+              testRunNamePrefixSuffix: ${{ parameters.runtimeDisplayName }}_${{ parameters.liveRuntimeBuildConfig }}
             SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
             SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
             SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}

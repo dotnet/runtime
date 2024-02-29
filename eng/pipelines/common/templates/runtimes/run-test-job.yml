@@ -204,42 +204,12 @@ jobs:
 
     steps:
 
-    - ${{ if ne(parameters.unifiedArtifactsName, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-          artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
-          artifactName: '${{ parameters.unifiedArtifactsName }}'
-          displayName: 'unified artifacts'
-
-    - ${{ else }}:
-
-      # Optionally download live-built libraries
-      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(librariesDownloadDir)
-            cleanUnpackFolder: false
-            artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-            artifactName: '$(librariesBuildArtifactName)'
-            displayName: 'live-built libraries'
-
-      # Download product binaries directory
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(buildProductRootFolderPath)
-          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-          artifactName: '$(buildProductArtifactName)'
-          displayName: 'product build'
-
-      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-        # We need to explicitly download CoreCLR for Mono
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(coreClrProductRootFolderPath)
-            artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-            artifactName: '$(coreClrProductArtifactName)'
-            displayName: 'CoreCLR product download for Mono'
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+        artifactName: '${{ parameters.unifiedArtifactsName }}'
+        displayName: 'unified artifacts'
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.

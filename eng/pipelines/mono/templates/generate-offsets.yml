@@ -12,7 +12,7 @@ parameters:
 
 ### Product build
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     osGroup: ${{ parameters.osGroup }}
