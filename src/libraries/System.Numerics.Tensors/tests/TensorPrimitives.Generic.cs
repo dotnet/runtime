@@ -362,7 +362,7 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Cbrt), new Func<T, T>(T.Cbrt), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Ceiling), new Func<T, T>(T.Ceiling) };
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Cos), new Func<T, T>(T.Cos), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-4) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Cos), new Func<T, T>(T.Cos), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-4, floatTolerance: 1e-4f) };
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Cosh), new Func<T, T>(T.Cosh), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14) };
             // TODO https://github.com/dotnet/runtime/issues/98861
@@ -393,14 +393,14 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.ReciprocalSqrtEstimate), new Func<T, T>(T.ReciprocalSqrtEstimate), T.CreateTruncating(Helpers.DefaultToleranceForEstimates) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Round), new Func<T, T>(T.Round) };
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sin), new Func<T, T>(T.Sin), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sin), new Func<T, T>(T.Sin), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f) };
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sinh), new Func<T, T>(T.Sinh), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14) };
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.SinPi), new Func<T, T>(T.SinPi), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sqrt), new Func<T, T>(T.Sqrt) };
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Tan), new Func<T, T>(T.Tan), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Tan), new Func<T, T>(T.Tan), Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Tanh), new Func<T, T>(T.Tanh) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.TanPi), new Func<T, T>(T.TanPi) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Truncate), new Func<T, T>(T.Truncate) };

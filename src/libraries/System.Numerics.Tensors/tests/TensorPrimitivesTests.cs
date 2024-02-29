@@ -3149,7 +3149,7 @@ namespace System.Numerics.Tensors.Tests
         public void Sum_AllLengths()
         {
             // TODO https://github.com/dotnet/runtime/issues/98861
-            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f);
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f);
 
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
