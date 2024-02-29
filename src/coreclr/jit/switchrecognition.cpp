@@ -363,16 +363,18 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
             assert(lastBlock->FalseTargetIs(blockIfTrue));
             fgRemoveRefPred(blockIfTrue, firstBlock);
             BasicBlock* targetBlock = blockIfTrue;
-            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
             FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfTrue);
             skipPredRemoval         = true;
+            blockIfTrue->SetTargetEdge(newEdge);
         }
         else
         {
             assert(lastBlock->FalseTargetIs(blockIfFalse));
             BasicBlock* targetBlock = blockIfFalse;
-            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
             FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfFalse);
+            blockIfFalse->SetTargetEdge(newEdge);
         }
     }
 

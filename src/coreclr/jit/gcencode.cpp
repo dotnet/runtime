@@ -1564,7 +1564,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
 
-#ifndef UNIX_X86_ABI
+#if !defined(FEATURE_EH_FUNCLETS)
     // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
     if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {

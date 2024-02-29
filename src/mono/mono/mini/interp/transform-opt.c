@@ -1959,7 +1959,8 @@ interp_reorder_bblocks (TransformData *td)
 				InterpInst *last_ins = interp_last_ins (in_bb);
 				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
 						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
-						last_ins->info.target_bb == bb) {
+						last_ins->info.target_bb == bb &&
+						in_bb != bb) {
 					InterpBasicBlock *target_bb = first->info.target_bb;
 					last_ins->info.target_bb = target_bb;
 					interp_unlink_bblocks (in_bb, bb);
@@ -2129,6 +2130,12 @@ interp_get_mt_for_ldind (int ldind_op)
 		result.field = op val->field; \
 		break;
 
+#define INTERP_FOLD_SHIFTOP_IMM(opcode,local_type,field,shift_op,cast_type) \
+	case opcode: \
+		result.type = local_type; \
+		result.field = (cast_type)val->field shift_op ins->data [0]; \
+		break;
+
 #define INTERP_FOLD_CONV(opcode,val_type_dst,field_dst,val_type_src,field_src,cast_type) \
 	case opcode: \
 		result.type = val_type_dst; \
@@ -2167,6 +2174,19 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 		INTERP_FOLD_UNOP (MINT_NOT_I4, VAR_VALUE_I4, i, ~);
 		INTERP_FOLD_UNOP (MINT_NOT_I8, VAR_VALUE_I8, l, ~);
 		INTERP_FOLD_UNOP (MINT_CEQ0_I4, VAR_VALUE_I4, i, 0 ==);
+
+		INTERP_FOLD_UNOP (MINT_ADD_I4_IMM, VAR_VALUE_I4, i, ((gint32)(gint16)ins->data [0])+);
+		INTERP_FOLD_UNOP (MINT_ADD_I8_IMM, VAR_VALUE_I8, l, ((gint64)(gint16)ins->data [0])+);
+
+		INTERP_FOLD_UNOP (MINT_MUL_I4_IMM, VAR_VALUE_I4, i, ((gint32)(gint16)ins->data [0])*);
+		INTERP_FOLD_UNOP (MINT_MUL_I8_IMM, VAR_VALUE_I8, l, ((gint64)(gint16)ins->data [0])*);
+
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_UN_I4_IMM, VAR_VALUE_I4, i, >>, guint32);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_UN_I8_IMM, VAR_VALUE_I8, l, >>, guint64);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHL_I4_IMM, VAR_VALUE_I4, i, <<, gint32);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHL_I8_IMM, VAR_VALUE_I8, l, <<, gint64);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_I4_IMM, VAR_VALUE_I4, i, >>, gint32);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_I8_IMM, VAR_VALUE_I8, l, >>, gint64);
 
 		INTERP_FOLD_CONV (MINT_CONV_I1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint8);
 		INTERP_FOLD_CONV (MINT_CONV_I1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint8);
@@ -2901,7 +2921,7 @@ retry_instruction:
 				td->var_values [dreg].type = VAR_VALUE_I4;
 				td->var_values [dreg].i = (gint32)td->data_items [ins->data [0]];
 #endif
-			} else if (MINT_IS_UNOP (opcode)) {
+			} else if (MINT_IS_UNOP (opcode) || MINT_IS_BINOP_IMM (opcode)) {
 				ins = interp_fold_unop (td, ins);
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, ins);

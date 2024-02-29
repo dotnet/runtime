@@ -2043,17 +2043,23 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
     }
 #endif // defined(TARGET_ARM)
-#ifndef TARGET_X86
+
+    bool addStubCellArg = true;
+
+#ifdef TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
+
+    addStubCellArg = call->gtCallType != CT_INDIRECT && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+#endif
 
     // We are allowed to have a ret buffer argument combined
     // with any of the remaining non-standard arguments
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-    if (call->IsVirtualStub())
+    if (call->IsVirtualStub() && addStubCellArg)
     {
         if (!call->IsTailCallViaJitHelper())
         {
@@ -2070,9 +2076,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else
-#endif // !TARGET_X86
-        if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
+    else if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
     {
         assert(!call->IsUnmanaged());
 
@@ -6316,7 +6320,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->SetKindAndTarget(BBJ_THROW);
+            compCurBB->SetKindAndTargetEdge(BBJ_THROW);
         }
 
         if (isRootReplaced)
@@ -7463,7 +7467,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetKindAndTarget(BBJ_ALWAYS, fgEntryBB);
+        FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     else
     {
@@ -7478,11 +7483,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         //
         fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        block->SetKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
+        FlowEdge* const newEdge = fgAddRefPred(fgFirstBB->Next(), block);
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
 
     // Finish hooking things up.
-    fgAddRefPred(block->GetTarget(), block);
     block->RemoveFlags(BBF_HAS_JMP);
 }
 
@@ -12785,10 +12790,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             gtUpdateNodeSideEffects(tree);
             break;
 
-        case GT_STORE_DYN_BLK:
-            tree = fgMorphStoreDynBlock(tree->AsStoreDynBlk());
-            break;
-
         case GT_SELECT:
             tree->AsConditional()->gtCond = fgMorphTree(tree->AsConditional()->gtCond);
             tree->AsConditional()->gtOp1  = fgMorphTree(tree->AsConditional()->gtOp1);
@@ -13205,7 +13206,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetFalseTarget();
                 bNotTaken = block->GetTrueTarget();
-                block->SetKindAndTarget(BBJ_ALWAYS, bTaken);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
                 block->SetFlags(BBF_NONE_QUIRK);
             }
 
@@ -13373,13 +13374,13 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    block->SetKindAndTarget(BBJ_ALWAYS, curEdge->getDestinationBlock());
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
                     foundVal = true;
                 }
                 else
                 {
                     // Remove 'curEdge'
-                    fgRemoveRefPred(curEdge->getDestinationBlock(), block);
+                    fgRemoveRefPred(curEdge);
                 }
             }
 
@@ -13561,11 +13562,7 @@ void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
         {
             if ((*use)->OperIsBlkOp())
             {
-                if ((*use)->OperIs(GT_STORE_DYN_BLK))
-                {
-                    *use = m_compiler->fgMorphStoreDynBlock((*use)->AsStoreDynBlk());
-                }
-                else if ((*use)->OperIsInitBlkOp())
+                if ((*use)->OperIsInitBlkOp())
                 {
                     *use = m_compiler->fgMorphInitBlock(*use);
                 }
@@ -14129,8 +14126,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
-            fgAddRefPred(genReturnBB, block);
+            FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
+            block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             fgReturnCount--;
         }
 
@@ -14632,15 +14629,23 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->bbWeight == remainderBlock->bbWeight);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    block->SetTarget(condBlock);
-    condBlock->SetTarget(elseBlock);
-    elseBlock->SetTarget(remainderBlock);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(condBlock, block);
+        block->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
+        condBlock->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
+        elseBlock->SetTargetEdge(newEdge);
+    }
+
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
-
-    fgAddRefPred(condBlock, block);
-    fgAddRefPred(elseBlock, condBlock);
-    fgAddRefPred(remainderBlock, elseBlock);
 
     condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
     elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
@@ -14658,17 +14663,20 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //
         gtReverseCond(condExpr);
 
-        thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
+        thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->SetFlags(propagateFlagsToAll);
-        condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
             thenBlock->SetFlags(BBF_IMPORTED);
         }
 
-        fgAddRefPred(thenBlock, condBlock);
-        fgAddRefPred(remainderBlock, thenBlock);
+        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
+        thenBlock->SetTargetEdge(newEdge);
+
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
+        condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);
 
         thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
@@ -14682,8 +14690,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(remainderBlock, elseBlock);
-        fgAddRefPred(remainderBlock, condBlock);
+
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
+        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
@@ -14698,8 +14709,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetCond(remainderBlock, elseBlock);
-        fgAddRefPred(remainderBlock, condBlock);
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
+        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
 
         elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
     }

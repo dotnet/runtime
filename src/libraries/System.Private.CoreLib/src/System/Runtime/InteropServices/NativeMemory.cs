@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static void Copy(void* source, void* destination, nuint byteCount)
         {
-            Buffer.Memmove(ref *(byte*)destination, ref *(byte*)source, byteCount);
+            SpanHelpers.Memmove(ref *(byte*)destination, ref *(byte*)source, byteCount);
         }
 
         /// <summary>

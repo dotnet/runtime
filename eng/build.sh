@@ -553,6 +553,9 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
+# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
+arguments="$arguments -tl:false"
+
 initDistroRid "$os" "$arch" "$crossBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.

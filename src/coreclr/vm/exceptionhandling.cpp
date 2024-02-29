@@ -19,6 +19,7 @@
 #include "corinfo.h"
 #include "exceptionhandlingqcalls.h"
 #include "exinfo.h"
+#include "configuration.h"
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -236,7 +237,7 @@ void InitializeExceptionHandling()
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
     g_StackTraceArrayLock.Init(LOCK_TYPE_DEFAULT, TRUE);
 
-    g_isNewExceptionHandlingEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableNewExceptionHandling) != 0;
+    g_isNewExceptionHandlingEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.LegacyExceptionHandling"), CLRConfig::EXTERNAL_LegacyExceptionHandling ) == 0;
 
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
@@ -939,7 +940,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord);
+            DispatchManagedException(oref, pContextRecord, /* preserveStackTrace */ false);
         }
     }
 #endif // !HOST_UNIX
@@ -5451,7 +5452,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     if (ex->GetExceptionRecord()->ExceptionCode != STATUS_BREAKPOINT && ex->GetExceptionRecord()->ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or
-        // in one of the JIT helper functions (JIT_MemSet, ...)
+        // in one of the JIT helper functions
         PCODE controlPc = GetIP(ex->GetContextRecord());
         if (ExecutionManager::IsManagedCode(controlPc) && IsGcMarker(ex->GetContextRecord(), ex->GetExceptionRecord()))
         {
@@ -6623,6 +6624,13 @@ bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * p
 
     // Remember that sfLowerBound and sfUpperBound are in the "OS format".
     // Refer to the comment for CallerStackFrame for more information.
+
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        // The new exception handling sets the ranges always to the SP of the unwound frame
+        return (sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound);
+    }
+
 #ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
     if ((sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound))
 #else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
@@ -7969,7 +7977,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -7983,7 +7991,7 @@ extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *p
 
     IJitManager* pJitMan = pFrameIter->m_crawl.GetJitManager();
     const METHODTOKEN& MethToken = pFrameIter->m_crawl.GetMethodToken();
-    *pMethodStartAddress = (BYTE*)pJitMan->JitTokenToStartAddress(MethToken);
+    pJitMan->JitTokenToMethodRegionInfo(MethToken, pMethodRegionInfo);
     pExtendedEHEnum->EHCount = pJitMan->InitializeEHEnumeration(MethToken, pEHEnum);
 
     END_QCALL;
