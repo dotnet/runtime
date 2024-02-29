@@ -475,7 +475,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                 return simpleAddRec;
             }
 
-            ScevConstant* symbolicAddRec = NewConstant(TYP_INT, 0xdeadbeef);
+            ScevConstant* symbolicAddRec = NewConstant(data->TypeGet(), 0xdeadbeef);
             m_ephemeralCache.Emplace(store, symbolicAddRec);
 
             Scev* result;
