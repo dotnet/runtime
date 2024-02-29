@@ -494,6 +494,8 @@ PhaseStatus Compiler::optInductionVariables()
         DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
         scevContext.ResetForLoop(loop);
 
+        int numWidened = 0;
+
         for (Statement* stmt : loop->GetHeader()->Statements())
         {
             if (!stmt->IsPhiDefnStmt())
@@ -666,6 +668,14 @@ PhaseStatus Compiler::optInductionVariables()
             }
 
             optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
+
+            numWidened++;
+        }
+
+        Metrics.WidenedIVs += numWidened;
+        if (numWidened > 0)
+        {
+            Metrics.LoopsIVWidened++;
         }
     }
 
