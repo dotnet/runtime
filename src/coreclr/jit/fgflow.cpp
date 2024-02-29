@@ -289,62 +289,6 @@ template FlowEdge* Compiler::fgAddRefPred<true>(BasicBlock* block,
                                                 FlowEdge*   oldEdge /* = nullptr */);
 
 //------------------------------------------------------------------------
-// fgRemoveRefPred: Decrements the reference count of a predecessor edge from "blockPred" to "block",
-// removing the edge if it is no longer necessary.
-//
-// Arguments:
-//    block -- A block to operate on.
-//    blockPred -- The predecessor block to remove from the predecessor list. It must be a predecessor of "block".
-//
-// Return Value:
-//    If the flow edge was removed (the predecessor has a "dup count" of 1),
-//        returns the flow graph edge that was removed. This means "blockPred" is no longer a predecessor of "block".
-//    Otherwise, returns nullptr. This means that "blockPred" is still a predecessor of "block" (because "blockPred"
-//        is a switch with multiple cases jumping to "block", or a BBJ_COND with both conditional and fall-through
-//        paths leading to "block").
-//
-// Assumptions:
-//    -- "blockPred" must be a predecessor block of "block".
-//
-// Notes:
-//    -- block->bbRefs is decremented by one to account for the reduction in incoming edges.
-//    -- block->bbRefs is adjusted even if preds haven't been computed. If preds haven't been computed,
-//       the preds themselves aren't touched.
-//    -- fgModified is set if a flow edge is removed (but not if an existing flow edge dup count is decremented),
-//       indicating that the flow graph shape has changed.
-//
-FlowEdge* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
-{
-    noway_assert(block != nullptr);
-    noway_assert(blockPred != nullptr);
-    noway_assert(block->countOfInEdges() > 0);
-    assert(fgPredsComputed);
-    block->bbRefs--;
-
-    FlowEdge** ptrToPred;
-    FlowEdge*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
-    noway_assert(pred != nullptr);
-    noway_assert(pred->getDupCount() > 0);
-
-    pred->decrementDupCount();
-
-    if (pred->getDupCount() == 0)
-    {
-        // Splice out the predecessor edge since it's no longer necessary.
-        *ptrToPred = pred->getNextPredEdge();
-
-        // Any changes to the flow graph invalidate the dominator sets.
-        fgModified = true;
-
-        return pred;
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
-//------------------------------------------------------------------------
 // fgRemoveRefPred: Decrements the reference count of `edge`, removing it from its successor block's pred list
 // if the reference count is zero.
 //
@@ -440,12 +384,12 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            fgRemoveRefPred(block->GetTarget(), block);
+            fgRemoveRefPred(block->GetTargetEdge());
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->GetTrueTarget(), block);
-            fgRemoveRefPred(block->GetFalseTarget(), block);
+            fgRemoveRefPred(block->GetTrueEdge());
+            fgRemoveRefPred(block->GetFalseEdge());
             break;
 
         case BBJ_EHFINALLYRET:

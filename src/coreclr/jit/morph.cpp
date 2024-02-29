@@ -6098,19 +6098,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     // If this block has a flow successor, make suitable updates.
     //
-    BasicBlock* nextBlock = compCurBB->GetUniqueSucc();
-
-    if (nextBlock == nullptr)
+    if (compCurBB->KindIs(BBJ_ALWAYS))
     {
-        // No unique successor. compCurBB should be a return.
+        // Flow no longer reaches the target from here.
         //
-        assert(compCurBB->KindIs(BBJ_RETURN));
-    }
-    else
-    {
-        // Flow no longer reaches nextBlock from here.
-        //
-        fgRemoveRefPred(nextBlock, compCurBB);
+        fgRemoveRefPred(compCurBB->GetTargetEdge());
 
         // Adjust profile weights of the successor blocks.
         //
@@ -6120,7 +6112,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         BasicBlock* curBlock = compCurBB;
         if (curBlock->hasProfileWeight())
         {
-            weight_t weightLoss = curBlock->bbWeight;
+            weight_t    weightLoss = curBlock->bbWeight;
+            BasicBlock* nextBlock  = curBlock->GetTarget();
 
             while (nextBlock->hasProfileWeight())
             {
@@ -6149,14 +6142,21 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                             nextBlock->bbNum, nextWeight, compCurBB->bbNum, weightLoss);
                 }
 
-                curBlock  = nextBlock;
-                nextBlock = curBlock->GetUniqueSucc();
-                if (nextBlock == nullptr)
+                if (!nextBlock->KindIs(BBJ_ALWAYS))
                 {
                     break;
                 }
+
+                curBlock  = nextBlock;
+                nextBlock = curBlock->GetTarget();
             }
         }
+    }
+    else
+    {
+        // No unique successor. compCurBB should be a return.
+        //
+        assert(compCurBB->KindIs(BBJ_RETURN));
     }
 
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
@@ -13199,6 +13199,9 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetTrueTarget();
                 bNotTaken = block->GetFalseTarget();
+
+                // Remove 'block' from the predecessor list of 'bNotTaken' */
+                fgRemoveRefPred(block->GetFalseEdge());
                 block->SetKind(BBJ_ALWAYS);
             }
             else
@@ -13206,6 +13209,9 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetFalseTarget();
                 bNotTaken = block->GetTrueTarget();
+
+                // Remove 'block' from the predecessor list of 'bNotTaken' */
+                fgRemoveRefPred(block->GetTrueEdge());
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
                 block->SetFlags(BBF_NONE_QUIRK);
             }
@@ -13287,11 +13293,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     }
                 }
             }
-
-            /* modify the flow graph */
-
-            /* Remove 'block' from the predecessor list of 'bNotTaken' */
-            fgRemoveRefPred(bNotTaken, block);
 
 #ifdef DEBUG
             if (verbose)
@@ -14605,7 +14606,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
     BasicBlockFlags propagateFlagsToAll = block->GetFlagsRaw() & BBF_COPY_PROPAGATE;
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
-    fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
+    fgRemoveRefPred(block->GetTargetEdge()); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);

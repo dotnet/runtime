@@ -4231,7 +4231,7 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS) && fgFirstBB->JumpsToNext());
-    fgRemoveRefPred(fgFirstBB->GetTarget(), fgFirstBB);
+    fgRemoveRefPred(fgFirstBB->GetTargetEdge());
     FlowEdge* const newEdge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     newEdge->setLikelihood(1.0);
     fgFirstBB->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
@@ -5337,7 +5337,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
          * First, remove 'block' from the predecessor list of succBlock.
          */
 
-        fgRemoveRefPred(succBlock, block);
+        fgRemoveRefPred(block->GetTargetEdge());
 
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
