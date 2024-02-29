@@ -30,12 +30,10 @@ public class SignalRClientTests : AppTestBase
     [InlineData("Release", "WebSockets")]
     public async Task SignalRPassMessages(string config, string transport)
     {
-        CopyTestAsset("BlazorHostedApp", "SignalRClientTests");
-        string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
-            forPublish: false,
-            clientDirRelativeToProjectDir: "../BlazorHosted.Client");
-        BuildProject(configuration: config,
-            binFrameworkDir: frameworkDir,
+        BlazorHostedBuild(config,
+            assetName: "BlazorHostedApp",
+            clientDirRelativeToProjectDir: "../BlazorHosted.Client",
+            generatedProjectNamePrefix: "SignalRClientTests",
             runtimeType: RuntimeVariant.MultiThreaded);
 
         List<string> consoleOutput = new();

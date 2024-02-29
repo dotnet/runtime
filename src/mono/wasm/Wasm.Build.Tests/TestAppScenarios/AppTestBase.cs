@@ -44,6 +44,22 @@ public abstract class AppTestBase : BlazorWasmTestBase
         }
     }
 
+    protected void BlazorHostedBuild(
+        string config,
+        string assetName,
+        string clientDirRelativeToProjectDir = "",
+        string? generatedProjectNamePrefix = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+    {
+        CopyTestAsset(assetName, generatedProjectNamePrefix);
+        string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
+            forPublish: false,
+            clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
+        BuildProject(configuration: config,
+            binFrameworkDir: frameworkDir,
+            runtimeType: runtimeType);
+    }
+
     protected void BuildProject(
         string configuration,
         string? binFrameworkDir = null,
