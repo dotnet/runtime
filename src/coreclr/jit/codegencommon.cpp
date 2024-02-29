@@ -6491,7 +6491,6 @@ unsigned CodeGen::getBaseOffsetOfGeneratedJumpTable(GenTree* treeNode)
     return jmpTabBase;
 }
 
-
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
