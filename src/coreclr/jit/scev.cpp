@@ -491,6 +491,11 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                 m_ephemeralCache.RemoveAll();
             }
 
+            if (result == nullptr)
+            {
+                return nullptr;
+            }
+
             return MakeAddRecFromRecursiveScev(enterScev, result, symbolicAddRec);
         }
         case GT_CAST:
