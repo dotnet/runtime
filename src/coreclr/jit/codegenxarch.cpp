@@ -6619,7 +6619,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
-        regMaskMixed tempMask = varDsc->lvRegMask();
+        regMaskOnlyOne tempMask = varDsc->lvRegMask();
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))
@@ -8447,7 +8447,9 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     regNumber simdTmpReg      = REG_NA;
     if (putArgStk->AvailableTempRegCount() != 0)
     {
-        regMaskMixed rsvdRegs = putArgStk->gtRsvdRegs;
+        regMaskOnlyOne rsvdRegs = putArgStk->gtRsvdRegs;
+        assert(compiler->IsOnlyOneRegMask(rsvdRegs));
+
         if ((rsvdRegs & RBM_ALLINT) != 0)
         {
             intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
@@ -9678,7 +9680,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // registers that profiler callback kills.
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
-        regMaskMixed thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
+        regMaskOnlyOne thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
         noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 
@@ -10737,7 +10739,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(isFramePointerUsed());
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
                                                                           // finalized
-    assert(compiler->compCalleeFPRegsSavedMask != (regMaskMixed)-1); // The float registers to be preserved is finalized
+    assert(compiler->compCalleeFPRegsSavedMask != (regMaskFloat)-1); // The float registers to be preserved is finalized
 
     // Even though lvaToInitialSPRelativeOffset() depends on compLclFrameSize,
     // that's ok, because we're figuring out an offset in the parent frame.

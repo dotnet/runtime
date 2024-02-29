@@ -188,8 +188,10 @@ void GCInfo::gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput))
  *  non-pointer values.
  */
 
-void GCInfo::gcMarkRegSetNpt(regMaskMixed regMask DEBUGARG(bool forceOutput))
+void GCInfo::gcMarkRegSetNpt(regMaskOnlyOne regMask DEBUGARG(bool forceOutput))
 {
+    assert(compiler->IsOnlyOneRegMask(regMask));
+
     /* NOTE: don't unmark any live register variables */
 
     regMaskMixed gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->GetMaskVars());

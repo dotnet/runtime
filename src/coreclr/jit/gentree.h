@@ -968,7 +968,7 @@ public:
 
     ValueNumPair gtVNPair;
 
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
+    regMaskOnlyOne gtRsvdRegs; // set of fixed trashed  registers
 
     unsigned AvailableTempRegCount(regMaskMixed mask = (regMaskMixed)-1) const;
     regNumber GetSingleTempReg(regMaskMixed mask = (regMaskMixed)-1);

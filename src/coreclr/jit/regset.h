@@ -168,9 +168,10 @@ public:
 
 private:
     regMaskMixed _rsMaskVars; // backing store for rsMaskVars property
+    AllRegsMask _rsAllMaskVars; // backing store for rsGprMaskVars property
 
 #if defined(TARGET_ARMARCH)
-    regMaskGpr rsGprMaskCalleeSaved;
+    regMaskGpr rsGprMaskCalleeSaved; // TODO: Can use AllRegsMask here as well
     regMaskFloat rsFloatMaskCalleeSaved;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog

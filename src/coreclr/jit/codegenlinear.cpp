@@ -201,7 +201,7 @@ void CodeGen::genCodeForBBlist()
         // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
         // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
-        regMaskMixed newLiveRegSet  = RBM_NONE;
+        AllRegsMask newLiveRegSet;
         regMaskGpr   newRegGCrefSet = RBM_NONE;
         regMaskGpr   newRegByrefSet = RBM_NONE;
 #ifdef DEBUG
@@ -216,7 +216,7 @@ void CodeGen::genCodeForBBlist()
 
             if (varDsc->lvIsInReg())
             {
-                newLiveRegSet |= varDsc->lvRegMask();
+                varDsc->lvRegMask(newLiveRegSet);
                 if (varDsc->lvType == TYP_REF)
                 {
                     newRegGCrefSet |= varDsc->lvRegMask();

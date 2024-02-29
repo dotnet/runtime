@@ -80,7 +80,7 @@ public:
     // Call this function after the equivalent fields in Compiler have been initialized.
     void CopyRegisterInfo();
 
-    FORCEINLINE regMaskMixed get_RBM_ALLMASK() const
+    FORCEINLINE regMaskPredicate get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }

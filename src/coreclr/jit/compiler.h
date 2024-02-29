@@ -1005,9 +1005,9 @@ public:
         return lvIsRegCandidate() && (GetRegNum() != REG_STK);
     }
 
-    regMaskMixed lvRegMask() const
+    regMaskOnlyOne lvRegMask() const
     {
-        regMaskMixed regMask = RBM_NONE;
+        regMaskOnlyOne regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
             if (varTypeUsesFloatReg(this))
@@ -1023,6 +1023,33 @@ public:
 #endif
 
                 regMask = genRegMask(GetRegNum());
+            }
+        }
+        return regMask;
+    }
+
+    regMaskOnlyOne lvRegMask(AllRegsMask& allRegsMask) const
+    {
+        regMaskOnlyOne regMask = RBM_NONE;
+        if (GetRegNum() != REG_STK)
+        {
+            if (varTypeUsesFloatReg(this))
+            {
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
+                allRegsMask.floatRegs = regMask;
+            }
+#ifdef HAS_PREDICATE_REGS
+            else if (varTypeUsesMaskReg(this))
+            {
+                regMask = genRegMask(GetRegNum());
+                allRegsMask.predicateRegs = regMask;
+            }
+#endif
+            else
+            {
+                assert(varTypeUsesIntReg(this));
+                regMask = genRegMask(GetRegNum());
+                allRegsMask.gprRegs = regMask;
             }
         }
         return regMask;

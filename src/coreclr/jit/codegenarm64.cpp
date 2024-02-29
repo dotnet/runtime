@@ -36,8 +36,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskMixed rsRestoreGprRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
-    regMaskMixed rsRestoreFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+    regMaskGpr rsRestoreGprRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskFloat rsRestoreFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
     if (isFramePointerUsed())
     {
@@ -1606,7 +1606,6 @@ void CodeGen::genFuncletEpilog()
         }
     }
 
-    regMaskMixed regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
     if ((genFuncletInfo.fiFrameType == 1) || (genFuncletInfo.fiFrameType == 2) || (genFuncletInfo.fiFrameType == 3))
     {
         maskRestoreRegsInt &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end

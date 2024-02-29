@@ -91,7 +91,7 @@ public:
 
     void gcMarkRegSetGCref(regMaskGpr regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput = false));
-    void gcMarkRegSetNpt(regMaskMixed regMask DEBUGARG(bool forceOutput = false));
+    void gcMarkRegSetNpt(regMaskOnlyOne regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegPtrVal(regNumber reg, var_types type);
 
 #ifdef DEBUG

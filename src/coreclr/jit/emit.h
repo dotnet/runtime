@@ -321,9 +321,7 @@ struct insGroup
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !(REGMASK_BITS <= 32)
     regMaskSmall igGCregs; // set of registers with live GC refs
-#endif                     // !(REGMASK_BITS <= 32)
 
     union {
         BYTE*                    igData;   // addr of instruction descriptors
@@ -340,9 +338,7 @@ struct insGroup
     unsigned igStkLvl; // stack level on entry
 #endif                 // EMIT_TRACK_STACK_DEPTH
 
-#if REGMASK_BITS <= 32
     regMaskSmall igGCregs; // set of registers with live GC refs
-#endif                     // REGMASK_BITS <= 32
 
     unsigned char igInsCnt; // # of instructions  in this group
 

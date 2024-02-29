@@ -273,10 +273,8 @@ void emitterStaticStats()
     fprintf(fout, "Offset / size of igLoopBackEdge     = %3zu / %2zu\n", offsetof(insGroup, igLoopBackEdge),
             sizeof(igDummy->igLoopBackEdge));
 #endif // FEATURE_LOOP_ALIGN
-#if !(REGMASK_BITS <= 32)
     fprintf(fout, "Offset / size of igGCregs           = %3zu / %2zu\n", offsetof(insGroup, igGCregs),
             sizeof(igDummy->igGCregs));
-#endif // !(REGMASK_BITS <= 32)
     fprintf(fout, "Offset / size of igData             = %3zu / %2zu\n", offsetof(insGroup, igData),
             sizeof(igDummy->igData));
     fprintf(fout, "Offset / size of igPhData           = %3zu / %2zu\n", offsetof(insGroup, igPhData),
@@ -289,10 +287,8 @@ void emitterStaticStats()
     fprintf(fout, "Offset / size of igStkLvl           = %3zu / %2zu\n", offsetof(insGroup, igStkLvl),
             sizeof(igDummy->igStkLvl));
 #endif // EMIT_TRACK_STACK_DEPTH
-#if REGMASK_BITS <= 32
     fprintf(fout, "Offset / size of igGCregs           = %3zu / %2zu\n", offsetof(insGroup, igGCregs),
             sizeof(igDummy->igGCregs));
-#endif // REGMASK_BITS <= 32
     fprintf(fout, "Offset / size of igInsCnt           = %3zu / %2zu\n", offsetof(insGroup, igInsCnt),
             sizeof(igDummy->igInsCnt));
     fprintf(fout, "\n");

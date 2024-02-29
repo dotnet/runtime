@@ -2494,8 +2494,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskMixed rsGprMaskSaveRegs  = regSet.rsGprMaskCalleeSaved;
-        regMaskMixed rsFloatMaskSaveRegs  = regSet.rsFloatMaskCalleeSaved;
+        regMaskGpr rsGprMaskSaveRegs  = regSet.rsGprMaskCalleeSaved;
+        regMaskFloat rsFloatMaskSaveRegs  = regSet.rsFloatMaskCalleeSaved;
         unsigned     saveRegsCount       = genCountBits(rsGprMaskSaveRegs) + genCountBits(rsFloatMaskSaveRegs);
         unsigned     saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned     saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
@@ -2652,9 +2652,9 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     regNumber    rAddr;
     regNumber    rCnt = REG_NA; // Invalid
-    regMaskMixed regMask;
+    regMaskGpr   regMask;
 
-    regMaskMixed availMask = regSet.rsGetModifiedGprRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
+    regMaskGpr availMask = regSet.rsGetModifiedGprRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
                                                         // currently live
     availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for

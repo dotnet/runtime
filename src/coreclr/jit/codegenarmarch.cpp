@@ -3577,14 +3577,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (call->IsFastTailCall())
     {
-        regMaskMixed trashedByEpilog = RBM_CALLEE_SAVED;
+        regMaskGpr trashedGprByEpilog = RBM_INT_CALLEE_SAVED;
+        regMaskFloat trashedFloatByEpilog = RBM_FLT_CALLEE_SAVED;
+#if HAS_PREDICATE_REGS
+        regMaskPredicate trashedPredicateByEpilog = RBM_MSK_CALLEE_SAVED;
+#endif // HAS_PREDICATE_REGS
 
         // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedGprByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
+            trashedGprByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
         }
 
         for (CallArg& arg : call->gtArgs.Args())
@@ -3592,13 +3596,29 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
             {
                 regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                if ((trashedGprByEpilog & genRegMask(reg)) != 0)
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    JITDUMP("Gpr Register used: %s\n", getRegName(reg));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
+                else if ((trashedFloatByEpilog & genRegMask(reg)) != 0)
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Float Register used: %s\n", getRegName(reg));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+#if HAS_PREDICATE_REGS
+                else if ((trashedPredicateByEpilog & genRegMask(reg)) != 0)
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Mask Register used: %s\n", getRegName(reg));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+#endif // HAS_PREDICATE_REGS
             }
         }
     }

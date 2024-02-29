@@ -128,7 +128,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #if defined(TARGET_XARCH)
     // Shouldn't be used before it is set in genFnProlog()
-    compiler->compCalleeFPRegsSavedMask = (regMaskMixed)-1;
+    compiler->compCalleeFPRegsSavedMask = (regMaskFloat)-1;
 #endif // defined(TARGET_XARCH)
 #endif // DEBUG
 
@@ -748,7 +748,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
             // gc sets
-            regMaskMixed regMask = varDsc->lvRegMask();
+            regMaskOnlyOne regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
                 codeGen->gcInfo.gcRegGCrefSetCur &= ~regMask;
@@ -793,7 +793,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
                 VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             }
             codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(nullptr));
-            regMaskMixed regMask = varDsc->lvRegMask();
+            regMaskOnlyOne regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
                 codeGen->gcInfo.gcRegGCrefSetCur |= regMask;
@@ -5405,7 +5405,6 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    //regMaskMixed maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 #ifdef TARGET_ARM
     // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
 #endif
@@ -8104,28 +8103,73 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
         // First set the source registers as busy if they haven't been spilled.
         // (Note that this is just for verification that we don't have circular dependencies.)
-        regMaskMixed busyRegs = RBM_NONE;
+#ifdef DEBUG
+        AllRegsMask busyRegs;
         for (unsigned i = 0; i < regCount; ++i)
         {
             if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
             {
-                busyRegs |= genRegMask(op1->GetRegByIndex(i));
+                regNumber      reg     = op1->GetRegByIndex(i);
+                //regMaskOnlyOne regMask = genRegMask();
+                if (genIsValidIntReg(reg))
+                {
+                    busyRegs.gprRegs |= genRegMask(reg);
+                }
+                else if (genIsValidFloatReg(reg))
+                {
+                    busyRegs.floatRegs |= genRegMask(reg);
+                }
+#ifdef HAS_PREDICATE_REGS
+                else if (genIsValidMaskReg(reg))
+                {
+                    busyRegs.predicateRegs |= genRegMask(reg);
+                }
+#endif // HAS_PREDICATE_REGS
             }
         }
+#endif // DEBUG
+
         for (unsigned i = 0; i < regCount; ++i)
         {
             regNumber sourceReg = op1->GetRegByIndex(i);
             // genRegCopy will consume the source register, perform any required reloads,
             // and will return either the register copied to, or the original register if there's no copy.
             regNumber targetReg = genRegCopy(treeNode, i);
-            if (targetReg != sourceReg)
+
+#ifdef DEBUG
+
+#define DO_VALIDATION(regType)                              \
+if (targetReg != sourceReg)                                 \
+{                                                           \
+    singleRegMask targetRegMask = genRegMask(targetReg);    \
+    assert((busyRegs.regType & targetRegMask) == 0);        \
+    busyRegs.regType &= ~genRegMask(sourceReg);             \
+}                                                           \
+busyRegs.regType |= genRegMask(targetReg);
+
+            if (genIsValidIntReg(targetReg))
             {
-                singleRegMask targetRegMask = genRegMask(targetReg);
-                assert((busyRegs & targetRegMask) == 0);
-                // Clear sourceReg from the busyRegs, and add targetReg.
-                busyRegs &= ~genRegMask(sourceReg);
+                DO_VALIDATION(gprRegs)
             }
-            busyRegs |= genRegMask(targetReg);
+            else if (genIsValidFloatReg(targetReg))
+            {
+                DO_VALIDATION(floatRegs)
+            }
+#ifdef HAS_PREDICATE_REGS
+            else if (genIsValidMaskReg(targetReg))
+            {
+                DO_VALIDATION(predicateRegs)
+            }
+#endif // HAS_PREDICATE_REGS
+            //if (targetReg != sourceReg)
+            //{
+            //    singleRegMask targetRegMask = genRegMask(targetReg);
+            //    assert((busyRegs & targetRegMask) == 0);
+            //    // Clear sourceReg from the busyRegs, and add targetReg.
+            //    busyRegs &= ~genRegMask(sourceReg);
+            //}
+            //busyRegs |= genRegMask(targetReg);
+#endif // DEBUG
         }
         return;
     }
