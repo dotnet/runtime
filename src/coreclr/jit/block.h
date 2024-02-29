@@ -1283,7 +1283,11 @@ public:
     unsigned NumSucc() const;
     unsigned NumSucc(Compiler* comp);
 
-    // GetSucc: Returns the "i"th successor. Requires (0 <= i < NumSucc()).
+    // GetSuccEdge: Returns the "i"th successor edge. Requires (0 <= i < NumSucc()).
+    FlowEdge* GetSuccEdge(unsigned i) const;
+    FlowEdge* GetSuccEdge(unsigned i, Compiler* comp);
+
+    // GetSucc: Returns the "i"th successor block. Requires (0 <= i < NumSucc()).
     BasicBlock* GetSucc(unsigned i) const;
     BasicBlock* GetSucc(unsigned i, Compiler* comp);
 

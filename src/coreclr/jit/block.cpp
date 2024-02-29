@@ -1185,15 +1185,15 @@ unsigned BasicBlock::NumSucc() const
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc().
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i) const
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
 {
     assert(i < NumSucc()); // Index bounds check.
     switch (bbKind)
@@ -1204,29 +1204,43 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return GetTarget();
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return GetFalseTarget();
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
                 assert(bbTrueEdge != bbFalseEdge);
-                return GetTrueTarget();
+                return GetTrueEdge();
             }
 
         case BBJ_EHFINALLYRET:
-            return bbEhfTargets->bbeSuccs[i]->getDestinationBlock();
+            return bbEhfTargets->bbeSuccs[i];
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsDstTab[i]->getDestinationBlock();
+            return bbSwtTargets->bbsDstTab[i];
 
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc().
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i) const
+{
+    return GetSuccEdge(i)->getDestinationBlock();
 }
 
 //------------------------------------------------------------------------
@@ -1296,6 +1310,64 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc(comp).
+//    comp - Compiler instance
+//
+// Return Value:
+//    Requested successor edge
+//
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
+{
+    assert(comp != nullptr);
+
+    assert(i < NumSucc(comp)); // Index bounds check.
+    switch (bbKind)
+    {
+        case BBJ_EHFILTERRET:
+            // Handler is the (sole) normal successor of the filter.
+            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
+            return GetTargetEdge();
+
+        case BBJ_EHFINALLYRET:
+            assert(bbEhfTargets != nullptr);
+            assert(i < bbEhfTargets->bbeCount);
+            return bbEhfTargets->bbeSuccs[i];
+
+        case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+            return GetTargetEdge();
+
+        case BBJ_COND:
+            if (i == 0)
+            {
+                return GetFalseEdge();
+            }
+            else
+            {
+                assert(i == 1);
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueEdge();
+            }
+
+        case BBJ_SWITCH:
+        {
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+            assert(i < sd.numDistinctSuccs); // Range check.
+            return sd.nonDuplicates[i];
+        }
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // GetSucc: Returns the requested block successor. See the declaration comment for details.
 //
 // Arguments:
@@ -1307,50 +1379,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 //
 BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
 {
-    assert(comp != nullptr);
-
-    assert(i < NumSucc(comp)); // Index bounds check.
-    switch (bbKind)
-    {
-        case BBJ_EHFILTERRET:
-            // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
-            return GetTarget();
-
-        case BBJ_EHFINALLYRET:
-            assert(bbEhfTargets != nullptr);
-            assert(i < bbEhfTargets->bbeCount);
-            return bbEhfTargets->bbeSuccs[i]->getDestinationBlock();
-
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-        case BBJ_EHCATCHRET:
-        case BBJ_LEAVE:
-            return GetTarget();
-
-        case BBJ_COND:
-            if (i == 0)
-            {
-                return GetFalseTarget();
-            }
-            else
-            {
-                assert(i == 1);
-                assert(bbTrueEdge != bbFalseEdge);
-                return GetTrueTarget();
-            }
-
-        case BBJ_SWITCH:
-        {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            assert(i < sd.numDistinctSuccs); // Range check.
-            return sd.nonDuplicates[i]->getDestinationBlock();
-        }
-
-        default:
-            unreached();
-    }
+    return GetSuccEdge(i, comp)->getDestinationBlock();
 }
 
 void BasicBlock::InitVarSets(Compiler* comp)
