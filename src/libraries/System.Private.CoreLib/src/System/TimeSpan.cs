@@ -308,6 +308,19 @@ namespace System
 
         public override int GetHashCode() => _ticks.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan FromUnits(long units, long ticksPerUnit, long minUnits, long maxUnits)
+        {
+            System.Diagnostics.Debug.Assert(minUnits < 0);
+            System.Diagnostics.Debug.Assert(maxUnits > 0);
+
+            if (units > maxUnits || units < minUnits)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            return TimeSpan.FromTicks(units * ticksPerUnit);
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
         /// days.
@@ -317,7 +330,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromDays(int days) => FromDays(days, 0);
+        public static TimeSpan FromDays(int days) => FromUnits(days, TicksPerDay, MinDays, MaxDays);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
@@ -359,7 +372,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromHours(int hours) => FromDays(0, hours: hours);
+        public static TimeSpan FromHours(int hours) => FromUnits(hours, TicksPerHour, MinHours, MaxHours);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
@@ -386,7 +399,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromMinutes(long minutes) => FromDays(0, minutes: minutes);
+        public static TimeSpan FromMinutes(long minutes) => FromUnits(minutes, TicksPerMinute, MinMinutes, MaxMinutes);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
@@ -412,7 +425,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromSeconds(long seconds) => FromDays(0, seconds: seconds);
+        public static TimeSpan FromSeconds(long seconds) => FromUnits(seconds, TicksPerSecond, MinSeconds, MaxSeconds);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
@@ -449,7 +462,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromMicroseconds(long microseconds) => FromDays(0, microseconds: microseconds);
+        public static TimeSpan FromMicroseconds(long microseconds) => FromUnits(microseconds, TicksPerMicrosecond, MinMicroseconds, MaxMicroseconds);
 
         public static TimeSpan FromHours(double value) => Interval(value, TicksPerHour);
 
