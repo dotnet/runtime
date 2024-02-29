@@ -470,6 +470,7 @@ namespace System.Runtime.CompilerServices
         [Fact]
         public static unsafe void ByteOffsetConstantRef()
         {
+            // https://github.com/dotnet/runtime/pull/99019
             [MethodImpl(MethodImplOptions.NoInlining)]
             static nint NullTest(ref byte origin) => Unsafe.ByteOffset(ref origin, ref Unsafe.NullRef<byte>());
             Assert.Equal(0, NullTest(ref Unsafe.NullRef<byte>()));
@@ -629,6 +630,7 @@ namespace System.Runtime.CompilerServices
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
 
+            // https://github.com/dotnet/runtime/pull/99019
             [MethodImpl(MethodImplOptions.NoInlining)]
             static ref byte NullTest(nuint offset) => ref Unsafe.Subtract(ref Unsafe.NullRef<byte>(), offset);
             Assert.True(Unsafe.IsNullRef(ref NullTest(0)));
