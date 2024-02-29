@@ -4268,24 +4268,25 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 #if defined(TARGET_AMD64)
                 if (!compiler->opts.IsReadyToRun() && TargetOS::IsWindows)
                 {
+                    // How many continuous GC slots we have?
                     unsigned gcSlotCount = 0;
+                    unsigned j           = i;
                     do
                     {
                         gcSlotCount++;
-                        i++;
-                    } while ((i < slots) && layout->IsGCPtr(i));
+                        j++;
+                    } while ((j < slots) && layout->IsGCPtr(j));
 
+                    // if more than 1, call the batch version
                     if (gcSlotCount > 1)
                     {
+                        // Number of continuous GC slots is passed in R8
                         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R8, gcSlotCount);
                         genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF_BATCH, 0, EA_PTRSIZE);
+                        gcPtrCount -= gcSlotCount;
+                        i += gcSlotCount;
+                        continue;
                     }
-                    else
-                    {
-                        genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
-                    }
-                    gcPtrCount -= gcSlotCount;
-                    continue;
                 }
 #endif
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
