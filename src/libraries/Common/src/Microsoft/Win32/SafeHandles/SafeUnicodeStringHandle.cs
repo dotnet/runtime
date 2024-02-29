@@ -24,11 +24,11 @@ namespace Microsoft.Win32.SafeHandles
         public unsafe SafeUnicodeStringHandle(ReadOnlySpan<char> s)
             : base(IntPtr.Zero, ownsHandle: true)
         {
-            // If s is null ref then the span represents the null string,
+            // If s contains a null ref then the span represents the null string,
             // and handle should be IntPtr.Zero to match Marshal.StringToHGlobalUni.
             //
             // Since that was already done in the base ctor call, we only need to do
-            // work when s is not null ref.
+            // work when s not contains a null ref.
             if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(s)))
             {
                 int cch = checked(s.Length + 1);
