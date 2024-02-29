@@ -740,54 +740,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 }
 
 //------------------------------------------------------------------------
-// fgReplacePred: update the predecessor list, swapping one pred for another
-//
-// Arguments:
-//   block - block with the pred list we want to update
-//   oldPred - pred currently appearing in block's pred list
-//   newPred - pred that will take oldPred's place.
-//
-// Notes:
-//
-// A block can only appear once in the preds list. If a predecessor has multiple
-// ways to get to this block, then the pred edge DupCount will be >1.
-//
-// This function assumes that all branches from the predecessor (practically, that all
-// switch cases that target this block) are changed to branch from the new predecessor,
-// with the same dup count.
-//
-// Note that the block bbRefs is not changed, since 'block' has the same number of
-// references as before, just from a different predecessor block.
-//
-// Also note this may cause sorting of the pred list.
-//
-void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred)
-{
-    noway_assert(block != nullptr);
-    noway_assert(oldPred != nullptr);
-    noway_assert(newPred != nullptr);
-
-    bool modified = false;
-
-    for (FlowEdge* const pred : block->PredEdges())
-    {
-        if (oldPred == pred->getSourceBlock())
-        {
-            pred->setSourceBlock(newPred);
-            modified = true;
-            break;
-        }
-    }
-
-    // We may now need to reorder the pred list.
-    //
-    if (modified)
-    {
-        block->ensurePredListOrder(this);
-    }
-}
-
-//------------------------------------------------------------------------
 // fgReplacePred: redirects the given edge to a new predecessor block
 //
 // Arguments:
@@ -4798,14 +4750,15 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     {
         // For each successor of the original block, set the new block as their predecessor.
 
-        for (BasicBlock* const succ : curr->Succs(this))
+        for (FlowEdge* const succEdge : curr->SuccEdges())
         {
-            if (succ != newBlock)
-            {
-                JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succ->bbNum, curr->bbNum,
-                        newBlock->bbNum);
-                fgReplacePred(succ, curr, newBlock);
-            }
+            // For non-switch blocks, successor iterator should not iterate duplicates.
+            assert(succEdge->getSourceBlock() != newBlock);
+
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succBlock->bbNum, curr->bbNum,
+                    newBlock->bbNum);
+            fgReplacePred(succEdge, newBlock);
         }
     }
 

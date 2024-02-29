@@ -5827,15 +5827,15 @@ public:
 public:
     // For many purposes, it is desirable to be able to enumerate the *distinct* targets of a switch statement,
     // skipping duplicate targets.  (E.g., in flow analyses that are only interested in the set of possible targets.)
-    // SwitchUniqueSuccSet contains the non-duplicated switch targets.
+    // SwitchUniqueSuccSet contains the non-duplicated switch successor edges.
     // Code that modifies the flowgraph (such as by renumbering blocks) must call Compiler::InvalidateUniqueSwitchSuccMap,
     // and code that modifies the targets of a switch block must call Compiler::fgInvalidateSwitchDescMapEntry.
     // If the unique targets of a switch block are needed later, they will be recomputed, ensuring they're up-to-date.
     struct SwitchUniqueSuccSet
     {
-        unsigned     numDistinctSuccs; // Number of distinct targets of the switch.
-        BasicBlock** nonDuplicates;    // Array of "numDistinctSuccs", containing all the distinct switch target
-                                       // successors.
+        unsigned   numDistinctSuccs; // Number of distinct targets of the switch.
+        FlowEdge** nonDuplicates;    // Array of "numDistinctSuccs", containing all the distinct switch target
+                                     // successor edges.
     };
 
     typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet> BlockToSwitchDescMap;
@@ -5897,8 +5897,6 @@ public:
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
-
-    void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
     void fgReplacePred(FlowEdge* edge, BasicBlock* const newPred);
 
