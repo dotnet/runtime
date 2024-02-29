@@ -38,12 +38,12 @@ public class SignalRClientTests : AppTestBase
             binFrameworkDir: frameworkDir,
             runtimeType: RuntimeVariant.MultiThreaded);
 
-        List<string> testOutput = new();
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
 
-        // To look for static files in the paths defined by "*staticwebassets.runtime.json"
-        // and avoid: "Static files may be unavailable."
+        // We are using build (not publish),
+        // we need to instruct static web assets to use manifest file,
+        // because wwwroot in bin doesn't contain all files (for build)
         s_buildEnv.EnvVars["ASPNETCORE_ENVIRONMENT"] = "Development";
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!);
@@ -56,14 +56,13 @@ public class SignalRClientTests : AppTestBase
         IBrowser browser = await runner.SpawnBrowserAsync(url);
         IBrowserContext context = await browser.NewContextAsync();
 
-        testOutput.Add($"Starting to run on browser URL: {chatUrl}");
         var page = await runner.RunAsync(context, chatUrl);
         try
         {
             #pragma warning disable 4014
             page.Console += (_, msg) => OnConsoleMessage(msg);
             #pragma warning restore 4014
-            testOutput.Add($"Wait for loading state");
+            _testOutput.WriteLine($"Wait for loading state");
             await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
             await page.ClickAsync("button#connectButton");
             // give the connection some time to establish
@@ -82,7 +81,7 @@ public class SignalRClientTests : AppTestBase
             consoleOutput.Add(msg.Text);
             if (msg.Text.Contains("TestOutput ->"))
             {
-                testOutput.Add(msg.Text);
+                _testOutput.WriteLine(msg.Text);
             }
 
             if (msg.Text.Contains("SignalR connected"))
@@ -102,17 +101,17 @@ public class SignalRClientTests : AppTestBase
 
         void OnServerMessage(string msg) => serverOutput.Add(msg);
 
-        string output = string.Join(Environment.NewLine, testOutput);
-
         // check sending threadId
-        var confirmation = testOutput.FirstOrDefault(m => m.Contains($"SignalRPassMessages was sent by CurrentManagedThreadId="));
-        Assert.True(confirmation != null, $"Expected to find a log that signalR message was sent. TestOutput: {output}.");
-        string threadIdUsedForSending = confirmation?.Split("CurrentManagedThreadId=")[1] ?? "";
+        string output = _testOutput.ToString() ?? "";
+        Assert.NotEmpty(output);
+        Match match = Regex.Match(output, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)");
+        Assert.True(match.Success, $"Expected to find a log that signalR message was sent. TestOutput: {output}.");
+        string threadIdUsedForSending = match.Groups[1].Value ?? "";
 
         // check receiving threadId
-        confirmation = testOutput.FirstOrDefault(m => m.Contains($"ReceiveMessage from server on CurrentManagedThreadId="));
-        Assert.True(confirmation != null, $"Expected to find a log that signalR message was received. TestOutput: {output}.");
-        string threadIdUsedForReceiving = confirmation?.Split("CurrentManagedThreadId=")[1] ?? "";
+        match = Regex.Match(output, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)");
+        Assert.True(match.Success, $"Expected to find a log that signalR message was sent. TestOutput: {output}.");
+        string threadIdUsedForReceiving = match.Groups[1].Value ?? "";
 
         Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
             $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
