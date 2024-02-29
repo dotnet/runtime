@@ -1119,6 +1119,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidScalarDatasize(elemsize));
             break;
 
+        case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_S || id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isValidUimm2(emitGetInsSC(id))); // hh
+            break;
+
+        case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D_SXTW || id->idInsOpt() == INS_OPTS_SCALABLE_D_UXTW);
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isValidUimm2(emitGetInsSC(id))); // hh
+            break;
+
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_NONE);
@@ -12953,6 +12970,30 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_adr:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            assert(isValidUimm2(imm));
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_S:
+                case INS_OPTS_SCALABLE_D:
+                    assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                    fmt = IF_SVE_BH_3A;
+                    break;
+                case INS_OPTS_SCALABLE_D_SXTW:
+                    fmt = IF_SVE_BH_3B;
+                    break;
+                case INS_OPTS_SCALABLE_D_UXTW:
+                    fmt = IF_SVE_BH_3B_A;
+                    break;
+                default:
+                    assert(!"invalid instruction");
+                    break;
+            }
+            break;
+
         case INS_sve_cmpeq:
         case INS_sve_cmpgt:
         case INS_sve_cmpge:
@@ -23770,6 +23811,26 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());     // mmmmm
+            code |= insEncodeUimm2_11_to_10(emitGetInsSC(id)); // hh
+            code |= insEncodeImm1_22(id->idInsOpt() == INS_OPTS_SCALABLE_D ? 1 : 0);
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());     // mmmmm
+            code |= insEncodeUimm2_11_to_10(emitGetInsSC(id)); // hh
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Immediate and patterm to general purpose.
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
             imm  = emitGetInsSC(id);
@@ -25464,11 +25525,17 @@ void emitter::emitDispSveExtendOpts(insOpts opt)
 {
     switch (opt)
     {
+        case INS_OPTS_LSL:
+            printf("lsl");
+            break;
+
+        case INS_OPTS_UXTW:
         case INS_OPTS_SCALABLE_S_UXTW:
         case INS_OPTS_SCALABLE_D_UXTW:
             printf("uxtw");
             break;
 
+        case INS_OPTS_SXTW:
         case INS_OPTS_SCALABLE_S_SXTW:
         case INS_OPTS_SCALABLE_D_SXTW:
             printf("sxtw");
@@ -25485,27 +25552,18 @@ void emitter::emitDispSveExtendOpts(insOpts opt)
  *  Prints the encoding for the Extend Type encoding along with the N value
  */
 
-void emitter::emitDispSveExtendOptsModN(insOpts opt, int n)
+void emitter::emitDispSveExtendOptsModN(insOpts opt, ssize_t imm)
 {
-    assert(n >= 0 && n <= 3);
+    assert(imm >= 0 && imm <= 3);
 
-    emitDispSveExtendOpts(opt);
-    switch (n)
+    if (imm == 0 && opt != INS_OPTS_LSL)
     {
-        case 3:
-            printf(" #3");
-            break;
-
-        case 2:
-            printf(" #2");
-            break;
-
-        case 1:
-            printf(" #1");
-            break;
-
-        default:
-            break;
+        emitDispSveExtendOpts(opt);
+    }
+    else if (imm > 0)
+    {
+        emitDispSveExtendOpts(opt);
+        printf(" #%d", (int)imm);
     }
 }
 
@@ -27791,6 +27849,36 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);       // nnnnn
             emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false); // mmmmm
+            break;
+
+        // <Zd>.<T>, [<Zn>.<T>, <Zm>.<T>{, <mod> <amount>}]
+        case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            printf("[");
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), emitGetInsSC(id) > 0);
+            emitDispSveExtendOptsModN(INS_OPTS_LSL, emitGetInsSC(id));
+            printf("]");
+            break;
+
+        // <Zd>.D, [<Zn>.D, <Zm>.D, SXTW{ <amount>}]
+        case IF_SVE_BH_3B: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            printf("[");
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispSveExtendOptsModN(INS_OPTS_SXTW, emitGetInsSC(id));
+            printf("]");
+            break;
+
+        // <Zd>.D, [<Zn>.D, <Zm>.D, UXTW{ <amount>}]
+        case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            printf("[");
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispSveExtendOptsModN(INS_OPTS_UXTW, emitGetInsSC(id));
+            printf("]");
             break;
 
         // <Pd>.H, <Pn>.B
@@ -31648,6 +31736,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                            // increment)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_8C;
+            break;
+
+        case IF_SVE_BH_3A:   // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+        case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
