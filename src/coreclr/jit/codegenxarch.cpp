@@ -4266,7 +4266,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             else
             {
 #if defined(TARGET_AMD64)
-                if (!compiler->opts.IsReadyToRun())
+                if (!compiler->opts.IsReadyToRun() && TargetOS::IsWindows)
                 {
                     unsigned gcSlotCount = 0;
                     do
