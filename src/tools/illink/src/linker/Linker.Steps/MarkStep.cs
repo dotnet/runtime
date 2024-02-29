@@ -2457,51 +2457,36 @@ namespace Mono.Linker.Steps
 
 			// Should look at all recursive interfaces
 			foreach(var iface in Annotations.GetRecusiveInterfaces(type)) {
-
-			}
-			Queue<InterfaceImplementation[]> ifacesToVisit = new();
-			foreach(var iface in type.Interfaces) ifacesToVisit.Enqueue ([iface]);
-			HashSet<TypeDefinition> visitedTypes = new();
-			while (ifacesToVisit.Count > 0) {
-				var ifaces = ifacesToVisit.Dequeue();
-				var topInterfaceType = Context.Resolve(ifaces[0].InterfaceType);
-				if (topInterfaceType is not TypeDefinition resolvedInterfaceType)
-					continue;
-
-				if (visitedTypes.Add (resolvedInterfaceType)) {
-					if (ShouldMarkInterfaceImplementation(type, ifaces[0]))
+				if (ShouldMarkInterfaceImplementation(iface))
+				{
+					foreach(InterfaceImplementation interfaceImpl in iface.InterfaceImplChain)
 					{
-						foreach (var iface in ifaces)
-							MarkInterfaceImplementation (iface, new MessageOrigin (type));
-					}
-					if (resolvedInterfaceType.HasInterfaces)
-					{
-						foreach (var iface in resolvedInterfaceType.Interfaces) ifacesToVisit.Enqueue ([iface, ..ifaces]);
+						MarkInterfaceImplementation (interfaceImpl, new MessageOrigin (type));
 					}
 				}
 			}
 		}
 
-		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+		protected virtual bool ShouldMarkInterfaceImplementation (InterfaceImplementor interfaceImplementor)
 		{
-			if (Annotations.IsMarked (iface))
-				return false;
+			// if (Annotations.IsMarked (iface))
+			// return false;
 
-			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, interfaceImplementor.Implementor))
 				return true;
 
-			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+			if (interfaceImplementor.InterfaceType is null)
 				return false;
 
-			if (Annotations.IsMarked (resolvedInterfaceType))
+			if (Annotations.IsMarked (interfaceImplementor.InterfaceType))
 				return true;
 
 			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
 			// so as a precaution we will mark these interfaces once the type is instantiated
-			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
+			if (interfaceImplementor.InterfaceType.IsImport || interfaceImplementor.InterfaceType.IsWindowsRuntime)
 				return true;
 
-			return IsFullyPreserved (type);
+			return IsFullyPreserved (interfaceImplementor.Implementor);
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider)

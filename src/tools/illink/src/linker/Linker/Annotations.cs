@@ -718,6 +718,6 @@ namespace Mono.Linker
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
 
-		internal IEnumerable<object> GetRecusiveInterfaces (TypeDefinition type) => TypeMapInfo.GetRecursiveInterfaces (type);
+		internal List<InterfaceImplementor> GetRecusiveInterfaces (TypeDefinition type) => TypeMapInfo.GetRecursiveInterfaces (type);
 	}
 }

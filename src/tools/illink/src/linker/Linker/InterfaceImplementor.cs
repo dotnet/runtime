@@ -32,57 +32,19 @@ namespace Mono.Linker
 		public TypeReference InterfaceTypeReference => InterfaceImplChain.GetLast ().InterfaceType;
 		public TypeReference InflatedInterface { get; }
 
-		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImplNode implNode)
+		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImplNode implNode, LinkContext context)
 		{
 			Implementor = implementor;
 			InterfaceType = interfaceType;
 			InterfaceImplChain = implNode;
 			InflatedInterface = inflatedInterface;
+			Debug.Assert (interfaceType == context.Resolve (implNode.GetLast ().InterfaceType));
 		}
 
-		public InterfaceImplementor WithImplementor (TypeDefinition implementor)
+		public void FindMostDerivedImplsForEachInterface (TypeDefinition type)
 		{
-			return new InterfaceImplementor (implementor, InterfaceType, InterfaceImplChain);
-		}
-
-		public static InterfaceImplementor Create (TypeDefinition implementor, TypeDefinition interfaceType, IMetadataResolver resolver)
-		{
-			foreach (InterfaceImplementation iface in implementor.Interfaces) {
-				if (resolver.Resolve (iface.InterfaceType) == interfaceType) {
-					return new InterfaceImplementor (implementor, [iface], interfaceType);
-				}
-			}
-			var baseTypeRef = implementor.BaseType;
-			while (baseTypeRef is not null) {
-				var baseType = resolver.Resolve (baseTypeRef);
-				foreach (InterfaceImplementation iface in baseType.Interfaces) {
-					if (resolver.Resolve (iface.InterfaceType) == interfaceType) {
-						return new InterfaceImplementor (implementor, [iface], interfaceType);
-					}
-				}
-				baseTypeRef = baseType.BaseType;
-			}
-
-			Queue<(TypeDefinition, IEnumerable<InterfaceImplementation>)> ifacesToCheck = new ();
-			ifacesToCheck.Enqueue ((implementor, []));
-			while (ifacesToCheck.Count > 0) {
-				var (myFace, interfaceImpls) = ifacesToCheck.Dequeue ();
-
-				foreach (InterfaceImplementation ifaceImpl in myFace.Interfaces) {
-					var iface = resolver.Resolve (ifaceImpl.InterfaceType);
-					if (iface == interfaceType) {
-
-						return new InterfaceImplementor (implementor, interfaceImpls.Append (ifaceImpl).ToArray (), interfaceType);
-					}
-					ifacesToCheck.Enqueue ((iface, interfaceImpls.Append (ifaceImpl)));
-				}
-			}
-			throw new InvalidOperationException ($"Type '{implementor.FullName}' does not implement interface '{interfaceType.FullName}' directly or through any base types or interfaces");
-		}
-
-		Dictionary<TypeDefinition, TypeDefinition[]> _ifacesRecursively;
-		void FindMostDerivedImplsForEachInterface (TypeDefinition type)
-		{
+			// Should be a field with all interfaces
+			Dictionary<TypeDefinition, TypeDefinition[]> _ifacesRecursively = new();
 
 			Dictionary<TypeDefinition, List<TypeDefinition>> MostDerivedImpls = new ();
 			Dictionary<TypeDefinition, List<TypeDefinition>> IsMostDerivedImplOf = new ();
@@ -135,6 +97,7 @@ namespace Mono.Linker
 			}
 		}
 	}
+
 	public sealed record ImplNode (InterfaceImplementation Value, TypeDefinition InterfaceImplementationProvider, ImplNode? Next) : IEnumerable<InterfaceImplementation>
 	{
 		sealed class Enumerator : IEnumerator<InterfaceImplementation>
