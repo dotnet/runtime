@@ -8,12 +8,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class RepeatIterator<TResult> : IPartition<TResult>, IList<TResult>, IReadOnlyList<TResult>
+        private sealed partial class RepeatIterator<TResult> : IList<TResult>, IReadOnlyList<TResult>
         {
-            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectIPartitionIterator<TResult, TResult2>(this, selector);
-
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 TResult[] array = new TResult[_count];
                 if (_current != null)
@@ -24,7 +21,7 @@ namespace System.Linq
                 return array;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
                 List<TResult> list = new List<TResult>(_count);
                 SetCountAndGetSpan(list, _count).Fill(_current);
@@ -32,11 +29,11 @@ namespace System.Linq
                 return list;
             }
 
-            public int GetCount(bool onlyIfCheap) => _count;
+            public override int GetCount(bool onlyIfCheap) => _count;
 
             public int Count => _count;
 
-            public IPartition<TResult>? Skip(int count)
+            public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
@@ -48,7 +45,7 @@ namespace System.Linq
                 return new RepeatIterator<TResult>(_current, _count - count);
             }
 
-            public IPartition<TResult> Take(int count)
+            public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
 
@@ -60,7 +57,7 @@ namespace System.Linq
                 return new RepeatIterator<TResult>(_current, count);
             }
 
-            public TResult? TryGetElementAt(int index, out bool found)
+            public override TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)_count)
                 {
@@ -72,13 +69,13 @@ namespace System.Linq
                 return default;
             }
 
-            public TResult TryGetFirst(out bool found)
+            public override TResult TryGetFirst(out bool found)
             {
                 found = true;
                 return _current;
             }
 
-            public TResult TryGetLast(out bool found)
+            public override TResult TryGetLast(out bool found)
             {
                 found = true;
                 return _current;

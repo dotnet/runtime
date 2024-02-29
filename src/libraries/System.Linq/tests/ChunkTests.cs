@@ -8,6 +8,12 @@ namespace System.Linq.Tests
     public class ChunkTests : EnumerableTests
     {
         [Fact]
+        public void Empty()
+        {
+            Assert.Equal(Enumerable.Empty<int[]>(), Enumerable.Empty<int>().Chunk(4));
+        }
+
+        [Fact]
         public void ThrowsOnNullSource()
         {
             int[] source = null;

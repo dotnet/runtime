@@ -190,7 +190,7 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // AssignLikelihoodJump: update edge likelihood for a block that always
-//   transfers control to bbTarget
+//   transfers control to its target block
 //
 // Arguments;
 //   block -- block in question
@@ -342,10 +342,9 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 
     // Each unique edge gets some multiple of that basic probability
     //
-    for (BasicBlock* const succ : block->Succs(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
     {
-        FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
-        edge->setLikelihood(p * edge->getDupCount());
+        succEdge->setLikelihood(p * succEdge->getDupCount());
     }
 }
 
@@ -368,10 +367,9 @@ weight_t ProfileSynthesis::SumOutgoingLikelihoods(BasicBlock* block, WeightVecto
         likelihoods->clear();
     }
 
-    for (BasicBlock* const succ : block->Succs(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
     {
-        FlowEdge* const edge       = m_comp->fgGetPredForBlock(succ, block);
-        weight_t        likelihood = edge->getLikelihood();
+        weight_t likelihood = succEdge->getLikelihood();
         if (likelihoods != nullptr)
         {
             likelihoods->push_back(likelihood);
@@ -560,15 +558,15 @@ void ProfileSynthesis::BlendLikelihoods()
                 JITDUMP("Blending likelihoods in " FMT_BB " with blend factor " FMT_WT " \n", block->bbNum,
                         blendFactor);
                 iter = likelihoods.begin();
-                for (BasicBlock* const succ : block->Succs(m_comp))
+                for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
                 {
-                    FlowEdge* const edge          = m_comp->fgGetPredForBlock(succ, block);
-                    weight_t        newLikelihood = edge->getLikelihood();
-                    weight_t        oldLikelihood = *iter;
+                    weight_t newLikelihood = succEdge->getLikelihood();
+                    weight_t oldLikelihood = *iter;
 
-                    edge->setLikelihood((blendFactor * oldLikelihood) + ((1.0 - blendFactor) * newLikelihood));
-                    JITDUMP(FMT_BB " -> " FMT_BB " was " FMT_WT " now " FMT_WT "\n", block->bbNum, succ->bbNum,
-                            oldLikelihood, edge->getLikelihood());
+                    succEdge->setLikelihood((blendFactor * oldLikelihood) + ((1.0 - blendFactor) * newLikelihood));
+                    BasicBlock* const succBlock = succEdge->getDestinationBlock();
+                    JITDUMP(FMT_BB " -> " FMT_BB " was " FMT_WT " now " FMT_WT "\n", block->bbNum, succBlock->bbNum,
+                            oldLikelihood, succEdge->getLikelihood());
 
                     iter++;
                 }
@@ -588,10 +586,9 @@ void ProfileSynthesis::ClearLikelihoods()
 {
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (BasicBlock* const succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
-            edge->clearLikelihood();
+            succEdge->clearLikelihood();
         }
     }
 }
@@ -664,10 +661,9 @@ void ProfileSynthesis::RandomizeLikelihoods()
         }
 
         i = 0;
-        for (BasicBlock* const succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
-            edge->setLikelihood(likelihoods[i++] / sum);
+            succEdge->setLikelihood(likelihoods[i++] / sum);
         }
     }
 #endif // DEBUG

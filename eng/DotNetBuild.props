@@ -21,6 +21,10 @@
     <_hostArch>$(_hostRid.Substring($(_hostRidPlatformIndex)).TrimStart('-'))</_hostArch>
 
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
+
+    <!-- When using the inner clone functionality in the repo build, copy the sources
+         directly as source-link doesn't support local path clones anymore. -->
+    <CopySrcInsteadOfClone>true</CopySrcInsteadOfClone>
   </PropertyGroup>
 
   <PropertyGroup Label="ShortStacks">
