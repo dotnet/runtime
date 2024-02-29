@@ -27,7 +27,7 @@ const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
 const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
 const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
 #if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-// JIT32_ENCODER has additional restriction on Windows x86: 
+// JIT32_ENCODER has additional restriction on x86 without funclets: 
 // - for untracked locals the flags allowed are "pinned" and "byref"
 // - for tracked locals the flags allowed are "this" and "byref"
 const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
