@@ -438,16 +438,16 @@ LEAF_ENTRY JIT_ByRefWriteBarrierBatch, _TEXT
 #endif
 
     // At least one write is already done, increment the pointers
-        add     rdi, 8h
-        add     rsi, 8h
+        add     rdi, 0x8
+        add     rsi, 0x8
         dec     r8d
         je      LOCAL_LABEL(NotInHeapExit)
     // Now we can do the rest of the writes without checking the heap
     LOCAL_LABEL(NextByrefUnchecked):
         mov     rcx, [rsi]
         mov     [rdi], rcx
-        add     rdi, 8h
-        add     rsi, 8h
+        add     rdi, 0x8
+        add     rsi, 0x8
         dec     r8d
         jne     LOCAL_LABEL(NextByrefUnchecked)
     LOCAL_LABEL(NotInHeapExit):
