@@ -1548,7 +1548,6 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: CoreClr_ReleaseLibraries
-            unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
