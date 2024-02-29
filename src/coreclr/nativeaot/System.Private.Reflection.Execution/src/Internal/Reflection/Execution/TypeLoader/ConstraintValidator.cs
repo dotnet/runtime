@@ -13,9 +13,9 @@ namespace Internal.Reflection.Execution
     {
         private static bool SatisfiesConstraints(this Type genericVariable, SigTypeContext typeContextOfConstraintDeclarer, Type typeArg)
         {
-            GenericParameterAttributes specialConstraints = genericVariable.GenericParameterAttributes;
+            GenericParameterAttributes attributes = genericVariable.GenericParameterAttributes;
 
-            if ((specialConstraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
+            if ((attributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
             {
                 if (!typeArg.IsValueType)
                 {
@@ -30,19 +30,19 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            if ((specialConstraints & GenericParameterAttributes.ReferenceTypeConstraint) != 0)
+            if ((attributes & GenericParameterAttributes.ReferenceTypeConstraint) != 0)
             {
                 if (typeArg.IsValueType)
                     return false;
             }
 
-            if ((specialConstraints & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
+            if ((attributes & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
             {
                 if (!typeArg.HasExplicitOrImplicitPublicDefaultConstructor())
                     return false;
             }
 
-            if (typeArg.IsByRefLike && (specialConstraints & (GenericParameterAttributes)0x20 /* GenericParameterAttributes.AllowByRefLike */) == 0)
+            if (typeArg.IsByRefLike && (attributes & (GenericParameterAttributes)0x20 /* GenericParameterAttributes.AllowByRefLike */) == 0)
                 return false;
 
             // Now check general subtype constraints
