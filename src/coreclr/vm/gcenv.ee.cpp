@@ -461,10 +461,8 @@ void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context
         if (remainingSamplingBudget > (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
         {
             // the allocation context size has been reduced below the sampling threshold (not sure this is possible)
-            // TODO: if remainingSamplingBudget was not 0, it means that an object would have been sampled.
-            //       but now that the allocation context is smaller than the sampling limit, what should be done?
-            //       maybe set alloc_sampling to alloc_ptr to trigger the sampling at the next allocation
-            //       if we don't do this, the distribution statistics will be skewed. Same if we recompute the limit.
+            // so need to recompute a new one
+            pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
         }
         else
         {

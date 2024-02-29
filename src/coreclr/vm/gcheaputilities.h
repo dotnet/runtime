@@ -27,13 +27,6 @@ typedef struct _ee_alloc_context
     uint8_t* alloc_sampling;
     gc_alloc_context gc_alloc_context;
 
-    // TODO: how to get a random number?
-    // - have a dedicated CLRRandom instance: seems like a waste because the related Thread already has its CLRRandom instance
-    // - share the CLRRandom instance of the related thread but the Init() method of the allocation context runs BEFORE the thread's m_random.Init() is called
-    // Do we want to inject the Thread's CLRRandom instance into the allocation context?  Could be done in the Init() method of the Thread.InitThread() method
-    // CLRRandom* m_pRandom;
-    // Another solution would be to pass the CLRRandom instance as a parameter to the ComputeSamplingLimit() method
-
  public:
     void init()
     {

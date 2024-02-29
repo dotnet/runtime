@@ -199,8 +199,6 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     Object* retVal = nullptr;
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
 
-    // TODO: isSampled could be an out parameter used by PublishObjectAndNotify()
-    //       where the event would be emitted
     size_t samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
     size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
     if (flags & GC_ALLOC_USER_OLD_HEAP)
@@ -236,18 +234,9 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // only SOH allocations require sampling threshold to be recomputed
     if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0)
     {
-        // the only case for which we don't need to recompute the sampling limit is when
-        // it was a fast path allocation (i.e. enough space left in the AC) after a sampled allocation
-        bool wasInPlaceAllocation = isSampled && (size <= availableSpace);
-        if (wasInPlaceAllocation)
-        {
-            // we don't want to sample the same allocation context twice
-            pEEAllocContext->alloc_sampling = pAllocContext->alloc_limit;
-        }
-        else
-        {
-            pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
-        }
+        // the sampling threshold was crossed, so compute a new one (even if some
+        // free space is left in the allocation context)
+        pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
     }
 
     return retVal;
