@@ -13193,12 +13193,14 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             //
             BasicBlock* bTaken;
             BasicBlock* bNotTaken;
+            FlowEdge*   edgeTaken;
 
             if (cond->AsIntCon()->gtIconVal != 0)
             {
                 // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetTrueTarget();
                 bNotTaken = block->GetFalseTarget();
+                edgeTaken = block->GetTrueEdge();
                 block->SetKind(BBJ_ALWAYS);
             }
             else
@@ -13206,6 +13208,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetFalseTarget();
                 bNotTaken = block->GetTrueTarget();
+                edgeTaken = block->GetFalseEdge();
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
                 block->SetFlags(BBF_NONE_QUIRK);
             }
@@ -13216,8 +13219,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // and we have already computed the edge weights, so
                 // we will try to adjust some of the weights
                 //
-                FlowEdge*   edgeTaken = fgGetPredForBlock(bTaken, block);
-                BasicBlock* bUpdated  = nullptr; // non-NULL if we updated the weight of an internal block
+                BasicBlock* bUpdated = nullptr; // non-NULL if we updated the weight of an internal block
 
                 // We examine the taken edge (block -> bTaken)
                 // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
@@ -13263,19 +13265,19 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     switch (bUpdated->GetKind())
                     {
                         case BBJ_COND:
-                            edge         = fgGetPredForBlock(bUpdated->GetFalseTarget(), bUpdated);
+                            edge         = bUpdated->GetFalseEdge();
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
 
-                            edge         = fgGetPredForBlock(bUpdated->GetTrueTarget(), bUpdated);
+                            edge         = bUpdated->GetTrueEdge();
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
                             break;
 
                         case BBJ_ALWAYS:
-                            edge         = fgGetPredForBlock(bUpdated->GetTarget(), bUpdated);
+                            edge         = bUpdated->GetTargetEdge();
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());

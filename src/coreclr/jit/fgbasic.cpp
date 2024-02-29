@@ -721,10 +721,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 }
             }
 
-            if (changed)
-            {
-                InvalidateUniqueSwitchSuccMap();
-            }
+            assert(changed);
+            InvalidateUniqueSwitchSuccMap();
             break;
         }
 
