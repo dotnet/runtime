@@ -1183,6 +1183,9 @@ protected:
     void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef SWIFT_SUPPORT
+    void genCodeForSwiftErrorReg(GenTree* tree);
+#endif // SWIFT_SUPPORT
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
     void genCodeForReuseVal(GenTree* treeNode);

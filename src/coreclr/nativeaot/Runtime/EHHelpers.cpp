@@ -29,13 +29,25 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 
+struct MethodRegionInfo
+{
+    void* hotStartAddress;
+    size_t hotSize;
+    void* coldStartAddress;
+    size_t coldSize;
+};
+
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator, (
-    StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
+    StackFrameIterator* pFrameIter, MethodRegionInfo* pMethodRegionInfoOut, EHEnum* pEHEnum))
 {
     ICodeManager * pCodeManager = pFrameIter->GetCodeManager();
     pEHEnum->m_pCodeManager = pCodeManager;
 
-    FC_RETURN_BOOL(pCodeManager->EHEnumInit(pFrameIter->GetMethodInfo(), pMethodStartAddressOut, &pEHEnum->m_state));
+    pMethodRegionInfoOut->hotSize = 0; // unknown
+    pMethodRegionInfoOut->coldStartAddress = nullptr;
+    pMethodRegionInfoOut->coldSize = 0;
+
+    FC_RETURN_BOOL(pCodeManager->EHEnumInit(pFrameIter->GetMethodInfo(), &pMethodRegionInfoOut->hotStartAddress, &pEHEnum->m_state));
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClause))

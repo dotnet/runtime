@@ -324,6 +324,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+    DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(Monitor_Wait)
     DllImportEntry(Monitor_Pulse)
     DllImportEntry(Monitor_PulseAll)

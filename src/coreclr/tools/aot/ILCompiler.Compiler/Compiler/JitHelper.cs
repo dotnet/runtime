@@ -359,13 +359,5 @@ namespace ILCompiler
 
             return "RhpNewFast";
         }
-
-        public static string GetNewArrayHelperForType(TypeDesc type)
-        {
-            if (type.RequiresAlign8())
-                return "RhpNewArrayAlign8";
-
-            return "RhpNewArray";
-        }
     }
 }

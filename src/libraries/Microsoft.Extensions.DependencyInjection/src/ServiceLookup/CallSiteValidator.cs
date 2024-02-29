@@ -41,18 +41,27 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // First, check if we have encountered this call site before to prevent visiting call site trees that have already been visited
             // If firstScopedServiceInCallSiteTree is null there are no scoped dependencies in this service's call site tree
             // If firstScopedServiceInCallSiteTree has a value, it contains the first scoped service in this service's call site tree
-            if (_scopedServices.TryGetValue(callSite.Cache.Key, out Type? firstScopedServiceInCallSiteTree))
+            if (!_scopedServices.TryGetValue(callSite.Cache.Key, out Type? firstScopedServiceInCallSiteTree))
             {
-                return firstScopedServiceInCallSiteTree;
+                // This call site wasn't cached yet, walk the tree
+                firstScopedServiceInCallSiteTree = base.VisitCallSite(callSite, argument);
+
+                // Cache the result
+                _scopedServices[callSite.Cache.Key] = firstScopedServiceInCallSiteTree;
             }
 
-            // Walk the tree
-            Type? scoped = base.VisitCallSite(callSite, argument);
+            // If there is a scoped service in the call site tree, make sure we are not resolving it from a singleton
+            if (firstScopedServiceInCallSiteTree != null && argument.Singleton != null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.ScopedInSingletonException,
+                    callSite.ServiceType,
+                    argument.Singleton.ServiceType,
+                    nameof(ServiceLifetime.Scoped).ToLowerInvariant(),
+                    nameof(ServiceLifetime.Singleton).ToLowerInvariant()
+                    ));
+            }
 
-            // Store the result for each visited service
-            _scopedServices[callSite.Cache.Key] = scoped;
-
-            return scoped;
+            return firstScopedServiceInCallSiteTree;
         }
 
         protected override Type? VisitConstructor(ConstructorCallSite constructorCallSite, CallSiteValidatorState state)
@@ -90,15 +99,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (scopedCallSite.ServiceType == typeof(IServiceScopeFactory))
             {
                 return null;
-            }
-            if (state.Singleton != null)
-            {
-                throw new InvalidOperationException(SR.Format(SR.ScopedInSingletonException,
-                    scopedCallSite.ServiceType,
-                    state.Singleton.ServiceType,
-                    nameof(ServiceLifetime.Scoped).ToLowerInvariant(),
-                    nameof(ServiceLifetime.Singleton).ToLowerInvariant()
-                    ));
             }
 
             VisitCallSiteMain(scopedCallSite, state);

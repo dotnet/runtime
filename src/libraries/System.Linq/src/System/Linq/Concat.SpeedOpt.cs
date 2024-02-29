@@ -342,13 +342,9 @@ namespace System.Linq
             }
         }
 
-        private abstract partial class ConcatIterator<TSource> : IPartition<TSource>
+        private abstract partial class ConcatIterator<TSource>
         {
-            public abstract int GetCount(bool onlyIfCheap);
-
-            public abstract TSource[] ToArray();
-
-            public List<TSource> ToList()
+            public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
                 var list = count != -1 ? new List<TSource>(count) : new List<TSource>();
@@ -366,16 +362,6 @@ namespace System.Linq
 
                 return list;
             }
-
-            public abstract TSource? TryGetElementAt(int index, out bool found);
-
-            public abstract TSource? TryGetFirst(out bool found);
-
-            public abstract TSource? TryGetLast(out bool found);
-
-            public IPartition<TSource>? Skip(int count) => new EnumerablePartition<TSource>(this, count, -1);
-
-            public IPartition<TSource>? Take(int count) => new EnumerablePartition<TSource>(this, 0, count - 1);
 
         }
     }
