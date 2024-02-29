@@ -29,44 +29,27 @@ namespace System.Numerics.Tensors
         /// <summary>T.TrailingZeroCount(x)</summary>
         private readonly unsafe struct TrailingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
-            public static bool Vectorizable =>
-                (AdvSimd.IsSupported && AdvSimd.Arm64.IsSupported && sizeof(T) == 1) ||
-                PopCountOperator<T>.Vectorizable; // http://0x80.pl/notesen/2023-01-31-avx512-bsf.html#trailing-zeros-simplified
+            // http://0x80.pl/notesen/2023-01-31-avx512-bsf.html#trailing-zeros-simplified
+            public static bool Vectorizable => PopCountOperator<T>.Vectorizable;
 
             public static T Invoke(T x) => T.TrailingZeroCount(x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-                if (AdvSimd.IsSupported && sizeof(T) == 1)
-                {
-                    return AdvSimd.LeadingZeroCount(AdvSimd.Arm64.ReverseElementBits(x.AsByte())).As<byte, T>();
-                }
-
-                Debug.Assert(PopCountOperator<T>.Vectorizable);
                 return PopCountOperator<T>.Invoke(~x & (x - Vector128<T>.One));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-                if (PopCountOperator<T>.Vectorizable)
-                {
-                    return PopCountOperator<T>.Invoke(~x & (x - Vector256<T>.One));
-                }
-
-                return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
+                return PopCountOperator<T>.Invoke(~x & (x - Vector256<T>.One));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-                if (PopCountOperator<T>.Vectorizable)
-                {
-                    return PopCountOperator<T>.Invoke(~x & (x - Vector512<T>.One));
-                }
-
-                return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
+                return PopCountOperator<T>.Invoke(~x & (x - Vector512<T>.One));
             }
         }
     }
