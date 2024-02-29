@@ -41,8 +41,8 @@ jobs:
         name: ${{ format('spmi_{0}_{1}_{2}_{3}{4}_{5}_{6}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ else }}:
         ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          displayName: ${{ format('Test Run {0} {1} {2}{3} {4} {5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-          name: ${{ format('test_run_{0}_{1}_{2}{3}_{4}_{5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          displayName: ${{ format('Libraries Test Run {0} {1} {2}{3} {4} {5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          name: ${{ format('libraries_test_run_{0}_{1}_{2}{3}_{4}_{5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
           displayName: 'Test Run'
           name: test_run
