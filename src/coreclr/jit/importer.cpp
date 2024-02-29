@@ -5420,7 +5420,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 //
 // Notes:
 //   May expand into a series of runtime checks or a helper call.
-
+//
 GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset)
 {
@@ -5465,7 +5465,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (!shouldExpandEarly)
     {
-        JITDUMP("\nImporting %s as call because %s\n", isCastClass ? "castclass" : "isinst");
+        JITDUMP("\nImporting %s as call\n", isCastClass ? "castclass" : "isinst");
 
         // If we CSE this class handle we prevent assertionProp from making SubType assertions
         // so instead we force the CSE logic to not consider CSE-ing this class handle.
