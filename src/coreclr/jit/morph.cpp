@@ -561,6 +561,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // we fix this by copying the GC pointer to a non-gc pointer temp.
         noway_assert(!varTypeIsGC(dstType) && "How can we have a cast to a GCRef here?");
 
+        // we can just change the type for constant addresses
+        if (oper->IsCnsIntOrI())
+        {
+            oper->gtType = TYP_I_IMPL;
+            return fgMorphTree(gtNewCastNode(TYP_I_IMPL, oper, false, dstType));
+        }
+
         // We generate an assignment to an int and then do the cast from an int. With this we avoid
         // the gc problem and we allow casts to bytes, longs,  etc...
         unsigned lclNum = lvaGrabTemp(true DEBUGARG("Cast away GC"));
