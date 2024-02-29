@@ -358,6 +358,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99074")]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
