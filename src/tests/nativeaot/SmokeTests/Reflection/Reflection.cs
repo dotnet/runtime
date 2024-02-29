@@ -187,6 +187,13 @@ internal static class ReflectionTest
         {
             Console.WriteLine(nameof(TestReflectionInvoke));
 
+            // Ensure things we reflect on are in the static callgraph
+            if (string.Empty.Length > 0)
+            {
+                InvokeTests.GetHelloGeneric<int>(0);
+                new InvokeTestsGeneric<int>().GetHelloGeneric<double>(0);
+            }
+
             {
                 object? arg = "world";
                 MethodInfo helloMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHello");
