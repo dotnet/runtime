@@ -248,9 +248,9 @@ namespace ILCompiler
                 {
                     OffsetsForType offsetsForType = new OffsetsForType(
                         nonGcOffset: LayoutInt.Zero,
-                        tlsNonGcOffset: LayoutInt.Zero,
+                        tlsNonGcOffset: new LayoutInt(2 * defType.Context.Target.PointerSize),
                         gcOffset: LayoutInt.Zero,
-                        tlsGcOffset: LayoutInt.Zero);
+                        tlsGcOffset: new LayoutInt(2 * defType.Context.Target.PointerSize));
 
                     fieldsForType = moduleFieldLayout.GetOrAddDynamicLayout(
                         defType,
