@@ -97,7 +97,7 @@ public partial class FunctionPtr
         Console.WriteLine("Testing non-GenericCalli with non-blittable argument in a generic caller");
         unsafe
         {
-            GenericCaller<string>.NonGenericCalli<string>((delegate* unmanaged<float, int*, void>)&UnmanagedExportedFunctionRefInt, ref outVar, inVal);
+            GenericCaller<string>.NonGenericCalli<string>((delegate* unmanaged<int*, float, void>)&UnmanagedExportedFunctionRefInt, ref outVar, inVal);
         }
         Assert.Equal(expectedValue, outVar);
     }
