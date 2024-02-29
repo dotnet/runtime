@@ -1168,10 +1168,10 @@ namespace System.Threading.ThreadPools.Tests
             private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
             private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
 
-            public volatile int TPIOEnqueue = 0;
-            public volatile int TPIODequeue = 0;
-            public ManualResetEvent TPWaitIOEnqueueEvent = new ManualResetEvent(false);
-            public ManualResetEvent TPWaitIODequeueEvent = new ManualResetEvent(false);
+            public volatile int tpIOEnqueue = 0;
+            public volatile int tpIODequeue = 0;
+            public ManualResetEvent tpWaitIOEnqueueEvent = new ManualResetEvent(false);
+            public ManualResetEvent tpWaitIODequeueEvent = new ManualResetEvent(false);
 
             protected override void OnEventSourceCreated(EventSource eventSource)
             {
@@ -1187,13 +1187,13 @@ namespace System.Threading.ThreadPools.Tests
             {
                 if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
                 {
-                    Interlocked.Increment(ref TPIOEnqueue);
-                    TPWaitIOEnqueueEvent.Set();
+                    Interlocked.Increment(ref tpIOEnqueue);
+                    tpWaitIOEnqueueEvent.Set();
                 }
                 else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
                 {
-                    Interlocked.Increment(ref TPIODequeue);
-                    TPWaitIODequeueEvent.Set();
+                    Interlocked.Increment(ref tpIODequeue);
+                    tpWaitIODequeueEvent.Set();
                 }
             }
         }
@@ -1206,21 +1206,25 @@ namespace System.Threading.ThreadPools.Tests
                 using (RuntimeEventListener eventListener = new RuntimeEventListener())
                 {
                     TaskCompletionSource<int> portTcs = new TaskCompletionSource<int>();
+                    TaskCompletionSource<bool> readAsyncReadyTcs = new TaskCompletionSource<bool>();
+
                     async Task StartListenerAsync()
                     {
-                        TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+                        using TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
                         listener.Start();
                         int port = ((IPEndPoint)listener.LocalEndpoint).Port;
                         portTcs.SetResult(port);
-                        TcpClient client = await listener.AcceptTcpClientAsync();
+                        using TcpClient client = await listener.AcceptTcpClientAsync();
                         using (NetworkStream stream = client.GetStream())
                         {
-                            byte[] buffer = new byte[1024];
-                            int bytesRead;
-                            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0);
+                            byte[] buffer = new byte[1];
+                            Task readAsyncTask = stream.ReadAsync(buffer, 0, buffer.Length);
+                            readAsyncReadyTcs.SetResult(true);
+                            await readAsyncTask;
                         }
                         listener.Stop();
                     }
+
                     async Task StartClientAsync()
                     {
                         int port = await portTcs.Task;
@@ -1229,18 +1233,21 @@ namespace System.Threading.ThreadPools.Tests
                             await client.ConnectAsync(IPAddress.Loopback, port);
                             using (NetworkStream stream = client.GetStream())
                             {
-                                byte[] data = Encoding.UTF8.GetBytes(new string('*', 1 << 26));
+                                bool readAsyncReady = await readAsyncReadyTcs.Task;
+                                byte[] data = new byte[1];
                                 await stream.WriteAsync(data, 0, data.Length);
                             }
                         }
                     }
+
                     Task listenerTask = StartListenerAsync();
                     Task clientTask = StartClientAsync();
                     await Task.WhenAll(listenerTask, clientTask);
-                    ManualResetEvent[] waitEvents = [eventListener.TPWaitIOEnqueueEvent, eventListener.TPWaitIODequeueEvent];
-                    WaitHandle.WaitAll(waitEvents, TimeSpan.FromSeconds(15));
-                    Assert.True(eventListener.TPIOEnqueue > 0);
-                    Assert.True(eventListener.TPIODequeue > 0);
+                    ManualResetEvent[] waitEvents = [eventListener.tpWaitIOEnqueueEvent, eventListener.tpWaitIODequeueEvent];
+
+                    Assert.True(WaitHandle.WaitAll(waitEvents, TimeSpan.FromSeconds(15))); // Assert that there wasn't a timeout
+                    Assert.True(eventListener.tpIOEnqueue > 0);
+                    Assert.True(eventListener.tpIODequeue > 0);
                 }
             }).Dispose();
         }
