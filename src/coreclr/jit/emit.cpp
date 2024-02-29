@@ -8609,7 +8609,7 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
 
     desc->vpdNext = nullptr;
 
-    /* the lower 2 bits encode props about the stk ptr */
+/* the lower 2 bits encode props about the stk ptr */
 
 #if defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
     if (offs == emitSyncThisObjOffs)
