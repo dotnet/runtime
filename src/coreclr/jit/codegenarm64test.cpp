@@ -6025,6 +6025,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                             INS_OPTS_SCALABLE_S); // INSR    <Zdn>.<T>, <R><m>
     theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V19, REG_R0,
                             INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V29, REG_ZR,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <R><m>
 
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,

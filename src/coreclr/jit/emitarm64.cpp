@@ -1241,15 +1241,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_CC_2A: // ........xx...... ......mmmmmddddd -- SVE insert SIMD&FP scalar register
-            assert(insOptsScalable(id->idInsOpt()));
+            assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // mmmmm
             break;
 
         case IF_SVE_CD_2A: // ........xx...... ......mmmmmddddd -- SVE insert general register
-            assert(insOptsScalable(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));  // ddddd
-            assert(isGeneralRegister(id->idReg2())); // mmmmm
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));      // ddddd
+            assert(isGeneralRegisterOrZR(id->idReg2())); // mmmmm
             break;
 
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
@@ -9099,13 +9099,13 @@ void emitter::emitIns_R_R(instruction     ins,
         }
 
         case INS_sve_insr:
-            assert(insOptsScalable(opt));
+            assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1)); // ddddd
             if (isVectorRegister(reg2))
             {
                 fmt = IF_SVE_CC_2A;
             }
-            else if (isGeneralRegister(reg2))
+            else if (isGeneralRegisterOrZR(reg2))
             {
                 fmt = IF_SVE_CD_2A;
             }
@@ -29011,8 +29011,8 @@ void emitter::emitDispInsHelp(
 
         // <Zdn>.<T>, <V><m>
         case IF_SVE_CC_2A: // ........xx...... ......mmmmmddddd -- SVE insert SIMD&FP scalar register
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);     // ddddd
-            emitDispScalarReg(id->idReg2(), id->idInsOpt(), false); // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                  // ddddd
+            emitDispReg(id->idReg2(), optGetSveElemsize(id->idInsOpt()), false); // mmmmm
             break;
 
         // <Zdn>.<T>, <R><m>
