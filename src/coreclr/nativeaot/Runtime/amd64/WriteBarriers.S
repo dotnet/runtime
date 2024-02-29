@@ -411,16 +411,16 @@ LOCAL_LABEL(RhpByRefAssignRefBatch_CheckCardTable):
 
 LOCAL_LABEL(RhpByRefAssignRefBatch_NotInHeap):
     // At least one write is already done, increment the pointers
-    add     rdi, 8h
-    add     rsi, 8h
+    add     rdi, 0x8
+    add     rsi, 0x8
     dec     r8d
     je      LOCAL_LABEL(RhpByRefAssignRefBatch_NotInHeapExit)
     // Now we can do the rest of the writes without checking the heap
 LOCAL_LABEL(RhpByRefAssignRefBatch_NextByrefUnchecked):
     mov     rcx, [rsi]
     mov     [rdi], rcx
-    add     rdi, 8h
-    add     rsi, 8h
+    add     rdi, 0x8
+    add     rsi, 0x8
     dec     r8d
     jne     LOCAL_LABEL(RhpByRefAssignRefBatch_NextByrefUnchecked)
 LOCAL_LABEL(RhpByRefAssignRefBatch_NotInHeapExit):
