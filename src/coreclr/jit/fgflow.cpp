@@ -136,32 +136,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
-
-                // This edge should have been given a likelihood when it was created.
-                // Since we're increasing its duplicate count, update the likelihood.
-                //
-                assert(flow->hasLikelihood());
-                const unsigned numSucc = blockPred->NumSucc();
-                assert(numSucc > 0);
-
-                if (numSucc == 1)
-                {
-                    // BasicBlock::NumSucc() returns 1 for BBJ_CONDs with the same true/false target.
-                    // For blocks that only ever have one successor (BBJ_ALWAYS, BBJ_LEAVE, etc.),
-                    // their successor edge should never have a duplicate count over 1.
-                    //
-                    assert(blockPred->KindIs(BBJ_COND));
-                    assert(blockPred->TrueEdgeIs(blockPred->GetFalseEdge()));
-                    flow->setLikelihood(1.0);
-                }
-                else
-                {
-                    // Duplicate count isn't updated until later, so add 1 for now.
-                    //
-                    const unsigned dupCount = flow->getDupCount() + 1;
-                    assert(dupCount > 1);
-                    flow->setLikelihood((1.0 / numSucc) * dupCount);
-                }
             }
         }
     }
@@ -211,19 +185,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         if (initializingPreds)
         {
             block->bbLastPred = flow;
-
-            // When initializing preds, ensure edge likelihood is set,
-            // such that this edge is as likely as any other successor edge
-            // Note: We probably shouldn't call NumSucc on a new BBJ_COND block.
-            // NumSucc compares bbTrueEdge and bbFalseEdge to determine if this BBJ_COND block has only one successor,
-            // but these members are uninitialized. Aside from the fact that this compares uninitialized memory,
-            // we don't know if the true and false targets are the same in NumSucc until both edges exist.
-            // TODO: Move this edge likelihood logic to fgLinkBasicBlocks.
-            //
-            const unsigned numSucc = blockPred->NumSucc();
-            assert(numSucc > 0);
-            assert(flow->getDupCount() == 1);
-            flow->setLikelihood(1.0 / numSucc);
         }
         else if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
         {
@@ -272,10 +233,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     // Pred list should (still) be ordered.
     //
     assert(block->checkPredListOrder());
-
-    // When initializing preds, edge likelihood should always be set.
-    //
-    assert(!initializingPreds || flow->hasLikelihood());
 
     return flow;
 }

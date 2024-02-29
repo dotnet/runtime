@@ -12993,7 +12993,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
         AssertionIndex ifFalseAssertionIndex;
         AssertionIndex ifTrueAssertionIndex;
 
-        if (info.IsNextEdgeAssertion())
+        if (info.AssertionHoldsOnFalseEdge())
         {
             ifFalseAssertionIndex = info.GetAssertionIndex();
             ifTrueAssertionIndex  = optFindComplementary(ifFalseAssertionIndex);
