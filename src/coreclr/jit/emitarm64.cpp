@@ -19153,25 +19153,25 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         case INS_OPTS_SCALABLE_B:
             assert(isValidUimm4(imm));
-            encoding |= (1 << 16); // bit 16
+            encoding |= (1 << 16);   // bit 16
             encoding |= (imm << 17); // bits 20-17
             break;
 
         case INS_OPTS_SCALABLE_H:
             assert(isValidUimm3(imm));
-            encoding |= (1 << 17); // bit 17
+            encoding |= (1 << 17);   // bit 17
             encoding |= (imm << 18); // bits 20-18
             break;
 
         case INS_OPTS_SCALABLE_S:
             assert(isValidUimm2(imm));
-            encoding |= (1 << 18); // bit 18
+            encoding |= (1 << 18);   // bit 18
             encoding |= (imm << 19); // bits 20-19
             break;
 
         case INS_OPTS_SCALABLE_D:
             assert(isValidImm1(imm));
-            encoding |= (1 << 19); // bit 19
+            encoding |= (1 << 19);   // bit 19
             encoding |= (imm << 20); // bit 20
             break;
 
@@ -33127,12 +33127,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
-        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+        case IF_SVE_BX_2A:                                  // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
-        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+        case IF_SVE_BY_2A:                                  // ............iiii ......mmmmmddddd -- sve_int_perm_extq
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
