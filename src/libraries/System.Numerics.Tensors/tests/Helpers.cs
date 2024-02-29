@@ -14,9 +14,10 @@ namespace System.Numerics.Tensors.Tests
 
         // Tolerances taken from testing in the scalar math routines:
         // cf. https://github.com/dotnet/runtime/blob/89f7ad3b276fb0b48f20cb4e8408bdce85c2b415/src/libraries/System.Runtime/tests/System.Runtime.Extensions.Tests/System/Math.cs
+        // and https://github.com/dotnet/runtime/blob/fd48b6f5d1ff81a81d09e9d72982cc9e8d139852/src/libraries/System.Runtime/tests/System.Runtime.Tests/System/HalfTests.cs
         public const double DefaultDoubleTolerance = 8.8817841970012523e-16;
         public const float DefaultFloatTolerance = 4.76837158e-07f;
-        public const float DefaultHalfTolerance = 1e-4f;
+        public const float DefaultHalfTolerance = 3.90625e-03f;
         public const double DefaultToleranceForEstimates = 1.171875e-02;
 
 #if NETCOREAPP
