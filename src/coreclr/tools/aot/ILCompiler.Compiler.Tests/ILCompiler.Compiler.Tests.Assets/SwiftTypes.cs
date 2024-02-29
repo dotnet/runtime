@@ -42,6 +42,7 @@ public struct F5_S1
 }
 
 [ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int32)]
+[StructLayout(LayoutKind.Sequential, Size = 3)]
 public struct F5_S2_S0
 {
     public short F0;
@@ -55,4 +56,13 @@ public struct F5_S2
     public long F1;
     public F5_S2_S0 F2;
     public long F3;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int64)]
+[StructLayout(LayoutKind.Sequential, Size = 5)]
+public struct ThreeByteStruct_SByte_Byte
+{
+    public F5_S2_S0 F0;
+    public sbyte F1;
+    public byte F2;
 }
