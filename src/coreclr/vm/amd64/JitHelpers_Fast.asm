@@ -467,6 +467,22 @@ ifdef WRITE_BARRIER_CHECK
         ; rcx is [rsi]
         mov     [rdi], rcx
 endif
+        ; At least one write is already done, increment the pointers
+        add     rdi, 8h
+        add     rsi, 8h
+        dec     r8d
+        je      NotInHeapExit
+        ; Now we can do the rest of the writes without checking the heap
+    NextByrefUnchecked:
+        mov     rcx, [rsi]
+        mov     [rdi], rcx
+        add     rdi, 8h
+        add     rsi, 8h
+        dec     r8d
+        jne     NextByrefUnchecked
+    NotInHeapExit:
+        ret
+
     Exit:
         ; Increment the pointers before leaving
         add     rdi, 8h
