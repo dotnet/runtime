@@ -52,6 +52,8 @@ extern JIT_InternalThrow:proc
 
 ; JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 ;
+;   Keep in sync with JIT_ByRefWriteBarrierBatch!!
+;
 ; Entry:
 ;   RDI - address of ref-field (assigned to)
 ;   RSI - address of the data  (source)
@@ -257,17 +259,17 @@ endif
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
 
-; JIT_ByRefWriteBarrierBatch has weird semantics, see usage in StubLinkerX86.cpp
+; JIT_ByRefWriteBarrierBatch is a batch version of JIT_ByRefWriteBarrier, so see comments there first
 ;
 ; Entry:
 ;   RDI - address of ref-field (assigned to)
 ;   RSI - address of the data  (source)
-;   R8D - number of byrefs to write
+;   R8  - number of byrefs to write
 ;   RCX is trashed
 ;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
 ; Exit:
 ;   RDI, RSI are incremented by SIZEOF(LPVOID)
-;   R8D is zeroed
+;   R8 is zeroed
 LEAF_ENTRY JIT_ByRefWriteBarrierBatch, _TEXT
     NextByref:
         mov     rcx, [rsi]
@@ -407,6 +409,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         ; Check if this card table bit is already set
         test    byte ptr [rcx], al
         je      SetCardTableBit
+        ; Check if we have more in the batch and run again
         dec     r8d
         jne     NextByref
         REPRET
@@ -430,6 +433,7 @@ CheckCardTableByte:
         ; Check if this card is dirty
         cmp     byte ptr [rcx], 0FFh
         jne     UpdateCardTable
+        ; Check if we have more in the batch and run again
         dec     r8d
         jne     NextByref
         REPRET
@@ -447,6 +451,7 @@ ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         add     rcx, [g_card_bundle_table]
         cmp     byte ptr [rcx], 0FFh
         jne     UpdateCardBundleTable
+        ; Check if we have more in the batch and run again
         dec     r8d
         jne     NextByref
         REPRET
@@ -454,6 +459,7 @@ ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     UpdateCardBundleTable:
         mov     byte ptr [rcx], 0FFh
 endif
+        ; Check if we have more in the batch and run again
         dec     r8d
         jne     NextByref
         ret
@@ -487,6 +493,7 @@ endif
         ; Increment the pointers before leaving
         add     rdi, 8h
         add     rsi, 8h
+        ; Check if we have more in the batch and run again
         dec     r8d
         jne     NextByref
         ret
