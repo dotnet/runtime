@@ -112,6 +112,17 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     return result != BasicBlockVisit::Abort;
 }
 
+struct LocalOccurrence
+{
+    BasicBlock* Block;
+    Statement* Stmt;
+
+    LocalOccurrence(BasicBlock* block, Statement* stmt)
+        : Block(block), Stmt(stmt)
+    {
+    }
+};
+
 //------------------------------------------------------------------------
 // optIsIVWideningProfitable: Check to see if IV widening is profitable.
 //
@@ -120,7 +131,7 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //   initBlock        - The block in where the new IV would be initialized
 //   initedToConstant - Whether or not the new IV will be initialized to a constant
 //   loop             - The loop
-//   ivUses           - Statements in which "lclNum" appears will be added to this list
+//   loopOccurrences  - IR locations where "lclNum" occurs
 //
 //
 // Returns:
@@ -140,7 +151,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned                lclNum,
                                          BasicBlock*             initBlock,
                                          bool                    initedToConstant,
                                          FlowGraphNaturalLoop*   loop,
-                                         ArrayStack<Statement*>& ivUses)
+                                         ArrayStack<LocalOccurrence>& loopOccurrences)
 {
     for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
     {
@@ -170,58 +181,51 @@ bool Compiler::optIsIVWideningProfitable(unsigned                lclNum,
     weight_t savedCost = 0;
     int      savedSize = 0;
 
-    loop->VisitLoopBlocks([&](BasicBlock* block) {
-        for (Statement* stmt : block->NonPhiStatements())
+    for (int i = 0; i < loopOccurrences.Height(); i++)
+    {
+        LocalOccurrence& occurrence = loopOccurrences.BottomRef(i);
+        BasicBlock* block = occurrence.Block;
+        Statement* stmt = occurrence.Stmt;
+
+        int numExtensions = 0;
+        for (GenTree* node : stmt->TreeList())
         {
-            bool hasUse        = false;
-            int  numExtensions = 0;
-            for (GenTree* node : stmt->TreeList())
+            if (!node->OperIs(GT_CAST))
             {
-                if (!node->OperIs(GT_CAST))
-                {
-                    hasUse |= node->OperIsLocal() && (node->AsLclVarCommon()->GetLclNum() == lclNum);
-                    continue;
-                }
-
-                GenTreeCast* cast = node->AsCast();
-                if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned() || cast->gtOverflow())
-                {
-                    continue;
-                }
-
-                GenTree* op = cast->CastOp();
-                if (!op->OperIs(GT_LCL_VAR) || (op->AsLclVarCommon()->GetLclNum() != lclNum))
-                {
-                    continue;
-                }
-
-                // If this is already the source of a store then it is going to be
-                // free in our backends regardless.
-                GenTree* parent = node->gtGetParent(nullptr);
-                if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR))
-                {
-                    continue;
-                }
-
-                numExtensions++;
+                continue;
             }
 
-            if (hasUse)
+            GenTreeCast* cast = node->AsCast();
+            if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned() || cast->gtOverflow())
             {
-                ivUses.Push(stmt);
+                continue;
             }
 
-            if (numExtensions > 0)
+            GenTree* op = cast->CastOp();
+            if (!op->OperIs(GT_LCL_VAR) || (op->AsLclVarCommon()->GetLclNum() != lclNum))
             {
-                JITDUMP("  Found %d zero extensions in " FMT_STMT "\n", numExtensions, stmt->GetID());
-
-                savedSize += numExtensions * ExtensionSize;
-                savedCost += numExtensions * block->getBBWeight(this) * ExtensionCost;
+                continue;
             }
+
+            // If this is already the source of a store then it is going to be
+            // free in our backends regardless.
+            GenTree* parent = node->gtGetParent(nullptr);
+            if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR))
+            {
+                continue;
+            }
+
+            numExtensions++;
         }
 
-        return BasicBlockVisit::Continue;
-    });
+        if (numExtensions > 0)
+        {
+            JITDUMP("  Found %d zero extensions in " FMT_STMT "\n", numExtensions, stmt->GetID());
+
+            savedSize += numExtensions * ExtensionSize;
+            savedCost += numExtensions * block->getBBWeight(this) * ExtensionCost;
+        }
+    }
 
     if (!initedToConstant)
     {
@@ -449,6 +453,165 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
     });
 }
 
+template<typename TFunctor>
+void Compiler::optFindLocalOccurrences(BasicBlock* block, unsigned lclNum, TFunctor func)
+{
+    for (Statement* stmt : block->NonPhiStatements())
+    {
+        int  numExtensions = 0;
+        for (GenTree* node : stmt->TreeList())
+        {
+            if (node->OperIsLocal() && (node->AsLclVarCommon()->GetLclNum() == lclNum))
+            {
+                // TODO-Bug: Disallow promoted fields or handle them specially?
+                func(stmt);
+                break;
+            }
+        }
+    }
+}
+
+bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, ArrayStack<LocalOccurrence>& loopOccurrences)
+{
+    LclVarDsc* lclDsc = lvaGetDesc(lclNum);
+    if (lclDsc->TypeGet() != TYP_INT)
+    {
+        JITDUMP("  Type is %s, no widening to be done\n", varTypeName(lclDsc->TypeGet()));
+        return false;
+    }
+
+    // If the IV is not enregisterable then uses/defs are going to go
+    // to stack regardless. This check also filters out IVs that may be
+    // live into exceptional exits since those are always marked DNER.
+    if (lclDsc->lvDoNotEnregister)
+    {
+        JITDUMP("  V%02u is marked DNER\n", lclNum);
+        return false;
+    }
+
+    if (!optCanSinkWidenedIV(lclNum, loop))
+    {
+        return false;
+    }
+
+    // Start value should always be an SSA use from outside the loop
+    // since we only widen primary IVs.
+    assert(addRec->Start->OperIs(ScevOper::Local));
+    ScevLocal* startLocal = (ScevLocal*)addRec->Start;
+    int64_t       startConstant = 0;
+    bool          initToConstant = startLocal->GetConstantValue(this, &startConstant);
+    LclSsaVarDsc* startSsaDsc = lclDsc->GetPerSsaData(startLocal->SsaNum);
+
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+    BasicBlock* initBlock = preheader;
+    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
+    {
+        initBlock = startSsaDsc->GetBlock();
+    }
+
+    if (!optIsIVWideningProfitable(lclNum, initBlock, initToConstant, loop, loopOccurrences))
+    {
+        return false;
+    }
+
+    Statement* insertInitAfter = nullptr;
+    if (initBlock != preheader)
+    {
+        GenTree* narrowInitRoot = startSsaDsc->GetDefNode();
+        while (true)
+        {
+            GenTree* parent = narrowInitRoot->gtGetParent(nullptr);
+            if (parent == nullptr)
+                break;
+
+            narrowInitRoot = parent;
+        }
+
+        for (Statement* stmt : initBlock->Statements())
+        {
+            if (stmt->GetRootNode() == narrowInitRoot)
+            {
+                insertInitAfter = stmt;
+                break;
+            }
+        }
+
+        assert(insertInitAfter != nullptr);
+
+        if (insertInitAfter->IsPhiDefnStmt())
+        {
+            while ((insertInitAfter->GetNextStmt() != nullptr) &&
+                insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
+            {
+                insertInitAfter = insertInitAfter->GetNextStmt();
+            }
+        }
+    }
+
+    Statement* initStmt = nullptr;
+    unsigned   newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lclNum)));
+    INDEBUG(lclDsc = nullptr);
+    assert(startLocal->LclNum == lclNum);
+
+    if (initBlock != preheader)
+    {
+        JITDUMP("Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
+            "\n",
+            initBlock->bbNum);
+    }
+    else
+    {
+        JITDUMP("Adding initialization of new widened local to preheader " FMT_BB "\n", initBlock->bbNum);
+    }
+
+    GenTree* initVal;
+    if (initToConstant)
+    {
+        initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
+    }
+    else
+    {
+        initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lclNum, TYP_INT), true, TYP_LONG);
+    }
+
+    GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
+    initStmt = fgNewStmtFromTree(widenStore);
+    if (insertInitAfter != nullptr)
+    {
+        fgInsertStmtAfter(initBlock, insertInitAfter, initStmt);
+    }
+    else
+    {
+        fgInsertStmtNearEnd(initBlock, initStmt);
+    }
+
+    DISPSTMT(initStmt);
+    JITDUMP("\n");
+
+    JITDUMP("  Replacing uses of V%02u with widened version V%02u\n", lclNum, newLclNum);
+
+    if (initStmt != nullptr)
+    {
+        JITDUMP("    Replacing on the way to the loop\n");
+        optBestEffortReplaceNarrowIVUses(lclNum, startLocal->SsaNum, newLclNum, initBlock,
+            initStmt->GetNextStmt());
+    }
+
+    JITDUMP("    Replacing in the loop; %d statements with appearences\n", loopOccurrences.Height());
+    for (int i = 0; i < loopOccurrences.Height(); i++)
+    {
+        Statement* stmt = loopOccurrences.BottomRef(i).Stmt;
+        JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum,
+            dspTreeID(stmt->GetRootNode()));
+        DISPSTMT(stmt);
+        JITDUMP("\n");
+        optReplaceWidenedIV(lclNum, SsaConfig::RESERVED_SSA_NUM, newLclNum, stmt);
+    }
+
+    optSinkWidenedIV(lclNum, newLclNum, loop);
+    return true;
+}
+
 //------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
@@ -477,17 +640,12 @@ PhaseStatus Compiler::optInductionVariables()
 
     bool changed = false;
 
-    // Currently we only do IV widening which generally is only profitable for
-    // x64 because arm64 addressing modes can include the zero/sign-extension
-    // of the index for free.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_XARCH) && defined(TARGET_64BIT)
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     ScalarEvolutionContext scevContext(this);
-    JITDUMP("Widening primary induction variables:\n");
-    ArrayStack<Statement*> ivUses(getAllocator(CMK_LoopIVOpts));
+    JITDUMP("Optimizing induction variables:\n");
+    ArrayStack<LocalOccurrence> ivOccurrences(getAllocator(CMK_LoopIVOpts));
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         JITDUMP("Processing ");
@@ -507,23 +665,6 @@ PhaseStatus Compiler::optInductionVariables()
 
             DISPSTMT(stmt);
 
-            GenTreeLclVarCommon* lcl    = stmt->GetRootNode()->AsLclVarCommon();
-            LclVarDsc*           lclDsc = lvaGetDesc(lcl);
-            if (lclDsc->TypeGet() != TYP_INT)
-            {
-                JITDUMP("  Type is %s, no widening to be done\n", varTypeName(lclDsc->TypeGet()));
-                continue;
-            }
-
-            // If the IV is not enregisterable then uses/defs are going to go
-            // to stack regardless. This check also filters out IVs that may be
-            // live into exceptional exits since those are always marked DNER.
-            if (lclDsc->lvDoNotEnregister)
-            {
-                JITDUMP("  V%02u is marked DNER\n", lcl->GetLclNum());
-                continue;
-            }
-
             Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
             if (scev == nullptr)
             {
@@ -531,145 +672,71 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
-            scev = scevContext.Simplify(scev);
-            JITDUMP("  => ");
-            DBEXEC(verbose, scev->Dump(this));
-            JITDUMP("\n");
             if (!scev->OperIs(ScevOper::AddRec))
             {
                 JITDUMP("  Not an addrec\n");
                 continue;
             }
 
-            ScevAddRec* addRec = (ScevAddRec*)scev;
-
-            JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lcl->GetLclNum(), loop->GetIndex());
-
-            if (!optCanSinkWidenedIV(lcl->GetLclNum(), loop))
-            {
-                continue;
-            }
-
-            // Start value should always be an SSA use from outside the loop
-            // since we only widen primary IVs.
-            assert(addRec->Start->OperIs(ScevOper::Local));
-            ScevLocal*    startLocal     = (ScevLocal*)addRec->Start;
-            int64_t       startConstant  = 0;
-            bool          initToConstant = startLocal->GetConstantValue(this, &startConstant);
-            LclSsaVarDsc* startSsaDsc    = lclDsc->GetPerSsaData(startLocal->SsaNum);
-
-            BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-            BasicBlock* initBlock = preheader;
-            if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
-            {
-                initBlock = startSsaDsc->GetBlock();
-            }
-
-            ivUses.Reset();
-            if (!optIsIVWideningProfitable(lcl->GetLclNum(), initBlock, initToConstant, loop, ivUses))
-            {
-                continue;
-            }
-
-            changed = true;
-
-            Statement* insertInitAfter = nullptr;
-            if (initBlock != preheader)
-            {
-                GenTree* narrowInitRoot = startSsaDsc->GetDefNode();
-                while (true)
-                {
-                    GenTree* parent = narrowInitRoot->gtGetParent(nullptr);
-                    if (parent == nullptr)
-                        break;
-
-                    narrowInitRoot = parent;
-                }
-
-                for (Statement* stmt : initBlock->Statements())
-                {
-                    if (stmt->GetRootNode() == narrowInitRoot)
-                    {
-                        insertInitAfter = stmt;
-                        break;
-                    }
-                }
-
-                assert(insertInitAfter != nullptr);
-
-                if (insertInitAfter->IsPhiDefnStmt())
-                {
-                    while ((insertInitAfter->GetNextStmt() != nullptr) &&
-                           insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
-                    {
-                        insertInitAfter = insertInitAfter->GetNextStmt();
-                    }
-                }
-            }
-
-            Statement* initStmt  = nullptr;
-            unsigned   newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
-            INDEBUG(lclDsc = nullptr);
-            assert(startLocal->LclNum == lcl->GetLclNum());
-
-            if (initBlock != preheader)
-            {
-                JITDUMP("Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
-                        "\n",
-                        initBlock->bbNum);
-            }
-            else
-            {
-                JITDUMP("Adding initialization of new widened local to preheader " FMT_BB "\n", initBlock->bbNum);
-            }
-
-            GenTree* initVal;
-            if (initToConstant)
-            {
-                initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
-            }
-            else
-            {
-                initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
-            }
-
-            GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
-            initStmt            = fgNewStmtFromTree(widenStore);
-            if (insertInitAfter != nullptr)
-            {
-                fgInsertStmtAfter(initBlock, insertInitAfter, initStmt);
-            }
-            else
-            {
-                fgInsertStmtNearEnd(initBlock, initStmt);
-            }
-
-            DISPSTMT(initStmt);
+            JITDUMP("  => ");
+            DBEXEC(verbose, scev->Dump(this));
             JITDUMP("\n");
 
-            JITDUMP("  Replacing uses of V%02u with widened version V%02u\n", lcl->GetLclNum(), newLclNum);
+            ScevAddRec* addRec = (ScevAddRec*)scev;
 
-            if (initStmt != nullptr)
-            {
-                JITDUMP("    Replacing on the way to the loop\n");
-                optBestEffortReplaceNarrowIVUses(lcl->GetLclNum(), startLocal->SsaNum, newLclNum, initBlock,
-                                                 initStmt->GetNextStmt());
-            }
+            GenTreeLclVarCommon* lcl    = stmt->GetRootNode()->AsLclVarCommon();
+            JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lcl->GetLclNum(), loop->GetIndex());
 
-            JITDUMP("    Replacing in the loop; %d statements with appearences\n", ivUses.Height());
-            for (int i = 0; i < ivUses.Height(); i++)
+            ivOccurrences.Reset();
+            loop->VisitLoopBlocks([=, &ivOccurrences](BasicBlock* block) {
+                optFindLocalOccurrences(block, lcl->GetLclNum(), [=, &ivOccurrences](Statement* stmt) {
+                    ivOccurrences.Emplace(block, stmt);
+                    });
+
+                return BasicBlockVisit::Continue;
+                });
+
+            // Look for secondary IVs.
+            JITDUMP("  Looking for secondary IVs based on this primary IV\n");
+            for (int i = 0; i < ivOccurrences.Height(); i++)
             {
-                Statement* stmt = ivUses.Bottom(i);
-                JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum,
-                        dspTreeID(stmt->GetRootNode()));
+                LocalOccurrence& occurrence = ivOccurrences.BottomRef(i);
+                BasicBlock* block = occurrence.Block;
+                Statement* stmt = occurrence.Stmt;
+                JITDUMP("    Looking in statement:\n");
                 DISPSTMT(stmt);
                 JITDUMP("\n");
-                optReplaceWidenedIV(lcl->GetLclNum(), SsaConfig::RESERVED_SSA_NUM, newLclNum, stmt);
+
+                for (GenTree* tree : stmt->TreeList())
+                {
+                    if (tree->OperIsLocal() && (tree->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
+                    {
+                        continue;
+                    }
+
+                    Scev* otherScev = scevContext.Analyze(block, tree);
+                    if (otherScev == nullptr)
+                    {
+                        continue;
+                    }
+
+                    otherScev = scevContext.Simplify(otherScev);
+                    if (!otherScev->OperIs(ScevOper::AddRec))
+                    {
+                        continue;
+                    }
+
+                    JITDUMP("[%06u] => ", dspTreeID(tree));
+                    DBEXEC(verbose, otherScev->Dump(this));
+                    JITDUMP("\n");
+                }
             }
 
-            optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
-
-            numWidened++;
+            if (optWidenPrimaryIV(loop, lcl->GetLclNum(), addRec, ivOccurrences))
+            {
+                numWidened++;
+                changed = true;
+            }
         }
 
         Metrics.WidenedIVs += numWidened;
@@ -680,7 +747,6 @@ PhaseStatus Compiler::optInductionVariables()
     }
 
     fgInvalidateDfsTree();
-#endif
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

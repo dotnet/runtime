@@ -718,9 +718,19 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
     switch (scev->Oper)
     {
         case ScevOper::Constant:
-        case ScevOper::Local:
         {
             return scev;
+        }
+        case ScevOper::Local:
+        {
+            ScevLocal* local = (ScevLocal*)scev;
+            int64_t cns;
+            if (local->GetConstantValue(m_comp, &cns))
+            {
+                return NewConstant(local->Type, cns);
+            }
+
+            return local;
         }
         case ScevOper::ZeroExtend:
         case ScevOper::SignExtend:
@@ -804,6 +814,27 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 }
 
                 return NewConstant(binop->Type, newValue);
+            }
+            else if (op2->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns2 = (ScevConstant*)op2;
+                if (binop->OperIs(ScevOper::Add, ScevOper::Lsh) && (cns2->Value == 0))
+                {
+                    return op1;
+                }
+
+                if (binop->OperIs(ScevOper::Mul) && (cns2->Value == 0))
+                {
+                    return cns2;
+                }
+            }
+            else if (op1->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns1 = (ScevConstant*)op1;
+                if (binop->OperIs(ScevOper::Lsh) && (cns1->Value == 0))
+                {
+                    return cns1;
+                }
             }
 
             return (op1 == binop->Op1) && (op2 == binop->Op2) ? binop : NewBinop(binop->Oper, op1, op2);

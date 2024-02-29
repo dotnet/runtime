@@ -7402,12 +7402,15 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
+    template<typename TFunctor>
+    void optFindLocalOccurrences(BasicBlock* block, unsigned lclNum, TFunctor func);
+    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, ArrayStack<struct LocalOccurrence>& loopOccurrences);
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optIsIVWideningProfitable(unsigned                lclNum,
                                    BasicBlock*             initBlock,
                                    bool                    initedToConstant,
                                    FlowGraphNaturalLoop*   loop,
-                                   ArrayStack<Statement*>& ivUses);
+                                   ArrayStack<LocalOccurrence>& loopOccurrences);
     void optBestEffortReplaceNarrowIVUses(
         unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
