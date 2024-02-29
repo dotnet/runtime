@@ -623,35 +623,35 @@
         ret
     }
 
-    .method public hidebysig static
-        void AllocArrayOfT_Invalid() cil managed
-    {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
+    // .method public hidebysig static
+    //     void AllocArrayOfT_Invalid() cil managed
+    // {
+    //     .locals init (
+    //         [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+    //     )
 
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocArrayOfT()
-        pop
-        ret
-    }
+    //     ldloca.s 0
+    //     initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+    //     ldloca.s 0
+    //     call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocArrayOfT()
+    //     pop
+    //     ret
+    // }
 
-    .method public hidebysig static
-        void AllocMultiDimArrayOfT_Invalid() cil managed
-    {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
+    // .method public hidebysig static
+    //     void AllocMultiDimArrayOfT_Invalid() cil managed
+    // {
+    //     .locals init (
+    //         [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+    //     )
 
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocMultiDimArrayOfT()
-        pop
-        ret
-    }
+    //     ldloca.s 0
+    //     initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+    //     ldloca.s 0
+    //     call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocMultiDimArrayOfT()
+    //     pop
+    //     ret
+    // }
 
     .method public hidebysig static
         string GenericClassWithStaticField_Invalid() cil managed
