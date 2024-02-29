@@ -1488,8 +1488,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         //
         // This will create more UpperSave/UpperRestore RefPositions then needed, but we need to do
         // this for correctness anyway.
-        VARSET_TP bbLiveDefs(
-            VarSetOps::Union(compiler, compiler->compCurBB->bbLiveIn, compiler->compCurBB->bbVarDef));
+        VARSET_TP bbLiveDefs(VarSetOps::Union(compiler, compiler->compCurBB->bbLiveIn, compiler->compCurBB->bbVarDef));
 
         VARSET_TP liveLargeVectors(VarSetOps::Intersection(compiler, bbLiveDefs, largeVectorVars));
 
