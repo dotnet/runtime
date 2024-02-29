@@ -765,6 +765,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "ValidateIndirectCallTarget";
         case WellKnownArg::DispatchIndirectCallTarget:
             return "DispatchIndirectCallTarget";
+        case WellKnownArg::SwiftSelf:
+            return "SwiftSelf";
     }
 
     return "N/A";
@@ -3179,7 +3181,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 
         // TODO-ARGS: Review this, is it really necessary to treat them specially here?
-        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters())
+        // Exception: Lower SwiftSelf struct arg to GT_LCL_FLD
+        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters() && (arg.GetWellKnownArg() != WellKnownArg::SwiftSelf))
         {
             flagsSummary |= argx->gtFlags;
             continue;
