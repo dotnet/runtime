@@ -51,7 +51,7 @@ void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
-void emitDispSveExtendOptsModN(insOpts opt, int n);
+void emitDispSveExtendOptsModN(insOpts opt, ssize_t imm);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
 void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
@@ -668,6 +668,9 @@ static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 6-bits at bit locations '10-5'.
+static code_t insEncodeSimm6_10_to_5(ssize_t imm);
 
 // Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
 static code_t insEncodeSimm6_21_to_16(ssize_t imm);
