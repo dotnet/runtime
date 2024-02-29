@@ -1758,7 +1758,6 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: Mono_Interpreter_LibrariesTests
-            isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
             buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 480
             # extra steps, run tests
@@ -1790,8 +1789,7 @@ extends:
             #- windows_x64
           jobParameters:
             testGroup: innerloop
-            nameSuffix: Mono_MiniJIT_LibrariesTests
-            isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+            nameSuffix: Mono_MiniJIT_LibrariesTests\
             buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 480
             # extra steps, run tests
