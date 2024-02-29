@@ -10,16 +10,19 @@ public class Program
 {
     public static int Main()
     {
-        // return (int)Bambala(6, 23, 40);
-        return (int)Bambala(2, 6, 23, 45, 66, 2);
+        Console.WriteLine("Hi");
+        int result = Bambala1(6, 23);
+        result += Bambala2(6, 23, 45, 66, 2);
+        long result2 = Bambala3(6, 23, 45, 66, 2, 2);
+        return result + (int)result2;
     }
 
-    // [MethodImpl(MethodImplOptions.NoInlining)]
-    // private static int Bambala(int x, int y) => x | y | 5;
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Bambala1(int x, int y) => (x | 3) | (y | 5);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static long Bambala(long m, int p, int u, int x, int y, int z) => m * System.Math.BigMul(((u | 2) | (x | 5) | (y | 3) | (z | 6)), p);
+    private static int Bambala2(int p, int u, int x, int y, int z) => ((u | 2) | (x | 5) | (y | 3) | (z | 6)) * p + ((x | 6) |  (u | 7));
 
-    // [MethodImpl(MethodImplOptions.NoInlining)]
-    // private static long Bambala(int m, int p, int c) => Math.Clamp(m, p, c);
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long Bambala3(long m, int p, int u, int x, int y, int z) => m * System.Math.BigMul(((u | 2) | (x | 5) | (y | 3) | (z | 6)), p);
 }

@@ -83,6 +83,7 @@ class SpanningTreeVisitor;   // defined in fgprofile.cpp
 class CSE_DataFlow;          // defined in optcse.cpp
 struct CSEdsc;               // defined in optcse.h
 class CSE_HeuristicCommon;   // defined in optcse.h
+struct IntBoolOpDsc;         // defined in optimizer.cpp
 class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
@@ -5898,7 +5899,7 @@ public:
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex);
-    
+
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);

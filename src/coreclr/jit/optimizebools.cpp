@@ -1746,6 +1746,11 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 
 void CleanIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
 {
+    if (intBoolOpDsc == nullptr)
+    {
+        return;
+    }
+
     intBoolOpDsc->start = nullptr;
     intBoolOpDsc->end = nullptr;
 
@@ -1766,57 +1771,50 @@ void CleanIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
     intBoolOpDsc->lclVarArrLength = 0;
 }
 
-IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
+IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
 {
-    IntBoolOpDsc intBoolOpDsc;
-    intBoolOpDsc.ctsArray = nullptr;
-    intBoolOpDsc.ctsArrayLength = 0;
-    intBoolOpDsc.lclVarArr = nullptr;
-    intBoolOpDsc.lclVarArrLength = 0;
-    intBoolOpDsc.start = nullptr;
-    intBoolOpDsc.end = nullptr;
-    int orOpCount = 0;
-
     if (b3 == nullptr)
     {
-        return intBoolOpDsc;
+        return nullptr;
     }
+
+    IntBoolOpDsc* intBoolOpDsc = reinterpret_cast<IntBoolOpDsc*>(malloc(sizeof(IntBoolOpDsc)));
+    intBoolOpDsc->ctsArray = nullptr;
+    intBoolOpDsc->ctsArrayLength = 0;
+    intBoolOpDsc->lclVarArr = nullptr;
+    intBoolOpDsc->lclVarArrLength = 0;
+    intBoolOpDsc->start = nullptr;
+    intBoolOpDsc->end = nullptr;
+    int orOpCount = 0;
 
     GenTree* b4 = b3->gtPrev;
     while (b4 != nullptr)
     {
         if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
         {
-            if (intBoolOpDsc.start == nullptr)
+            if (intBoolOpDsc->start == nullptr)
             {
-                if (b4->OperIsBinary())
-                {
-                    b4 = b4->gtPrev->gtPrev;
-                }
-                else
-                {
-                    b4 = b4->gtPrev;
-                }
+                b4 = b4->gtPrev;
                 continue;
             }
 
-            if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
             {
-                intBoolOpDsc.end = b4;
+                intBoolOpDsc->end = b4;
                 return intBoolOpDsc;
             }
             else
             {
-                CleanIntBoolOpDsc(&intBoolOpDsc);
+                CleanIntBoolOpDsc(intBoolOpDsc);
                 b4 = b4->gtPrev;
                 orOpCount = 0;
                 continue;
             }
         }
 
-        if (intBoolOpDsc.start == nullptr)
+        if (intBoolOpDsc->start == nullptr)
         {
-            intBoolOpDsc.start = b4->gtNext;
+            intBoolOpDsc->start = b4->gtNext;
         }
 
         switch (b4->gtOper)
@@ -1825,28 +1823,28 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
             {
                 if (orOpCount <= 0)
                 {
-                    if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+                    if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
                     {
-                        intBoolOpDsc.end = b4;
+                        intBoolOpDsc->end = b4;
                         return intBoolOpDsc;
                     }
 
-                    CleanIntBoolOpDsc(&intBoolOpDsc);
+                    CleanIntBoolOpDsc(intBoolOpDsc);
                     break;
                 }
 
-                intBoolOpDsc.lclVarArrLength++;
-                if (intBoolOpDsc.lclVarArr == nullptr)
+                intBoolOpDsc->lclVarArrLength++;
+                if (intBoolOpDsc->lclVarArr == nullptr)
                 {
-                    intBoolOpDsc.lclVarArr = reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc.lclVarArrLength));
+                    intBoolOpDsc->lclVarArr = reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
                 }
                 else
                 {
-                    intBoolOpDsc.lclVarArr = reinterpret_cast<GenTree**>(
-                        realloc(intBoolOpDsc.lclVarArr, sizeof(GenTree*) * intBoolOpDsc.lclVarArrLength));
+                    intBoolOpDsc->lclVarArr = reinterpret_cast<GenTree**>(
+                        realloc(intBoolOpDsc->lclVarArr, sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
                 }
 
-                intBoolOpDsc.lclVarArr[intBoolOpDsc.lclVarArrLength - 1] = b4;
+                intBoolOpDsc->lclVarArr[intBoolOpDsc->lclVarArrLength - 1] = b4;
                 orOpCount--;
                 break;
             }
@@ -1854,27 +1852,27 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
             {
                 if (orOpCount <= 0)
                 {
-                    if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+                    if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
                     {
-                        intBoolOpDsc.end = b4;
+                        intBoolOpDsc->end = b4;
                         return intBoolOpDsc;
                     }
 
-                    CleanIntBoolOpDsc(&intBoolOpDsc);
+                    CleanIntBoolOpDsc(intBoolOpDsc);
                     break;
                 }
 
-                intBoolOpDsc.ctsArrayLength++;
-                if (intBoolOpDsc.ctsArray == nullptr)
+                intBoolOpDsc->ctsArrayLength++;
+                if (intBoolOpDsc->ctsArray == nullptr)
                 {
-                    intBoolOpDsc.ctsArray = reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc.ctsArrayLength));
+                    intBoolOpDsc->ctsArray = reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
                 }
                 else
                 {
-                    intBoolOpDsc.ctsArray = reinterpret_cast<ssize_t*>(realloc(intBoolOpDsc.ctsArray, sizeof(ssize_t) * intBoolOpDsc.ctsArrayLength));
+                    intBoolOpDsc->ctsArray = reinterpret_cast<ssize_t*>(realloc(intBoolOpDsc->ctsArray, sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
                 }
                 ssize_t constant = b4->AsIntConCommon()->IconValue();
-                intBoolOpDsc.ctsArray[intBoolOpDsc.ctsArrayLength - 1] = constant;
+                intBoolOpDsc->ctsArray[intBoolOpDsc->ctsArrayLength - 1] = constant;
                 orOpCount--;
                 break;
             }
@@ -1911,6 +1909,12 @@ void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc* intBoolOpDsc)
     intBoolOpDsc->lclVarArr[1]->gtPrev = intBoolOpDsc->lclVarArr[0];
     intBoolOpDsc->lclVarArr[0]->gtNext = intBoolOpDsc->lclVarArr[1];
     intBoolOpDsc->lclVarArr[0]->gtPrev = intBoolOpDsc->end;
+
+    if (intBoolOpDsc->end != nullptr)
+    {
+        intBoolOpDsc->end->gtNext = intBoolOpDsc->lclVarArr[0];
+    }
+
     GenTree* tempIntVatTree = intVarTree;
 
     for (int i = 2; i < intBoolOpDsc->lclVarArrLength; i++)
@@ -1941,6 +1945,10 @@ void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc* intBoolOpDsc)
     if (intBoolOpDsc->start->OperIsUnary())
     {
         intBoolOpDsc->start->AsOp()->gtOp1 = optimizedTree;
+    }
+    else if (intBoolOpDsc->start->OperIsBinary())
+    {
+        intBoolOpDsc->start->AsOp()->gtOp2 = optimizedTree;
     }
     else if (intBoolOpDsc->start->gtNext != nullptr)
     {
@@ -1988,23 +1996,28 @@ unsigned int TryOptimizeIntBoolOp(Compiler* compiler, BasicBlock* b1)
         GenTree* b3 = b2->GetRootNode();
         if (b3 != nullptr && b3->OperIs(GT_RETURN))
         {
-            IntBoolOpDsc intBoolOpDsc = GetNextIntBoolOpToOptimize(b3);
-            while (intBoolOpDsc.ctsArrayLength >= 2
-                    && intBoolOpDsc.lclVarArrLength >= 2)
+            IntBoolOpDsc* intBoolOpDsc = GetNextIntBoolOpToOptimize(b3);
+
+            if (intBoolOpDsc == nullptr)
             {
-                OptimizeIntBoolOp(compiler, &intBoolOpDsc);
-
-                if (intBoolOpDsc.end == nullptr)
-                {
-                    b2->SetTreeList(intBoolOpDsc.lclVarArr[0]);
-                }
-
-                CleanIntBoolOpDsc(&intBoolOpDsc);
-                result++;
-                intBoolOpDsc = GetNextIntBoolOpToOptimize(intBoolOpDsc.end);
+                return 0;
             }
 
-            CleanIntBoolOpDsc(&intBoolOpDsc);
+            if (intBoolOpDsc->ctsArrayLength >= 2
+                    && intBoolOpDsc->lclVarArrLength >= 2)
+            {
+                OptimizeIntBoolOp(compiler, intBoolOpDsc);
+
+                if (intBoolOpDsc->end == nullptr)
+                {
+                    b2->SetTreeList(intBoolOpDsc->lclVarArr[0]);
+                }
+
+                result++;
+            }
+
+            CleanIntBoolOpDsc(intBoolOpDsc);
+            free(intBoolOpDsc);
         }
     }
 
@@ -2134,6 +2147,14 @@ unsigned int TryOptimizeIntBoolOp(Compiler* compiler, BasicBlock* b1)
 //             +--*  LCL_VAR    int     V00 arg0
 //             \--*  CNS_INT    int     0
 //
+//      Case 16:     ((x | 5) | (y | 2)) => ((x | y) | 7)
+//           *  RETURN    int    $VN.Void
+//           \--*  OR        int
+//              +--*  OR        int
+//              |  +--*  LCL_VAR   int    V01 arg1         u:1 (last use) $81
+//              |  \--*  LCL_VAR   int    V00 arg0         u:1 (last use) $80
+//              \--*  CNS_INT   int    7
+//
 //      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
 //      When m_foldOp == GT_AND or m_cmpOp == GT_NE, both compTrees must be boolean expression
@@ -2175,7 +2196,12 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b1->KindIs(BBJ_RETURN))
             {
-                numReturn += TryOptimizeIntBoolOp(this, b1);
+                if (TryOptimizeIntBoolOp(this, b1) > 0)
+                {
+                    numReturn++;
+                    retry = true;
+                }
+
                 continue;
             }
 
