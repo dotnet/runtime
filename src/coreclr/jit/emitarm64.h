@@ -58,7 +58,9 @@ void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
+void emitDispSveReg(regNumber reg, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
+void emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
@@ -594,6 +596,49 @@ static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, em
 // for the 'dtypeh' and 'dtypel' fields.
 static code_t insEncodeSveElemsize_dtypeh_dtypel(instruction ins, insFormat fmt, emitAttr size, code_t code);
 
+// Encodes an immediate value in consecutive bits from most significant position 'hi' to least significant
+// position 'lo'.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeUimm(size_t imm)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+
+    const size_t imm_bits = hi - lo + 1;
+    static_assert(imm_bits < sizeof(code_t) * BITS_PER_BYTE);
+
+    const size_t imm_max = 1 << imm_bits;
+    assert(imm < imm_max);
+
+    code_t result = static_cast<code_t>(imm << lo);
+    assert((result >> lo) == imm);
+    return result;
+}
+
+// Encodes an immediate value across two ranges of consecutive bits, splitting the bits of the immediate
+// value between them. The bit ranges are from hi1-lo1, and hi2-lo2 where the second range is at a less
+// significant position relative to the first.
+template <const size_t hi1, const size_t lo1, const size_t hi2, const size_t lo2>
+static code_t insEncodeSplitUimm(size_t imm)
+{
+    static_assert((hi1 >= lo1) && (lo1 > hi2) && (hi2 >= lo2));
+    static_assert(hi1 < sizeof(code_t) * BITS_PER_BYTE);
+
+    const size_t hi_bits = hi1 - lo1 + 1;
+    const size_t lo_bits = hi2 - lo2 + 1;
+
+    const size_t imm_max = 1 << (hi_bits + lo_bits);
+    assert(imm < imm_max);
+
+    const size_t hi_max = 1 << hi_bits;
+    const size_t lo_max = 1 << lo_bits;
+
+    size_t immhi = (imm >> lo_bits) & (hi_max - 1);
+    size_t immlo = imm & (lo_max - 1);
+
+    return insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
+}
+
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
@@ -790,6 +835,13 @@ static bool isValidUimm6_MultipleOf8(ssize_t value)
 {
     return (0 <= value) && (value <= 504) && (value % 8 == 0);
 };
+
+template <const size_t bits>
+static bool isValidUimm(ssize_t value)
+{
+    constexpr size_t max = 1 << bits;
+    return (0 <= value) && (value < max);
+}
 
 // Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
 static bool isValidImm1(ssize_t value)
