@@ -206,7 +206,7 @@ void Scev::Dump(Compiler* comp)
 //   ResetForLoop.
 //
 ScalarEvolutionContext::ScalarEvolutionContext(Compiler* comp)
-    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts)), m_cyclicCache(comp->getAllocator(CMK_LoopIVOpts))
+    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts)), m_ephemeralCache(comp->getAllocator(CMK_LoopIVOpts))
 {
 }
 
@@ -476,24 +476,19 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             }
 
             ScevConstant* symbolicAddRec = NewConstant(TYP_INT, 0xdeadbeef);
-            m_cyclicCache.Emplace(store, symbolicAddRec);
+            m_ephemeralCache.Emplace(store, symbolicAddRec);
 
             Scev* result;
-            if (m_usingCyclicCache)
+            if (m_usingEphemeralCache)
             {
                 result = Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data(), depth + 1);
             }
             else
             {
-                m_usingCyclicCache = true;
+                m_usingEphemeralCache = true;
                 result             = Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data(), depth + 1);
-                m_usingCyclicCache = false;
-                m_cyclicCache.RemoveAll();
-            }
-
-            if (result == nullptr)
-            {
-                return nullptr;
+                m_usingEphemeralCache = false;
+                m_ephemeralCache.RemoveAll();
             }
 
             return MakeAddRecFromRecursiveScev(enterScev, result, symbolicAddRec);
@@ -648,7 +643,7 @@ void ScalarEvolutionContext::ExtractAddOperands(ScevBinop* binop, ArrayStack<Sce
 // Parameters:
 //   startScev     - The start value of the addrec
 //   scev          - The scev
-//   recursiveScev - A symbolic node whose appearence represents the value of "scev"
+//   recursiveScev - A symbolic node whose appearance represents the value of "scev"
 //
 // Returns:
 //   A non-recursive addrec
@@ -665,13 +660,13 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
 
     assert(addOperands.Height() >= 2);
 
-    int numAppearences = 0;
+    int numAppearances = 0;
     for (int i = 0; i < addOperands.Height(); i++)
     {
         Scev* addOperand = addOperands.Bottom(i);
         if (addOperand == recursiveScev)
         {
-            numAppearences++;
+            numAppearances++;
         }
         else
         {
@@ -692,7 +687,7 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
         }
     }
 
-    if (numAppearences == 0)
+    if (numAppearances == 0)
     {
         // TODO-CQ: We currently cannot handle cases like
         // i = arr.Length;
@@ -700,14 +695,19 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
         // i = j;
         // while (true) { ...; j = i - 1; i = j; }
         //
-        // These cases can arise due to "dup".
+        // These cases can arise from loop structures like "for (int i =
+        // arr.Length; --i >= 0;)" when Roslyn emits a "sub; dup; stloc"
+        // sequence, and local prop + loop inversion converts the duplicated
+        // local into a fully fledged IV.
         // In this case we see that i = <L, [i from outside loop], -1>, but for
-        // j we will see <L, [i from outside loop], -1> + (-1) in this function.
+        // j we will see <L, [i from outside loop], -1> + (-1) in this function
+        // as the value coming around the backedge, and we cannot reconcile
+        // this.
         //
         return nullptr;
     }
 
-    if (numAppearences > 1)
+    if (numAppearances > 1)
     {
         // Multiple occurrences -- cannot be represented as an addrec
         // (corresponds to a geometric progression).
@@ -778,7 +778,7 @@ const int SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH = 64;
 Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int depth)
 {
     Scev* result;
-    if (!m_cache.Lookup(tree, &result) && (!m_usingCyclicCache || !m_cyclicCache.Lookup(tree, &result)))
+    if (!m_cache.Lookup(tree, &result) && (!m_usingEphemeralCache || !m_ephemeralCache.Lookup(tree, &result)))
     {
         if (depth >= SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH)
         {
@@ -787,9 +787,9 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int dept
 
         result = AnalyzeNew(block, tree, depth);
 
-        if (m_usingCyclicCache)
+        if (m_usingEphemeralCache)
         {
-            m_cyclicCache.Set(tree, result, ScalarEvolutionMap::Overwrite);
+            m_ephemeralCache.Set(tree, result, ScalarEvolutionMap::Overwrite);
         }
         else
         {
