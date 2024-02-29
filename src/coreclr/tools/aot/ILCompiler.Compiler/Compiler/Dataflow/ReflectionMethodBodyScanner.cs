@@ -380,11 +380,7 @@ namespace ILCompiler.Dataflow
                     {
                         bool triggersWarning = false;
 
-                        if (instanceValue.IsEmpty() || argumentValues[0].IsEmpty())
-                        {
-                            triggersWarning = true;
-                        }
-                        else
+                        if (!instanceValue.IsEmpty() && !argumentValues[0].IsEmpty())
                         {
                             foreach (var value in instanceValue.AsEnumerable())
                             {
@@ -423,7 +419,7 @@ namespace ILCompiler.Dataflow
                                 }
                                 else
                                 {
-                                    // We don't know what type the `MakeGenericMethod` was called on
+                                    // We don't know what type the `MakeGenericType` was called on
                                     triggersWarning = true;
                                 }
                             }
@@ -442,11 +438,7 @@ namespace ILCompiler.Dataflow
                     {
                         bool triggersWarning = false;
 
-                        if (instanceValue.IsEmpty())
-                        {
-                            triggersWarning = true;
-                        }
-                        else
+                        if (!instanceValue.IsEmpty())
                         {
                             foreach (var methodValue in instanceValue.AsEnumerable())
                             {
