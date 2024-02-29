@@ -635,13 +635,7 @@ public:
         return m_likelihood;
     }
 
-    void setLikelihood(weight_t likelihood)
-    {
-        assert(likelihood >= 0.0);
-        assert(likelihood <= 1.0);
-        m_likelihoodSet = true;
-        m_likelihood    = likelihood;
-    }
+    void setLikelihood(weight_t likelihood);
 
     void clearLikelihood()
     {
