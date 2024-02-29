@@ -486,7 +486,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             else
             {
                 m_usingEphemeralCache = true;
-                result             = Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data(), depth + 1);
+                result                = Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data(), depth + 1);
                 m_usingEphemeralCache = false;
                 m_ephemeralCache.RemoveAll();
             }

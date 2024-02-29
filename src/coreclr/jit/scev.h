@@ -192,8 +192,8 @@ class ScalarEvolutionContext
     // During analysis of PHIs we insert a symbolic node representing the
     // "recurrence"; we use this cache to be able to invalidate things that end
     // up depending on the symbolic node quickly.
-    ScalarEvolutionMap    m_ephemeralCache;
-    bool                  m_usingEphemeralCache = false;
+    ScalarEvolutionMap m_ephemeralCache;
+    bool               m_usingEphemeralCache = false;
 
     Scev* Analyze(BasicBlock* block, GenTree* tree, int depth);
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree, int depth);
