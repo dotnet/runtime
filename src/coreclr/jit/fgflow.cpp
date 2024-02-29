@@ -507,16 +507,20 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // Now we have a set of unique successors.
         unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
 
-        BasicBlock** nonDups = new (getAllocator()) BasicBlock*[numNonDups];
+        FlowEdge** nonDups = new (getAllocator()) FlowEdge*[numNonDups];
 
         unsigned nonDupInd = 0;
+
         // At this point, all unique targets are in "uniqueSuccBlocks".  As we encounter each,
         // add to nonDups, remove from "uniqueSuccBlocks".
-        for (BasicBlock* const targ : switchBlk->SwitchTargets())
+        BBswtDesc* const swtDesc = switchBlk->GetSwitchTargets();
+        for (unsigned i = 0; i < swtDesc->bbsCount; i++)
         {
+            FlowEdge* const succEdge = swtDesc->bbsDstTab[i];
+            BasicBlock* const targ = succEdge->getDestinationBlock();
             if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
-                nonDups[nonDupInd] = targ;
+                nonDups[nonDupInd] = succEdge;
                 nonDupInd++;
                 BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
             }

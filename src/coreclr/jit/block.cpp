@@ -1345,7 +1345,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         {
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
             assert(i < sd.numDistinctSuccs); // Range check.
-            return sd.nonDuplicates[i];
+            return sd.nonDuplicates[i]->getDestinationBlock();
         }
 
         default:
