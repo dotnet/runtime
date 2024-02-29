@@ -1260,7 +1260,7 @@ protected:
     void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
-    unsigned getBaseOffsetOfGeneratedJumpTable(GenTree* treeNode);
+    unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void genJumpTable(GenTree* tree);
     void genTableBasedSwitch(GenTree* tree);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

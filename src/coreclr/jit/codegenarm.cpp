@@ -647,7 +647,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    unsigned jmpTabBase = getBaseOffsetOfGeneratedJumpTable(treeNode);
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, false);
     genMov32RelocatableDataLabel(jmpTabBase, treeNode->GetRegNum());
 
     genProduceReg(treeNode);
