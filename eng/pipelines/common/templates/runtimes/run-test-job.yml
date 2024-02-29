@@ -9,7 +9,6 @@ parameters:
   readyToRun: false
   hotColdSplitting: false
   liveLibrariesBuildConfig: ''
-  unifiedArtifactsName: ''
   compositeBuildMode: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
@@ -25,6 +24,9 @@ parameters:
   dependsOn: []
   dependOnEvaluatePaths: false
   SuperPmiCollect: false
+  unifiedArtifactsName: ''
+  unifiedBuildNameSuffix: ''
+  unifiedBuildConfigOverride: ''
 
 ### Test run job
 
@@ -62,7 +64,7 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
-        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
       - ${{ else }}:
         - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
           # This is needed for creating a CORE_ROOT in the current design.

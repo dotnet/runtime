@@ -26,6 +26,8 @@ parameters:
   dependsOn: []
   unifiedArtifactsName: ''
   helixArtifactsName: ''
+  unifiedBuildNameSuffix: ''
+  unifiedBuildConfigOverride: ''
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -69,7 +71,7 @@ jobs:
         - ${{ parameters.dependsOn }}
       - ${{ if eq(parameters.dependsOn[0], '') }}:
         - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
-          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
+          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
         - ${{ else }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
           - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:

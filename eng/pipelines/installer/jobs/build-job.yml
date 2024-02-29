@@ -18,7 +18,6 @@ parameters:
   displayName: ''
   runtimeVariant: ''
   pool: ''
-  runOnlyIfDependenciesSucceeded: false
 
   # The target names here should match container names in the resources section in our pipelines, like runtime.yml
   packageDistroList:
@@ -35,6 +34,9 @@ parameters:
   liveRuntimeBuildConfig: ''
   liveLibrariesBuildConfig: ''
   runtimeFlavor: 'coreclr'
+  unifiedArtifactsName: ''
+  unifiedBuildNameSuffix: ''
+  unifiedBuildConfigOverride: ''
 
 ### Product build
 jobs:
@@ -50,16 +52,11 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
 
-    ${{ if eq(parameters.runOnlyIfDependenciesSucceeded, true) }}:
-      condition: and(succeeded(), ${{ parameters.condition }})
-    ${{ if ne(parameters.runOnlyIfDependenciesSucceeded, true) }}:
-      condition: ${{ parameters.condition }}
-
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
-    name: ${{ format('installer_{0}_{1}_{2}_{3}_', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-    displayName: ${{ format('Installer Build and Test {0} {1} {2} {3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+    name: ${{ format('installer_{0}_{1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+    displayName: ${{ format('Installer Build and Test {0} {1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -79,40 +76,8 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - ${{ variable }}
 
-    - name: OfficialBuildArg
-      value: ''
-
-    # Explicitly enable tests for linux even though it is a cross build using mariner
-    # They still work in this configuration and until they run on Helix, it is our only
-    # linux test coverage in the installer pipeline
-    - name: SkipTests
-      value: ${{ or(
-        not(in(parameters.archType, 'x64', 'x86')),
-        eq(parameters.runtimeFlavor, 'mono'),
-        eq(parameters.isOfficialBuild, true),
-        and(
-          eq(parameters.crossBuild, true),
-          not(and(
-            eq(parameters.osGroup, 'linux'),
-            eq(parameters.osSubgroup, ''))
-          ))) }}
-
     - name: BuildAction
       value: -test
-
-    - ${{ if eq(or(not(in(parameters.archType, 'x64', 'x86')), eq(parameters.runtimeFlavor, 'mono'), eq(parameters.isOfficialBuild, true), and(eq(parameters.crossBuild, true), not(and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, ''))))), true) }}:
-      - name: BuildAction
-        value: ''
-
-    - name: SignType
-      value: test
-
-    # Set up non-PR build from internal project
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - name: SignType
-        value: $[ coalesce(variables.OfficialSignType, 'real') ]
-      - name: OfficialBuildArg
-        value: /p:OfficialBuildId=$(Build.BuildNumber)
 
     - name: buildCommandSourcesDirectory
       value: '$(Build.SourcesDirectory)/'
@@ -127,13 +92,7 @@ jobs:
         value: >-
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:PortableBuild=true
-          /p:SkipTests=$(SkipTests)
           /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-          $(OfficialBuildArg)
-      - name: MsbuildSigningArguments
-        value: >-
-          /p:CertificateId=400
-          /p:DotNetSignType=$(SignType)
       - name: TargetArchitecture
         value: ${{ parameters.archType }}
 
@@ -142,16 +101,13 @@ jobs:
           build.cmd -subset host+packs -ci
           $(BuildAction)
           -configuration $(_BuildConfig)
-          $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
-          $(MsbuildSigningArguments)
 
-    - ${{ if eq(parameters.osGroup, 'osx') }}:
+    - ${{ elseif eq(parameters.osGroup, 'osx') }}:
 
       - name: CommonMSBuildArgs
         value: >-
           /p:PortableBuild=true
-          /p:SkipTests=$(SkipTests)
           /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:CrossBuild=${{ parameters.crossBuild }}
@@ -162,37 +118,15 @@ jobs:
           $(BuildAction)
           -configuration $(_BuildConfig)
           -arch ${{ parameters.archType }}
-          $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
-          $(OfficialBuildArg)
 
-    - ${{ if in(parameters.osGroup, 'ios', 'tvos', 'android', 'browser') }}:
-
-      - name: CommonMSBuildArgs
-        value: >-
-          /p:PortableBuild=true
-          /p:SkipTests=$(SkipTests)
-
-      - name: BaseJobBuildCommand
-        value: >-
-          $(Build.SourcesDirectory)/build.sh -subset packs -ci
-          $(BuildAction)
-          -configuration $(_BuildConfig)
-          -os ${{ parameters.osGroup }}
-          -arch ${{ parameters.archType }}
-          /p:StripSymbols=true
-          $(LiveOverridePathArgs)
-          $(CommonMSBuildArgs)
-          $(OfficialBuildArg)
-
-    - ${{ if in(parameters.osGroup, 'linux', 'freebsd') }}:
+    - ${{ elseif in(parameters.osGroup, 'linux', 'freebsd') }}:
       - name: CommonMSBuildArgs
         value: >-
           /p:Configuration=$(_BuildConfig)
           /p:TargetOS=${{ parameters.osGroup }}
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-          $(OfficialBuildArg)
 
       - name: _PortableBuild
         value: ${{ eq(parameters.osSubgroup, '') }}
@@ -212,80 +146,16 @@ jobs:
           $(ArchArg)
           /p:CrossBuild=${{ parameters.crossBuild }}
           /p:PortableBuild=$(_PortableBuild)
-          /p:SkipTests=$(SkipTests)
-          $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
 
       - name: installersSubsetArg
         value: --subset packs.installers
 
-    ###
-    ### Common Live build override variable setup
-    ###
-
-    - name: LiveOverridePathArgs
-      value: >-
-        $(RuntimeArtifactsArgs)
-        $(LibrariesConfigurationArg)
-
-    - name: RuntimeArtifactsArgs
-      value: ''
-    - name: LibrariesConfigurationArg
-      value: ''
-
-    - name: RuntimeDownloadPath
-      value: ''
-    - name: LibrariesDownloadPath
-      value: ''
-
-    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-      - name: liveRuntimeLegName
-        value: ${{ format('{0}{1}_{2}_{3}',
-          parameters.osGroup,
-          parameters.osSubgroup,
-          parameters.archType,
-          parameters.liveRuntimeBuildConfig) }}
-      - name: RuntimeDownloadPath
-        value: 'artifacts/transport/${{ parameters.runtimeFlavor }}'
-      - name: RuntimeArtifactsArgs
-        value: >-
-          /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
-          /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
-      - name: RuntimeArtifactName
-        value: $(runtimeFlavorName)Product_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
-
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - name: liveLibrariesLegName
-        value: ${{ format('{0}{1}_{2}_{3}',
-          parameters.osGroup,
-          parameters.osSubgroup,
-          parameters.archType,
-          parameters.liveLibrariesBuildConfig) }}
-      - name: LibrariesDownloadPath
-        value: 'artifacts'
-      - name: LibrariesArtifactName
-        value: libraries_bin_$(liveLibrariesLegName)
-      - name: LibrariesConfigurationArg
-        value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
-
     dependsOn:
     - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
       - evaluate_paths
+    - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
     - ${{ parameters.dependsOn }}
-    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
-          parameters.runtimeFlavor,
-          parameters.runtimeVariant,
-          parameters.osGroup,
-          parameters.osSubgroup,
-          parameters.archType,
-          parameters.liveRuntimeBuildConfig) }}
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - libraries_build_${{ format('{0}{1}_{2}_{3}',
-          parameters.osGroup,
-          parameters.osSubgroup,
-          parameters.archType,
-          parameters.liveLibrariesBuildConfig) }}
     steps:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
@@ -311,22 +181,12 @@ jobs:
             env:
               Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
-      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/$(RuntimeDownloadPath)
-            artifactFileName: '$(RuntimeArtifactName)$(archiveExtension)'
-            artifactName: '$(RuntimeArtifactName)'
-            displayName: '$(runtimeFlavorName) artifacts'
-
-      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/$(LibrariesDownloadPath)
-            artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
-            artifactName: '$(LibrariesArtifactName)'
-            displayName: 'Libraries artifacts'
-            cleanUnpackFolder: false
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+          artifactName: '${{ parameters.unifiedArtifactsName }}'
+          displayName: 'unified artifacts'
 
       - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
         - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
@@ -339,7 +199,7 @@ jobs:
 
       - script: $(BaseJobBuildCommand)
         displayName: Build
-        continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
+        continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
@@ -373,8 +233,6 @@ jobs:
           name: ${{ coalesce(parameters.name, parameters.platform) }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           runtimeVariant: ${{ parameters.runtimeVariant }}
-          isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
-          skipTests: ${{ eq(variables.SkipTests, true) }}
 
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - script: set -x && df -h
