@@ -501,6 +501,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
                     id = ReadyToRunHelper.ByRefWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF_BATCH:
+                    id = ReadyToRunHelper.ByRefWriteBarrierBatch;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;

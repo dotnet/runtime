@@ -349,4 +349,108 @@ RhpByRefAssignRef_NoBarrierRequired:
     ret
 LEAF_END RhpByRefAssignRef, _TEXT
 
+;;
+;; RhpByRefAssignRefBatch "Batch" version of RhpByRefAssignRef.
+;;
+;; On entry:
+;;      rdi: address of ref-field (assigned to)
+;;      rsi: address of the data (source)
+;;      r8:  number of byrefs
+;;
+;; On exit:
+;;      rdi, rsi are incremented by 8,
+;;      r8 is 0
+;;      rcx, r10, r11: trashed
+;;
+LEAF_ENTRY RhpByRefAssignRefBatch, _TEXT
+RhpByRefAssignRefBatch_NextByref:
+
+ALTERNATE_ENTRY RhpByRefAssignRefBatchAVLocation1
+    mov     rcx, [rsi]
+ALTERNATE_ENTRY RhpByRefAssignRefBatchAVLocation2
+    mov     [rdi], rcx
+
+    ;; Check whether the writes were even into the heap. If not there's no card update required.
+    cmp     rdi, [g_lowest_address]
+    jb      RhpByRefAssignRefBatch_NotInHeap
+    cmp     rdi, [g_highest_address]
+    jae     RhpByRefAssignRefBatch_NotInHeap
+
+    ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
+    ;; we're in a debug build and write barrier checking has been enabled).
+    UPDATE_GC_SHADOW BASENAME, rcx, rdi
+
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    mov     r11, [g_write_watch_table]
+    cmp     r11, 0
+    je      RhpByRefAssignRefBatch_CheckCardTable
+
+    mov     r10, rdi
+    shr     r10, 0Ch ;; SoftwareWriteWatch::AddressToTableByteIndexShift
+    add     r10, r11
+    cmp     byte ptr [r10], 0
+    jne     RhpByRefAssignRefBatch_CheckCardTable
+    mov     byte ptr [r10], 0FFh
+endif
+
+RhpByRefAssignRefBatch_CheckCardTable:
+
+    ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
+    ;; (since the object won't be collected or moved by an ephemeral collection).
+    cmp     rcx, [g_ephemeral_low]
+    jb      RhpByRefAssignRefBatch_NoBarrierRequired
+    cmp     rcx, [g_ephemeral_high]
+    jae     RhpByRefAssignRefBatch_NoBarrierRequired
+
+    ;; move current rdi value into rcx, we need to keep rdi and eventually increment by 8
+    mov     rcx, rdi
+
+    ;; We have a location on the GC heap being updated with a reference to an ephemeral object so we must
+    ;; track this write. The location address is translated into an offset in the card table bitmap. We set
+    ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
+    ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
+    shr     rcx, 0Bh
+    mov     r10, [g_card_table]
+    cmp     byte ptr [rcx + r10], 0FFh
+    je      RhpByRefAssignRefBatch_NoBarrierRequired
+
+;; We get here if it's necessary to update the card table.
+    mov     byte ptr [rcx + r10], 0FFh
+
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0Bh already)
+    shr     rcx, 0Ah
+    add     rcx, [g_card_bundle_table]
+    cmp     byte ptr [rcx], 0FFh
+    je      RhpByRefAssignRefBatch_NoBarrierRequired
+
+    mov     byte ptr [rcx], 0FFh
+endif
+    
+RhpByRefAssignRefBatch_NotInHeap:
+    ;; At least one write is already done, increment the pointers
+    add     rdi, 8h
+    add     rsi, 8h
+    dec     r8d
+    je     RhpByRefAssignRefBatch_NotInHeapExit
+    ;; Now we can do the rest of the writes without checking the heap
+RhpByRefAssignRefBatch_NextByrefUnchecked:
+    mov     rcx, [rsi]
+    mov     [rdi], rcx
+    add     rdi, 8h
+    add     rsi, 8h
+    dec     r8d
+    jne     RhpByRefAssignRefBatch_NextByrefUnchecked
+RhpByRefAssignRefBatch_NotInHeapExit:
+    ret
+
+RhpByRefAssignRefBatch_NoBarrierRequired:
+    ;; Increment the pointers before leaving
+    add     rdi, 8h
+    add     rsi, 8h
+    dec     r8d
+    jne     RhpByRefAssignRefBatch_NextByref
+    ret
+LEAF_END RhpByRefAssignRefBatch, _TEXT
+
     end

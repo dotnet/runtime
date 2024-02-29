@@ -4266,33 +4266,30 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             else
             {
 #if defined(TARGET_AMD64)
-                if (!compiler->opts.IsReadyToRun())
+                // How many continuous GC slots we have?
+                unsigned gcSlotCount = 0;
+                unsigned j           = i;
+                do
                 {
-                    // How many continuous GC slots we have?
-                    unsigned gcSlotCount = 0;
-                    unsigned j           = i;
-                    do
-                    {
-                        gcSlotCount++;
-                        j++;
-                    } while ((j < slots) && layout->IsGCPtr(j));
+                    gcSlotCount++;
+                    j++;
+                } while ((j < slots) && layout->IsGCPtr(j));
 
-                    // Limit the max size of a batch, we don't want to get stuck in the write-barrier
-                    // moving a huge batch while GC is suspending threads.
-                    gcSlotCount = min(gcSlotCount, 256);
+                // Limit the max size of a batch, we don't want to get stuck in the write-barrier
+                // moving a huge batch while GC is suspending threads.
+                gcSlotCount = min(gcSlotCount, 256);
 
-                    // Use a batched version of write-barrier if there are more than 1 continuous GC slots
-                    if (gcSlotCount > 1)
-                    {
-                        // Number of continuous GC slots is passed in R8
-                        assert((genRegMask(REG_R8) & (RBM_INT_CALLEE_TRASH)) == genRegMask(REG_R8));
+                // Use a batched version of write-barrier if there are more than 1 continuous GC slots
+                if (gcSlotCount > 1)
+                {
+                    // Number of continuous GC slots is passed in R8
+                    assert((genRegMask(REG_R8) & (RBM_INT_CALLEE_TRASH)) == genRegMask(REG_R8));
 
-                        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R8, gcSlotCount);
-                        genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF_BATCH, 0, EA_PTRSIZE);
-                        gcPtrCount -= gcSlotCount;
-                        i += gcSlotCount;
-                        continue;
-                    }
+                    instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R8, gcSlotCount);
+                    genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF_BATCH, 0, EA_PTRSIZE);
+                    gcPtrCount -= gcSlotCount;
+                    i += gcSlotCount;
+                    continue;
                 }
 #endif
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);

@@ -70,6 +70,11 @@ namespace ILCompiler
                 case ReadyToRunHelper.ByRefWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
+                case ReadyToRunHelper.ByRefWriteBarrierBatch:
+                    if (context.Target.Architecture != TargetArchitecture.X64)
+                        throw new NotImplementedException();
+                    mangledName = "RhpByRefAssignRefBatch";
+                    break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
                     break;

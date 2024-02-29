@@ -1671,6 +1671,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.ByRefWriteBarrier:
                     builder.Append("BYREF_WRITE_BARRIER");
                     break;
+                case ReadyToRunHelper.ByRefWriteBarrierBatch:
+                    builder.Append("BYREF_WRITE_BARRIER_BATCH");
+                    break;
 
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
