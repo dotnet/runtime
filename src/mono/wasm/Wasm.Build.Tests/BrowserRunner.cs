@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Wasm.Tests.Internal;
 using Xunit.Abstractions;
+using System.Diagnostics;
 
 namespace Wasm.Build.Tests;
 
@@ -79,7 +80,24 @@ internal class BrowserRunner : IAsyncDisposable
             throw new Exception($"Process ended before the url was found");
         }
         if (!urlAvailable.Task.IsCompleted)
+        {
+            foreach (var p in Process.GetProcesses())
+            {
+                string processMsg = $"Process: {p.Id} - {p.ProcessName}";
+                try
+                {
+                    processMsg += $" - {p.MainModule?.FileName}";
+                }
+                catch (Exception e)
+                {
+                    processMsg += $" - Failed to get MainModule - {e.Message}";
+                }
+
+                _testOutput.WriteLine(processMsg);
+            }
+
             throw new Exception("Timed out waiting for the web server url");
+        }
 
         RunTask = runTask;
         return urlAvailable.Task.Result;
