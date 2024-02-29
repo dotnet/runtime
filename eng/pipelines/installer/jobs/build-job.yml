@@ -114,7 +114,7 @@ jobs:
 
       - name: BaseJobBuildCommand
         value: >-
-          $(Build.SourcesDirectory)/build.sh -ci
+          $(Build.SourcesDirectory)/build.sh -subset host+packs -ci
           $(BuildAction)
           -configuration $(_BuildConfig)
           -arch ${{ parameters.archType }}
