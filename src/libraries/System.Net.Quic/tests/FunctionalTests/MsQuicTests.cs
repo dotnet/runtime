@@ -357,8 +357,10 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        static bool SupportsAsyncCertValidation => QuicTestCollection.MsQuicVersion >= new Version(2, 4);
+
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99074")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99074", typeof(MsQuicTests), nameof(SupportsAsyncCertValidation))]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
