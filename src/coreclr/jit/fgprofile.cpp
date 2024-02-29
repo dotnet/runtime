@@ -5645,17 +5645,10 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (FlowEdge* succEdge : block->SuccEdges(this))
         {
-            BasicBlock* succBlock = block->GetSucc(i, this);
-            FlowEdge*   succEdge  = fgGetPredForBlock(succBlock, block);
-
-            if (succEdge == nullptr)
-            {
-                missingEdges++;
-                JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum, succBlock->bbNum);
-                continue;
-            }
+            assert(succEdge != nullptr);
+            BasicBlock* succBlock = succEdge->getDestinationBlock();
 
             outgoingWeightMin += succEdge->edgeWeightMin();
             outgoingWeightMax += succEdge->edgeWeightMax();
