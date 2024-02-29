@@ -1191,8 +1191,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BR_3B:   // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
-        case IF_SVE_EW_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
-        case IF_SVE_EW_3B:   // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
         case IF_SVE_FN_3B:   // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
         case IF_SVE_FO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE integer matrix multiply accumulate
         case IF_SVE_AT_3B:   // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
@@ -1206,7 +1204,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_GW_3B:   // ...........mmmmm ......nnnnnddddd -- SVE FP clamp
         case IF_SVE_HA_3A:   // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
         case IF_SVE_HA_3A_E: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
-        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
         case IF_SVE_HB_3A:   // ...........mmmmm ......nnnnnddddd -- SVE floating-point multiply-add long
         case IF_SVE_HD_3A:   // ...........mmmmm ......nnnnnddddd -- SVE floating point matrix multiply accumulate
         case IF_SVE_HD_3A_A: // ...........mmmmm ......nnnnnddddd -- SVE floating point matrix multiply accumulate
@@ -1216,6 +1213,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
             assert(isVectorRegister(id->idReg3())); // mmmmm/aaaaa
+            break;
+
+        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_EW_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_EW_3B:   // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn/aaaaa
+            assert(isVectorRegister(id->idReg3())); // mmmmm
             break;
 
         case IF_SVE_EG_3A:   // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
@@ -11495,9 +11501,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 unreached(); // TODO-SVE: Not yet supported.
                 assert(insOptsNone(opt));
                 fmt = IF_SVE_HA_3A_F;
-
-                // opt is set only for convenience in emitDispInsHelp
-                opt = INS_OPTS_SCALABLE_B;
             }
             break;
 
@@ -12270,9 +12273,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmmmm
             fmt = IF_SVE_EW_3A;
-
-            // opt is set only for convenience in emitDispInsHelp
-            opt = INS_OPTS_SCALABLE_D;
             break;
 
         case INS_sve_madpt:
@@ -12282,9 +12282,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg2)); // mmmmm
             assert(isVectorRegister(reg3)); // aaaaa
             fmt = IF_SVE_EW_3B;
-
-            // opt is set only for convenience in emitDispInsHelp
-            opt = INS_OPTS_SCALABLE_D;
             break;
 
         case INS_sve_fcmeq:
@@ -27689,10 +27686,7 @@ void emitter::emitDispInsHelp(
         // <Zd>.Q, <Zn>.Q, <Zm>.Q
         case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
         // <Zda>.D, <Zn>.D, <Zm>.D
-        case IF_SVE_EW_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
         case IF_SVE_HD_3A_A: // ...........mmmmm ......nnnnnddddd -- SVE floating point matrix multiply accumulate
-        // <Zdn>.D, <Zm>.D, <Za>.D
-        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
         // <Zd>.D, <Zn>.D, <Zm>.D
         case IF_SVE_AT_3B: // ...........mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
@@ -27708,6 +27702,15 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn/mmmmm
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
+            break;
+
+        // <Zda>.D, <Zn>.D, <Zm>.D
+        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        // <Zdn>.D, <Zm>.D, <Za>.D
+        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_D, true);  // ddddd
+            emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_D, true);  // nnnnn
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false); // mmmmm
             break;
 
         // <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
@@ -27982,13 +27985,18 @@ void emitter::emitDispInsHelp(
         case IF_SVE_HA_3A: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
         case IF_SVE_HB_3A: // ...........mmmmm ......nnnnnddddd -- SVE floating-point multiply-add long
         case IF_SVE_HD_3A: // ...........mmmmm ......nnnnnddddd -- SVE floating point matrix multiply accumulate
-        // <Zda>.S, <Zn>.B, <Zm>.B
-        case IF_SVE_EI_3A:   // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
-        case IF_SVE_GO_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
-        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+        case IF_SVE_EI_3A: // ...........mmmmm ......nnnnnddddd -- SVE mixed sign dot product
+        case IF_SVE_GO_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long long
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmmmm
+            break;
+
+        // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_HA_3A_F: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true);  // ddddd
+            emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_B, true);  // nnnnn
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_B, false); // mmmmm
             break;
 
         // <Zd>.D, <Zn>.S, <Zm>.S[<imm>]
