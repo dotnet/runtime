@@ -496,6 +496,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP,  // Do the store, and ensure that the target was not in the heap.
 
     CORINFO_HELP_ASSIGN_BYREF,
+    CORINFO_HELP_ASSIGN_BYREF_BATCH,
     CORINFO_HELP_ASSIGN_STRUCT,
 
 

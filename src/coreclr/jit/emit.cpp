@@ -2850,6 +2850,7 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
         case CORINFO_HELP_ASSIGN_BYREF:
+        case CORINFO_HELP_ASSIGN_BYREF_BATCH:
 
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
@@ -10422,6 +10423,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
+        case CORINFO_HELP_ASSIGN_BYREF_BATCH:
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 

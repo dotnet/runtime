@@ -256,6 +256,227 @@ endif
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
+
+; JIT_ByRefWriteBarrierBatch has weird semantics, see usage in StubLinkerX86.cpp
+;
+; Entry:
+;   RDI - address of ref-field (assigned to)
+;   RSI - address of the data  (source)
+;   R8D - number of byrefs to write
+;   RCX is trashed
+;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
+; Exit:
+;   RDI, RSI are incremented by SIZEOF(LPVOID)
+;   R8D is zeroed
+LEAF_ENTRY JIT_ByRefWriteBarrierBatch, _TEXT
+    NextByref:
+        mov     rcx, [rsi]
+
+; If !WRITE_BARRIER_CHECK do the write first, otherwise we might have to do some ShadowGC stuff
+ifndef WRITE_BARRIER_CHECK
+        ; rcx is [rsi]
+        mov     [rdi], rcx
+endif
+
+        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        ; but if it isn't then it will just return.
+        ;
+        ; See if this is in GCHeap
+        cmp     rdi, [g_lowest_address]
+        jb      NotInHeap
+        cmp     rdi, [g_highest_address]
+        jnb     NotInHeap
+
+ifdef WRITE_BARRIER_CHECK
+        ; we can only trash rcx in this function so in _DEBUG we need to save
+        ; some scratch registers.
+        push    r10
+        push    r11
+        push    rax
+
+        ; **ALSO update the shadow GC heap if that is enabled**
+        ; Do not perform the work if g_GCShadow is 0
+        cmp     g_GCShadow, 0
+        je      NoShadow
+
+        ; If we end up outside of the heap don't corrupt random memory
+        mov     r10, rdi
+        sub     r10, [g_lowest_address]
+        jb      NoShadow
+
+        ; Check that our adjusted destination is somewhere in the shadow gc
+        add     r10, [g_GCShadow]
+        cmp     r10, [g_GCShadowEnd]
+        jnb     NoShadow
+
+        ; Write ref into real GC
+        mov     [rdi], rcx
+        ; Write ref into shadow GC
+        mov     [r10], rcx
+
+        ; Ensure that the write to the shadow heap occurs before the read from
+        ; the GC heap so that race conditions are caught by INVALIDGCVALUE
+        mfence
+
+        ; Check that GC/ShadowGC values match
+        mov     r11, [rdi]
+        mov     rax, [r10]
+        cmp     rax, r11
+        je      DoneShadow
+        mov     r11, INVALIDGCVALUE
+        mov     [r10], r11
+
+        jmp     DoneShadow
+
+    ; If we don't have a shadow GC we won't have done the write yet
+    NoShadow:
+        mov     [rdi], rcx
+
+    ; If we had a shadow GC then we already wrote to the real GC at the same time
+    ; as the shadow GC so we want to jump over the real write immediately above.
+    ; Additionally we know for sure that we are inside the heap and therefore don't
+    ; need to replicate the above checks.
+    DoneShadow:
+        pop     rax
+        pop     r11
+        pop     r10
+endif
+
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        ; Update the write watch table if necessary
+        cmp     byte ptr [g_sw_ww_enabled_for_gc_heap], 0h
+        je      CheckCardTable
+        mov     rax, rdi
+        shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
+        add     rax, qword ptr [g_sw_ww_table]
+        cmp     byte ptr [rax], 0h
+        jne     CheckCardTable
+        mov     byte ptr [rax], 0FFh
+endif
+
+        ; See if we can just quick out
+    CheckCardTable:
+        cmp     rcx, [g_ephemeral_low]
+        jb      Exit
+        cmp     rcx, [g_ephemeral_high]
+        jnb     Exit
+
+        ; do the following checks only if we are allowed to trash rax
+        ; otherwise we don't have enough registers
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        mov     rax, rcx
+
+        mov     cl, [g_region_shr]
+        test    cl, cl
+        je      SkipCheck
+
+        ; check if the source is in gen 2 - then it's not an ephemeral pointer
+        shr     rax, cl
+        add     rax, [g_region_to_generation_table]
+        cmp     byte ptr [rax], 82h
+        je      Exit
+
+        ; check if the destination happens to be in gen 0
+        mov     rax, rdi
+        shr     rax, cl
+        add     rax, [g_region_to_generation_table]
+        cmp     byte ptr [rax], 0
+        je      Exit
+    SkipCheck:
+
+        cmp     [g_region_use_bitwise_write_barrier], 0
+        je      CheckCardTableByte
+
+        ; compute card table bit
+        mov     rcx, rdi
+        mov     al, 1
+        shr     rcx, 8
+        and     cl, 7
+        shl     al, cl
+
+        ; move current rdi value into rcx and then increment the pointers
+        mov     rcx, rdi
+        add     rsi, 8h
+        add     rdi, 8h
+
+        ; Check if we need to update the card table
+        ; Calc pCardByte
+        shr     rcx, 0Bh
+        add     rcx, [g_card_table]
+
+        ; Check if this card table bit is already set
+        test    byte ptr [rcx], al
+        je      SetCardTableBit
+        dec     r8d
+        jne     NextByref
+        REPRET
+
+    SetCardTableBit:
+        lock or byte ptr [rcx], al
+        jmp     CheckCardBundle
+endif
+CheckCardTableByte:
+
+        ; move current rdi value into rcx and then increment the pointers
+        mov     rcx, rdi
+        add     rsi, 8h
+        add     rdi, 8h
+
+        ; Check if we need to update the card table
+        ; Calc pCardByte
+        shr     rcx, 0Bh
+        add     rcx, [g_card_table]
+
+        ; Check if this card is dirty
+        cmp     byte ptr [rcx], 0FFh
+        jne     UpdateCardTable
+        dec     r8d
+        jne     NextByref
+        REPRET
+
+    UpdateCardTable:
+        mov     byte ptr [rcx], 0FFh
+
+    CheckCardBundle:
+
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        ; check if we need to update the card bundle table
+        ; restore destination address from rdi - rdi has been incremented by 8 already
+        lea     rcx, [rdi-8]
+        shr     rcx, 15h
+        add     rcx, [g_card_bundle_table]
+        cmp     byte ptr [rcx], 0FFh
+        jne     UpdateCardBundleTable
+        dec     r8d
+        jne     NextByref
+        REPRET
+
+    UpdateCardBundleTable:
+        mov     byte ptr [rcx], 0FFh
+endif
+        dec     r8d
+        jne     NextByref
+        ret
+
+    align 16
+    NotInHeap:
+; If WRITE_BARRIER_CHECK then we won't have already done the mov and should do it here
+; If !WRITE_BARRIER_CHECK we want _NotInHeap and _Leave to be the same and have both
+; 16 byte aligned.
+ifdef WRITE_BARRIER_CHECK
+        ; rcx is [rsi]
+        mov     [rdi], rcx
+endif
+    Exit:
+        ; Increment the pointers before leaving
+        add     rdi, 8h
+        add     rsi, 8h
+        dec     r8d
+        jne     NextByref
+        ret
+LEAF_END_MARKED JIT_ByRefWriteBarrierBatch, _TEXT
+
+
 Section segment para 'DATA'
 
         align   16

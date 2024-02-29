@@ -4265,6 +4265,29 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             }
             else
             {
+#if defined(TARGET_AMD64)
+                if (!compiler->opts.IsReadyToRun())
+                {
+                    unsigned gcSlotCount = 0;
+                    do
+                    {
+                        gcSlotCount++;
+                        i++;
+                    } while ((i < slots) && layout->IsGCPtr(i));
+
+                    if (gcSlotCount > 1)
+                    {
+                        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R8, gcSlotCount);
+                        genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF_BATCH, 0, EA_PTRSIZE);
+                    }
+                    else
+                    {
+                        genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+                    }
+                    gcPtrCount -= gcSlotCount;
+                    continue;
+                }
+#endif
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
                 gcPtrCount--;
                 i++;

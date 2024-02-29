@@ -1747,6 +1747,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
+            case CORINFO_HELP_ASSIGN_BYREF_BATCH:
             case CORINFO_HELP_ASSIGN_STRUCT:
 
                 mutatesHeap = true;

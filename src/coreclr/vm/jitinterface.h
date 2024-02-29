@@ -389,6 +389,7 @@ extern "C"
 #endif // TARGET_X86
 
     void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
+    void STDCALL JIT_ByRefWriteBarrierBatch(); // JIThelp.asm/JIThelp.s
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
 
