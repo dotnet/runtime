@@ -15100,11 +15100,18 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.compile_in_child) {
-		res = compile_assemblies_in_child (&acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
-		if (res)
-			return res;
+		if (acfg->aot_opts.dedup_include) {
+			if (acfg->image->assembly == dedup_assembly)
+				return assemble_link (acfg);
+			else
+				return 0;
+		} else {
+			res = compile_assemblies_in_child (&acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
+			if (res)
+				return res;
 
-		return assemble_link (acfg);
+			return assemble_link (acfg);
+		}
 	}
 
 	acfg->method_index = 1;
@@ -15681,13 +15688,18 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 			res = 1;
 			goto early_exit;
 		}
-		// FIXME:
-		if (nassemblies > 1)
+		if (nassemblies > 1 && !aot_opts.dedup_include)
 			aot_opts.compile_in_child = FALSE;
 #ifdef HOST_WIN32
 		// Need to create response files
 		aot_opts.compile_in_child = FALSE;
 #endif
+	}
+
+	if (aot_opts.dedup_include && aot_opts.compile_in_child) {
+		res = compile_assemblies_in_child (assemblies, nassemblies, aot_opts.runtime_args, aot_opts.aot_options);
+		if (res)
+			return res;
 	}
 
 	if (aot_opts.dedup_include) {
