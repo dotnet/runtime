@@ -31,6 +31,7 @@ enum PredicateType
 
 const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
+const char* emitSimdScalarRegName(regNumber reg, emitAttr attr);
 const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
 void emitDispInsHelp(
@@ -62,6 +63,7 @@ void emitDispSveReg(regNumber reg, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
+void emitDispScalarReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);

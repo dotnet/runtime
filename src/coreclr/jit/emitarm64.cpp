@@ -1210,6 +1210,18 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm<2>(emitGetInsSC(id)));  // ii
             break;
 
+        case IF_SVE_CC_2A: // ........xx...... ......mmmmmddddd -- SVE insert SIMD&FP scalar register
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // mmmmm
+            break;
+
+        case IF_SVE_CD_2A: // ........xx...... ......mmmmmddddd -- SVE insert general register
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));  // ddddd
+            assert(isGeneralRegister(id->idReg2())); // mmmmm
+            break;
+
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -3244,6 +3256,28 @@ static const char * const  qRegNames[] =
     "q30", "q31"
 };
 
+static const char * const  dRegNames[] =
+{
+    "d0",  "d1",  "d2",  "d3",  "d4",
+    "d5",  "d6",  "d7",  "d8",  "d9",
+    "d10", "d11", "d12", "d13", "d14",
+    "d15", "d16", "d17", "d18", "d19",
+    "d20", "d21", "d22", "d23", "d24",
+    "d25", "d26", "d27", "d28", "d29",
+    "d30", "d31"
+};
+
+static const char * const  sRegNames[] =
+{
+    "s0",  "s1",  "s2",  "s3",  "s4",
+    "s5",  "s6",  "s7",  "s8",  "s9",
+    "s10", "s11", "s12", "s13", "s14",
+    "s15", "s16", "s17", "s18", "s19",
+    "s20", "s21", "s22", "s23", "s24",
+    "s25", "s26", "s27", "s28", "s29",
+    "s30", "s31"
+};
+
 static const char * const  hRegNames[] =
 {
     "h0",  "h1",  "h2",  "h3",  "h4",
@@ -3379,6 +3413,36 @@ const char* emitter::emitVectorRegName(regNumber reg)
     int index = (int)reg - (int)REG_V0;
 
     return vRegNames[index];
+}
+
+//------------------------------------------------------------------------
+// emitSimdScalarRegName: Returns a SIMD scalar register name.
+//
+// Arguments:
+//    reg - A SIMD and floating-point register.
+//
+// Return value:
+//    A string  that represents a SIMD scalar register name.
+//
+const char* emitter::emitSimdScalarRegName(regNumber reg, emitAttr attr)
+{
+    assert(isVectorRegister(reg));
+    int index = (int)reg - (int)REG_V0;
+
+    switch (attr)
+    {
+        case EA_1BYTE:
+            return bRegNames[index];
+        case EA_2BYTE:
+            return hRegNames[index];
+        case EA_4BYTE:
+            return sRegNames[index];
+        case EA_8BYTE:
+            return dRegNames[index];
+        default:
+            unreached();
+            break;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -9003,6 +9067,23 @@ void emitter::emitIns_R_R(instruction     ins,
             }
             break;
         }
+
+        case INS_sve_insr:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            if (isVectorRegister(reg2))
+            {
+                fmt = IF_SVE_CC_2A;
+            }
+            else if (isGeneralRegister(reg2))
+            {
+                fmt = IF_SVE_CD_2A;
+            }
+            else
+            {
+                unreached();
+            }
+            break;
 
         case INS_sve_pfirst:
             assert(opt == INS_OPTS_SCALABLE_B);
@@ -24488,6 +24569,22 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CC_2A: // ........xx...... ......mmmmmddddd -- SVE insert SIMD&FP scalar register
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                     // mmmmm
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CD_2A: // ........xx...... ......mmmmmddddd -- SVE insert general register
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_R_9_to_5(id->idReg2());                     // mmmmm
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
@@ -26489,6 +26586,18 @@ void emitter::emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma)
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispElementIndex(index, addComma);
+}
+
+//------------------------------------------------------------------------
+// emitDispScalarReg: Display a the name of a scalar mode of a vector register
+//
+void emitter::emitDispScalarReg(regNumber reg, insOpts opt, bool addComma)
+{
+    assert(isVectorRegister(reg));
+    printf(emitSimdScalarRegName(reg, optGetSveElemsize(opt)));
+
+    if (addComma)
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -28671,6 +28780,18 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
             emitDispSveExtendOptsModN(INS_OPTS_UXTW, emitGetInsSC(id));
             printf("]");
+            break;
+
+        // <Zdn>.<T>, <V><m>
+        case IF_SVE_CC_2A: // ........xx...... ......mmmmmddddd -- SVE insert SIMD&FP scalar register
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);     // ddddd
+            emitDispScalarReg(id->idReg2(), id->idInsOpt(), false); // mmmmm
+            break;
+
+        // <Zdn>.<T>, <R><m>
+        case IF_SVE_CD_2A: // ........xx...... ......mmmmmddddd -- SVE insert general register
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                            // ddddd
+            emitDispReg(id->idReg2(), id->idInsOpt() == INS_OPTS_SCALABLE_D ? EA_8BYTE : EA_4BYTE, false); // mmmmm
             break;
 
         // <Pd>.H, <Pn>.B
@@ -32640,6 +32761,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
             result.insThroughput = PERFSCORE_THROUGHPUT_140C; // @ToDo currently undocumented
             result.insLatency    = PERFSCORE_LATENCY_140C;
+            break;
+
+        case IF_SVE_CC_2A: // ........xx...... ......mmmmmddddd -- SVE insert SIMD&FP scalar register
+        case IF_SVE_CD_2A: // ........xx...... ......mmmmmddddd -- SVE insert general register
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_5C;
             break;
 
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
