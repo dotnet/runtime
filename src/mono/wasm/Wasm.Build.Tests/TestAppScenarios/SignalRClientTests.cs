@@ -57,9 +57,7 @@ public class SignalRClientTests : AppTestBase
         var page = await runner.RunAsync(context, chatUrl);
         try
         {
-            #pragma warning disable 4014
-            page.Console += (_, msg) => OnConsoleMessage(msg);
-            #pragma warning restore 4014
+            page.Console += (_, msg) => { OnConsoleMessage(msg); };
             _testOutput.WriteLine($"Wait for loading state");
             await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
             await page.ClickAsync("button#connectButton");
@@ -74,7 +72,7 @@ public class SignalRClientTests : AppTestBase
             throw;
         }
 
-        async Task OnConsoleMessage(IConsoleMessage msg)
+        async void OnConsoleMessage(IConsoleMessage msg)
         {
             consoleOutput.Add(msg.Text);
             if (msg.Text.Contains("TestOutput ->"))
@@ -90,28 +88,24 @@ public class SignalRClientTests : AppTestBase
 
             if (msg.Text.Contains("ReceiveMessage from server"))
                 await page.ClickAsync("button#exitProgramButton");
-
-            if (msg.Text.Contains("Exit signal was sent"))
-            {
-                await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
-            }
         }
 
         void OnServerMessage(string msg) => serverOutput.Add(msg);
 
-        // check sending threadId
         string output = _testOutput.ToString() ?? "";
         Assert.NotEmpty(output);
-        Match match = Regex.Match(output, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)");
-        Assert.True(match.Success, $"Expected to find a log that signalR message was sent. TestOutput: {output}.");
-        string threadIdUsedForSending = match.Groups[1].Value ?? "";
-
-        // check receiving threadId
-        match = Regex.Match(output, @"ReceiveMessage from server on CurrentManagedThreadId=(\d+)");
-        Assert.True(match.Success, $"Expected to find a log that signalR message was sent. TestOutput: {output}.");
-        string threadIdUsedForReceiving = match.Groups[1].Value ?? "";
-
+        // check sending and receiving threadId
+        Assert.NotEmpty(output);
+        string threadIdUsedForSending = GetThreadOfAction(output, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)", "signalR message was sent");
+        string threadIdUsedForReceiving = GetThreadOfAction(output, @"SignalRPassMessages was sent by CurrentManagedThreadId=(\d+)", "signalR message was received");
         Assert.True("1" != threadIdUsedForSending || "1" != threadIdUsedForReceiving,
             $"Expected to send/receive with signalR in non-UI threads, instead only CurrentManagedThreadId=1 was used. TestOutput: {output}.");
+    }
+
+    private string GetThreadOfAction(string testOutput, string pattern, string actionDescription)
+    {
+        Match match = Regex.Match(testOutput, pattern);
+        Assert.True(match.Success, $"Expected to find a log that {actionDescription}. TestOutput: {testOutput}.");
+        return match.Groups[1].Value ?? "";
     }
 }
