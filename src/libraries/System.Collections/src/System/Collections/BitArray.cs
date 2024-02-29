@@ -761,21 +761,14 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                Div32Rem(m_length, out int extraBits);
+                int quotient = Div32Rem(m_length, out int extraBits);
 
-                if (extraBits == 0)
-                {
-                    // we have perfect bit alignment, no need to sanitize, just copy
-                    Array.Copy(m_array, 0, intArray, index, m_array.Length);
-                }
-                else
-                {
-                    int last = (m_length - 1) >> BitShiftPerInt32;
-                    // do not copy the last int, as it is not completely used
-                    Array.Copy(m_array, 0, intArray, index, last);
+                Array.Copy(m_array, 0, intArray, index, quotient);
 
+                if (extraBits > 0)
+                {
                     // the last int needs to be masked
-                    intArray[index + last] = m_array[last] & unchecked((1 << extraBits) - 1);
+                    intArray[index + quotient] = m_array[quotient] & unchecked((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[] byteArray)
