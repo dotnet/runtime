@@ -11,7 +11,7 @@ if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
 endif()
 
 add_custom_target(${SOURCE} ALL
-    COMMAND swiftc -emit-library ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift -o ${CMAKE_CURRENT_BINARY_DIR}/lib${SOURCE}.dylib
+    COMMAND xcrun swiftc -target ${SWIFT_COMPILER_TARGET} -emit-library ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift -o ${CMAKE_CURRENT_BINARY_DIR}/lib${SOURCE}.dylib
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift
     COMMENT "Generating ${SOURCE} library"
 )
