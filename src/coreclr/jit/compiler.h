@@ -5897,8 +5897,6 @@ public:
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
 
-    void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
-
     void fgReplacePred(FlowEdge* edge, BasicBlock* const newPred);
 
     // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()

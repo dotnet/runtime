@@ -307,7 +307,7 @@ public:
     }
 };
 
-// BBArrayIterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
+// BBArrayIterator: forward iterator for an array of BasicBlock*.
 // It is an error (with assert) to yield a nullptr BasicBlock* in this array.
 // `m_edgeEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
 // (meaning, no actual iteration will happen).
@@ -331,6 +331,41 @@ public:
     }
 
     bool operator!=(const BBArrayIterator& i) const
+    {
+        return m_edgeEntry != i.m_edgeEntry;
+    }
+};
+
+// FlowEdgeArrayIterator: forward iterator for an array of FlowEdge*, such as the BBswtDesc->bbsDstTab.
+// It is an error (with assert) to yield a nullptr FlowEdge* in this array.
+// `m_edgeEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
+// (meaning, no actual iteration will happen).
+//
+class FlowEdgeArrayIterator
+{
+    FlowEdge* const* m_edgeEntry;
+
+public:
+    FlowEdgeArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry)
+    {
+    }
+
+    FlowEdge* operator*() const
+    {
+        assert(m_edgeEntry != nullptr);
+        FlowEdge* const edge = *m_edgeEntry;
+        assert(edge != nullptr);
+        return edge;
+    }
+
+    FlowEdgeArrayIterator& operator++()
+    {
+        assert(m_edgeEntry != nullptr);
+        ++m_edgeEntry;
+        return *this;
+    }
+
+    bool operator!=(const FlowEdgeArrayIterator& i) const
     {
         return m_edgeEntry != i.m_edgeEntry;
     }
@@ -1766,12 +1801,11 @@ public:
 
     bool HasPotentialEHSuccs(Compiler* comp);
 
-    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-    // normally used via BasicBlock::Succs(), e.g.:
-    //    for (BasicBlock* const target : block->Succs()) ...
+    // Base class for Successor block/edge iterators.
     //
-    class BBSuccList
+    class SuccList
     {
+    protected:
         // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
         // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
@@ -1780,10 +1814,47 @@ public:
         FlowEdge* const* m_begin;
         FlowEdge* const* m_end;
 
+        SuccList(const BasicBlock* block);
+    };
+
+    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs()) ...
+    //
+    class BBSuccList : private SuccList
+    {
     public:
-        BBSuccList(const BasicBlock* block);
-        BBArrayIterator begin() const;
-        BBArrayIterator end() const;
+        BBSuccList(const BasicBlock* block) : SuccList(block) {}
+
+        BBArrayIterator begin() const
+        {
+            return BBArrayIterator(m_begin);
+        }
+
+        BBArrayIterator end() const
+        {
+            return BBArrayIterator(m_end);
+        }
+    };
+
+    // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
+    // normally used via BasicBlock::SuccEdges(), e.g.:
+    //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
+    //
+    class BBSuccEdgeList : private SuccList
+    {
+    public:
+        BBSuccEdgeList(const BasicBlock* block) : SuccList(block) {}
+
+        FlowEdgeArrayIterator begin() const
+        {
+            return FlowEdgeArrayIterator(m_begin);
+        }
+
+        FlowEdgeArrayIterator end() const
+        {
+            return FlowEdgeArrayIterator(m_end);
+        }
     };
 
     // BBCompilerSuccList: adapter class for forward iteration of block successors, using range-based `for`,
@@ -1844,65 +1915,6 @@ public:
         iterator end() const
         {
             return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
-        }
-    };
-
-    // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
-    // normally used via BasicBlock::SuccEdges(), e.g.:
-    //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
-    //
-    // This version uses NumSucc()/GetSucc(). See the documentation there for the explanation
-    // of the implications of this versus the version that takes `Compiler*`.
-    class BBSuccEdgeList
-    {
-        BasicBlock* m_block;
-
-        // iterator: forward iterator for an array of FlowEdge*, such as the BBswtDesc->bbsDstTab.
-        //
-        class iterator
-        {
-            BasicBlock* const m_block;
-            unsigned    m_succNum;
-
-        public:
-            iterator(BasicBlock* const block, unsigned succNum)
-                : m_block(block), m_succNum(succNum)
-            {
-            }
-
-            FlowEdge* operator*() const
-            {
-                assert(m_block != nullptr);
-                FlowEdge* succEdge = m_block->GetSuccEdge(m_succNum);
-                assert(succEdge != nullptr);
-                return succEdge;
-            }
-
-            iterator& operator++()
-            {
-                ++m_succNum;
-                return *this;
-            }
-
-            bool operator!=(const iterator& i) const
-            {
-                return m_succNum != i.m_succNum;
-            }
-        };
-
-    public:
-        BBSuccEdgeList(BasicBlock* block) : m_block(block)
-        {
-        }
-
-        iterator begin() const
-        {
-            return iterator(m_block, 0);
-        }
-
-        iterator end() const
-        {
-            return iterator(m_block, m_block->NumSucc());
         }
     };
 
@@ -2244,9 +2256,9 @@ inline BBArrayIterator BBEhfSuccList::end() const
     return BBArrayIterator(m_bbeDesc->bbeSuccs + m_bbeDesc->bbeCount);
 }
 
-// BBSuccList out-of-class-declaration implementations
+// SuccList out-of-class-declaration implementations
 //
-inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
+inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
 
@@ -2317,16 +2329,6 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
     }
 
     assert(m_end >= m_begin);
-}
-
-inline BBArrayIterator BasicBlock::BBSuccList::begin() const
-{
-    return BBArrayIterator(m_begin);
-}
-
-inline BBArrayIterator BasicBlock::BBSuccList::end() const
-{
-    return BBArrayIterator(m_end);
 }
 
 // We have a simpler struct, BasicBlockList, which is simply a singly-linked
