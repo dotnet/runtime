@@ -2026,7 +2026,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
             // Found the SwiftSelf arg
             arg.SetWellKnownArg(WellKnownArg::SwiftSelf);
         }
-// TODO: SwiftSelf, SwiftAsync
+// TODO: SwiftAsync
 #endif // SWIFT_SUPPORT
 
         argIndex++;

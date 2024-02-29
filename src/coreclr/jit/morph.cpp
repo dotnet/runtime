@@ -3182,7 +3182,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
         // TODO-ARGS: Review this, is it really necessary to treat them specially here?
         // Exception: Lower SwiftSelf struct arg to GT_LCL_FLD
-        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters() && (arg.GetWellKnownArg() != WellKnownArg::SwiftSelf))
+        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters() &&
+            (arg.GetWellKnownArg() != WellKnownArg::SwiftSelf))
         {
             flagsSummary |= argx->gtFlags;
             continue;
