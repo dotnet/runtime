@@ -191,6 +191,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     {
         if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
             runArgs += $" {runOptions.ExtraArgs}";
+
+        runOptions.ServerEnvironment?.ToList().ForEach(
+            kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
+
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(workingDirectory);
 
@@ -198,10 +202,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         var page = await runner.RunAsync(
             runCommand,
             runArgs,
+            onPageLoaded: runOptions.OnPageLoaded,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => browserUrl + runOptions.QueryString);
+            modifyBrowserUrl: browserUrl => browserUrl + runOptions.BrowserPath + runOptions.QueryString);
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
@@ -223,11 +228,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         await Task.Delay(10_000);
 
-        void OnConsoleMessage(IConsoleMessage msg)
+        void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
             _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
 
-            runOptions.OnConsoleMessage?.Invoke(msg);
+            runOptions.OnConsoleMessage?.Invoke(page, msg);
 
             if (runOptions.DetectRuntimeFailures)
             {

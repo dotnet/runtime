@@ -94,27 +94,32 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     private async Task<RunResult> RunSdkStyleApp(RunOptions options, BlazorRunHost host = BlazorRunHost.DotnetRun)
     {
-        string queryString = "?test=" + options.TestScenario;
-        if (options.BrowserQueryString != null)
-            queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+        var query = options.BrowserQueryString ?? new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(options.TestScenario))
+            query.Add("test", options.TestScenario);
+
+        var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
 
         var tcs = new TaskCompletionSource<int>();
         List<string> testOutput = new();
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
-        Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
+        Regex exitRegex = new Regex("(WASM EXIT (?<exitCode>[0-9]+)$)|(Program terminated with exit\\((?<exitCode>[0-9]+)\\))");
 
         BlazorRunOptions blazorRunOptions = new(
                 CheckCounter: false,
                 Config: options.Configuration,
+                ServerEnvironment: options.ServerEnvironment,
+                OnPageLoaded: options.OnPageLoaded,
                 OnConsoleMessage: OnConsoleMessage,
                 OnServerMessage: OnServerMessage,
+                BrowserPath: options.BrowserPath,
                 QueryString: queryString,
                 Host: host);
 
         await BlazorRunTest(blazorRunOptions);
 
-        void OnConsoleMessage(IConsoleMessage msg)
+        void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
             consoleOutput.Add(msg.Text);
 
@@ -128,7 +133,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 throw new Exception(msg.Text);
 
             if (options.OnConsoleMessage != null)
-                options.OnConsoleMessage(msg);
+                options.OnConsoleMessage(page, msg);
         }
 
         void OnServerMessage(string msg)
@@ -161,9 +166,12 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected record RunOptions(
         string Configuration,
-        string TestScenario,
+        string BrowserPath = "",
+        string? TestScenario = null,
         Dictionary<string, string> BrowserQueryString = null,
-        Action<IConsoleMessage> OnConsoleMessage = null,
+        Dictionary<string, string> ServerEnvironment = null,
+        Action<IPage> OnPageLoaded = null,
+        Action<IPage, IConsoleMessage> OnConsoleMessage = null,
         Action<string> OnServerMessage = null,
         int? ExpectedExitCode = 0
     );

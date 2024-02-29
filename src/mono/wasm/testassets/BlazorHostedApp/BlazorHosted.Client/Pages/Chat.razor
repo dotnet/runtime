@@ -89,7 +89,7 @@
         await DisposeHubConnection();
         Helper.TestOutputWriteLine($"Exit signal was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         // exit the client
-        await JSRuntime.InvokeVoidAsync("eval", "import { dotnet, exit } from './_framework/dotnet.js'; exit(0);");
+        await JSRuntime.InvokeVoidAsync("eval", "import('./dotnet.js').then(module => { module.dotnet; module.exit(0); });");
     }
 
     private async Task DisposeHubConnection()

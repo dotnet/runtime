@@ -111,7 +111,8 @@ internal class BrowserRunner : IAsyncDisposable
         ToolCommand cmd,
         string args,
         bool headless = true,
-        Action<IConsoleMessage>? onConsoleMessage = null,
+        Action<IPage, IConsoleMessage>? onConsoleMessage = null,
+        Action<IPage>? onPageLoaded = null,
         Action<string>? onServerMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
@@ -119,14 +120,15 @@ internal class BrowserRunner : IAsyncDisposable
         var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();
-        return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+        return await RunAsync(context, urlString, headless, onPageLoaded, onConsoleMessage, onError, modifyBrowserUrl);
     }
 
     public async Task<IPage> RunAsync(
         IBrowserContext context,
         string browserUrl,
         bool headless = true,
-        Action<IConsoleMessage>? onConsoleMessage = null,
+        Action<IPage>? onPageLoaded = null,
+        Action<IPage, IConsoleMessage>? onConsoleMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null,
         bool resetExitedState = false
@@ -138,8 +140,11 @@ internal class BrowserRunner : IAsyncDisposable
             browserUrl = modifyBrowserUrl(browserUrl);
 
         IPage page = await context.NewPageAsync();
+        if (onPageLoaded is not null)
+            page.Load += (_, _) => onPageLoaded(page);
+
         if (onConsoleMessage is not null)
-            page.Console += (_, msg) => onConsoleMessage(msg);
+            page.Console += (_, msg) => onConsoleMessage(page, msg);
 
         onError ??= _testOutput.WriteLine;
         if (onError is not null)
