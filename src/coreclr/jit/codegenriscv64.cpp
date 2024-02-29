@@ -8012,7 +8012,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         }
         else
         {
-            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, &ignoreInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
+                                      /* reportUnwindData */ true);
         }
     }
 
