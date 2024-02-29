@@ -293,15 +293,15 @@ namespace Mono.Linker
 				MethodDefinition? baseMethod = context.TryResolve (baseMethodRef);
 				if (baseMethod == null)
 					continue;
-				if (!baseMethod.DeclaringType.IsInterface)
-				{
-					AnnotateMethods (baseMethod, method);
-				}
-				else
+				if (baseMethod.DeclaringType.IsInterface)
 				{
 					var implr = GetInterfaceImplementor(method.DeclaringType, baseMethod.DeclaringType);
 					Debug.Assert(implr != null);
 					AnnotateMethods (baseMethod, method, implr);
+				}
+				else
+				{
+					AnnotateMethods (baseMethod, method);
 				}
 			}
 		}
@@ -405,6 +405,12 @@ namespace Mono.Linker
 						break;
 					}
 				}
+
+				// // We haven't found a MethodImpl on the current interface, but one of the interfaces
+				// // this interface requires could still provide it.
+				// if (!foundImpl) {
+				// FindAndAddDefaultInterfaceImplementations (typeThatImplementsInterface, potentialImplInterface, interfaceMethodToBeImplemented, originalInterfaceImpl);
+				// }
 			}
 			// Debug.Assert(foundImpl);
 		}

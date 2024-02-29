@@ -2568,7 +2568,7 @@ namespace Mono.Linker.Steps
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
-			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
+			InterfaceImplementation? iface = overrideInformation.InterfaceImplementor.InterfaceImplementation;
 			if (!((iface is not null && Annotations.IsMarked (iface))
 				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
 				return false;
