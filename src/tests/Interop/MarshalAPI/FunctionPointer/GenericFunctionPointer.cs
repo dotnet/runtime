@@ -49,7 +49,7 @@ public partial class FunctionPtr
 
         internal static unsafe void NonGenericCalli<U>(void* fnptr, ref int val, float arg)
         {
-            ((delegate* unmanaged<float, ref int, void>)fnptr)(ref val, arg);
+            ((delegate* unmanaged<ref int, float, void>)fnptr)(ref val, arg);
         }
     }
 
