@@ -1744,7 +1744,13 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     return opr1;
 }
 
-void CleanIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
+//-----------------------------------------------------------------------------
+// ReinitIntBoolOpDsc:   Procedure that reinitialize IntBoolOpDsc reference
+//
+// Arguments:
+//      intBoolOpDsc    the reference for INT OR operations to be folded
+//
+void ReinitIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
 {
     if (intBoolOpDsc == nullptr)
     {
@@ -1771,6 +1777,17 @@ void CleanIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
     intBoolOpDsc->lclVarArrLength = 0;
 }
 
+//-----------------------------------------------------------------------------
+// GetNextIntBoolOpToOptimize:   Function used for searching constant INT OR operation that can be folded
+//
+// Arguments:
+//      b3    the tree to inspect
+//
+// Return:
+//      On success, return the start and end offset of code to optimize and the variables and constants to be folded.
+//
+// Notes:
+//      We look for consecutive blocks that have GT_OR, GT_LCL_VAR, GT_CNS_INT nodes.
 IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
 {
     if (b3 == nullptr)
@@ -1805,7 +1822,7 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
             }
             else
             {
-                CleanIntBoolOpDsc(intBoolOpDsc);
+                ReinitIntBoolOpDsc(intBoolOpDsc);
                 b4 = b4->gtPrev;
                 orOpCount = 0;
                 continue;
@@ -1829,7 +1846,7 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
                         return intBoolOpDsc;
                     }
 
-                    CleanIntBoolOpDsc(intBoolOpDsc);
+                    ReinitIntBoolOpDsc(intBoolOpDsc);
                     break;
                 }
 
@@ -1858,7 +1875,7 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
                         return intBoolOpDsc;
                     }
 
-                    CleanIntBoolOpDsc(intBoolOpDsc);
+                    ReinitIntBoolOpDsc(intBoolOpDsc);
                     break;
                 }
 
@@ -1900,6 +1917,15 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
     return intBoolOpDsc;
 }
 
+//-----------------------------------------------------------------------------
+// OptimizeIntBoolOp:   Procedure that fold constant INT OR operations
+//
+// Arguments:
+//      compiler        compiler reference
+//      intBoolOpDsc    the reference for INT OR operations to be folded
+//
+// Notes:
+//      We recreate nodes so as to eliminate excessive constants
 void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc* intBoolOpDsc)
 {
     GenTreeOp* intVarTree = compiler->gtNewOperNode(GT_OR, TYP_INT,
@@ -1987,6 +2013,15 @@ void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc* intBoolOpDsc)
     }
 }
 
+//-----------------------------------------------------------------------------
+// OptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and fold them
+//
+// Arguments:
+//      compiler        compiler reference
+//      b1              the block code to inspect for operations to fold
+//
+// Return:
+//      1 if a block was folded, 0 if not
 unsigned int TryOptimizeIntBoolOp(Compiler* compiler, BasicBlock* b1)
 {
     unsigned int result = 0;
@@ -2016,7 +2051,7 @@ unsigned int TryOptimizeIntBoolOp(Compiler* compiler, BasicBlock* b1)
                 result++;
             }
 
-            CleanIntBoolOpDsc(intBoolOpDsc);
+            ReinitIntBoolOpDsc(intBoolOpDsc);
             free(intBoolOpDsc);
         }
     }
