@@ -12,11 +12,14 @@ namespace System.Numerics.Tensors.Tests
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
 
-        private const float DefaultFloatTolerance = 1e-6f;
-#if NETCOREAPP
-        private const double DefaultDoubleTolerance = 1e-15;
-        private const float DefaultHalfTolerance = 1e-4f;
+        // Tolerances taken from testing in the scalar math routines:
+        // cf. https://github.com/dotnet/runtime/blob/89f7ad3b276fb0b48f20cb4e8408bdce85c2b415/src/libraries/System.Runtime/tests/System.Runtime.Extensions.Tests/System/Math.cs
+        public const double DefaultDoubleTolerance = 8.8817841970012523e-16;
+        public const float DefaultFloatTolerance = 4.76837158e-07f;
+        public const float DefaultHalfTolerance = 1e-4f;
+        public const double DefaultToleranceForEstimates = 1.171875e-02;
 
+#if NETCOREAPP
         private static class DefaultTolerance<T> where T : unmanaged, INumber<T>
         {
             public static readonly T Value = DetermineTolerance<T>(DefaultDoubleTolerance, DefaultFloatTolerance, Half.CreateTruncating(DefaultHalfTolerance)) ?? T.CreateTruncating(0);

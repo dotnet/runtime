@@ -3170,7 +3170,7 @@ namespace System.Numerics.Tensors.Tests
         public void SumOfMagnitudes_AllLengths()
         {
             // TODO https://github.com/dotnet/runtime/issues/98861
-            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12);
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-6f);
 
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -3192,7 +3192,7 @@ namespace System.Numerics.Tensors.Tests
         public void SumOfSquares_AllLengths()
         {
             // TODO https://github.com/dotnet/runtime/issues/98861
-            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12);
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-6f);
 
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
