@@ -134,7 +134,7 @@ void Compiler::fgDebugCheckUpdate()
 
         // Check for an unnecessary jumps to the next block.
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
-        if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
+        if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
         {
             noway_assert(!"Unnecessary jump to the next block!");
         }

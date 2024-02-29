@@ -216,8 +216,18 @@ namespace ILCompiler
                 MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetOrdinalInterface");
                 MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetCurrentSharedThunkContext");
 
+                bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
+
                 // Load "this"
                 codeStream.EmitLdArg(0);
+
+                if (isX86)
+                {
+                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                    {
+                        codeStream.EmitLdArg(i + 1);
+                    }
+                }
 
                 // Load the instantiating argument.
                 if (_interfaceIndex == UseContextFromRuntime)
@@ -232,10 +242,13 @@ namespace ILCompiler
                     codeStream.Emit(ILOpcode.call, emit.NewToken(getOrdinalInterfaceMethod));
                 }
 
-                // Load rest of the arguments
-                for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                if (!isX86)
                 {
-                    codeStream.EmitLdArg(i + 1);
+                    // Load rest of the arguments
+                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                    {
+                        codeStream.EmitLdArg(i + 1);
+                    }
                 }
 
                 // Call an instance method on the target interface that has a fake instantiation parameter
@@ -292,9 +305,18 @@ namespace ILCompiler
 
                         // Shared instance methods on generic interfaces have a hidden parameter with the generic context.
                         // We add it to the signature so that we can refer to it from IL.
-                        parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
-                        for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                            parameters[i + 1] = _methodRepresented.Signature[i];
+                        if (Context.Target.Architecture == TargetArchitecture.X86)
+                        {
+                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                                parameters[i] = _methodRepresented.Signature[i];
+                            parameters[_methodRepresented.Signature.Length] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                        }
+                        else
+                        {
+                            parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
+                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                                parameters[i + 1] = _methodRepresented.Signature[i];
+                        }
 
                         _signature = new MethodSignature(_methodRepresented.Signature.Flags,
                             _methodRepresented.Signature.GenericParameterCount,

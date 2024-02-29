@@ -33,15 +33,15 @@ namespace System.Linq
                     return [];
                 }
 
-                return new WhereArrayIterator<TSource>(array, predicate);
+                return new ArrayWhereIterator<TSource>(array, predicate);
             }
 
             if (source is List<TSource> list)
             {
-                return new WhereListIterator<TSource>(list, predicate);
+                return new ListWhereIterator<TSource>(list, predicate);
             }
 
-            return new WhereEnumerableIterator<TSource>(source, predicate);
+            return new IEnumerableWhereIterator<TSource>(source, predicate);
         }
 
         public static IEnumerable<TSource> Where<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
@@ -85,13 +85,13 @@ namespace System.Linq
         /// An iterator that filters each item of an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private sealed partial class WhereEnumerableIterator<TSource> : Iterator<TSource>
+        private sealed partial class IEnumerableWhereIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
             private IEnumerator<TSource>? _enumerator;
 
-            public WhereEnumerableIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate)
+            public IEnumerableWhereIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(predicate != null);
@@ -99,7 +99,7 @@ namespace System.Linq
                 _predicate = predicate;
             }
 
-            public override Iterator<TSource> Clone() => new WhereEnumerableIterator<TSource>(_source, _predicate);
+            public override Iterator<TSource> Clone() => new IEnumerableWhereIterator<TSource>(_source, _predicate);
 
             public override void Dispose()
             {
@@ -140,22 +140,22 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-                new WhereSelectEnumerableIterator<TSource, TResult>(_source, _predicate, selector);
+                new IEnumerableWhereSelectIterator<TSource, TResult>(_source, _predicate, selector);
 
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
-                new WhereEnumerableIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
+                new IEnumerableWhereIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
         }
 
         /// <summary>
         /// An iterator that filters each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
-        internal sealed partial class WhereArrayIterator<TSource> : Iterator<TSource>
+        internal sealed partial class ArrayWhereIterator<TSource> : Iterator<TSource>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
 
-            public WhereArrayIterator(TSource[] source, Func<TSource, bool> predicate)
+            public ArrayWhereIterator(TSource[] source, Func<TSource, bool> predicate)
             {
                 Debug.Assert(source != null && source.Length > 0);
                 Debug.Assert(predicate != null);
@@ -164,7 +164,7 @@ namespace System.Linq
             }
 
             public override Iterator<TSource> Clone() =>
-                new WhereArrayIterator<TSource>(_source, _predicate);
+                new ArrayWhereIterator<TSource>(_source, _predicate);
 
             public override bool MoveNext()
             {
@@ -187,23 +187,23 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-                new WhereSelectArrayIterator<TSource, TResult>(_source, _predicate, selector);
+                new ArrayWhereSelectIterator<TSource, TResult>(_source, _predicate, selector);
 
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
-                new WhereArrayIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
+                new ArrayWhereIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
         }
 
         /// <summary>
         /// An iterator that filters each item of a <see cref="List{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
-        private sealed partial class WhereListIterator<TSource> : Iterator<TSource>
+        private sealed partial class ListWhereIterator<TSource> : Iterator<TSource>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
             private List<TSource>.Enumerator _enumerator;
 
-            public WhereListIterator(List<TSource> source, Func<TSource, bool> predicate)
+            public ListWhereIterator(List<TSource> source, Func<TSource, bool> predicate)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(predicate != null);
@@ -212,7 +212,7 @@ namespace System.Linq
             }
 
             public override Iterator<TSource> Clone() =>
-                new WhereListIterator<TSource>(_source, _predicate);
+                new ListWhereIterator<TSource>(_source, _predicate);
 
             public override bool MoveNext()
             {
@@ -241,10 +241,10 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-                new WhereSelectListIterator<TSource, TResult>(_source, _predicate, selector);
+                new ListWhereSelectIterator<TSource, TResult>(_source, _predicate, selector);
 
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
-                new WhereListIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
+                new ListWhereIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
         }
 
         /// <summary>
@@ -252,13 +252,13 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed partial class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class ArrayWhereSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
             private readonly Func<TSource, TResult> _selector;
 
-            public WhereSelectArrayIterator(TSource[] source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
+            public ArrayWhereSelectIterator(TSource[] source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
                 Debug.Assert(source != null && source.Length > 0);
                 Debug.Assert(predicate != null);
@@ -269,7 +269,7 @@ namespace System.Linq
             }
 
             public override Iterator<TResult> Clone() =>
-                new WhereSelectArrayIterator<TSource, TResult>(_source, _predicate, _selector);
+                new ArrayWhereSelectIterator<TSource, TResult>(_source, _predicate, _selector);
 
             public override bool MoveNext()
             {
@@ -292,7 +292,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new WhereSelectArrayIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
+                new ArrayWhereSelectIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
         }
 
         /// <summary>
@@ -300,14 +300,14 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed partial class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class ListWhereSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
             private readonly Func<TSource, TResult> _selector;
             private List<TSource>.Enumerator _enumerator;
 
-            public WhereSelectListIterator(List<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
+            public ListWhereSelectIterator(List<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(predicate != null);
@@ -318,7 +318,7 @@ namespace System.Linq
             }
 
             public override Iterator<TResult> Clone() =>
-                new WhereSelectListIterator<TSource, TResult>(_source, _predicate, _selector);
+                new ListWhereSelectIterator<TSource, TResult>(_source, _predicate, _selector);
 
             public override bool MoveNext()
             {
@@ -347,7 +347,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new WhereSelectListIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
+                new ListWhereSelectIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
         }
 
         /// <summary>
@@ -355,14 +355,14 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed partial class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class IEnumerableWhereSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
             private readonly Func<TSource, TResult> _selector;
             private IEnumerator<TSource>? _enumerator;
 
-            public WhereSelectEnumerableIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
+            public IEnumerableWhereSelectIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(predicate != null);
@@ -373,7 +373,7 @@ namespace System.Linq
             }
 
             public override Iterator<TResult> Clone() =>
-                new WhereSelectEnumerableIterator<TSource, TResult>(_source, _predicate, _selector);
+                new IEnumerableWhereSelectIterator<TSource, TResult>(_source, _predicate, _selector);
 
             public override void Dispose()
             {
@@ -414,7 +414,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new WhereSelectEnumerableIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
+                new IEnumerableWhereSelectIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
         }
     }
 }

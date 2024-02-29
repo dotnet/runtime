@@ -51,7 +51,7 @@ void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
-void emitDispSveExtendOptsModN(insOpts opt, int n);
+void emitDispSveExtendOptsModN(insOpts opt, ssize_t imm);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
 void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
@@ -544,6 +544,9 @@ static code_t insEncodeSveElemsize_30_or_21(insFormat fmt, emitAttr size);
 // Returns the encoding for the field 'i1:tszh:tszl' at bit locations '23-22:20-18'.
 static code_t insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ssize_t imm);
 
+// Returns the encoding for the field 'tszh:tszl:imm3' at bit locations '23-22:20-19:18-16'.
+static code_t insEncodeSveElemsizeWithShift_tszh_tszl_imm3(const insOpts opt, ssize_t imm, bool isRightShift);
+
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
 static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
@@ -621,6 +624,9 @@ static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 6-bits at bit locations '10-5'.
+static code_t insEncodeSimm6_10_to_5(ssize_t imm);
+
 // Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
 static code_t insEncodeSimm6_21_to_16(ssize_t imm);
 
@@ -644,6 +650,15 @@ static code_t insEncodeUimm2_11_to_10(ssize_t imm);
 
 // Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
 static code_t insEncodeUimm2_20_to_19(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '23-22'.
+static code_t insEncodeUimm2_23_to_22(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1-bit at bit locations '23'.
+static code_t insEncodeUimm1_23(ssize_t imm);
+
+// Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
+static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
 
 // Returns the encoding for the immediate value as 1 bit at bit location '10'.
 static code_t insEncodeImm1_10(ssize_t imm);
@@ -1438,23 +1453,24 @@ void emitIns_R_R_R(instruction     ins,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
-void emitIns_R_R_R_I(instruction ins,
-                     emitAttr    attr,
-                     regNumber   reg1,
-                     regNumber   reg2,
-                     regNumber   reg3,
-                     ssize_t     imm,
-                     insOpts     opt      = INS_OPTS_NONE,
-                     emitAttr    attrReg2 = EA_UNKNOWN);
+void emitIns_R_R_R_I(instruction     ins,
+                     emitAttr        attr,
+                     regNumber       reg1,
+                     regNumber       reg2,
+                     regNumber       reg3,
+                     ssize_t         imm,
+                     insOpts         opt      = INS_OPTS_NONE,
+                     emitAttr        attrReg2 = EA_UNKNOWN,
+                     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE);
 
-void emitInsSve_R_R_R_I(instruction ins,
-                        emitAttr    attr,
-                        regNumber   reg1,
-                        regNumber   reg2,
-                        regNumber   reg3,
-                        ssize_t     imm,
-                        insOpts     opt      = INS_OPTS_NONE,
-                        emitAttr    attrReg2 = EA_UNKNOWN);
+void emitInsSve_R_R_R_I(instruction     ins,
+                        emitAttr        attr,
+                        regNumber       reg1,
+                        regNumber       reg2,
+                        regNumber       reg3,
+                        ssize_t         imm,
+                        insOpts         opt  = INS_OPTS_NONE,
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I_I(instruction ins,
                        emitAttr    attr,

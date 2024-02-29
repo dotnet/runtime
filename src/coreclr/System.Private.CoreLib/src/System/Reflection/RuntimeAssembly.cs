@@ -645,27 +645,29 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(culture);
 
-            return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
+            return InternalGetSatelliteAssembly(this, culture, version, throwOnFileNotFound: true)!;
         }
 
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture,
+        internal static Assembly? InternalGetSatelliteAssembly(Assembly assembly,
+                                                       CultureInfo culture,
                                                        Version? version,
                                                        bool throwOnFileNotFound)
         {
             var an = new AssemblyName();
-            an.SetPublicKey(GetPublicKey());
-            an.Flags = GetFlags() | AssemblyNameFlags.PublicKey;
-            an.Version = version ?? GetVersion();
+            RuntimeAssembly runtimeAssembly = (RuntimeAssembly)assembly;
+            an.SetPublicKey(runtimeAssembly.GetPublicKey());
+            an.Flags = runtimeAssembly.GetFlags() | AssemblyNameFlags.PublicKey;
+            an.Version = version ?? runtimeAssembly.GetVersion();
             an.CultureInfo = culture;
-            an.Name = GetSimpleName() + ".resources";
+            an.Name = runtimeAssembly.GetSimpleName() + ".resources";
 
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly? retAssembly = InternalLoad(an, ref unused, requestingAssembly: this, throwOnFileNotFound: throwOnFileNotFound);
+            RuntimeAssembly? retAssembly = InternalLoad(an, ref unused, requestingAssembly: runtimeAssembly, throwOnFileNotFound: throwOnFileNotFound);
 
-            if (retAssembly == this)
+            if (retAssembly == runtimeAssembly)
             {
                 retAssembly = null;
             }

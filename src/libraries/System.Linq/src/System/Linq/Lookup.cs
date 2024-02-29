@@ -76,7 +76,7 @@ namespace System.Linq
     {
         private readonly IEqualityComparer<TKey> _comparer;
         private Grouping<TKey, TElement>[] _groupings;
-        private protected Grouping<TKey, TElement>? _lastGrouping;
+        internal Grouping<TKey, TElement>? _lastGrouping;
         private int _count;
 
         internal static Lookup<TKey, TElement> Create<TSource>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
