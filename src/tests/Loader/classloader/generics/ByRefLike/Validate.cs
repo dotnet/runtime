@@ -28,7 +28,6 @@ public class Validate
     }
 
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void Validate_Casting_Scenarios()
     {
         Console.WriteLine($"{nameof(Validate_Casting_Scenarios)}...");
@@ -72,7 +71,6 @@ public class Validate
     }
 
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void Validate_Inlining_Behavior()
     {
         Console.WriteLine($"{nameof(Validate_Inlining_Behavior)}...");

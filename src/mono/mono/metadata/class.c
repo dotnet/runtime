@@ -640,7 +640,6 @@ mono_type_is_valid_generic_argument (MonoType *type)
 {
 	switch (type->type) {
 	case MONO_TYPE_VOID:
-	case MONO_TYPE_TYPEDBYREF:
 		return FALSE;
 	default:
 		return TRUE;
