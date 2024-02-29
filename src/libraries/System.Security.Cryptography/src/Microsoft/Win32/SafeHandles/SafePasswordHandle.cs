@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -35,8 +36,8 @@ namespace Microsoft.Win32.SafeHandles
         public SafePasswordHandle(ReadOnlySpan<char> password, bool passwordProvided)
             : base(ownsHandle: true)
         {
-            // "".AsSpan() is not default, so this is compat for "null tries NULL first".
-            if (password != default)
+            // "".AsSpan() is not null ref, so this is compat for "null tries NULL first".
+            if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(password)))
             {
                 int spanLen;
 
