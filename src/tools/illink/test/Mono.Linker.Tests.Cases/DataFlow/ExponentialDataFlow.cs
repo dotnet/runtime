@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL2090", "'T'")]
 			public static void Test<T> ()
 			{
