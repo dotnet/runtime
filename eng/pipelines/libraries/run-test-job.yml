@@ -114,61 +114,61 @@ jobs:
             env:
               Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
-        - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
-          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
-            displayName: Install Build Dependencies
+      - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+        - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+          displayName: Install Build Dependencies
 
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-            artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
-            artifactName: '${{ parameters.unifiedArtifactsName }}'
-            displayName: 'unified artifacts'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+          artifactName: '${{ parameters.unifiedArtifactsName }}'
+          displayName: 'unified artifacts'
 
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            displayName: Test Assets
-            artifactName: ${{ parameters.helixArtifactsName }}
-            artifactFileName: '${{ parameters.helixArtifactsName }}$(archiveExtension)'
-            unpackFolder: $(Build.SourcesDirectory)/artifacts/helix
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          displayName: Test Assets
+          artifactName: ${{ parameters.helixArtifactsName }}
+          artifactFileName: '${{ parameters.helixArtifactsName }}$(archiveExtension)'
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/helix
 
-        - template: /eng/pipelines/libraries/helix.yml
+      - template: /eng/pipelines/libraries/helix.yml
+        parameters:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          osGroup: ${{ parameters.osGroup }}
+          targetRid: ${{ parameters.targetRid }}
+          archType: ${{ parameters.archType }}
+          buildConfig: ${{ parameters.buildConfig }}
+          helixQueues: ${{ parameters.helixQueues }}
+          testScope: ${{ parameters.testScope }}
+          interpreter: ${{ parameters.interpreter }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+          creator: dotnet-bot
+          ${{ if eq(parameters.interpreter, 'true') }}:
+            testRunNamePrefixSuffix: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
+          ${{ else }}:
+            testRunNamePrefixSuffix: ${{ parameters.runtimeDisplayName }}_${{ parameters.liveRuntimeBuildConfig }}
+          SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+          SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
+          SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
+          
+          ${{ if ne(parameters.scenarios[0], '') }}:
+            scenarios: ${{ parameters.scenarios }}
+
+      - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+        - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml
           parameters:
-            runtimeFlavor: ${{ parameters.runtimeFlavor }}
-            osGroup: ${{ parameters.osGroup }}
-            targetRid: ${{ parameters.targetRid }}
-            archType: ${{ parameters.archType }}
             buildConfig: ${{ parameters.buildConfig }}
-            helixQueues: ${{ parameters.helixQueues }}
-            testScope: ${{ parameters.testScope }}
-            interpreter: ${{ parameters.interpreter }}
-            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-            creator: dotnet-bot
-            ${{ if eq(parameters.interpreter, 'true') }}:
-              testRunNamePrefixSuffix: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
-            ${{ else }}:
-              testRunNamePrefixSuffix: ${{ parameters.runtimeDisplayName }}_${{ parameters.liveRuntimeBuildConfig }}
-            SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+            buildConfigUpper: $(buildConfigUpper)
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            archType: ${{ parameters.archType }}
             SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
             SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-            
-            ${{ if ne(parameters.scenarios[0], '') }}:
-              scenarios: ${{ parameters.scenarios }}
-
-        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
-          - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml
-            parameters:
-              buildConfig: ${{ parameters.buildConfig }}
-              buildConfigUpper: $(buildConfigUpper)
-              osGroup: ${{ parameters.osGroup }}
-              osSubgroup: ${{ parameters.osSubgroup }}
-              archType: ${{ parameters.archType }}
-              SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
-              SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-              MergedMchFileLocation: $(MergedMchFileLocation)
-              MchFilesLocation: $(MchFilesLocation)
-              SpmiLogsLocation: $(SpmiLogsLocation)
-              SuperPmiMcsPath: $(SuperPmiMcsPath)
-              PythonSetupScript: $(PythonSetupScript)
-              PythonScript: $(PythonScript)
-              PipScript: $(PipScript)
+            MergedMchFileLocation: $(MergedMchFileLocation)
+            MchFilesLocation: $(MchFilesLocation)
+            SpmiLogsLocation: $(SpmiLogsLocation)
+            SuperPmiMcsPath: $(SuperPmiMcsPath)
+            PythonSetupScript: $(PythonSetupScript)
+            PythonScript: $(PythonScript)
+            PipScript: $(PipScript)
