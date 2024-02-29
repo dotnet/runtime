@@ -3041,12 +3041,12 @@ retry_instruction:
 						interp_dump_ins (ins, td->data_items);
 					}
 				}
-			} else if (opcode == MINT_INITOBJ) {
+			} else if (opcode == MINT_ZEROBLK_IMM) {
 				InterpInst *ldloca = get_var_value_def (td, sregs [0]);
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int size = ins->data [0];
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + INITOBJ with or LDC
+					// Replace LDLOCA + ZEROBLK_IMM with or LDC
 					if (size <= 4)
 						ins->opcode = MINT_LDC_I4_0;
 					else if (size <= 8)
@@ -3057,7 +3057,7 @@ retry_instruction:
 					ins->dreg = local;
 
 					if (td->verbose_level) {
-						g_print ("Replace ldloca/initobj pair :\n\t");
+						g_print ("Replace ldloca/zeroblk pair :\n\t");
 						interp_dump_ins (ins, td->data_items);
 					}
 				}
