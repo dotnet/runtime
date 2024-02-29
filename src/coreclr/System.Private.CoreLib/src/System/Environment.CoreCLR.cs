@@ -35,8 +35,7 @@ namespace System
         }
 
         // Note: The CLR's Watson bucketization code looks at the caller of the QCALL method
-        // to assign blame for crashes.  Don't mess with this, such as by making it call
-        // another managed helper method, unless you consult with some CLR Watson experts.
+        // to assign blame for crashes.
         [DoesNotReturn]
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static void FailFast(string? message)
