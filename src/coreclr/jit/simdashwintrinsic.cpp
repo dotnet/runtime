@@ -516,12 +516,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case NI_VectorT_ConvertToDouble:
         {
+#ifdef TARGET_AMD64
             if ((varTypeIsLong(simdBaseType) && IsBaselineVector512IsaSupportedOpportunistically()) ||
                 (simdBaseType == TYP_FLOAT && ((simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
                                                (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically()))))
             {
                 break;
             }
+#endif // TARGET_AMD64
             return nullptr;
         }
 
@@ -530,21 +532,25 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT_ConvertToUInt32:
         case NI_VectorT_ConvertToUInt64:
         {
+#ifdef TARGET_AMD64
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 break;
             }
+#endif // TARGET_AMD64
             return nullptr;
         }
 
         case NI_VectorT_ConvertToSingle:
         {
+#ifdef TARGET_AMD64
             if ((simdBaseType == TYP_INT && ((simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
                                              (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically()))) ||
                 (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically()))
             {
                 break;
             }
+#endif // TARGET_AMD64
             return nullptr;
         }
 #endif // TARGET_XARCH
