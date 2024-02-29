@@ -16,5 +16,3 @@ variables:
     value: '$(Build.SourcesDirectory)/venv/bin/python3'
   - name: PipScript
     value: '$(Build.SourcesDirectory)/venv/bin/pip3'
-
-- ${{ parameters.variables }}
