@@ -60,7 +60,7 @@ extends:
                   archiveType: $(archiveType)
                   tarCompression: $(tarCompression)
                   archiveExtension: $(archiveExtension)
-                  artifactName: CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)
+                  artifactName: CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)
                   displayName: JIT and SuperPMI Assets
             condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
@@ -82,7 +82,7 @@ extends:
                   archiveType: $(archiveType)
                   tarCompression: $(tarCompression)
                   archiveExtension: $(archiveExtension)
-                  artifactName: ReleaseJIT_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: JIT and SuperPMI Assets
             condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 

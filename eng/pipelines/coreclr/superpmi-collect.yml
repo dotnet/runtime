@@ -52,7 +52,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/helix
@@ -60,7 +60,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/coreclr/templates/native-test-assets-variables.yml
                 parameters:
@@ -92,7 +92,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/helix
@@ -100,7 +100,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/coreclr/templates/native-test-assets-variables.yml
                 parameters:
@@ -132,7 +132,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/helix
@@ -140,7 +140,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/coreclr/templates/native-test-assets-variables.yml
                 parameters:
@@ -297,7 +297,7 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             SuperPmiCollect: true
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -343,8 +343,8 @@ extends:
             - normal
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       #
       # Collection of libraries test run: no_tiered_compilation
@@ -373,5 +373,5 @@ extends:
             - no_tiered_compilation
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)

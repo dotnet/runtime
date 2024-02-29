@@ -129,7 +129,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -154,7 +154,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -185,7 +185,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -194,7 +194,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
@@ -226,7 +226,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
@@ -257,7 +257,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -266,7 +266,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -291,7 +291,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
@@ -323,7 +323,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
@@ -356,7 +356,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -365,7 +365,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1340,7 +1340,7 @@ extends:
           jobParameters:
             liveRuntimeBuildConfig: release
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_Release
+            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
             unifiedBuildConfigOverride: release
             unifiedBuildNameSuffix: CoreCLR_Libraries
             condition:
@@ -1362,7 +1362,7 @@ extends:
           jobParameters:
             liveRuntimeBuildConfig: release
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             unifiedBuildNameSuffix: CoreCLR_Libraries
             condition:
@@ -1553,7 +1553,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: CoreClr_ReleaseLibraries
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
@@ -1576,7 +1576,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
@@ -1596,7 +1596,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
@@ -1619,8 +1619,8 @@ extends:
             isOfficialBuild: false
             testScope: innerloop
             liveRuntimeBuildConfig: release
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: CoreCLR_Libraries
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
@@ -1646,8 +1646,8 @@ extends:
             isOfficialBuild: false
             testScope: innerloop
             liveRuntimeBuildConfig: release
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: CoreCLR_Libraries
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
@@ -1686,8 +1686,8 @@ extends:
           jobParameters:
             testScope: innerloop
             liveRuntimeBuildConfig: checked
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             condition: >-
               or(
@@ -1712,8 +1712,8 @@ extends:
           jobParameters:
             testScope: innerloop
             liveRuntimeBuildConfig: checked
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_checked
-            helixArtifactsName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_checked
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_checked
+            helixArtifactsName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_checked
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             unifiedBuildConfigOverride: checked
             condition: >-
@@ -1732,8 +1732,8 @@ extends:
           jobParameters:
             testScope: innerloop
             liveRuntimeBuildConfig: checked
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             condition: >-
               or(

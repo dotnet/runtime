@@ -179,8 +179,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-          artifactFileName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)'
-          artifactName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr'
+          artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)'
+          artifactName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr'
           displayName: 'Runtime artifacts'
 
       - template: /eng/pipelines/common/download-artifact-step.yml
@@ -196,8 +196,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-          artifactFileName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_${{ parameters.runtimeType }}$(archiveExtension)'
-          artifactName: 'BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_${{ parameters.runtimeType }}'
+          artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_${{ parameters.runtimeType }}$(archiveExtension)'
+          artifactName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_${{ parameters.runtimeType }}'
           displayName: 'Runtime artifacts'
 
     - ${{ elseif eq(parameters.runtimeType, 'AndroidMono')}}:

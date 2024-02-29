@@ -24,7 +24,7 @@ jobs:
             archiveType: $(archiveType)
             archiveExtension: $(archiveExtension)
             tarCompression: $(tarCompression)
-            artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
             displayName: Build Assets
 
   # build mono for AOT
@@ -93,7 +93,7 @@ jobs:
             archiveType: $(archiveType)
             archiveExtension: $(archiveExtension)
             tarCompression: $(tarCompression)
-            artifactName: BuildArtifacts_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
             displayName: Build Assets
 
   # Build and run iOS Mono and NativeAOT scenarios

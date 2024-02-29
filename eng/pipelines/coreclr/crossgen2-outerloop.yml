@@ -42,7 +42,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Checked_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
@@ -77,7 +77,7 @@ extends:
             compositeBuildMode: true
             displayNameArgs: R2R_Composite
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       # Outerloop testing in non-composite mode
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -99,7 +99,7 @@ extends:
             readyToRun: true
             displayNameArgs: R2R
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       # Build release CoreCLR for Crossgen2 baseline generation
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -125,7 +125,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: Release_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
 
       # Build Crossgen2 baselines

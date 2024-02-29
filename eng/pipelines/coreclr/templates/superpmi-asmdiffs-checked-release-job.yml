@@ -39,8 +39,8 @@ jobs:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-        artifactFileName: 'CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)$(archiveExtension)'
-        artifactName: 'CheckedJIT_$(osGroup)_$(osSubgroup)_$(archType)'
+        artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
         displayName: 'JIT checked build'
         cleanupUnpackFolder: false
 
@@ -48,7 +48,7 @@ jobs:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-        artifactFileName: 'ReleaseJIT_$(osGroup)_$(osSubgroup)_$(archType)$(archiveExtension)'
-        artifactName: 'ReleaseJIT_$(osGroup)_$(osSubgroup)_$(archType)'
+        artifactFileName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)'
         displayName: 'JIT release build'
         cleanupUnpackFolder: false

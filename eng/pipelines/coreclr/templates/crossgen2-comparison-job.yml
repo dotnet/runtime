@@ -91,8 +91,8 @@ jobs:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-        artifactFileName: 'Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
-        artifactName: 'Release_CoreCLR_$(osGroup)_$(osSubgroup)_$(archType)_$(_BuildConfig)'
+        artifactFileName: 'Release_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+        artifactName: 'Release_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)'
         displayName: 'product build'
 
     # Populate Core_Root
