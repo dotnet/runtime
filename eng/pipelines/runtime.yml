@@ -329,8 +329,8 @@ extends:
           - windows_arm64
           - windows_x86
           jobParameters:
-            nameSuffix: CoreClr_ReleaseLibraries
-            buildArgs: -s clr+libs -c $(_BuildConfig) -rc Checked
+            nameSuffix: CoreCLR_ReleaseLibraries
+            buildArgs: -s clr+libs -rc $(_BuildConfig) -c Release
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
@@ -341,7 +341,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
@@ -363,7 +363,7 @@ extends:
           - linux_musl_arm64
           - windows_x64
           jobParameters:
-            nameSuffix: CoreClr_ReleaseLibraries
+            nameSuffix: CoreCLR_ReleaseLibraries
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
@@ -374,7 +374,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -1564,8 +1564,8 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreClr_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            unifiedBuildNameSuffix: CoreClr_ReleaseLibraries
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1586,7 +1586,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
@@ -1722,8 +1722,8 @@ extends:
           jobParameters:
             testScope: innerloop
             liveRuntimeBuildConfig: checked
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_checked
-            helixArtifactsName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_checked
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+            helixArtifactsName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             unifiedBuildConfigOverride: checked
             condition: >-
