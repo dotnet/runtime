@@ -4277,10 +4277,12 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                         j++;
                     } while ((j < slots) && layout->IsGCPtr(j));
 
-                    // if more than 1, call the batch version
+                    // Use a batched version of write-barrier if there are more than 1 continuous GC slots
                     if (gcSlotCount > 1)
                     {
                         // Number of continuous GC slots is passed in R8
+                        assert((genRegMask(REG_R8) & (RBM_INT_CALLEE_TRASH)) == genRegMask(REG_R8));
+
                         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R8, gcSlotCount);
                         genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF_BATCH, 0, EA_PTRSIZE);
                         gcPtrCount -= gcSlotCount;
