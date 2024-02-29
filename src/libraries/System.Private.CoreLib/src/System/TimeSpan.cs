@@ -355,12 +355,7 @@ namespace System
                                      + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
                                      + microseconds;
 
-            if ((totalMicroseconds > MaxMicroseconds) || (totalMicroseconds < MinMicroseconds))
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
-            }
-            var ticks = (long)totalMicroseconds * TicksPerMicrosecond;
-            return TimeSpan.FromTicks(ticks);
+            return FromMicroseconds(totalMicroseconds);
         }
 
         /// <summary>
@@ -451,7 +446,24 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) => FromDays(0, milliseconds: milliseconds, microseconds: microseconds);
+        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan FromMicroseconds(Int128 microseconds)
+        {
+            if ((microseconds > MaxMicroseconds) || (microseconds < MinMicroseconds))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            long ticks = (long)microseconds * TicksPerMicrosecond;
+            return TimeSpan.FromTicks(ticks);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of

@@ -390,13 +390,6 @@ namespace System.Tests
             var actualaaa = TimeSpan.FromSeconds(1, 2, 3);
             Assert.Equal(expected, actualaaa);
         }
-        [Fact]
-        public static void FromMilliseconds_Int_Overload()
-        {
-            var expected = new TimeSpan(0, 0, 0, 0, 1, 2);
-            var actuala = TimeSpan.FromMilliseconds(1, 2);
-            Assert.Equal(expected, actuala);
-        }
 
         [Fact]
         public static void FromSeconds_Int_ShouldGiveResultWithPrecision()
@@ -635,23 +628,38 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(-1)]
-        [InlineData(maxMilliseconds)]
-        [InlineData(-maxMilliseconds)]
-        public static void FromMilliseconds_Int_Single_ShouldCreate(long milliseconds)
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(0, 1)]
+        [InlineData(-1, 0)]
+        [InlineData(0, -1)]
+        [InlineData(maxMilliseconds, 0)]
+        [InlineData(-maxMilliseconds, 0)]
+        [InlineData(0, maxMicroseconds)]
+        [InlineData(0, -maxMicroseconds)]
+        public static void FromMilliseconds_Int_ShouldCreate(long milliseconds, long microseconds)
         {
-            Assert.Equal(TimeSpan.FromDays(0, milliseconds: milliseconds), TimeSpan.FromMilliseconds(milliseconds));
+            long ticksFromMilliseconds = milliseconds * TimeSpan.TicksPerMillisecond;
+            long ticksFromMicroseconds = microseconds * TimeSpan.TicksPerMicrosecond;
+            var expected = TimeSpan.FromTicks(ticksFromMilliseconds + ticksFromMicroseconds);
+            Assert.Equal(expected, TimeSpan.FromMilliseconds(milliseconds, microseconds));
         }
         [Theory]
-        [InlineData(maxMilliseconds + 1)]
-        [InlineData(-(maxMilliseconds + 1))]
-        [InlineData(long.MaxValue)]
-        [InlineData(long.MinValue)]
-        public static void FromMilliseconds_Int_Single_ShouldOverflow(long milliseconds)
+        [InlineData(maxMilliseconds + 1, 0)]
+        [InlineData(-(maxMilliseconds + 1), 0)]
+        [InlineData(long.MaxValue, 0)]
+        [InlineData(long.MinValue, 0)]
+        [InlineData(0, maxMicroseconds + 1)]
+        [InlineData(0, -(maxMicroseconds + 1))]
+        [InlineData(0, long.MaxValue)]
+        [InlineData(0, long.MinValue)]
+        [InlineData(maxMilliseconds, 1000)]
+        [InlineData(-maxMilliseconds, -1000)]
+        [InlineData(1, maxMicroseconds)]
+        [InlineData(-1, -maxMicroseconds)]
+        public static void FromMilliseconds_Int_ShouldOverflow(long milliseconds, long microseconds)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMilliseconds(milliseconds));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMilliseconds(milliseconds, microseconds));
         }
 
         [Theory]
