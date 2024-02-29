@@ -238,7 +238,7 @@ typedef struct MonoAotOptions {
 	gboolean verbose;
 	gboolean deterministic;
 	gboolean allow_errors;
-	gboolean driver;
+	gboolean compile_in_child;
 	gboolean child;
 	char *tool_prefix;
 	char *as_prefix;
@@ -9089,7 +9089,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "wrappers-only")) {
 			opts->wrappers_only = TRUE;
 		} else if (!strcmp (arg, "compile-in-child")) {
-			opts->driver = TRUE;
+			opts->compile_in_child = TRUE;
 		} else if (!strcmp (arg, "_child")) {
 			opts->child = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
@@ -15099,8 +15099,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->llvm_eh_frame_symbol = g_strdup_printf ("%s_eh_frame", acfg->global_prefix);
 	}
 
-	if (acfg->aot_opts.driver) {
-		/* Run the compilation part in a child process */
+	if (acfg->aot_opts.compile_in_child) {
 		res = compile_assemblies_in_child (&acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
 		if (res)
 			return res;
@@ -15676,7 +15675,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		goto early_exit;
 	}
 
-	if (aot_opts.driver) {
+	if (aot_opts.compile_in_child) {
 		if (aot_opts.temp_path [0] == '\0') {
 			fprintf (stderr, "The 'compile-in-child' option requires the 'temp-path=' option.\n");
 			res = 1;
@@ -15684,7 +15683,11 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		}
 		// FIXME:
 		if (nassemblies > 1)
-			aot_opts.driver = FALSE;
+			aot_opts.compile_in_child = FALSE;
+#ifdef HOST_WIN32
+		// Need to create response files
+		aot_opts.compile_in_child = FALSE;
+#endif
 	}
 
 	if (aot_opts.dedup_include) {
