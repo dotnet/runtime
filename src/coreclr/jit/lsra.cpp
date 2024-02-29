@@ -5927,13 +5927,18 @@ void LinearScan::allocateRegisters()
                 // For a given RefTypeUpperVectorSave, there should be a matching RefTypeUpperVectorRestore
                 // If not, probably, this was an extra one we added conservatively and should not need a register.
                 RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
-                bool isExtraUpperVectorSave  = (nextRefPosition == nullptr) || (nextRefPosition->refType != RefTypeUpperVectorRestore);
+                bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
 
                 if ((lclVarInterval->physReg == REG_NA) ||
                     isExtraUpperVectorSave ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
                     allocate = false;
+
+                    if (isExtraUpperVectorSave)
+                    {
+                        currentRefPosition.skipSaveRestore = true;
+                    }                    
                 }
 #if defined(TARGET_XARCH)
                 else if (lclVarInterval->registerType == TYP_SIMD64)
@@ -7977,7 +7982,11 @@ void           LinearScan::resolveRegisters()
                             insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(),
                                                   block);
                         }
-                        localVarInterval->isPartiallySpilled = true;
+
+                        if (!currentRefPosition->IsExtraUpperVectorSave())
+                        {
+                            localVarInterval->isPartiallySpilled = true;
+                        }
                     }
                 }
                 else

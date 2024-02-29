@@ -2720,6 +2720,11 @@ public:
 #endif
 #endif // TARGET_ARM64
 
+    FORCEINLINE bool IsExtraUpperVectorSave() const
+    {
+        assert(refType == RefTypeUpperVectorSave);
+        return (nextRefPosition == nullptr) || (nextRefPosition->refType != RefTypeUpperVectorRestore);
+    }
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique
     RefPosition& operator=(const RefPosition& rp)
