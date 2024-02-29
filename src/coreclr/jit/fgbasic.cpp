@@ -2979,6 +2979,17 @@ void Compiler::fgLinkBasicBlocks()
                 curBBdesc->SetTrueEdge(trueEdge);
                 curBBdesc->SetFalseEdge(falseEdge);
 
+                if (trueEdge == falseEdge)
+                {
+                    assert(trueEdge->getDupCount() == 2);
+                    trueEdge->setLikelihood(1.0);
+                }
+                else
+                {
+                    trueEdge->setLikelihood(0.5);
+                    falseEdge->setLikelihood(0.5);
+                }
+
                 if (trueTarget->bbNum <= curBBdesc->bbNum)
                 {
                     fgMarkBackwardJump(trueTarget, curBBdesc);
@@ -3003,6 +3014,7 @@ void Compiler::fgLinkBasicBlocks()
                 // Redundantly use SetKindAndTargetEdge() instead of SetTargetEdge() just this once,
                 // so we don't break the HasInitializedTarget() invariant of SetTargetEdge().
                 FlowEdge* const newEdge = fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
+                newEdge->setLikelihood(1.0);
                 curBBdesc->SetKindAndTargetEdge(curBBdesc->GetKind(), newEdge);
 
                 if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
@@ -3029,14 +3041,17 @@ void Compiler::fgLinkBasicBlocks()
 
             case BBJ_SWITCH:
             {
-                unsigned   jumpCnt = curBBdesc->GetSwitchTargets()->bbsCount;
-                FlowEdge** jumpPtr = curBBdesc->GetSwitchTargets()->bbsDstTab;
+                const unsigned numSucc = curBBdesc->GetSwitchTargets()->bbsCount;
+                unsigned       jumpCnt = numSucc;
+                FlowEdge**     jumpPtr = curBBdesc->GetSwitchTargets()->bbsDstTab;
 
                 do
                 {
                     BasicBlock*     jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
                     FlowEdge* const newEdge  = fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
-                    *jumpPtr                 = newEdge;
+
+                    newEdge->setLikelihood((1.0 / numSucc) * newEdge->getDupCount());
+                    *jumpPtr = newEdge;
                     if (jumpDest->bbNum <= curBBdesc->bbNum)
                     {
                         fgMarkBackwardJump(jumpDest, curBBdesc);
