@@ -6469,10 +6469,10 @@ unsigned CodeGen::getBaseOffsetOfGeneratedJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    emitter* emit = GetEmitter();
-    const unsigned   jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    FlowEdge** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    const unsigned   jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, true);
+    emitter*       emit       = GetEmitter();
+    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, true);
 
     JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
 
