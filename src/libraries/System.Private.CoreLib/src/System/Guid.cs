@@ -841,10 +841,6 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe ReadOnlySpan<byte> AsBytes(in Guid source) =>
-            new ReadOnlySpan<byte>(Unsafe.AsPointer(ref Unsafe.AsRef(in source)), sizeof(Guid));
-
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
@@ -856,7 +852,7 @@ namespace System
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(AsBytes(this), false);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), false);
                 MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
@@ -874,7 +870,7 @@ namespace System
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(AsBytes(this), bigEndian);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), bigEndian);
                 MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
@@ -893,7 +889,7 @@ namespace System
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(AsBytes(this), false);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), false);
                 MemoryMarshal.TryWrite(destination, in guid);
             }
             return true;
@@ -915,7 +911,7 @@ namespace System
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(AsBytes(this), bigEndian);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), bigEndian);
                 MemoryMarshal.TryWrite(destination, in guid);
             }
             bytesWritten = 16;
