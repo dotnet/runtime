@@ -4,6 +4,7 @@
              Targets="Test">
     </MSBuild>
   </Target>
+  <!-- Manually remove .NET Framework projects on non-Windows: https://github.com/microsoft/vstest/issues/4908 -->
   <Target Name="VSTest" DependsOnTargets="RemoveNetFrameworkProjectsOnNonWindows;GetProjectWithBestTargetFrameworks">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="VSTest">
