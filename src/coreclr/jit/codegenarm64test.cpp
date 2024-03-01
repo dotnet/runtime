@@ -5755,6 +5755,24 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_nbsl, EA_SCALABLE, REG_V15, REG_V16, REG_V17,
                               INS_OPTS_SCALABLE_D); // NBSL <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
 
+    // IF_SVE_AW_2A
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V0, REG_V1, 1,
+                              INS_OPTS_SCALABLE_B); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V2, REG_V3, 8,
+                              INS_OPTS_SCALABLE_B); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V4, REG_V5, 2,
+                              INS_OPTS_SCALABLE_H); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V6, REG_V7, 16,
+                              INS_OPTS_SCALABLE_H); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V8, REG_V9, 3,
+                              INS_OPTS_SCALABLE_S); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V10, REG_V11, 32,
+                              INS_OPTS_SCALABLE_S); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V12, REG_V13, 4,
+                              INS_OPTS_SCALABLE_D); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V14, REG_V15, 64,
+                              INS_OPTS_SCALABLE_D); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+
     // IF_SVE_BB_2A
     theEmitter->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, REG_R0, REG_R1, -32); // ADDPL <Xd|SP>, <Xn|SP>, #<imm>
     theEmitter->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, REG_R2, REG_SP, 0);   // ADDPL <Xd|SP>, <Xn|SP>, #<imm>

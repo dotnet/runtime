@@ -535,8 +535,8 @@ static code_t insEncodeSveElemsize_18_to_17(emitAttr size);
 static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
-// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
-static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:20-19'.
+static code_t insEncodeSveElemsize_tszh_23_tszl_20_to_19(emitAttr size);
 
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30' or
 // '21'.
@@ -901,6 +901,12 @@ static bool isValidUimm6(ssize_t value)
 static bool isValidUimm5From1(ssize_t value)
 {
     return (1 <= value) && (value <= 0x20);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 6 bit encoding, starting from 1 (such as for XAR).
+static bool isValidUimm6From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 0x40);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).
