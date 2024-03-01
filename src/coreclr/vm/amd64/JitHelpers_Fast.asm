@@ -57,6 +57,10 @@ extern JIT_InternalThrow:proc
 ;   RSI - address of the data  (source)
 ;   RCX is trashed
 ;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
+;
+;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;         if you add more trashed registers.
+;
 ; Exit:
 ;   RDI, RSI are incremented by SIZEOF(LPVOID)
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
