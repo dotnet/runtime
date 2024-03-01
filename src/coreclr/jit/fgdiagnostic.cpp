@@ -3003,7 +3003,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 {
                     for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
                     {
-                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i];
+                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i]->getDestinationBlock();
                         assert(nonDuplicateSucc != nullptr);
                         assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
                     }
@@ -3981,7 +3981,8 @@ void Compiler::fgDebugCheckBlockLinks()
                 assert(uniqueSuccSet.numDistinctSuccs == count);
                 for (unsigned i = 0; i < uniqueSuccSet.numDistinctSuccs; i++)
                 {
-                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks, uniqueSuccSet.nonDuplicates[i]->bbNum));
+                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks,
+                                               uniqueSuccSet.nonDuplicates[i]->getDestinationBlock()->bbNum));
                 }
             }
         }

@@ -4688,7 +4688,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTarget(), step);
+                    fgRemoveRefPred(step->GetTargetEdge());
                 }
 
                 FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
@@ -5006,7 +5006,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
         if (step == block)
         {
-            fgRemoveRefPred(step->GetTarget(), step);
+            fgRemoveRefPred(step->GetTargetEdge());
         }
         FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
         newEdge->setLikelihood(1.0);
@@ -5524,7 +5524,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
     GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
     GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
-    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtClone(op1), qmarkMT));
+    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtNewNull(), qmarkMT));
 
     // Make QMark node a top level node by spilling it.
     const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
@@ -7186,7 +7186,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
-                        fgRemoveRefPred(block->GetFalseTarget(), block);
+                        fgRemoveRefPred(block->GetFalseEdge());
                         block->SetKind(BBJ_ALWAYS);
 
                         // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
@@ -7451,7 +7451,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
-                        fgRemoveRefPred(block->GetFalseTarget(), block);
+                        fgRemoveRefPred(block->GetFalseEdge());
                         block->SetKind(BBJ_ALWAYS);
 
                         // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
