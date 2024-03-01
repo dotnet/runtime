@@ -383,7 +383,15 @@ namespace System
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
         public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
-            => FromDays(0, hours: hours, minutes: minutes, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
+        {
+            Int128 totalMicroseconds = Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
@@ -409,7 +417,14 @@ namespace System
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
         public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
-            => FromDays(0, minutes: minutes, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
+        {
+            Int128 totalMicroseconds = Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
@@ -434,7 +449,13 @@ namespace System
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
         public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
-            => FromDays(0, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
+        {
+            Int128 totalMicroseconds = Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
