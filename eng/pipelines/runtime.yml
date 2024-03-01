@@ -217,6 +217,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: innerloop
+                  configOverride: Checked
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -250,6 +251,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: innerloop
+                  configOverride: Checked
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -315,6 +317,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: innerloop
+                  configOverride: Checked
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
@@ -383,7 +386,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

@@ -5,6 +5,7 @@ parameters:
   runtimeVariant: ''
   liveLibrariesBuildConfig: ''
   testGroup: 'innerloop'
+  configOverride: ''
 
 variables:
   - name: binTestsPath
@@ -24,11 +25,18 @@ variables:
   - name: managedTestArtifactRootFolderPath
     value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
+  - name: nativeTestArtifactConfig
+    value: $(_BuildConfig)
+  
+  - ${{ if ne(parameters.configOverride, '') }}:
+    - name: nativeTestArtifactConfig
+      value: ${{ parameters.configOverride }}
+
   - name: nativeTestArtifactName
-    value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)'
+    value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(nativeTestArtifactConfig)'
 
   - name: nativeTestArtifactRootFolderPath
-    value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+    value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(nativeTestArtifactConfig)'
 
   - name: microsoftNetSdkIlFolderPath
     value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
