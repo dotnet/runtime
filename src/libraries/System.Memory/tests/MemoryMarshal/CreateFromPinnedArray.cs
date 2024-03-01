@@ -190,6 +190,7 @@ namespace System.SpanTests
             int[] pinnedArray = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
             GCHandle pinnedGCHandle = GCHandle.Alloc(pinnedArray, GCHandleType.Pinned);
 
+            // Unsafe.AsPointer is used to ensure we catch if the GC moves the memory
             Memory<int> pinnedMemory = MemoryMarshal.CreateFromPinnedArray(pinnedArray, 0, 2);
             void* pinnedPtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(pinnedMemory.Span));
             void* memoryHandlePinnedPtr = pinnedMemory.Pin().Pointer;
@@ -197,8 +198,8 @@ namespace System.SpanTests
             GC.Collect();
             GC.Collect(2);
 
-            Assert.Equal((int)pinnedPtr, (int)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pinnedMemory.Span)));
-            Assert.Equal((int)memoryHandlePinnedPtr, (int)pinnedGCHandle.AddrOfPinnedObject().ToPointer());
+            Assert.Equal((IntPtr)pinnedPtr, (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pinnedMemory.Span)));
+            Assert.Equal((IntPtr)memoryHandlePinnedPtr, (IntPtr)pinnedGCHandle.AddrOfPinnedObject().ToPointer());
 
             pinnedGCHandle.Free();
         }

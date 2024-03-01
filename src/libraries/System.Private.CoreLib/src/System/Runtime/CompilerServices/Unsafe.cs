@@ -3,6 +3,7 @@
 
 #pragma warning disable IDE0060 // implementations provided as intrinsics
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
@@ -906,6 +907,21 @@ namespace System.Runtime.CompilerServices
             // ldarg .0
             // unbox !!T
             // ret
+        }
+
+
+        // Internal helper methods:
+
+        // Determines if the address is aligned at least to `alignment` bytes.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsOpportunisticallyAligned<T>(ref readonly T address, nuint aligment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) != 0;
         }
     }
 }
