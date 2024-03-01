@@ -112,7 +112,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
     } // end of GCX_PREEMP
 
-    PublishFrozenObject(obj);
+    PublishFrozenObject(obj, objectSize);
 
     return obj;
 #endif // !FEATURE_BASICFREEZE

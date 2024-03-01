@@ -89,6 +89,6 @@ extern void ThrowOutOfMemoryDimensionsExceeded();
 void ErectWriteBarrier(OBJECTREF* dst, OBJECTREF ref);
 void SetCardsAfterBulkCopy(Object **start, size_t len);
 
-void PublishFrozenObject(Object*& orObject);
+void PublishFrozenObject(Object*& orObject, size_t size);
 
 #endif // _GCHELPERS_H_

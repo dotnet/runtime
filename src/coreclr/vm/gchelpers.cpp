@@ -198,9 +198,9 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
     Object* retVal = nullptr;
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
-
     size_t samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
     size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+    auto pCurrentThread = GetThread();
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         // TODO: if sampling is on, decide if this object should be sampled
@@ -208,6 +208,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         // (only its alloc_bytes_uoh field will be updated)
         // so get a random size in the distribution and if it is less than the size of the object
         // then this object should be sampled
+        isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
     }
     else
     {
@@ -236,7 +237,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     {
         // the sampling threshold was crossed, so compute a new one (even if some
         // free space is left in the allocation context)
-        pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
+        pEEAllocContext->ComputeSamplingLimit(pCurrentThread->GetRandom());
     }
 
     return retVal;
@@ -361,7 +362,7 @@ inline void LogAlloc(Object* object)
 
 // signals completion of the object to GC and sends events if necessary
 template <class TObj>
-void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags, bool isSampled)
+void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags, bool isSampled)
 {
     _ASSERTE(orObject->HasEmptySyncBlockInfo());
 
@@ -393,12 +394,52 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags, bool isSample
     {
         ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
     }
+
+    // TODO: not sure it is worth emitting the event here instead of in Alloc
+    //       because it is needed to pass the size + the isSampled flag
+    //       so all caller of PublishObjectAndNotify should pass the size and the isSampled flag
+    if (isSampled && EventPipeEventEnabledAllocationSampled())
+    {
+        // TODO: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
+        //       --> should we refactor into a common helper?
+        void* typeId = nullptr;
+        const WCHAR* name = nullptr;
+        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+        EX_TRY
+        {
+            TypeHandle th = GetThread()->GetTHAllocContextObj();
+
+            if (th != 0)
+            {
+                th.GetName(strTypeName);
+                name = strTypeName.GetUnicode();
+                typeId = th.GetMethodTable();
+            }
+        }
+        EX_CATCH{}
+        EX_END_CATCH(SwallowAllExceptions)
+        // end of duplication
+
+        if (typeId != nullptr)
+        {
+            unsigned int allocKind =
+                (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+                (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+                0;  // SOH
+            unsigned int heapIndex = 0;
+#ifdef BACKGROUND_GC
+            gc_heap* hp = gc_heap::heap_of((BYTE*)orObject);
+            heapIndex = hp->heap_number;
+#endif
+            FireEtwAllocationSampled(allocKind, GetClrInstanceId(),typeId, name, heapIndex, (BYTE*)orObject, size);
+        }
+    }
 #endif // FEATURE_EVENT_TRACE
 }
 
-void PublishFrozenObject(Object*& orObject)
+void PublishFrozenObject(Object*& orObject, size_t size)
 {
-    PublishObjectAndNotify(orObject, GC_ALLOC_NO_FLAGS, false);  // TODO: allocations in NGCH are not sampled?
+    PublishObjectAndNotify(orObject, size, GC_ALLOC_NO_FLAGS, false);  // TODO: allocations in NGCH are not sampled?
 }
 
 inline SIZE_T MaxArrayLength()
@@ -549,7 +590,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
-    PublishObjectAndNotify(orArray, flags, isSampled);
+    PublishObjectAndNotify(orArray, totalSize, flags, isSampled);
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
@@ -818,7 +859,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
     }
 
-    PublishObjectAndNotify(orArray, flags, isSampled);
+    PublishObjectAndNotify(orArray, totalSize, flags, isSampled);
 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
@@ -990,7 +1031,7 @@ STRINGREF AllocateString( DWORD cchStringLength )
     orString->SetMethodTable(g_pStringClass);
     orString->SetStringLength(cchStringLength);
 
-    PublishObjectAndNotify(orString, flags, isSampled);
+    PublishObjectAndNotify(orString, totalSize, flags, isSampled);
     return ObjectToSTRINGREF(orString);
 
 }
@@ -1161,7 +1202,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             orObject->SetMethodTable(pMT);
         }
 
-        PublishObjectAndNotify(orObject, flags, isSampled);
+        PublishObjectAndNotify(orObject, totalSize, flags, isSampled);
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(orObject);
     }
 
