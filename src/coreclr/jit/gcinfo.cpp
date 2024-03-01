@@ -722,7 +722,7 @@ void GCInfo::gcRegPtrSetInit()
 //    It is also called by LinearScan::recordVarLocationAtStartOfBB() which is in turn called by
 //    CodeGen::genCodeForBBList() at the block boundary.
 
-void GCInfo::gcUpdateForRegVarMove(regMaskMixed srcMask, regMaskMixed dstMask, LclVarDsc* varDsc)
+void GCInfo::gcUpdateForRegVarMove(regMaskOnlyOne srcMask, regMaskOnlyOne dstMask, LclVarDsc* varDsc)
 {
     var_types type    = varDsc->TypeGet();
     bool      isGCRef = (type == TYP_REF);

@@ -393,7 +393,7 @@ private:
 #if 0
 public:
     // This method updates the appropriate reg masks when a variable is moved.
-    void gcUpdateForRegVarMove(regMaskMixed srcMask, regMaskMixed dstMask, LclVarDsc* varDsc);
+    void gcUpdateForRegVarMove(regMaskOnlyOne srcMask, regMaskOnlyOne dstMask, LclVarDsc* varDsc);
 #endif
 
 private:
