@@ -522,7 +522,7 @@ static inline const char*
 lookup_direct_pinvoke_symbol_name_aot (MonoAotCompile *acfg, MonoMethod *method);
 
 static int
-compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options);
+compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options);
 
 static gboolean
 mono_aot_mode_is_full (MonoAotOptions *opts)
@@ -15106,7 +15106,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 			else
 				return 0;
 		} else {
-			res = compile_assemblies_in_child (&acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
+			res = compile_assemblies_in_child (&acfg->aot_opts, &acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
 			if (res)
 				return res;
 
@@ -15606,8 +15606,11 @@ emit_aot_image (MonoAotCompile *acfg)
 }
 
 static int
-compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options)
+compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options)
 {
+	FILE *response = NULL;
+	char *response_fname = NULL;
+
 	/* Find --aot argument */
 	int aot_index = -1;
 	for (guint32 i = 1; i < runtime_args->len; ++i) {
@@ -15618,6 +15621,12 @@ compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArr
 		}
 	}
 	g_assert (aot_index != -1);
+
+#ifdef TARGET_WIN32
+	response_fname = g_build_filename (aot_opts->temp_path, "temp.rsp", (const char*)NULL);
+	response = fopen (response_fname, "w");
+	g_assert (response);
+#endif
 
 	GString *command;
 
@@ -15630,8 +15639,12 @@ compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArr
 		if (strncmp (arg, "--response=", strlen ("--response=")) == 0)
 			/* Already expanded */
 			continue;
-		if (i != aot_index)
-			g_string_append_printf (command, " \"%s\"", arg);
+		if (i != aot_index) {
+			if (response)
+				fprintf (response, "%s\n", arg);
+			else
+				g_string_append_printf (command, " \"%s\"", arg);
+		}
 	}
 
 	/* Pass '_child' instead of 'compile-in-child' */
@@ -15639,19 +15652,30 @@ compile_assemblies_in_child (MonoAssembly **assemblies, int nassemblies, GPtrArr
 	GString *new_aot_args = g_string_new ("");
 	for (guint32 i = 0; i < aot_split_args->len; ++i) {
 		const char *aot_arg = (const char*)g_ptr_array_index (aot_split_args, i);
+		if (!strcmp (aot_arg, "compile-in-child"))
+			aot_arg = "_child";
 		if (i > 0)
 			g_string_append_printf (new_aot_args, ",");
-		if (!strcmp (aot_arg, "compile-in-child"))
-			g_string_append_printf (new_aot_args, "%s", "_child");
-		else
-			g_string_append_printf (new_aot_args, "%s", aot_arg);
+		g_string_append_printf (new_aot_args, "%s", aot_arg);
 	}
 
-	g_string_append_printf (command, " \"--aot=%s\"", g_string_free (new_aot_args, FALSE));
+	if (response)
+		fprintf (response, "\"--aot=%s\"\n", g_string_free (new_aot_args, FALSE));
+	else
+		g_string_append_printf (command, " \"--aot=%s\"", g_string_free (new_aot_args, FALSE));
 
-	for (int i = 0; i < nassemblies; ++i)
-		g_string_append_printf (command, " \"%s\"", assemblies [i]->image->name);
+	for (int i = 0; i < nassemblies; ++i) {
+		if (response)
+			fprintf (response, "\"%s\"\n", assemblies [i]->image->name);
+		else
+			g_string_append_printf (command, " \"%s\"", assemblies [i]->image->name);
+	}
 
+	if (response)
+		fclose (response);
+
+	if (response)
+		g_string_append_printf (command, " \"--response=%s\"", response_fname);
 	char *cmd = g_string_free (command, FALSE);
 	printf ("Executing: %s\n", cmd);
 	int res = execute_system (cmd);
@@ -15690,14 +15714,10 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		}
 		if (nassemblies > 1 && !aot_opts.dedup_include)
 			aot_opts.compile_in_child = FALSE;
-#ifdef HOST_WIN32
-		// Need to create response files
-		aot_opts.compile_in_child = FALSE;
-#endif
 	}
 
 	if (aot_opts.dedup_include && aot_opts.compile_in_child) {
-		res = compile_assemblies_in_child (assemblies, nassemblies, aot_opts.runtime_args, aot_opts.aot_options);
+		res = compile_assemblies_in_child (&aot_opts, assemblies, nassemblies, aot_opts.runtime_args, aot_opts.aot_options);
 		if (res)
 			return res;
 	}
