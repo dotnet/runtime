@@ -74,11 +74,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     )
 endif()
 
-if(CLR_CMAKE_TARGET_WIN32)
-add_definitions(-DTARGET_WINDOWS)
-add_definitions(-DPALEXPORT=EXTERN_C)
-endif()
-
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DAPPLE_HYBRID_GLOBALIZATION)
     set(NATIVEGLOBALIZATION_SOURCES
@@ -188,21 +183,19 @@ if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    if(STATIC_LIBS_ONLY)
-        add_library(System.Globalization.Native.Aot
-            STATIC
-            ${NATIVEGLOBALIZATION_SOURCES}
-        )
-        set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
-        set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    add_library(System.Globalization.Native.Aot
+        SHARED
+        ${NATIVEGLOBALIZATION_SOURCES}
+    )
+    set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+    set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
-        add_library(System.Globalization.Native.Aot.GuardCF
-            STATIC
-            ${NATIVEGLOBALIZATION_SOURCES}
-        )
-        set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    add_library(System.Globalization.Native.Aot.GuardCF
+        SHARED
+        ${NATIVEGLOBALIZATION_SOURCES}
+    )
+    set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
-        install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
-        install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
-    endif()
+    install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
+    install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
 endif()
