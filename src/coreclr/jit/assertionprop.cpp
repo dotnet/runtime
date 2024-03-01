@@ -4216,14 +4216,18 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             return assertionIndex;
         }
 
-        // Look for matching exact type assertions based on vtable accesses
+        // Look for matching exact type assertions based on vtable accesses. E.g.:
+        //
+        //   op1:       VNF_InvariantLoad(myObj) or in other words: a vtable access
+        //   op2:       'MyType' class handle
+        //   Assertion: 'myObj's type is exactly MyType
+        //
         if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_EXACT_TYPE) &&
-            (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
+            (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)) && op1->TypeIs(TYP_I_IMPL))
         {
-            ValueNum  op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
             VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(op1VN, &funcApp) && (funcApp.m_func == VNF_InvariantLoad) &&
-                (curAssertion->op1.vn == funcApp.m_args[0]))
+            if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
+                (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
                 return assertionIndex;
             }
