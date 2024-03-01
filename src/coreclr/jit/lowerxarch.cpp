@@ -843,7 +843,7 @@ void Lowering::LowerCast(GenTree* tree)
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
-        noway_assert(castToType != TYP_ULONG);
+        assert(castToType != TYP_ULONG || comp->IsBaselineVector512IsaSupportedDebugOnly());
     }
     else if (srcType == TYP_UINT)
     {
@@ -851,7 +851,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
     else if (srcType == TYP_ULONG)
     {
-        assert(castToType != TYP_FLOAT || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        assert(castToType != TYP_FLOAT || comp->IsBaselineVector512IsaSupportedDebugOnly());
     }
 
     // Case of src is a small type and dst is a floating point type.
