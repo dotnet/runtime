@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
         public SafePasswordHandle(ReadOnlySpan<char> password, bool passwordProvided)
             : base(ownsHandle: true)
         {
-            // "".AsSpan() not contains a null ref, so this is compat for "null tries NULL first".
+            // "".AsSpan() does not contain a null ref, so this is compat for "null tries NULL first".
             if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(password)))
             {
                 int spanLen;

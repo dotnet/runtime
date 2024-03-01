@@ -28,7 +28,7 @@ namespace Microsoft.Win32.SafeHandles
             // and handle should be IntPtr.Zero to match Marshal.StringToHGlobalUni.
             //
             // Since that was already done in the base ctor call, we only need to do
-            // work when s not contains a null ref.
+            // work when s does not contain a null ref.
             if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(s)))
             {
                 int cch = checked(s.Length + 1);
