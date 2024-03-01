@@ -635,8 +635,8 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     newRP->setRegOptional(false);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    newRP->skipSaveRestore = false;
-    newRP->liveVarUpperSave  = false;
+    newRP->skipSaveRestore  = false;
+    newRP->liveVarUpperSave = false;
 #endif
 
     associateRefPosWithInterval(newRP);
@@ -1501,9 +1501,9 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 #endif
 
         VarSetOps::Iter iter(compiler, liveLargeVectors);
-        unsigned        varIndex = 0;
-        bool            blockAlwaysReturn =
-            compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_RETURN);
+        unsigned        varIndex          = 0;
+        bool            blockAlwaysReturn = compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET,
+                                                             BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_RETURN);
 
         while (iter.NextElem(&varIndex))
         {
@@ -1609,14 +1609,14 @@ void LinearScan::buildUpperVectorRestoreRefPosition(
         {
             // If there was a use of the restore before end of the block restore,
             // then it is needed and cannot be eliminated
-            savePos->skipSaveRestore = false;
+            savePos->skipSaveRestore  = false;
             savePos->liveVarUpperSave = true;
         }
         else
         {
             // otherwise, just do the whatever was decided for save position
-            restorePos->skipSaveRestore = savePos->skipSaveRestore;
-            restorePos->liveVarUpperSave  = savePos->liveVarUpperSave;
+            restorePos->skipSaveRestore  = savePos->skipSaveRestore;
+            restorePos->liveVarUpperSave = savePos->liveVarUpperSave;
         }
 
 #ifdef TARGET_XARCH

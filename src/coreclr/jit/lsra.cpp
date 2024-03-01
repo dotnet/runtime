@@ -5936,11 +5936,22 @@ void LinearScan::allocateRegisters()
                     {
                         if (isExtraUpperVectorSave)
                         {
+                            // If this was just an extra upperVectorSave that do not have corresponding
+                            // upperVectorRestore, we do not need to mark this as isPartiallySpilled
+                            // or need to insert the save/restore.
                             currentRefPosition.skipSaveRestore = true;
                         }
 
                         if (assignedRegister != REG_NA)
                         {
+                            // If we ever assigned register to this interval, it was because in the past
+                            // there were valid save/restore RefPositions associated. For non-live vars,
+                            // we want to reduce the affect of their presence and hence, we will
+                            // unassign register from this interval without spilling and free it.
+
+                            // We do not take similar action on upperVectorRestore below because here, we
+                            // have already removed the register association with the interval.
+                            // The "allocate = false" route, will do a no-op.
                             if (currentInterval->isActive)
                             {
                                 RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
@@ -5951,15 +5962,12 @@ void LinearScan::allocateRegisters()
                                 updateNextIntervalRef(assignedRegister, currentInterval);
                                 updateSpillCost(assignedRegister, currentInterval);
                             }
-                            
-                            regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
 
-                            // we do not take similar action on restore because we already remove the register association with interval
-                            // so when we go "allocate = false" route, we no-op.
+                            regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
                         }
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
                         currentRefPosition.registerAssignment = RBM_NONE;
-                        lastAllocatedRefPosition = &currentRefPosition;
+                        lastAllocatedRefPosition              = &currentRefPosition;
 
                         continue;
                     }
@@ -5971,7 +5979,6 @@ void LinearScan::allocateRegisters()
                     }
 
                     allocate = false;
-
                 }
 #if defined(TARGET_XARCH)
                 else if (lclVarInterval->registerType == TYP_SIMD64)
@@ -12141,7 +12148,8 @@ void LinearScan::verifyFinalAllocation()
                             (currentRefPosition.refType == RefTypeUpperVectorRestore))
                         {
                             Interval* lclVarInterval = interval->relatedInterval;
-                            assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled || currentRefPosition.IsExtraUpperVectorSave());
+                            assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled ||
+                                   currentRefPosition.IsExtraUpperVectorSave());
                         }
                     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE

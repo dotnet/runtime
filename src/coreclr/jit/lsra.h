@@ -2520,7 +2520,7 @@ public:
     // If upper vector save is related to live var
     // or created just based on bbLiveIn/bbDefs and
     // whose liveness is not entirely know.
-    unsigned char liveVarUpperSave: 1;
+    unsigned char liveVarUpperSave : 1;
 #endif
 
 #ifdef DEBUG
