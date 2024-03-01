@@ -55,6 +55,7 @@
       />
 
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
+      Exclude="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(LibPrefix)clrjit_win_aot_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
