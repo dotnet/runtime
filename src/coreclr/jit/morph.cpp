@@ -323,6 +323,139 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             }
         }
     }
+
+    // This if check needs to be changed to make sure we only
+    // block casts which are already Fixed UP.
+    do
+    {
+        if (!tree->gtOverflow() && varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType))
+        {
+            if ((dstType == TYP_LONG) && (srcType == TYP_FLOAT))
+            {
+                oper    = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+                srcType = TYP_DOUBLE;
+            }
+            if (tree->IsSaturatedConversion())
+            {
+                break;
+            }
+            CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            {
+                if (varTypeIsUnsigned(dstType))
+                {
+                    // Generate the control table for VFIXUPIMMSD
+                    // The behavior we want is to saturate negative values to 0.
+                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+
+                    // QNAN: 0b1000:
+                    // SNAN: 0b1000
+                    // ZERO: 0b0000:
+                    // +ONE: 0b0000
+                    // -INF: 0b0000
+                    // +INF: 0b0000
+                    // -VAL: 0b1000: Saturate to Zero
+                    // +VAL: 0b0000
+                    tbl->gtSimdVal.i32[0] = 0x08000088;
+
+                    // Generate first operand
+                    // The logic is that first and second operand are basically the same because we want
+                    // the output to be in the same xmm register
+                    // Hence we clone the first operand
+                    GenTree* op2Clone = fgMakeMultiUse(&oper);
+
+                    // run vfixupimmsd base on table and no flags reporting
+                    GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
+                                                                NI_AVX512F_FixupScalar, fieldType, 16);
+
+                    // Convert to scalar
+                    // Here, we try to insert a Vector128 to Scalar node so that the input
+                    // can be provided to the scalar cast
+                    GenTree* retNode1 =
+                        gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, fieldType, 16);
+                    tree = gtNewCastNode(genActualType(dstType), retNode1, false, dstType);
+                    tree->SetSaturatedConversion();
+                    return fgMorphTree(tree);
+                }
+                else
+                {
+                    CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
+
+                    ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX : INT64_MAX;
+
+                    // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
+                    // Generate the control table for VFIXUPIMMSD
+                    // The behavior we want is to saturate negative values to 0.
+                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+
+                    // QNAN: 0b1000:
+                    // SNAN: 0b1000
+                    // ZERO: 0b0000:
+                    // +ONE: 0b0000
+                    // -INF: 0b0000
+                    // +INF: 0b0000
+                    // -VAL: 0b0000: Saturate to Zero
+                    // +VAL: 0b0000
+                    tbl->gtSimdVal.i32[0] = 0x00000088;
+
+                    // Generate first operand
+                    // The logic is that first and second operand are basically the same because we want
+                    // the output to be in the same xmm register
+                    // Hence we clone the first operand
+                    GenTree* op2Clone = fgMakeMultiUse(&oper);
+
+                    // run vfixupimmsd base on table and no flags reporting
+                    oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
+                                                    NI_AVX512F_FixupScalar, fieldType, 16);
+
+                    GenTree* saturate_val = oper;
+
+                    // get the max value vector
+
+                    GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal))
+                                                               : gtNewDconNodeF(static_cast<float>(actualMaxVal));
+                    GenTree* max_valDup =
+                        (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewLconNode(actualMaxVal);
+                    max_val    = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
+                    max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_valDup, destFieldType, 16);
+
+                    // we will be using the input value twice
+                    GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
+
+                    // usage 1 --> compare with max value of integer
+                    saturate_val = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturate_val, max_val, fieldType, 16);
+                    GenTree* retNode1 =
+                        gtNewSimdHWIntrinsicNode(srcType, saturate_valDup, NI_Vector128_ToScalar, fieldType, 16);
+                    // cast it
+                    tree = gtNewCastNode(dstType, retNode1, false, dstType);
+                    tree->SetSaturatedConversion();
+                    GenTree* tree1 = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
+
+                    // usage 2 --> use thecompared mask with input value and max value to blend
+                    // GenTree* dummy = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewLconNode(2), destFieldType, 16);
+                    saturate_val = gtNewSimdCndSelNode(TYP_SIMD16, saturate_val, max_valDup, tree1, destFieldType, 16);
+                    saturate_val =
+                        gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, destFieldType, 16);
+                    return fgMorphTree(saturate_val);
+                }
+            }
+            // does not work, need to convert into helper function
+            else if (srcType == TYP_FLOAT && dstType == TYP_UINT)
+            {
+                return fgMorphCastIntoHelper(tree, CORINFO_HELP_FLT2UINT, oper);
+            }
+            else if (srcType == TYP_DOUBLE && dstType == TYP_UINT)
+            {
+                return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
+            }
+            else if (srcType == TYP_DOUBLE && dstType == TYP_INT)
+            {
+                return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
+            }
+        }
+    } while (false);
+
 #endif // TARGET_AMD64
 
     // See if the cast has to be done in two steps.  R -> I
@@ -336,7 +469,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || (dstType == TYP_ULONG))
+            && (tree->gtOverflow() || ((dstType == TYP_INT || dstType == TYP_ULONG || dstType == TYP_LONG) &&
+                                       !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -371,26 +505,43 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 switch (dstType)
                 {
                     case TYP_INT:
+#ifdef TARGET_XARCH
+                        if (!tree->IsSaturatedConversion())
+                        {
+                            return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
+                        }
+#endif // TARGET_XARCH
                         return nullptr;
 
                     case TYP_UINT:
-#if defined(TARGET_ARM) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM)
                         return nullptr;
 #else  // TARGET_X86
-                        oper = gtNewCastNode(TYP_LONG, oper, false, TYP_LONG);
+                        if (tree->IsSaturatedConversion())
+                        {
+                            return nullptr;
+                        }
+                        /*oper = gtNewCastNode(TYP_LONG, oper, false, TYP_LONG);
                         tree = gtNewCastNode(TYP_INT, oper, false, TYP_UINT);
-                        return fgMorphTree(tree);
+                        return fgMorphTree(tree);*/
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
 #endif // TARGET_X86
 
                     case TYP_LONG:
-#ifdef TARGET_AMD64
-                        // SSE2 has instructions to convert a float/double directly to a long
+#ifdef TARGET_XARCH
+                        if (!tree->IsSaturatedConversion())
+                        {
+                            return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
+                        }
                         return nullptr;
-#else  // !TARGET_AMD64
+#endif // TARGET_XARCH
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
-#endif // !TARGET_AMD64
 
                     case TYP_ULONG:
+#ifdef TARGET_AMD64
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                            return nullptr;
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
                         unreached();

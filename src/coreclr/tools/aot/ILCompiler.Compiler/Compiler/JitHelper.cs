@@ -177,6 +177,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2ULng:
                     methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToULong");
                     break;
+                case ReadyToRunHelper.Flt2UInt:
+                    mangledName = "RhpFlt2UInt";
+                    break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToIntOverflow");

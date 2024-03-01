@@ -513,23 +513,45 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     switch (intrinsic)
     {
 #if defined(TARGET_XARCH)
+
         case NI_VectorT_ConvertToDouble:
+        {
+#ifdef TARGET_AMD64
+            if ((varTypeIsLong(simdBaseType) && IsBaselineVector512IsaSupportedOpportunistically()) ||
+                (simdBaseType == TYP_FLOAT && ((simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                                               (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically()))))
+            {
+                break;
+            }
+#endif // TARGET_AMD64
+            return nullptr;
+        }
+
+        case NI_VectorT_ConvertToInt32:
         case NI_VectorT_ConvertToInt64:
         case NI_VectorT_ConvertToUInt32:
         case NI_VectorT_ConvertToUInt64:
         {
-            // TODO-XARCH-CQ: These intrinsics should be accelerated
+#ifdef TARGET_AMD64
+            if (IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                break;
+            }
+#endif // TARGET_AMD64
             return nullptr;
         }
 
         case NI_VectorT_ConvertToSingle:
         {
-            if (simdBaseType == TYP_UINT)
+#ifdef TARGET_AMD64
+            if ((simdBaseType == TYP_INT && ((simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                                             (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically()))) ||
+                (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically()))
             {
-                // TODO-XARCH-CQ: These intrinsics should be accelerated
-                return nullptr;
+                break;
             }
-            break;
+#endif // TARGET_AMD64
+            return nullptr;
         }
 #endif // TARGET_XARCH
 
@@ -1154,50 +1176,269 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 
 #if defined(TARGET_XARCH)
+
+                case NI_VectorT_ConvertToInt64:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(simdBaseType == TYP_DOUBLE);
+#ifdef TARGET_AMD64
+                    if (IsBaselineVector512IsaSupportedOpportunistically())
+                    {
+                        var_types simdType = getSIMDTypeForSize(simdSize);
+                        // Generate the control table for VFIXUPIMMSD
+                        // The behavior we want is to saturate negative values to 0.
+                        GenTreeVecCon* tbl = gtNewVconNode(simdType);
+
+                        // QNAN: 0b1000: Saturate to Zero
+                        // SNAN: 0b1000: Saturate to Zero
+                        // ZERO: 0b0000
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b0000
+                        // +VAL: 0b0000
+                        for (int i = 0; i < 8; i++)
+                        {
+                            tbl->gtSimdVal.i64[i] = 0x00000088;
+                        }
+
+                        // Generate first operand
+                        // The logic is that first and second operand are basically the same because we want
+                        // the output to be in the same xmm register
+                        // Hence we clone the first operand
+                        GenTree* op2Clone = fgMakeMultiUse(&op1);
+                        // GenTree* op2Clone;
+                        // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
+                        //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                         NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        GenTree* max_val =
+                            gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT64_MAX)),
+                                                         simdBaseJitType, simdSize);
+                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG),
+                                                                           CORINFO_TYPE_LONG, simdSize);
+                        // we will be using the input value twice
+                        GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
+
+                        // usage 1 --> compare with max value of integer
+                        saturate_val =
+                            gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
+                        // cast it
+
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+
+                        GenTree* retNode =
+                            gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
+
+                        // usage 2 --> use thecompared mask with input value and max value to blend
+                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_LONG,
+                                                   simdSize);
+                    }
+#endif // TARGET_AMD64
+                    return nullptr;
+                }
+
+                case NI_VectorT_ConvertToUInt32:
+                {
+                    assert(sig->numArgs == 1);
+                    assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
+#ifdef TARGET_AMD64
+                    if (IsBaselineVector512IsaSupportedOpportunistically())
+                    {
+                        var_types simdType = getSIMDTypeForSize(simdSize);
+                        // Generate the control table for VFIXUPIMMSD
+                        // The behavior we want is to saturate negative values to 0.
+                        GenTreeVecCon* tbl = gtNewVconNode(simdType);
+
+                        // QNAN: 0b0000:
+                        // SNAN: 0b0000
+                        // ZERO: 0b0000:
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b1000: Saturate to Zero
+                        // +VAL: 0b0000
+                        for (int i = 0; i < 16; i++)
+                        {
+                            tbl->gtSimdVal.i32[i] = 0x08000088;
+                        }
+
+                        // Generate first operand
+                        // The logic is that first and second operand are basically the same because we want
+                        // the output to be in the same xmm register
+                        // Hence we clone the first operand
+                        GenTree* op2Clone = fgMakeMultiUse(&op1);
+
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                     NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        intrinsic = (simdSize == 16)
+                                        ? NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation
+                                        : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation
+                                                           : NI_AVX512F_ConvertToVector512UInt32WithTruncation;
+
+                        return gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
+                    }
+#endif // TARGET_AMD64
+                    return nullptr;
+                }
+
+                case NI_VectorT_ConvertToUInt64:
+                {
+                    assert(sig->numArgs == 1);
+                    assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
+#ifdef TARGET_AMD64
+                    if (IsBaselineVector512IsaSupportedOpportunistically())
+                    {
+                        var_types simdType = getSIMDTypeForSize(simdSize);
+                        // Generate the control table for VFIXUPIMMSD
+                        // The behavior we want is to saturate negative values to 0.
+                        GenTreeVecCon* tbl = gtNewVconNode(simdType);
+
+                        // QNAN: 0b0000:
+                        // SNAN: 0b0000
+                        // ZERO: 0b0000:
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b1000: Saturate to Zero
+                        // +VAL: 0b0000
+                        for (int i = 0; i < 8; i++)
+                        {
+                            tbl->gtSimdVal.i64[i] = 0x08000088;
+                        }
+
+                        // Generate first operand
+                        // The logic is that first and second operand are basically the same because we want
+                        // the output to be in the same xmm register
+                        // Hence we clone the first operand
+                        GenTree* op2Clone = fgMakeMultiUse(&op1);
+
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                     NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        intrinsic = (simdSize == 16)
+                                        ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
+                                        : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
+                                                           : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+
+                        return gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
+                    }
+#endif // TARGET_AMD64
+                    return nullptr;
+                }
+
                 case NI_VectorT_ConvertToInt32:
                 {
                     assert(simdBaseType == TYP_FLOAT);
-                    NamedIntrinsic convert;
-
-                    switch (simdSize)
+#ifdef TARGET_AMD64
+                    if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        case 16:
-                            convert = NI_SSE2_ConvertToVector128Int32WithTruncation;
-                            break;
-                        case 32:
-                            convert = NI_AVX_ConvertToVector256Int32WithTruncation;
-                            break;
-                        case 64:
-                            convert = NI_AVX512F_ConvertToVector512Int32WithTruncation;
-                            break;
-                        default:
-                            unreached();
-                    }
+                        var_types simdType = getSIMDTypeForSize(simdSize);
+                        // Generate the control table for VFIXUPIMMSD
+                        // The behavior we want is to saturate negative values to 0.
+                        GenTreeVecCon* tbl = gtNewVconNode(simdType);
 
-                    return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
+                        // QNAN: 0b1000: Saturate to Zero
+                        // SNAN: 0b1000: Saturate to Zero
+                        // ZERO: 0b0000
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b0000
+                        // +VAL: 0b0000
+                        for (int i = 0; i < 16; i++)
+                        {
+                            tbl->gtSimdVal.i32[i] = 0x00000088;
+                        }
+
+                        // Generate first operand
+                        // The logic is that first and second operand are basically the same because we want
+                        // the output to be in the same xmm register
+                        // Hence we clone the first operand
+                        GenTree* op2Clone = fgMakeMultiUse(&op1);
+                        // GenTree* op2Clone;
+                        // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
+                        //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+
+                        // run vfixupimmsd base on table and no flags reporting
+                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                                                                         NI_AVX512F_Fixup, simdBaseJitType, simdSize);
+
+                        GenTree* max_val =
+                            gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)),
+                                                         simdBaseJitType, simdSize);
+                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT32_MAX, TYP_INT),
+                                                                           CORINFO_TYPE_INT, simdSize);
+                        // we will be using the input value twice
+                        GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
+
+                        // usage 1 --> compare with max value of integer
+                        saturate_val =
+                            gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
+                        // cast it
+
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
+                                             : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
+                                                                : NI_AVX512F_ConvertToVector512Int32WithTruncation;
+
+                        GenTree* retNode =
+                            gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
+
+                        // usage 2 --> use thecompared mask with input value and max value to blend
+                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_INT,
+                                                   simdSize);
+                    }
+#endif // TARGET_AMD64
+                    return nullptr;
+                }
+
+                case NI_VectorT_ConvertToDouble:
+                {
+                    assert(sig->numArgs == 1);
+                    assert(varTypeIsLong(simdBaseType) || simdBaseType == TYP_FLOAT);
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Double
+                                                     : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
+                                                                        : NI_AVX512DQ_ConvertToVector512Double;
+                    }
+                    else
+                    {
+                        intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Double
+                                                     : (simdSize == 32) ? NI_AVX_ConvertToVector256Double
+                                                                        : NI_AVX512F_ConvertToVector512Double;
+                    }
+                    return gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT_ConvertToSingle:
                 {
-                    assert(simdBaseType == TYP_INT);
-                    NamedIntrinsic convert;
+                    assert(varTypeIsInt(simdBaseType));
+                    NamedIntrinsic intrinsic = NI_Illegal;
 
-                    switch (simdSize)
+                    if (simdBaseType == TYP_INT)
                     {
-                        case 16:
-                            convert = NI_SSE2_ConvertToVector128Single;
-                            break;
-                        case 32:
-                            convert = NI_AVX_ConvertToVector256Single;
-                            break;
-                        case 64:
-                            convert = NI_AVX512F_ConvertToVector512Single;
-                            break;
-                        default:
-                            unreached();
+                        intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Single
+                                                     : (simdSize == 32) ? NI_AVX_ConvertToVector256Single
+                                                                        : NI_AVX512F_ConvertToVector512Single;
                     }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
+                    else if (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically())
+                    {
+                        intrinsic = (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128Single
+                                                     : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single
+                                                                        : NI_AVX512F_ConvertToVector512Single;
+                    }
+                    return gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
                 }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT_ConvertToDouble:
