@@ -10,8 +10,6 @@
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
     <!-- Disable native AOT on FreeBSD when cross building from Linux. -->
@@ -26,7 +24,7 @@
     <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
     <_hostArchitecture Condition="'$(OS)' != 'Windows_NT'">$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
     <_hostArchitecture Condition="'$(OS)' == 'Windows_NT'">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostArchitecture>
-    <_hostPackageName>runtime.$(_hostOS)-$(_hostArchitecture).Microsoft.DotNet.ILCompiler</_hostPackageName>
+    <_hostPackageName>runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler</_hostPackageName>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
