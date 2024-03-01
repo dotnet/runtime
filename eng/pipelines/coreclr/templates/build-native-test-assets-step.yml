@@ -3,7 +3,7 @@ parameters:
   compiler: ''
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(_BuildConfig) $(archType) $(crossArg) $(priorityArg) ${{ parameters.compiler }}
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(nativeTestArtifactConfig) $(archType) $(crossArg) $(priorityArg) ${{ parameters.compiler }}
     displayName: Build native test components
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
