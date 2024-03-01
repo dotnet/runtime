@@ -13,7 +13,8 @@
     <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
     <RuntimeIdentifiers Condition="'$(DotNetBuildSourceOnly)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
     <!-- runtime/apphost packs of these platforms aren't built in the official build, so only reference the RIDs when we are targetting the community-supported platforms. -->
-    <RuntimeIdentifiers Condition="'$(DotNetBuildSourceOnly)' != 'true' and ('$(TargetOS)' == 'freebsd' or '$(TargetArchitecture)' == 'riscv64')">$(RuntimeIdentifiers);freebsd-x64;freebsd-arm64;linux-riscv64;linux-musl-riscv64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(TargetOS)' == 'freebsd'">$(RuntimeIdentifiers);freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(TargetArchitecture)' == 'riscv64'">$(RuntimeIdentifiers);linux-riscv64;linux-musl-riscv64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
