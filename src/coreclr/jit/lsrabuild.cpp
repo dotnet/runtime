@@ -1491,16 +1491,17 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         // this for correctness anyway.
         VARSET_TP bbLiveDefs(VarSetOps::Union(compiler, compiler->compCurBB->bbLiveIn, compiler->compCurBB->bbVarDef));
 
-        VARSET_TP liveLargeVectors(VarSetOps::Intersection(compiler, bbLiveDefs, largeVectorVars));
+        VARSET_TP liveDefsLargeVectors(VarSetOps::Intersection(compiler, bbLiveDefs, largeVectorVars));
+
+        // Make sure that `liveLargeVectors` captures the currentLiveVars as well.
+        VARSET_TP liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
 
 #ifdef DEBUG
-        // Make sure that `liveLargeVectors` captures the currentLiveVars as well.
-        VARSET_TP oldLiveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
-        assert(VarSetOps::IsEmpty(compiler, oldLiveLargeVectors) ||
-               VarSetOps::IsSubset(compiler, oldLiveLargeVectors, liveLargeVectors));
+        assert(VarSetOps::IsEmpty(compiler, liveLargeVectors) ||
+               VarSetOps::IsSubset(compiler, liveLargeVectors, liveDefsLargeVectors));
 #endif
 
-        VarSetOps::Iter iter(compiler, liveLargeVectors);
+        VarSetOps::Iter iter(compiler, liveDefsLargeVectors);
         unsigned        varIndex          = 0;
         bool            blockAlwaysReturn = compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET,
                                                              BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_RETURN);
@@ -1515,7 +1516,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
-                if (VarSetOps::IsMember(compiler, oldLiveLargeVectors, varIndex))
+                if (VarSetOps::IsMember(compiler, liveLargeVectors, varIndex))
                 {
                     pos->liveVarUpperSave = true;
                 }
