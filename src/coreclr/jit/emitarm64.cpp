@@ -2722,6 +2722,48 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+#ifdef DEBUG
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm4(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm));
+                    break;
+
+                default:
+                    break;
+            }
+#endif // DEBUG
+            break;
+
+        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isValidUimm4(imm));
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -10129,6 +10171,48 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
             fmt = IF_SVE_FU_2A;
+            break;
+
+        case INS_sve_dupq:
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+#ifdef DEBUG
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm4(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm));
+                    break;
+
+                default:
+                    break;
+            }
+#endif // DEBUG
+            fmt = IF_SVE_BX_2A;
+            break;
+
+        case INS_sve_extq:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+            assert(isValidUimm4(imm));
+            fmt = IF_SVE_BY_2A;
             break;
 
         default:
@@ -19407,6 +19491,49 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the field 'i1:tsz' at bit locations '20:19-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsizeWithImmediate_i1_tsz(const insOpts opt, ssize_t imm)
+{
+    code_t encoding = 0;
+
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+            assert(isValidUimm4(imm));
+            encoding |= (1 << 16);   // bit 16
+            encoding |= (imm << 17); // bits 20-17
+            break;
+
+        case INS_OPTS_SCALABLE_H:
+            assert(isValidUimm3(imm));
+            encoding |= (1 << 17);   // bit 17
+            encoding |= (imm << 18); // bits 20-18
+            break;
+
+        case INS_OPTS_SCALABLE_S:
+            assert(isValidUimm2(imm));
+            encoding |= (1 << 18);   // bit 18
+            encoding |= (imm << 19); // bits 20-19
+            break;
+
+        case INS_OPTS_SCALABLE_D:
+            assert(isValidImm1(imm));
+            encoding |= (1 << 19);   // bit 19
+            encoding |= (imm << 20); // bit 20
+            break;
+
+        default:
+            assert(!"Invalid size for vector register");
+            break;
+    }
+
+    return encoding;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
  *  This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
  */
@@ -21506,6 +21633,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isValidUimm7(imm));
     return (code_t)imm << 14;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm4_19_to_16(ssize_t imm)
+{
+    assert(isValidUimm4(imm));
+    return (code_t)imm << 16;
 }
 
 /*****************************************************************************
@@ -25430,6 +25568,24 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
             code |= insEncodeSveElemsizeWithShift_tszh_tszl_imm3(id->idInsOpt(), imm,
                                                                  emitInsIsVectorRightShift(ins)); // xx xxiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                           // nnnnn
+            code |= insEncodeSveElemsizeWithImmediate_i1_tsz(id->idInsOpt(), imm); // ixxxx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // mmmmm
+            code |= insEncodeUimm4_19_to_16(imm);        // iiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -29484,6 +29640,23 @@ void emitter::emitDispInsHelp(
         // <Zda>.<T>, <Zn>.<T>, #<const>
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
             imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispImm(imm, false);
+            break;
+
+        // <Zd>.<T>, <Zn>.<T>[<imm>]
+        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
+            emitDispElementIndex(imm, false);
+            break;
+
+        // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
             emitDispImm(imm, false);
@@ -33685,6 +33858,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_SVE_BX_2A:                                  // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_BY_2A:                                  // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
         default:
