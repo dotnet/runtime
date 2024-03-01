@@ -1735,7 +1735,19 @@ namespace System
             return FMod(dividend, divisor);
         }
 
-        private static int DoubleToInt(double val) => (int)(long)val;
-        private static uint DoubleToUInt(double val) => (uint)(long)val;
+        private static int DoubleToInt(double val)
+        {
+            return double.IsNaN(val) || ((long)val < int.MinValue) ? int.MinValue : ((long)val > int.MaxValue) ? int.MaxValue : (int)(long)val;
+        }
+        private static uint DoubleToUInt(double val)
+        {
+            return double.IsNaN(val) || (val < 0) ? 0 : ((ulong)val > uint.MaxValue) ? uint.MaxValue : (uint)(ulong)val;
+        }
+
+        private static uint FloatToUInt(float val)
+        {
+            //return 0;
+            return float.IsNaN(val) || (val < 0) ? 0 : ((ulong)val > uint.MaxValue) ? uint.MaxValue : (uint)(ulong)val;
+        }
     }
 }

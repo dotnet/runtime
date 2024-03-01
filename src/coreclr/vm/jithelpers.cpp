@@ -388,8 +388,10 @@ HCIMPLEND
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
-
-    return (INT64)val;
+    const double int64_min = (double)INT64_MIN;
+    const double int64_max = (double)INT64_MAX;
+    return (val!= val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (INT64)val;
+    //return (INT64)val;
 }
 HCIMPLEND
 

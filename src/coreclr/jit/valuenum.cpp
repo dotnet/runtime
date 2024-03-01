@@ -12740,6 +12740,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
 void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
 {
+    // printf("\n Deepak fgValueNumberCastHelper IN \n");
     CorInfoHelpFunc helpFunc         = eeGetHelperNum(call->gtCallMethHnd);
     var_types       castToType       = TYP_UNDEF;
     var_types       castFromType     = TYP_UNDEF;
@@ -12767,6 +12768,16 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
 
         case CORINFO_HELP_DBL2LNG:
             castToType   = TYP_LONG;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2INT:
+            castToType   = TYP_INT;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2UINT:
+            castToType   = TYP_UINT;
             castFromType = TYP_DOUBLE;
             break;
 
@@ -13081,6 +13092,8 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 {
     CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+    // printf("\n Deepak Call = [%06u], helpFunc = %d \n", dspTreeID(call), (int)helpFunc);
+    // printTreeID(call);
 
     switch (helpFunc)
     {
@@ -13088,6 +13101,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_ULNG2DBL:
         case CORINFO_HELP_DBL2INT_OVF:
         case CORINFO_HELP_DBL2LNG:
+        case CORINFO_HELP_DBL2INT:
+        case CORINFO_HELP_DBL2UINT:
         case CORINFO_HELP_DBL2LNG_OVF:
         case CORINFO_HELP_FLT2UINT:
         case CORINFO_HELP_DBL2UINT_OVF:
@@ -13117,7 +13132,10 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         break;
 
         default:
+        {
+            // printf("\n Deepak DEFAULT!! \n");
             break;
+        }
     }
 
     bool pure        = s_helperCallProperties.IsPure(helpFunc);

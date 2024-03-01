@@ -447,6 +447,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             }
             else if (srcType == TYP_DOUBLE && dstType == TYP_UINT)
             {
+                /*oper = gtNewCastNode(TYP_LONG, oper, false, TYP_LONG);
+                tree = gtNewCastNode(TYP_INT, oper, false, TYP_UINT);
+                return fgMorphTree(tree);*/
                 return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
             }
             else if (srcType == TYP_DOUBLE && dstType == TYP_INT)

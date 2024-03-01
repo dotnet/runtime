@@ -177,8 +177,15 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2ULng:
                     methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToULong");
                     break;
+                case ReadyToRunHelper.Dbl2UInt:
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToUInt");
+                    break;
+                case ReadyToRunHelper.Dbl2Int:
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToInt");
+                    break;
                 case ReadyToRunHelper.Flt2UInt:
-                    mangledName = "RhpFlt2UInt";
+                    methodDesc = context.GetHelperEntryPoint("System", "Math", "FloatToUInt");
+                    //mangledName = "RhpFlt2UInt";
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
@@ -199,13 +206,6 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.FltRem:
                     methodDesc = context.GetHelperEntryPoint("System", "MathF", "FloatReminder");
-                    break;
-
-                case ReadyToRunHelper.Dbl2Int:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToInt");
-                    break;
-                case ReadyToRunHelper.Dbl2UInt:
-                    methodDesc = context.GetHelperEntryPoint("System", "MathF", "DoubleToUInt");
                     break;
                 case ReadyToRunHelper.DblRound:
                     DefType doubleType = context.GetWellKnownType(WellKnownType.Double);
