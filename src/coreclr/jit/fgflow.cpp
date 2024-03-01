@@ -136,32 +136,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
-
-                // This edge should have been given a likelihood when it was created.
-                // Since we're increasing its duplicate count, update the likelihood.
-                //
-                assert(flow->hasLikelihood());
-                const unsigned numSucc = blockPred->NumSucc();
-                assert(numSucc > 0);
-
-                if (numSucc == 1)
-                {
-                    // BasicBlock::NumSucc() returns 1 for BBJ_CONDs with the same true/false target.
-                    // For blocks that only ever have one successor (BBJ_ALWAYS, BBJ_LEAVE, etc.),
-                    // their successor edge should never have a duplicate count over 1.
-                    //
-                    assert(blockPred->KindIs(BBJ_COND));
-                    assert(blockPred->TrueTargetIs(blockPred->GetFalseTarget()));
-                    flow->setLikelihood(1.0);
-                }
-                else
-                {
-                    // Duplicate count isn't updated until later, so add 1 for now.
-                    //
-                    const unsigned dupCount = flow->getDupCount() + 1;
-                    assert(dupCount > 1);
-                    flow->setLikelihood((1.0 / numSucc) * dupCount);
-                }
             }
         }
     }
@@ -211,14 +185,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         if (initializingPreds)
         {
             block->bbLastPred = flow;
-
-            // When initializing preds, ensure edge likelihood is set,
-            // such that this edge is as likely as any other successor edge
-            //
-            const unsigned numSucc = blockPred->NumSucc();
-            assert(numSucc > 0);
-            assert(flow->getDupCount() == 1);
-            flow->setLikelihood(1.0 / numSucc);
         }
         else if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
         {
@@ -267,10 +233,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     // Pred list should (still) be ordered.
     //
     assert(block->checkPredListOrder());
-
-    // When initializing preds, edge likelihood should always be set.
-    //
-    assert(!initializingPreds || flow->hasLikelihood());
 
     return flow;
 }
@@ -502,16 +464,20 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // Now we have a set of unique successors.
         unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
 
-        BasicBlock** nonDups = new (getAllocator()) BasicBlock*[numNonDups];
+        FlowEdge** nonDups = new (getAllocator()) FlowEdge*[numNonDups];
 
         unsigned nonDupInd = 0;
+
         // At this point, all unique targets are in "uniqueSuccBlocks".  As we encounter each,
         // add to nonDups, remove from "uniqueSuccBlocks".
-        for (BasicBlock* const targ : switchBlk->SwitchTargets())
+        BBswtDesc* const swtDesc = switchBlk->GetSwitchTargets();
+        for (unsigned i = 0; i < swtDesc->bbsCount; i++)
         {
+            FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
+            BasicBlock* const targ     = succEdge->getDestinationBlock();
             if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
-                nonDups[nonDupInd] = targ;
+                nonDups[nonDupInd] = succEdge;
                 nonDupInd++;
                 BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
             }

@@ -6624,6 +6624,13 @@ bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * p
 
     // Remember that sfLowerBound and sfUpperBound are in the "OS format".
     // Refer to the comment for CallerStackFrame for more information.
+
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        // The new exception handling sets the ranges always to the SP of the unwound frame
+        return (sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound);
+    }
+
 #ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
     if ((sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound))
 #else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
@@ -7970,7 +7977,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -7984,7 +7991,7 @@ extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *p
 
     IJitManager* pJitMan = pFrameIter->m_crawl.GetJitManager();
     const METHODTOKEN& MethToken = pFrameIter->m_crawl.GetMethodToken();
-    *pMethodStartAddress = (BYTE*)pJitMan->JitTokenToStartAddress(MethToken);
+    pJitMan->JitTokenToMethodRegionInfo(MethToken, pMethodRegionInfo);
     pExtendedEHEnum->EHCount = pJitMan->InitializeEHEnumeration(MethToken, pEHEnum);
 
     END_QCALL;
@@ -8204,18 +8211,6 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
 
     NotifyExceptionPassStarted(pThis, pThread, pExInfo);
 
-    if (pFrame == FRAME_TOP)
-    {
-        // There are no managed frames on the stack, fail fast and report unhandled exception
-        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
-#ifdef HOST_WINDOWS
-        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
-        RaiseFailFastException(pExInfo->m_ptrs.ExceptionRecord, NULL, 0);
-#else
-        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
-#endif
-    }
-
     REGDISPLAY* pRD = &pExInfo->m_regDisplay;
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
@@ -8284,6 +8279,18 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
+    }
+    else
+    {
+        // There are no managed frames on the stack, fail fast and report unhandled exception
+        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
+#ifdef HOST_WINDOWS
+        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
+#else
+        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
+#endif
     }
 
     return result;

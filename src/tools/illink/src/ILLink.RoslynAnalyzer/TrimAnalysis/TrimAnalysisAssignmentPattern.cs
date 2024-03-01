@@ -58,7 +58,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
-				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode)) {
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
 				foreach (var sourceValue in Source.AsEnumerable ()) {
 					foreach (var targetValue in Target.AsEnumerable ()) {
 						// The target should always be an annotated value, but the visitor design currently prevents

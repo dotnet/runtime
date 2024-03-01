@@ -10,9 +10,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal abstract partial class OrderedEnumerable<TElement> : IPartition<TElement>
+        internal abstract partial class OrderedIterator<TElement>
         {
-            public virtual TElement[] ToArray()
+            public override TElement[] ToArray()
             {
                 TElement[] buffer = _source.ToArray();
                 if (buffer.Length == 0)
@@ -25,7 +25,7 @@ namespace System.Linq
                 return array;
             }
 
-            public virtual List<TElement> ToList()
+            public override List<TElement> ToList()
             {
                 TElement[] buffer = _source.ToArray();
 
@@ -47,11 +47,11 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is IIListProvider<TElement> listProv)
+                if (_source is Iterator<TElement> iterator)
                 {
-                    return listProv.GetCount(onlyIfCheap);
+                    return iterator.GetCount(onlyIfCheap);
                 }
 
                 return !onlyIfCheap || _source is ICollection<TElement> || _source is ICollection ? _source.Count() : -1;
@@ -133,11 +133,11 @@ namespace System.Linq
                 return (count <= maxIdx ? count : maxIdx + 1) - minIdx;
             }
 
-            public IPartition<TElement> Skip(int count) => new OrderedPartition<TElement>(this, count, int.MaxValue);
+            public override Iterator<TElement> Skip(int count) => new SkipTakeOrderedIterator<TElement>(this, count, int.MaxValue);
 
-            public IPartition<TElement> Take(int count) => new OrderedPartition<TElement>(this, 0, count - 1);
+            public override Iterator<TElement> Take(int count) => new SkipTakeOrderedIterator<TElement>(this, 0, count - 1);
 
-            public TElement? TryGetElementAt(int index, out bool found)
+            public override TElement? TryGetElementAt(int index, out bool found)
             {
                 if (index == 0)
                 {
@@ -158,7 +158,7 @@ namespace System.Linq
                 return default;
             }
 
-            public virtual TElement? TryGetFirst(out bool found)
+            public override TElement? TryGetFirst(out bool found)
             {
                 CachingComparer<TElement> comparer = GetComparer();
                 using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -185,7 +185,7 @@ namespace System.Linq
                 }
             }
 
-            public virtual TElement? TryGetLast(out bool found)
+            public override TElement? TryGetLast(out bool found)
             {
                 using (IEnumerator<TElement> e = _source.GetEnumerator())
                 {
@@ -247,7 +247,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
+        internal sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
         {
             // For complicated cases, rely on the base implementation that's more comprehensive.
             // For the simple case of OrderBy(...).First() or OrderByDescending(...).First() (i.e. where
@@ -358,7 +358,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+        internal sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
         {
             public override TElement[] ToArray()
             {
@@ -433,6 +433,114 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+        }
+
+        internal sealed class SkipTakeOrderedIterator<TElement> : Iterator<TElement>
+        {
+            private readonly OrderedIterator<TElement> _source;
+            private readonly int _minIndexInclusive;
+            private readonly int _maxIndexInclusive;
+
+            private TElement[]? _buffer;
+            private int[]? _map;
+            private int _maxIdx;
+
+            public SkipTakeOrderedIterator(OrderedIterator<TElement> source, int minIdxInclusive, int maxIdxInclusive)
+            {
+                _source = source;
+                _minIndexInclusive = minIdxInclusive;
+                _maxIndexInclusive = maxIdxInclusive;
+            }
+
+            public override Iterator<TElement> Clone() => new SkipTakeOrderedIterator<TElement>(_source, _minIndexInclusive, _maxIndexInclusive);
+
+            public override bool MoveNext()
+            {
+                int state = _state;
+
+                Initialized:
+                if (state > 1)
+                {
+                    Debug.Assert(_buffer is not null);
+                    Debug.Assert(_map is not null);
+
+                    int[] map = _map;
+                    int i = state - 2 + _minIndexInclusive;
+                    if (i <= _maxIdx)
+                    {
+                        _current = _buffer[map[i]];
+                        _state++;
+                        return true;
+                    }
+                }
+                else if (state == 1)
+                {
+                    TElement[] buffer = _source.ToArray();
+                    int count = buffer.Length;
+                    if (count > _minIndexInclusive)
+                    {
+                        _maxIdx = _maxIndexInclusive;
+                        if (count <= _maxIdx)
+                        {
+                            _maxIdx = count - 1;
+                        }
+
+                        if (_minIndexInclusive == _maxIdx)
+                        {
+                            _current = _source.GetEnumerableSorter().ElementAt(buffer, count, _minIndexInclusive);
+                            _state = -1;
+                            return true;
+                        }
+
+                        _map = _source.SortedMap(buffer, _minIndexInclusive, _maxIdx);
+                        _buffer = buffer;
+                        _state = state = 2;
+                        goto Initialized;
+                    }
+                }
+
+                Dispose();
+                return false;
+            }
+
+            public override Iterator<TElement>? Skip(int count)
+            {
+                int minIndex = _minIndexInclusive + count;
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new SkipTakeOrderedIterator<TElement>(_source, minIndex, _maxIndexInclusive);
+            }
+
+            public override Iterator<TElement> Take(int count)
+            {
+                int maxIndex = _minIndexInclusive + count - 1;
+                if ((uint)maxIndex >= (uint)_maxIndexInclusive)
+                {
+                    return this;
+                }
+
+                return new SkipTakeOrderedIterator<TElement>(_source, _minIndexInclusive, maxIndex);
+            }
+
+            public override TElement? TryGetElementAt(int index, out bool found)
+            {
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive))
+                {
+                    return _source.TryGetElementAt(index + _minIndexInclusive, out found);
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TElement? TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
+
+            public override TElement? TryGetLast(out bool found) =>
+                _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
+
+            public override TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
+
+            public override List<TElement> ToList() => _source.ToList(_minIndexInclusive, _maxIndexInclusive);
+
+            public override int GetCount(bool onlyIfCheap) => _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
         }
     }
 }

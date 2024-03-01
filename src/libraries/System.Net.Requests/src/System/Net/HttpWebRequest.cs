@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -44,6 +45,7 @@ namespace System.Net
         private HttpRequestMessage? _sendRequestMessage;
 
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
+        private static int _defaultMaximumErrorResponseLength = -1;
 
         private int _beginGetRequestStreamCalled;
         private int _beginGetResponseCalled;
@@ -425,11 +427,7 @@ namespace System.Net
         /// <devdoc>
         ///    <para>Sets the media type header</para>
         /// </devdoc>
-        public string? MediaType
-        {
-            get;
-            set;
-        }
+        public string? MediaType { get; set; }
 
         /// <devdoc>
         ///    <para>
@@ -682,14 +680,22 @@ namespace System.Net
             }
             set
             {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
                 _defaultMaxResponseHeadersLength = value;
             }
         }
 
-        // NOP
         public static int DefaultMaximumErrorResponseLength
         {
-            get; set;
+            get
+            {
+                return _defaultMaximumErrorResponseLength;
+            }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                _defaultMaximumErrorResponseLength = value;
+            }
         }
 
         private static RequestCachePolicy? _defaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
@@ -811,10 +817,12 @@ namespace System.Net
                 if (value.Equals(HttpVersion.Version11))
                 {
                     IsVersionHttp10 = false;
+                    ServicePoint.ProtocolVersion = HttpVersion.Version11;
                 }
                 else if (value.Equals(HttpVersion.Version10))
                 {
                     IsVersionHttp10 = true;
+                    ServicePoint.ProtocolVersion = HttpVersion.Version10;
                 }
                 else
                 {
@@ -1662,6 +1670,13 @@ namespace System.Net
                     handler.UseCookies = false;
                 }
 
+                if (parameters.ServicePoint is { } servicePoint)
+                {
+                    handler.MaxConnectionsPerServer = servicePoint.ConnectionLimit;
+                    handler.PooledConnectionIdleTimeout = TimeSpan.FromMilliseconds(servicePoint.MaxIdleTime);
+                    handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(servicePoint.ConnectionLeaseTimeout);
+                }
+
                 Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
                 Debug.Assert(handler.Proxy == null); // Default of handler.Proxy is null.
 
@@ -1679,7 +1694,7 @@ namespace System.Net
                 {
                     handler.UseProxy = false;
                 }
-                else if (!object.ReferenceEquals(parameters.Proxy, WebRequest.GetSystemWebProxy()))
+                else if (!ReferenceEquals(parameters.Proxy, GetSystemWebProxy()))
                 {
                     handler.Proxy = parameters.Proxy;
                 }
@@ -1700,10 +1715,20 @@ namespace System.Net
                 handler.SslOptions.EnabledSslProtocols = (SslProtocols)parameters.SslProtocols;
                 handler.SslOptions.CertificateRevocationCheckMode = parameters.CheckCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
                 RemoteCertificateValidationCallback? rcvc = parameters.ServerCertificateValidationCallback;
-                if (rcvc != null)
+                handler.SslOptions.RemoteCertificateValidationCallback = (message, cert, chain, errors) =>
                 {
-                    handler.SslOptions.RemoteCertificateValidationCallback = (message, cert, chain, errors) => rcvc(request!, cert, chain, errors);
-                }
+                    if (parameters.ServicePoint is { } servicePoint)
+                    {
+                        servicePoint.Certificate = cert;
+                    }
+
+                    if (rcvc is not null)
+                    {
+                        return rcvc(request!, cert, chain, errors);
+                    }
+
+                    return errors == SslPolicyErrors.None;
+                };
 
                 // Set up a ConnectCallback so that we can control Socket-specific settings, like ReadWriteTimeout => socket.Send/ReceiveTimeout.
                 handler.ConnectCallback = async (context, cancellationToken) =>
@@ -1712,6 +1737,10 @@ namespace System.Net
 
                     try
                     {
+                        IPAddress[] addresses = parameters.Async ?
+                            await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false) :
+                            Dns.GetHostAddresses(context.DnsEndPoint.Host);
+
                         if (parameters.ServicePoint is { } servicePoint)
                         {
                             if (servicePoint.ReceiveBufferSize != -1)
@@ -1725,19 +1754,58 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
+
+                            BindHelper(servicePoint, ref addresses, socket, context.DnsEndPoint.Port);
+                            static void BindHelper(ServicePoint servicePoint, ref IPAddress[] addresses, Socket socket, int port)
+                            {
+                                if (servicePoint.BindIPEndPointDelegate is null)
+                                {
+                                    return;
+                                }
+
+                                const int MaxRetries = 100;
+                                foreach (IPAddress address in addresses)
+                                {
+                                    int retryCount = 0;
+                                    for (; retryCount < MaxRetries; retryCount++)
+                                    {
+                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, port), retryCount);
+                                        if (endPoint is null) // Get other address to try
+                                        {
+                                            break;
+                                        }
+
+                                        try
+                                        {
+                                            socket.Bind(endPoint);
+                                            addresses = [address];
+                                            return; // Bind successful, exit loops.
+                                        }
+                                        catch
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    if (retryCount >= MaxRetries)
+                                    {
+                                        throw new OverflowException(SR.net_maximumbindretries);
+                                    }
+                                }
+                            }
                         }
 
-                        socket.NoDelay = true;
+                        socket.NoDelay = !(parameters.ServicePoint?.UseNagleAlgorithm) ?? true;
 
                         if (parameters.Async)
                         {
-                            await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                            await socket.ConnectAsync(addresses, context.DnsEndPoint.Port, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
                             using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
                             {
-                                socket.Connect(context.DnsEndPoint);
+                                socket.Connect(addresses, context.DnsEndPoint.Port);
                             }
 
                             // Throw in case cancellation caused the socket to be disposed after the Connect completed

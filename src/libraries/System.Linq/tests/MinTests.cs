@@ -136,6 +136,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<int>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<int>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<int>().Min());
         }
@@ -182,6 +184,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<long>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<long>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<long>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<long>().Min());
         }
@@ -250,6 +254,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<float>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<float>().Min());
         }
@@ -316,6 +322,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<double>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<double>().Min());
         }
@@ -355,6 +363,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<decimal>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<decimal>().Min());
         }
@@ -595,6 +605,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<DateTime>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<DateTime>().Min());
         }
@@ -858,6 +870,7 @@ namespace System.Linq.Tests
         public void Min_Bool_EmptySource_ThrowsInvalodOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<bool>().Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<bool>()).Min());
         }
 
         [Fact]
