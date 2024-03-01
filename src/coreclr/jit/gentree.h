@@ -970,9 +970,9 @@ public:
 
     regMaskOnlyOne gtRsvdRegs; // set of fixed trashed  registers
 
-    unsigned AvailableTempRegCount(regMaskMixed mask = (regMaskMixed)-1) const;
-    regNumber GetSingleTempReg(regMaskMixed mask = (regMaskMixed)-1);
-    regNumber ExtractTempReg(regMaskMixed mask = (regMaskMixed)-1);
+    unsigned  AvailableTempRegCount(regMaskOnlyOne mask = (regMaskOnlyOne)-1) const;
+    regNumber GetSingleTempReg(regMaskOnlyOne mask = (regMaskOnlyOne)-1);
+    regNumber ExtractTempReg(regMaskOnlyOne mask = (regMaskOnlyOne)-1);
 
     void SetVNsFromNode(GenTree* tree)
     {
