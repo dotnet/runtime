@@ -5493,7 +5493,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_IND:
         case GT_STOREIND:
         case GT_NULLCHECK:
-        case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
@@ -6147,7 +6146,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 AssertionIndex valueAssertionIndex;
                 AssertionIndex jumpDestAssertionIndex;
 
-                if (info.IsNextEdgeAssertion())
+                if (info.AssertionHoldsOnFalseEdge())
                 {
                     valueAssertionIndex    = info.GetAssertionIndex();
                     jumpDestAssertionIndex = optFindComplementary(info.GetAssertionIndex());

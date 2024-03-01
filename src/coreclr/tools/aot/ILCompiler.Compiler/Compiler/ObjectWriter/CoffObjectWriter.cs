@@ -446,8 +446,8 @@ namespace ILCompiler.ObjectWriter
                     // Emit RUNTIME_FUNCTION
                     pdataSectionWriter.EmitAlignment(4);
                     pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
-                    // Only x64 has the End symbol
-                    if (_machine == Machine.Amd64)
+                    // Only x86/x64 has the End symbol
+                    if (_machine is Machine.I386 or Machine.Amd64)
                     {
                         pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
                     }

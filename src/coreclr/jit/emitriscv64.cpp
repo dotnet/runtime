@@ -625,7 +625,8 @@ void emitter::emitIns_R_R(
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= reg2 << 15;
-        code |= 0x7 << 12;
+        if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
+            code |= 0x7 << 12;                           // round according to frm status register
     }
     else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
     {
@@ -633,7 +634,8 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
-        code |= 0x7 << 12;
+        if (INS_fcvt_d_s != ins) // fcvt.d.s never rounds
+            code |= 0x7 << 12;   // round according to frm status register
     }
     else
     {

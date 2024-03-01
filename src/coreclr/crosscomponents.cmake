@@ -25,6 +25,13 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS OR CLR_CMAKE_TARGET_IOS OR CL
                 DESTINATIONS .
                 COMPONENT crosscomponents
             )
+            if (CLR_CMAKE_TARGET_ARCH_I386)
+                install_clr (TARGETS
+                    clrjit_win_aot_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME}
+                    DESTINATIONS .
+                    COMPONENT crosscomponents
+                )
+            endif()
         endif()
     endif()
 endif()
