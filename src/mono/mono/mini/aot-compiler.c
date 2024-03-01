@@ -15622,7 +15622,7 @@ compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies
 	}
 	g_assert (aot_index != -1);
 
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 	response_fname = g_build_filename (aot_opts->temp_path, "temp.rsp", (const char*)NULL);
 	response = fopen (response_fname, "w");
 	g_assert (response);
