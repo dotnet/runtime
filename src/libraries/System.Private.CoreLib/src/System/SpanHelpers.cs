@@ -14,7 +14,7 @@ namespace System
     {
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
         {
-            Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref ip, sizeof(IntPtr)), "Should've been aligned on natural word boundary.");
+            Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref ip, (uint)sizeof(IntPtr)), "Should've been aligned on natural word boundary.");
 
             // First write backward 8 natural words at a time.
             // Writing backward allows us to get away with only simple modifications to the

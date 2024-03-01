@@ -914,7 +914,7 @@ namespace System.Runtime.CompilerServices
 
         // Determines if the address is aligned at least to `alignment` bytes.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsOpportunisticallyAligned<T>(ref readonly T address, nuint aligment)
+        internal static bool IsOpportunisticallyAligned<T>(ref readonly T address, nuint alignment)
         {
             // `alignment` is expected to be a power of 2 in bytes.
             // We use Unsafe.AsPointer to convert to a pointer,
