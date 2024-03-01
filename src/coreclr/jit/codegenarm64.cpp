@@ -3727,12 +3727,12 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                             nonGcSlots -= 2;
                         }
                         nonGcSlots -= 2;
-
                         emit->emitIns_R_R_R_I(INS_ldp, size, tmp1, tmp2, srcReg, EA_SIZE(size) * 2, opts);
                         emit->emitIns_R_R_R_I(INS_stp, size, tmp1, tmp2, dstReg, EA_SIZE(size) * 2, opts);
                     }
                     else
                     {
+                        nonGcSlots--;
                         emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmp1, tmp2, EA_SIZE(size), opts);
                         emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmp1, tmp2, EA_SIZE(size), opts);
                     }
