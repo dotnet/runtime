@@ -92,6 +92,8 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
 
 void ScanThreadStaticRoots(PTR_ThreadLocalData pThreadLocalData, promote_func* fn, ScanContext* sc)
 {
+    if (pThreadLocalData == NULL)
+        return;
     PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
     while (pInFlightData != NULL)
     {

@@ -3738,12 +3738,14 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
         case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
             result = true;
             gc     = true;
             retVal = SHRV_STATIC_BASE_PTR;
             break;
         case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
         case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             result = true;
             gc     = false;
             retVal = SHRV_STATIC_BASE_PTR;

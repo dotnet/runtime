@@ -7733,6 +7733,7 @@ void Thread::DeleteThreadStaticData(bool forCurrentThread)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -8310,7 +8311,8 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     m_ExceptionState.EnumChainMemoryRegions(flags);
 
-    EnumThreadMemoryRegions(GetThreadLocalDataPtr(), flags);
+    if (GetThreadLocalDataPtr() != NULL)
+        EnumThreadMemoryRegions(GetThreadLocalDataPtr(), flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
