@@ -2517,6 +2517,10 @@ public:
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // If upper vector save/restore can be avoided.
     unsigned char skipSaveRestore : 1;
+    // If upper vector save is related to live var
+    // or created just based on bbLiveIn/bbDefs and
+    // whose liveness is not entirely know.
+    unsigned char liveVarUpperSave: 1;
 #endif
 
 #ifdef DEBUG

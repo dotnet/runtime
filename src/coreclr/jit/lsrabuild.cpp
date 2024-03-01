@@ -636,6 +636,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     newRP->skipSaveRestore = false;
+    newRP->liveVarUpperSave  = false;
 #endif
 
     associateRefPosWithInterval(newRP);
@@ -1514,6 +1515,10 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
+                if (VarSetOps::IsMember(compiler, oldLiveLargeVectors, varIndex))
+                {
+                    pos->liveVarUpperSave = true;
+                }
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
@@ -1605,11 +1610,13 @@ void LinearScan::buildUpperVectorRestoreRefPosition(
             // If there was a use of the restore before end of the block restore,
             // then it is needed and cannot be eliminated
             savePos->skipSaveRestore = false;
+            savePos->liveVarUpperSave = true;
         }
         else
         {
             // otherwise, just do the whatever was decided for save position
             restorePos->skipSaveRestore = savePos->skipSaveRestore;
+            restorePos->liveVarUpperSave  = savePos->liveVarUpperSave;
         }
 
 #ifdef TARGET_XARCH
