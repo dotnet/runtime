@@ -4218,18 +4218,14 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
 
         // Look for matching exact type assertions based on vtable accesses
         if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_EXACT_TYPE) &&
-            op1->OperIs(GT_IND))
+            (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
         {
-            GenTree* indirAddr = op1->AsIndir()->Addr();
-
-            if (indirAddr->OperIs(GT_LCL_VAR) && (indirAddr->TypeGet() == TYP_REF))
+            ValueNum  op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+            VNFuncApp funcApp;
+            if (vnStore->GetVNFunc(op1VN, &funcApp) && ((funcApp.m_func == VNF_InvariantLoad)) &&
+                (curAssertion->op1.vn == funcApp.m_args[0]))
             {
-                // op1 is accessing vtable of a ref type local var
-                if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(indirAddr->gtVNPair)) &&
-                    (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
-                {
-                    return assertionIndex;
-                }
+                return assertionIndex;
             }
         }
     }
