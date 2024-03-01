@@ -495,8 +495,8 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             // so this corresponds to the infinite sequence [start, start + 1,
             // start + 1 + 1, ...] which can be represented by <L, start, 1>.
             //
-            // This approach also generalizes to handle to chains of
-            // recurrences. For example:
+            // This approach also generalizes to handle chains of recurrences.
+            // For example:
             //
             //   int i = 0;
             //   int j = 0;
