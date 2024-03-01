@@ -1502,7 +1502,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         VarSetOps::Iter iter(compiler, liveLargeVectors);
         unsigned        varIndex = 0;
         bool            blockAlwaysReturn =
-            compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
+            compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_RETURN);
 
         while (iter.NextElem(&varIndex))
         {
