@@ -9040,6 +9040,7 @@ void CordbJITILFrame::AdjustIPAfterException()
                 nativeOffsetToMap,
                 &mappingType);
         m_ip= uILOffset;
+        m_adjustedIP = true;
     }
 }
 
