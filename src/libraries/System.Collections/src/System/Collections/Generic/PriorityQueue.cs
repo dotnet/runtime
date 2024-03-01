@@ -470,7 +470,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                // all elements have the same priority so no need to heapify.
+                // If the queue is empty just append the elements since they all have the same priority.
 
                 int i = 0;
                 (TElement, TPriority)[] nodes = _nodes;
