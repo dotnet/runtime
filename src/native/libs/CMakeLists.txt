@@ -11,8 +11,7 @@ include_directories(${CLR_SRC_NATIVE_DIR})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if (STATIC_LIBS_ONLY)
-    # Suppress exporting of the PAL APIs
+if(STATIC_LIBS_ONLY OR "${__RuntimeFlavor}" STREQUAL "mono" OR "${__RuntimeFlavor}" STREQUAL "")    # Suppress exporting of the PAL APIs
     add_definitions(-DPALEXPORT=EXTERN_C)
 
     set(GEN_SHARED_LIB 0)
@@ -97,7 +96,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif ()
 else ()
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
-    add_subdirectory(System.Globalization.Native)
+    if(STATIC_LIBS_ONLY OR "${__RuntimeFlavor}" STREQUAL "mono" OR "${__RuntimeFlavor}" STREQUAL "")
+        add_subdirectory(System.Globalization.Native)
+    endif ()
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)
