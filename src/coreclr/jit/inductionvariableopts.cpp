@@ -656,7 +656,7 @@ PhaseStatus Compiler::optInductionVariables()
                                                  initStmt->GetNextStmt());
             }
 
-            JITDUMP("    Replacing in the loop; %d statements with appearences\n", ivUses.Height());
+            JITDUMP("    Replacing in the loop; %d statements with appearances\n", ivUses.Height());
             for (int i = 0; i < ivUses.Height(); i++)
             {
                 Statement* stmt = ivUses.Bottom(i);
