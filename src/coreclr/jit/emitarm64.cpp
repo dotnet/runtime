@@ -16254,10 +16254,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
         dumpConvertedVarSet(emitComp, ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
-        emitDispRegSet(gcrefRegs);
+        emitDispGprRegSet(gcrefRegs);
         printf(", byrefRegs=");
         printRegMaskInt(byrefRegs);
-        emitDispRegSet(byrefRegs);
+        emitDispGprRegSet(byrefRegs);
         printf("\n");
     }
 #endif

@@ -43,7 +43,7 @@ public:
     RegSet(Compiler* compiler, GCInfo& gcInfo);
 
 #ifdef TARGET_ARM
-    regMaskMixed rsMaskPreSpillRegs(bool includeAlignment) const
+    regMaskGpr rsMaskPreSpillRegs(bool includeAlignment) const
     {
         return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
     }
@@ -143,31 +143,93 @@ public:
     void verifyRegistersUsed(AllRegsMask mask);
 
 public:
-    regMaskMixed GetMaskVars() const // 'get' property function for rsMaskVars property
+    regMaskOnlyOne GetMaskVars(var_types type) const // 'get' property function for rsMaskVars property
     {
-        return _rsMaskVars;
+        if (varTypeRegister[type] == VTR_INT)
+        {
+            return _rsAllMaskVars.gprRegs;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeRegister[type] == VTR_MASK)
+        {
+            return _rsAllMaskVars.predicateRegs;
+        }
+#endif
+        else
+        {
+            assert(varTypeRegister[type] == VTR_FLOAT);
+            return _rsAllMaskVars.floatRegs;
+        }
     }
 
-    void SetMaskVars(regMaskMixed newMaskVars); // 'put' property function for rsMaskVars property
-
-    void AddMaskVars(regMaskMixed addMaskVars) // union 'addMaskVars' with the rsMaskVars set
+    regMaskGpr GetGprMaskVars() const // 'get' property function for rsMaskVars property
     {
-        SetMaskVars(_rsMaskVars | addMaskVars);
+        return _rsAllMaskVars.gprRegs;
     }
 
-    void RemoveMaskVars(regMaskMixed removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset
-                                                     // DiffD)
+    void SetMaskVars(AllRegsMask newMaskVars); // 'put' property function for rsMaskVars property
+
+    void AddMaskVars(var_types type, regMaskOnlyOne addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
-        SetMaskVars(_rsMaskVars & ~removeMaskVars);
+        AllRegsMask newMask = _rsAllMaskVars;
+        if (varTypeRegister[type] == VTR_INT)
+        {
+            newMask.gprRegs |= addMaskVars;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeRegister[type] == VTR_MASK)
+        {
+            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
+            // to regMaskGpr
+            assert(false);
+            newMask.predicateRegs |= addMaskVars;
+        }
+#endif
+        else
+        {
+            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
+            // to regMaskGpr
+            assert(false);
+            assert(varTypeRegister[type] == VTR_FLOAT);
+            newMask.floatRegs |= addMaskVars;
+        }
+        SetMaskVars(newMask);
+    }
+
+    // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
+    void RemoveMaskVars(var_types type, regMaskOnlyOne removeMaskVars) 
+    {
+        AllRegsMask newMask = _rsAllMaskVars;
+        if (varTypeRegister[type] == VTR_INT)
+        {
+            newMask.gprRegs = ~removeMaskVars;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeRegister[type] == VTR_MASK)
+        {
+            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
+            // to regMaskGpr
+            assert(false);
+            newMask.predicateRegs = ~removeMaskVars;
+        }
+#endif
+        else
+        {
+            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
+            // to regMaskGpr
+            assert(false);
+            assert(varTypeRegister[type] == VTR_FLOAT);
+            newMask.floatRegs = ~removeMaskVars;
+        }
+        SetMaskVars(newMask);
     }
 
     void ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
     {
-        _rsMaskVars = RBM_NONE;
+        _rsAllMaskVars = AllRegsMask();
     }
 
 private:
-    regMaskMixed _rsMaskVars; // backing store for rsMaskVars property
     AllRegsMask _rsAllMaskVars; // backing store for rsGprMaskVars property
 
 #if defined(TARGET_ARMARCH)

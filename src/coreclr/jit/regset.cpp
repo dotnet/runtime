@@ -346,34 +346,34 @@ void RegSet::rsRemoveRegsModified(regMaskGpr mask)
     rsModifiedGprRegsMask &= ~mask;
 }
 
-void RegSet::SetMaskVars(regMaskMixed newMaskVars)
+void RegSet::SetMaskVars(AllRegsMask newMaskVars)
 {
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tLive regs: ");
-        if (_rsMaskVars == newMaskVars)
+        if (_rsAllMaskVars == newMaskVars)
         {
             printf("(unchanged) ");
         }
         else
         {
-            printRegMask(_rsMaskVars);
-            m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
+            printRegMask(_rsAllMaskVars);
+            m_rsCompiler->GetEmitter()->emitDispRegSet(_rsAllMaskVars);
 
             // deadSet = old - new
-            regMaskMixed deadSet = _rsMaskVars & ~newMaskVars;
+            AllRegsMask deadSet = _rsAllMaskVars & ~newMaskVars;
 
             // bornSet = new - old
-            regMaskMixed bornSet = newMaskVars & ~_rsMaskVars;
+            AllRegsMask bornSet = newMaskVars & ~_rsAllMaskVars;
 
-            if (deadSet != RBM_NONE)
+            if (!deadSet.IsEmpty())
             {
                 printf(" -");
                 m_rsCompiler->GetEmitter()->emitDispRegSet(deadSet);
             }
 
-            if (bornSet != RBM_NONE)
+            if (!bornSet.IsEmpty())
             {
                 printf(" +");
                 m_rsCompiler->GetEmitter()->emitDispRegSet(bornSet);
@@ -387,7 +387,7 @@ void RegSet::SetMaskVars(regMaskMixed newMaskVars)
     }
 #endif // DEBUG
 
-    _rsMaskVars = newMaskVars;
+    _rsAllMaskVars = newMaskVars;
 }
 
 /*****************************************************************************/

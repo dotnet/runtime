@@ -95,8 +95,8 @@ public:
     void gcMarkRegPtrVal(regNumber reg, var_types type);
 
 #ifdef DEBUG
-    void gcDspGCrefSetChanges(regMaskMixed gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
-    void gcDspByrefSetChanges(regMaskMixed gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
+    void gcDspGCrefSetChanges(regMaskGpr gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
+    void gcDspByrefSetChanges(regMaskGpr gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
 #endif // DEBUG
 
     /*****************************************************************************/
@@ -390,9 +390,11 @@ private:
 #endif // JIT32_GCENCODER
 #endif // DUMP_GC_TABLES
 
+#if 0
 public:
     // This method updates the appropriate reg masks when a variable is moved.
     void gcUpdateForRegVarMove(regMaskMixed srcMask, regMaskMixed dstMask, LclVarDsc* varDsc);
+#endif
 
 private:
     ReturnKind getReturnKind();

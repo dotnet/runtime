@@ -337,6 +337,24 @@ typedef struct _regMaskAll
         ;
     }
 
+    void           AddRegTypeMask(var_types type, regMaskOnlyOne maskToAdd)
+    {
+        if (varTypeRegister[type] == VTR_INT)
+        {
+            gprRegs |= maskToAdd;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeRegister[type] == VTR_MASK)
+        {
+            predicateRegs |= maskToAdd;
+        }
+#endif
+        else
+        {
+            assert(varTypeRegister[type] == VTR_FLOAT);
+            floatRegs |= maskToAdd;
+        }
+    }
     regMaskOnlyOne GetRegTypeMask(var_types type)
     {
         if (varTypeRegister[type] == VTR_INT)
@@ -720,7 +738,7 @@ inline singleRegMask genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskMixed result = 1ULL << reg;
+    singleRegMask result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -779,19 +797,17 @@ inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TY
 inline regMaskOnlyOne genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
-    regMaskMixed regMask = RBM_NONE;
-
     if (varTypeUsesIntReg(type))
     {
-        regMask = genRegMask(regNum);
+        return genRegMask(regNum);
     }
     else
     {
         assert(varTypeUsesFloatReg(type));
-        regMask = genRegMaskFloat(regNum, type);
+        return genRegMaskFloat(regNum, type);
     }
 
-    return regMask;
+    return RBM_NONE;
 #else
     return genRegMask(regNum);
 #endif

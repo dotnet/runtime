@@ -6620,7 +6620,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
         regMaskOnlyOne tempMask = varDsc->lvRegMask();
-        regSet.RemoveMaskVars(tempMask);
+        regSet.RemoveMaskVars(varDsc->TypeGet(), tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))
         {
@@ -6696,7 +6696,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             if (type0 != TYP_UNKNOWN)
             {
                 GetEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), varDsc->GetArgReg(), varNum, offset0);
-                regSet.SetMaskVars(regSet.GetMaskVars() | genRegMask(varDsc->GetArgReg()));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(varDsc->GetArgReg()));
                 gcInfo.gcMarkRegPtrVal(varDsc->GetArgReg(), type0);
             }
 
@@ -6704,7 +6704,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             {
                 GetEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), varDsc->GetOtherArgReg(), varNum,
                                           offset1);
-                regSet.SetMaskVars(regSet.GetMaskVars() | genRegMask(varDsc->GetOtherArgReg()));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(varDsc->GetOtherArgReg()));
                 gcInfo.gcMarkRegPtrVal(varDsc->GetOtherArgReg(), type1);
             }
 
@@ -6751,7 +6751,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of the
                 // basic block and after which reg life and gc info will be recomputed for the new block in
                 // genCodeForBBList().
-                regSet.AddMaskVars(genRegMask(argReg));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argReg));
                 gcInfo.gcMarkRegPtrVal(argReg, loadType);
                 if (compiler->lvaIsGCTracked(varDsc))
                 {
@@ -9190,7 +9190,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                 // The call target must not overwrite any live variable, though it may not be in the
                 // kill set for the call.
                 regMaskGpr callTargetMask = genRegMask(callTargetReg);
-                noway_assert((callTargetMask & regSet.GetMaskVars()) == RBM_NONE);
+                noway_assert((callTargetMask & regSet.GetGprMaskVars()) == RBM_NONE);
             }
 #endif
 
@@ -10136,10 +10136,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         dumpConvertedVarSet(compiler, gcInfo.gcVarPtrSetCur);
         printf(", gcRegGCrefSetCur=");
         printRegMaskInt(gcInfo.gcRegGCrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur);
+        GetEmitter()->emitDispGprRegSet(gcInfo.gcRegGCrefSetCur);
         printf(", gcRegByrefSetCur=");
         printRegMaskInt(gcInfo.gcRegByrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
+        GetEmitter()->emitDispGprRegSet(gcInfo.gcRegByrefSetCur);
         printf("\n");
     }
 #endif

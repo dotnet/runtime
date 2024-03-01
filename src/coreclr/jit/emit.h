@@ -338,8 +338,6 @@ struct insGroup
     unsigned igStkLvl; // stack level on entry
 #endif                 // EMIT_TRACK_STACK_DEPTH
 
-    regMaskSmall igGCregs; // set of registers with live GC refs
-
     unsigned char igInsCnt; // # of instructions  in this group
 
     VARSET_VALRET_TP igGCvars() const
@@ -3193,7 +3191,9 @@ public:
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
-    void emitDispRegSet(regMaskMixed regs);
+    void        emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyOne regs);
+    void        emitDispGprRegSet(regMaskGpr regs);
+    void emitDispRegSet(AllRegsMask regs);
     void emitDispVarSet();
 #endif
 

@@ -4705,10 +4705,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
         dumpConvertedVarSet(emitComp, ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
-        emitDispRegSet(gcrefRegs);
+        emitDispGprRegSet(gcrefRegs);
         printf(", byrefRegs=");
         printRegMaskInt(byrefRegs);
-        emitDispRegSet(byrefRegs);
+        emitDispGprRegSet(byrefRegs);
         printf("\n");
     }
 #endif
@@ -6668,11 +6668,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             printf("Before emitOutputInstr for id->idDebugOnlyInfo()->idNum=0x%02x\n", id->idDebugOnlyInfo()->idNum);
             printf("  emitThisGCrefRegs(0x%p)=", dspPtr(&emitThisGCrefRegs));
             printRegMaskInt(emitThisGCrefRegs);
-            emitDispRegSet(emitThisGCrefRegs);
+            emitDispGprRegSet(emitThisGCrefRegs);
             printf("\n");
             printf("  emitThisByrefRegs(0x%p)=", dspPtr(&emitThisByrefRegs));
             printRegMaskInt(emitThisByrefRegs);
-            emitDispRegSet(emitThisByrefRegs);
+            emitDispGprRegSet(emitThisByrefRegs);
             printf("\n");
         }
 

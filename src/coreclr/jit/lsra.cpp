@@ -4092,7 +4092,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
     {
         // If we're rotating the register locations at block boundaries, try to use
         // the next higher register number of the appropriate register type.
-        regMaskMixed candidateRegs = allRegs(interval->registerType) & availableRegs;
+        regMaskOnlyOne candidateRegs = allRegs(interval->registerType) & availableRegs;
         regNumber    firstReg      = REG_NA;
         regNumber    newReg        = REG_NA;
         while (candidateRegs != RBM_NONE)

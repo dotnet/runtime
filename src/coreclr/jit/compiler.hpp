@@ -4445,9 +4445,16 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 #ifdef DEBUG
 
-inline void printRegMask(regMaskMixed mask)
+inline void printRegMask(AllRegsMask mask)
 {
+    printf(REG_MASK_ALL_FMT, mask.gprRegs);
+    printf(" ");
+    printf(REG_MASK_ALL_FMT, mask.floatRegs);
+
+#ifdef HAS_PREDICATE_REGS
+    printf(" ");
     printf(REG_MASK_ALL_FMT, mask);
+#endif // HAS_PREDICATE_REGS
 }
 
 inline char* regMaskToString(regMaskMixed mask, Compiler* context)

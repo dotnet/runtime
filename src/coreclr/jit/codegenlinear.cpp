@@ -216,7 +216,8 @@ void CodeGen::genCodeForBBlist()
 
             if (varDsc->lvIsInReg())
             {
-                varDsc->lvRegMask(newLiveRegSet);
+                newLiveRegSet.AddRegTypeMask(varDsc->TypeGet(), varDsc->lvRegMask());
+
                 if (varDsc->lvType == TYP_REF)
                 {
                     newRegGCrefSet |= varDsc->lvRegMask();
@@ -390,7 +391,7 @@ void CodeGen::genCodeForBBlist()
         // We cannot emit this code in the prolog as it might make the prolog too large.
         if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
         {
-            genPoisonFrame(newLiveRegSet);
+            genPoisonFrame(newLiveRegSet.gprRegs);
         }
 
         // Traverse the block in linear order, generating code for each node as we
@@ -481,7 +482,7 @@ void CodeGen::genCodeForBBlist()
         /* Make sure we didn't bungle pointer register tracking */
 
         regMaskGpr ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
-        regMaskGpr nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
+        regMaskGpr nonVarPtrRegs = ptrRegs & ~regSet.GetGprMaskVars();
 
         // If return is a GC-type, clear it.  Note that if a common
         // epilog is generated (genReturnBB) it has a void return
@@ -499,14 +500,14 @@ void CodeGen::genCodeForBBlist()
         if (nonVarPtrRegs)
         {
             printf("Regset after " FMT_BB " gcr=", block->bbNum);
-            printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.GetMaskVars());
-            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.GetMaskVars());
+            printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.GetGprMaskVars());
+            compiler->GetEmitter()->emitDispGprRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.GetGprMaskVars());
             printf(", byr=");
-            printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.GetMaskVars());
-            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur & ~regSet.GetMaskVars());
+            printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.GetGprMaskVars());
+            compiler->GetEmitter()->emitDispGprRegSet(gcInfo.gcRegByrefSetCur & ~regSet.GetGprMaskVars());
             printf(", regVars=");
-            printRegMaskInt(regSet.GetMaskVars());
-            compiler->GetEmitter()->emitDispRegSet(regSet.GetMaskVars());
+            printRegMaskInt(regSet.GetGprMaskVars());
+            compiler->GetEmitter()->emitDispGprRegSet(regSet.GetGprMaskVars());
             printf("\n");
         }
 
@@ -1123,7 +1124,7 @@ void CodeGen::genUnspillLocal(
         }
 #endif // DEBUG
 
-        regSet.AddMaskVars(genGetRegMask(varDsc));
+        regSet.AddMaskVars(varDsc->TypeGet(), genGetRegMask(varDsc));
     }
 
     gcInfo.gcMarkRegPtrVal(regNum, type);

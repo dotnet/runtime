@@ -83,7 +83,7 @@ void GCInfo::gcResetForBB()
  *  Print the changes in the gcRegGCrefSetCur sets.
  */
 
-void GCInfo::gcDspGCrefSetChanges(regMaskMixed gcRegGCrefSetNew DEBUGARG(bool forceOutput))
+void GCInfo::gcDspGCrefSetChanges(regMaskGpr gcRegGCrefSetNew DEBUGARG(bool forceOutput))
 {
     if (compiler->verbose)
     {
@@ -97,11 +97,11 @@ void GCInfo::gcDspGCrefSetChanges(regMaskMixed gcRegGCrefSetNew DEBUGARG(bool fo
             else
             {
                 printRegMaskInt(gcRegGCrefSetCur);
-                compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetCur);
+                compiler->GetEmitter()->emitDispGprRegSet(gcRegGCrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegGCrefSetNew);
-            compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetNew);
+            compiler->GetEmitter()->emitDispGprRegSet(gcRegGCrefSetNew);
             printf("\n");
         }
     }
@@ -112,7 +112,7 @@ void GCInfo::gcDspGCrefSetChanges(regMaskMixed gcRegGCrefSetNew DEBUGARG(bool fo
  *  Print the changes in the gcRegByrefSetCur sets.
  */
 
-void GCInfo::gcDspByrefSetChanges(regMaskMixed gcRegByrefSetNew DEBUGARG(bool forceOutput))
+void GCInfo::gcDspByrefSetChanges(regMaskGpr gcRegByrefSetNew DEBUGARG(bool forceOutput))
 {
     if (compiler->verbose)
     {
@@ -126,11 +126,11 @@ void GCInfo::gcDspByrefSetChanges(regMaskMixed gcRegByrefSetNew DEBUGARG(bool fo
             else
             {
                 printRegMaskInt(gcRegByrefSetCur);
-                compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetCur);
+                compiler->GetEmitter()->emitDispGprRegSet(gcRegByrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegByrefSetNew);
-            compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetNew);
+            compiler->GetEmitter()->emitDispGprRegSet(gcRegByrefSetNew);
             printf("\n");
         }
     }
@@ -194,8 +194,8 @@ void GCInfo::gcMarkRegSetNpt(regMaskOnlyOne regMask DEBUGARG(bool forceOutput))
 
     /* NOTE: don't unmark any live register variables */
 
-    regMaskMixed gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->GetMaskVars());
-    regMaskMixed gcRegGCrefSetNew = gcRegGCrefSetCur & ~(regMask & ~regSet->GetMaskVars());
+    regMaskGpr gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->GetGprMaskVars());
+    regMaskGpr gcRegGCrefSetNew = gcRegGCrefSetCur & ~(regMask & ~regSet->GetGprMaskVars());
 
     INDEBUG(gcDspGCrefSetChanges(gcRegGCrefSetNew, forceOutput));
     INDEBUG(gcDspByrefSetChanges(gcRegByrefSetNew, forceOutput));
@@ -705,6 +705,7 @@ void GCInfo::gcRegPtrSetInit()
 
 #endif // JIT32_GCENCODER
 
+#if 0
 //------------------------------------------------------------------------
 // gcUpdateForRegVarMove: Update the masks when a variable is moved
 //
@@ -771,6 +772,6 @@ void GCInfo::gcUpdateForRegVarMove(regMaskMixed srcMask, regMaskMixed dstMask, L
         VarSetOps::AddElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
     }
 }
-
+#endif 
 /*****************************************************************************/
 /*****************************************************************************/

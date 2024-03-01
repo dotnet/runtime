@@ -3902,7 +3902,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
         singleRegMask tempMask = genRegMask(varDsc->GetRegNum());
-        regSet.RemoveMaskVars(tempMask);
+        regSet.RemoveMaskVars(varDsc->TypeGet(), tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))
         {
@@ -3990,7 +3990,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of
                 // the basic block and after which reg life and gc info will be recomputed for the new block
                 // in genCodeForBBList().
-                regSet.AddMaskVars(genRegMask(argReg));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argReg));
                 gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
                 if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
@@ -4002,7 +4002,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     loadSize = emitActualTypeSize(loadType);
                     GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
 
-                    regSet.AddMaskVars(genRegMask(argRegNext));
+                    regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argRegNext));
                     gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
                 }
 
@@ -4100,7 +4100,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, slotReg, varNum, ofs);
                 }
 
-                regSet.AddMaskVars(genRegMask(slotReg));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(slotReg));
                 gcInfo.gcMarkRegPtrVal(slotReg, loadType);
                 if (genIsValidIntReg(slotReg) && compiler->info.compIsVarArgs)
                 {
@@ -4119,7 +4119,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 GetEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
             }
 
-            regSet.AddMaskVars(genRegMask(argReg));
+            regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argReg));
             gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
             if (genIsValidIntReg(argReg) && compiler->info.compIsVarArgs)
@@ -5558,10 +5558,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         dumpConvertedVarSet(compiler, gcInfo.gcVarPtrSetCur);
         printf(", gcRegGCrefSetCur=");
         printRegMaskInt(gcInfo.gcRegGCrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur);
+        GetEmitter()->emitDispGprRegSet(gcInfo.gcRegGCrefSetCur);
         printf(", gcRegByrefSetCur=");
         printRegMaskInt(gcInfo.gcRegByrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
+        GetEmitter()->emitDispGprRegSet(gcInfo.gcRegByrefSetCur);
         printf("\n");
     }
 #endif // DEBUG
