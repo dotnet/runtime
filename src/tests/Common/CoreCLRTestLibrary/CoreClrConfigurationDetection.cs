@@ -35,7 +35,7 @@ public static class CoreClrConfigurationDetection
 
     public static bool IsStressTest =>
         IsGCStress ||
-        IsZapDisable ||
+        IsDisableR2R ||
         IsAnyJitStress ||
         IsHeapVerify;
 
