@@ -183,19 +183,21 @@ if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    add_library(System.Globalization.Native.Aot
-        SHARED
-        ${NATIVEGLOBALIZATION_SOURCES}
-    )
-    set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
-    set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    if(STATIC_LIBS_ONLY OR "${RuntimeFlavor}" STREQUAL "mono")
+        add_library(System.Globalization.Native.Aot
+            STATIC
+            ${NATIVEGLOBALIZATION_SOURCES}
+        )
+        set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+        set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
-    add_library(System.Globalization.Native.Aot.GuardCF
-        SHARED
-        ${NATIVEGLOBALIZATION_SOURCES}
-    )
-    set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+        add_library(System.Globalization.Native.Aot.GuardCF
+            STATIC
+            ${NATIVEGLOBALIZATION_SOURCES}
+        )
+        set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
-    install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
-    install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
+        install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
+        install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
+    endif()
 endif()
