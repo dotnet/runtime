@@ -202,7 +202,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     FindFailFastCallerStruct findCallerData;
     findCallerData.pStackMark = stackMark;
     findCallerData.retAddress = 0;
-    StackWalkFunctions(GetThread(), FindFailFastCallerCallback, &findCallerData);
+    GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | LIGHTUNWIND);
 
     // Managed code injected FailFast maps onto the unmanaged version
     // (EEPolicy::HandleFatalError) in the following manner: the exit code is
