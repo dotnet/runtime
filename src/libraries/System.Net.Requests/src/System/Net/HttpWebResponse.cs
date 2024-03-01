@@ -390,8 +390,7 @@ namespace System.Net
             public override long Length => throw new NotSupportedException();
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
-            public override void Flush() => innerStream.Flush();
-            public override Task FlushAsync(CancellationToken cancellationToken) => innerStream.FlushAsync(cancellationToken);
+            public override void Flush() => throw new NotSupportedException();
 
             public override int Read(byte[] buffer, int offset, int count)
             {

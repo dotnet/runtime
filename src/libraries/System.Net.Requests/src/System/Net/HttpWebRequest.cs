@@ -680,7 +680,8 @@ namespace System.Net
             }
         }
 
-        public static int DefaultMaximumErrorResponseLength {
+        public static int DefaultMaximumErrorResponseLength
+        {
             get
             {
                 return _defaultMaximumErrorResponseLength;
