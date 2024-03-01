@@ -8,6 +8,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
+    <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
