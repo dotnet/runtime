@@ -701,17 +701,16 @@ namespace Mono.Linker.Steps
 				var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
 				if (defaultImplementations is not null) {
 					foreach (var dimInfo in defaultImplementations) {
-						ProcessDefaultImplementation (dimInfo.ImplementingType, dimInfo.InterfaceImpl, dimInfo.DefaultInterfaceMethod);
+						ProcessDefaultImplementation (dimInfo);
 
-						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context);
-						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, dimInfo.ImplementingType))
-							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (dimInfo))
+							MarkMethod (dimInfo.Override, new DependencyInfo (DependencyKind.Override, dimInfo.Base), ScopeStack.CurrentScope.Origin);
 					}
 				}
 				var overridingMethods = Annotations.GetOverrides (method);
 				if (overridingMethods is not null) {
-					foreach (var ov in overridingMethods) {
-						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, ov.Override.DeclaringType))
+					foreach (OverrideInformation ov in overridingMethods) {
+						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov))
 							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 					}
 				}
@@ -819,13 +818,14 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation, MethodDefinition implementationMethod)
+		void ProcessDefaultImplementation (OverrideInformation ov)
 		{
-			if ((!implementationMethod.IsStatic && !Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
-				|| implementationMethod.IsStatic && !Annotations.IsRelevantToVariantCasting (typeWithDefaultImplementedInterfaceMethod))
+			Debug.Assert (ov.IsOverrideOfInterfaceMember);
+			if ((!ov.Override.IsStatic && !Annotations.IsInstantiated (ov.InterfaceImplementor.Implementor))
+				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor.Implementor))
 				return;
 
-			MarkInterfaceImplementation (implementation);
+			MarkInterfaceImplementation (ov.InterfaceImplementor.InterfaceImplementation);
 		}
 
 		void MarkMarshalSpec (IMarshalInfoProvider spec, in DependencyInfo reason)
@@ -2549,11 +2549,11 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// Returns true if the override method is required due to the interface that the base method is declared on. See doc at <see href="docs/methods-kept-by-interface.md"/> for explanation of logic.
 		/// </summary>
-		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation, TypeDefinition typeThatImplsInterface)
+		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation)
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
-			Debug.Assert (@base.DeclaringType.IsInterface);
+			Debug.Assert (overrideInformation.IsOverrideOfInterfaceMember);
 			if (@base is null || method is null || @base.DeclaringType is null)
 				return false;
 
@@ -2562,7 +2562,7 @@ namespace Mono.Linker.Steps
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
-			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
+			InterfaceImplementation? iface = overrideInformation.InterfaceImplementor.InterfaceImplementation;
 			if (!((iface is not null && Annotations.IsMarked (iface))
 				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
 				return false;
@@ -2580,12 +2580,12 @@ namespace Mono.Linker.Steps
 			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
 			// A static method may only be called through a constrained call if the type is relevant to variant casting.
 			if (@base.IsStatic)
-				return Annotations.IsRelevantToVariantCasting (typeThatImplsInterface)
+				return Annotations.IsRelevantToVariantCasting (overrideInformation.InterfaceImplementor.Implementor)
 					|| IgnoreScope (@base.DeclaringType.Scope);
 
 			// If the implementing type is marked as instantiated, mark the implementation method.
 			// If the type is not instantiated, do not mark the implementation method
-			return Annotations.IsInstantiated (typeThatImplsInterface);
+			return Annotations.IsInstantiated (overrideInformation.InterfaceImplementor.Implementor);
 		}
 
 		static bool IsSpecialSerializationConstructor (MethodDefinition method)
@@ -3256,7 +3256,7 @@ namespace Mono.Linker.Steps
 					// Only if the interface method is referenced, then all the methods which implemented must be kept, but not the other way round.
 					if (!markAllOverrides &&
 						Context.Resolve (@base) is MethodDefinition baseDefinition
-						&& new OverrideInformation.OverridePair (baseDefinition, method).IsStaticInterfaceMethodPair ())
+						&& baseDefinition.DeclaringType.IsInterface && baseDefinition.IsStatic && method.IsStatic)
 						continue;
 					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);
 					MarkExplicitInterfaceImplementation (method, @base);

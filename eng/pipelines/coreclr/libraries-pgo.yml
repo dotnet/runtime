@@ -70,4 +70,4 @@ extends:
                     - jitosr_stress_random
                     - syntheticpgo
                     - syntheticpgo_blend
-                    - jitcrossblocklocalassertionprop
+                    - jitrlcse

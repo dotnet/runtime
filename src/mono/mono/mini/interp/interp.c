@@ -7618,7 +7618,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			/* top of stack is result of filter */
 			frame->retval->data.i = LOCAL_VAR (ip [1], gint32);
 			goto exit_clause;
-		MINT_IN_CASE(MINT_INITOBJ)
+		MINT_IN_CASE(MINT_ZEROBLK)
+			memset (LOCAL_VAR (ip [1], gpointer), 0, LOCAL_VAR (ip [2], gsize));
+			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ZEROBLK_IMM)
 			memset (LOCAL_VAR (ip [1], gpointer), 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;

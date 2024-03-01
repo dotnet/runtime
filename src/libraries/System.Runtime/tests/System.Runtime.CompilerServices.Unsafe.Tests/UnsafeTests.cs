@@ -462,6 +462,26 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(new IntPtr(-3), Unsafe.ByteOffset(ref byte4.B3, ref byte4.B0));
         }
 
+        private static unsafe class StaticReadonlyHolder
+        {
+            public static readonly void* Pointer = (void*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(StaticReadonlyHolder), 1);
+        }
+
+        [Fact]
+        public static unsafe void ByteOffsetConstantRef()
+        {
+            // https://github.com/dotnet/runtime/pull/99019
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint NullTest(ref byte origin) => Unsafe.ByteOffset(ref origin, ref Unsafe.NullRef<byte>());
+            Assert.Equal(0, NullTest(ref Unsafe.NullRef<byte>()));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static ref byte GetStatic(ref byte x) => ref x;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint StaticReadonlyTest(ref byte x) => Unsafe.ByteOffset(ref GetStatic(ref Unsafe.AsRef<byte>(StaticReadonlyHolder.Pointer)), ref x);
+            Assert.Equal(0, StaticReadonlyTest(ref Unsafe.AsRef<byte>(StaticReadonlyHolder.Pointer)));
+        }
+
         [Fact]
         public static unsafe void AsRef()
         {
@@ -597,7 +617,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void RefSubtract()
+        public static unsafe void RefSubtract()
         {
             string[] a = new string[] { "abc", "def", "ghi", "jkl" };
 
@@ -609,6 +629,11 @@ namespace System.Runtime.CompilerServices
 
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
+
+            // https://github.com/dotnet/runtime/pull/99019
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static ref byte NullTest(nuint offset) => ref Unsafe.Subtract(ref Unsafe.NullRef<byte>(), offset);
+            Assert.True(Unsafe.IsNullRef(ref NullTest(0)));
         }
 
         [Fact]

@@ -691,6 +691,18 @@ const char* relocationTypeToString(uint16_t fRelocType)
         // From corinfo.h
         case IMAGE_REL_BASED_REL32:
             return "rel32";
+        case IMAGE_REL_SECREL:
+            return "secrel";
+        case IMAGE_REL_TLSGD:
+            return "tlsgd";
+        case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+            return "tlsdesc_high21";
+        case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+            return "tlsdesc_lo12";
+        case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+            return "tlsdesc_add_lo12";
+        case IMAGE_REL_AARCH64_TLSDESC_CALL:
+            return "tlsdesc_call";
         case IMAGE_REL_BASED_THUMB_BRANCH24:
             return "thumb_branch24";
         default:
@@ -851,6 +863,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 break;
 
                 case IMAGE_REL_ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
+                case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21: // ADRP 21 bit for TLSDesc
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -871,6 +884,16 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         INT32 imm12 = (INT32)(SIZE_T)tmp.target & 0xFFFLL;
                         PutArm64Rel12((UINT32*)address, imm12);
                     }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
+                case IMAGE_REL_AARCH64_TLSDESC_CALL:
+                {
+                    // These are patched later by linker during actual execution
+                    // and do not need relocation.
                     wasRelocHandled = true;
                 }
                 break;
@@ -902,13 +925,19 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 wasRelocHandled = true;
             }
+            else if (relocType == IMAGE_REL_TLSGD)
+            {
+                // These are patched later by linker during actual execution
+                // and do not need relocation.
+                wasRelocHandled = true;
+            }
         }
 
         if (wasRelocHandled)
             continue;
 
         // Now do all-platform relocations.
-        if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
+        if ((tmp.fRelocType == IMAGE_REL_BASED_REL32) || (tmp.fRelocType == IMAGE_REL_SECREL))
         {
             DWORDLONG fixupLocation = tmp.location;
 

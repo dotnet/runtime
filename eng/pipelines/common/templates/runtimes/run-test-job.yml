@@ -565,7 +565,7 @@ jobs:
             - jitobjectstackallocation
             - jitphysicalpromotion_only
             - jitphysicalpromotion_full
-            - jitcrossblocklocalassertionprop
+            - jitrlcse
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg
