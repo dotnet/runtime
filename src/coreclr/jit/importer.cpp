@@ -7276,6 +7276,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
+
+                        FlowEdge* const edge = fgGetPredForBlock(block->GetTarget(), block);
+                        edge->setLikelihood(1.0);
                     }
 
                     break;
@@ -7537,6 +7540,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // transform the basic block into a BBJ_ALWAYS
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
+                            curEdge->setLikelihood(1.0);
                             foundVal = true;
                         }
                         else

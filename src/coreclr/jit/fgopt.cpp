@@ -1534,7 +1534,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
             }
 
-            FlowEdge* edge2 = fgGetPredForBlock(bDest->GetTarget(), bDest);
+            FlowEdge* edge2 = bDest->GetTargetEdge();
 
             if (edge2 != nullptr)
             {
@@ -1871,7 +1871,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             {
                 if (fgHaveValidEdgeWeights)
                 {
-                    FlowEdge* edge                = fgGetPredForBlock(bDest, block);
+                    FlowEdge* edge                = *jmpTab;
                     weight_t  branchThroughWeight = edge->edgeWeightMin();
 
                     if (bDest->bbWeight > branchThroughWeight)
@@ -3671,7 +3671,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                             // The edge bPrev -> bDest must have a higher minimum weight
                             // than every other edge into bDest
                             //
-                            FlowEdge* edgeFromPrev = fgGetPredForBlock(bDest, bPrev);
+                            FlowEdge* edgeFromPrev = bPrev->GetTargetEdge();
                             noway_assert(edgeFromPrev != nullptr);
 
                             // Examine all of the other edges into bDest
@@ -3763,8 +3763,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         //                                                   V
                         //                  bDest --------------->   [BB08, weight 21]
                         //
-                        FlowEdge* edgeToDest  = fgGetPredForBlock(bDest, bPrev);
-                        FlowEdge* edgeToBlock = fgGetPredForBlock(block, bPrev);
+                        assert(bPrev->FalseTargetIs(block));
+                        FlowEdge* edgeToDest  = bPrev->GetTrueEdge();
+                        FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
                         noway_assert(edgeToDest != nullptr);
                         noway_assert(edgeToBlock != nullptr);
                         //

@@ -1938,9 +1938,21 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 	} else if (in_corlib &&
 			!strcmp (klass_name_space, "System") &&
-			!strcmp (klass_name, "SpanHelpers") &&
-			!strcmp (tm, "ClearWithReferences")) {
-		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
+			!strcmp (klass_name, "SpanHelpers")) {
+		if (!strcmp (tm, "ClearWithReferences")) {
+			*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
+		} else if (!strcmp (tm, "ClearWithoutReferences")) {
+			*op = MINT_ZEROBLK;
+		} else if (!strcmp (tm, "Fill") && csignature->param_count == 3) {
+			int align;
+			if (mono_type_size (csignature->params [2], &align) == 1) {
+				interp_add_ins (td, MINT_INITBLK);
+				td->sp -= 3;
+				interp_ins_set_sregs3 (td->last_ins, td->sp [0].var, td->sp [2].var, td->sp [1].var);
+				td->ip += 5;
+				return TRUE;
+			}
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block")) {
 			InterpInst *ldloca2 = td->last_ins;
@@ -8125,7 +8137,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				CHECK_TYPELOAD (klass);
 				if (m_class_is_valuetype (klass)) {
 					--td->sp;
-					interp_add_ins (td, MINT_INITOBJ);
+					interp_add_ins (td, MINT_ZEROBLK_IMM);
 					interp_ins_set_sreg (td->last_ins, td->sp [0].var);
 					i32 = mono_class_value_size (klass, NULL);
 					g_assert (i32 < G_MAXUINT16);

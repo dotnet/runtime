@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using Xunit;
 
@@ -863,6 +862,30 @@ namespace System.Linq.Tests
             Type grouptype = group.GetType();
             PropertyInfo key = grouptype.GetProperty("Key", BindingFlags.Instance | BindingFlags.Public);
             Assert.NotNull(key);
+        }
+
+        [Fact]
+        public void MultipleIterationsOfSameEnumerable()
+        {
+            foreach (IEnumerable<IGrouping<int, int>> e1 in new[] { Enumerable.Range(0, 10).GroupBy(i => i), Enumerable.Range(0, 10).GroupBy(i => i, i => i) })
+            {
+                for (int trial = 0; trial < 3; trial++)
+                {
+                    int count = 0;
+                    foreach (IGrouping<int, int> g in e1) count++;
+                    Assert.Equal(10, count);
+                }
+            }
+
+            foreach (IEnumerable<int> e2 in new[] { Enumerable.Range(0, 10).GroupBy(i => i, (i, e) => i), Enumerable.Range(0, 10).GroupBy(i => i, i => i, (i, e) => i) })
+            {
+                for (int trial = 0; trial < 3; trial++)
+                {
+                    int count = 0;
+                    foreach (int i in e2) count++;
+                    Assert.Equal(10, count);
+                }
+            }
         }
     }
 }
