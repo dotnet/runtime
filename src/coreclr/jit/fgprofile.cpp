@@ -3990,7 +3990,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
         assert(block->HasInitializedTarget());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
+        FlowEdge* const flowEdge = block->GetTargetEdge();
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -4020,12 +4020,12 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 
         weight_t equalLikelihood = 1.0 / nSucc;
 
-        for (BasicBlock* succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(succ, block);
-            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum, succ->bbNum,
-                    equalLikelihood);
-            flowEdge->setLikelihood(equalLikelihood);
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
+                    succBlock->bbNum, equalLikelihood);
+            succEdge->setLikelihood(equalLikelihood);
         }
 
         return;
@@ -4917,13 +4917,13 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     BasicBlock* otherDst;
                     if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetTrueTarget();
+                        otherEdge = bSrc->GetTrueEdge();
                     }
                     else
                     {
-                        otherDst = bSrc->GetFalseTarget();
+                        otherEdge = bSrc->GetFalseEdge();
                     }
-                    otherEdge = fgGetPredForBlock(otherDst, bSrc);
+                    otherDst = otherEdge->getDestinationBlock();
 
                     // If we see min/max violations, just give up on the computations
                     //
@@ -5590,17 +5590,10 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (FlowEdge* succEdge : block->SuccEdges(this))
         {
-            BasicBlock* succBlock = block->GetSucc(i, this);
-            FlowEdge*   succEdge  = fgGetPredForBlock(succBlock, block);
-
-            if (succEdge == nullptr)
-            {
-                missingEdges++;
-                JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum, succBlock->bbNum);
-                continue;
-            }
+            assert(succEdge != nullptr);
+            BasicBlock* succBlock = succEdge->getDestinationBlock();
 
             outgoingWeightMin += succEdge->edgeWeightMin();
             outgoingWeightMax += succEdge->edgeWeightMax();

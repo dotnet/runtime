@@ -382,6 +382,8 @@ enum insScalableOpts : unsigned
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
     INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
+    INS_SCALABLE_OPTS_TO_PREDICATE,     // Variants moving to a predicate from a vector (e.g. pmov)
+    INS_SCALABLE_OPTS_TO_VECTOR         // Variants moving to a vector from a predicate (e.g. pmov)
 };
 
 // Maps directly to the pattern used in SVE instructions such as cntb.

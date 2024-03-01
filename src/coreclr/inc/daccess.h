@@ -614,8 +614,7 @@ struct DacTableHeader
 // Define TADDR as a non-pointer value so use of it as a pointer
 // will not work properly.  Define it as unsigned so
 // pointer comparisons aren't affected by sign.
-// This requires special casting to ULONG64 to sign-extend if necessary.
-typedef ULONG_PTR TADDR;
+typedef uintptr_t TADDR;
 
 // TSIZE_T used for counts or ranges that need to span the size of a
 // target pointer.  For cross-plat, this may be different than SIZE_T
@@ -2128,7 +2127,7 @@ inline void DACCOP_IGNORE(DacCopWarningCode code, const char * szReasonString)
 // Declare TADDR as a non-pointer type so that arithmetic
 // can be done on it directly, as with the DACCESS_COMPILE definition.
 // This also helps expose pointer usage that may need to be changed.
-typedef ULONG_PTR TADDR;
+typedef uintptr_t TADDR;
 
 typedef void* PTR_VOID;
 typedef LPVOID* PTR_PTR_VOID;

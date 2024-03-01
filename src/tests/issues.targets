@@ -78,9 +78,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftInvalidCallConv/*">
             <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftSelfContext/*">
-            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
