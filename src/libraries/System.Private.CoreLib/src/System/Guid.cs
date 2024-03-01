@@ -852,7 +852,7 @@ namespace System
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), false);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
                 MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
@@ -870,7 +870,7 @@ namespace System
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), bigEndian);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
                 MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
@@ -889,7 +889,7 @@ namespace System
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), false);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
                 MemoryMarshal.TryWrite(destination, in guid);
             }
             return true;
@@ -911,7 +911,7 @@ namespace System
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(this)), bigEndian);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
                 MemoryMarshal.TryWrite(destination, in guid);
             }
             bytesWritten = 16;
