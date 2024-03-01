@@ -15026,8 +15026,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // instruction, if writing a GC ref even through reading a long, will go live here.
                         // These situations typically occur due to unsafe casting, such as with Span<T>.
 
-                        regMaskMixed regMask;
+                        regMaskGpr regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
+                        assert(emitComp->IsGprRegMask(regMask));
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
                         //                               or BYREF+/-int=BYREF

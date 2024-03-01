@@ -4457,16 +4457,6 @@ inline void printRegMask(AllRegsMask mask)
 #endif // HAS_PREDICATE_REGS
 }
 
-inline char* regMaskToString(regMaskMixed mask, Compiler* context)
-{
-    const size_t cchRegMask = 24;
-    char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
-
-    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
-
-    return regmask;
-}
-
 inline void printRegMaskInt(regMaskGpr mask)
 {
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
