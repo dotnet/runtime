@@ -20,8 +20,14 @@ public static class CoreClrConfigurationDetection
     public static bool IsDisableR2R => string.Equals(GetEnvironmentVariableValue("ReadyToRun"), "0", StringComparison.InvariantCulture);
     public static bool IsGCStress3 => CompareGCStressModeAsLower(GetEnvironmentVariableValue("GCStress"), "0x3", "3");
     public static bool IsGCStressC => CompareGCStressModeAsLower(GetEnvironmentVariableValue("GCStress"), "0xC", "C");
+    public static bool IsTieredCompilation => string.Equals(GetEnvironmentVariableValue("TieredCompilation", "1"), "1", StringComparison.InvariantCulture);
+    public static bool IsHeapVerify => string.Equals(GetEnvironmentVariableValue("HeapVerify"), "1", StringComparison.InvariantCulture);
 
     public static bool IsGCStress => !string.Equals(GetEnvironmentVariableValue("GCStress"), "0", StringComparison.InvariantCulture);
+    
+    public static bool IsAnyJitStress => IsJitStress || IsJitStressRegs || IsJitMinOpts || IsTailCallStress;
+
+    public static bool IsAnyJitOptimizationStress => IsAnyJitStress || IsTieredCompilation;
 
     public static bool IsCheckedRuntime => AssemblyConfigurationEquals("Checked");
     public static bool IsReleaseRuntime => AssemblyConfigurationEquals("Release");
@@ -29,14 +35,12 @@ public static class CoreClrConfigurationDetection
 
     public static bool IsStressTest =>
         IsGCStress ||
-        IsDisableR2R ||
-        IsTailCallStress ||
-        IsJitStressRegs ||
-        IsJitStress ||
-        IsJitMinOpts;
+        IsZapDisable ||
+        IsAnyJitStress ||
+        IsHeapVerify;
 
-    private static string GetEnvironmentVariableValue(string name) =>
-        Environment.GetEnvironmentVariable("DOTNET_" + name) ?? Environment.GetEnvironmentVariable("COMPlus_" + name) ?? "0";
+    private static string GetEnvironmentVariableValue(string name, string defaultValue = "0") =>
+        Environment.GetEnvironmentVariable("DOTNET_" + name) ?? Environment.GetEnvironmentVariable("COMPlus_" + name) ?? defaultValue;
 
     private static bool AssemblyConfigurationEquals(string configuration)
     {

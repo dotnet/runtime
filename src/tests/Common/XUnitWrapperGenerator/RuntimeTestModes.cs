@@ -34,5 +34,14 @@ namespace Xunit
         // including in NGEN/ReadyToRun code.
         GCStressC = 1 << 7, // DOTNET_GCStress includes mode 0xC.
         AnyGCStress = GCStress3 | GCStressC // Disable when any GCStress is exercised.
+        // TieredCompilation is on by default, but can cause some tests to fail
+        // As TieredCompilation is on by default, it does not count as a stress mode for RegularRun.
+        TieredCompilation = 1 << 8, // DOTNET_TieredCompilation (or COMPlus_TieredCompilation) is not set to 0.
+
+        AnyJitStress = JitStress | JitStressRegs | JitMinOpts | TailcallStress, // Disable when any JIT stress mode is exercised.
+
+        AnyJitOptimizationStress = AnyJitStress | TieredCompilation, // Disable when any JIT non-full optimization stress mode is exercised.
+
+        HeapVerify = 1 << 9, // DOTNET_HeapVerify (or COMPlus_HeapVerify) is set.
     }
 }
