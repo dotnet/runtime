@@ -888,6 +888,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         pMD = resolved.Method;
         pFD = resolved.Field;
 
+        // Record supplied signatures.
+        if (!resolved.TypeSignature.IsNull())
+            resolved.TypeSignature.GetSignature(&pResolvedToken->pTypeSpec, &pResolvedToken->cbTypeSpec);
+        if (!resolved.MethodSignature.IsNull())
+            resolved.MethodSignature.GetSignature(&pResolvedToken->pMethodSpec, &pResolvedToken->cbMethodSpec);
+
         //
         // Check that we got the expected handles and fill in missing data if necessary
         //
@@ -896,16 +902,10 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
         if (pMD != NULL)
         {
-            if ((tkType != mdtMethodDef) && (tkType != mdtMemberRef))
+            if ((tkType != mdtMethodDef) && (tkType != mdtMemberRef) && (tkType != mdtMethodSpec))
                 ThrowBadTokenException(pResolvedToken);
             if ((tokenType & CORINFO_TOKENKIND_Method) == 0)
                 ThrowBadTokenException(pResolvedToken);
-
-            // "PermitUninstDefOrRef" check
-            if ((tokenType != CORINFO_TOKENKIND_Ldtoken) && pMD->ContainsGenericVariables())
-            {
-                COMPlusThrow(kInvalidProgramException);
-            }
 
             // if this is a BoxedEntryPointStub get the UnboxedEntryPoint one
             if (pMD->IsUnboxingStub())
@@ -925,12 +925,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 ThrowBadTokenException(pResolvedToken);
             if ((tokenType & CORINFO_TOKENKIND_Field) == 0)
                 ThrowBadTokenException(pResolvedToken);
-
-            // If a signature was supplied, set the TypeSpec for resolution.
-            if (!resolved.Signature.IsNull())
-            {
-                resolved.Signature.GetSignature(&pResolvedToken->pTypeSpec, &pResolvedToken->cbTypeSpec);
-            }
 
             if (pFD->IsStatic() && (tokenType != CORINFO_TOKENKIND_Ldtoken))
             {
@@ -964,7 +958,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     else
     {
         mdToken metaTOK = pResolvedToken->token;
-        Module * pModule = (Module *)pResolvedToken->tokenScope;
+        Module * pModule = GetModule(pResolvedToken->tokenScope);
 
         switch (TypeFromToken(metaTOK))
         {
@@ -4943,7 +4937,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
         SigTypeContext::InitTypeContext(pCallerForSecurity, &typeContext);
 
         SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-        pCalleeForSecurity = sigptr.GetTypeHandleThrowing((Module *)pResolvedToken->tokenScope, &typeContext);
+        pCalleeForSecurity = sigptr.GetTypeHandleThrowing(GetModule(pResolvedToken->tokenScope), &typeContext);
     }
 
     while (pCalleeForSecurity.HasTypeParam())
@@ -5541,7 +5535,7 @@ void CEEInfo::getCallInfo(
             if (pResolvedToken->pTypeSpec != NULL)
             {
                 SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-                calleeTypeForSecurity = sigptr.GetTypeHandleThrowing((Module *)pResolvedToken->tokenScope, &typeContext);
+                calleeTypeForSecurity = sigptr.GetTypeHandleThrowing(GetModule(pResolvedToken->tokenScope), &typeContext);
 
                 // typeHnd can be a variable type
                 if (calleeTypeForSecurity.GetMethodTable() == NULL)
@@ -5568,7 +5562,7 @@ void CEEInfo::getCallInfo(
                 IfFailThrow(sp.GetByte(&etype));
 
                 // Load the generic method instantiation
-                THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, (Module *)pResolvedToken->tokenScope);
+                THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, GetModule(pResolvedToken->tokenScope));
 
                 IfFailThrow(sp.GetData(&nGenericMethodArgs));
 
@@ -5582,7 +5576,7 @@ void CEEInfo::getCallInfo(
 
                 for (uint32_t i = 0; i < nGenericMethodArgs; i++)
                 {
-                    genericMethodArgs[i] = sp.GetTypeHandleThrowing((Module *)pResolvedToken->tokenScope, &typeContext);
+                    genericMethodArgs[i] = sp.GetTypeHandleThrowing(GetModule(pResolvedToken->tokenScope), &typeContext);
                     _ASSERTE (!genericMethodArgs[i].IsNull());
                     IfFailThrow(sp.SkipExactlyOne());
                 }

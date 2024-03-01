@@ -175,16 +175,42 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
                 _ASSERTE(entry.Entry.Field != NULL);
 
                 if (entry.ClassSignatureToken != mdTokenNil)
-                    resolvedToken->Signature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+                    resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
 
                 resolvedToken->Field = entry.Entry.Field;
-                resolvedToken->TypeHandle = TypeHandle(entry.Entry.Field->GetApproxEnclosingMethodTable()).Instantiate(entry.ClassInstantiation);
+                resolvedToken->TypeHandle = TypeHandle(entry.Entry.Field->GetApproxEnclosingMethodTable());
             }
             else
             {
                 _ASSERTE(entry.Type == mdtMethodDef);
                 _ASSERTE(entry.Entry.Method != NULL);
+
+                if (entry.ClassSignatureToken != mdTokenNil)
+                    resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+
+                resolvedToken->Method = entry.Entry.Method;
+                MethodTable* pMT = entry.Entry.Method->GetMethodTable();
+                _ASSERTE(!pMT->ContainsGenericVariables());
+                resolvedToken->TypeHandle = TypeHandle(pMT);
             }
+        }
+        break;
+
+    case mdtMethodSpec:
+        {
+            TokenLookupMap::MethodSpecEntry entry = m_pCompileTimeState->m_tokenLookupMap.LookupMethodSpec(token);
+            _ASSERTE(entry.Method != NULL);
+
+            if (entry.ClassSignatureToken != mdTokenNil)
+                resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+
+            if (entry.MethodSignatureToken != mdTokenNil)
+                resolvedToken->MethodSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.MethodSignatureToken);
+
+            resolvedToken->Method = entry.Method;
+            MethodTable* pMT = entry.Method->GetMethodTable();
+            _ASSERTE(!pMT->ContainsGenericVariables());
+            resolvedToken->TypeHandle = TypeHandle(pMT);
         }
         break;
 #endif // !defined(DACCESS_COMPILE)

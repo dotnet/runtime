@@ -1150,6 +1150,7 @@ namespace
     bool DoesMethodMatchUnsafeAccessorDeclaration(
         GenerationContext& cxt,
         MethodDesc* method,
+        const Substitution* pMethodSubst,
         MetaSig::CompareState& state)
     {
         STANDARD_VM_CONTRACT;
@@ -1167,7 +1168,11 @@ namespace
         method->GetSig(&pSig2, &cSig2);
         PCCOR_SIGNATURE pEndSig2 = pSig2 + cSig2;
         ModuleBase* pModule2 = method->GetModule();
-        const Substitution* pSubst2 = NULL;
+        const Substitution* pSubst2 = pMethodSubst;
+
+        //
+        // Parsing the signature follows details defined in ECMA-335 - II.23.2.1
+        //
 
         // Validate calling convention
         if ((*pSig1 & IMAGE_CEE_CS_CALLCONV_MASK) != (*pSig2 & IMAGE_CEE_CS_CALLCONV_MASK))
@@ -1175,9 +1180,18 @@ namespace
             return false;
         }
 
-        BYTE callConv = *pSig1;
+        BYTE callConvDecl = *pSig1;
+        BYTE callConvMethod = *pSig2;
         pSig1++;
         pSig2++;
+
+        // Handle generic param count
+        DWORD declGenericCount = 0;
+        DWORD methodGenericCount = 0;
+        if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
+            IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declGenericCount));
+        if (callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC)
+            IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &methodGenericCount));
 
         DWORD declArgCount;
         DWORD methodArgCount;
@@ -1266,7 +1280,33 @@ namespace
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
 
+        // We do not support the Canon type as a valid target.
+        if (targetType.AsMethodTable() == g_pCanonMethodTableClass)
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
         MethodDesc* targetMaybe = NULL;
+        Substitution* pLookupSubst = NULL;
+
+        // Build up a Substitution to use when looking up methods involving generics.
+        Substitution substitution;
+        SigBuilder sigBuilder;
+        DWORD targetGenericParamCount = targetType.AsMethodTable()->GetNumGenericArgs();
+        if (targetGenericParamCount > 0)
+        {
+            // Create a temporary signature that translate VARs to MVARs.
+            for (DWORD i = 0; i < targetGenericParamCount; ++i)
+            {
+                sigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
+                sigBuilder.AppendData(i); // Represents the generic parameter index - II.23.2.12
+            }
+
+            DWORD tmpSigLen;
+            PVOID tmpSigRaw = sigBuilder.GetSignature(&tmpSigLen);
+
+            SigPointer tmpSig{ (PCCOR_SIGNATURE)tmpSigRaw, tmpSigLen };
+            substitution = Substitution{ cxt.Declaration->GetModule(), tmpSig, NULL };
+            pLookupSubst = &substitution;
+        }
 
         // Following a similar iteration pattern found in MemberLoader::FindMethod().
         // However, we are only operating on the current type not walking the type hierarchy.
@@ -1287,7 +1327,7 @@ namespace
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
-            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
+            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, pLookupSubst, state))
                 continue;
 
             // Check if there is some ambiguity.
@@ -1322,6 +1362,10 @@ namespace
 
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
+
+        // We do not support the Canon type as a valid target.
+        if (targetType.AsMethodTable() == g_pCanonMethodTableClass)
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
         CorElementType elemType = fieldType.GetSignatureCorElementType();
         ApproxFieldDescIterator fdIterator(
@@ -1396,13 +1440,75 @@ namespace
         switch (cxt.Kind)
         {
         case UnsafeAccessorKind::Constructor:
+        {
             _ASSERTE(cxt.TargetMethod != NULL);
-            pCode->EmitNEWOBJ(pCode->GetToken(cxt.TargetMethod), targetArgCount);
+            mdToken target;
+            if (!cxt.TargetType.HasInstantiation())
+            {
+                target = pCode->GetToken(cxt.TargetMethod);
+            }
+            else
+            {
+                PCCOR_SIGNATURE sig;
+                uint32_t sigLen;
+                cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
+                mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
+                target = pCode->GetToken(cxt.TargetMethod, targetTypeSigToken);
+            }
+            pCode->EmitNEWOBJ(target, targetArgCount);
             break;
+        }
         case UnsafeAccessorKind::Method:
+        {
             _ASSERTE(cxt.TargetMethod != NULL);
-            pCode->EmitCALLVIRT(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
+            mdToken target;
+            if (!cxt.TargetMethod->HasMethodInstantiation())
+            {
+                target = pCode->GetToken(cxt.TargetMethod);
+            }
+            else
+            {
+                // Create signature for the MethodSpec. See ECMA-335 - II.23.2.15
+                DWORD targetGenericCount = cxt.TargetMethod->GetNumGenericMethodArgs();
+                _ASSERTE(targetGenericCount != 0);
+
+                SigBuilder sigBuilder;
+                sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
+                sigBuilder.AppendData(targetGenericCount);
+                for (DWORD i = 0; i < targetGenericCount; ++i)
+                {
+                    sigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
+                    sigBuilder.AppendData(i);
+                }
+                uint32_t sigLen;
+                PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
+                mdToken methodSpecSigToken = pCode->GetSigToken(sig, sigLen);
+
+                // Create a MethodSpec
+                cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
+                mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
+
+                // Convert the declaration Instantiation to one that can be used
+                // to find the instantiated MethodDesc target.
+                Instantiation methodInst = cxt.Declaration->GetMethodInstantiation();
+                DWORD declGenericCount = cxt.Declaration->GetNumGenericMethodArgs();
+
+                // Generic parameters that are used for the type, must come at the end
+                // of the parameter list. For example,
+                //
+                //   [UnsafeAccessor(UnsafeAccessorKind.Method)]
+                //   extern static void M<T, U>(C<U> c, T element);
+                //
+                if (declGenericCount > targetGenericCount)
+                    methodInst = Instantiation{ methodInst.GetRawArgs(), targetGenericCount };
+
+                // Look up the instantiated MethodDesc target.
+                MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, TRUE);
+                target = pCode->GetToken(instantiatedTarget, targetTypeSigToken, methodSpecSigToken);
+            }
+            pCode->EmitCALLVIRT(target, targetArgCount, targetRetCount);
             break;
+        }
         case UnsafeAccessorKind::StaticMethod:
             _ASSERTE(cxt.TargetMethod != NULL);
             pCode->EmitCALL(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
@@ -1419,7 +1525,7 @@ namespace
             {
                 // See the static field case for why this can be mdTokenNil.
                 mdToken targetTypeSigToken = mdTokenNil;
-                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken, cxt.TargetType.GetInstantiation());
+                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken);
             }
             pCode->EmitLDFLDA(target);
             break;
@@ -1443,7 +1549,7 @@ namespace
                 uint32_t sigLen;
                 cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
                 mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
-                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken, cxt.TargetType.GetInstantiation());
+                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken);
             }
             pCode->EmitLDSFLDA(target);
             break;
@@ -1509,9 +1615,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
     // Block generic support on methods
     if (HasClassOrMethodInstantiation()
-        && (kind == UnsafeAccessorKind::Constructor
-            || kind == UnsafeAccessorKind::Method
-            || kind == UnsafeAccessorKind::StaticMethod))
+        && kind == UnsafeAccessorKind::StaticMethod)
     {
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
     }
@@ -1550,6 +1654,8 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
+        // Get the target type signature from the return type.
+        context.TargetTypeSig = context.DeclarationSig.GetReturnProps();
         context.TargetType = ValidateTargetType(retType);
         if (!TrySetTargetMethod(context, ".ctor"))
             MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), ".ctor");

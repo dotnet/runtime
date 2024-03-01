@@ -40,7 +40,8 @@ public:
 struct ResolvedToken final
 {
     TypeHandle TypeHandle;
-    SigPointer Signature; // Needed for generic look-up (for example, static fields on generic types)
+    SigPointer TypeSignature;
+    SigPointer MethodSignature;
     MethodDesc* Method;
     FieldDesc* Field;
 };

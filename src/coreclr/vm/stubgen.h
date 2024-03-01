@@ -313,6 +313,7 @@ public:
         }
 
         m_memberRefs.Set(pSrc->m_memberRefs);
+        m_methodSpecs.Set(pSrc->m_methodSpecs);
     }
 
     TypeHandle LookupTypeDef(mdToken token)
@@ -335,7 +336,6 @@ public:
     {
         CorTokenType Type;
         mdToken ClassSignatureToken;
-        Instantiation ClassInstantiation;
         union
         {
             FieldDesc* Field;
@@ -356,6 +356,28 @@ public:
         CONTRACTL_END;
 
         return m_memberRefs[static_cast<COUNT_T>(RidFromToken(token) - 1)];
+    }
+
+    struct MethodSpecEntry final
+    {
+        mdToken ClassSignatureToken;
+        mdToken MethodSignatureToken;
+        MethodDesc* Method;
+    };
+    MethodSpecEntry LookupMethodSpec(mdToken token)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(RidFromToken(token) - 1 < m_methodSpecs.GetCount());
+            PRECONDITION(RidFromToken(token) != 0);
+            PRECONDITION(TypeFromToken(token) == mdtMethodSpec);
+        }
+        CONTRACTL_END;
+
+        return m_methodSpecs[static_cast<COUNT_T>(RidFromToken(token) - 1)];
     }
 
     SigPointer LookupSig(mdToken token)
@@ -387,12 +409,50 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetTokenWorker<mdtMethodDef, MethodDesc*>(pMD);
     }
+    mdToken GetToken(MethodDesc* pMD, mdToken typeSignature)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(pMD != NULL);
+        }
+        CONTRACTL_END;
+
+        MemberRefEntry* entry;
+        mdToken token = GetMemberRefWorker(&entry);
+        entry->Type = mdtMethodDef;
+        entry->ClassSignatureToken = typeSignature;
+        entry->Entry.Method = pMD;
+        return token;
+    }
+    mdToken GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(pMD != NULL);
+            PRECONDITION(typeSignature != mdTokenNil);
+            PRECONDITION(methodSignature != mdTokenNil);
+        }
+        CONTRACTL_END;
+
+        MethodSpecEntry* entry;
+        mdToken token = GetMethodSpecWorker(&entry);
+        entry->ClassSignatureToken = typeSignature;
+        entry->MethodSignatureToken = methodSignature;
+        entry->Method = pMD;
+        return token;
+    }
     mdToken GetToken(FieldDesc* pFieldDesc)
     {
         WRAPPER_NO_CONTRACT;
         return GetTokenWorker<mdtFieldDef, FieldDesc*>(pFieldDesc);
     }
-    mdToken GetToken(FieldDesc* pFieldDesc, mdToken typeSignature, Instantiation inst)
+    mdToken GetToken(FieldDesc* pFieldDesc, mdToken typeSignature)
     {
         CONTRACTL
         {
@@ -400,7 +460,6 @@ public:
             MODE_ANY;
             GC_NOTRIGGER;
             PRECONDITION(pFieldDesc != NULL);
-            PRECONDITION(!inst.IsEmpty());
         }
         CONTRACTL_END;
 
@@ -408,7 +467,6 @@ public:
         mdToken token = GetMemberRefWorker(&entry);
         entry->Type = mdtFieldDef;
         entry->ClassSignatureToken = typeSignature;
-        entry->ClassInstantiation = inst;
         entry->Entry.Field = pFieldDesc;
         return token;
     }
@@ -445,6 +503,22 @@ protected:
 
         mdToken token = TokenFromRid(m_memberRefs.GetCount(), mdtMemberRef) + 1;
         *entry = &*m_memberRefs.Append(); // Dereference the iterator and then take the address
+        return token;
+    }
+
+    mdToken GetMethodSpecWorker(MethodSpecEntry** entry)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(entry != NULL);
+        }
+        CONTRACTL_END;
+
+        mdToken token = TokenFromRid(m_methodSpecs.GetCount(), mdtMethodSpec) + 1;
+        *entry = &*m_methodSpecs.Append(); // Dereference the iterator and then take the address
         return token;
     }
 
@@ -493,6 +567,7 @@ protected:
     CQuickBytesSpecifySize<TOKEN_LOOKUP_MAP_SIZE>  m_qbEntries;
     SArray<CQuickBytesSpecifySize<16>, FALSE>      m_signatures;
     SArray<MemberRefEntry, FALSE>                  m_memberRefs;
+    SArray<MethodSpecEntry, FALSE>                 m_methodSpecs;
 };
 
 class ILCodeLabel;
@@ -659,10 +734,12 @@ protected:
     //
     ILCodeLabel* NewCodeLabel();
     int GetToken(MethodDesc* pMD);
+    int GetToken(MethodDesc* pMD, mdToken typeSignature);
+    int GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature);
     int GetToken(MethodTable* pMT);
     int GetToken(TypeHandle th);
     int GetToken(FieldDesc* pFD);
-    int GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst);
+    int GetToken(FieldDesc* pFD, mdToken typeSignature);
     int GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig);
     DWORD NewLocal(CorElementType typ = ELEMENT_TYPE_I);
     DWORD NewLocal(LocalDesc loc);
@@ -889,10 +966,12 @@ public:
     //
 
     int GetToken(MethodDesc* pMD);
+    int GetToken(MethodDesc* pMD, mdToken typeSignature);
+    int GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature);
     int GetToken(MethodTable* pMT);
     int GetToken(TypeHandle th);
     int GetToken(FieldDesc* pFD);
-    int GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst);
+    int GetToken(FieldDesc* pFD, mdToken typeSignature);
     int GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig);
 
     DWORD NewLocal(CorElementType typ = ELEMENT_TYPE_I);

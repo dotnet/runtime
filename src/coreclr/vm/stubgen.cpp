@@ -3133,6 +3133,18 @@ int ILStubLinker::GetToken(MethodDesc* pMD)
     return m_tokenMap.GetToken(pMD);
 }
 
+int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pMD, typeSignature);
+}
+
+int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pMD, typeSignature, methodSignature);
+}
+
 int ILStubLinker::GetToken(MethodTable* pMT)
 {
     STANDARD_VM_CONTRACT;
@@ -3151,10 +3163,10 @@ int ILStubLinker::GetToken(FieldDesc* pFD)
     return m_tokenMap.GetToken(pFD);
 }
 
-int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst)
+int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature)
 {
     STANDARD_VM_CONTRACT;
-    return m_tokenMap.GetToken(pFD, typeSignature, inst);
+    return m_tokenMap.GetToken(pFD, typeSignature);
 }
 
 int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
@@ -3233,6 +3245,16 @@ int ILCodeStream::GetToken(MethodDesc* pMD)
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pMD);
 }
+int ILCodeStream::GetToken(MethodDesc* pMD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pMD, typeSignature);
+}
+int ILCodeStream::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pMD, typeSignature, methodSignature);
+}
 int ILCodeStream::GetToken(MethodTable* pMT)
 {
     STANDARD_VM_CONTRACT;
@@ -3248,10 +3270,10 @@ int ILCodeStream::GetToken(FieldDesc* pFD)
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pFD);
 }
-int ILCodeStream::GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst)
+int ILCodeStream::GetToken(FieldDesc* pFD, mdToken typeSignature)
 {
     STANDARD_VM_CONTRACT;
-    return m_pOwner->GetToken(pFD, typeSignature, inst);
+    return m_pOwner->GetToken(pFD, typeSignature);
 }
 int ILCodeStream::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
 {
