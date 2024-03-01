@@ -698,6 +698,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
                 }
 
+                if (size >= 4 * REGSIZE_BYTES && compiler->IsBaselineSimdIsaSupported())
+                {
+                    // We can use 128-bit SIMD ldp/stp for larger block sizes
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                }
+
                 // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
                 dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
 
