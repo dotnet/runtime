@@ -1195,7 +1195,7 @@ extends:
           - windows_x86
           # - windows_arm64
           jobParameters:
-            buildSuffix: Mono_Runtime
+            nameSuffix: Mono_Runtime
             buildArgs: -s mono -c $(_BuildConfig)
             condition: >-
               or(
