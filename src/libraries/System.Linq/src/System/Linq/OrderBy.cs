@@ -44,14 +44,14 @@ namespace System.Linq
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
             TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
-                new OrderedImplicitlyStableEnumerable<T>(source, descending: false) :
+                new ImplicitlyStableOrderedIterator<T>(source, descending: false) :
                 OrderBy(source, EnumerableSorter<T>.IdentityFunc, comparer);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-            => new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
+            => new OrderedIterator<TSource, TKey>(source, keySelector, null, false, null);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-            => new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
+            => new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
 
         /// <summary>
         /// Sorts the elements of a sequence in descending order.
@@ -89,14 +89,14 @@ namespace System.Linq
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
             TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
-                new OrderedImplicitlyStableEnumerable<T>(source, descending: true) :
+                new ImplicitlyStableOrderedIterator<T>(source, descending: true) :
                 OrderByDescending(source, EnumerableSorter<T>.IdentityFunc, comparer);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
-            new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true, null);
+            new OrderedIterator<TSource, TKey>(source, keySelector, null, true, null);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer) =>
-            new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, true, null);
+            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {

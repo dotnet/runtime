@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).il" />
-  </ItemGroup>
-</Project>

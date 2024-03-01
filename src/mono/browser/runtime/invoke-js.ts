@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free } from "./marshal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid } from "./marshal";
 import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
@@ -141,7 +141,8 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         const previous = runtimeHelpers.isPendingSynchronousCall;
         try {
             forceThreadMemoryViewRefresh();
-            runtimeHelpers.isPendingSynchronousCall = true;
+            const caller_tid = get_caller_native_tid(args);
+            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.currentThreadTID === caller_tid;
             bound_fn(args);
         }
         finally {

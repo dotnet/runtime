@@ -857,12 +857,27 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    printf("Exact Type MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    {
+                        printf("Exact Type MT(0x%p)", dspPtr(iconVal));
+                    }
+                    else
+                    {
+                        printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
+                               eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    }
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    {
+                        printf("MT(0x%p)", dspPtr(iconVal));
+                    }
+                    else
+                    {
+                        printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    }
                     assert(curAssertion->op2.HasIconFlag());
                 }
                 else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
@@ -5478,7 +5493,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_IND:
         case GT_STOREIND:
         case GT_NULLCHECK:
-        case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
@@ -6132,7 +6146,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 AssertionIndex valueAssertionIndex;
                 AssertionIndex jumpDestAssertionIndex;
 
-                if (info.IsNextEdgeAssertion())
+                if (info.AssertionHoldsOnFalseEdge())
                 {
                     valueAssertionIndex    = info.GetAssertionIndex();
                     jumpDestAssertionIndex = optFindComplementary(info.GetAssertionIndex());

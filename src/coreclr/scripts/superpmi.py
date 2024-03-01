@@ -297,7 +297,7 @@ collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help=
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file. Default is a constructed file name in the current directory.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
-collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets DOTNET_ZapDisable=1 and DOTNET_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
@@ -506,9 +506,10 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 def read_csv(path):
-    with open(path) as csv_file:
+    with open(path, encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file)
-        return list(reader)
+        for row in reader:
+            yield row
 
 def decode_clrjit_build_string(clrjit_path):
     """ Obtain information about the compiler that was used to compile the clrjit at the specified path.
@@ -842,8 +843,7 @@ class SuperPMICollect:
             else:
                 dotnet_env["TieredCompilation"] = "0"
 
-            if self.coreclr_args.use_zapdisable:
-                dotnet_env["ZapDisable"] = "1"
+            if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
 
             logging.debug("Starting collection.")
@@ -1710,8 +1710,8 @@ class SuperPMIReplay:
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 (return_code, replay_output) = run_and_log_return_output(command)
 
-                details = read_csv(details_info_file)
-                print_superpmi_result(return_code, self.coreclr_args, self.aggregate_replay_metrics(details), None)
+                replay_metrics = self.aggregate_replay_metrics(details_info_file)
+                print_superpmi_result(return_code, self.coreclr_args, replay_metrics, None)
 
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
@@ -1752,8 +1752,8 @@ class SuperPMIReplay:
 
         return result
 
-    def aggregate_replay_metrics(self, details):
-        """ Given the CSV details file output by SPMI for a replay aggregate the
+    def aggregate_replay_metrics(self, details_file):
+        """ Given a path to a CSV details file output by SPMI for a replay aggregate the
         successes, misses and failures
 
         Returns:
@@ -1763,7 +1763,7 @@ class SuperPMIReplay:
         num_successes = 0
         num_misses = 0
         num_failures = 0
-        for row in details:
+        for row in read_csv(details_file):
             result = row["Result"]
             if result == "Success":
                 num_successes += 1
@@ -1861,8 +1861,8 @@ class DetailsSection:
     def __exit__(self, *args):
         self.write_fh.write("\n\n</div></details>\n")
 
-def aggregate_diff_metrics(details):
-    """ Given the CSV details file output by SPMI for a diff aggregate the metrics.
+def aggregate_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff aggregate the metrics.
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
@@ -1874,7 +1874,9 @@ def aggregate_diff_metrics(details):
     diff_minopts = base_minopts.copy()
     diff_fullopts = base_minopts.copy()
 
-    for row in details:
+    diffs = []
+
+    for row in read_csv(details_file):
         base_result = row["Base result"]
 
         if row["MinOpts"] == "True":
@@ -1917,10 +1919,9 @@ def aggregate_diff_metrics(details):
             base_dict["Diffed PerfScore"] += base_perfscore
             diff_dict["Diffed PerfScore"] += diff_perfscore
 
-            if base_perfscore > 0:
-                log_relative_perfscore = math.log(diff_perfscore / base_perfscore)
-                base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
-                diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+            log_relative_perfscore = math.log(max(diff_perfscore, 1.0) / max(base_perfscore, 1.0))
+            base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+            diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
 
             base_dict["Diffed contexts"] += 1
             diff_dict["Diffed contexts"] += 1
@@ -1928,6 +1929,7 @@ def aggregate_diff_metrics(details):
             if row["Has diff"] == "True":
                 base_dict["Contexts with diffs"] += 1
                 diff_dict["Contexts with diffs"] += 1
+                diffs.append(row)
 
     base_overall = base_minopts.copy()
     for k in base_overall.keys():
@@ -1950,7 +1952,8 @@ def aggregate_diff_metrics(details):
             d["Relative PerfScore Geomean (Diffs)"] = 1
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
-            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
+            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts},
+            diffs)
 
 
 class SuperPMIReplayAsmDiffs:
@@ -2152,8 +2155,7 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                details = read_csv(detailed_info_file)
-                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
 
                 print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -2173,7 +2175,6 @@ class SuperPMIReplayAsmDiffs:
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
-                diffs = [r for r in details if r["Has diff"] == "True"]
                 if any(diffs):
                     files_with_asm_diffs.append(mch_file)
 
@@ -2924,8 +2925,7 @@ class SuperPMIReplayThroughputDiff:
                     command_string = " ".join(command)
                     logging.debug("'%s': Error return code: %s", command_string, return_code)
 
-                details = read_csv(detailed_info_file)
-                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
+                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = base_metrics["Overall"]["Diff executed instructions"]
@@ -4603,9 +4603,9 @@ def setup_args(args):
                             "Unable to set clean.")
 
         coreclr_args.verify(args,
-                            "use_zapdisable",
+                            "disable_r2r",
                             lambda unused: True,
-                            "Unable to set use_zapdisable")
+                            "Unable to set disable_r2r")
 
         coreclr_args.verify(args,
                             "tiered_compilation",

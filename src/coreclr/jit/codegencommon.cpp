@@ -6452,6 +6452,47 @@ void CodeGen::genFnProlog()
 #pragma warning(pop)
 #endif
 
+//----------------------------------------------------------------------------------
+// genEmitJumpTable: emit jump table and return its base offset
+//
+// Arguments:
+//    treeNode     - the GT_JMPTABLE node
+//    relativeAddr - if true, references are treated as 4-byte relative addresses,
+//                   otherwise they are absolute pointers
+//
+// Return Value:
+//    base offset to jump table
+//
+// Assumption:
+//    The current basic block in process ends with a switch statement
+//
+unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
+{
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
+    assert(treeNode->OperGet() == GT_JMPTABLE);
+
+    emitter*       emit       = GetEmitter();
+    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
+
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
+
+    for (unsigned i = 0; i < jumpCount; i++)
+    {
+        BasicBlock* target = (*jumpTable)->getDestinationBlock();
+        jumpTable++;
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
+
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
+
+        emit->emitDataGenData(i, target);
+    };
+
+    emit->emitDataGenEnd();
+    return jmpTabBase;
+}
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
@@ -6546,7 +6587,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // For certain indirect calls we may introduce helper calls before that we need to skip:
     // - CFG may introduce a call to the validator first
     // - Generic virtual methods may compute the target dynamically through a separate helper call
-    // - memset/memcpy helper calls emitted for GT_STORE_DYN_BLK/GT_STORE_BLK
+    // - memset/memcpy helper calls emitted for GT_STORE_BLK
     if (call->IsHelperCall())
     {
         switch (compiler->eeGetHelperNum(call->gtCallMethHnd))
@@ -7364,6 +7405,26 @@ void CodeGen::genReportRichDebugInfoToFile()
 #endif
 
 //------------------------------------------------------------------------
+// SuccessfulSibling:
+//   Find the next sibling inline context that was successfully inlined.
+//
+// Parameters:
+//   context - the inline context. Can be nullptr in which case nullptr is returned.
+//
+// Returns:
+//   The sibling, or nullptr if there is no succesful sibling.
+//
+static InlineContext* SuccessfulSibling(InlineContext* context)
+{
+    while ((context != nullptr) && !context->IsSuccess())
+    {
+        context = context->GetSibling();
+    }
+
+    return context;
+}
+
+//------------------------------------------------------------------------
 // genRecordRichDebugInfoInlineTree:
 //   Recursively process a context in the inline tree and record information
 //   about it.
@@ -7374,26 +7435,28 @@ void CodeGen::genReportRichDebugInfoToFile()
 //
 void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    if (context->IsSuccess())
-    {
-        // We expect 1 + NumInlines unique ordinals
-        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+    assert(context->IsSuccess());
 
-        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
-        node->Method                        = context->GetCallee();
-        node->ILOffset                      = context->GetActualCallOffset();
-        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
-        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
+    // We expect 1 + NumInlines unique ordinals
+    assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+    InlineContext* successfulChild   = SuccessfulSibling(context->GetChild());
+    InlineContext* successfulSibling = SuccessfulSibling(context->GetSibling());
+
+    ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+    node->Method                        = context->GetCallee();
+    node->ILOffset                      = context->GetActualCallOffset();
+    node->Child                         = successfulChild == nullptr ? 0 : successfulChild->GetOrdinal();
+    node->Sibling                       = successfulSibling == nullptr ? 0 : successfulSibling->GetOrdinal();
+
+    if (successfulSibling != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(successfulSibling, nodes);
     }
 
-    if (context->GetSibling() != nullptr)
+    if (successfulChild != nullptr)
     {
-        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
-    }
-
-    if (context->GetChild() != nullptr)
-    {
-        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
+        genRecordRichDebugInfoInlineTree(successfulChild, nodes);
     }
 }
 
@@ -7442,6 +7505,28 @@ void CodeGen::genReportRichDebugInfo()
 
         mappingIndex++;
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported inline tree:\n");
+        for (unsigned i = 0; i < numContexts; i++)
+        {
+            printf("  [#%d] %s @ %d, child = %d, sibling = %d\n", i,
+                   compiler->eeGetMethodFullName(inlineTree[i].Method), inlineTree[i].ILOffset, inlineTree[i].Child,
+                   inlineTree[i].Sibling);
+        }
+
+        printf("\nReported rich mappings:\n");
+        for (size_t i = 0; i < mappingIndex; i++)
+        {
+            printf("  [%zu] 0x%x <-> IL %d in #%d\n", i, mappings[i].NativeOffset, mappings[i].ILOffset,
+                   mappings[i].Inlinee);
+        }
+
+        printf("\n");
+    }
+#endif
 
     compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
 }
@@ -8359,7 +8444,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
             instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_2, size);
-            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+
+            // Call non-managed memset
+            genEmitHelperCall(CORINFO_HELP_NATIVE_MEMSET, 0, EA_UNKNOWN);
             // May kill REG_SCRATCH, so we need to reload it.
             hasPoisonImm = false;
 #endif
@@ -8523,3 +8610,31 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
         genDefineTempLabel(genCreateTempLabel());
     }
 }
+
+#ifdef SWIFT_SUPPORT
+//---------------------------------------------------------------------
+// genCodeForSwiftErrorReg - generate code for a GT_SWIFT_ERROR node
+//
+// Arguments
+//    tree - the GT_SWIFT_ERROR node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
+{
+    assert(tree->OperIs(GT_SWIFT_ERROR));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    // LSRA should have picked REG_SWIFT_ERROR as the destination register, too
+    // (see LinearScan::BuildNode for an explanation of why we want this)
+    assert(targetReg == REG_SWIFT_ERROR);
+
+    inst_Mov(targetType, targetReg, REG_SWIFT_ERROR, /* canSkip */ true);
+    genTransferRegGCState(targetReg, REG_SWIFT_ERROR);
+
+    genProduceReg(tree);
+}
+#endif // SWIFT_SUPPORT
