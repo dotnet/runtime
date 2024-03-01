@@ -378,7 +378,20 @@ export function generateWasmBody(
                 builder.callImport("localloc");
                 break;
             }
-            case MintOpcode.MINT_INITOBJ: {
+            case MintOpcode.MINT_ZEROBLK: {
+                // dest
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                // value
+                builder.i32_const(0);
+                // count
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                // memset
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(11);
+                builder.appendU8(0);
+                break;
+            }
+            case MintOpcode.MINT_ZEROBLK_IMM: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
                 break;
