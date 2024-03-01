@@ -311,6 +311,7 @@ namespace Internal.ReadyToRunConstants
         Dbl2UIntOvf                 = 0xD5,
         Dbl2ULng                    = 0xD6,
         Dbl2ULngOvf                 = 0xD7,
+        Flt2UInt                    = 0xD8,
 
         // Floating point ops
         DblRem                      = 0xE0,
