@@ -199,7 +199,7 @@ namespace System.SpanTests
             GC.Collect(2);
 
             Assert.Equal((IntPtr)pinnedPtr, (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pinnedMemory.Span)));
-            Assert.Equal((IntPtr)memoryHandlePinnedPtr, (IntPtr)pinnedGCHandle.AddrOfPinnedObject().ToPointer());
+            Assert.Equal((IntPtr)memoryHandlePinnedPtr, pinnedGCHandle.AddrOfPinnedObject());
 
             pinnedGCHandle.Free();
         }

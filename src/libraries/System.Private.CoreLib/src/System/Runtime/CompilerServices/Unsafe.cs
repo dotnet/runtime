@@ -921,7 +921,7 @@ namespace System.Runtime.CompilerServices
             // GC will keep alignment when moving objects (up to sizeof(void*)),
             // otherwise alignment should be considered a hint if not pinned.
             Debug.Assert(nuint.IsPow2(alignment));
-            return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) != 0;
+            return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) == 0;
         }
     }
 }
