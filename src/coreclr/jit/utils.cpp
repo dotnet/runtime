@@ -282,9 +282,9 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  *  Displays a range of registers
  *   -- This is a helper used by dspRegMask
  */
-const char* dspRegRange(regMaskMixed regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
+const char* dspRegRange(regMaskOnlyOne regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-#ifdef TARGET_XARCH
+#ifdef HAS_PREDICATE_REGS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
            ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));

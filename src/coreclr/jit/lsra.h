@@ -636,7 +636,7 @@ public:
     // This is the main driver
     virtual PhaseStatus doLinearScan();
 
-    static bool isSingleRegister(regMaskMixed regMask)
+    static bool isSingleRegister(regMaskOnlyOne regMask)
     {
         return (genExactlyOneBit(regMask));
     }
