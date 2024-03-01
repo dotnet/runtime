@@ -3733,8 +3733,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                     else
                     {
                         nonGcSlots--;
-                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmp1, tmp2, EA_SIZE(size), opts);
-                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmp1, tmp2, EA_SIZE(size), opts);
+                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmp1, srcReg, EA_SIZE(size), opts);
+                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmp1, dstReg, EA_SIZE(size), opts);
                     }
                 }
             }
