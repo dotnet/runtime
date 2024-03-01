@@ -989,6 +989,7 @@ CorDebugInternalFrameType ShimStackWalk::GetInternalFrameType(ICorDebugInternalF
 
 void ShimStackWalk::AppendFrame(ICorDebugFrame * pFrame, StackWalkInfo * pStackWalkInfo)
 {
+    // Subtracting 1 from IP of the leaf frame after an exception to ensure that the source info points at the call site 
     if (pStackWalkInfo->m_fHasException && pStackWalkInfo->m_cFrame == 0)
     {
         RSExtSmartPtr<ICorDebugILFrame> pNFrame3;
