@@ -7887,13 +7887,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 {
     assert(compiler->compGeneratingProlog);
 
-    //
     // The 'initReg' could have been calculated as one of the callee-saved registers (let's say T0, T1 and T2 are in
     // use, so the next possible register is S1, which should be callee-save register). This is fine, as long as we
     // save callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH
     // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
     //
-
     // Unlike on x86/x64, we can also push float registers to stack
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
