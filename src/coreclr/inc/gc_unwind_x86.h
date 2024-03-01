@@ -24,10 +24,6 @@
 #define NOT_IN_NATIVEAOT_PRE_COMMA(a) ,a
 #endif
 
-/*****************************************************************************
- <TODO>ToDo: Do we want to include JIT/IL/target.h? </TODO>
- */
-
 enum regNum
 {
         REGI_EAX, REGI_ECX, REGI_EDX, REGI_EBX,

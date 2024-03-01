@@ -13,11 +13,6 @@
 /*****************************************************************************/
 
 #include "daccess.h"
-#ifndef FEATURE_NATIVEAOT
-#include "windef.h"     // For UINT32
-#else
-#define UINT32 uint32_t
-#endif
 
 // Use the lower 2 bits of the offsets stored in the tables
 // to encode properties
@@ -60,7 +55,7 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 struct GCInfoToken
 {
     PTR_VOID Info;
-    UINT32 Version;
+    uint32_t Version;
 
 #ifdef FEATURE_NATIVEAOT
     GCInfoToken(PTR_VOID info)
@@ -70,7 +65,7 @@ struct GCInfoToken
     }
 #endif
 
-    static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion)
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion)
     {
         // GcInfo version is current from  ReadyToRun version 2.0
         return GCINFO_VERSION;
