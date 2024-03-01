@@ -515,7 +515,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             // More generally, as long as we have only additions and only a
             // single operand is the recurrence, we can represent it as an add
             // recurrence. See MakeAddRecFromRecursiveScev for the details.
-            // 
+            //
             ScevConstant* symbolicAddRec = NewConstant(data->TypeGet(), 0xdeadbeef);
             m_ephemeralCache.Emplace(store, symbolicAddRec);
 
@@ -576,7 +576,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                     break;
                 case GT_SUB:
                     oper = ScevOper::Add;
-                    op2 = NewBinop(ScevOper::Mul, op2, NewConstant(op2->Type, -1));
+                    op2  = NewBinop(ScevOper::Mul, op2, NewConstant(op2->Type, -1));
                     break;
                 case GT_MUL:
                     oper = ScevOper::Mul;
