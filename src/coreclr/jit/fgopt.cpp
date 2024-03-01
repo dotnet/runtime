@@ -835,8 +835,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    FlowEdge* const oldEdge = fgRemoveRefPred(osrEntry, fgFirstBB);
-                    FlowEdge* const newEdge = fgAddRefPred(entryJumpTarget, fgFirstBB, oldEdge);
+                    fgRemoveRefPred(fgFirstBB->GetTargetEdge());
+                    FlowEdge* const newEdge = fgAddRefPred(entryJumpTarget, fgFirstBB, fgFirstBB->GetTargetEdge());
                     fgFirstBB->SetTargetEdge(newEdge);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
@@ -1008,7 +1008,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     noway_assert(block->hasTryIndex() == bNext->hasTryIndex());
 
     JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", bNext->bbNum, block->bbNum);
-    fgRemoveRefPred(bNext, block);
+    fgRemoveRefPred(block->GetTargetEdge());
 
     if (bNext->countOfInEdges() > 0)
     {
@@ -1566,25 +1566,31 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         }
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
-        FlowEdge* const newEdge = fgAddRefPred(bDest->GetTarget(), block, fgRemoveRefPred(bDest, block));
-
         switch (block->GetKind())
         {
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
+            {
+                fgRemoveRefPred(block->GetTargetEdge());
+                FlowEdge* const newEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetTargetEdge());
                 block->SetTargetEdge(newEdge);
                 break;
+            }
 
             case BBJ_COND:
                 if (block->TrueTargetIs(bDest))
                 {
                     assert(!block->FalseTargetIs(bDest));
-                    block->SetTrueEdge(newEdge);
+                    fgRemoveRefPred(block->GetTrueEdge());
+                    FlowEdge* const trueEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetTrueEdge());
+                    block->SetTrueEdge(trueEdge);
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
-                    block->SetFalseEdge(newEdge);
+                    fgRemoveRefPred(block->GetFalseEdge());
+                    FlowEdge* const falseEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetFalseEdge());
+                    block->SetFalseEdge(falseEdge);
                 }
                 break;
 
@@ -1881,7 +1887,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             }
 
             // Update the switch jump table
-            FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, fgRemoveRefPred(bDest, block));
+            FlowEdge* const oldEdge = *jmpTab;
+            fgRemoveRefPred(oldEdge);
+            FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, oldEdge);
             *jmpTab                 = newEdge;
 
             // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
@@ -2482,7 +2490,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRemoveRefPred(target, block);
+    fgRemoveRefPred(block->GetTargetEdge());
 
     FlowEdge* const trueEdge  = fgAddRefPred(target->GetTrueTarget(), block, target->GetTrueEdge());
     FlowEdge* const falseEdge = fgAddRefPred(target->GetFalseTarget(), block, target->GetFalseEdge());
@@ -2904,7 +2912,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     // bJump no longer jumps to bDest
     //
-    fgRemoveRefPred(bDest, bJump);
+    fgRemoveRefPred(bJump->GetTargetEdge());
 
     // bJump now jumps to bDest's normal jump target
     //
@@ -4996,7 +5004,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                                 BasicBlock* const bFixup           = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bFixup->inheritWeight(bDestFalseTarget);
 
-                                fgRemoveRefPred(bDestFalseTarget, bDest);
+                                fgRemoveRefPred(bDest->GetFalseEdge());
                                 FlowEdge* const falseEdge = fgAddRefPred(bFixup, bDest);
                                 bDest->SetFalseEdge(falseEdge);
 
@@ -5679,7 +5687,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 //
                 if (commSucc != nullptr)
                 {
-                    fgRemoveRefPred(commSucc, predBlock);
+                    fgRemoveRefPred(predBlock->GetTargetEdge());
                 }
 
                 FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
