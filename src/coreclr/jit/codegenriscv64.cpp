@@ -8093,7 +8093,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
                 dspBool(compiler->compLocallocUsed));
 
-        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) >= 2040)
+        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) > 2040)
         {
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize & 0xfffffff0;
 
