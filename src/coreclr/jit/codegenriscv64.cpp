@@ -7893,7 +7893,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // save callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH
     // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
     //
-    bool ignoreInitRegZeroed = false;
 
     // Unlike on x86/x64, we can also push float registers to stack
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
@@ -8007,13 +8006,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
             offset            = calleeSaveSPDelta - offset;
 
-            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, &ignoreInitRegZeroed,
-                                      /* reportUnwindData */ true);
+            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
         else
         {
-            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
-                                      /* reportUnwindData */ true);
+            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
     }
 
