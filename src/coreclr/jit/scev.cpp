@@ -469,12 +469,53 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
 
             assert(ssaDsc->GetBlock() != nullptr);
 
+            // Try simple but most common case first, where we have a direct
+            // add recurrence like i = i + 1.
             Scev* simpleAddRec = CreateSimpleAddRec(store, enterScev, ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data());
             if (simpleAddRec != nullptr)
             {
                 return simpleAddRec;
             }
 
+            // Otherwise try a more powerful approach; we create a symbolic
+            // node representing the recurrence and then invoke the analysis
+            // recursively. This handles for example cases like
+            //
+            //   int i = start;
+            //   while (i < n)
+            //   {
+            //     int j = i + 1;
+            //     ...
+            //     i = j;
+            //   }
+            // => <L, start, 1>
+            //
+            // where we need to follow SSA defs. In this case the analysis will result in
+            // <symbolic node> + 1. The symbolic node represents a recurrence,
+            // so this corresponds to the infinite sequence [start, start + 1,
+            // start + 1 + 1, ...] which can be represented by <L, start, 1>.
+            //
+            // This approach also generalizes to handle to chains of
+            // recurrences. For example:
+            //
+            //   int i = 0;
+            //   int j = 0;
+            //   while (i < n)
+            //   {
+            //     j++;
+            //     i += j;
+            //   }
+            // => <L, 0, <L, 1, 1>>
+            //
+            // Here `i` will analyze to <symbolic node> + <L, [initial value of j], 1>.
+            // Like before this corresponds to an infinite sequence
+            // [start, start + <L, [initial value of j], 1>, start + 2 * <L, [initial value of j], 1>, ...]
+            // which again can be represented as <L, start, <L, [initial value of j], 1>>.
+            //
+            // More generally, as long as we have only additions and only a
+            // single operand is the recurrence, we can represent it as an add
+            // recurrence. See MakeAddRecFromRecursiveScev for the details.
+            // 
             ScevConstant* symbolicAddRec = NewConstant(data->TypeGet(), 0xdeadbeef);
             m_ephemeralCache.Emplace(store, symbolicAddRec);
 
@@ -515,6 +556,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             return NewExtension(cast->IsUnsigned() ? ScevOper::ZeroExtend : ScevOper::SignExtend, TYP_LONG, op);
         }
         case GT_ADD:
+        case GT_SUB:
         case GT_MUL:
         case GT_LSH:
         {
@@ -531,6 +573,10 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             {
                 case GT_ADD:
                     oper = ScevOper::Add;
+                    break;
+                case GT_SUB:
+                    oper = ScevOper::Add;
+                    op2 = NewBinop(ScevOper::Mul, op2, NewConstant(op2->Type, -1));
                     break;
                 case GT_MUL:
                     oper = ScevOper::Mul;
@@ -651,7 +697,8 @@ void ScalarEvolutionContext::ExtractAddOperands(ScevBinop* binop, ArrayStack<Sce
 //   recursiveScev - A symbolic node whose appearance represents the value of "scev"
 //
 // Returns:
-//   A non-recursive addrec
+//   A non-recursive addrec, or nullptr if the recursive SCEV is not
+//   representable as an add recurrence.
 //
 Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev* scev, Scev* recursiveScev)
 {
