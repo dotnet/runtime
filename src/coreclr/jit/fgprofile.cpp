@@ -3990,7 +3990,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
         assert(block->HasInitializedTarget());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
+        FlowEdge* const flowEdge = block->GetTargetEdge();
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -4917,13 +4917,13 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     BasicBlock* otherDst;
                     if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetTrueTarget();
+                        otherEdge = bSrc->GetTrueEdge();
                     }
                     else
                     {
-                        otherDst = bSrc->GetFalseTarget();
+                        otherEdge = bSrc->GetFalseEdge();
                     }
-                    otherEdge = fgGetPredForBlock(otherDst, bSrc);
+                    otherDst = otherEdge->getDestinationBlock();
 
                     // If we see min/max violations, just give up on the computations
                     //
