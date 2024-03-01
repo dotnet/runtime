@@ -152,7 +152,6 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
-    regMaskMixed relOffsetMask = RBM_CALLEE_SAVED
 #if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
                                  // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
                                  // is excluded from the callee-save register list.
@@ -172,7 +171,14 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     assert(reg < REG_FP_FIRST);
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
 #endif
-    if (relOffsetMask & genRegMask(reg))
+
+    singleRegMask mask = genRegMask(reg);
+    if ((emitter::isIntegerRegister(reg) && (RBM_INT_CALLEE_SAVED & mask)) ||
+        (emitter::isFloatReg(reg) && (RBM_FLT_CALLEE_SAVED & mask))
+#ifdef HAS_PREDICATE_REGS
+        || (emitter::isPredicateRegister(reg) && (RBM_MSK_CALLEE_SAVED & mask))
+#endif // HAS_PREDICATE_REGS
+    )
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }

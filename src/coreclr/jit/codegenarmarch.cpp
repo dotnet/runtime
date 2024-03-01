@@ -3579,7 +3579,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskGpr trashedGprByEpilog = RBM_INT_CALLEE_SAVED;
         regMaskFloat trashedFloatByEpilog = RBM_FLT_CALLEE_SAVED;
-#if HAS_PREDICATE_REGS
+#ifdef HAS_PREDICATE_REGS
         regMaskPredicate trashedPredicateByEpilog = RBM_MSK_CALLEE_SAVED;
 #endif // HAS_PREDICATE_REGS
 
@@ -3610,7 +3610,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     JITDUMP("Float Register used: %s\n", getRegName(reg));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
-#if HAS_PREDICATE_REGS
+#ifdef HAS_PREDICATE_REGS
                 else if ((trashedPredicateByEpilog & genRegMask(reg)) != 0)
                 {
                     JITDUMP("Tail call node:\n");
