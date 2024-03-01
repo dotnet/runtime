@@ -4222,7 +4222,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             ValueNum  op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
             VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(op1VN, &funcApp) && ((funcApp.m_func == VNF_InvariantLoad)) &&
+            if (vnStore->GetVNFunc(op1VN, &funcApp) && (funcApp.m_func == VNF_InvariantLoad) &&
                 (curAssertion->op1.vn == funcApp.m_args[0]))
             {
                 return assertionIndex;
