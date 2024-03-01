@@ -10,7 +10,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
 namespace System.Buffers
 {
