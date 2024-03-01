@@ -470,7 +470,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                // build using Heapify() if the queue is empty.
+                // all elements have the same priority so no need to heapify.
 
                 int i = 0;
                 (TElement, TPriority)[] nodes = _nodes;
@@ -487,11 +487,6 @@ namespace System.Collections.Generic
 
                 _size = i;
                 _version++;
-
-                if (i > 1)
-                {
-                    Heapify();
-                }
             }
             else
             {
