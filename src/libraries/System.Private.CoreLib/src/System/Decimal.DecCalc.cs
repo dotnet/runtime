@@ -207,6 +207,15 @@ namespace System
                 return DivRem64By32Quo32(((ulong)leftCarry << 32) | leftBase, right);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static (uint Quotient, uint Remainder) DivRem16Carry16By16(uint leftBase, uint leftCarry, uint right)
+            {
+                Debug.Assert(leftBase <= ushort.MaxValue);
+                Debug.Assert(right <= ushort.MaxValue);
+                Debug.Assert(leftCarry < right);
+                return Math.DivRem((leftCarry << 16) | leftBase, right);
+            }
+
             /// <summary>
             /// Do full divide, yielding 96-bit result and 32-bit remainder.
             /// </summary>
@@ -241,51 +250,31 @@ namespace System
 #else
                 // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
                 Debug.Assert(pow <= ushort.MaxValue);
-                uint num, mid32, low16, div, rem;
+                uint mid32, low16, div, rem;
                 if (high64 <= uint.MaxValue)
                 {
-                    num = (uint)high64;
-                    (mid32, rem) = Math.DivRem(num, pow);
-                    num = rem << 16;
-
-                    num += low >> 16;
-                    (low16, rem) = Math.DivRem(num, pow);
-                    num = rem << 16;
-
-                    num += (ushort)low;
-                    (div, rem) = Math.DivRem(num, pow);
+                    (mid32, rem) = Math.DivRem((uint)high64, pow);
+                    (low16, rem) = DivRem16Carry16By16(low >> 16, rem, pow);
+                    (div, rem) = DivRem16Carry16By16((ushort)low, rem, pow);
                     if (rem == 0)
                     {
                         high64 = mid32;
-                        low = (low16 << 16) + div;
+                        low = (low16 << 16) | div;
                         return true;
                     }
                 }
                 else
                 {
-                    num = (uint)(high64 >> 32);
-                    (uint high32, rem) = Math.DivRem(num, pow);
-                    num = rem << 16;
-
-                    num += (uint)high64 >> 16;
-                    (mid32, rem) = Math.DivRem(num, pow);
-                    num = rem << 16;
-
-                    num += (ushort)high64;
-                    (div, rem) = Math.DivRem(num, pow);
-                    num = rem << 16;
-                    mid32 = div + (mid32 << 16);
-
-                    num += low >> 16;
-                    (low16, rem) = Math.DivRem(num, pow);
-                    num = rem << 16;
-
-                    num += (ushort)low;
-                    (div, rem) = Math.DivRem(num, pow);
+                    (uint high32, rem) = Math.DivRem((uint)(high64 >> 32), pow);
+                    (mid32, rem) = DivRem16Carry16By16((uint)high64 >> 16, rem, pow);
+                    (div, rem) = DivRem16Carry16By16((ushort)high64, rem, pow);
+                    mid32 = div | (mid32 << 16);
+                    (low16, rem) = DivRem16Carry16By16(low >> 16, rem, pow);
+                    (div, rem) = DivRem16Carry16By16((ushort)low, rem, pow);
                     if (rem == 0)
                     {
                         high64 = ((ulong)high32 << 32) | mid32;
-                        low = (low16 << 16) + div;
+                        low = (low16 << 16) | div;
                         return true;
                     }
                 }
@@ -684,20 +673,10 @@ ThrowOverflow:
                     (result[i], remainder) = DivRem32Carry32By32(result[i], remainder, power);
 #else
                     // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
-                    Debug.Assert(power <= ushort.MaxValue);
-#if BIGENDIAN
-                    const int low16 = 2, high16 = 0;
-#else
-                    const int low16 = 0, high16 = 2;
-#endif
-                    // byte* is used here because Roslyn doesn't do constant propagation for pointer arithmetic
-                    uint num = *(ushort*)((byte*)result + i * 4 + high16) + (remainder << 16);
-                    (uint div, remainder) = Math.DivRem(num, power);
-                    *(ushort*)((byte*)result + i * 4 + high16) = (ushort)div;
-
-                    num = *(ushort*)((byte*)result + i * 4 + low16) + (remainder << 16);
-                    (div, remainder) = Math.DivRem(num, power);
-                    *(ushort*)((byte*)result + i * 4 + low16) = (ushort)div;
+                    uint tmp = result[i];
+                    (uint high16, remainder) = DivRem16Carry16By16(tmp >> 16, remainder, power);
+                    (uint low16, remainder) = DivRem16Carry16By16((ushort)tmp, remainder, power);
+                    result[i] = high16 << 16 | low16;
 #endif
                 }
                 return power;
