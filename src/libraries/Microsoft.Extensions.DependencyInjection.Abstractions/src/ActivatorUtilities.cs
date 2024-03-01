@@ -107,12 +107,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (isPreferred || bestLength < length)
                     {
+                        // When a preferred constructor is found, it is always selected however subsequent constructors
+                        // will be selected if they have more parameters.
                         bestLength = length;
                         bestMatcher = matcher;
                         multipleBestLengthFound = false;
                     }
-                    else if (bestLength == length)
+                    else if (bestLength == length && bestMatcher.Constructor?.IsPreferred == false)
                     {
+                        // The best constructor was not the one with the attribute, so we have an ambiguous case.
                         multipleBestLengthFound = true;
                     }
 
@@ -715,6 +718,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 _constructor = constructor;
                 _parameterValues = new object[constructor.Parameters.Length];
             }
+
+            public ConstructorInfoEx Constructor { get { return _constructor; } }
 
             public int Match(object[] givenParameters, IServiceProviderIsService serviceProviderIsService)
             {
