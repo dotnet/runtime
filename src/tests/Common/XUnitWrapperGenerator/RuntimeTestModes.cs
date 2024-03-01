@@ -33,7 +33,7 @@ namespace Xunit
         // GCStressC forces a GC at every JIT-generated code instruction,
         // including in NGEN/ReadyToRun code.
         GCStressC = 1 << 7, // DOTNET_GCStress includes mode 0xC.
-        AnyGCStress = GCStress3 | GCStressC // Disable when any GCStress is exercised.
+        AnyGCStress = GCStress3 | GCStressC, // Disable when any GCStress is exercised.
         // TieredCompilation is on by default, but can cause some tests to fail
         // As TieredCompilation is on by default, it does not count as a stress mode for RegularRun.
         TieredCompilation = 1 << 8, // DOTNET_TieredCompilation (or COMPlus_TieredCompilation) is not set to 0.
