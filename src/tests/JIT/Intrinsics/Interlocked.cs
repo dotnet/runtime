@@ -57,6 +57,7 @@ namespace InterlockedTest
 
         private static int _errors;
         private static Box _box;
+        private static uint _staticMemory;
 
         [Fact]
         public static int TestEntryPoint()
@@ -226,6 +227,49 @@ namespace InterlockedTest
             ThrowsNRE(() => { CompareExchangeShort()(ref Unsafe.NullRef<short>(), 0, 0); });
             ThrowsNRE(() => { CompareExchangeUShort()(ref Unsafe.NullRef<ushort>(), 0, 0); });
 
+            // test for asserts with statics since their addresses are constant which caused issues earlier
+            // test with 4B alignment provided by the uint field
+            _staticMemory = 0;
+            Equals(0, Interlocked.Exchange(ref Unsafe.As<uint, byte>(ref _staticMemory), 255));
+            Equals(255, Unsafe.As<uint, byte>(ref _staticMemory));
+
+            _staticMemory = 0;
+            Equals(0, Interlocked.Exchange(ref Unsafe.As<uint, ushort>(ref _staticMemory), 65535));
+            Equals(65535, Unsafe.As<uint, ushort>(ref _staticMemory));
+
+            _staticMemory = 0;
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<uint, byte>(ref _staticMemory), 255, 0));
+            Equals(255, Unsafe.As<uint, byte>(ref _staticMemory));
+            Equals(255, Interlocked.CompareExchange(ref Unsafe.As<uint, byte>(ref _staticMemory), 1, 0));
+            Equals(255, Unsafe.As<uint, byte>(ref _staticMemory));
+
+            _staticMemory = 0;
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<uint, ushort>(ref _staticMemory), 65535, 0));
+            Equals(65535, Unsafe.As<uint, ushort>(ref _staticMemory));
+            Equals(65535, Interlocked.CompareExchange(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1, 0));
+            Equals(65535, Unsafe.As<uint, ushort>(ref _staticMemory));
+            
+            // offset the address by 1 to avoid 4B alignment
+            _staticMemory = 0;
+            Equals(0, Interlocked.Exchange(ref Unsafe.Add(ref Unsafe.As<uint, byte>(ref _staticMemory), 1), 255));
+            Equals(255, Unsafe.Add(ref Unsafe.As<uint, byte>(ref _staticMemory), 1));
+
+            _staticMemory = 0;
+            Equals(0, Interlocked.Exchange(ref Unsafe.Add(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1), 65535));
+            Equals(65535, Unsafe.Add(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1));
+
+            _staticMemory = 0;
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.Add(ref Unsafe.As<uint, byte>(ref _staticMemory), 1), 255, 0));
+            Equals(255, Unsafe.Add(ref Unsafe.As<uint, byte>(ref _staticMemory), 1));
+            Equals(255, Interlocked.CompareExchange(ref Unsafe.Add(ref Unsafe.As<uint, byte>(ref _staticMemory), 1), 1, 0));
+            Equals(255, Unsafe.Add(ref Unsafe.As<uint, byte>(ref _staticMemory), 1));
+
+            _staticMemory = 0;
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.Add(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1), 65535, 0));
+            Equals(65535, Unsafe.Add(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1));
+            Equals(65535, Interlocked.CompareExchange(ref Unsafe.Add(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1), 1, 0));
+            Equals(65535, Unsafe.Add(ref Unsafe.As<uint, ushort>(ref _staticMemory), 1));
+            
             return 100 + _errors;
         }
 
