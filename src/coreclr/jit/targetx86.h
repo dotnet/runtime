@@ -53,13 +53,8 @@
                                            // target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
                                            // filter-handler, fault) and directly execute 'finally' clauses.
-
-#ifdef FEATURE_EH_FUNCLETS
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region,
-                                           // protected by "cloned finally" clauses.
-#else
-  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
-                                           // protected by "cloned finally" clauses.
+#if !defined(UNIX_X86_ABI)
+  #define FEATURE_EH_WINDOWS_X86   1       // Enable support for SEH regions
 #endif
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
