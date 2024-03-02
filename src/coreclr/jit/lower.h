@@ -489,6 +489,8 @@ public:
         return false;
     }
 
+    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
+
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64

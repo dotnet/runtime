@@ -719,7 +719,7 @@ private:
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
-            IsValidLclAddr(lclNum, val.Offset()))
+            m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
             // We will only attempt this optimization for locals that are:
             // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
@@ -805,6 +805,7 @@ private:
         unsigned   indirSize = node->AsIndir()->Size();
         bool       isWide;
 
+        // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
         if ((indirSize == 0) || ((offset + indirSize) > UINT16_MAX))
         {
             // If we can't figure out the indirection size then treat it as a wide indirection.
@@ -865,7 +866,7 @@ private:
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
-        if (IsValidLclAddr(lclNum, offset))
+        if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
             addr->ChangeOper(GT_LCL_ADDR);
             addr->AsLclFld()->SetLclNum(lclNum);
@@ -1458,24 +1459,6 @@ public:
     }
 
 private:
-    //------------------------------------------------------------------------
-    // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
-    //
-    // Local address nodes cannot point beyond the local and can only store
-    // 16 bits worth of offset.
-    //
-    // Arguments:
-    //    lclNum - The local's number
-    //    offset - The address' offset
-    //
-    // Return Value:
-    //    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
-    //
-    bool IsValidLclAddr(unsigned lclNum, unsigned offset) const
-    {
-        return (offset < UINT16_MAX) && (offset < m_compiler->lvaLclExactSize(lclNum));
-    }
-
     //------------------------------------------------------------------------
     // IsUnused: is the given node unused?
     //

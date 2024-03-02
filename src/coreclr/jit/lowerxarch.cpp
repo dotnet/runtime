@@ -545,7 +545,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
     {
         addr->SetContained();
         return;
@@ -6687,12 +6687,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
-
-        // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
@@ -7630,7 +7628,8 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
 
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
-        if (indirCandidateChild->OperIs(GT_LCL_ADDR))
+        if (indirCandidateChild->OperIs(GT_LCL_ADDR) &&
+            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->Size()))
         {
             indirDst->SetContained();
         }
@@ -8833,11 +8832,12 @@ void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 //
 void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr)
 {
-    assert((addr->TypeGet() == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
+    assert((genActualType(addr) == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
     TryCreateAddrMode(addr, true, node);
     if ((addr->OperIs(GT_LCL_ADDR, GT_LEA) || (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
         IsInvariantInRange(addr, node))
     {
+        // TODO-Bug: this needs to call "IsContainableLclAddr" for local addresses.
         MakeSrcContained(node, addr);
     }
 }
