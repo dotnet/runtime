@@ -28398,26 +28398,26 @@ void emitter::emitDispInsHelp(
         // <Zd>.<T>, #<imm1>, #<imm2>
         case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
-            {
-                ssize_t imm1;
-                ssize_t imm2;
-                insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
-                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-                emitDispImm(imm1, true);                            // iiiii
-                emitDispImm(imm2, false);                           // iiiii
-                break;
-            }
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispImm(imm1, true);                            // iiiii
+            emitDispImm(imm2, false);                           // iiiii
+            break;
+        }
 
         // <Zd>.<T>, #<imm>, <R><m>
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
-            {
-                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
-                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-                emitDispImm(emitGetInsSC(id), true);                // iiiii
-                emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
-                break;
-            }
+        {
+            const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispImm(emitGetInsSC(id), true);                // iiiii
+            emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
+            break;
+        }
 
         // <Zd>.<T>, <R><n>, #<imm>
         case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
