@@ -8829,16 +8829,23 @@ void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 //  Arguments:
 //     node - The hardware intrinsic node
 //     addr - The address node to try contain
+//     size - Size of the memory access (can be an overestimate)
 //
-void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr)
+void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size)
 {
     assert((genActualType(addr) == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
-    TryCreateAddrMode(addr, true, node);
-    if ((addr->OperIs(GT_LCL_ADDR, GT_LEA) || (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
-        IsInvariantInRange(addr, node))
+    if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size)) ||
+        (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp)))
     {
-        // TODO-Bug: this needs to call "IsContainableLclAddr" for local addresses.
         MakeSrcContained(node, addr);
+    }
+    else
+    {
+        TryCreateAddrMode(addr, true, node);
+        if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, node))
+        {
+            MakeSrcContained(node, addr);
+        }
     }
 }
 
@@ -8914,7 +8921,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         switch (category)
         {
             case HW_Category_MemoryLoad:
-                ContainCheckHWIntrinsicAddr(node, op1);
+                ContainCheckHWIntrinsicAddr(node, op1, simdSize);
                 break;
 
             case HW_Category_SimpleSIMD:
@@ -8972,7 +8979,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 16);
                             return;
                         }
                         break;
@@ -8985,7 +8992,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 8);
                             return;
                         }
 
@@ -9024,7 +9031,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 16);
                             return;
                         }
 
@@ -9123,16 +9130,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 case HW_Category_MemoryLoad:
                     if ((intrinsicId == NI_AVX_MaskLoad) || (intrinsicId == NI_AVX2_MaskLoad))
                     {
-                        ContainCheckHWIntrinsicAddr(node, op1);
+                        ContainCheckHWIntrinsicAddr(node, op1, simdSize);
                     }
                     else
                     {
-                        ContainCheckHWIntrinsicAddr(node, op2);
+                        ContainCheckHWIntrinsicAddr(node, op2, simdSize);
                     }
                     break;
 
                 case HW_Category_MemoryStore:
-                    ContainCheckHWIntrinsicAddr(node, op1);
+                    ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ simdSize);
                     break;
 
                 case HW_Category_SimpleSIMD:
@@ -9486,10 +9493,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (category)
             {
-                case HW_Category_MemoryStore:
-                    ContainCheckHWIntrinsicAddr(node, op1);
-                    break;
-
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
