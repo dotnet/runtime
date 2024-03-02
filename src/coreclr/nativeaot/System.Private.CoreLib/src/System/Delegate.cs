@@ -645,10 +645,6 @@ namespace System
             Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = Unsafe.As<Delegate>(obj);
 
-            // there are 2 kind of delegate kinds for comparison
-            // 1- Multicast (m_helperObject is Wrapper[])
-            // 2- Single-cast delegate, which can be compared with a structural comparison
-
             if (m_helperObject is Wrapper[] invocationList)
             {
                 if (d.m_extraFunctionPointerOrData != m_extraFunctionPointerOrData)

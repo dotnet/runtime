@@ -304,7 +304,8 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            ArrayType invocationListArrayType = SystemDelegateType.MakeArrayType();
+            TypeDesc delegateWrapperType = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper");
+            ArrayType invocationListArrayType = delegateWrapperType.MakeArrayType();
 
             ILLocalVariable delegateArrayLocal = emitter.NewLocal(invocationListArrayType);
             ILLocalVariable invocationCountLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
@@ -318,11 +319,11 @@ namespace Internal.IL.Stubs
             }
 
             // Fill in delegateArrayLocal
-            // Delegate[] delegateArrayLocal = (Delegate[])this.m_helperObject
+            // Wrapper[] delegateArrayLocal = (Wrapper[])this.m_helperObject
 
             // ldarg.0 (this pointer)
             // ldfld Delegate.HelperObjectField
-            // castclass Delegate[]
+            // castclass Wrapper[]
             // stloc delegateArrayLocal
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
@@ -352,15 +353,17 @@ namespace Internal.IL.Stubs
 
             // Implement as do/while loop. We only have this stub in play if we're in the multicast situation
             // Find the delegate to call
-            // Delegate = delegateToCallLocal = delegateArrayLocal[iteratorLocal];
+            // Delegate = delegateToCallLocal = delegateArrayLocal[iteratorLocal].Value;
 
             // ldloc delegateArrayLocal
             // ldloc iteratorLocal
-            // ldelem System.Delegate
+            // ldelema System.Delegate
+            // ldfld Wrapper.Value
             // stloc delegateToCallLocal
             codeStream.EmitLdLoc(delegateArrayLocal);
             codeStream.EmitLdLoc(iteratorLocal);
-            codeStream.Emit(ILOpcode.ldelem, emitter.NewToken(SystemDelegateType));
+            codeStream.Emit(ILOpcode.ldelema, emitter.NewToken(delegateWrapperType));
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value")));
             codeStream.EmitStLoc(delegateToCallLocal);
 
             // Call the delegate
