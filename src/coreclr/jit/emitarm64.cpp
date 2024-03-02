@@ -1797,6 +1797,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isValidSimm5(emitGetInsSC(id)));                           // iiiii
@@ -10023,7 +10025,16 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(isValidSimm5(imm));                             // iiiii
             assert(isIntegerRegister(reg2));                       // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            fmt = IF_SVE_AY_2A;
+
+            if (sopt == INS_SCALABLE_OPTS_IMM_FIRST)
+            {
+                fmt = IF_SVE_AY_2A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_AZ_2A;
+            }
             break;
 
         case INS_sve_addvl:
@@ -24560,6 +24571,16 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_R_9_to_5(id->idReg2());                  // mmmmm
+            code |= insEncodeSimm5_20_to_16(emitGetInsSC(id));            // iiiii
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_BB_2A: // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_R_4_to_0(id->idReg1());      // ddddd
@@ -28390,11 +28411,22 @@ void emitter::emitDispInsHelp(
         // <Zd>.<T>, #<imm>, <R><m>
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
+            {
+                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispImm(emitGetInsSC(id), true);                // iiiii
+                emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
+                break;
+            }
+
+        // <Zd>.<T>, <R><n>, #<imm>
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
         {
             const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImm(emitGetInsSC(id), true);                // iiiii
             emitDispReg(id->idReg2(), intRegSize, true);        // mmmmm
+            emitDispImm(emitGetInsSC(id), false);               // iiiii
             break;
         }
 
@@ -32407,6 +32439,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
+                           // increment)
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
                            // increment)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_8C;
