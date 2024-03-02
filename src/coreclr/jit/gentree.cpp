@@ -27341,8 +27341,6 @@ regMaskMixed ReturnTypeDesc::GetABIReturnRegs() const
 //
 unsigned GenTree::AvailableTempRegCount(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */) const
 {
-    assert((mask == RBM_NONE) || ((mask & RBM_ALLFLOAT) == mask) != ((mask & ~RBM_ALLFLOAT) == mask));
-
     return genCountBits(gtRsvdRegs & mask);
 }
 
@@ -27360,8 +27358,6 @@ unsigned GenTree::AvailableTempRegCount(regMaskOnlyOne mask /* = (regMaskOnlyOne
 //
 regNumber GenTree::GetSingleTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */)
 {
-    assert((mask == RBM_NONE) || ((mask & RBM_ALLFLOAT) == mask) != ((mask & ~RBM_ALLFLOAT) == mask));
-
     regMaskOnlyOne availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) == 1);
     regNumber tempReg = genRegNumFromMask(availableSet);
@@ -27383,8 +27379,6 @@ regNumber GenTree::GetSingleTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 
 //
 regNumber GenTree::ExtractTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */)
 {
-    assert((mask == RBM_NONE) || ((mask & RBM_ALLFLOAT) == mask) != ((mask & ~RBM_ALLFLOAT) == mask));
-
     regMaskOnlyOne availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) >= 1);
     regNumber tempReg = genFirstRegNumFromMask(availableSet);
