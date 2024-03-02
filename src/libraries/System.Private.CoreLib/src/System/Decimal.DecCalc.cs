@@ -364,7 +364,7 @@ namespace System
                     // Result is zero.  Entire dividend is remainder.
                     //
                     return 0;
-;
+
                 (quo, rem) = DivRem64By32Quo32(num64, denHigh32);
                 num = bufNum.U0 | ((ulong)rem << 32); // remainder
 
