@@ -63,7 +63,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("m_extraFunctionPointerOrData");
+                return SystemDelegateType.GetKnownField("_extraFunctionPointerOrData");
             }
         }
 
@@ -71,7 +71,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("m_helperObject");
+                return SystemDelegateType.GetKnownField("_helperObject");
             }
         }
 
@@ -79,7 +79,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("m_firstParameter");
+                return SystemDelegateType.GetKnownField("_firstParameter");
             }
         }
 
@@ -87,7 +87,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("m_functionPointer");
+                return SystemDelegateType.GetKnownField("_functionPointer");
             }
         }
 
@@ -319,7 +319,7 @@ namespace Internal.IL.Stubs
             }
 
             // Fill in delegateArrayLocal
-            // Wrapper[] delegateArrayLocal = (Wrapper[])this.m_helperObject
+            // Wrapper[] delegateArrayLocal = (Wrapper[])this._helperObject
 
             // ldarg.0 (this pointer)
             // ldfld Delegate.HelperObjectField
@@ -331,9 +331,9 @@ namespace Internal.IL.Stubs
             codeStream.EmitStLoc(delegateArrayLocal);
 
             // Fill in invocationCountLocal
-            // int invocationCountLocal = this.m_extraFunctionPointerOrData
+            // int invocationCountLocal = this._extraFunctionPointerOrData
             // ldarg.0 (this pointer)
-            // ldfld Delegate.m_extraFunctionPointerOrData
+            // ldfld Delegate._extraFunctionPointerOrData
             // stloc invocationCountLocal
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
@@ -370,10 +370,10 @@ namespace Internal.IL.Stubs
             // returnValueLocal = delegateToCallLocal(...);
 
             // ldloc delegateToCallLocal
-            // ldfld System.Delegate.m_firstParameter
+            // ldfld System.Delegate._firstParameter
             // ldarg 1, n
             // ldloc delegateToCallLocal
-            // ldfld System.Delegate.m_functionPointer
+            // ldfld System.Delegate._functionPointer
             // calli returnValueType thiscall (all the params)
             // IF there is a return value
             // stloc returnValueLocal
@@ -504,7 +504,7 @@ namespace Internal.IL.Stubs
             // args[1] = param1;
             //  ...
             // try {
-            //      ret = ((Func<object[], object>)dlg.m_helperObject)(args);
+            //      ret = ((Func<object[], object>)dlg._helperObject)(args);
             // } finally {
             //      param0 = (T0)args[0];   // only generated for each byref argument
             // }

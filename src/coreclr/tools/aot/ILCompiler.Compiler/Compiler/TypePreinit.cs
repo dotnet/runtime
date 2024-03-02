@@ -2784,16 +2784,16 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
 
-                    // m_firstParameter
+                    // _firstParameter
                     builder.EmitPointerReloc(thisNode);
 
-                    // m_helperObject
+                    // _helperObject
                     builder.EmitZeroPointer();
 
-                    // m_extraFunctionPointerOrData
+                    // _extraFunctionPointerOrData
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
 
-                    // m_functionPointer
+                    // _functionPointer
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
                 }
@@ -2801,16 +2801,16 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
 
-                    // m_firstParameter
+                    // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);
 
-                    // m_helperObject
+                    // _helperObject
                     builder.EmitZeroPointer();
 
-                    // m_extraFunctionPointerOrData
+                    // _extraFunctionPointerOrData
                     builder.EmitZeroPointer();
 
-                    // m_functionPointer
+                    // _functionPointer
                     builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
                 }
             }
