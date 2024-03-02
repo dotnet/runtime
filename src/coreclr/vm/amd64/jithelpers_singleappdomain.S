@@ -10,39 +10,30 @@
 // appdomain flag
 //
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
         // If class is not initialized, bail to C++ helper
-        test    byte ptr [rdi + OFFSETOF__DomainLocalModule__m_pDataBlob + rsi], 1
+        test    byte ptr [rdi + OFFSETOF__DynamicStaticsInfo__m_AuxData__m_dwFlags], 1
         jz      CallHelper
-        mov     rax, rdi
+        mov     rax, [rdi + OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
         rep ret
 
 .balign 16
 CallHelper:
         // Tail call JIT_GetSharedNonGCStaticBase_Helper
-        jmp     C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
-LEAF_END_MARKED JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+        jmp     C_FUNC(JIT_GetDynamicNonGCStaticBase_Portable)
+LEAF_END_MARKED JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-        mov     rax, rdi
-        ret
-LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
         // If class is not initialized, bail to C++ helper
-        test    byte ptr [rdi + OFFSETOF__DomainLocalModule__m_pDataBlob + rsi], 1
+        test    byte ptr [rdi + OFFSETOF__DynamicStaticsInfo__m_AuxData__m_dwFlags], 1
         jz      CallHelper1
 
-        mov     rax, [rdi + OFFSETOF__DomainLocalModule__m_pGCStatics]
+        mov     rax, [rdi + OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
         rep ret
 
 .balign 16
 CallHelper1:
         // Tail call Jit_GetSharedGCStaticBase_Helper
-        jmp     C_FUNC(JIT_GetSharedGCStaticBase_Helper)
-LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
+        jmp     C_FUNC(JIT_GetDynamicGCStaticBase_Portable)
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
-LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-        mov     rax, [rdi + OFFSETOF__DomainLocalModule__m_pGCStatics]
-        ret
-LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
