@@ -190,21 +190,22 @@ namespace System
             private static (ulong Quotient, uint Remainder) DivRem64By32(ulong left, uint right)
             {
                 ulong quotient = left / right;
-                return (quotient, (uint)quotient * right - (uint)left);
+                return (quotient, (uint)left - (uint)quotient * right);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static (uint Quotient, uint Remainder) DivRem64By32Quo32(ulong left, uint right)
             {
                 uint quotient = (uint)(left / right);
-                return (quotient, quotient * right - (uint)left);
+                return (quotient, (uint)left - quotient * right);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static (uint Quotient, uint Remainder) DivRem32Carry32By32(uint leftBase, uint leftCarry, uint right)
             {
                 Debug.Assert(leftCarry < right);
-                return DivRem64By32Quo32(((ulong)leftCarry << 32) | leftBase, right);
+                uint quotient = (uint)((((ulong)leftCarry << 32) | leftBase) / right);
+                return (quotient, leftBase - quotient * right);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
