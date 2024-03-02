@@ -1781,6 +1781,20 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
         }
 
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm5(imm1));                                       // iiiii
+            assert(isValidSimm5(imm2));                                       // iiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+        }
+
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
             assert(insOptsScalableWide(id->idInsOpt()));
@@ -9321,6 +9335,17 @@ void emitter::emitIns_R_I_I(instruction ins,
             }
             break;
 
+        case INS_sve_index:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidSimm5(imm1));                            // iiiii
+            assert(isValidSimm5(imm2));                            // iiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            immOut    = insEncodeTwoSimm5(imm1, imm2);
+            canEncode = true;
+            fmt       = IF_SVE_AX_1A;
+            break;
+
         default:
             unreached();
             break;
@@ -9333,6 +9358,7 @@ void emitter::emitIns_R_I_I(instruction ins,
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idInsOpt(opt);
 
     id->idReg1(reg);
 
@@ -21546,6 +21572,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 5-bits at bit locations '9-5'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm5_9_to_5(ssize_t imm)
+{
+    assert(isValidSimm5(imm));
+    if (imm < 0)
+    {
+        imm = (imm & 0x1F);
+    }
+    return (code_t)imm << 5;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
  */
 
@@ -21816,6 +21857,69 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
     return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the two 5-bit signed immediates encoded in the following format:
+ *  njjj jjmi iiii
+ *  - iiiii: the absolute value of imm1
+ *  - m: 1 if imm1 is negative, 0 otherwise
+ *  - jjjjj: the absolute value of imm2
+ *  - n: 1 if imm2 is negative, 0 otherwise
+ */
+/*static*/ ssize_t emitter::insEncodeTwoSimm5(ssize_t imm1, ssize_t imm2)
+{
+    assert(isValidSimm5(imm1));
+    assert(isValidSimm5(imm2));
+    ssize_t immOut = 0;
+
+    if (imm1 < 0)
+    {
+        // Set bit location 5 to indicate imm1 is negative
+        immOut |= 0x20;
+        imm1 *= -1;
+    }
+
+    if (imm2 < 0)
+    {
+        // Set bit location 11 to indicate imm2 is negative
+        immOut |= 0x800;
+        imm2 *= -1;
+    }
+
+    immOut |= imm1;
+    immOut |= (imm2 << 6);
+    return immOut;
+}
+
+/*****************************************************************************
+ *
+ *  Decodes imm into two 5-bit signed immediates,
+ *  using the encoding format from insEncodeTwoSimm5.
+ */
+/*static*/ void emitter::insDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2)
+{
+    assert(imm1 != nullptr);
+    assert(imm2 != nullptr);
+
+    *imm1 = (imm & 0x1F);
+
+    if ((imm & 0x20) != 0)
+    {
+        *imm1 *= -1;
+    }
+
+    imm >>= 6;
+    *imm2 = (imm & 0x1F);
+
+    if ((imm & 0x20) != 0)
+    {
+        *imm2 *= -1;
+    }
+
+    assert(isValidSimm5(*imm1));
+    assert(isValidSimm5(*imm2));
 }
 
 /*****************************************************************************
@@ -24412,6 +24516,21 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx xx
             dst += emitOutput_Instr(dst, code);
             break;
+
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeSimm5_9_to_5(imm1);                          // iiiii
+            code |= insEncodeSimm5_20_to_16(imm2);                        // iiiii
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+        }
 
         case IF_SVE_BB_2A: // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
             code = emitInsCodeSve(ins, fmt);
@@ -28226,6 +28345,19 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // mmmmm
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // kkkkk
             break;
+
+        // <Zd>.<T>, #<imm1>, #<imm2>
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+        {
+            ssize_t imm1;
+            ssize_t imm2;
+            insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispImm(imm1, true);                            // iiiii
+            emitDispImm(imm2, false);                           // iiiii
+            break;
+        }
 
         // <Zda>.H, <Zn>.B, <Zm>.B
         case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
@@ -32232,6 +32364,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_BA_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE index generation (register start, register
+                           // increment)
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_8C;

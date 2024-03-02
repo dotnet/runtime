@@ -5773,6 +5773,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V14, REG_V15, 64,
                               INS_OPTS_SCALABLE_D); // XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
 
+    // IF_SVE_AX_1A
+    theEmitter->emitIns_R_I_I(INS_sve_index, EA_SCALABLE, REG_V0, -16, 15,
+                              INS_OPTS_SCALABLE_B); // INDEX <Zd>.<T>, #<imm1>, #<imm2>
+    theEmitter->emitIns_R_I_I(INS_sve_index, EA_SCALABLE, REG_V1, 15, -16,
+                              INS_OPTS_SCALABLE_H); // INDEX <Zd>.<T>, #<imm1>, #<imm2>
+    theEmitter->emitIns_R_I_I(INS_sve_index, EA_SCALABLE, REG_V2, 0, 0,
+                              INS_OPTS_SCALABLE_S); // INDEX <Zd>.<T>, #<imm1>, #<imm2>
+    theEmitter->emitIns_R_I_I(INS_sve_index, EA_SCALABLE, REG_V3, -5, 5,
+                              INS_OPTS_SCALABLE_D); // INDEX <Zd>.<T>, #<imm1>, #<imm2>
+
     // IF_SVE_BB_2A
     theEmitter->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, REG_R0, REG_R1, -32); // ADDPL <Xd|SP>, <Xn|SP>, #<imm>
     theEmitter->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, REG_R2, REG_SP, 0);   // ADDPL <Xd|SP>, <Xn|SP>, #<imm>
