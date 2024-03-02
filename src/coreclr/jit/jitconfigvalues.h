@@ -326,6 +326,10 @@ CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) /
 CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX10v1,               W("EnableAVX10v1"),             1) // Allows AVX10v1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX10v1_V256,          W("EnableAVX10v1_V256"),        1) // Allows AVX10v1_V256+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX10v1_V512,          W("EnableAVX10v1_V512"),        1) // Allows AVX10v1_V512+ hardware intrinsics to be disabled
+CONFIG_INTEGER(Avx10MaxVectorLength,        W("Avx10MaxVectorLength"),      0) // The max vector length supported
 CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI1,                  W("EnableBMI1"),                1) // Allows BMI1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI2,                  W("EnableBMI2"),                1) // Allows BMI2+ hardware intrinsics to be disabled
