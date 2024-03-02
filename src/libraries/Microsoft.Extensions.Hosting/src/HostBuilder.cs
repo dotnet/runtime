@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
+        private readonly bool? _defaultProviderFactoryUsed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
@@ -44,6 +45,7 @@ namespace Microsoft.Extensions.Hosting
         public HostBuilder()
         {
             _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+            _defaultProviderFactoryUsed = true;
         }
 
         /// <summary>
@@ -347,6 +349,11 @@ namespace Microsoft.Extensions.Hosting
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
                 configureServicesAction(_hostBuilderContext!, services);
+            }
+
+            if (_hostBuilderContext!.HostingEnvironment.IsDevelopment() && _defaultProviderFactoryUsed.HasValue && _defaultProviderFactoryUsed.Value)
+            {
+                _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true }));
             }
 
             object containerBuilder = _serviceProviderFactory.CreateBuilder(services);
