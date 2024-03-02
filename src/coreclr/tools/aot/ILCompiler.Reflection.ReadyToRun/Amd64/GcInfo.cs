@@ -46,7 +46,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             }
         }
 
-        private const int GCINFO_VERSION = 2;
         private const int MIN_GCINFO_VERSION_WITH_RETURN_KIND = 2;
         private const int MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME = 2;
 
@@ -398,7 +397,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             if (readyToRunMajorVersion < 9 || (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2))
                 return 2;
 
-            return GCINFO_VERSION;
+            return 3;
         }
 
         private List<List<BaseGcSlot>> GetLiveSlotsAtSafepoints(byte[] image, ref int bitOffset)
