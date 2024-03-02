@@ -395,7 +395,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             // R2R 9.0 and 9.1 use GCInfo v2
             // R2R 9.2 uses GCInfo v3
-            if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
+            if (readyToRunMajorVersion < 9 || (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2))
                 return 2;
 
             return GCINFO_VERSION;
