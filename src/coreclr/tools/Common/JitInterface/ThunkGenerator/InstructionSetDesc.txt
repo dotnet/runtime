@@ -57,6 +57,9 @@ instructionset     ,X86   ,Avx512DQ             ,        ,35 ,AVX512DQ          
 instructionset     ,X86   ,Avx512DQ_VL          ,        ,36 ,AVX512DQ_VL           ,avx512dq_vl
 instructionset     ,X86   ,Avx512Vbmi           ,        ,37 ,AVX512VBMI            ,avx512vbmi
 instructionset     ,X86   ,Avx512Vbmi_VL        ,        ,38 ,AVX512VBMI_VL         ,avx512vbmi_vl
+instructionset     ,X86   ,Avx10v1              ,        ,44 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,Avx10v1_V256         ,        ,45 ,AVX10v1_V256          ,avx10v1_v256
+instructionset     ,X86   ,Avx10v1_V512         ,        ,46 ,AVX10v1_V512          ,avx10v1_v512
 instructionset     ,X86   ,VectorT128           ,        ,39 ,VectorT128            ,vectort128
 instructionset     ,X86   ,VectorT256           ,        ,40 ,VectorT256            ,vectort256
 instructionset     ,X86   ,VectorT512           ,        ,41 ,VectorT512            ,vectort512
