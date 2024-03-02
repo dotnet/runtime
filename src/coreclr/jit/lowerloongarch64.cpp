@@ -486,7 +486,8 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         }
 
         // Codegen supports containment of local addresses under BLKs.
-        if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr())
+        if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr() &&
+            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->Size()))
         {
             // TODO-LOONGARCH64-CQ: support containment of LCL_ADDR with non-zero offset too.
             MakeSrcContained(src, src->AsBlk()->Addr());
