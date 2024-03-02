@@ -1137,6 +1137,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_NONE);
             assert(isGeneralRegister(id->idReg1()));
@@ -16416,7 +16417,7 @@ void emitter::emitIns_R_R_FLAGS_COND(
  */
 
 void emitter::emitIns_R_I_FLAGS_COND(
-    instruction ins, emitAttr attr, regNumber reg, int imm, insCflags flags, insCond cond)
+    instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insCflags flags, insCond cond)
 {
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
@@ -16512,7 +16513,7 @@ void emitter::emitIns_R_PATTERN(
  *  Add an instruction referencing a register, a SVE Pattern and an immediate.
  */
 
-void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm)
+void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -16525,10 +16526,24 @@ void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1
         case INS_sve_cntd:
         case INS_sve_cnth:
         case INS_sve_cntw:
-            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg1)); // ddddd
+            assert(isValidUimm4From1(imm));  // iiii
             assert(size == EA_8BYTE);
-            assert(isValidUimm4From1(imm));
             fmt = IF_SVE_BL_1A;
+            break;
+
+        case INS_sve_incb:
+        case INS_sve_incd:
+        case INS_sve_inch:
+        case INS_sve_incw:
+        case INS_sve_decb:
+        case INS_sve_decd:
+        case INS_sve_dech:
+        case INS_sve_decw:
+            assert(isGeneralRegister(reg1)); // ddddd
+            assert(isValidUimm4From1(imm));  // iiii
+            assert(size == EA_8BYTE);
+            fmt = IF_SVE_BM_1A;
             break;
 
         default:
@@ -24299,8 +24314,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        // Immediate and patterm to general purpose.
+        // Immediate and pattern to general purpose.
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_Rd(id->idReg1());           // ddddd
@@ -28398,37 +28414,37 @@ void emitter::emitDispInsHelp(
         // <Zd>.<T>, #<imm1>, #<imm2>
         case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
                            // increment)
-        {
-            ssize_t imm1;
-            ssize_t imm2;
-            insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImm(imm1, true);                            // iiiii
-            emitDispImm(imm2, false);                           // iiiii
-            break;
-        }
+            {
+                ssize_t imm1;
+                ssize_t imm2;
+                insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispImm(imm1, true);                            // iiiii
+                emitDispImm(imm2, false);                           // iiiii
+                break;
+            }
 
         // <Zd>.<T>, #<imm>, <R><m>
         case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
                            // increment)
-        {
-            const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImm(emitGetInsSC(id), true);                // iiiii
-            emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
-            break;
-        }
+            {
+                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispImm(emitGetInsSC(id), true);                // iiiii
+                emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
+                break;
+            }
 
         // <Zd>.<T>, <R><n>, #<imm>
         case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
                            // increment)
-        {
-            const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispReg(id->idReg2(), intRegSize, true);        // mmmmm
-            emitDispImm(emitGetInsSC(id), false);               // iiiii
-            break;
-        }
+            {
+                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispReg(id->idReg2(), intRegSize, true);        // mmmmm
+                emitDispImm(emitGetInsSC(id), false);               // iiiii
+                break;
+            }
 
         // <Zda>.H, <Zn>.B, <Zm>.B
         case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
@@ -28485,6 +28501,7 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             imm = emitGetInsSC(id);
             emitDispReg(id->idReg1(), size, true);             // ddddd
             emitDispSvePattern(id->idSvePattern(), (imm > 1)); // ppppp
@@ -32454,6 +32471,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

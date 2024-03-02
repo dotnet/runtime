@@ -403,8 +403,8 @@ enum insSvePattern : unsigned
     SVE_PATTERN_VL64 = 11,  // 64 elements.
     SVE_PATTERN_VL128 = 12, // 128 elements.
     SVE_PATTERN_VL256 = 13, // 256 elements.
-    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 3.
-    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 4.
+    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 4.
+    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 3.
     SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
 };
 

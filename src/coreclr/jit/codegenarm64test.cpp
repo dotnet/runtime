@@ -5840,6 +5840,24 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cnth, EA_8BYTE, REG_R5, SVE_PATTERN_ALL,
                                     13); // CNTH    <Xd>{, <pattern>{, MUL #<imm>}}
 
+    // IF_SVE_BM_1A
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_decb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
+                                    1); // DECB <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_decd, EA_8BYTE, REG_R1, SVE_PATTERN_VL16,
+                                    3); // DECD <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_dech, EA_8BYTE, REG_R2, SVE_PATTERN_VL32,
+                                    5); // DECH <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_decw, EA_8BYTE, REG_R3, SVE_PATTERN_VL64,
+                                    7); // DECW <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_incb, EA_8BYTE, REG_R4, SVE_PATTERN_VL128,
+                                    9); // INCB <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_incd, EA_8BYTE, REG_R5, SVE_PATTERN_MUL3,
+                                    10); // INCD <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_inch, EA_8BYTE, REG_R6, SVE_PATTERN_MUL4,
+                                    13); // INCH <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_incw, EA_8BYTE, REG_R7, SVE_PATTERN_ALL,
+                                    16); // INCW <Xdn>{, <pattern>{, MUL #<imm>}}
+
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
                               INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>

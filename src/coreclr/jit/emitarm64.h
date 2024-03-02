@@ -1601,12 +1601,12 @@ void emitIns_R_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumbe
 void emitIns_R_R_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCflags flags, insCond cond);
 
-void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, int imm, insCflags flags, insCond cond);
+void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, ssize_t imm, insCflags flags, insCond cond);
 
 void emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
 
-void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
+void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm);
 
 void emitIns_PRFOP_R_R_R(instruction     ins,
                          emitAttr        attr,
