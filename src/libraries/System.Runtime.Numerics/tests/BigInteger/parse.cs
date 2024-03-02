@@ -143,10 +143,32 @@ namespace System.Numerics.Tests
             Assert.True(BigInteger.TryParse("080000001", NumberStyles.HexNumber, null, out result));
             Assert.Equal(0x80000001u, result);
 
+            Assert.True(BigInteger.TryParse("F0000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F0000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF0000001u, result);
+            
+            Assert.True(BigInteger.TryParse("F00000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F00000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF00000001u, result);
+
             // Regression test for: https://github.com/dotnet/runtime/issues/74758
             Assert.True(BigInteger.TryParse("FFFFFFFFE", NumberStyles.HexNumber, null, out result));
             Assert.Equal(new BigInteger(-2), result);
             Assert.Equal(-2, result);
+
+            Assert.True(BigInteger.TryParse("F", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-1, result);
+
+            for (int i = 0; i < 40; i++)
+            {
+                string test = "F" + new string('0', i);
+                Assert.True(BigInteger.TryParse(test, NumberStyles.HexNumber, null, out result));
+                Assert.Equal(BigInteger.MinusOne << (4 * i), result);
+            }
 
             Assert.Throws<FormatException>(() =>
             {
@@ -157,6 +179,20 @@ namespace System.Numerics.Tests
             {
                 BigInteger.Parse("1", NumberStyles.AllowHexSpecifier | NumberStyles.AllowCurrencySymbol);
             });
+        }
+
+        [Theory]
+        [InlineData("1", -1L)]
+        [InlineData("01", 1L)]
+        [InlineData("10000000000000000000000000000000", (long)int.MinValue)]
+        [InlineData("010000000000000000000000000000001", 0x080000001L)]
+        [InlineData("111111111111111111111111111111110", -2L)]
+        [InlineData("100000000000000000000000000000001", -0xFFFFFFFFL)]
+        [InlineData("0111111111111111111111111111111111", 0x1FFFFFFFFL)]
+        public void Parse_BinSpecialCases(string input, long expectedValue)
+        {
+            Assert.True(BigInteger.TryParse(input, NumberStyles.BinaryNumber, null, out BigInteger result));
+            Assert.Equal(expectedValue, result);
         }
 
         public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData()
@@ -465,6 +501,12 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + GetRandomInvalidChar(random) + GetBinaryDigitSequence(1, 10, random), ns, false);
+            }
+
+            // Power of 2
+            for (int i = 0; i < 70; i++)
+            {
+                VerifyParseToString("1" + new string('0', i), ns, true);
             }
         }
 

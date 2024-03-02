@@ -24,7 +24,7 @@
       <File Include="$(SharedNativeRoot)libs\Common\*" TargetPath="native/src/libs/Common"/>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
       <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
       <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
     </ItemGroup>

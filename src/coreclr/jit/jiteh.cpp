@@ -75,27 +75,27 @@ bool EHblkDsc::InHndRegionILRange(BasicBlock* pBlk)
 }
 
 // HasCatchHandler: returns 'true' for either try/catch, or try/filter/filter-handler.
-bool EHblkDsc::HasCatchHandler()
+bool EHblkDsc::HasCatchHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_CATCH) || (ebdHandlerType == EH_HANDLER_FILTER);
 }
 
-bool EHblkDsc::HasFilter()
+bool EHblkDsc::HasFilter() const
 {
     return ebdHandlerType == EH_HANDLER_FILTER;
 }
 
-bool EHblkDsc::HasFinallyHandler()
+bool EHblkDsc::HasFinallyHandler() const
 {
     return ebdHandlerType == EH_HANDLER_FINALLY;
 }
 
-bool EHblkDsc::HasFaultHandler()
+bool EHblkDsc::HasFaultHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_FAULT) || (ebdHandlerType == EH_HANDLER_FAULT_WAS_FINALLY);
 }
 
-bool EHblkDsc::HasFinallyOrFaultHandler()
+bool EHblkDsc::HasFinallyOrFaultHandler() const
 {
     return HasFinallyHandler() || HasFaultHandler();
 }
@@ -594,9 +594,9 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
 // most nested try region it is a member of. Thus, we only need to check the EH
 // table entry related to the try index stored on the block.
 //
-bool Compiler::bbIsTryBeg(BasicBlock* block)
+bool Compiler::bbIsTryBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
@@ -605,9 +605,9 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
 //
-bool Compiler::bbIsHandlerBeg(BasicBlock* block)
+bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
@@ -1984,9 +1984,11 @@ bool Compiler::fgNormalizeEHCase1()
         {
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
-            BasicBlock* newHndStart = BasicBlock::New(this, BBJ_ALWAYS, handlerStart);
+            BasicBlock* newHndStart = BasicBlock::New(this);
             fgInsertBBbefore(handlerStart, newHndStart);
-            fgAddRefPred(handlerStart, newHndStart);
+            FlowEdge* newEdge = fgAddRefPred(handlerStart, newHndStart);
+            newEdge->setLikelihood(1.0);
+            newHndStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
             // Handler begins have an extra implicit ref count.
             // BasicBlock::New has already handled this for newHndStart.
@@ -2153,10 +2155,12 @@ bool Compiler::fgNormalizeEHCase2()
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
-                        BasicBlock* newTryStart = BasicBlock::New(this, BBJ_ALWAYS, insertBeforeBlk);
+                        BasicBlock* newTryStart = BasicBlock::New(this);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
-                        fgAddRefPred(insertBeforeBlk, newTryStart);
+                        FlowEdge* const newEdge = fgAddRefPred(insertBeforeBlk, newTryStart);
+                        newEdge->setLikelihood(1.0);
+                        newTryStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                         // It's possible for a try to start at the beginning of a method. If so, we need
                         // to adjust the implicit ref counts as we've just created a new first bb
@@ -2254,7 +2258,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                             // Change pred branches.
                             //
-                            fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
+                            fgReplaceJumpTarget(predBlock, insertBeforeBlk, newTryStart);
 
                             JITDUMP("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n", predBlock->bbNum,
                                     insertBeforeBlk->bbNum, newTryStart->bbNum);
@@ -2344,7 +2348,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Create a new bb for the fake filter
             BasicBlock* handlerBb = eh->ebdHndBeg;
-            BasicBlock* filterBb  = BasicBlock::New(this, BBJ_EHFILTERRET, handlerBb);
+            BasicBlock* filterBb  = BasicBlock::New(this);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2372,7 +2376,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);
-            fgAddRefPred(handlerBb, filterBb);
+            FlowEdge* const newEdge = fgAddRefPred(handlerBb, filterBb);
+            newEdge->setLikelihood(1.0);
+            filterBb->SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
             filterBb->bbCatchTyp = BBCT_FILTER;
@@ -2629,7 +2635,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
                     // shares a 'last' pointer
 
-                    BasicBlock* newLast = BasicBlock::New(this, BBJ_ALWAYS, insertAfterBlk->Next());
+                    BasicBlock* newLast = BasicBlock::New(this);
                     newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);
@@ -2678,7 +2684,9 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
                     newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
-                    fgAddRefPred(newLast, insertAfterBlk);
+                    FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
+                    newEdge->setLikelihood(1.0);
+                    insertAfterBlk->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
                     insertAfterBlk = newLast;
@@ -4321,8 +4329,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // FEATURE_EH_FUNCLETS
 
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EHFILTERRET block that has a bbTarget that jumps to the first block of
-            // its handler. So we need to update it to keep things in sync.
+            // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
+            // So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
             {
@@ -4333,14 +4341,15 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating bbTarget for filter ret block: " FMT_BB " => " FMT_BB "\n",
-                           ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
+                    printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n", ehGetIndex(HBtab),
+                           bFilterLast->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
-                // Change the bbTarget for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->GetTarget(), bFilterLast);
-                bFilterLast->SetTarget(bPrev);
-                fgAddRefPred(bPrev, bFilterLast);
+                // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRemoveRefPred(bFilterLast->GetTargetEdge());
+                FlowEdge* const newEdge = fgAddRefPred(bPrev, bFilterLast);
+                newEdge->setLikelihood(1.0);
+                bFilterLast->SetTargetEdge(newEdge);
             }
         }
 

@@ -975,7 +975,7 @@ public:
     allocator       free_list_allocator;
 
     // The following fields are maintained in the older generation we allocate into, and they are only for diagnostics
-    // except free_list_allocated which is currently used in generation_allocator_efficiency.
+    // except free_list_allocated which is currently used in generation_allocator_efficiency_percent.
     //
     // If we rearrange regions between heaps, we will no longer have valid values for these fields unless we just merge
     // regions from multiple heaps into one, in which case we can simply combine the values from all heaps.
@@ -2555,8 +2555,6 @@ private:
 
     // re-initialize a heap in preparation to putting it back into service
     PER_HEAP_METHOD void recommission_heap();
-
-    PER_HEAP_ISOLATED_METHOD size_t get_num_completed_gcs();
 
     PER_HEAP_ISOLATED_METHOD int calculate_new_heap_count();
 
@@ -4238,21 +4236,166 @@ private:
     struct dynamic_heap_count_data_t
     {
         static const int sample_size = 3;
+        static const int recorded_tcp_array_size = 64;
 
         struct sample
         {
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds (this should really be between_pauses)
             uint64_t    gc_pause_time;          // pause time for this GC
             uint64_t    msl_wait_time;
+            size_t      gc_survived_size;
         };
 
         uint32_t        sample_index;
         sample          samples[sample_size];
-        size_t          prev_num_completed_gcs;
+
+        size_t          current_samples_count;
+        size_t          processed_samples_count;
+
+        //
+        // We need to observe the history of tcp's so record them in a small buffer.
+        //
+        float           recorded_tcp_rearranged[recorded_tcp_array_size];
+        float           recorded_tcp[recorded_tcp_array_size];
+        int             recorded_tcp_index;
+        int             total_recorded_tcp;
+
+        int add_to_recorded_tcp (float tcp)
+        {
+            total_recorded_tcp++;
+
+            recorded_tcp[recorded_tcp_index] = tcp;
+            recorded_tcp_index++;
+            if (recorded_tcp_index == recorded_tcp_array_size)
+            {
+                recorded_tcp_index = 0;
+            }
+
+            return recorded_tcp_index;
+        }
+
+        int rearrange_recorded_tcp ()
+        {
+            int count = recorded_tcp_array_size;
+            int copied_count = 0;
+
+            if (total_recorded_tcp >= recorded_tcp_array_size)
+            {
+                int earlier_entry_size = recorded_tcp_array_size - recorded_tcp_index;
+                memcpy (recorded_tcp_rearranged, (recorded_tcp + recorded_tcp_index), (earlier_entry_size * sizeof (float)));
+
+                copied_count = earlier_entry_size;
+            }
+
+            if (recorded_tcp_index)
+            {
+                memcpy ((recorded_tcp_rearranged + copied_count), recorded_tcp, (recorded_tcp_index * sizeof (float)));
+                copied_count += recorded_tcp_index;
+            }
+
+            return copied_count;
+        }
+
+        int highest_avg_recorded_tcp (int count, float avg, float* highest_avg)
+        {
+            float highest_sum = 0.0;
+            int highest_count = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                if (recorded_tcp_rearranged[i] > avg)
+                {
+                    highest_count++;
+                    highest_sum += recorded_tcp_rearranged[i];
+                }
+            }
+
+            if (highest_count)
+            {
+                *highest_avg = highest_sum / highest_count;
+            }
+
+            return highest_count;
+        }
+
+        void init_recorded_tcp ()
+        {
+            total_recorded_tcp = 0;
+            recorded_tcp_index = 0;
+            dprintf (6666, ("INIT tcp buffer"));
+        }
+
+        int get_recorded_tcp_count () { return total_recorded_tcp; }
+
+        //
+        // Maintain some info about last time we did change heap count.
+        //
+        size_t          last_changed_gc_index;
+        // This is intentionally kept as a float for precision.
+        float           last_changed_count;
+        float           last_changed_stcp;
+
+        //
+        // For tuning above/below target tcp.
+        //
+        // If we just increased the heap count and immediately need to grow again, that counts as a failure.
+        // The higher the failure count, the more aggressive we should grow.
+        int             inc_failure_count;
+
+        // If we are trending up and the tcp is already close enough to target, we need this many samples
+        // before we adjust.
+        int             inc_recheck_threshold;
+
+        // If we shrink and the stcp doesn't change much, that counts as a failure. For the below target case
+        // it's fine to stay here for a while. Either it'll naturally change and break out of this situation
+        // or we wait for a while before we re-evaluate. How long we wait is defined by dec_recheck_threshold
+        // each time our calculation tells us to shrink.
+        int             dec_failure_count;
+        int             dec_failure_recheck_threshold;
+
+        // If we continue to be below target for an extended period of time, ie, we've accumulated more than
+        // below_target_threshold, we want to reduce the heap count.
+        float           below_target_accumulation;
+        float           below_target_threshold;
+
+        // Currently only used for dprintf.
+        size_t          first_below_target_gc_index;
+
+        float get_range_upper (float t)
+        {
+            return (t * 1.2f);
+        }
+
+        bool is_tcp_in_range (float diff_pct, float slope)
+        {
+            return ((diff_pct <= 0.2) && (diff_pct >= -0.2) && (slope <= 0.1) && (slope >= -0.1));
+        }
+
+        bool is_close_to_max (int new_n, int max)
+        {
+            return ((max - new_n) <= (max / 10));
+        }
+
+        //
+        // gen2 GCs are handled separately only as a backstop.
+        //
+        struct gen2_sample
+        {
+            // Recording the gen2 GC indices so we know how far apart they are. Currently unused
+            // but we should consider how much value there is if they are very far apart.
+            size_t gc_index;
+            // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
+            float gc_percent;
+        };
 
         uint32_t        gen2_sample_index;
-        // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
-        float           gen2_gc_percents[sample_size];
+        gen2_sample     gen2_samples[sample_size];
+
+        size_t          current_gen2_samples_count;
+        size_t          processed_gen2_samples_count;
+
+        // This records the stcp last time we processed ephemeral samples. We use it
+        float           last_processed_stcp;
 
         float median_throughput_cost_percent;          // estimated overhead of allocator + gc
         float smoothed_median_throughput_cost_percent; // exponentially smoothed version
@@ -4271,14 +4414,13 @@ private:
 
         bool            should_change_heap_count;
         int             heap_count_to_change_to;
-        int             heap_count_change_count;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
         int             lowest_heap_with_msl_uoh;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
 
         float get_median_gen2_gc_percent()
         {
-            return median_of_3 (gen2_gc_percents[0], gen2_gc_percents[1], gen2_gc_percents[2]);
+            return median_of_3 (gen2_samples[0].gc_percent, gen2_samples[1].gc_percent, gen2_samples[2].gc_percent);
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
@@ -4475,6 +4617,9 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
+    // Right now this is diag only but may be used functionally later.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
+    // TEMP END
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
@@ -5055,21 +5200,30 @@ size_t& generation_allocated_since_last_pin (generation* inst)
 }
 #endif //FREE_USAGE_STATS
 
+// Return the percentage of efficiency (between 0 and 100) of the allocator.
 inline
-float generation_allocator_efficiency (generation* inst)
+size_t generation_allocator_efficiency_percent (generation* inst)
 {
-    if ((generation_free_list_allocated (inst) + generation_free_obj_space (inst)) != 0)
-    {
-        return ((float) (generation_free_list_allocated (inst)) / (float)(generation_free_list_allocated (inst) + generation_free_obj_space (inst)));
-    }
-    else
-        return 0;
+    // Use integer division to prevent potential floating point exception.
+    // FPE may occur if we use floating point division because of speculative execution.
+    uint64_t free_obj_space = generation_free_obj_space (inst);
+    uint64_t free_list_allocated = generation_free_list_allocated (inst);
+    if ((free_list_allocated + free_obj_space) == 0)
+      return 0;
+    return (size_t)((100 * free_list_allocated) / (free_list_allocated + free_obj_space));
 }
+
 inline
 size_t generation_unusable_fragmentation (generation* inst)
 {
-    return (size_t)(generation_free_obj_space (inst) +
-                    (1.0f-generation_allocator_efficiency(inst))*generation_free_list_space (inst));
+    // Use integer division to prevent potential floating point exception.
+    // FPE may occur if we use floating point division because of speculative execution.
+    uint64_t free_obj_space = generation_free_obj_space (inst);
+    uint64_t free_list_allocated = generation_free_list_allocated (inst);
+    uint64_t free_list_space = generation_free_list_space (inst);
+    if ((free_list_allocated + free_obj_space) == 0)
+      return 0;
+    return (size_t)(free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
 }
 
 #define plug_skew           sizeof(ObjHeader)

@@ -89,6 +89,65 @@ namespace System.Linq
                     return result;
                 }
             }
+
+            public override TSource? TryGetElementAt(int index, out bool found)
+            {
+                if (index >= 0)
+                {
+                    foreach (IEnumerable<TSource> source in (ReadOnlySpan<IEnumerable<TSource>>)[_first, _second])
+                    {
+                        if (TryGetNonEnumeratedCount(source, out int count))
+                        {
+                            if (index < count)
+                            {
+                                found = true;
+                                return source.ElementAt(index);
+                            }
+
+                            index -= count;
+                        }
+                        else
+                        {
+                            using IEnumerator<TSource> e = source.GetEnumerator();
+                            while (e.MoveNext())
+                            {
+                                if (index == 0)
+                                {
+                                    found = true;
+                                    return e.Current;
+                                }
+
+                                index--;
+                            }
+                        }
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                TSource? result = _first.TryGetFirst(out found);
+                if (!found)
+                {
+                    result = _second.TryGetFirst(out found);
+                }
+
+                return result;
+            }
+
+            public override TSource? TryGetLast(out bool found)
+            {
+                TSource? result = _second.TryGetLast(out found);
+                if (!found)
+                {
+                    result = _first.TryGetLast(out found);
+                }
+
+                return result;
+            }
         }
 
         private sealed partial class ConcatNIterator<TSource> : ConcatIterator<TSource>
@@ -210,15 +269,82 @@ namespace System.Linq
 
                 return array;
             }
+
+            public override TSource? TryGetElementAt(int index, out bool found)
+            {
+                if (index >= 0)
+                {
+                    IEnumerable<TSource>? source;
+                    for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                    {
+                        if (TryGetNonEnumeratedCount(source, out int count))
+                        {
+                            if (index < count)
+                            {
+                                found = true;
+                                return source.ElementAt(index);
+                            }
+
+                            index -= count;
+                        }
+                        else
+                        {
+                            using IEnumerator<TSource> e = source.GetEnumerator();
+                            while (e.MoveNext())
+                            {
+                                if (index == 0)
+                                {
+                                    found = true;
+                                    return e.Current;
+                                }
+
+                                index--;
+                            }
+                        }
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                IEnumerable<TSource>? source;
+                for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                {
+                    TSource? result = source.TryGetFirst(out found);
+                    if (found)
+                    {
+                        return result;
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TSource? TryGetLast(out bool found)
+            {
+                ConcatNIterator<TSource>? node = this;
+                do
+                {
+                    TSource? result = node._head.TryGetLast(out found);
+                    if (found)
+                    {
+                        return result;
+                    }
+                }
+                while ((node = node!.PreviousN) is not null);
+
+                found = false;
+                return default;
+            }
         }
 
-        private abstract partial class ConcatIterator<TSource> : IIListProvider<TSource>
+        private abstract partial class ConcatIterator<TSource>
         {
-            public abstract int GetCount(bool onlyIfCheap);
-
-            public abstract TSource[] ToArray();
-
-            public List<TSource> ToList()
+            public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
                 var list = count != -1 ? new List<TSource>(count) : new List<TSource>();
@@ -236,6 +362,7 @@ namespace System.Linq
 
                 return list;
             }
+
         }
     }
 }

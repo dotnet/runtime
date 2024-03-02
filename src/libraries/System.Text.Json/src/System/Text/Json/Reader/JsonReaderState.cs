@@ -11,18 +11,18 @@ namespace System.Text.Json
     /// this type can survive across async/await boundaries and hence this type is required to provide
     /// support for reading in more data asynchronously before continuing with a new instance of the <see cref="Utf8JsonReader"/>.
     /// </summary>
-    public struct JsonReaderState
+    public readonly struct JsonReaderState
     {
-        internal long _lineNumber;
-        internal long _bytePositionInLine;
-        internal bool _inObject;
-        internal bool _isNotPrimitive;
-        internal bool _valueIsEscaped;
-        internal bool _trailingCommaBeforeComment;
-        internal JsonTokenType _tokenType;
-        internal JsonTokenType _previousTokenType;
-        internal JsonReaderOptions _readerOptions;
-        internal BitStack _bitStack;
+        internal readonly long _lineNumber;
+        internal readonly long _bytePositionInLine;
+        internal readonly bool _inObject;
+        internal readonly bool _isNotPrimitive;
+        internal readonly bool _valueIsEscaped;
+        internal readonly bool _trailingCommaBeforeComment;
+        internal readonly JsonTokenType _tokenType;
+        internal readonly JsonTokenType _previousTokenType;
+        internal readonly JsonReaderOptions _readerOptions;
+        internal readonly BitStack _bitStack;
 
         /// <summary>
         /// Constructs a new <see cref="JsonReaderState"/> instance.
@@ -51,6 +51,30 @@ namespace System.Text.Json
             // Only allocate if the user reads a JSON payload beyond the depth that the _allocationFreeContainer can handle.
             // This way we avoid allocations in the common, default cases, and allocate lazily.
             _bitStack = default;
+        }
+
+        internal JsonReaderState(
+            long lineNumber,
+            long bytePositionInLine,
+            bool inObject,
+            bool isNotPrimitive,
+            bool valueIsEscaped,
+            bool trailingCommaBeforeComment,
+            JsonTokenType tokenType,
+            JsonTokenType previousTokenType,
+            JsonReaderOptions readerOptions,
+            BitStack bitStack)
+        {
+            _lineNumber = lineNumber;
+            _bytePositionInLine = bytePositionInLine;
+            _inObject = inObject;
+            _isNotPrimitive = isNotPrimitive;
+            _valueIsEscaped = valueIsEscaped;
+            _trailingCommaBeforeComment = trailingCommaBeforeComment;
+            _tokenType = tokenType;
+            _previousTokenType = previousTokenType;
+            _readerOptions = readerOptions;
+            _bitStack = bitStack;
         }
 
         /// <summary>

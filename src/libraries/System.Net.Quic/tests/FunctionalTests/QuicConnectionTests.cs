@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -13,8 +14,9 @@ namespace System.Net.Quic.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [Collection(nameof(DisableParallelization))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
@@ -22,7 +24,7 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(LocalAddresses))]
         public async Task TestConnect(IPAddress address)
         {
@@ -121,6 +123,47 @@ namespace System.Net.Quic.Tests
                     // Subsequent attempts should fail
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseCanceled()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseTaskStored()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    var task = clientConnection.CloseAsync(0).AsTask();
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
                 });
         }
 

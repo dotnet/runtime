@@ -130,6 +130,20 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	}
 }
 
+// This can be called while sweep is running to determine earlier if there is so much memory growth
+// that we know we will require a GC once sweep finishes.
+static gboolean
+sgen_need_major_collection_conservative (void)
+{
+	size_t min_heap_size = sgen_los_memory_usage + sgen_major_collector.get_min_live_major_sections () * sgen_major_collector.section_size;
+
+	size_t max_last_collection_heap_size = last_collection_los_memory_usage + sgen_major_collector.get_max_last_major_survived_sections () * sgen_major_collector.section_size;
+	size_t max_allowance = GDOUBLE_TO_SIZE (max_last_collection_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO);
+	max_allowance = MAX (max_allowance, GDOUBLE_TO_SIZE (MIN_MINOR_COLLECTION_ALLOWANCE));
+
+	return min_heap_size > max_allowance;
+}
+
 static size_t
 get_heap_size (void)
 {
@@ -184,9 +198,11 @@ sgen_need_major_collection (mword space_needed, gboolean *forced)
 		return FALSE;
 	}
 
-	/* FIXME: This is a cop-out.  We should have some way of figuring this out. */
-	if (!sgen_major_collector.have_swept ())
+	if (!sgen_major_collector.have_swept ()) {
+		if (sgen_need_major_collection_conservative ())
+			return TRUE;
 		return FALSE;
+	}
 
 	if (space_needed > sgen_memgov_available_free_space ())
 		return TRUE;

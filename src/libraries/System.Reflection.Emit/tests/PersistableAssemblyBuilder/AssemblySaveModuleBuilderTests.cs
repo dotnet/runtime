@@ -287,5 +287,72 @@ namespace System.Reflection.Emit.Tests
             Assert.True(signatureToken > 0);
             Assert.True(stringToken > 0);
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98013", TestRuntimes.Mono)]
+        public static void GetArrayMethodTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+
+                ModuleBuilder mb = ab.DefineDynamicModule("MyModule");
+                TypeBuilder tb = mb.DefineType("TestClass", TypeAttributes.Public);
+                Type tbArray = tb.MakeArrayType(2);
+                Type[] paramArray = { tbArray, typeof(int), typeof(int) };
+                MethodBuilder getMethod = tb.DefineMethod("GetArray", MethodAttributes.Public | MethodAttributes.Static, tb, paramArray);
+
+                MethodInfo arrayGetMethod = mb.GetArrayMethod(tbArray, "Get", CallingConventions.HasThis, tb, [typeof(int), typeof(int)]);
+                Assert.Equal(tbArray, arrayGetMethod.DeclaringType);
+                Assert.Equal("Get", arrayGetMethod.Name);
+                Assert.Equal(CallingConventions.HasThis, arrayGetMethod.CallingConvention);
+                Assert.Equal(tb, arrayGetMethod.ReturnType);
+
+                ILGenerator getIL = getMethod.GetILGenerator();
+                getIL.Emit(OpCodes.Ldarg_0);
+                getIL.Emit(OpCodes.Ldarg_1);
+                getIL.Emit(OpCodes.Ldarg_2);
+                getIL.Emit(OpCodes.Call, arrayGetMethod);
+                getIL.Emit(OpCodes.Ret);
+
+                MethodInfo arraySetMethod = mb.GetArrayMethod(tbArray, "Set", CallingConventions.HasThis, typeof(void), [typeof(int), typeof(int), tb]);
+                MethodBuilder setMethod = tb.DefineMethod("SetArray", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [tbArray, typeof(int), typeof(int), tb]);
+                ILGenerator setIL = setMethod.GetILGenerator();
+                setIL.Emit(OpCodes.Ldarg_0);
+                setIL.Emit(OpCodes.Ldarg_1);
+                setIL.Emit(OpCodes.Ldarg_2);
+                setIL.Emit(OpCodes.Ldarg_3);
+                setIL.Emit(OpCodes.Call, arraySetMethod);
+                setIL.Emit(OpCodes.Ret);
+
+                tb.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("TestClass");
+                object instance = Activator.CreateInstance(typeFromDisk);
+                Array a = Array.CreateInstance(typeFromDisk, 2, 2);
+                MethodInfo setArray = typeFromDisk.GetMethod("SetArray");
+                setArray.Invoke(null, [a, 0, 0, instance]);
+                MethodInfo getArray = typeFromDisk.GetMethod("GetArray");
+                object obj = getArray.Invoke(null, [a, 0, 0]);
+                Assert.NotNull(obj);
+                Assert.Equal(instance, obj);
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void GetArrayMethod_InvalidArgument_ThrowsArgumentException()
+        {
+            ModuleBuilder module = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly")).DefineDynamicModule("MyModule");
+
+            AssertExtensions.Throws<ArgumentNullException>("arrayClass", () => module.GetArrayMethod(null, "TestMethod", CallingConventions.Standard, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("methodName", () => module.GetArrayMethod(typeof(string[]), null, CallingConventions.Standard, typeof(void), null));
+            AssertExtensions.Throws<ArgumentException>("methodName", () => module.GetArrayMethod(typeof(string[]), "", CallingConventions.Standard, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("parameterTypes", () => module.GetArrayMethod(typeof(string[]), "TestMethod", CallingConventions.Standard, null, [null]));
+            AssertExtensions.Throws<ArgumentException>(null, () => module.GetArrayMethod(typeof(Array), "TestMethod", CallingConventions.Standard, null, null));
+        }
     }
 }

@@ -113,7 +113,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 Debug.Assert((int)GenericConstraints.DefaultConstructorConstraint == (int)GenericParameterAttributes.DefaultConstructorConstraint);
                 GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-                const GenericParameterAttributes mask = GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AcceptByRefLike;
+                const GenericParameterAttributes mask = GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AllowByRefLike;
                 return (GenericConstraints)(parameter.Attributes & mask);
             }
         }

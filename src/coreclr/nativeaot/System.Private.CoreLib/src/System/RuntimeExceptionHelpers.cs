@@ -21,7 +21,7 @@ namespace System
         }
     }
 
-    public class RuntimeExceptionHelpers
+    internal static class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
@@ -227,6 +227,27 @@ namespace System
                         Internal.Console.Error.Write(exception.ToString());
                         Internal.Console.Error.WriteLine();
                     }
+
+#if TARGET_WINDOWS
+                    if (EventReporter.ShouldLogInEventLog)
+                    {
+                        var reporter = new EventReporter(reason);
+                        if (exception != null && reason is not RhFailFastReason.AssertionFailure)
+                        {
+                            reporter.AddDescription($"{exception.GetType()}: {exception.Message}");
+                            reporter.AddStackTrace(exception.StackTrace);
+                        }
+                        else
+                        {
+                            if (message != null)
+                                reporter.AddDescription(message);
+                            reporter.BeginStackTrace();
+                            reporter.AddStackTrace(new StackTrace().ToString());
+                        }
+
+                        reporter.Report();
+                    }
+#endif
 
                     if (exception != null)
                     {

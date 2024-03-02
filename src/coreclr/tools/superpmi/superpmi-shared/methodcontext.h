@@ -627,12 +627,6 @@ public:
                                 CORINFO_CLASS_HANDLE* structType,
                                 CORINFO_CLASS_HANDLE  memberParent);
 
-    void recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                               CorInfoInlineTypeCheckSource source,
-                               CorInfoInlineTypeCheck       result);
-    void dmpCanInlineTypeCheck(DLD key, DWORD value);
-    CorInfoInlineTypeCheck repCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
     bool repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
@@ -718,6 +712,10 @@ public:
     void recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
     bool repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+
+    void recIsExactType(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsExactType(DWORDLONG key, DWORD value);
+    bool repIsExactType(CORINFO_CLASS_HANDLE cls);
 
     void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);
@@ -887,6 +885,13 @@ public:
     Environment cloneEnvironment();
 
     bool WasEnvironmentChanged(const Environment& prevEnv);
+
+    void Reset()
+    {
+        delete cr;
+        FreeTempAllocations();
+        cr = new CompileResult();
+    }
 
     CompileResult* cr;
     CompileResult* originalCR;
@@ -1106,7 +1111,7 @@ enum mcPackets
     Packet_GetHeapClassSize = 170,
     Packet_CanAllocateOnStack = 171,
     Packet_GetStaticFieldCurrentClass = 172,
-    Packet_CanInlineTypeCheck = 173,
+    // Packet_CanInlineTypeCheck = 173,
     Packet_IsMoreSpecificType = 174,
     Packet_GetStringLiteral = 175,
     PacketCR_SetPatchpointInfo = 176,
@@ -1148,6 +1153,7 @@ enum mcPackets
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
     Packet_NotifyMethodInfoUsage = 214,
+    Packet_IsExactType = 215,
 };
 
 void SetDebugDumpVariables();

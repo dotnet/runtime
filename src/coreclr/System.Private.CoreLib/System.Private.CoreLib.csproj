@@ -151,7 +151,7 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.CoreCLR.cs" />
@@ -203,18 +203,17 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
@@ -231,7 +230,6 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
@@ -248,7 +246,8 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
-    </Compile>    
+    </Compile>
+    <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />    
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
@@ -328,11 +327,7 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles"
-          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
-		  Outputs="@(EventingSourceFile)"
-		  DependsOnTargets="FindPython"
-		  BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>

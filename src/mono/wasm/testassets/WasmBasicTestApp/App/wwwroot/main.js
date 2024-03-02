@@ -33,6 +33,8 @@ switch (testCase) {
                 Math.floor(Math.random() * 5) + 5,
                 Math.floor(Math.random() * 5) + 10
             ];
+            console.log(`Failing test at assembly indexes [${failAtAssemblyNumbers.join(", ")}]`);
+            let alreadyFailed = [];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
                 if (type === "dotnetjs") {
                     // loadBootResource could return string with unqualified name of resource. 
@@ -44,10 +46,11 @@ switch (testCase) {
                     return defaultUri;
                 }
 
-                assemblyCounter++;
-                if (!failAtAssemblyNumbers.includes(assemblyCounter))
+                const currentCounter = assemblyCounter++;
+                if (!failAtAssemblyNumbers.includes(currentCounter) || alreadyFailed.includes(defaultUri))
                     return defaultUri;
 
+                alreadyFailed.push(defaultUri);
                 testOutput("Throw error instead of downloading resource");
                 const error = new Error("Simulating a failed fetch");
                 error.silent = true;
@@ -92,6 +95,10 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+            exit(0);
+            break;
+        case "DebugLevelTest":
+            testOutput("WasmDebugLevel: " + config.debugLevel);
             exit(0);
             break;
         default:

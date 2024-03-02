@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -7,8 +7,14 @@
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <AnalysisLevel>Latest</AnalysisLevel>
-    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <!-- The analyzer needs to process deeply nested expressions in corelib.
+         This can blow up the stack if using unoptimized code (due to large
+         stack frames with many temporary locals for debugging support), so we
+         optimize the analyzer even in Debug builds. Note: we still use the
+         Debug configuration to get Debug asserts. -->
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
-    <PackageReference Condition="'$(DotNetBuildFromSource)' == 'true'" Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+    <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
+    <PackageReference Condition="'$(DotNetBuildSourceOnly)' == 'true'" Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>

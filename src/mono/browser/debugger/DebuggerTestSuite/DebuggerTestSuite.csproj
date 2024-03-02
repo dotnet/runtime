@@ -16,6 +16,9 @@
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <RunSettingsFilePath Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(OutputPath).runsettings</RunSettingsFilePath>
     <RunSettingsFilePath Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsObjDir)vscode\.runsettings</RunSettingsFilePath>
+
+    <!-- Serilog.Extensions.Logging.File brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
@@ -78,7 +81,7 @@
           BeforeTargets="CopyTestZipForHelix"
           DependsOnTargets="_GenerateRunSettingsFile">
 
-    <Exec Command="&quot;$(DotNetTool)&quot; test --no-build -s $(RunSettingsFilePath) -t --nologo -v:q" ConsoleToMSBuild="true">
+    <Exec Command="&quot;$(DotNetTool)&quot; test --no-build -s $(RunSettingsFilePath) -t --nologo -v:q -p:VsTestUseMSBuildOutput=false" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
     </Exec>
 
@@ -86,12 +89,15 @@
       <_Regex>^ *(DebuggerTests[^\($]+)</_Regex>
     </PropertyGroup>
     <ItemGroup>
-      <_TestLines0 Include="$([System.Text.RegularExpressions.Regex]::Match('%(_ListOfTestsLines.Identity)', $(_Regex)))" />
-      <TestClassName Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(_TestLines0.Identity)))" />
+      <_TestLines0 Include="$([System.Text.RegularExpressions.Regex]::Match('%(_ListOfTestsLines.Identity)', '$(_Regex)'))" />
+      <TestClassName Include="$([System.IO.Path]::GetFileNameWithoutExtension('%(_TestLines0.Identity)'))" />
     </ItemGroup>
 
+    <Error Text="No DebuggerTests test classes found!" Condition="'@(TestClassName)' == ''" />
+
     <WriteLinesToFile File="$(TestArchiveTestsDir)$(MSBuildProjectName).tests.list"
-                      Lines="@(TestClassName->Distinct())" />
+                      Lines="@(TestClassName->Distinct())"
+                      Overwrite="true" />
   </Target>
 
   <!-- Copy of `GenerateRunSettingsFile` from eng/testing/runsettings.targets -->

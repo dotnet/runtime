@@ -2241,7 +2241,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     {
         if (emitter::emitIns_valid_imm_for_mov(imm, size))
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
+                                      INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
         else
         {
@@ -2332,6 +2333,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+                if (tree->IsTlsIconHandle())
+                {
+                    // no need to generate because we generate it as part of GT_CALL
+                    break;
+                }
             }
 
             if (targetType == TYP_BYREF)
@@ -3620,7 +3626,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = cpObjNode->ExtractTempReg();
+    regNumber tmpReg  = cpObjNode->ExtractTempReg(RBM_ALLINT);
     regNumber tmpReg2 = REG_NA;
 
     assert(genIsValidIntReg(tmpReg));
@@ -3629,7 +3635,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (slots > 1)
     {
-        tmpReg2 = cpObjNode->GetSingleTempReg();
+        tmpReg2 = cpObjNode->ExtractTempReg(RBM_ALLINT);
         assert(tmpReg2 != tmpReg);
         assert(genIsValidIntReg(tmpReg2));
         assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
@@ -3676,26 +3682,60 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     {
         unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
 
+        // We might also need SIMD regs if we have 4 or more continuous non-gc slots
+        // On ARM64, SIMD loads/stores provide 8-byte atomicity guarantees when aligned to 8 bytes.
+        regNumber tmpSimdReg1 = REG_NA;
+        regNumber tmpSimdReg2 = REG_NA;
+        if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
+        {
+            tmpSimdReg1 = cpObjNode->ExtractTempReg(RBM_ALLFLOAT);
+            tmpSimdReg2 = cpObjNode->ExtractTempReg(RBM_ALLFLOAT);
+        }
+
         unsigned i = 0;
         while (i < slots)
         {
             if (!layout->IsGCPtr(i))
             {
-                // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
-                if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
+                // How many continuous non-gc slots do we have?
+                unsigned nonGcSlots = 0;
+                do
                 {
-                    emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
-                                          2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                    emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
-                                          2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                    ++i; // extra increment of i, since we are copying two items
-                }
-                else
+                    nonGcSlots++;
+                    i++;
+                } while ((i < slots) && !layout->IsGCPtr(i));
+
+                const regNumber srcReg = REG_WRITE_BARRIER_SRC_BYREF;
+                const regNumber dstReg = REG_WRITE_BARRIER_DST_BYREF;
+                while (nonGcSlots > 0)
                 {
-                    emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
-                    emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
+                    regNumber tmp1 = tmpReg;
+                    regNumber tmp2 = tmpReg2;
+                    emitAttr  size = EA_8BYTE;
+                    insOpts   opts = INS_OPTS_POST_INDEX;
+
+                    // Copy at least two slots at a time
+                    if (nonGcSlots >= 2)
+                    {
+                        // Do 4 slots at a time if SIMD is supported
+                        if ((nonGcSlots >= 4) && compiler->IsBaselineSimdIsaSupported())
+                        {
+                            // We need SIMD temp regs now
+                            tmp1 = tmpSimdReg1;
+                            tmp2 = tmpSimdReg2;
+                            size = EA_16BYTE;
+                            nonGcSlots -= 2;
+                        }
+                        nonGcSlots -= 2;
+                        emit->emitIns_R_R_R_I(INS_ldp, size, tmp1, tmp2, srcReg, EA_SIZE(size) * 2, opts);
+                        emit->emitIns_R_R_R_I(INS_stp, size, tmp1, tmp2, dstReg, EA_SIZE(size) * 2, opts);
+                    }
+                    else
+                    {
+                        nonGcSlots--;
+                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmp1, srcReg, EA_SIZE(size), opts);
+                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmp1, dstReg, EA_SIZE(size), opts);
+                    }
                 }
             }
             else
@@ -3703,8 +3743,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                 // In the case of a GC-Pointer we'll call the ByRef write barrier helper
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
                 gcPtrCount--;
+                i++;
             }
-            ++i;
         }
         assert(gcPtrCount == 0);
     }
@@ -3744,32 +3784,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabOffs;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
@@ -3795,6 +3810,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     genConsumeAddress(addr);
     genConsumeRegs(data);
 
+    assert(treeNode->OperIs(GT_XCHG) || !varTypeIsSmall(treeNode->TypeGet()));
+
     emitAttr dataSize = emitActualTypeSize(data);
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
@@ -3817,8 +3834,19 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 break;
             }
             case GT_XCHG:
-                GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
+            {
+                instruction ins = INS_swpal;
+                if (varTypeIsByte(treeNode->TypeGet()))
+                {
+                    ins = INS_swpalb;
+                }
+                else if (varTypeIsShort(treeNode->TypeGet()))
+                {
+                    ins = INS_swpalh;
+                }
+                GetEmitter()->emitIns_R_R_R(ins, dataSize, dataReg, targetReg, addrReg);
                 break;
+            }
             case GT_XADD:
                 GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
@@ -3877,8 +3905,21 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         BasicBlock* labelRetry = genCreateTempLabel();
         genDefineTempLabel(labelRetry);
 
+        instruction insLd = INS_ldaxr;
+        instruction insSt = INS_stlxr;
+        if (varTypeIsByte(treeNode->TypeGet()))
+        {
+            insLd = INS_ldaxrb;
+            insSt = INS_stlxrb;
+        }
+        else if (varTypeIsShort(treeNode->TypeGet()))
+        {
+            insLd = INS_ldaxrh;
+            insSt = INS_stlxrh;
+        }
+
         // The following instruction includes a acquire half barrier
-        GetEmitter()->emitIns_R_R(INS_ldaxr, dataSize, loadReg, addrReg);
+        GetEmitter()->emitIns_R_R(insLd, dataSize, loadReg, addrReg);
 
         switch (treeNode->OperGet())
         {
@@ -3904,7 +3945,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         }
 
         // The following instruction includes a release half barrier
-        GetEmitter()->emitIns_R_R_R(INS_stlxr, dataSize, exResultReg, storeDataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(insSt, dataSize, exResultReg, storeDataReg, addrReg);
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
@@ -3913,8 +3954,14 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
-    if (treeNode->GetRegNum() != REG_NA)
+    if (targetReg != REG_NA)
     {
+        if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+        {
+            instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
+            GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
+
         genProduceReg(treeNode);
     }
 }
@@ -3942,10 +3989,10 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeRegs(data);
     genConsumeRegs(comparand);
 
+    emitAttr dataSize = emitActualTypeSize(data);
+
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
-        emitAttr dataSize = emitActualTypeSize(data);
-
         // casal use the comparand as the target reg
         GetEmitter()->emitIns_Mov(INS_mov, dataSize, targetReg, comparandReg, /* canSkip */ true);
 
@@ -3953,7 +4000,16 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         noway_assert((addrReg != targetReg) || (targetReg == comparandReg));
         noway_assert((dataReg != targetReg) || (targetReg == comparandReg));
 
-        GetEmitter()->emitIns_R_R_R(INS_casal, dataSize, targetReg, dataReg, addrReg);
+        instruction ins = INS_casal;
+        if (varTypeIsByte(treeNode->TypeGet()))
+        {
+            ins = INS_casalb;
+        }
+        else if (varTypeIsShort(treeNode->TypeGet()))
+        {
+            ins = INS_casalh;
+        }
+        GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addrReg);
     }
     else
     {
@@ -3987,9 +4043,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
 
-        // TODO-ARM64-CQ Use ARMv8.1 atomics if available
-        // https://github.com/dotnet/runtime/issues/8225
-
         // Emit code like this:
         //   retry:
         //     ldxr targetReg, [addrReg]
@@ -4004,8 +4057,21 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         BasicBlock* labelCompareFail = genCreateTempLabel();
         genDefineTempLabel(labelRetry);
 
+        instruction insLd = INS_ldaxr;
+        instruction insSt = INS_stlxr;
+        if (varTypeIsByte(treeNode->TypeGet()))
+        {
+            insLd = INS_ldaxrb;
+            insSt = INS_stlxrb;
+        }
+        else if (varTypeIsShort(treeNode->TypeGet()))
+        {
+            insLd = INS_ldaxrh;
+            insSt = INS_stlxrh;
+        }
+
         // The following instruction includes a acquire half barrier
-        GetEmitter()->emitIns_R_R(INS_ldaxr, emitTypeSize(treeNode), targetReg, addrReg);
+        GetEmitter()->emitIns_R_R(insLd, dataSize, targetReg, addrReg);
 
         if (comparand->isContainedIntOrIImmed())
         {
@@ -4027,7 +4093,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         }
 
         // The following instruction includes a release half barrier
-        GetEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(insSt, dataSize, exResultReg, dataReg, addrReg);
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
@@ -4036,6 +4102,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         instGen_MemoryBarrier();
 
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
+    }
+
+    if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+    {
+        instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
+        GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
     }
 
     genProduceReg(treeNode);

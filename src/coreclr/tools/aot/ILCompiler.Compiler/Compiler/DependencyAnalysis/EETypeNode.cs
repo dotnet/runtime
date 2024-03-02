@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            _writableDataNode = SupportsWritableData(factory.Target) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
+            _writableDataNode = !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             if (EmitVirtualSlots)
@@ -102,12 +102,6 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.TypeSystemContext.EnsureLoadableType(type);
         }
-
-        public static bool SupportsWritableData(TargetDetails target)
-            => target.SupportsRelativePointers;
-
-        public static bool SupportsFrozenRuntimeTypeInstances(TargetDetails target)
-            => SupportsWritableData(target);
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
         {
@@ -413,7 +407,7 @@ namespace ILCompiler.DependencyAnalysis
                         // We don't do this if the method can be placed in the sealed vtable since
                         // those can never be overriden by children anyway.
                         bool canUseTentativeMethod = isNonInterfaceAbstractType
-                            && !decl.CanMethodBeInSealedVTable()
+                            && !decl.CanMethodBeInSealedVTable(factory)
                             && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
                         IMethodNode implNode = canUseTentativeMethod ?
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
@@ -1045,7 +1039,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Final NewSlot methods cannot be overridden, and therefore can be placed in the sealed-vtable to reduce the size of the vtable
                 // of this type and any type that inherits from it.
-                if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces())
+                if (declMethod.CanMethodBeInSealedVTable(factory) && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
 
                 bool shouldEmitImpl = !implMethod.IsAbstract;
@@ -1125,11 +1119,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_writableDataNode != null)
             {
-                objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(_writableDataNode);
             }
-            else if (SupportsWritableData(factory.Target))
+            else
             {
-                objData.EmitInt(0);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitInt(0);
+                else
+                    objData.EmitZeroPointer();
             }
         }
 
@@ -1423,7 +1423,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public WritableDataNode(EETypeNode type) => _type = type;
             public override ObjectNodeSection GetSection(NodeFactory factory)
-                => SupportsFrozenRuntimeTypeInstances(factory.Target) && _type.GetFrozenRuntimeTypeNode(factory).Marked
+                => _type.GetFrozenRuntimeTypeNode(factory).Marked
                 ? (factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection)
                 : ObjectNodeSection.BssSection;
 
@@ -1444,8 +1444,7 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (SupportsFrozenRuntimeTypeInstances(factory.Target)
-                    && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
+                if (_type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);
                 }

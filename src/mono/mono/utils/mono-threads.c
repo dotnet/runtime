@@ -281,6 +281,12 @@ mono_threads_end_global_suspend (void)
 static void
 dump_threads (void)
 {
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+	mono_wasm_dump_threads_async ();
+#endif
+#endif
+
 	MonoThreadInfo *cur = mono_thread_info_current ();
 
 	g_async_safe_printf ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
@@ -564,7 +570,7 @@ register_thread (MonoThreadInfo *info)
 	mono_thread_info_suspend_unlock ();
 
 #ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_attached ();
+	mono_threads_wasm_on_thread_registered ();
 #endif
 
 	return TRUE;
@@ -649,7 +655,7 @@ unregister_thread (void *arg)
 	mono_thread_info_suspend_unlock ();
 
 #ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_detached ();
+	mono_threads_wasm_on_thread_unregistered ();
 #endif
 
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);

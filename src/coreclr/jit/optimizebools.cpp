@@ -46,7 +46,7 @@ public:
 private:
     BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
     BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
-    BasicBlock* m_b3; // m_b1->bbTarget. Null if m_b2 is not a return block.
+    BasicBlock* m_b3; // m_b1's target block. Null if m_b2 is not a return block.
 
     Compiler* m_comp; // The pointer to the Compiler instance
 
@@ -89,7 +89,7 @@ private:
 //  Notes:
 //      m_b1 and m_b2 are set on entry.
 //
-//      Case 1: if b1.bbTarget == b2.bbTarget, it transforms
+//      Case 1: if b1->TargetIs(b2->GetTarget()), it transforms
 //          B1 : brtrue(t1, Bx)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -107,7 +107,7 @@ private:
 //              B3: GT_RETURN (BBJ_RETURN)
 //              B4: GT_RETURN (BBJ_RETURN)
 //
-//      Case 2: if B2->FalseTargetIs(B1.bbTarget), it transforms
+//      Case 2: if B2->FalseTargetIs(B1->GetTarget()), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -123,7 +123,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     m_t3 = nullptr;
 
-    // Check if m_b1 and m_b2 have the same bbTarget
+    // Check if m_b1 and m_b2 have the same target
 
     if (m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
@@ -751,7 +751,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     //
     BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
     BasicBlock* inRangeBb;
-    if (notInRangeBb == m_b2->GetTrueTarget())
+    if (m_b2->TrueTargetIs(notInRangeBb))
     {
         // Shape 1: both conditions jump to NotInRange
         //
@@ -765,7 +765,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         // ...
         inRangeBb = m_b2->GetFalseTarget();
     }
-    else if (notInRangeBb == m_b2->GetFalseTarget())
+    else if (m_b2->FalseTargetIs(notInRangeBb))
     {
         // Shape 2: 2nd block jumps to InRange
         //
@@ -807,15 +807,26 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    m_comp->fgAddRefPred(inRangeBb, m_b1);
+    // Re-direct firstBlock to jump to inRangeBb
+    FlowEdge* const newEdge = m_comp->fgAddRefPred(inRangeBb, m_b1);
+    FlowEdge* const oldEdge = m_b1->GetFalseEdge();
+
     if (!cmp2IsReversed)
     {
-        // Re-direct firstBlock to jump to inRangeBb
-        m_b1->SetTrueTarget(inRangeBb);
+        m_b1->SetFalseEdge(m_b1->GetTrueEdge());
+        m_b1->SetTrueEdge(newEdge);
+        assert(m_b1->TrueTargetIs(inRangeBb));
+        assert(m_b1->FalseTargetIs(notInRangeBb));
+    }
+    else
+    {
+        m_b1->SetFalseEdge(newEdge);
+        assert(m_b1->TrueTargetIs(notInRangeBb));
+        assert(m_b1->FalseTargetIs(inRangeBb));
     }
 
     // Remove the 2nd condition block as we no longer need it
-    m_comp->fgRemoveRefPred(m_b2, m_b1);
+    m_comp->fgRemoveRefPred(oldEdge);
     m_comp->fgRemoveBlock(m_b2, true);
 
     Statement* stmt = m_b1->lastStmt();
@@ -1007,15 +1018,15 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
-    m_b1->SetKindAndTarget(BBJ_ALWAYS, m_b1->GetFalseTarget());
+    m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
+    m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, m_b1->GetFalseEdge());
     m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
     {
         m_comp->fgCompactBlocks(m_b1, m_b2);
     }
@@ -1261,22 +1272,19 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetTrueTarget(), m_b1);
+        FlowEdge* edge1 = m_b1->GetTrueEdge();
         FlowEdge* edge2;
 
         if (m_sameTarget)
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetTrueTarget(), m_b2);
+            edge2 = m_b2->GetTrueEdge();
         }
         else
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetFalseTarget(), m_b2);
-
-            m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
-
-            m_b1->SetTrueTarget(m_b2->GetTrueTarget());
-
-            m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
+            edge2 = m_b2->GetFalseEdge();
+            m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
+            FlowEdge* const newEdge = m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
+            m_b1->SetTrueEdge(newEdge);
         }
 
         assert(edge1 != nullptr);
@@ -1302,7 +1310,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(m_b3 != nullptr);
-        m_b1->SetKindAndTarget(BBJ_RETURN);
+        m_b1->SetKindAndTargetEdge(BBJ_RETURN);
     }
     else
     {
@@ -1317,11 +1325,12 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
-        m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
-        m_b1->SetFalseTarget(m_b2->GetFalseTarget());
+        // Replace pred 'm_b2' for m_b2's false target with 'm_b1'
+        // Remove  pred 'm_b2' for m_b2's true target
+        FlowEdge* falseEdge = m_b2->GetFalseEdge();
+        m_comp->fgReplacePred(falseEdge, m_b1);
+        m_comp->fgRemoveRefPred(m_b2->GetTrueEdge());
+        m_b1->SetFalseEdge(falseEdge);
     }
 
     // Get rid of the second block
@@ -1356,7 +1365,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //  Notes:
 //      m_b1, m_b2 and m_b3 of OptBoolsDsc are set on entry.
 //
-//      if B1.bbTarget == b3, it transforms
+//      if B1->TargetIs(b3), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : ret(t2)
 //          B3 : ret(0)

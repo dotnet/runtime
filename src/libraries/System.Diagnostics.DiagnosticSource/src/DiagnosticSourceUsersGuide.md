@@ -180,7 +180,7 @@ Thus the event names only need to be unique within a component.
   reflection must be used to fetch fields).   This is both easier to program and more efficient.
   Thus in scenarios where there is likely high-volume filtering to be done by the logging listener, having
   this type available to do the cast is valuable.   Note that this type needs to be made public (since
-  the listener needs to see it), and should be under the namespace System.Diagnostics.DiagnosticSource.PayloadTypes.
+  the listener needs to see it).
   Note that if there is doubt about the value DO NOT create an explicit type, as you CAN convert from
   an anonymous type to a explicit type compatibly in the future, but once you expose the payload type
   you must keep it forever.   The payload type should simply have C#  'TYPE NAME {get; set; }' properties
@@ -404,6 +404,21 @@ Thus we could replace the `listener.Subscribe()` call in the previous example wi
 
 This very efficiently subscribes to only the 'RequestStart' events. All other events will cause the `DiagnosticSource.IsEnabled()`
 method to return `false`, and thus be efficiently filtered out.
+
+NOTE: Filtering is only designed as a performance optimization. It is possible for a listener to receive events even when they
+do not satisfy the filter. This could occur because some other listener has subscribed to the event or because the source
+of the event didn't check IsEnabled() prior to sending it. If you want to be certain that a given event satisfies the filter
+you will need to check it inside the callback. For example:
+
+```C#
+Action<KeyValuePair<string, object>> callback = (KeyValuePair<string, object> evnt) =>
+        {
+            if(predicate(evnt.Key)) // only print out events that satisfy our filter
+            {
+                Console.WriteLine("From Listener {0} Received Event {1} with payload {2}", networkListener.Name, evnt.Key, evnt.Value.ToString());
+            }
+        };
+```
 
 ##### Context-based Filtering
 Some scenarios require advanced filtering based on extended context.
