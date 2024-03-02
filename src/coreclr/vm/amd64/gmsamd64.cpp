@@ -136,7 +136,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
 #else  // !DACCESS_COMPILE
 
-#define CALLEE_SAVED_REGISTER(regname) unwoundState->m_Ptrs.p##regname = PTR_ULONG64(nonVolRegPtrs.regname);
+#define CALLEE_SAVED_REGISTER(regname) unwoundState->m_Ptrs.p##regname = PTR_TADDR(nonVolRegPtrs.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 

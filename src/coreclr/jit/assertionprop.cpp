@@ -4216,20 +4216,20 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             return assertionIndex;
         }
 
-        // Look for matching exact type assertions based on vtable accesses
+        // Look for matching exact type assertions based on vtable accesses. E.g.:
+        //
+        //   op1:       VNF_InvariantLoad(myObj) or in other words: a vtable access
+        //   op2:       'MyType' class handle
+        //   Assertion: 'myObj's type is exactly MyType
+        //
         if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_EXACT_TYPE) &&
-            op1->OperIs(GT_IND))
+            (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)) && op1->TypeIs(TYP_I_IMPL))
         {
-            GenTree* indirAddr = op1->AsIndir()->Addr();
-
-            if (indirAddr->OperIs(GT_LCL_VAR) && (indirAddr->TypeGet() == TYP_REF))
+            VNFuncApp funcApp;
+            if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
+                (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
-                // op1 is accessing vtable of a ref type local var
-                if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(indirAddr->gtVNPair)) &&
-                    (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
-                {
-                    return assertionIndex;
-                }
+                return assertionIndex;
             }
         }
     }
@@ -6146,7 +6146,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 AssertionIndex valueAssertionIndex;
                 AssertionIndex jumpDestAssertionIndex;
 
-                if (info.IsNextEdgeAssertion())
+                if (info.AssertionHoldsOnFalseEdge())
                 {
                     valueAssertionIndex    = info.GetAssertionIndex();
                     jumpDestAssertionIndex = optFindComplementary(info.GetAssertionIndex());

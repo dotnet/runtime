@@ -69,6 +69,24 @@ unsigned SsaStressHashHelper()
 #endif
 
 //------------------------------------------------------------------------
+// setLikelihood: set the likelihood of aflow edge
+//
+// Arguments:
+//   likelihood -- value in range [0.0, 1.0] indicating how likely
+//     the source block is to transfer control along this edge.
+//
+void FlowEdge::setLikelihood(weight_t likelihood)
+{
+    assert(likelihood >= 0.0);
+    assert(likelihood <= 1.0);
+    m_likelihoodSet = true;
+    m_likelihood    = likelihood;
+
+    JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum, m_destBlock->bbNum,
+            m_likelihood);
+}
+
+//------------------------------------------------------------------------
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
@@ -1185,15 +1203,15 @@ unsigned BasicBlock::NumSucc() const
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc().
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i) const
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
 {
     assert(i < NumSucc()); // Index bounds check.
     switch (bbKind)
@@ -1204,29 +1222,43 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return GetTarget();
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return GetFalseTarget();
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
                 assert(bbTrueEdge != bbFalseEdge);
-                return GetTrueTarget();
+                return GetTrueEdge();
             }
 
         case BBJ_EHFINALLYRET:
-            return bbEhfTargets->bbeSuccs[i]->getDestinationBlock();
+            return bbEhfTargets->bbeSuccs[i];
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsDstTab[i]->getDestinationBlock();
+            return bbSwtTargets->bbsDstTab[i];
 
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc().
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i) const
+{
+    return GetSuccEdge(i)->getDestinationBlock();
 }
 
 //------------------------------------------------------------------------
@@ -1296,16 +1328,16 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc(comp).
 //    comp - Compiler instance
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
 {
     assert(comp != nullptr);
 
@@ -1315,30 +1347,30 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
             assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
-            return GetTarget();
+            return GetTargetEdge();
 
         case BBJ_EHFINALLYRET:
             assert(bbEhfTargets != nullptr);
             assert(i < bbEhfTargets->bbeCount);
-            return bbEhfTargets->bbeSuccs[i]->getDestinationBlock();
+            return bbEhfTargets->bbeSuccs[i];
 
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            return GetTarget();
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return GetFalseTarget();
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
                 assert(bbTrueEdge != bbFalseEdge);
-                return GetTrueTarget();
+                return GetTrueEdge();
             }
 
         case BBJ_SWITCH:
@@ -1351,6 +1383,21 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc(comp).
+//    comp - Compiler instance
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+{
+    return GetSuccEdge(i, comp)->getDestinationBlock();
 }
 
 void BasicBlock::InitVarSets(Compiler* comp)

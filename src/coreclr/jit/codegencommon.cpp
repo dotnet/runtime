@@ -6452,6 +6452,47 @@ void CodeGen::genFnProlog()
 #pragma warning(pop)
 #endif
 
+//----------------------------------------------------------------------------------
+// genEmitJumpTable: emit jump table and return its base offset
+//
+// Arguments:
+//    treeNode     - the GT_JMPTABLE node
+//    relativeAddr - if true, references are treated as 4-byte relative addresses,
+//                   otherwise they are absolute pointers
+//
+// Return Value:
+//    base offset to jump table
+//
+// Assumption:
+//    The current basic block in process ends with a switch statement
+//
+unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
+{
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
+    assert(treeNode->OperGet() == GT_JMPTABLE);
+
+    emitter*       emit       = GetEmitter();
+    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
+
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
+
+    for (unsigned i = 0; i < jumpCount; i++)
+    {
+        BasicBlock* target = (*jumpTable)->getDestinationBlock();
+        jumpTable++;
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
+
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
+
+        emit->emitDataGenData(i, target);
+    };
+
+    emit->emitDataGenEnd();
+    return jmpTabBase;
+}
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //

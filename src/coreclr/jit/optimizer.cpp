@@ -2290,8 +2290,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const testToNextWeight  = weightTop * testToNextLikelihood;
         weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
 
-        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTop, bTest);
-        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->GetFalseTarget(), bTest);
+        FlowEdge* const edgeTestToNext  = bTest->GetTrueEdge();
+        FlowEdge* const edgeTestToAfter = bTest->GetFalseEdge();
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
                 testToNextWeight);
@@ -2311,8 +2311,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->GetFalseTarget(), bNewCond);
-        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetTrueTarget(), bNewCond);
+        FlowEdge* const edgeBlockToNext  = bNewCond->GetFalseEdge();
+        FlowEdge* const edgeBlockToAfter = bNewCond->GetTrueEdge();
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
                 bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
@@ -3279,7 +3279,7 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     }
 
     // Normalize block -> target weight
-    FlowEdge* const edgeFromBlock = fgGetPredForBlock(block->GetTarget(), block);
+    FlowEdge* const edgeFromBlock = block->GetTargetEdge();
     assert(edgeFromBlock != nullptr);
     edgeFromBlock->setEdgeWeights(block->bbWeight, block->bbWeight, block->GetTarget());
 }

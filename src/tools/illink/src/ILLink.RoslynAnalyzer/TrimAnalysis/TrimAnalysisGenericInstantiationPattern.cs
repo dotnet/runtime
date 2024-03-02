@@ -48,7 +48,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
-				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode)) {
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
 				switch (GenericInstantiation) {
 				case INamedTypeSymbol type:
 					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, type);
