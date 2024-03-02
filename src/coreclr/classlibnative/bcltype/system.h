@@ -54,11 +54,7 @@ public:
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
 
-extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message);
-
-extern "C" void QCALLTYPE Environment_FailFastWithException(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception);
-
-extern "C" void QCALLTYPE Environment_FailFastWithExceptionAndSource(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception, QCall::StringHandleOnStack errorSource);
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception, QCall::StringHandleOnStack errorSource);
 
 // Returns the number of logical processors that can be used by managed code
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();

@@ -325,42 +325,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     GCPROTECT_END();
 }
 
-// Note: Do not merge this FCALL method with any other FailFast overloads.
-// Watson uses the managed FailFast method with one String for crash dump bucketization.
-extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    STRINGREF refMessage = message.Get();
-
-    // Call the actual worker to perform failfast
-    SystemNative::GenericFailFast(refMessage, NULL, mark, NULL);
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE Environment_FailFastWithException(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    STRINGREF refMessage = message.Get();
-    EXCEPTIONREF refException = (EXCEPTIONREF)exception.Get();
-
-    // Call the actual worker to perform failfast
-    SystemNative::GenericFailFast(refMessage, refException, mark, NULL);
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE Environment_FailFastWithExceptionAndSource(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception, QCall::StringHandleOnStack errorSource)
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception, QCall::StringHandleOnStack errorSource)
 {
     QCALL_CONTRACT;
 
