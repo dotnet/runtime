@@ -200,12 +200,11 @@ namespace System
                     uint hiRes = 0;
                     ulong remainder = bufNum.U2;
 
-                    if (remainder < den)
-                        goto DivOne64Bit;
+                    if (remainder >= den)
+                    {
+                        (hiRes, remainder) = X86.X86Base.DivRem(bufNum.U2, 0u, den);
+                    }
 
-                    (hiRes, remainder) = X86.X86Base.DivRem(bufNum.U2, 0u, den);
-
-                DivOne64Bit:
                     bufNum.U2 = hiRes;
                     (bufNum.Low64, remainder) = X86.X86Base.X64.DivRem(bufNum.Low64, remainder, (ulong)den);
                     return (uint)remainder;
@@ -222,12 +221,14 @@ namespace System
                     remainder = bufNum.U1;
                     bufNum.U1 = 0;
                     goto Div1Word;
-
-                Div3Word:
-                    (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, 0, den);
-                Div2Word:
+Div3Word:
+                    if (bufNum.U2 < den)
+                        (bufNum.U2, remainder) = (0, bufNum.U2);
+                    else
+                        (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
+Div2Word:
                     (bufNum.U1, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
-                Div1Word:
+Div1Word:
                     (bufNum.U0, remainder) = X86.X86Base.DivRem(bufNum.U0, remainder, den);
                     return remainder;
                 }
@@ -815,13 +816,28 @@ ThrowOverflow:
                 // We have overflown, so load the high bit with a one.
                 const ulong highbit = 1UL << 32;
                 bufQuo.U2 = (uint)(highbit / 10);
-                ulong tmp = ((highbit % 10) << 32) + bufQuo.U1;
-                uint div = (uint)(tmp / 10);
-                bufQuo.U1 = div;
-                tmp = ((tmp - div * 10) << 32) + bufQuo.U0;
-                div = (uint)(tmp / 10);
-                bufQuo.U0 = div;
-                uint remainder = (uint)(tmp - div * 10);
+
+                uint remainder;
+#if TARGET_32BIT
+                if (X86.X86Base.IsSupported)
+                {
+                    // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal.
+                    // Do "32bit" divides instead of calling full 64bit helper
+                    (bufQuo.U1, remainder) = X86.X86Base.DivRem(bufQuo.U1, (uint)(highbit % 10), 10);
+                    (bufQuo.U0, remainder) = X86.X86Base.DivRem(bufQuo.U0, remainder, 10);
+                }
+                else
+#endif
+                {
+                    ulong tmp = ((highbit % 10) << 32) + bufQuo.U1;
+                    uint div = (uint)(tmp / 10);
+                    bufQuo.U1 = div;
+                    tmp = ((tmp - div * 10) << 32) + bufQuo.U0;
+                    div = (uint)(tmp / 10);
+                    bufQuo.U0 = div;
+                    remainder = (uint)(tmp - div * 10);
+                }
+
                 // The remainder is the last digit that does not fit, so we can use it to work out if we need to round up
                 if (remainder > 5 || remainder == 5 && (sticky || (bufQuo.U0 & 1) != 0))
                     Add32To96(ref bufQuo, 1);
@@ -1537,7 +1553,7 @@ ThrowOverflow:
                 // Check for leading zero uints on the product
                 //
                 uint* product = (uint*)&bufProd;
-                while (product[(int)hiProd] == 0)
+                while (product[hiProd] == 0)
                 {
                     if (hiProd == 0)
                         goto ReturnZero;
@@ -2017,9 +2033,20 @@ ReturnZero:
                             goto ThrowOverflow;
 
                         ulong num = Math.BigMul(remainder, power);
-                        // TODO: https://github.com/dotnet/runtime/issues/5213
-                        uint div = (uint)(num / den);
-                        remainder = (uint)num - div * den;
+                        uint div;
+#if TARGET_32BIT
+                        if (X86.X86Base.IsSupported)
+                        {
+                            (div, remainder) = X86.X86Base.DivRem((uint)num, (uint)(num >> 32), den);
+                        }
+                        else
+#endif
+                        {
+                            // Do full 64bit divide and cast result to 32bit
+                            var divRes = X86.X86Base.X64.IsSupported ? X86.X86Base.X64.DivRem(num, 0, (ulong)den) : Math.DivRem(num, den);
+                            div = (uint)divRes.Quotient;
+                            remainder = (uint)divRes.Remainder;
+                        }
 
                         if (!Add32To96(ref bufQuo, div))
                         {
@@ -2057,6 +2084,7 @@ ReturnZero:
                         // Have a 64-bit divisor in sdlDivisor.  The remainder
                         // (currently 96 bits spread over 4 uints) will be < divisor.
                         //
+                        bufQuo.U2 = 0;
                         bufQuo.Low64 = Div128By64(&bufRem, divisor);
                         while (true)
                         {
