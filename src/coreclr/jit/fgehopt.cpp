@@ -32,10 +32,8 @@
 //
 PhaseStatus Compiler::fgRemoveEmptyFinally()
 {
-#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
-#endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
     assert(fgPredsComputed);
@@ -271,10 +269,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 {
     JITDUMP("\n*************** In fgRemoveEmptyTry()\n");
 
-#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
-#endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
     assert(fgPredsComputed);
@@ -527,21 +523,24 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 }
             }
 
-#if !defined(FEATURE_EH_FUNCLETS)
-            // If we're in a non-funclet model, decrement the nesting
-            // level of any GT_END_LFIN we find in the handler region,
-            // since we're removing the enclosing handler.
-            for (Statement* const stmt : block->Statements())
+#if defined(FEATURE_EH_X86_FRAMES)
+            if (!UsesFunclets())
             {
-                GenTree* expr = stmt->GetRootNode();
-                if (expr->gtOper == GT_END_LFIN)
+                // If we're in a non-funclet model, decrement the nesting
+                // level of any GT_END_LFIN we find in the handler region,
+                // since we're removing the enclosing handler.
+                for (Statement* const stmt : block->Statements())
                 {
-                    const size_t nestLevel = expr->AsVal()->gtVal1;
-                    assert(nestLevel > 0);
-                    expr->AsVal()->gtVal1 = nestLevel - 1;
+                    GenTree* expr = stmt->GetRootNode();
+                    if (expr->gtOper == GT_END_LFIN)
+                    {
+                        const size_t nestLevel = expr->AsVal()->gtVal1;
+                        assert(nestLevel > 0);
+                        expr->AsVal()->gtVal1 = nestLevel - 1;
+                    }
                 }
             }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_X86_FRAMES
         }
 
         // (6) Remove the try-finally EH region. This will compact the
@@ -605,10 +604,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 //
 PhaseStatus Compiler::fgCloneFinally()
 {
-#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
-#endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
     assert(fgPredsComputed);
@@ -1455,27 +1452,30 @@ void Compiler::fgDebugCheckTryFinallyExits()
 //
 void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 {
-#if !defined(FEATURE_EH_FUNCLETS)
-    // The continuation may be a finalStep block.
-    // It is now a normal block, so clear the special keep
-    // always flag.
-    continuation->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
-
-    // Remove the GT_END_LFIN from the continuation,
-    // Note we only expect to see one such statement.
-    bool foundEndLFin = false;
-    for (Statement* const stmt : continuation->Statements())
+#if defined(FEATURE_EH_X86_FRAMES)
+    if (!UsesFunclets())
     {
-        GenTree* expr = stmt->GetRootNode();
-        if (expr->gtOper == GT_END_LFIN)
+        // The continuation may be a finalStep block.
+        // It is now a normal block, so clear the special keep
+        // always flag.
+        continuation->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
+
+        // Remove the GT_END_LFIN from the continuation,
+        // Note we only expect to see one such statement.
+        bool foundEndLFin = false;
+        for (Statement* const stmt : continuation->Statements())
         {
-            assert(!foundEndLFin);
-            fgRemoveStmt(continuation, stmt);
-            foundEndLFin = true;
+            GenTree* expr = stmt->GetRootNode();
+            if (expr->gtOper == GT_END_LFIN)
+            {
+                assert(!foundEndLFin);
+                fgRemoveStmt(continuation, stmt);
+                foundEndLFin = true;
+            }
         }
+        assert(foundEndLFin);
     }
-    assert(foundEndLFin);
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_X86_FRAMES
 }
 
 //------------------------------------------------------------------------
@@ -1493,10 +1493,8 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 //
 PhaseStatus Compiler::fgMergeFinallyChains()
 {
-#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
-#endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
     assert(fgPredsComputed);
@@ -1521,14 +1519,17 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
     bool enableMergeFinallyChains = true;
 
-#if !defined(FEATURE_EH_FUNCLETS)
-    // For non-funclet models (x86) the callfinallys may contain
-    // statements and the continuations contain GT_END_LFINs.  So no
-    // merging is possible until the GT_END_LFIN blocks can be merged
-    // and merging is not safe unless the callfinally blocks are split.
-    JITDUMP("EH using non-funclet model; merging not yet implemented.\n");
-    enableMergeFinallyChains = false;
-#endif // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_X86_FRAMES)
+    if (!UsesFunclets())
+    {
+        // For non-funclet models (x86) the callfinallys may contain
+        // statements and the continuations contain GT_END_LFINs.  So no
+        // merging is possible until the GT_END_LFIN blocks can be merged
+        // and merging is not safe unless the callfinally blocks are split.
+        JITDUMP("EH using non-funclet model; merging not yet implemented.\n");
+        enableMergeFinallyChains = false;
+    }
+#endif // FEATURE_EH_X86_FRAMES
 
 #if !FEATURE_EH_CALLFINALLY_THUNKS
     // For non-thunk EH models (x86) the callfinallys may contain

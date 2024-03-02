@@ -538,9 +538,9 @@ inline bool OperIsControlFlow(genTreeOps oper)
 
         case GT_RETURN:
         case GT_RETFILT:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_X86_FRAMES)
         case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_X86_FRAMES
             return true;
 
         default:

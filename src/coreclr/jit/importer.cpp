@@ -4341,9 +4341,9 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
 //   After this function, the BBJ_LEAVE block has been converted to a different type.
 //
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_X86_FRAMES)
 
-void Compiler::impImportLeave(BasicBlock* block)
+void Compiler::impImportLeaveEHRegions(BasicBlock* block)
 {
 #ifdef DEBUG
     if (verbose)
@@ -4626,10 +4626,17 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // DEBUG
 }
 
-#else // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_X86_FRAMES
 
 void Compiler::impImportLeave(BasicBlock* block)
 {
+#if defined(FEATURE_EH_X86_FRAMES)
+    if (!UsesFunclets())
+    {
+        return impImportLeaveEHRegions(block);
+    }
+#endif
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -5083,15 +5090,12 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // DEBUG
 }
 
-#endif // FEATURE_EH_FUNCLETS
-
 /*****************************************************************************/
 // This is called when reimporting a leave block. It resets the JumpKind,
 // JumpDest, and bbNext to the original values
 
 void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 {
-#if defined(FEATURE_EH_FUNCLETS)
     // With EH Funclets, while importing leave opcode we create another block ending with BBJ_ALWAYS (call it B1)
     // and the block containing leave (say B0) is marked as BBJ_CALLFINALLY.   Say for some reason we reimport B0,
     // it is reset (in this routine) by marking as ending with BBJ_LEAVE and further down when B0 is reimported, we
@@ -5114,7 +5118,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // work around this we will duplicate B0 (call it B0Dup) before resetting. B0Dup is marked as BBJ_CALLFINALLY and
     // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
     // will be treated as pair and handled correctly.
-    if (block->KindIs(BBJ_CALLFINALLY))
+    if (UsesFunclets() && block->KindIs(BBJ_CALLFINALLY))
     {
         BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
@@ -5144,7 +5148,6 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         }
 #endif
     }
-#endif // FEATURE_EH_FUNCLETS
 
     fgInitBBLookup();
 
