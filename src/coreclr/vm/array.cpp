@@ -1217,7 +1217,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
 
     // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute
     // "Object" for reference-type theT's. This causes fewer methods to be instantiated.
-    if (inheritanceDepth != 1 && !theT.IsValueType())
+    if (inheritanceDepth != 0 && !theT.IsValueType())
     {
         theT = TypeHandle(g_pObjectClass);
     }
