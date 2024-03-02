@@ -5614,6 +5614,16 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public bool Equals(System.TimeSpan obj) { throw null; }
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
+        public static System.TimeSpan FromDays(int days) { throw null; }
+        public static System.TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromHours(int hours) { throw null; }
+        public static System.TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
