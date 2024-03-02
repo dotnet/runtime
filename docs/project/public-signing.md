@@ -17,7 +17,7 @@ Known issues when debugging and testing public signed assemblies on .NET Framewo
 - You will not be able to load the assembly in an AppDomain where shadow copying is turned on.
 - You will not be able to load the assembly in a partially trusted AppDomain
 - You will not be able to pre-compile ASP.NET applications
-- You may not be able to load the assembly if the `app.config` file specifies `<configuration`/`<runtime>`/`<NetFx40_LegacySecurityPolicy enabled="true" />`
+- You may not be able to load the assembly if the `app.config` file specifies `<configuration>`/`<runtime>`/`<NetFx40_LegacySecurityPolicy enabled="true" />`
 
 The `corflags.exe` tool that ships with the .NET Framework SDK can show whether a binary is delay-signed or strong-named. For a delay-signed assembly it may show:
 
