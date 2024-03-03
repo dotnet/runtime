@@ -1145,6 +1145,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+            elemsize = id->idOpSize();
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(elemsize == EA_SCALABLE);
+            assert(isValidUimm4From1(emitGetInsSC(id)));
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             assert(isPredicateRegister(id->idReg1())); // DDDD
             assert(isVectorRegister(id->idReg2()));    // nnnnn
@@ -16513,7 +16521,12 @@ void emitter::emitIns_R_PATTERN(
  *  Add an instruction referencing a register, a SVE Pattern and an immediate.
  */
 
-void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm)
+void emitter::emitIns_R_PATTERN_I(instruction   ins,
+                                  emitAttr      attr,
+                                  regNumber     reg1,
+                                  insSvePattern pattern,
+                                  ssize_t       imm,
+                                  insOpts       opt /* = INS_OPTS_NONE */)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -16526,20 +16539,37 @@ void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1
         case INS_sve_cntd:
         case INS_sve_cnth:
         case INS_sve_cntw:
+            assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1)); // ddddd
             assert(isValidUimm4From1(imm));  // iiii
             assert(size == EA_8BYTE);
             fmt = IF_SVE_BL_1A;
             break;
 
-        case INS_sve_incb:
         case INS_sve_incd:
         case INS_sve_inch:
         case INS_sve_incw:
-        case INS_sve_decb:
         case INS_sve_decd:
         case INS_sve_dech:
         case INS_sve_decw:
+            assert(isValidUimm4From1(imm)); // iiii
+
+            if (insOptsNone(opt))
+            {
+                assert(isGeneralRegister(reg1)); // ddddd
+                assert(size == EA_8BYTE);
+                fmt = IF_SVE_BM_1A;
+            }
+            else
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isVectorRegister(reg1)); // ddddd
+                fmt = IF_SVE_BN_1A;
+            }
+            break;
+
+        case INS_sve_incb:
+        case INS_sve_decb:
             assert(isGeneralRegister(reg1)); // ddddd
             assert(isValidUimm4From1(imm));  // iiii
             assert(size == EA_8BYTE);
@@ -16557,6 +16587,7 @@ void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idInsOpt(opt);
 
     id->idReg1(reg1);
     id->idSvePattern(pattern);
@@ -24325,6 +24356,15 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
+            code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
@@ -28500,11 +28540,27 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg3(), size, false);             // mmmmm
             break;
 
+        // <Xd>{, <pattern>{, MUL #<imm>}}
+        // <Xdn>{, <pattern>{, MUL #<imm>}}
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
         case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             imm = emitGetInsSC(id);
             emitDispReg(id->idReg1(), size, true);             // ddddd
             emitDispSvePattern(id->idSvePattern(), (imm > 1)); // ppppp
+            if (imm > 1)
+            {
+                printf("mul ");
+                emitDispImm(emitGetInsSC(id), false, false); // iiii
+            }
+            break;
+
+        // <Zdn>.D{, <pattern>{, MUL #<imm>}}
+        // <Zdn>.H{, <pattern>{, MUL #<imm>}}
+        // <Zdn>.S{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSvePattern(id->idSvePattern(), (imm > 1));  // ppppp
             if (imm > 1)
             {
                 printf("mul ");
@@ -32472,6 +32528,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
         case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

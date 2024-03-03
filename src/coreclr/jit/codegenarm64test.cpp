@@ -5858,6 +5858,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_PATTERN_I(INS_sve_incw, EA_8BYTE, REG_R7, SVE_PATTERN_ALL,
                                     16); // INCW <Xdn>{, <pattern>{, MUL #<imm>}}
 
+    // IF_SVE_BN_1A
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_decd, EA_SCALABLE, REG_V0, SVE_PATTERN_POW2, 1,
+                                    INS_OPTS_SCALABLE_D); // DECD <Zdn>.D{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_dech, EA_SCALABLE, REG_V1, SVE_PATTERN_VL2, 2,
+                                    INS_OPTS_SCALABLE_H); // DECH <Zdn>.H{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_decw, EA_SCALABLE, REG_V2, SVE_PATTERN_VL3, 4,
+                                    INS_OPTS_SCALABLE_S); // DECW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_incd, EA_SCALABLE, REG_V3, SVE_PATTERN_VL4, 8,
+                                    INS_OPTS_SCALABLE_D); // INCD <Zdn>.D{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_inch, EA_SCALABLE, REG_V4, SVE_PATTERN_VL5, 12,
+                                    INS_OPTS_SCALABLE_H); // INCH <Zdn>.H{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_incw, EA_SCALABLE, REG_V5, SVE_PATTERN_VL6, 16,
+                                    INS_OPTS_SCALABLE_S); // INCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
                               INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>

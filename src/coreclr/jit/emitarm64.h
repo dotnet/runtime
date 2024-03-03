@@ -1606,7 +1606,8 @@ void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, ssiz
 void emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
 
-void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm);
+void emitIns_R_PATTERN_I(
+    instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_PRFOP_R_R_R(instruction     ins,
                          emitAttr        attr,
