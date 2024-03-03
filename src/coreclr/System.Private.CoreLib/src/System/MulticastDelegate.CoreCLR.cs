@@ -496,7 +496,7 @@ namespace System
 
         protected override MethodInfo GetMethodImpl()
         {
-            if (s_methodCache.TryGetValue(this, out object? cachedValue) && cachedValue is MethodInfo methodInfo)
+            if (Cache.s_methodCache.TryGetValue(this, out object? cachedValue) && cachedValue is MethodInfo methodInfo)
             {
                 return methodInfo;
             }

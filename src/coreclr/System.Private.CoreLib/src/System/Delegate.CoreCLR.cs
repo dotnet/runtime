@@ -14,11 +14,6 @@ namespace System
     [ComVisible(true)]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-        // Caches MethodInfos, added either after first request or assigned from a DynamicMethod
-        // For open delegates to collectible types, this may contain a LoaderAllocator object
-        // that prevents the type from being unloaded.
-        internal static readonly ConditionalWeakTable<Delegate, object?> s_methodCache = new();
-
         // _target is the object we will invoke on
         internal object? _target; // Initialized by VM as needed; null if static delegate
 
@@ -131,8 +126,8 @@ namespace System
 
             // method ptrs don't match, go down long path
             //
-            if (s_methodCache.TryGetValue(this, out object? thisCache) && thisCache is MethodInfo thisMethod &&
-                s_methodCache.TryGetValue(d, out object? otherCache) && otherCache is MethodInfo otherMethod)
+            if (Cache.s_methodCache.TryGetValue(this, out object? thisCache) && thisCache is MethodInfo thisMethod &&
+                Cache.s_methodCache.TryGetValue(d, out object? otherCache) && otherCache is MethodInfo otherMethod)
                 return thisMethod.Equals(otherMethod);
             return InternalEqualMethodHandles(this, d);
         }
@@ -157,7 +152,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if (s_methodCache.TryGetValue(this, out object? cachedValue) && cachedValue is MethodInfo methodInfo)
+            if (Cache.s_methodCache.TryGetValue(this, out object? cachedValue) && cachedValue is MethodInfo methodInfo)
             {
                 return methodInfo;
             }
@@ -221,7 +216,7 @@ namespace System
         // this is called by the VM in addition to calls from managed code
         internal void SetCachedMethod(object? value)
         {
-            s_methodCache.AddOrUpdate(this, value);
+            Cache.s_methodCache.AddOrUpdate(this, value);
         }
 
         public object? Target => GetTarget();
@@ -533,6 +528,14 @@ namespace System
         internal virtual object? GetTarget()
         {
             return (_methodPtrAux == IntPtr.Zero) ? _target : null;
+        }
+
+        // Caches MethodInfos, added either after first request or assigned from a DynamicMethod
+        // For open delegates to collectible types, this may contain a LoaderAllocator object
+        // that prevents the type from being unloaded.
+        internal static class Cache
+        {
+            public static readonly ConditionalWeakTable<Delegate, object?> s_methodCache = new();
         }
     }
 
