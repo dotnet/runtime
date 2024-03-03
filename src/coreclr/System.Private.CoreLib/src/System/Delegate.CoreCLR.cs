@@ -218,6 +218,7 @@ namespace System
             return methodInfo;
         }
 
+        // this is called by the VM in addition to calls from managed code
         internal void SetCachedMethod(object? value)
         {
             s_methodCache.AddOrUpdate(this, value);
