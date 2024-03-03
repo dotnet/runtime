@@ -161,7 +161,7 @@ namespace System.Runtime.InteropServices.Tests
 
             if (PlatformDetection.IsPreciseGcSupported)
             {
-                while (handle.Target != null)
+                while (IsNullTarget(handle))
                 {
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
@@ -176,6 +176,12 @@ namespace System.Runtime.InteropServices.Tests
                 GCHandle gcHandle = default;
                 gcHandle = GCHandle.Alloc(new FreachableObject(), GCHandleType.WeakTrackResurrection);
                 return gcHandle;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool IsNullTarget(GCHandle handle)
+            {
+                return handle.Target is null;
             }
         }
 
