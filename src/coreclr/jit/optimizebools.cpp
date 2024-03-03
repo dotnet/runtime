@@ -1802,9 +1802,15 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
     intBoolOpDsc->lclVarArrLength = 0;
     intBoolOpDsc->start           = nullptr;
     intBoolOpDsc->end             = nullptr;
-    int orOpCount                 = 0;
+    int orOpCount                 = 1;
 
     GenTree* b4 = b3->gtPrev;
+
+    while (b4 != nullptr && !b4->OperIs(GT_OR))
+    {
+        b4 = b4->gtPrev;
+    }
+
     while (b4 != nullptr)
     {
         if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
@@ -1897,16 +1903,20 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
                 break;
             }
             case GT_OR:
-                if (b4->gtPrev != nullptr && b4->gtPrev->OperIs(GT_CNS_INT, GT_LCL_VAR))
+                if (orOpCount <= 0)
                 {
-                    orOpCount++;
-
-                    if (b4->gtPrev->gtPrev != nullptr && b4->gtPrev->gtPrev->OperIs(GT_CNS_INT, GT_LCL_VAR))
+                    if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
                     {
-                        orOpCount++;
+                        intBoolOpDsc->end = b4;
+                        return intBoolOpDsc;
                     }
+
+                    ReinitIntBoolOpDsc(intBoolOpDsc);
+                    orOpCount           = 1;
+                    intBoolOpDsc->start = b4->gtNext;
                 }
 
+                orOpCount++;
                 break;
             default:
             {
@@ -1979,45 +1989,54 @@ void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc* intBoolOpDsc)
     {
         intBoolOpDsc->start->AsOp()->gtOp2 = optimizedTree;
     }
-    else if (intBoolOpDsc->start->gtNext != nullptr)
+    else if (intBoolOpDsc->start->gtNext != nullptr && intBoolOpDsc->start->gtNext->OperIsBinary())
     {
-        if (intBoolOpDsc->start->gtNext->OperIsBinary())
+        intBoolOpDsc->start->gtNext->AsOp()->gtOp1 = optimizedTree;
+    }
+    else
+    {
+        GenTree* functionCallCandidate  = intBoolOpDsc->start;
+        bool     parameterAssigningDone = false;
+        while (functionCallCandidate != nullptr && !parameterAssigningDone)
         {
-            intBoolOpDsc->start->gtNext->AsOp()->gtOp1 = optimizedTree;
-        }
-        else if (intBoolOpDsc->start->gtNext->OperIs(GT_CALL))
-        {
-            GenTreeCall*                        call        = intBoolOpDsc->start->gtNext->AsCall();
-            IteratorPair<CallArgs::ArgIterator> args        = call->gtArgs.Args();
-            CallArgs::ArgIterator               nextArg     = args.begin();
-            CallArg*                            nextCallArg = nextArg.GetArg();
+            if (functionCallCandidate->OperIs(GT_CALL))
+            {
+                GenTreeCall*                        call        = functionCallCandidate->AsCall();
+                IteratorPair<CallArgs::ArgIterator> args        = call->gtArgs.Args();
+                CallArgs::ArgIterator               nextArg     = args.begin();
+                CallArg*                            nextCallArg = nextArg.GetArg();
 
-            if (nextCallArg->GetNode()->gtNext == intBoolOpDsc->start)
-            {
-                nextCallArg->SetLateNode(optimizedTree);
-            }
-            else
-            {
-                nextArg     = nextArg.operator++();
-                nextCallArg = nextArg.GetArg();
-                while (nextCallArg != nullptr)
+                if (nextCallArg->GetNode()->gtNext == intBoolOpDsc->start)
                 {
-                    if (nextCallArg->GetNode()->gtNext == intBoolOpDsc->start)
-                    {
-                        nextCallArg->SetLateNode(optimizedTree);
-                        break;
-                    }
-
+                    nextCallArg->SetLateNode(optimizedTree);
+                    parameterAssigningDone = true;
+                }
+                else
+                {
                     nextArg     = nextArg.operator++();
                     nextCallArg = nextArg.GetArg();
+                    while (nextCallArg != nullptr)
+                    {
+                        if (nextCallArg->GetNode()->gtNext == intBoolOpDsc->start)
+                        {
+                            nextCallArg->SetLateNode(optimizedTree);
+                            parameterAssigningDone = true;
+                            break;
+                        }
+
+                        nextArg     = nextArg.operator++();
+                        nextCallArg = nextArg.GetArg();
+                    }
                 }
             }
+
+            functionCallCandidate = functionCallCandidate->gtNext;
         }
     }
 }
 
 //-----------------------------------------------------------------------------
-// OptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and fold them
+// TryOptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and if found, folds them
 //
 // Arguments:
 //      compiler        compiler reference
