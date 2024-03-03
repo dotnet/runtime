@@ -165,7 +165,7 @@ namespace System
             return GetMethodImplUncached();
         }
 
-        private MethodInfo GetMethodImplUncached()
+        internal MethodInfo GetMethodImplUncached()
         {
             IRuntimeMethodInfo method = FindMethodHandle();
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
