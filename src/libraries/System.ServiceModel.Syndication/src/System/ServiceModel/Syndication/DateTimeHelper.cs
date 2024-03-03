@@ -96,12 +96,12 @@ namespace System.ServiceModel.Syndication
                 "d MMMM yyyy HH:mm:ss zzz",
                 "ddd, d MMM yyyy HH:mm:ss zzz",
                 "d MMM yyyy HH:mm:ss zzz",
-                
+
                 "ddd, d MMMM yyyy HH:mm zzz",
                 "d MMMM yyyy HH:mm zzz",
                 "ddd, d MMM yyyy HH:mm zzz",
                 "d MMM yyyy HH:mm zzz",
-                
+
                 // The original RFC822 spec listed 2 digit years. RFC1123 updated the format to include 4 digit years and states that you should use 4 digits.
                 // Technically RSS2.0 specifies RFC822 but it's presumed that RFC1123 will be used as we're now past Y2K and everyone knows better. The 4 digit
                 // formats are listed first for performance reasons as it's presumed they will be more likely to match first.
@@ -109,7 +109,7 @@ namespace System.ServiceModel.Syndication
                 "d MMMM yy HH:mm:ss zzz",
                 "ddd, d MMM yy HH:mm:ss zzz",
                 "d MMM yy HH:mm:ss zzz",
-                
+
                 "ddd, d MMMM yy HH:mm zzz",
                 "d MMMM yy HH:mm zzz",
                 "ddd, d MMM yy HH:mm zzz",
