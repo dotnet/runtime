@@ -486,7 +486,7 @@ Div1Word:
                 ulong prodL = ((ulong)al) * bl;
                 ulong prodH = ((ulong)ah) * bl + (prodL >> 32);
 
-                low = (prodH << 32 | (uint)prodL);
+                low = ((prodH << 32) | (uint)prodL);
                 return (nuint)(prodH >> 32);
 #endif
             }
