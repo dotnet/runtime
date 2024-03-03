@@ -69,14 +69,51 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            if (options.HandshakeTimeout != Timeout.InfiniteTimeSpan && options.HandshakeTimeout != TimeSpan.Zero)
-            {
-                linkedCts.CancelAfter(options.HandshakeTimeout);
-            }
-
             try
             {
-                await connection.FinishConnectAsync(options, linkedCts.Token).ConfigureAwait(false);
+                if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
+                {
+                    throw new ArgumentException(SR.Format(SR.net_quic_unsupported_endpoint_type, options.RemoteEndPoint.GetType()), nameof(options));
+                }
+
+                if (address is not null && host is null)
+                {
+                    if (options.HandshakeTimeout != Timeout.InfiniteTimeSpan && options.HandshakeTimeout != TimeSpan.Zero)
+                    {
+                        linkedCts.CancelAfter(options.HandshakeTimeout);
+                    }
+
+                    await connection.FinishConnectAsync(options, null, address, port, linkedCts.Token).ConfigureAwait(false);
+                    return connection;
+                }
+
+                Debug.Assert(host is not null);
+                IPAddress[] addresses = await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (addresses.Length == 0)
+                {
+                    throw new SocketException((int)SocketError.HostNotFound);
+                }
+
+                ExceptionDispatchInfo? lastException = null;
+
+                foreach (IPAddress addr in addresses)
+                {
+                    connection = new QuicConnection();
+                    try
+                    {
+                        await connection.FinishConnectAsync(options, host, addr, port, linkedCts.Token).ConfigureAwait(false);
+                        lastException = null;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastException = ExceptionDispatchInfo.Capture(ex);
+                        await connection.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+
+                lastException?.Throw();
             }
             catch (OperationCanceledException)
             {
@@ -289,35 +326,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
 #endif
     }
 
-    private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
+    private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, string? host, IPAddress address, int port, CancellationToken cancellationToken = default)
     {
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
-
-            if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
-            {
-                throw new ArgumentException(SR.Format(SR.net_quic_unsupported_endpoint_type, options.RemoteEndPoint.GetType()), nameof(options));
-            }
-
-            if (address is null)
-            {
-                Debug.Assert(host is not null);
-
-                // Given just a ServerName to connect to, msquic would also use the first address after the resolution
-                // (https://github.com/microsoft/msquic/issues/1181) and it would not return a well-known error code
-                // for resolution failures we could rely on. By doing the resolution in managed code, we can guarantee
-                // that a SocketException will surface to the user if the name resolution fails.
-                IPAddress[] addresses = await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (addresses.Length == 0)
-                {
-                    throw new SocketException((int)SocketError.HostNotFound);
-                }
-                address = addresses[0];
-            }
 
             QuicAddr remoteQuicAddress = new IPEndPoint(address, port).ToQuicAddr();
             MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, remoteQuicAddress);
