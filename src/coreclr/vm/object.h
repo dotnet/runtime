@@ -2000,7 +2000,7 @@ public:
     void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
     static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
 
-    void SetMethodBase(OBJECTREF newMethodBase) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_methodBase, newMethodBase); }
+    void SetMethodBase(OBJECTREF newMethodBase);
 
     // README:
     // If you modify the order of these fields, make sure to update the definition in
@@ -2008,7 +2008,6 @@ public:
 private:
     // System.Delegate
     OBJECTREF   _target;
-    OBJECTREF   _methodBase;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
     // System.MulticastDelegate
@@ -2017,7 +2016,7 @@ private:
 };
 
 #define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 #ifdef USE_CHECKED_OBJECTREFS

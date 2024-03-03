@@ -2808,8 +2808,8 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     LoaderAllocator *pTargetMethodLoaderAllocator = pTargetMethod->GetLoaderAllocator();
     BOOL isCollectible = pTargetMethodLoaderAllocator->IsCollectible();
     // A method that may be instantiated over a collectible type, and is static will require a delegate
-    // that has the _methodBase field filled in with the LoaderAllocator of the collectible assembly
-    // associated with the instantiation.
+    // that has the LoaderAllocator of the collectible assembly associated with the instantiation
+    // stored in the MethodInfo cache.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
     // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.

@@ -138,7 +138,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
 
 
 
-#define           OFFSETOF__DelegateObject___methodPtr      0x18
+#define           OFFSETOF__DelegateObject___methodPtr      0x10
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
 
 #define           OFFSETOF__DelegateObject___target         0x08
@@ -680,13 +680,13 @@ template<size_t N>
 class FindCompileTimeConstant
 {
 private:
-	FindCompileTimeConstant();
+    FindCompileTimeConstant();
 };
 
 void BogusFunction()
 {
-	// Sample usage to generate the error
-	FindCompileTimeConstant<offsetof(Thread, m_pDomain)> bogus_variable;
-	FindCompileTimeConstant<offsetof(Thread, m_ExceptionState)> bogus_variable2;
+    // Sample usage to generate the error
+    FindCompileTimeConstant<offsetof(Thread, m_pDomain)> bogus_variable;
+    FindCompileTimeConstant<offsetof(Thread, m_ExceptionState)> bogus_variable2;
 }
 #endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

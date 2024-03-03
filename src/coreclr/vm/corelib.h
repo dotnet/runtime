@@ -249,7 +249,6 @@ DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,              
 
 DEFINE_CLASS_U(System,                 Delegate,            NoClass)
 DEFINE_FIELD_U(_target,                    DelegateObject,   _target)
-DEFINE_FIELD_U(_methodBase,                DelegateObject,   _methodBase)
 DEFINE_FIELD_U(_methodPtr,                 DelegateObject,   _methodPtr)
 DEFINE_FIELD_U(_methodPtrAux,              DelegateObject,   _methodPtrAux)
 DEFINE_CLASS(DELEGATE,              System,                 Delegate)
@@ -258,6 +257,7 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR,             _methodPtr)
 DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
+DEFINE_METHOD(DELEGATE,             SET_CACHED_METHOD,      SetCachedMethod,            IM_Obj_RetVoid)
 
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)

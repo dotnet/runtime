@@ -129,7 +129,7 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, capture
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
 
-#define DelegateObject___methodPtr      0x18
+#define DelegateObject___methodPtr      0x10
 ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr == offsetof(DelegateObject, _methodPtr));
 
 #define DelegateObject___target         0x08
