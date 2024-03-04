@@ -761,9 +761,11 @@ void CodeGen::genCodeForBBlist()
                 GenTree* call = block->lastNode();
                 if ((call != nullptr) && (call->gtOper == GT_CALL))
                 {
-                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
+                        ((call->AsCall()->gtCallType == CT_HELPER) &&
+                         Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
                     {
-                        assert(!"Unexpected fallthrough after GTF_CALL_M_DOES_NOT_RETURN");
+                        assert(!"Unexpected fallthrough after a throwing call");
                     }
                 }
 #endif
