@@ -12,7 +12,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
   )
-
+set(Mono 1)
 if(HOST_DARWIN)
   set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
