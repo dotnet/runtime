@@ -456,7 +456,7 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
+        private uint OffsetOfDelegateFirstTarget => (uint)(2 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
@@ -2114,7 +2114,7 @@ namespace Internal.JitInterface
                 // of shared generic code calling a shared generic implementation method, which should be rare.
                 //
                 // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
-                // of the constrained target instead, and use that in some circumstances; however, implementation of 
+                // of the constrained target instead, and use that in some circumstances; however, implementation of
                 // that design requires refactoring variuos parts of the JIT interface as well as
                 // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
                 // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
