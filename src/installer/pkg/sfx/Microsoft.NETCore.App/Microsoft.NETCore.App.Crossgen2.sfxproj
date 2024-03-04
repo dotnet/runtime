@@ -7,7 +7,7 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
-    <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
+    <OverridePackageId>$(SharedFrameworkName).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <GenerateInstallers>false</GenerateInstallers>
