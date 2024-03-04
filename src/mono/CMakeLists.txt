@@ -709,10 +709,10 @@ endif()
 
 ##
 
-if(NOT MONO_CROSS_COMPILE)
+#if(NOT MONO_CROSS_COMPILE)
     set(Mono 1)
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
-endif(NOT MONO_CROSS_COMPILE)
+    #add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
+#endif(NOT MONO_CROSS_COMPILE)
 ##
 
 ######################################
