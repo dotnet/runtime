@@ -757,7 +757,6 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
             {
-#if DEBUG
                 GenTree* call = block->lastNode();
                 if ((call != nullptr) && (call->gtOper == GT_CALL))
                 {
@@ -765,10 +764,13 @@ void CodeGen::genCodeForBBlist()
                         ((call->AsCall()->gtCallType == CT_HELPER) &&
                          Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
                     {
-                        assert(!"Unexpected fallthrough after a throwing call");
+                        // TODO: We should probably never see this in a BBJ_ALWAYS block in a first place.
+                        //       When/if that is fixed, this can be just an assert.
+                        //       For the reasons why we insert a BP, see similar code in "case BBJ_THROW:" above.
+                        instGen(INS_BREAKPOINT); // This should never get executed
                     }
                 }
-#endif
+
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
