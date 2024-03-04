@@ -74,20 +74,19 @@ namespace ILLink.RoslynAnalyzer
 		internal static ValueSet<string> GetFeatureCheckAnnotations (this IPropertySymbol propertySymbol)
 		{
 			HashSet<string> featureSet = new ();
-			foreach (var attributeData in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute)) {
-				if (attributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
+			foreach (var featureCheckAttribute in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute)) {
+				if (featureCheckAttribute.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
 					AddFeatures (featureType);
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
 
 			void AddFeatures (INamedTypeSymbol featureType) {
-				var featureName = featureType.GetDisplayName ();
-				if (!featureSet.Add (featureName))
+				if (!featureSet.Add (featureType.GetDisplayName ()))
 					return;
 
 				// Look at FeatureDependsOn attributes on the feature type.
-				foreach (var featureTypeAttributeData in featureType.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureDependsOnAttribute)) {
-					if (featureTypeAttributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
+				foreach (var featureDependsOnAttribute in featureType.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureDependsOnAttribute)) {
+					if (featureDependsOnAttribute.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
 						AddFeatures (featureTypeSymbol);
 				}
 			}

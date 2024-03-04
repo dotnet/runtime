@@ -19,10 +19,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Related: https://github.com/dotnet/runtime/issues/88647
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
 		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
-	// FeatureCheckAttribute is currently only supported by the analyzer.
-	// The same guard behavior is achieved for ILLink/ILCompiler using substitutions.
 	[SetupCompileResource ("FeatureCheckAttributeDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitch", "false")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies", "true")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.XmlWinsOverAttribute_NewFeatureSwitch", "false")]
+	// For analyzer, FeatureDependsOnAttribute influences the guard behavior.
+	// ILLink/ILCompiler don't infer feature settings from FeatureDependsOnAttribute, so the following need to be set via
+	// FeatureSwitchDefinition and the explicit feature settings instead.
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode", "false")]
 	public class FeatureCheckAttributeDataFlow
 	{
 		public static void Main ()
@@ -31,6 +36,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ValidGuardBodies.Test ();
 			InvalidGuardBodies.Test ();
 			InvalidFeatureChecks.Test ();
+			FeatureCheckPrecedence.Test ();
 		}
 
 		class DefineFeatureCheck {
@@ -68,6 +74,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
 			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
 			static class DynamicCodeAndUnreferencedCode {}
 
 			static void TestMultipleGuards ()
@@ -78,52 +85,89 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			static class DynamicCode1 {}
+			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
+			static class UnreferencedCode {}
 
-			[FeatureDependsOn (typeof (DynamicCode1))]
-			static class DynamicCode2 {}
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
+			[FeatureDependsOn (typeof (UnreferencedCode))]
+			static class UnreferencedCodeIndirect {
+				[FeatureCheck (typeof (UnreferencedCode))]
+				public static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
+			}
 
-			[FeatureCheck (typeof (DynamicCode2))]
-			static bool GuardDynamicCodeIndirect => RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureCheck (typeof (UnreferencedCodeIndirect))]
+			static bool GuardUnreferencedCodeIndirect => UnreferencedCodeIndirect.GuardUnreferencedCode;
 
 			static void TestIndirectGuard ()
 			{
-				if (GuardDynamicCodeIndirect)
-					RequiresDynamicCode ();
+				if (GuardUnreferencedCodeIndirect)
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			[FeatureDependsOn (typeof (DynamicCodeCycle))]
-			static class DynamicCodeCycle {}
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitch")]
+			static class FeatureWithSwitch {}
 
-			[FeatureCheck (typeof (DynamicCodeCycle))]
-			static bool GuardDynamicCodeCycle => RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureCheck (typeof (FeatureWithSwitch))]
+			static bool GuardWithSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitch", out bool isEnabled) && isEnabled;
 
-			[FeatureCheck (typeof (DynamicCodeCycle))]
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)] // Analyzer doesn't respect FeatureSwitchDefinition or feature settings
+			static void TestGuardWithSwitch ()
+			{
+				if (GuardWithSwitch)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies")]
+			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
+			static class UnreferencedCodeWithSwitchAndDependencies {}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof (UnreferencedCodeWithSwitchAndDependencies))]
+			static bool GuardUnreferencedCodeWithSwitchAndDependencies => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies", out bool isEnabled) && isEnabled;
+
+			// FeatureSwitchDefinition settings should win over FeatureDependsOn for ILLink/ILCompiler.
+			// Currently this is trivially the case because they don't respect FeatureDependsOn at all,
+			// but this test should have the same behavior even if that changes.
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestGuardWithSwitchAndDependencies ()
+			{
+				if (GuardUnreferencedCodeWithSwitchAndDependencies)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureDependsOn (typeof (UnreferencedCodeCycle))]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
+			static class UnreferencedCodeCycle {}
+
+			[FeatureCheck (typeof (UnreferencedCodeCycle))]
+			static bool GuardUnreferencedCodeCycle => TestFeatures.IsUnreferencedCodeSupported;
+
+			[FeatureCheck (typeof (UnreferencedCodeCycle))]
 			static void TestFeatureDependencyCycle1 ()
 			{
-				if (GuardDynamicCodeCycle)
-					RequiresDynamicCode ();
+				if (GuardUnreferencedCodeCycle)
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureDependsOn (typeof (DynamicCodeCycle2_B))]
-			static class DynamicCodeCycle2_A {}
+			[FeatureDependsOn (typeof (UnreferencedCodeCycle2_B))]
+			static class UnreferencedCodeCycle2_A {}
 
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			[FeatureDependsOn (typeof (DynamicCodeCycle2_A))]
-			static class DynamicCodeCycle2_B {}
+			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureDependsOn (typeof (UnreferencedCodeCycle2_A))]
+			static class UnreferencedCodeCycle2_B {}
 
-			[FeatureDependsOn (typeof (DynamicCodeCycle2_A))]
-			static class DynamicCodeCycle2 {}
+			[FeatureDependsOn (typeof (UnreferencedCodeCycle2_A))]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
+			static class UnreferencedCodeCycle2 {}
 
-			[FeatureCheck (typeof (DynamicCodeCycle2))]
-			static bool GuardDynamicCodeCycle2 => RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureCheck (typeof (UnreferencedCodeCycle2))]
+			static bool GuardUnreferencedCodeCycle2 => TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestFeatureDependencyCycle2 ()
 			{
-				if (GuardDynamicCodeCycle2)
-					RequiresDynamicCode ();
+				if (GuardUnreferencedCodeCycle2)
+					RequiresUnreferencedCode ();
 			}
 
 			public static void Test ()
@@ -133,6 +177,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestGuardAssemblyFiles ();
 				TestMultipleGuards ();
 				TestIndirectGuard ();
+				TestGuardWithSwitch ();
+				TestGuardWithSwitchAndDependencies ();
 				TestFeatureDependencyCycle1 ();
 				TestFeatureDependencyCycle2 ();
 			}
@@ -580,6 +626,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool SetOnlyProperty { set => throw null; }
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
+			static void TestSetOnlyProperty ()
+			{
+				if (SetOnlyProperty = true)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool GetAndSetProperty { get => true; set => throw null; }
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
+			static void TestGetAndSetProperty ()
+			{
+				if (GetAndSetProperty)
+					RequiresUnreferencedCode ();
+			}
+
 			// No warning for this case because we don't validate that the attribute usage matches
 			// the expected AttributeUsage.Property for assemblies that define their own version
 			// of FeatureCheckAttributes.
@@ -597,7 +664,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestNonBooleanProperty ();
 				TestNonStaticProperty ();
+				TestSetOnlyProperty ();
+				TestGetAndSetProperty ();
 				TestMethod ();
+			}
+		}
+
+		class FeatureCheckPrecedence {
+			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardXmlAndAttribute_ExistingFeatureSwitch => TestFeatures.IsUnreferencedCodeSupported;
+
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // XML substitutions win despite FeatureSwitchDefinition
+			static void TestXmlWinsOverAttribute_ExistingFeatureSwitch ()
+			{
+				if (GuardXmlAndAttribute_ExistingFeatureSwitch)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.XmlWinsOverAttribute_NewFeatureSwitch")]
+			static class UnreferencedCode_NewFeatureSwitch {}
+
+			[FeatureCheck (typeof (UnreferencedCode_NewFeatureSwitch))]
+			static bool GuardXmlAndAttribute_NewFeatureSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.XmlWinsOverAttribute_NewFeatureSwitch", out bool isEnabled) && isEnabled;
+
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)] // Expected warning from the analyzer
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // XML substitutions win despite FeatureSwitchDefinition
+			static void TestXmlWinsOverAttribute_NewFeatureSwitch () {
+				if (GuardXmlAndAttribute_NewFeatureSwitch)
+					RequiresUnreferencedCode ();
+			}
+
+			public static void Test () {
+				TestXmlWinsOverAttribute_ExistingFeatureSwitch ();
+				TestXmlWinsOverAttribute_NewFeatureSwitch ();
 			}
 		}
 

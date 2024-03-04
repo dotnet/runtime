@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Resources;
@@ -33,9 +34,92 @@ namespace ILCompiler
                 AssemblyFeatureInfo info = _hashtable.GetOrCreateValue(ecmaMethod.Module);
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
+
+                if (IsCheckForDisabledFeature(ecmaMethod))
+                    return BodySubstitution.Create(0);
             }
 
             return null;
+        }
+
+        private bool IsCheckForDisabledFeature(EcmaMethod method)
+        {
+            if (!method.Signature.IsStatic)
+                return false;
+
+            if (!method.Signature.ReturnType.IsWellKnownType(WellKnownType.Boolean))
+                return false;
+
+            if (FindProperty(method) is not PropertyPseudoDesc property)
+                return false;
+
+            if (property.SetMethod != null)
+                return false;
+
+            HashSet<EcmaType> featureSet = new();
+            foreach (var featureCheckAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureCheckAttribute"))
+            {
+                if (featureCheckAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
+                    continue;
+
+                if (IsFeatureDisabled(featureType))
+                    return true;
+            }
+
+            return false;
+
+            bool IsFeatureDisabled(EcmaType featureType) {
+                if (!featureSet.Add(featureType))
+                    return false;
+
+                if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
+                    switch (featureType.Name) {
+                    case "RequiresAssemblyFilesAttribute":
+                    case "RequiresUnreferencedCodeAttribute":
+                        return true;
+                    case "RequiresDynamicCodeAttribute":
+                        if (_hashtable._switchValues.TryGetValue(
+                                "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
+                                out bool isDynamicCodeSupported)
+                            && !isDynamicCodeSupported)
+                            return true;
+                        break;
+                    }
+                }
+
+                foreach (var featureSwitchDefinitionAttribute in featureType.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
+                {
+                    if (featureSwitchDefinitionAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: string switchName }])
+                        continue;
+
+                    if (_hashtable._switchValues.TryGetValue(switchName, out bool value) && !value)
+                        return true;
+
+                    return false;
+                }
+
+                return false;
+            }
+
+            static PropertyPseudoDesc FindProperty(EcmaMethod method)
+            {
+                if ((method.Attributes & MethodAttributes.SpecialName) == 0)
+                    return null;
+
+                if (method.OwningType is not EcmaType declaringType)
+                    return null;
+
+                var reader = declaringType.MetadataReader;
+                foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
+                {
+                    PropertyDefinition propertyDef = reader.GetPropertyDefinition(propertyHandle);
+                    var property = new PropertyPseudoDesc(declaringType, propertyHandle);
+                    if (property.GetMethod == method)
+                        return property;
+                }
+
+                return null;
+            }
         }
 
         public object GetSubstitution(FieldDesc field)
