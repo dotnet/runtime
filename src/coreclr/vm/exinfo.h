@@ -196,6 +196,13 @@ enum class ExKind : uint8_t
 
 struct PAL_SEHException;
 
+struct LastReportedFuncletInfo
+{
+    PCODE IP;
+    TADDR FP;
+    uint32_t Flags;
+};
+
 struct ExInfo : public ExceptionTrackerBase
 {
     ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind);
@@ -269,6 +276,8 @@ struct ExInfo : public ExceptionTrackerBase
     REGDISPLAY     m_regDisplay;
     // Initial explicit frame for stack walking
     Frame         *m_pInitialFrame;
+    // Info on the last reported funclet used to report references in the parent frame
+    LastReportedFuncletInfo m_lastReportedFunclet;
 
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);
