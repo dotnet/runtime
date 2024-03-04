@@ -79,7 +79,7 @@ namespace Internal.JitInterface
 
                 Debug.Assert(PointerSize == 8, "Swift interop is only supported on 64-bit platforms.");
 
-                if (fieldType.Category is TypeFlags.IntPtr or TypeFlags.UIntPtr || fieldType.IsPointer || fieldType.IsFunctionPointer)
+                if (fieldType.Category is TypeFlags.IntPtr or TypeFlags.UIntPtr or TypeFlags.Pointer or TypeFlags.FunctionPointer)
                 {
                     return LoweredType.Int64;
                 }
@@ -96,6 +96,9 @@ namespace Internal.JitInterface
 
             public List<CorInfoType> GetLoweredTypeSequence()
             {
+                // We need to track the sequence size to ensure we break up the opaque ranges
+                // into correctly-sized integers that do not require padding.
+                int loweredSequenceSize = 0;
                 List<CorInfoType> loweredTypes = new();
                 foreach (var interval in Intervals)
                 {
@@ -105,42 +108,69 @@ namespace Internal.JitInterface
                         continue;
 
                     if (interval.Tag == LoweredType.Float)
+                    {
                         loweredTypes.Add(CorInfoType.CORINFO_TYPE_FLOAT);
+                        loweredSequenceSize = loweredSequenceSize.AlignUp(4);
+                        loweredSequenceSize += 4;
+                    }
 
                     if (interval.Tag == LoweredType.Double)
+                    {
                         loweredTypes.Add(CorInfoType.CORINFO_TYPE_DOUBLE);
+                        loweredSequenceSize = loweredSequenceSize.AlignUp(8);
+                        loweredSequenceSize += 8;
+                    }
 
                     if (interval.Tag == LoweredType.Int64)
+                    {
                         loweredTypes.Add(CorInfoType.CORINFO_TYPE_LONG);
+                        loweredSequenceSize = loweredSequenceSize.AlignUp(8);
+                        loweredSequenceSize += 8;
+                    }
 
                     if (interval.Tag == LoweredType.Opaque)
                     {
                         // We need to split the opaque ranges into integer parameters.
-                        // As long as we need to fill more than 4 bytes, we'll split into 8-byte integers.
-                        // If we have more than 2 bytes but less than 4, we'll use a 4-byte integer to represent the rest of the parameters.
-                        // If we have 2 bytes, we'll use a 2-byte integer to represent the rest of the parameters.
+                        // As part of this splitting, we must ensure that we don't introduce alignment padding.
+                        // This lowering algorithm should produce a lowered type sequence that would have the same padding for
+                        // a naturally-aligned struct with the lowered fields as the original type has.
+                        // This algorithm intends to split the opaque range into the least number of lowered elements that covers the entire range.
+                        // The lowered range is allowed to extend past the end of the opaque range (including past the end of the struct),
+                        // but not into the next non-empty interval.
+                        // However, due to the properties of the lowering (the only non-8 byte elements of the lowering are 4-byte floats),
+                        // we'll never encounter a scneario where we need would need to account for a correctly-aligned
+                        // opaque range of > 4 bytes that we must not pad to 8 bytes.
+
+
+                        // As long as we need to fill more than 4 bytes and the sequence is currently 8-byte aligned, we'll split into 8-byte integers.
+                        // If we have more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
+                        // If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
                         // If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
-                        int intervalOffset = 0;
-                        while (interval.Size - intervalOffset > 4)
+                        int remainingIntervalSize = interval.Size;
+                        while (remainingIntervalSize > 4 && loweredSequenceSize == loweredSequenceSize.AlignUp(8))
                         {
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_LONG);
-                            intervalOffset += 8;
+                            loweredSequenceSize += 8;
+                            remainingIntervalSize -= 8;
                         }
 
-                        if (interval.Size - intervalOffset > 2)
+                        if (remainingIntervalSize > 2 && loweredSequenceSize == loweredSequenceSize.AlignUp(4))
                         {
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_INT);
-                            intervalOffset += 4;
+                            loweredSequenceSize += 4;
+                            remainingIntervalSize -= 4;
                         }
 
-                        if (interval.Size - intervalOffset > 1)
+                        if (remainingIntervalSize > 1 && loweredSequenceSize == loweredSequenceSize.AlignUp(2))
                         {
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_SHORT);
-                            intervalOffset += 2;
+                            loweredSequenceSize += 2;
+                            remainingIntervalSize -= 2;
                         }
 
-                        if (interval.Size - intervalOffset == 1)
+                        if (remainingIntervalSize == 1)
                         {
+                            loweredSequenceSize += 1;
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_BYTE);
                         }
                     }

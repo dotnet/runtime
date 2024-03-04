@@ -66,3 +66,29 @@ public struct ThreeByteStruct_SByte_Byte
     public sbyte F1;
     public byte F2;
 }
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Double, ExpectedLoweringAttribute.Lowered.Float)]
+[StructLayout(LayoutKind.Sequential, Size = 12)]
+public struct F2087_S0_S0
+{
+    public double F0;
+    public float F1;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Double, ExpectedLoweringAttribute.Lowered.Float, ExpectedLoweringAttribute.Lowered.Int32, ExpectedLoweringAttribute.Lowered.Int8)]
+[StructLayout(LayoutKind.Sequential, Size = 17)]
+public struct F2087_S0
+{
+    public F2087_S0_S0 F0;
+    public int F1;
+    public sbyte F2;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Float, ExpectedLoweringAttribute.Lowered.Int32, ExpectedLoweringAttribute.Lowered.Int16)]
+public struct F114_S0
+{
+    public float F0;
+    public ushort F1;
+    public short F2;
+    public ushort F3;
+}

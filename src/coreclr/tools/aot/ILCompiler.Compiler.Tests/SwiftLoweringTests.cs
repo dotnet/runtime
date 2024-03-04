@@ -58,16 +58,18 @@ namespace ILCompiler.Compiler.Tests
             _ = typeName;
             var expectedLoweringAttribute = type.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute");
 
+            var actualLowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(type);
+
             if (expectedLoweringAttribute.Value.FixedArguments.Length == 0)
             {
-                Assert.Equal(new CORINFO_SWIFT_LOWERING { byReference = true }, SwiftPhysicalLowering.LowerTypeForSwiftSignature(type), SwiftLoweringComparer.Instance);
+                Assert.Equal(new CORINFO_SWIFT_LOWERING { byReference = true }, actualLowering, SwiftLoweringComparer.Instance);
             }
             else
             {
                 CORINFO_SWIFT_LOWERING expectedLowering = default;
                 expectedLowering.numLoweredElements = expectedLoweringAttribute.Value.FixedArguments.Length;
                 expectedLoweringAttribute.Value.FixedArguments.Select(na => GetCorType((ExpectedLowering)(int)na.Value)).ToArray().AsSpan().CopyTo(expectedLowering.LoweredElements);
-                Assert.Equal(expectedLowering, SwiftPhysicalLowering.LowerTypeForSwiftSignature(type));
+                Assert.Equal(expectedLowering, actualLowering);
             }
         }
 
