@@ -2043,7 +2043,7 @@ ReturnZero:
 #endif
                         {
                             // Do full 64bit divide and cast result to 32bit
-                            var divRes = X86.X86Base.X64.IsSupported ? X86.X86Base.X64.DivRem(num, 0, (ulong)den) : Math.DivRem(num, den);
+                            var divRes = Math.DivRem(num, den);
                             div = (uint)divRes.Quotient;
                             remainder = (uint)divRes.Remainder;
                         }
