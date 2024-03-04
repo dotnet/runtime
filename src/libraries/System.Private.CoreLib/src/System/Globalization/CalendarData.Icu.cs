@@ -142,9 +142,9 @@ namespace System.Globalization
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
-#pragma warning disable CS8500
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
-#pragma warning restore CS8500
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             if (result)
             {
                 List<string> datePatternsList = callbackContext.Results;
@@ -370,9 +370,9 @@ namespace System.Globalization
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
-#pragma warning disable CS8500
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
-#pragma warning restore CS8500
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             if (result)
             {
                 // the month-name arrays are expected to have 13 elements.  If ICU only returns 12, add an
@@ -420,9 +420,9 @@ namespace System.Globalization
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
-#pragma warning disable CS8500
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
-#pragma warning restore CS8500
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             if (result)
             {
                 calendarData = callbackContext.Results.ToArray();
@@ -431,12 +431,12 @@ namespace System.Globalization
             return result;
         }
 
-#pragma warning disable CS8500
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, IcuEnumCalendarsData* callbackContext)
         {
             return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)callbackContext);
         }
-#pragma warning restore CS8500
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 
         [UnmanagedCallersOnly]
         private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
