@@ -189,6 +189,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static (ulong Quotient, uint Remainder) DivRem64By32(ulong left, uint right)
             {
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong quotient = left / right;
                 return (quotient, (uint)left - (uint)quotient * right);
             }
@@ -196,6 +197,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static (uint Quotient, uint Remainder) DivRem64By32Quo32(ulong left, uint right)
             {
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 uint quotient = (uint)(left / right);
                 return (quotient, (uint)left - quotient * right);
             }
@@ -203,6 +205,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static (uint Quotient, uint Remainder) DivRem32Carry32By32(uint left, uint carry, uint right)
             {
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 Debug.Assert(carry < right);
                 ulong num = ((ulong)carry << 32) | left;
                 uint quotient = (uint)(num / right);
