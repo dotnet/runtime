@@ -1170,6 +1170,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm8(emitGetInsSC(id))); // iiiii iii
             break;
 
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+            imm = emitGetInsSC(id);
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm8(imm) || isValidUimm8(imm));                   // iiiiiiii
+            assert(isPredicateRegister(id->idReg2()));                        // gggg
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             assert(isPredicateRegister(id->idReg1())); // DDDD
             assert(isVectorRegister(id->idReg2()));    // nnnnn
@@ -10557,6 +10566,22 @@ void emitter::emitIns_R_R_F(
             assert(isScalableVectorSize(size));
             imm = emitEncodeSmallFloatImm(immDbl, ins);
             fmt = IF_SVE_HM_2A;
+            break;
+
+        case INS_sve_fmov:
+        case INS_sve_fcpy:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isPredicateRegister(reg2));                     // gggg
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            floatImm8 fpi;
+            fpi.immFPIVal = 0;
+            canEncodeFloatImm8(immDbl, &fpi);
+            imm = fpi.immFPIVal;
+            fmt = IF_SVE_BU_2A;
+
+            // FMOV is an alias for FCPY, and is always the preferred disassembly.
+            ins = INS_sve_fmov;
             break;
 
         default:
@@ -24463,6 +24488,16 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
@@ -28722,6 +28757,13 @@ void emitter::emitDispInsHelp(
             emitDispImm(imm, false);                            // iiiii iii
             break;
 
+        // <Zd>.<T>, <Pg>/M, #<const>
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                           // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(id->idInsFmt()), INS_OPTS_NONE, true); // gggg
+            emitDispFloatImm(emitGetInsSC(id));                                                           // iiiiiiii
+            break;
+
         // <Zd>.<T>, <Zn>.<T>, <Zm>.D
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
@@ -32687,6 +32729,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
         case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
         case IF_SVE_BQ_2B: // ...........iiiii ...iiimmmmmddddd -- SVE extract vector (immediate offset, destructive)
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

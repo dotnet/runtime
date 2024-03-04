@@ -5952,6 +5952,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V6, REG_V7, 255,
                               INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
 
+    // IF_SVE_BU_2A
+    theEmitter->emitIns_R_R_F(INS_sve_fcpy, EA_SCALABLE, REG_V0, REG_P1, 2.0,
+                              INS_OPTS_SCALABLE_H); // FCPY <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fcpy, EA_SCALABLE, REG_V2, REG_P3, 1.0,
+                              INS_OPTS_SCALABLE_S); // FCPY <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fcpy, EA_SCALABLE, REG_V4, REG_P5, -10.0,
+                              INS_OPTS_SCALABLE_D); // FCPY <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V6, REG_P7, -0.125,
+                              INS_OPTS_SCALABLE_H); // FMOV <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V8, REG_P9, 31.0,
+                              INS_OPTS_SCALABLE_S); // FMOV <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V10, REG_P11, 0.5,
+                              INS_OPTS_SCALABLE_D); // FMOV <Zd>.<T>, <Pg>/M, #<const>
+
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
                               INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
