@@ -6146,7 +6146,7 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 //   This algorithm consumes O(n^2) memory because we're using dense
 //   bitsets to represent reachability.
 //
-BlockReachabilitySets* BlockReachabilitySets::Build(FlowGraphDfsTree* dfsTree)
+BlockReachabilitySets* BlockReachabilitySets::Build(const FlowGraphDfsTree* dfsTree)
 {
     Compiler*    comp            = dfsTree->GetCompiler();
     BitVecTraits postOrderTraits = dfsTree->PostOrderTraits();

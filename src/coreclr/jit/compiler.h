@@ -2323,6 +2323,11 @@ class FlowGraphDominatorTree
 
     static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
@@ -2357,23 +2362,28 @@ public:
 // exceptional flow, then CanReach returns false.
 class BlockReachabilitySets
 {
-    FlowGraphDfsTree* m_dfsTree;
+    const FlowGraphDfsTree* m_dfsTree;
     BitVec* m_reachabilitySets;
 
-    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+    BlockReachabilitySets(const FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
         : m_dfsTree(dfsTree)
         , m_reachabilitySets(reachabilitySets)
     {
     }
 
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     bool CanReach(BasicBlock* from, BasicBlock* to);
 
 #ifdef DEBUG
     void Dump();
 #endif
 
-    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
+    static BlockReachabilitySets* Build(const FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -6095,7 +6105,7 @@ public:
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
-    void fgDebugCheckDfsTree();
+    void fgDebugCheckFlowGraphAnnotations();
 
 #endif // DEBUG
 
