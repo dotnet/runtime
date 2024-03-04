@@ -70,7 +70,7 @@ endif()
 if (MSVC)
   set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
-
+set(Core_CLR 1)
 #-------------------------------
 # Include libraries native shims
 #-------------------------------

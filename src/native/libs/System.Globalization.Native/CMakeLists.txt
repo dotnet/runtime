@@ -183,7 +183,7 @@ if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    if(STATIC_LIBS_ONLY OR Mono)
+    if(STATIC_LIBS_ONLY OR NOT Core_CLR)
         add_library(System.Globalization.Native.Aot
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
