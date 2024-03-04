@@ -43,8 +43,10 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 
 //------------------------------------------------------------------------
 // optSetBlockWeights: adjust block weights, as follows:
-// 1. A block that is not reachable from the entry block is marked "run rarely".
-// 2. If we're not using profile weights, then any block with a non-zero weight
+// 1. Lexical block ranges where the bottom reaches the top are scaled as a loop.
+//    This is a more general definition of "loop" than natural loops.
+// 2. A block that is not reachable from the entry block is marked "run rarely".
+// 3. If we're not using profile weights, then any block with a non-zero weight
 //    that doesn't dominate all the return blocks has its weight dropped in half
 //    (but only if the first block *does* dominate all the returns).
 //
@@ -59,13 +61,19 @@ PhaseStatus Compiler::optSetBlockWeights()
     noway_assert(opts.OptimizationEnabled());
 
     assert(m_dfsTree != nullptr);
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
     if (m_reachabilitySets == nullptr)
     {
         m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
     }
-    if (m_domTree == nullptr)
+
+    if (m_dfsTree->HasCycle())
     {
-        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+        optMarkLoopHeads();
+        optFindAndScaleGeneralLoopBlocks();
     }
 
     bool       madeChanges                = false;
@@ -2497,11 +2505,7 @@ void Compiler::optMarkLoopHeads()
     int loopHeadsMarked = 0;
 #endif
 
-    assert(m_dfsTree != nullptr);
-    if (m_reachabilitySets == nullptr)
-    {
-        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
-    }
+    assert((m_dfsTree != nullptr) && (m_reachabilitySets != nullptr));
 
     bool hasLoops = false;
 
@@ -2578,15 +2582,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
-    assert(m_dfsTree != nullptr);
-    if (m_reachabilitySets == nullptr)
-    {
-        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
-    }
-    if (m_domTree == nullptr)
-    {
-        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-    }
+    assert((m_dfsTree != nullptr) && (m_domTree != nullptr) && (m_reachabilitySets != nullptr));
 
     unsigned generalLoopCount = 0;
 
@@ -2687,12 +2683,6 @@ PhaseStatus Compiler::optFindLoopsPhase()
 
     assert(m_dfsTree != nullptr);
     optFindLoops();
-
-    if (fgMightHaveNaturalLoops)
-    {
-        optMarkLoopHeads();
-        optFindAndScaleGeneralLoopBlocks();
-    }
 
     Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 

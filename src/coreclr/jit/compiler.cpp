@@ -5855,12 +5855,6 @@ void Compiler::RecomputeFlowGraphAnnotations()
     fgInvalidateDfsTree();
     fgDfsBlocksAndRemove();
     optFindLoops();
-
-    if (fgMightHaveNaturalLoops)
-    {
-        optFindAndScaleGeneralLoopBlocks();
-    }
-
     optSetBlockWeights();
 
     if (m_domTree == nullptr)
