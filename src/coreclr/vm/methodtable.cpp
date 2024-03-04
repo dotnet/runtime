@@ -4027,9 +4027,9 @@ _End_arg:
 #endif
 
 #if defined(TARGET_APPLE)
-void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering)
+namespace
 {
-    enum class SwiftIntervalTag : uint8_t
+    enum class SwiftPhysicalLoweringTag : uint8_t
     {
         Empty,
         Opaque,
@@ -4037,31 +4037,298 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
         Float,
         Double
     };
-    struct Interval
+
+    uint32_t GetAlignment(SwiftPhysicalLoweringTag tag)
     {
-        uint32_t m_offset;
-        uint32_t m_size;
-        SwiftIntervalTag m_tag;
-    };
+        switch (tag)
+        {
+            case SwiftPhysicalLoweringTag::Int64:
+                return 8;
+            case SwiftPhysicalLoweringTag::Float:
+                return 4;
+            case SwiftPhysicalLoweringTag::Double:
+                return 8;
+            default:
+                return 1;
+        }
+    }
 
-    // TODO: Reimplement the algorithm from SwiftPhysicalLowering in the managed type system here.
-    // Abstracting between out from the two field representations is too hard,
-    // so we'll just duplicate the code for now, especially as we aren't reusing it anywhere else.
+    void SetLoweringRange(CQuickArray<SwiftPhysicalLoweringTag>& intervals, uint32_t start, uint32 size, SwiftPhysicalLoweringTag tag)
+    {
+        bool forceOpaque = false;
 
-    CQuickArray<Interval> intervals;
-    // We'll have up to as many intervals as there are fields.
-    intervals.AllocThrows(GetNumInstanceFields());
+        if (!IS_ALIGNED(start, GetAlignment(tag)))
+        {
+            // If the start of the range is not aligned, we need to force the entire range to be opaque.
+            forceOpaque = true;
+        }
+        else
+        {
+            // Check if any of the range is non-empty.
+            // If so, we need to force this range to be opaque
+            // and extend the range mark the existing tag's range as opaque.
+            for (uint32_t i = 0; i < size; i++)
+            {
+                if (intervals[start + i] != SwiftPhysicalLoweringTag::Empty
+                    && intervals[start + i] != tag
+                    && intervals[start + i] != SwiftPhysicalLoweringTag::Opaque)
+                {
+                    forceOpaque = true;
+
+                    // Extend out start to the beginning of the existing tag's range
+                    // and extend size to the end of the existing tag's range (if non-opaque/empty).
+                    start = (uint32_t)ALIGN_DOWN(start, GetAlignment(intervals[start + i]));
+                    size = (uint32_t)ALIGN_UP(size + start, GetAlignment(intervals[start + i])) - start;
+                    break;
+                }
+            }
+
+            if (forceOpaque)
+            {
+                tag = SwiftPhysicalLoweringTag::Opaque;
+            }
+
+            for (uint32_t i = 0; i < size; i++)
+            {
+                intervals[start + i] = tag;
+            }
+        }
+    }
+
+    void GetNativeSwiftPhysicalLowering(CQuickArray<SwiftPhysicalLoweringTag>& intervals, PTR_MethodTable pMT, uint32_t offset = 0)
+    {
+        // Use FieldDescs to calculate the Swift intervals
+        FieldDesc *pFieldDescList = pMT->GetApproxFieldDescListRaw();
+        for (uint32_t i = 0; i < pMT->GetNumIntroducedInstanceFields(); i++)
+        {
+            PTR_MethodTable fieldType = pFieldDescList[i].GetFieldTypeHandleThrowing().GetMethodTable();
+            CorInfoType corType = fieldType->GetVerifierCorElementType();
+
+            uint32_t fieldOffset = offset + pFieldDescList[i].GetOffset();
+
+            if (corType == ELEMENT_TYPE_VALUETYPE)
+            {
+                GetNativeSwiftPhysicalLowering(intervals, fieldType, fieldOffset);
+                continue;
+            }
+
+            if (corType == ELEMENT_TYPE_R4)
+            {
+                SetLoweringRange(intervals, fieldOffset, 4, SwiftPhysicalLoweringTag::Float);
+            }
+            else if (corType == ELEMENT_TYPE_R8)
+            {
+                SetLoweringRange(intervals, fieldOffset, 8, SwiftPhysicalLoweringTag::Double);
+            }
+            else if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8)
+            {
+                SetLoweringRange(intervals, fieldOffset, 8, SwiftPhysicalLoweringTag::Int64);
+            }
+            else
+            {
+                SetLoweringRange(intervals, fieldOffset, fieldType->GetNumInstanceFieldBytes(), SwiftPhysicalLoweringTag::Opaque);
+            }
+        }
+    }
+
+    void GetNativeSwiftPhysicalLowering(CQuickArray<SwiftPhysicalLoweringTag>& intervals, PTR_EEClassNativeLayoutInfo pNativeLayoutInfo, uint32_t offset = 0)
+    {
+        // Use NativeLayout to calculate the Swift intervals
+        NativeFieldDescriptor* pNativeFieldDescs = pNativeLayoutInfo->GetNativeFieldDescriptors();
+        for (uint32_t i = 0; i < pNativeLayoutInfo->GetNumFields(); i++)
+        {
+            NativeFieldDescriptor& nfd = pNativeFieldDescs[i];
+            if (nfd.GetCategory() == NativeFieldCategory::NESTED)
+            {
+                PTR_MethodTable fieldType = nfd.GetNestedNativeMethodTable();
+                for (uint32_t i = 0; i < nfd.GetNumElements(); i++)
+                {
+                    if (fieldType.IsBlittable())
+                    {
+                        GetNativeSwiftPhysicalLowering(intervals, fieldType, offset + nfd.GetOffset() + fieldType->GetNativeSize() * i);
+                    }
+                    else
+                    {
+                        GetNativeSwiftPhysicalLowering(intervals, fieldType.GetNativeLayoutInfo(), offset + nfd.GetOffset() + fieldType->GetNativeSize() * i);
+                    }
+                }
+            }
+            else if (nfd.GetCategory() == NativeFieldCategory::FLOAT)
+            {
+                _ASSERTE(nfd.NativeSize() == 4 || nfd.NativeSize() == 8);
+                SetLoweringRange(intervals, offset + nfd.GetOffset(), nfd.NativeSize(), nfd.NativeSize() == 4 ? SwiftPhysicalLoweringTag::Float : SwiftPhysicalLoweringTag::Double);
+            }
+            else if (nfd.GetCategory() == NativeFieldCategory::INTEGER && nfd.NativeSize() == 8)
+            {
+                SetLoweringRange(intervals, offset + nfd.GetOffset(), nfd.NativeSize(), SwiftPhysicalLoweringTag::Int64);
+            }
+            else
+            {
+                SetLoweringRange(intervals, offset + nfd.GetOffset(), nfd.NativeSize(), SwiftPhysicalLoweringTag::Opaque);
+            }
+        }
+    }
+}
+
+void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering, bool useNativeLayout)
+{
+    // We'll build the intervals by scanning the fields byte-by-byte and then calculate the lowering intervals
+    // from that information.
+    CQuickArray<SwiftPhysicalLoweringTag> loweringBytes;
+    intervals.AllocThrows(GetNumInstanceFieldBytes());
+    memset(loweringBytes.Ptr(), SwiftPhysicalLoweringTag::Empty, loweringBytes.Size());
     uint32_t numIntervals = 0;
 
-    if (IsBlittable())
+    if (useNativeLayout && !IsBlittable())
     {
-        // Use FieldDescs to calculate the layout
+        // Use NativeLayout to calculate the layout
+        GetNativeSwiftPhysicalLowering(loweringBytes, GetNativeLayoutInfo());
     }
     else
     {
-        // Use NativeLayout to calculate the layout
-        EEClassNativeLayoutInfo* pNativeLayoutInfo = GetNativeLayoutInfo();
+        GetNativeSwiftPhysicalLowering(loweringBytes, this);
     }
+
+    struct SwiftLoweringInterval
+    {
+        uint32_t m_offset;
+        uint32_t m_size;
+        SwiftPhysicalLoweringTag m_tag;
+    };
+
+    // Build intervals from the byte sequences
+    CQuickArrayList<SwiftLoweringInterval> intervals;
+    for (uint32_t i = 0; i < loweingBytes.Size(); ++i)
+    {
+        if (i == 0 || loweringBytes[i] != loweringBytes[i - 1])
+        {
+            SwiftLoweringInterval interval;
+            interval.m_offset = i;
+            interval.m_size = 1;
+            interval.m_tag = loweringBytes[i];
+            intervals.Push(interval);
+        }
+        else
+        {
+            intervals[intervals.Size() - 1].m_size++;
+        }
+    }
+
+    // Now we have the intervals, we can calculate the lowering.
+    CorElementType elementTypes[4];
+    uint32_t numElementTypes = 0;
+    size_t currentLoweredSize = 0;
+
+    for (uint32_t i = 0; i < numIntervals; i++)
+    {
+        SwiftLoweringInterval& interval = intervals[i];
+
+        if (interval.m_tag == SwiftPhysicalLoweringTag::Empty)
+        {
+            continue;
+        }
+
+        if (numElementTypes == 4)
+        {
+            // If we have more than for intervals, this type is passed by-reference in Swift.
+            pSwiftLowering->byReference = true;
+            return;
+        }
+
+        switch (interval.m_tag)
+        {
+            case SwiftPhysicalLoweringTag::Int64:
+                currentLoweredSize = ALIGN_UP(currentLoweredSize, 8) + 8;
+                elementTypes[numElementTypes++] = CORINFO_TYPE_LONG;
+                break;
+            case SwiftPhysicalLoweringTag::Float:
+                currentLoweredSize = ALIGN_UP(currentLoweredSize, 4) + 4;
+                elementTypes[numElementTypes++] = CORINFO_TYPE_FLOAT;
+                break;
+            case SwiftPhysicalLoweringTag::Double:
+                currentLoweredSize = ALIGN_UP(currentLoweredSize, 8) + 8;
+                elementTypes[numElementTypes++] = CORINFO_TYPE_DOUBLE;
+                break;
+            case SwiftPhysicalLoweringTag::Opaque:
+            {
+                // We need to split the opaque ranges into integer parameters.
+                // As part of this splitting, we must ensure that we don't introduce alignment padding.
+                // This lowering algorithm should produce a lowered type sequence that would have the same padding for
+                // a naturally-aligned struct with the lowered fields as the original type has.
+                // This algorithm intends to split the opaque range into the least number of lowered elements that covers the entire range.
+                // The lowered range is allowed to extend past the end of the opaque range (including past the end of the struct),
+                // but not into the next non-empty interval.
+                // However, due to the properties of the lowering (the only non-8 byte elements of the lowering are 4-byte floats),
+                // we'll never encounter a scneario where we need would need to account for a correctly-aligned
+                // opaque range of > 4 bytes that we must not pad to 8 bytes.
+
+
+                // As long as we need to fill more than 4 bytes and the sequence is currently 8-byte aligned, we'll split into 8-byte integers.
+                // If we have more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
+                // If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
+                // If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
+                uint32_t remainingIntervalSize = interval.m_size;
+                while (remainingIntervalSize > 4 && IS_ALIGNED(currentLoweredSize, 8))
+                {
+                    if (numElementTypes == 4)
+                    {
+                        // If we have more than for intervals, this type is passed by-reference in Swift.
+                        pSwiftLowering->byReference = true;
+                        return;
+                    }
+
+                    elementTypes[numElementTypes++] = CORINFO_TYPE_LONG;
+                    currentLoweredSize += 8;
+                    remainingIntervalSize -= 8;
+                }
+
+                if (remainingIntervalSize > 2 && IS_ALIGNED(currentLoweredSize, 4))
+                {
+                    if (numElementTypes == 4)
+                    {
+                        // If we have more than for intervals, this type is passed by-reference in Swift.
+                        pSwiftLowering->byReference = true;
+                        return;
+                    }
+
+                    elementTypes[numElementTypes++] = CORINFO_TYPE_INT;
+                    currentLoweredSize += 4;
+                    remainingIntervalSize -= 4;
+                }
+
+                if (remainingIntervalSize > 1 && IS_ALIGNED(currentLoweredSize, 2))
+                {
+                    if (numElementTypes == 4)
+                    {
+                        // If we have more than for intervals, this type is passed by-reference in Swift.
+                        pSwiftLowering->byReference = true;
+                        return;
+                    }
+
+                    elementTypes[numElementTypes++] = CORINFO_TYPE_SHORT;
+                    currentLoweredSize += 2;
+                    remainingIntervalSize -= 2;
+                }
+
+                if (remainingIntervalSize == 1)
+                {
+                    if (numElementTypes == 4)
+                    {
+                        // If we have more than for intervals, this type is passed by-reference in Swift.
+                        pSwiftLowering->byReference = true;
+                        return;
+                    }
+
+                    elementTypes[numElementTypes++] = CORINFO_TYPE_BYTE;
+                    currentLoweredSize += 1;
+                }
+            }
+        }
+    }
+
+    memcpy(pSwiftLowering->loweredTypes, elementTypes, numElementTypes * sizeof(CorElementType));
+    pSwiftLowering->numLoweredTypes = numElementTypes;
+    pSwiftLowering->byReference = false;
 }
 #endif
 

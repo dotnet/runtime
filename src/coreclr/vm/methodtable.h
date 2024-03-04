@@ -841,7 +841,7 @@ public:
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(TARGET_APPLE)
-    void GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering);
+    void GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering, bool useNativeLayout);
 #endif // defined(TARGET_APPLE)
 
     // Copy m_dwFlags from another method table
