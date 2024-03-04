@@ -147,19 +147,19 @@ namespace NetCoreServer
                     else if (receivedMessage == ".shutdownAfterTwoMessages")
                     {
                         byte[] buffer = new byte[1024];
-                        string message = DateTime.Now.ToString("HH:mm:ss");
-                        buffer = System.Text.Encoding.UTF8.GetBytes(message);
+                        string message1 = $"{receivedMessage} 1 {DateTime.Now.ToString("HH:mm:ss")}";
+                        buffer = System.Text.Encoding.UTF8.GetBytes(message1);
                         await socket.SendAsync(
-                            new ArraySegment<byte>(buffer, 0, message.Length),
+                            new ArraySegment<byte>(buffer, 0, message1.Length),
                             WebSocketMessageType.Text,
                             true,
                             CancellationToken.None);
                         await Task.Delay(1990); // try to sync with receive request from the client: 1.9k is too little, 2k too much
 
-                        message = DateTime.Now.ToString("HH:mm:ss");
-                        buffer = System.Text.Encoding.UTF8.GetBytes(message);
+                        string message2 = $"{receivedMessage} 2 {DateTime.Now.ToString("HH:mm:ss")}";
+                        buffer = System.Text.Encoding.UTF8.GetBytes(message2);
                         await socket.SendAsync(
-                            new ArraySegment<byte>(buffer, 0, message.Length),
+                            new ArraySegment<byte>(buffer, 0, message2.Length),
                             WebSocketMessageType.Text,
                             true,
                             CancellationToken.None);

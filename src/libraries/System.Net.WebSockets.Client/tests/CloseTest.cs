@@ -381,16 +381,13 @@ namespace System.Net.WebSockets.Client.Tests
                 var recvBuffer = new ArraySegment<byte>(new byte[1024]);
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
                 var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
-                Console.WriteLine($"Received: {message}");
-                Assert.Equal(WebSocketState.Open, cws.State);
+                Assert.Contains(".shutdownAfterTwoMessages 1", message);
 
                 await Task.Delay(2000);
 
                 recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
                 message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
-                Console.WriteLine($"2nd Received: {message}");
-                await Task.Delay(1000); // otherwise it might be not closed yet
-                Assert.Equal(WebSocketState.Closed, cws.State);
+                Assert.Contains(".shutdownAfterTwoMessages 2", message);
             }
         }
 
