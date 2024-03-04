@@ -13,12 +13,12 @@ namespace System.Linq
 
         public static IEnumerable<TSource> Union<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
-            if (first == null)
+            if (first is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
-            if (second == null)
+            if (second is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
@@ -111,7 +111,7 @@ namespace System.Linq
 
             public sealed override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -134,7 +134,7 @@ namespace System.Linq
 
             private void StoreFirst()
             {
-                Debug.Assert(_enumerator != null);
+                Debug.Assert(_enumerator is not null);
 
                 var set = new HashSet<TSource>(DefaultInternalSetCapacity, _comparer);
                 TSource element = _enumerator.Current;
@@ -145,8 +145,8 @@ namespace System.Linq
 
             private bool GetNext()
             {
-                Debug.Assert(_enumerator != null);
-                Debug.Assert(_set != null);
+                Debug.Assert(_enumerator is not null);
+                Debug.Assert(_set is not null);
 
                 HashSet<TSource> set = _set;
 
@@ -167,7 +167,7 @@ namespace System.Linq
             {
                 if (_state == 1)
                 {
-                    for (IEnumerable<TSource>? enumerable = GetEnumerable(0); enumerable != null; enumerable = GetEnumerable(_state - 1))
+                    for (IEnumerable<TSource>? enumerable = GetEnumerable(0); enumerable is not null; enumerable = GetEnumerable(_state - 1))
                     {
                         IEnumerator<TSource> enumerator = enumerable.GetEnumerator();
                         SetEnumerator(enumerator);
@@ -190,7 +190,7 @@ namespace System.Linq
                         }
 
                         IEnumerable<TSource>? enumerable = GetEnumerable(_state - 1);
-                        if (enumerable == null)
+                        if (enumerable is null)
                         {
                             break;
                         }
@@ -217,8 +217,8 @@ namespace System.Linq
             public UnionIterator2(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
                 : base(comparer)
             {
-                Debug.Assert(first != null);
-                Debug.Assert(second != null);
+                Debug.Assert(first is not null);
+                Debug.Assert(second is not null);
                 _first = first;
                 _second = second;
             }

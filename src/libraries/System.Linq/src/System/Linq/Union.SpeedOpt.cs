@@ -15,7 +15,7 @@ namespace System.Linq
                 for (int index = 0; ; ++index)
                 {
                     IEnumerable<TSource>? enumerable = GetEnumerable(index);
-                    if (enumerable == null)
+                    if (enumerable is null)
                     {
                         return set;
                     }

@@ -152,8 +152,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedStrings, sourceIntegers.Where(i => true).Select(i => i.ToString()).ToArray());
             Assert.Equal(Array.Empty<string>(), sourceIntegers.Where(i => false).Select(i => i.ToString()).ToArray());
 
-            Assert.Equal(convertedStrings, sourceIntegers.Select(i => i.ToString()).Where(s => s != null).ToArray());
-            Assert.Equal(Array.Empty<string>(), sourceIntegers.Select(i => i.ToString()).Where(s => s == null).ToArray());
+            Assert.Equal(convertedStrings, sourceIntegers.Select(i => i.ToString()).Where(s => s is not null).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceIntegers.Select(i => i.ToString()).Where(s => s is null).ToArray());
         }
 
         [Theory]
@@ -172,8 +172,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedStrings, sourceList.Where(i => true).Select(i => i.ToString()).ToArray());
             Assert.Equal(Array.Empty<string>(), sourceList.Where(i => false).Select(i => i.ToString()).ToArray());
 
-            Assert.Equal(convertedStrings, sourceList.Select(i => i.ToString()).Where(s => s != null).ToArray());
-            Assert.Equal(Array.Empty<string>(), sourceList.Select(i => i.ToString()).Where(s => s == null).ToArray());
+            Assert.Equal(convertedStrings, sourceList.Select(i => i.ToString()).Where(s => s is not null).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceList.Select(i => i.ToString()).Where(s => s is null).ToArray());
         }
 
         [Fact]

@@ -13,12 +13,12 @@ namespace System.Linq
             TResult[] array = new TResult[_count];
             int index = 0;
             Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            if (g is not null)
             {
                 do
                 {
                     g = g._next;
-                    Debug.Assert(g != null);
+                    Debug.Assert(g is not null);
 
                     g.Trim();
                     array[index] = resultSelector(g._key, g._elements);

@@ -360,7 +360,7 @@ namespace System.Linq.Tests
         {
             public int Id { get; set; }
 
-            public bool Equals(Role other) => other != null && Id == other.Id;
+            public bool Equals(Role other) => other is not null && Id == other.Id;
 
             public override bool Equals(object obj) => Equals(obj as Role);
 
@@ -374,7 +374,7 @@ namespace System.Linq.Tests
             public int CountrB { get; set; }
 
             public bool Equals(RoleMetadata other)
-                => other != null && Role.Equals(other.Role) && CountA == other.CountA && CountrB == other.CountrB;
+                => other is not null && Role.Equals(other.Role) && CountA == other.CountA && CountrB == other.CountrB;
 
             public override bool Equals(object obj) => Equals(obj as RoleMetadata);
 

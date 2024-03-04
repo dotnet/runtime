@@ -104,7 +104,7 @@ namespace System.Linq
                 }
 
                 EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TKey>(_keySelector, comparer, _descending, next);
-                if (_parent != null)
+                if (_parent is not null)
                 {
                     sorter = _parent.GetEnumerableSorter(sorter);
                 }
@@ -114,10 +114,10 @@ namespace System.Linq
 
             internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer)
             {
-                CachingComparer<TElement> cmp = childComparer == null
+                CachingComparer<TElement> cmp = childComparer is null
                     ? new CachingComparer<TElement, TKey>(_keySelector, _comparer, _descending)
                     : new CachingComparerWithChild<TElement, TKey>(_keySelector, _comparer, _descending, childComparer);
-                return _parent != null ? _parent.GetComparer(cmp) : cmp;
+                return _parent is not null ? _parent.GetComparer(cmp) : cmp;
             }
 
             public override bool MoveNext()
@@ -185,7 +185,7 @@ namespace System.Linq
             public override Iterator<TElement> Clone() => new ImplicitlyStableOrderedIterator<TElement>(_source, _descending);
 
             internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
-                childComparer == null ?
+                childComparer is null ?
                     new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending) :
                     new CachingComparerWithChild<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, childComparer);
 
@@ -427,12 +427,12 @@ namespace System.Linq
             internal override int CompareAnyKeys(int index1, int index2)
             {
                 TKey[]? keys = _keys;
-                Debug.Assert(keys != null);
+                Debug.Assert(keys is not null);
 
                 int c = _comparer.Compare(keys[index1], keys[index2]);
                 if (c == 0)
                 {
-                    if (_next == null)
+                    if (_next is null)
                     {
                         return index1 - index2; // ensure stability of sort
                     }
@@ -454,7 +454,7 @@ namespace System.Linq
                 Debug.Assert(!_descending);
 
                 TKey[]? keys = _keys;
-                Debug.Assert(keys != null);
+                Debug.Assert(keys is not null);
 
                 int c = Comparer<TKey>.Default.Compare(keys[index1], keys[index2]);
                 return
@@ -470,7 +470,7 @@ namespace System.Linq
                 Debug.Assert(_descending);
 
                 TKey[]? keys = _keys;
-                Debug.Assert(keys != null);
+                Debug.Assert(keys is not null);
 
                 int c = Comparer<TKey>.Default.Compare(keys[index2], keys[index1]);
                 return

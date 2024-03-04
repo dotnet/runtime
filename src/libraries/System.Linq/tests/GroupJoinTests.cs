@@ -44,24 +44,24 @@ namespace System.Linq.Tests
             public bool Equals(JoinRec other)
             {
                 if (!string.Equals(name, other.name)) return false;
-                if (orderID == null)
+                if (orderID is null)
                 {
-                    if (other.orderID != null) return false;
+                    if (other.orderID is not null) return false;
                 }
                 else
                 {
-                    if (other.orderID == null) return false;
+                    if (other.orderID is null) return false;
                     if (orderID.Length != other.orderID.Length) return false;
                     for (int i = 0; i != other.orderID.Length; ++i)
                         if (orderID[i] != other.orderID[i]) return false;
                 }
-                if (total == null)
+                if (total is null)
                 {
-                    if (other.total != null) return false;
+                    if (other.total is not null) return false;
                 }
                 else
                 {
-                    if (other.total == null) return false;
+                    if (other.total is null) return false;
                     if (total.Length != other.total.Length) return false;
                     for (int i = 0; i != other.total.Length; ++i)
                         if (total[i] != other.total[i]) return false;
@@ -511,7 +511,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).GroupJoin(Enumerable.Empty<int>(), i => i, i => i, (o, i) => i);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<IEnumerable<int>>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
     }
 }

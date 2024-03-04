@@ -11,12 +11,12 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Where<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
@@ -46,12 +46,12 @@ namespace System.Linq
 
         public static IEnumerable<TSource> Where<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
@@ -93,8 +93,8 @@ namespace System.Linq
 
             public IEnumerableWhereIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(predicate != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(predicate is not null);
                 _source = source;
                 _predicate = predicate;
             }
@@ -103,7 +103,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -121,7 +121,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         while (_enumerator.MoveNext())
                         {
                             TSource item = _enumerator.Current;
@@ -157,8 +157,8 @@ namespace System.Linq
 
             public ArrayWhereIterator(TSource[] source, Func<TSource, bool> predicate)
             {
-                Debug.Assert(source != null && source.Length > 0);
-                Debug.Assert(predicate != null);
+                Debug.Assert(source is not null && source.Length > 0);
+                Debug.Assert(predicate is not null);
                 _source = source;
                 _predicate = predicate;
             }
@@ -205,8 +205,8 @@ namespace System.Linq
 
             public ListWhereIterator(List<TSource> source, Func<TSource, bool> predicate)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(predicate != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(predicate is not null);
                 _source = source;
                 _predicate = predicate;
             }
@@ -260,9 +260,9 @@ namespace System.Linq
 
             public ArrayWhereSelectIterator(TSource[] source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null && source.Length > 0);
-                Debug.Assert(predicate != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null && source.Length > 0);
+                Debug.Assert(predicate is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _predicate = predicate;
                 _selector = selector;
@@ -309,9 +309,9 @@ namespace System.Linq
 
             public ListWhereSelectIterator(List<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(predicate != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(predicate is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _predicate = predicate;
                 _selector = selector;
@@ -364,9 +364,9 @@ namespace System.Linq
 
             public IEnumerableWhereSelectIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(predicate != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(predicate is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _predicate = predicate;
                 _selector = selector;
@@ -377,7 +377,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -395,7 +395,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         while (_enumerator.MoveNext())
                         {
                             TSource item = _enumerator.Current;

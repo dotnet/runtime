@@ -13,7 +13,7 @@ namespace System.Linq
             public override TResult[] ToArray()
             {
                 TResult[] array = new TResult[_count];
-                if (_current != null)
+                if (_current is not null)
                 {
                     Array.Fill(array, _current);
                 }

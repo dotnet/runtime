@@ -227,7 +227,7 @@ namespace System.Linq
 
                 TSource[] array = new TSource[count];
                 int index = 0;
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
+                for (SingleLinkedNode<TSource>? node = _prepended; node is not null; node = node.Linked)
                 {
                     array[index] = node.Item;
                     ++index;
@@ -247,7 +247,7 @@ namespace System.Linq
                 }
 
                 index = array.Length;
-                for (SingleLinkedNode<TSource>? node = _appended; node != null; node = node.Linked)
+                for (SingleLinkedNode<TSource>? node = _appended; node is not null; node = node.Linked)
                 {
                     --index;
                     array[index] = node.Item;
