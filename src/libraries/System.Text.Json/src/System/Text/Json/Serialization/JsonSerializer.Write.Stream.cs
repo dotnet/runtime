@@ -66,7 +66,7 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static Task SerializeAsync<TValue>(
-            System.IO.Pipelines.PipeWriter utf8Json,
+            PipeWriter utf8Json,
             TValue value,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -78,6 +78,95 @@ namespace System.Text.Json
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// f
+        /// </summary>
+        /// <param name="utf8Json"></param>
+        /// <param name="value"></param>
+        /// <param name="jsonTypeInfo"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public static Task SerializeAsync(
+            PipeWriter utf8Json,
+            object? value,
+            JsonTypeInfo jsonTypeInfo,
+            CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// g
+        /// </summary>
+        /// <param name="utf8Json"></param>
+        /// <param name="value"></param>
+        /// <param name="inputType"></param>
+        /// <param name="context"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public static Task SerializeAsync(
+                PipeWriter utf8Json,
+                object? value,
+                Type inputType,
+                JsonSerializerContext context,
+                CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
+
+            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// g
+        /// </summary>
+        /// <param name="utf8Json"></param>
+        /// <param name="value"></param>
+        /// <param name="inputType"></param>
+        /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static Task SerializeAsync(
+                PipeWriter utf8Json,
+                object? value,
+                Type inputType,
+                JsonSerializerOptions? options = null,
+                CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+
+            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
         }
 
         /// <summary>

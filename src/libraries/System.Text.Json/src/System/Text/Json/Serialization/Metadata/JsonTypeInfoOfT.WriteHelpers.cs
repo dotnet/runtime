@@ -201,15 +201,11 @@ namespace System.Text.Json.Serialization.Metadata
             if (CanUseSerializeHandlerInStreaming)
             {
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
-                //throw new NotImplementedException();
                 Debug.Assert(SerializeHandler != null);
-                //Debug.Assert(CanUseSerializeHandler);
-                //Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
+                Debug.Assert(CanUseSerializeHandler);
+                Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
-                //using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                //Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, bufferWriter);
-                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(Options, out PooledByteBufferWriter bufferWriter);
-                writer.Reset(utf8Json);
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, utf8Json);
 
                 try
                 {
@@ -222,10 +218,9 @@ namespace System.Text.Json.Serialization.Metadata
                     // since we want to immediately opt out of the fast path if it exceeds the threshold.
                     OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
 
-                    Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, bufferWriter);
+                    Utf8JsonWriterCache.ReturnWriter(writer);
                 }
 
-                //await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
                 await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             else if (
@@ -272,8 +267,6 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
-                                //await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                                //bufferWriter.Clear();
                                 await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
                             }
                         }

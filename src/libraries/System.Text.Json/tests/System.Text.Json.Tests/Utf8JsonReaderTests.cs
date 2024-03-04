@@ -225,54 +225,58 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(TestCases))]
         public static void TestJsonReaderUtf8(bool compactData, TestCaseType type, string jsonString)
         {
-            // Remove all formatting/indendation
-            if (compactData)
+            for (var i = 0; i < 1; ++i)
             {
-                jsonString = JsonTestHelper.GetCompactString(jsonString);
+                var rand = new Random().Next();
+                // Remove all formatting/indendation
+                if (compactData)
+                {
+                    jsonString = JsonTestHelper.GetCompactString(jsonString);
+                }
+
+                byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+                SpanSequenceStatesAreEqual(dataUtf8);
+
+                byte[] result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out int length);
+                string actualStr = Encoding.UTF8.GetString(result, 0, length);
+
+                byte[] resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, rand);
+                string actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
+
+                Stream stream = new MemoryStream(dataUtf8);
+                TextReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, true);
+                string expectedStr = JsonTestHelper.NewtonsoftReturnStringHelper(reader);
+
+                Assert.Equal(expectedStr, actualStr);
+                Assert.Equal(expectedStr, actualStrSequence);
+
+                // Json payload contains numbers that are too large for .NET (need BigInteger+)
+                if (type != TestCaseType.FullSchema1 && type != TestCaseType.BasicLargeNum)
+                {
+                    object jsonValues = JsonTestHelper.ReturnObjectHelper(dataUtf8);
+                    string str = JsonTestHelper.ObjectToString(jsonValues);
+                    ReadOnlySpan<char> expectedSpan = expectedStr.AsSpan(0, expectedStr.Length - 2);
+                    ReadOnlySpan<char> actualSpan = str.AsSpan(0, str.Length - 2);
+                    Assert.True(expectedSpan.SequenceEqual(actualSpan));
+                }
+
+                result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Skip);
+                actualStr = Encoding.UTF8.GetString(result, 0, length);
+                resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, rand, JsonCommentHandling.Skip);
+                actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
+
+                Assert.Equal(expectedStr, actualStr);
+                Assert.Equal(expectedStr, actualStrSequence);
+
+                result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Allow);
+                actualStr = Encoding.UTF8.GetString(result, 0, length);
+                resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, rand, JsonCommentHandling.Allow);
+                actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
+
+                Assert.Equal(expectedStr, actualStr);
+                Assert.Equal(expectedStr, actualStrSequence);
             }
-
-            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-
-            SpanSequenceStatesAreEqual(dataUtf8);
-
-            byte[] result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out int length);
-            string actualStr = Encoding.UTF8.GetString(result, 0, length);
-
-            byte[] resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length);
-            string actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
-
-            Stream stream = new MemoryStream(dataUtf8);
-            TextReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, true);
-            string expectedStr = JsonTestHelper.NewtonsoftReturnStringHelper(reader);
-
-            Assert.Equal(expectedStr, actualStr);
-            Assert.Equal(expectedStr, actualStrSequence);
-
-            // Json payload contains numbers that are too large for .NET (need BigInteger+)
-            if (type != TestCaseType.FullSchema1 && type != TestCaseType.BasicLargeNum)
-            {
-                object jsonValues = JsonTestHelper.ReturnObjectHelper(dataUtf8);
-                string str = JsonTestHelper.ObjectToString(jsonValues);
-                ReadOnlySpan<char> expectedSpan = expectedStr.AsSpan(0, expectedStr.Length - 2);
-                ReadOnlySpan<char> actualSpan = str.AsSpan(0, str.Length - 2);
-                Assert.True(expectedSpan.SequenceEqual(actualSpan));
-            }
-
-            result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Skip);
-            actualStr = Encoding.UTF8.GetString(result, 0, length);
-            resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Skip);
-            actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
-
-            Assert.Equal(expectedStr, actualStr);
-            Assert.Equal(expectedStr, actualStrSequence);
-
-            result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Allow);
-            actualStr = Encoding.UTF8.GetString(result, 0, length);
-            resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Allow);
-            actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
-
-            Assert.Equal(expectedStr, actualStr);
-            Assert.Equal(expectedStr, actualStrSequence);
         }
 
         [Theory]

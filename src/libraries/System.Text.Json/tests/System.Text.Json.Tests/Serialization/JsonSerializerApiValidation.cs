@@ -50,6 +50,11 @@ namespace System.Text.Json.Serialization.Tests
     {
         public JsonSerializerApiValidation_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
+
+    public class JsonSerializerApiValidation_Pipe : JsonSerializerApiValidation
+    {
+        public JsonSerializerApiValidation_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+    }
 }
 
 /// <summary>

@@ -132,6 +132,249 @@ namespace System.Text.Json
             return ReaderLoop(data.Length, out length, ref reader);
         }
 
+        public static byte[] SequenceReturnBytesHelper(byte[] data, out int length, int randomSeed, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow, int maxDepth = 64)
+        {
+            ReadOnlySequence<byte> sequence = CreateSegmentsRandom(data, randomSeed);
+            var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
+            var reader = new Utf8JsonReader(sequence, true, state);
+            return ReaderLoop(data.Length, out length, ref reader);
+        }
+
+        internal sealed class CustomMemoryForTest<T> : IMemoryOwner<T>
+        {
+            private bool _disposed;
+            private T[] _array;
+            private readonly int _offset;
+            private readonly int _length;
+
+            public CustomMemoryForTest(T[] array) : this(array, 0, array.Length)
+            {
+            }
+
+            public CustomMemoryForTest(T[] array, int offset, int length)
+            {
+                _array = array;
+                _offset = offset;
+                _length = length;
+            }
+
+            public Memory<T> Memory
+            {
+                get
+                {
+                    if (_disposed) throw new ObjectDisposedException(this.GetType().Name);
+                    return new Memory<T>(_array, _offset, _length);
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _array = null!;
+                _disposed = true;
+            }
+        }
+
+        internal sealed class BufferSegment : ReadOnlySequenceSegment<byte>
+        {
+            public BufferSegment(Memory<byte> memory)
+            {
+                Memory = memory;
+            }
+
+            public BufferSegment Append(Memory<byte> memory)
+            {
+                var segment = new BufferSegment(memory)
+                {
+                    RunningIndex = RunningIndex + Memory.Length
+                };
+                Next = segment;
+                return segment;
+            }
+        }
+
+        internal abstract class ReadOnlySequenceFactory
+        {
+            public static ReadOnlySequenceFactory ArrayFactory { get; } = new ArrayTestSequenceFactory();
+            public static ReadOnlySequenceFactory MemoryFactory { get; } = new MemoryTestSequenceFactory();
+            public static ReadOnlySequenceFactory OwnedMemoryFactory { get; } = new OwnedMemoryTestSequenceFactory();
+            public static ReadOnlySequenceFactory SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
+            public static ReadOnlySequenceFactory SegmentPerByteFactory { get; } = new BytePerSegmentTestSequenceFactory();
+
+            public abstract ReadOnlySequence<byte> CreateOfSize(int size);
+            public abstract ReadOnlySequence<byte> CreateWithContent(byte[] data);
+
+            public ReadOnlySequence<byte> CreateWithContent(string data)
+            {
+                return CreateWithContent(Encoding.ASCII.GetBytes(data));
+            }
+
+            internal sealed class ArrayTestSequenceFactory : ReadOnlySequenceFactory
+            {
+                public override ReadOnlySequence<byte> CreateOfSize(int size)
+                {
+                    return new ReadOnlySequence<byte>(new byte[size + 20], 10, size);
+                }
+
+                public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+                {
+                    var startSegment = new byte[data.Length + 20];
+                    Array.Copy(data, 0, startSegment, 10, data.Length);
+                    return new ReadOnlySequence<byte>(startSegment, 10, data.Length);
+                }
+            }
+
+            internal sealed class MemoryTestSequenceFactory : ReadOnlySequenceFactory
+            {
+                public override ReadOnlySequence<byte> CreateOfSize(int size)
+                {
+                    return CreateWithContent(new byte[size]);
+                }
+
+                public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+                {
+                    var startSegment = new byte[data.Length + 20];
+                    Array.Copy(data, 0, startSegment, 10, data.Length);
+                    return new ReadOnlySequence<byte>(new Memory<byte>(startSegment, 10, data.Length));
+                }
+            }
+
+            internal sealed class OwnedMemoryTestSequenceFactory : ReadOnlySequenceFactory
+            {
+                public override ReadOnlySequence<byte> CreateOfSize(int size)
+                {
+                    return CreateWithContent(new byte[size]);
+                }
+
+                public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+                {
+                    var startSegment = new byte[data.Length + 20];
+                    Array.Copy(data, 0, startSegment, 10, data.Length);
+                    return new ReadOnlySequence<byte>(new CustomMemoryForTest<byte>(startSegment, 10, data.Length).Memory);
+                }
+            }
+
+            internal sealed class SingleSegmentTestSequenceFactory : ReadOnlySequenceFactory
+            {
+                public override ReadOnlySequence<byte> CreateOfSize(int size)
+                {
+                    return CreateWithContent(new byte[size]);
+                }
+
+                public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+                {
+                    return CreateSegments(data);
+                }
+            }
+
+            internal sealed class BytePerSegmentTestSequenceFactory : ReadOnlySequenceFactory
+            {
+                public override ReadOnlySequence<byte> CreateOfSize(int size)
+                {
+                    return CreateWithContent(new byte[size]);
+                }
+
+                public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+                {
+                    var segments = new List<byte[]>((data.Length * 2) + 1);
+
+                    segments.Add(Array.Empty<byte>());
+                    foreach (var b in data)
+                    {
+                        segments.Add(new[] { b });
+                        segments.Add(Array.Empty<byte>());
+                    }
+
+                    return CreateSegments(segments.ToArray());
+                }
+            }
+
+            internal sealed class RandomSegmentTestSequenceFactory : ReadOnlySequenceFactory
+            {
+                private int _rand;
+                public RandomSegmentTestSequenceFactory(int rand)
+                {
+                    _rand = rand;
+                }
+
+                public override ReadOnlySequence<byte> CreateOfSize(int size)
+                {
+                    return CreateWithContent(new byte[size]);
+                }
+
+                public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+                {
+                    var segments = new List<byte[]>();
+
+                    segments.Add(Array.Empty<byte>());
+                    var random = new Random(_rand);
+                    var size = data.Length;
+                    while (size > 0)
+                    {
+                        var segmentSize = random.Next(1, size);
+                        var arr = new byte[segmentSize];
+                        data.AsSpan(data.Length - size, segmentSize).CopyTo(arr);
+                        segments.Add(arr);
+                        segments.Add(Array.Empty<byte>());
+                        size -= segmentSize;
+                    }
+                    //foreach (var b in data)
+                    //{
+                    //    segments.Add(new[] { b });
+                    //    segments.Add(Array.Empty<byte>());
+                    //}
+
+                    return CreateSegments(segments.ToArray());
+                }
+            }
+
+            public static ReadOnlySequence<byte> CreateSegments(params byte[][] inputs)
+            {
+                if (inputs == null || inputs.Length == 0)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                int i = 0;
+
+                BufferSegment? last = null;
+                BufferSegment? first = null;
+
+                do
+                {
+                    byte[] s = inputs[i];
+                    int length = s.Length;
+                    int dataOffset = length;
+                    var chars = new byte[length * 2];
+
+                    for (int j = 0; j < length; j++)
+                    {
+                        chars[dataOffset + j] = s[j];
+                    }
+
+                    // Create a segment that has offset relative to the OwnedMemory and OwnedMemory itself has offset relative to array
+                    var memory = new Memory<byte>(chars).Slice(length, length);
+
+                    if (first == null)
+                    {
+                        first = new BufferSegment(memory);
+                        last = first;
+                    }
+                    else
+                    {
+                        last = last!.Append(memory);
+                    }
+                    i++;
+                } while (i < inputs.Length);
+
+                return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
+            }
+        }
+
         public delegate void Utf8JsonReaderAction(ref Utf8JsonReader reader);
 
         public static void AssertWithSingleAndMultiSegmentReader(string json, Utf8JsonReaderAction action, JsonReaderOptions options = default)
@@ -155,6 +398,19 @@ namespace System.Text.Json
             BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
 
             return new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+        }
+
+        public static ReadOnlySequence<byte> CreateSegmentsRandom(byte[] data, int randomSeed)
+        {
+            return new ReadOnlySequenceFactory.RandomSegmentTestSequenceFactory(randomSeed).CreateWithContent(data);
+            //return ReadOnlySequenceFactory.SegmentPerByteFactory.CreateWithContent(data);
+            //ReadOnlyMemory<byte> dataMemory = data;
+
+            //var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, data.Length / 2));
+            //ReadOnlyMemory<byte> secondMem = dataMemory.Slice(data.Length / 2);
+            //BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+
+            //return new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
         }
 
         public static ReadOnlySequence<byte> CreateSegments(byte[] data, int splitLocation)

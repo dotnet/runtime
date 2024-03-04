@@ -47,6 +47,11 @@ namespace System.Text.Json.Serialization.Tests
         public MetadataTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
 
+    public class MetadataTests_Pipe : MetadataTests
+    {
+        public MetadataTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+    }
+
     public abstract partial class MetadataTests
     {
         protected JsonSerializerWrapper Serializer { get; }

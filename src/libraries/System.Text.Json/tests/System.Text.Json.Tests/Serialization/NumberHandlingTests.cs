@@ -42,6 +42,11 @@ namespace System.Text.Json.Serialization.Tests
         public NumberHandlingTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
 
+    public class NumberHandlingTests_Pipe : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+    }
+
     public abstract class NumberHandlingTests_OverloadSpecific
     {
         private JsonSerializerWrapper Serializer { get; }

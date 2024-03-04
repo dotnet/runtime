@@ -52,4 +52,9 @@ namespace System.Text.Json.Serialization.Tests
     {
         public RequiredKeywordTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
+
+    public class RequiredKeywordTests_Pipe : RequiredKeywordTests
+    {
+        public RequiredKeywordTests_Pipe() : base(JsonSerializerWrapper.PipeSerializer) { }
+    }
 }

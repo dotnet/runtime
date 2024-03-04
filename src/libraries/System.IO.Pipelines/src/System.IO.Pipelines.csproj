@@ -65,4 +65,13 @@ System.IO.Pipelines.PipeReader</PackageDescription>
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+
 </Project>
