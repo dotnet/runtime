@@ -710,7 +710,7 @@ endif()
 ##
 
 if(NOT MONO_CROSS_COMPILE)
-    set(STATIC_LIBS_ONLY 1)
+    set(Mono 1)
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT MONO_CROSS_COMPILE)
 ##
