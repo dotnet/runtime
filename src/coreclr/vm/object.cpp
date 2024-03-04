@@ -1396,7 +1396,14 @@ void __fastcall ZeroMemoryInGCHeap(void* mem, size_t size)
 
 void DelegateObject::SetMethodBase(OBJECTREF newMethodBase)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    
     GCX_COOP();
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__DELEGATE__SET_CACHED_METHOD);
     DECLARE_ARGHOLDER_ARRAY(args, 2);
