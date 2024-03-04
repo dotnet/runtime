@@ -9,16 +9,8 @@ import {
 } from "./mintops";
 
 export const ldcTable: { [opcode: number]: [WasmOpcode, number] } = {
-    [MintOpcode.MINT_LDC_I4_M1]: [WasmOpcode.i32_const, -1],
     [MintOpcode.MINT_LDC_I4_0]:  [WasmOpcode.i32_const,  0],
     [MintOpcode.MINT_LDC_I4_1]:  [WasmOpcode.i32_const,  1],
-    [MintOpcode.MINT_LDC_I4_2]:  [WasmOpcode.i32_const,  2],
-    [MintOpcode.MINT_LDC_I4_3]:  [WasmOpcode.i32_const,  3],
-    [MintOpcode.MINT_LDC_I4_4]:  [WasmOpcode.i32_const,  4],
-    [MintOpcode.MINT_LDC_I4_5]:  [WasmOpcode.i32_const,  5],
-    [MintOpcode.MINT_LDC_I4_6]:  [WasmOpcode.i32_const,  6],
-    [MintOpcode.MINT_LDC_I4_7]:  [WasmOpcode.i32_const,  7],
-    [MintOpcode.MINT_LDC_I4_8]:  [WasmOpcode.i32_const,  8],
 };
 
 // operator, loadOperator, storeOperator

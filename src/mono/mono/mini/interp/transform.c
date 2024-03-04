@@ -1604,24 +1604,16 @@ interp_ip_in_cbb (TransformData *td, int il_offset)
 static gboolean
 interp_ins_is_ldc (InterpInst *ins)
 {
-	return ins->opcode >= MINT_LDC_I4_M1 && ins->opcode <= MINT_LDC_I8;
+	return ins->opcode >= MINT_LDC_I4_0 && ins->opcode <= MINT_LDC_I8;
 }
 
 gint32
 interp_get_const_from_ldc_i4 (InterpInst *ins)
 {
 	switch (ins->opcode) {
-	case MINT_LDC_I4_M1: return -1;
 	case MINT_LDC_I4_0: return 0;
 	case MINT_LDC_I4_1: return 1;
-	case MINT_LDC_I4_2: return 2;
-	case MINT_LDC_I4_3: return 3;
-	case MINT_LDC_I4_4: return 4;
-	case MINT_LDC_I4_5: return 5;
-	case MINT_LDC_I4_6: return 6;
-	case MINT_LDC_I4_7: return 7;
-	case MINT_LDC_I4_8: return 8;
-	case MINT_LDC_I4_S: return (gint32)(gint8)ins->data [0];
+	case MINT_LDC_I4_S: return (gint32)(gint16)ins->data [0];
 	case MINT_LDC_I4: return READ32 (&ins->data [0]);
 	default:
 		g_assert_not_reached ();
@@ -1633,24 +1625,14 @@ InterpInst*
 interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int dreg)
 {
 	guint16 opcode;
-	switch (ct) {
-	case -1: opcode = MINT_LDC_I4_M1; break;
-	case 0: opcode = MINT_LDC_I4_0; break;
-	case 1: opcode = MINT_LDC_I4_1; break;
-	case 2: opcode = MINT_LDC_I4_2; break;
-	case 3: opcode = MINT_LDC_I4_3; break;
-	case 4: opcode = MINT_LDC_I4_4; break;
-	case 5: opcode = MINT_LDC_I4_5; break;
-	case 6: opcode = MINT_LDC_I4_6; break;
-	case 7: opcode = MINT_LDC_I4_7; break;
-	case 8: opcode = MINT_LDC_I4_8; break;
-	default:
-		if (ct >= -128 && ct <= 127)
-			opcode = MINT_LDC_I4_S;
-		else
-			opcode = MINT_LDC_I4;
-		break;
-	}
+	if (!ct)
+		opcode = MINT_LDC_I4_0;
+	else if (ct == 1)
+		opcode = MINT_LDC_I4_1;
+	else if (ct >= G_MININT16 && ct <= G_MAXINT16)
+		opcode = MINT_LDC_I4_S;
+	else
+		opcode = MINT_LDC_I4;
 
 	int new_size = mono_interp_oplen [opcode];
 
@@ -1668,7 +1650,7 @@ interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int
 	interp_ins_set_dreg (ins, dreg);
 
 	if (new_size == 3)
-		ins->data [0] = (gint8)ct;
+		ins->data [0] = (gint16)ct;
 	else if (new_size == 4)
 		WRITE32_INS (ins, 0, &ct);
 
@@ -5232,7 +5214,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			++td->ip;
 			break;
 		case CEE_LDC_I4_M1:
-			interp_add_ins (td, MINT_LDC_I4_M1);
+			interp_add_ins (td, MINT_LDC_I4_S);
+			td->last_ins->data [0] = (guint16)-1;
 			push_simple_type (td, STACK_TYPE_I4);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 			++td->ip;
@@ -5276,7 +5259,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_LDC_I4_6:
 		case CEE_LDC_I4_7:
 		case CEE_LDC_I4_8:
-			interp_add_ins (td, (*td->ip - CEE_LDC_I4_0) + MINT_LDC_I4_0);
+			interp_add_ins (td, MINT_LDC_I4_S);
+			td->last_ins->data [0] = *td->ip - CEE_LDC_I4_0;
 			push_simple_type (td, STACK_TYPE_I4);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 			++td->ip;

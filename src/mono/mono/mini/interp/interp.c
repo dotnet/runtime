@@ -3997,36 +3997,13 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 
-#define LDC(n) do { LOCAL_VAR (ip [1], gint32) = (n); ip += 2; } while (0)
-		MINT_IN_CASE(MINT_LDC_I4_M1)
-			LDC(-1);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_0)
-			LDC(0);
+			LOCAL_VAR (ip [1], gint32) = 0;
+			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_1)
-			LDC(1);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_2)
-			LDC(2);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_3)
-			LDC(3);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_4)
-			LDC(4);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_5)
-			LDC(5);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_6)
-			LDC(6);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_7)
-			LDC(7);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_8)
-			LDC(8);
+			LOCAL_VAR (ip [1], gint32) = 1;
+			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_S)
 			LOCAL_VAR (ip [1], gint32) = (short)ip [2];
