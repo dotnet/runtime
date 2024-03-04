@@ -12,6 +12,7 @@ using Microsoft.Playwright;
 using Wasm.Tests.Internal;
 using Xunit.Abstractions;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace Wasm.Build.Tests;
 
@@ -37,7 +38,8 @@ internal class BrowserRunner : IAsyncDisposable
 
     public async Task<string> StartServerAndGetUrlAsync(
         ToolCommand cmd,
-        string args
+        string args,
+        string? projectDir = null
     ) {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
@@ -81,6 +83,20 @@ internal class BrowserRunner : IAsyncDisposable
         }
         if (!urlAvailable.Task.IsCompleted)
         {
+            if (projectDir != null)
+            {
+                string launchFile = Path.Combine(projectDir, "Properties", "launchSettings.json");
+                if (File.Exists(launchFile))
+                {
+                    string launchContent = File.ReadAllText(launchFile);
+                    _testOutput.WriteLine($"launchSettings.json: {launchContent}");
+                }
+                else
+                {
+                    _testOutput.WriteLine("launchSettings.json: Doesn't exist");
+                }
+            }
+
             foreach (var p in Process.GetProcesses())
             {
                 string processMsg = $"Process: {p.Id} - {p.ProcessName}";
@@ -125,9 +141,10 @@ internal class BrowserRunner : IAsyncDisposable
         bool headless = true,
         Action<IConsoleMessage>? onConsoleMessage = null,
         Action<string>? onError = null,
-        Func<string, string>? modifyBrowserUrl = null)
+        Func<string, string>? modifyBrowserUrl = null,
+        string? projectDir = null)
     {
-        var urlString = await StartServerAndGetUrlAsync(cmd, args);
+        var urlString = await StartServerAndGetUrlAsync(cmd, args, projectDir);
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
