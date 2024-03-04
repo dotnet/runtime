@@ -11,6 +11,11 @@
     <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
   </PropertyGroup>
 
+  <PropertyGroup>
+      <!-- if IsRuntimeComponent is true, we will put the native library into the specified locations under `artifacts/bin/$(RuntimeFlavor)/os.arch.config/` -->
+      <IsRuntimeComponent Condition="'$(IsRuntimeComponent)' == ''">true</IsRuntimeComponent>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- passed by compile-native.proj to set - -gcc-toolchain=$(ROOTFS_DIR)/usr -->
     <CustomLinkerArg Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="$(CustomLinkerArgToolchainArg)" />

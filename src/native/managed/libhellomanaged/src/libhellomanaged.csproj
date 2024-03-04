@@ -16,6 +16,11 @@
   <Import Project="..\..\native-library.props" />
 
   <ItemGroup>
+      <InstallRuntimeComponentDest Include="." />
+      <InstallRuntimeComponentDest Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/>
+  </ItemGroup>
+
+  <ItemGroup>
       <ProjectReference Include="..\..\..\..\tools\Microsoft.DotNet.HelloManaged\src\Microsoft.DotNet.HelloManaged.csproj" />
   </ItemGroup>
 

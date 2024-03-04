@@ -81,4 +81,23 @@
         </ItemGroup>
     </Target>
 
+    <Target Name="InstallRuntimeComponentToFinalDest" AfterTargets="Publish" Condition="'$(IsRuntimeComponent)' == 'true'">
+        <Error Text="Set at least one @InstallRuntimeComponentDest item" Condition="@(InstallRuntimeComponentDest->Count()) == 0" />
+
+        <PropertyGroup>
+            <!-- FIXME: this is the same as CoreCLRToolPath - but that doesn't seem like a good name -->
+            <FinalRuntimeComponentDestinationBase>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(RuntimeFlavor.ToLower())', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</FinalRuntimeComponentDestinationBase>
+        </PropertyGroup>
+        
+        <ItemGroup>
+            <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDest.Identity)'))" />
+        </ItemGroup>
+
+        <Message Importance="High" Text="Would  install $(TargetName) into %(_NormalizedInstallRuntimeComponentDest.Identity)" />
+
+        <Copy SourceFiles="$(PublishDir)/$(TargetName)$(NativeBinaryExt)"
+              DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)"
+              SkipUnchangedFiles="true" />
+    </Target>
+
 </Project>

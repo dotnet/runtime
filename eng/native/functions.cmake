@@ -407,7 +407,7 @@ function(add_imported_library_clr targetName)
   
   add_custom_command(OUTPUT "${dest}"
     DEPENDS "${src}"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${src}" "${dest}"
+    COMMAND ${CMAKE_COMMAND} -E true "${src}" "${dest}"
   )
 
   if (CLR_CMAKE_HOST_WIN32)
@@ -417,7 +417,7 @@ function(add_imported_library_clr targetName)
 
     add_custom_command(OUTPUT "${destPdb}"
       DEPENDS "${srcPdb}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${srcPdb}" "${destPdb}"
+      COMMAND ${CMAKE_COMMAND} -E true "${srcPdb}" "${destPdb}"
     )
   endif()
 
