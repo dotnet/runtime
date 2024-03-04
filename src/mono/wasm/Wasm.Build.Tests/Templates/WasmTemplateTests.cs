@@ -292,7 +292,7 @@ namespace Wasm.Build.Tests
                 await using var runner = new BrowserRunner(_testOutput);
                 IPage? page = null;
                 int iteration = 0;
-                while (iteration < 3)
+                while (page == null && iteration < 3)
                 {
                     try
                     {
