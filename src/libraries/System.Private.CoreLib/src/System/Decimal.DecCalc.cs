@@ -467,30 +467,6 @@ Div1Word:
                 return quo;
             }
 
-
-            /// <summary>
-            /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
-            /// </summary>
-            /// <returns>hi bits of the result</returns>
-            /// <remarks>returns nuint instead of uint to skip clearing upper 32bits on 64bit platforms</remarks>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static nuint BigMul64By32(ulong a, uint b, out ulong low)
-            {
-#if TARGET_64BIT
-                return (nuint)Math.BigMul(a, b, out low);
-#else
-                uint al = (uint)a;
-                uint ah = (uint)(a >> 32);
-                uint bl = b;
-
-                ulong prodL = ((ulong)al) * bl;
-                ulong prodH = ((ulong)ah) * bl + (prodL >> 32);
-
-                low = ((prodH << 32) | (uint)prodL);
-                return (nuint)(prodH >> 32);
-#endif
-            }
-
             /// <summary>
             /// Do partial divide, yielding 32-bit result and 96-bit remainder.
             /// Top divisor uint must be larger than top dividend uint. This is
@@ -529,7 +505,7 @@ Div1Word:
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
                 ulong prod1;
-                uint prod2 = (uint)BigMul64By32(bufDen.Low64, quo, out prod1);
+                uint prod2 = (uint)Math.BigMul(bufDen.Low64, quo, out prod1);
                 ulong num = bufNum.Low64 - prod1;
                 remainder -= (uint)prod2;
 
@@ -584,7 +560,7 @@ PosRem:
             /// <returns>Returns highest 32 bits of product</returns>
             private static uint IncreaseScale(ref Buf12 bufNum, uint power)
             {
-                ulong hi64 = BigMul64By32(bufNum.Low64, power, out ulong low64);
+                ulong hi64 = Math.BigMul(bufNum.Low64, power, out ulong low64);
                 bufNum.Low64 = low64;
                 hi64 = Math.BigMul(bufNum.U2, power) + hi64;
                 bufNum.U2 = (uint)hi64;
@@ -599,7 +575,7 @@ PosRem:
             /// <param name="power">Scale factor to multiply by</param>
             private static void IncreaseScale64(ref Buf12 bufNum, uint power)
             {
-                bufNum.U2 = (uint)BigMul64By32(bufNum.Low64, power, out ulong low64);
+                bufNum.U2 = (uint)Math.BigMul(bufNum.Low64, power, out ulong low64);
                 bufNum.Low64 = low64;
             }
 
@@ -1464,7 +1440,7 @@ ThrowOverflow:
                     else
                     {
                         // Left value is 32-bit, result fits in 4 uints
-                        tmp = BigMul64By32(d2.Low64, d1.Low, out ulong low);
+                        tmp = Math.BigMul(d1.Low, d2.Low64, out ulong low);
                         bufProd.Low64 = low;
 
                         if (d2.High != 0)
@@ -1484,7 +1460,7 @@ ThrowOverflow:
                 else if ((d2.High | d2.Mid) == 0)
                 {
                     // Right value is 32-bit, result fits in 4 uints
-                    tmp = BigMul64By32(d1.Low64, d2.Low, out ulong low);
+                    tmp = Math.BigMul(d1.Low64, d2.Low, out ulong low);
                     bufProd.Low64 = low;
 
                     if (d1.High != 0)
@@ -1528,13 +1504,13 @@ ThrowOverflow:
                         ulong hi64 = Math.BigMul(d1.High, d2.High);
 
                         // Do crosswise multiplications between upper 32bit and lower 64 bits
-                        hi64 += BigMul64By32(d1.Low64, d2.High, out tmp);
+                        hi64 += Math.BigMul(d1.Low64, d2.High, out tmp);
                         mid64 += tmp;
                         // propagate carry, can be simplified if https://github.com/dotnet/runtime/issues/48247 is done
                         if (mid64 < tmp)
                             ++hi64;
 
-                        hi64 += BigMul64By32(d2.Low64, d1.High, out tmp);
+                        hi64 += Math.BigMul(d2.Low64, d1.High, out tmp);
                         mid64 += tmp;
                         if (mid64 < tmp)
                             ++hi64;
