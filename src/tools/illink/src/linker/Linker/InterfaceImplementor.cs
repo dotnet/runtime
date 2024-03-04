@@ -104,9 +104,8 @@ namespace Mono.Linker
 		{
 			public Enumerator (ImplNode original)
 			{
-				_current = original;
-				_original = original;
-
+				_current = new ImplNode (null!, null!, original);
+				_original = _current;
 			}
 			ImplNode _current;
 			ImplNode _original;

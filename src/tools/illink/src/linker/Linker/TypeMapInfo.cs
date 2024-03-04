@@ -49,7 +49,7 @@ namespace Mono.Linker
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<TypeDefinition, List<InterfaceImplementor>> interfaces = new ();
+		readonly Dictionary<TypeDefinition, List<InterfaceImplementor>> _interfaces = new ();
 
 		public TypeMapInfo (LinkContext context)
 		{
@@ -93,7 +93,7 @@ namespace Mono.Linker
 
 		public InterfaceImplementor? GetInterfaceImplementor(TypeDefinition implementor, TypeDefinition interfaceType)
 		{
-			if (!_ifaces.TryGetValue (implementor, out var implrs))
+			if (!_interfaces.TryGetValue (implementor, out var implrs))
 				return null;
 
 			foreach(var iface in implrs)
@@ -161,15 +161,14 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		public sealed record IFaceImplr(TypeDefinition ImplementingType, TypeDefinition InterfaceImplProvider, TypeDefinition? InterfaceType, ImplNode InterfaceImplChain);
-		readonly Dictionary<TypeDefinition, List<InterfaceImplementor>> _ifaces = new ();
 		protected void MapInterfacesOnType (TypeDefinition type)
 		{
-			if (_ifaces.ContainsKey (type))
+			if (_interfaces.ContainsKey (type))
 				return;
 
 			List<InterfaceImplementor> implrs = [];
 			// There may be many different chains of interface implementations that lead to the same interface. We should only keep one for each.
+			// This should use TypeReferences since the interfaceImpl could point to different generic instantiations of the interface
 			HashSet<TypeDefinition> interfacesSeen = [];
 
 			// Get all interfaces directly implemented by this type
@@ -184,7 +183,7 @@ namespace Mono.Linker
 			// Add interfaces on base type with the same implementation chain
 			if (type.BaseType is { } baseType && context.Resolve (baseType) is { } baseDef) {
 				MapInterfacesOnType (baseDef);
-				var baseInterfaces = _ifaces[baseDef];
+				var baseInterfaces = _interfaces[baseDef];
 				foreach (var item in baseInterfaces) {
 					if (item.InterfaceType is null || interfacesSeen.Add (item.InterfaceType)) {
 						implrs.Add (new (type, item.InterfaceType, item.InflatedInterface, item.InterfaceImplChain, context));
@@ -200,7 +199,7 @@ namespace Mono.Linker
 					continue;
 				MapInterfacesOnType (iface.InterfaceType);
 				// This would be nice if we could do a breadth-first search instead of a depth-first search. That way we could make sure we keep the shortest interfaceImpl chain to each interface.
-				var baseInterfaces = _ifaces[iface.InterfaceType];
+				var baseInterfaces = _interfaces[iface.InterfaceType];
 				foreach (var item in baseInterfaces) {
 					if (item.InterfaceType is null)
 						continue;
@@ -209,7 +208,7 @@ namespace Mono.Linker
 					}
 				}
 			}
-			_ifaces.Add (type, implrs);
+			_interfaces.Add (type, implrs);
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)
@@ -219,7 +218,7 @@ namespace Mono.Linker
 
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.
-			var allInflatedInterface = _ifaces[type];
+			var allInflatedInterface = _interfaces[type];
 			foreach(var interfaceImplementor in allInflatedInterface) {
 				foreach (MethodReference interfaceMethod in interfaceImplementor.InflatedInterface.GetMethods (context)) {
 					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
@@ -375,7 +374,7 @@ namespace Mono.Linker
 		{
 			// Can I maybe only look at types in the implNode chain? I'd need all the chains that lead to the interfaceType, but it could be possible.
 			bool foundImpl = false;
-			foreach (var potentialDimProviderImplementation in _ifaces[typeThatImplementsInterface]) {
+			foreach (var potentialDimProviderImplementation in _interfaces[typeThatImplementsInterface]) {
 				if (potentialDimProviderImplementation.InterfaceType is null)
 					continue;
 				// If this interface doesn't implement the interface with the method we're looking for, it can't provide a default implementation.
@@ -574,6 +573,6 @@ namespace Mono.Linker
 			return a.FullName == b.FullName;
 		}
 
-		internal List<InterfaceImplementor> GetRecursiveInterfaces (TypeDefinition type) => _ifaces.TryGetValue(type, out var value) ? value : [];
+		internal List<InterfaceImplementor> GetRecursiveInterfaces (TypeDefinition type) => _interfaces.TryGetValue(type, out var value) ? value : [];
 	}
 }

@@ -2452,11 +2452,11 @@ namespace Mono.Linker.Steps
 
 		void MarkInterfaceImplementations (TypeDefinition type)
 		{
-			if (!type.HasInterfaces)
-				return;
+			//if (!type.HasInterfaces)
+			//return;
 
 			// Should look at all recursive interfaces
-			foreach(var iface in Annotations.GetRecusiveInterfaces(type)) {
+			foreach(var iface in Annotations.GetRecursiveInterfaces(type)) {
 				if (ShouldMarkInterfaceImplementation(iface))
 				{
 					foreach(InterfaceImplementation interfaceImpl in iface.InterfaceImplChain)
@@ -2568,7 +2568,7 @@ namespace Mono.Linker.Steps
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
-			InterfaceImplementation? iface = overrideInformation.InterfaceImplementor.InterfaceImplementation;
+			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
 			if (!((iface is not null && Annotations.IsMarked (iface))
 				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
 				return false;
