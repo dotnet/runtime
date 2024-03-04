@@ -636,17 +636,6 @@ namespace System.Threading
             }
         }
 
-        internal unsafe nint ObjectIdForEvents
-        {
-            get
-            {
-                Lock lockObj = this;
-#pragma warning disable CS8500
-                return *(nint*)&lockObj;
-#pragma warning restore CS8500
-            }
-        }
-
         internal ulong OwningThreadId => _owningThreadId;
 
         private static short DetermineMaxSpinCount() =>

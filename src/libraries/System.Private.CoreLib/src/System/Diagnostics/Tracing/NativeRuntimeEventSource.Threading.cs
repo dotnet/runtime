@@ -107,7 +107,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, lockObj.ObjectIdForEvents);
+        public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, Unsafe.ObjectIDForEvents(lockObj));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
@@ -146,7 +146,7 @@ namespace System.Diagnostics.Tracing
                 ContentionFlagsMap.Managed,
                 DefaultClrInstanceId,
                 lockObj.LockIdForEvents,
-                lockObj.ObjectIdForEvents,
+                Unsafe.ObjectIDForEvents(lockObj),
                 lockObj.OwningThreadId);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
@@ -552,14 +552,12 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(301, 3, data);
         }
 
-#pragma warning disable CS8500
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
             object? associatedObject = null) =>
-            WaitHandleWaitStart(waitSource, *(nint*)&associatedObject);
-#pragma warning restore CS8500
+            WaitHandleWaitStart(waitSource, Unsafe.ObjectIDForEvents(associatedObject));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
