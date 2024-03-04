@@ -8100,8 +8100,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             {
                 genStackPointerAdjustment(calleeSaveSPOffset, REG_RA, nullptr, /* reportUnwindData */ true);
             }
+            remainingSPSize    = totalFrameSize - calleeSaveSPOffset;
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize - calleeSaveSPOffset;
-            remainingSPSize    = remainingSPSize - calleeSaveSPOffset;
         }
         else
         {
