@@ -374,8 +374,7 @@ GcInfoDecoder::GcInfoDecoder(
             m_SafePointIndex = FindSafePoint(offset);
         }
     }
-
-    if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
+    else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -385,6 +384,11 @@ GcInfoDecoder::GcInfoDecoder(
         m_Reader.Skip(m_NumSafePoints * numBitsPerOffset);
     }
 #endif
+
+    // we do not support both DECODE_INTERRUPTIBILITY and DECODE_FOR_RANGES_CALLBACK at the same time
+    // as both will enumerate and consume interruptible ranges.
+    _ASSERTE((flags & (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK)) !=
+        (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK));
 
     _ASSERTE(!m_IsInterruptible);
     if(flags & DECODE_INTERRUPTIBILITY)
