@@ -3520,6 +3520,7 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(context);
 
+            result.inlinedLookup = false;
             if (method.IsSharedByGenericInstantiations)
             {
                 result.needsRuntimeLookup = true;

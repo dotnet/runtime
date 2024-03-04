@@ -688,7 +688,6 @@ struct InlineInfo
     InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];
     int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
-    unsigned      lclCtx;
 
     unsigned numberOfGcRefLocals; // Number of TYP_REF and TYP_BYREF locals
 

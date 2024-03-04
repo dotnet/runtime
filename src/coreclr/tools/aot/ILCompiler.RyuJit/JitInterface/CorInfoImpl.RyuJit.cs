@@ -433,6 +433,7 @@ namespace Internal.JitInterface
             if (delegateInfo.NeedsRuntimeLookup)
             {
                 pLookup.lookupKind.needsRuntimeLookup = true;
+                pLookup.lookupKind.inlinedLookup = false;
 
                 MethodDesc contextMethod = methodFromContext(pTargetMethod.tokenContext);
 
@@ -1434,6 +1435,7 @@ namespace Internal.JitInterface
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult->codePointerOrStubLookup.lookupKind.inlinedLookup = false;
                     pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 

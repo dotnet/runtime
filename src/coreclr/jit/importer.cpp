@@ -1568,13 +1568,19 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_LOOKUP_KIND kind)
     }
     else
     {
-        assert(kind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM || kind.runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
+        assert(kind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM ||
+               kind.runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
 
         if (kind.inlinedLookup)
         {
+            assert(compIsForInlining());
+
+            // We're inlining a callee with a runtime lookup. For that runtime lookup we need to grab the
+            // context from the callsite.
             CallArg* instParam = impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
             assert(instParam != nullptr);
             assert(instParam->GetNode()->OperIs(GT_LCL_VAR));
+
             ctxTree = gtNewLclvNode(instParam->GetNode()->AsLclVar()->GetLclNum(), TYP_I_IMPL);
             ctxTree->gtFlags |= GTF_VAR_CONTEXT;
         }

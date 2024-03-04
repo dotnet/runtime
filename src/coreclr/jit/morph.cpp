@@ -6917,8 +6917,7 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
         pRuntimeLookup->testForNull)
     {
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
-                                                getRuntimeContextTree(pLookup->lookupKind),
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, getRuntimeContextTree(pLookup->lookupKind),
                                                 compileTimeHandle);
     }
 
