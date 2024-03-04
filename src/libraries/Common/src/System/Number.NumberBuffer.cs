@@ -50,7 +50,7 @@ namespace System
                 IsNegative = false;
                 HasNonZeroTail = false;
                 Kind = kind;
-                DigitsPtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(digits)); // Safe since memory must be fixed
+                DigitsPtr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(digits)); // Safe since memory must be fixed
                 DigitsLength = digits.Length;
 #if DEBUG
                 Digits.Fill(0xCC);
