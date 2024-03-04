@@ -4370,7 +4370,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfThreadFrame                        = (unsigned)0x10;
         pEEInfoOut->offsetOfGCState                            = (unsigned)0xc;
         pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
-        pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
+        pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x10;
         pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
         pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
