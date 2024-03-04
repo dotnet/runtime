@@ -1400,11 +1400,10 @@ void DelegateObject::SetMethodBase(OBJECTREF newMethodBase)
     {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
     
-    GCX_COOP();
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__DELEGATE__SET_CACHED_METHOD);
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(this);
