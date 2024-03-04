@@ -82,6 +82,12 @@ jobs:
     - name: buildCommandSourcesDirectory
       value: '$(Build.SourcesDirectory)/'
 
+    - name: librariesBuildConfigArg
+      value: -lc ${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
+
+    - name: runtimeBuildConfigArg
+      value: -rc ${{ coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig) }}
+
     ###
     ### Platform-specific variable setup
     ###
@@ -101,6 +107,8 @@ jobs:
           build.cmd -subset host+packs -ci
           $(BuildAction)
           -configuration $(_BuildConfig)
+          $(librariesBuildConfigArg)
+          $(runtimeBuildConfigArg)
           $(CommonMSBuildArgs)
 
     - ${{ elseif eq(parameters.osGroup, 'osx') }}:
@@ -118,6 +126,8 @@ jobs:
           $(BuildAction)
           -configuration $(_BuildConfig)
           -arch ${{ parameters.archType }}
+          $(librariesBuildConfigArg)
+          $(runtimeBuildConfigArg)
           $(CommonMSBuildArgs)
 
     - ${{ elseif in(parameters.osGroup, 'linux', 'freebsd') }}:
@@ -143,6 +153,8 @@ jobs:
         value: >-
           $(Build.SourcesDirectory)/build.sh -subset host+packs -ci
           $(BuildAction)
+          $(librariesBuildConfigArg)
+          $(runtimeBuildConfigArg)
           $(ArchArg)
           /p:CrossBuild=${{ parameters.crossBuild }}
           /p:PortableBuild=$(_PortableBuild)
