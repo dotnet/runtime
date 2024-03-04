@@ -9277,7 +9277,7 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (!mono_class_init_internal (cmethod->klass))
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);

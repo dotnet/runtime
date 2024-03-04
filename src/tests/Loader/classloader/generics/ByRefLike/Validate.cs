@@ -68,7 +68,6 @@ public class Validate
     }
 
     [Fact]
-    [SkipOnMono("https://github.com/dotnet/runtime/issues/99165")]
     public static void Validate_InvalidOpCode_Scenarios_ArrayOfT()
     {
         Console.WriteLine($"{nameof(Validate_InvalidOpCode_Scenarios_ArrayOfT)}...");
@@ -77,8 +76,8 @@ public class Validate
         // The TypeLoader prevents these invalid types from being constructed. We rely on
         // the failure to construct these invalid types to block opcode usage.
 
-        // Assert.Throws<TypeLoadException>(() => { Exec.AllocArrayOfT_Invalid(); });
-        // Assert.Throws<TypeLoadException>(() => { Exec.AllocMultiDimArrayOfT_Invalid(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.AllocArrayOfT_Invalid(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.AllocMultiDimArrayOfT_Invalid(); });
     }
 
     [Fact]

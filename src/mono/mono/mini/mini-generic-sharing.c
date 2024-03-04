@@ -590,6 +590,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
@@ -654,6 +655,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 
