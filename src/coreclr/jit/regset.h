@@ -187,9 +187,6 @@ public:
 #endif
         else
         {
-            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
-            // to regMaskGpr
-            assert(false);
             assert(varTypeRegister[type] == VTR_FLOAT);
             newMask.floatRegs |= addMaskVars;
         }
@@ -202,7 +199,7 @@ public:
         AllRegsMask newMask = _rsAllMaskVars;
         if (varTypeRegister[type] == VTR_INT)
         {
-            newMask.gprRegs = ~removeMaskVars;
+            newMask.gprRegs &= ~removeMaskVars;
         }
 #ifdef HAS_PREDICATE_REGS
         else if (varTypeRegister[type] == VTR_MASK)
@@ -210,16 +207,13 @@ public:
             // TODO: If we never hit this assert, then just convert _rsAllMaskVars
             // to regMaskGpr
             assert(false);
-            newMask.predicateRegs = ~removeMaskVars;
+            newMask.predicateRegs &= ~removeMaskVars;
         }
 #endif
         else
         {
-            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
-            // to regMaskGpr
-            assert(false);
             assert(varTypeRegister[type] == VTR_FLOAT);
-            newMask.floatRegs = ~removeMaskVars;
+            newMask.floatRegs &= ~removeMaskVars;
         }
         SetMaskVars(newMask);
     }
