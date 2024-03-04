@@ -1162,6 +1162,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isValidUimm8(emitGetInsSC(id))); // iiiii iii
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             assert(isPredicateRegister(id->idReg1())); // DDDD
             assert(isVectorRegister(id->idReg2()));    // nnnnn
@@ -10309,6 +10316,14 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
             fmt = IF_SVE_FU_2A;
+            break;
+
+        case INS_sve_ext:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isValidUimm8(imm));      // iiiii iii
+            fmt = IF_SVE_BQ_2A;
             break;
 
         case INS_sve_dupq:
@@ -21925,6 +21940,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm3_12_to_10(ssize_t imm)
+{
+    assert(isValidUimm3(imm));
+    return (code_t)imm << 10;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
  */
 
@@ -24403,6 +24429,16 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_Rd(id->idReg1());           // ddddd
             code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
             code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());  // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());  // nnnnn
+            code |= insEncodeUimm3_12_to_10(imm & 0b111); // iii
+            code |= insEncodeUimm5_20_to_16(imm >> 3);    // iiiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -28658,6 +28694,14 @@ void emitter::emitDispInsHelp(
             }
             break;
 
+        // <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
+            emitDispVectorRegList(id->idReg2(), 2, id->idInsOpt(), true); // nnnnn
+            emitDispImm(imm, false);                                      // iiiii iii
+            break;
+
         // <Zd>.<T>, <Zn>.<T>, <Zm>.D
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
@@ -32621,6 +32665,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
         case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
         case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

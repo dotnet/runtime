@@ -5932,6 +5932,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincw, EA_SCALABLE, REG_V11, SVE_PATTERN_ALL, 16,
                                     INS_OPTS_SCALABLE_D); // UQINCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
 
+    // IF_SVE_BQ_2A
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V0, REG_V1, 0,
+                              INS_OPTS_SCALABLE_B); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V2, REG_V3, 5,
+                              INS_OPTS_SCALABLE_B); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V4, REG_V5, 128,
+                              INS_OPTS_SCALABLE_B); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V6, REG_FP_LAST, 255,
+                              INS_OPTS_SCALABLE_B); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
                               INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>

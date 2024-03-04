@@ -738,6 +738,9 @@ static code_t insEncodeUimm6_21_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
 
+// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+static code_t insEncodeUimm3_12_to_10(ssize_t imm);
+
 // Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
 static code_t insEncodeUimm3_18_to_16(ssize_t imm);
 
