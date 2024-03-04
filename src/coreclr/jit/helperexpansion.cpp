@@ -371,7 +371,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     //
     // Update preds in all new blocks
     //
-    fgRemoveRefPred(block, prevBb);
+    assert(prevBb->KindIs(BBJ_ALWAYS));
+    fgRemoveRefPred(prevBb->GetTargetEdge());
 
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fastPathBb);
@@ -384,8 +385,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         assert(fallbackBb->JumpsToNext());
         fallbackBb->SetFlags(BBF_NONE_QUIRK);
     }
-
-    assert(prevBb->KindIs(BBJ_ALWAYS));
 
     if (needsSizeCheck)
     {
