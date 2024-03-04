@@ -14,6 +14,6 @@
     <OfficialBuildRID Include="win-x64" Platform="x64" />
     <OfficialBuildRID Include="freebsd-x64" Platform="x64" />
     <OfficialBuildRID Include="freebsd-arm64" Platform="arm64" />
-    <OfficialBuildRID Include="$(OutputRID)" Platform="$(TargetArchitecture)" Condition="'$(NativeAotSupported)' == 'true'" Exclude="@(OfficialBuildRID)" />
+    <OfficialBuildRID Include="$(OutputRID)" Platform="$(TargetArchitecture)" Exclude="@(OfficialBuildRID)" />
   </ItemGroup>
 </Project>

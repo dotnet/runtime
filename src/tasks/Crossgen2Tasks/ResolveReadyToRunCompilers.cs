@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using NuGet.RuntimeModel;
 using NuGet.Versioning;
 
 namespace Microsoft.NET.Build.Tasks
@@ -112,9 +111,8 @@ namespace Microsoft.NET.Build.Tasks
                 return false;
             }
 
-            RuntimeGraph runtimeGraph = new RuntimeGraphCache(this).GetRuntimeGraph(RuntimeGraphPath);
-            if (!ExtractTargetPlatformAndArchitecture(runtimeGraph, _targetRuntimeIdentifier, out _targetPlatform, out _targetArchitecture) ||
-                !ExtractTargetPlatformAndArchitecture(runtimeGraph, _hostRuntimeIdentifier, out string hostPlatform, out _) ||
+            if (!ExtractTargetPlatformAndArchitecture(_targetRuntimeIdentifier, out _targetPlatform, out _targetArchitecture) ||
+                !ExtractTargetPlatformAndArchitecture(_hostRuntimeIdentifier, out string hostPlatform, out _) ||
                 _targetPlatform != hostPlatform ||
                 !GetCrossgenComponentsPaths())
             {
@@ -144,8 +142,7 @@ namespace Microsoft.NET.Build.Tasks
             }
 
             bool version5 = crossgen2PackVersion.Major < 6;
-            RuntimeGraph runtimeGraph = new RuntimeGraphCache(this).GetRuntimeGraph(RuntimeGraphPath);
-            bool isSupportedTarget = ExtractTargetPlatformAndArchitecture(runtimeGraph, _targetRuntimeIdentifier, out _targetPlatform, out _targetArchitecture);
+            bool isSupportedTarget = ExtractTargetPlatformAndArchitecture(_targetRuntimeIdentifier, out _targetPlatform, out _targetArchitecture);
 
             // Normalize target OS for crossgen invocation
             string targetOS = (_targetPlatform == "win") ? "windows" :
@@ -205,7 +202,7 @@ namespace Microsoft.NET.Build.Tasks
                             .Equals("Microsoft.NETCore.App", StringComparison.OrdinalIgnoreCase));
         }
 
-        private static bool ExtractTargetPlatformAndArchitecture(RuntimeGraph runtimeGraph, string runtimeIdentifier, out string platform, out Architecture architecture)
+        private static bool ExtractTargetPlatformAndArchitecture(string runtimeIdentifier, out string platform, out Architecture architecture)
         {
             platform = null;
             architecture = default;
@@ -237,30 +234,7 @@ namespace Microsoft.NET.Build.Tasks
                     return false;
             }
 
-            string[] supportedRIDsList = [
-                $"linux-{architectureStr}",
-                $"win-{architectureStr}",
-                $"osx-{architectureStr}",
-                $"freebsd-{architectureStr}",
-                $"maccatalyst-{architectureStr}",
-                $"iossimulator-{architectureStr}",
-                $"ios-{architectureStr}",
-                $"tvossimulator-{architectureStr}",
-                $"tvos-{architectureStr}"
-            ];
-
-            string platformRid = NuGetUtils.GetBestMatchingRid(
-                runtimeGraph,
-                runtimeIdentifier,
-                supportedRIDsList,
-                out _);
-
-            if (platformRid == null)
-            {
-                return false;
-            }
-
-            platform = platformRid.Substring(0, platformRid.LastIndexOf('-')).ToLowerInvariant();
+            platform = runtimeIdentifier.Substring(0, separator).ToLowerInvariant();
             return true;
         }
 
