@@ -11,7 +11,7 @@ parameters:
 # This pipeline only runs on GitHub PRs, not on merges.
 trigger: none
 
-# Only run on changes to the JIT directory. 
+# Only run on changes to the JIT directory.
 pr:
   branches:
     include:
@@ -82,7 +82,7 @@ extends:
                   archiveType: $(archiveType)
                   tarCompression: $(tarCompression)
                   archiveExtension: $(archiveExtension)
-                  artifactName: ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)
                   displayName: JIT and SuperPMI Assets
             condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 

@@ -55,7 +55,7 @@ extends:
                   archiveType: $(archiveType)
                   tarCompression: $(tarCompression)
                   archiveExtension: $(archiveExtension)
-                  artifactName: ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)
                   displayName: JIT and SuperPMI Assets
 
       - template: /eng/pipelines/common/platform-matrix.yml
