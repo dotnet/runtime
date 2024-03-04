@@ -1118,6 +1118,12 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+
+            // Returns the object as a IntPtr - safe when only used for logging
+            internal static nint ObjectIDForEvents(object o)
+            {
+                return Unsafe.GetPinnedObjectPointer(o);
+            }
         }
 
 #pragma warning restore 1591

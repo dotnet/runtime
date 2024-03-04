@@ -107,7 +107,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, Unsafe.ObjectIDForEvents(lockObj));
+        public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, ObjectIDForEvents(lockObj));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
@@ -146,7 +146,7 @@ namespace System.Diagnostics.Tracing
                 ContentionFlagsMap.Managed,
                 DefaultClrInstanceId,
                 lockObj.LockIdForEvents,
-                Unsafe.ObjectIDForEvents(lockObj),
+                ObjectIDForEvents(lockObj),
                 lockObj.OwningThreadId);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
@@ -557,7 +557,7 @@ namespace System.Diagnostics.Tracing
         public unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
             object? associatedObject = null) =>
-            WaitHandleWaitStart(waitSource, Unsafe.ObjectIDForEvents(associatedObject));
+            WaitHandleWaitStart(waitSource, ObjectIDForEvents(associatedObject));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]

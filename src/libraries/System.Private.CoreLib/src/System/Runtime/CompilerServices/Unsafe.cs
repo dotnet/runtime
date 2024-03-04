@@ -937,8 +937,9 @@ namespace System.Runtime.CompilerServices
         }
 
         // Returns the object as a IntPtr - safe when object is pinned, or when only used for logging;
-        // The second method is also defined so that safe usage is always obvious by name.
-        internal static nint GetPinnedObjectPointer(object o) =>  *(nint*)&o;
-        internal static nint ObjectIDForEvents(object o) => GetPinnedObjectPointer(o);
+        internal static nint GetPinnedObjectPointer(object o)
+        {
+            return *(nint*)&o;
+        }
     }
 }
