@@ -83,6 +83,24 @@ namespace System.Text.RegularExpressions
             N = n;
         }
 
+        /// <summary>Creates a new node from an existing one/notone/setone {lazy/atomic} loop with one less iteration.</summary>
+        public RegexNode CloneCharLoopWithOneLessIteration()
+        {
+            Debug.Assert(Kind is RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or
+                                 RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or
+                                 RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic);
+            Debug.Assert(M > 0);
+
+            RegexNode newNode = IsSetFamily ?
+                new RegexNode(Kind, Options, Str!) :
+                new RegexNode(Kind, Options, Ch);
+
+            newNode.M = M - 1;
+            newNode.N = N == int.MaxValue ? int.MaxValue : N - 1;
+
+            return newNode;
+        }
+
         /// <summary>Creates a RegexNode representing a single character.</summary>
         /// <param name="ch">The character.</param>
         /// <param name="options">The node's options.</param>
@@ -1361,27 +1379,16 @@ namespace System.Text.RegularExpressions
             return branch.Kind is RegexNodeKind.One or RegexNodeKind.Multi ? branch : null;
         }
 
-        /// <summary>Same as <see cref="FindBranchOneOrMultiStart"/> but also for Sets.</summary>
-        public RegexNode? FindBranchOneMultiOrSetStart()
-        {
-            RegexNode branch = Kind == RegexNodeKind.Concatenate ? Child(0) : this;
-            return branch.Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set ? branch : null;
-        }
-
         /// <summary>Gets the character that begins a One or Multi.</summary>
         public char FirstCharOfOneOrMulti()
         {
-            Debug.Assert(Kind is RegexNodeKind.One or RegexNodeKind.Multi);
+            Debug.Assert(Kind is RegexNodeKind.One or RegexNodeKind.Multi || (IsOneFamily && M > 0));
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
-            return Kind == RegexNodeKind.One ? Ch : Str![0];
+            return IsOneFamily ? Ch : Str![0];
         }
 
         /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
-        /// <returns>
-        /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
-        /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
-        /// </returns>
-        public RegexNode? FindStartingLiteralNode()
+        public RegexNode? FindStartingLiteralNode(bool allowZeroWidth = true)
         {
             RegexNode? node = this;
             while (true)
@@ -1404,7 +1411,7 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.Capture:
                         case RegexNodeKind.Group:
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
-                        case RegexNodeKind.PositiveLookaround:
+                        case RegexNodeKind.PositiveLookaround when allowZeroWidth:
                             node = node.Child(0);
                             continue;
                     }
