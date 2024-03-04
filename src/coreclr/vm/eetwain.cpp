@@ -2644,10 +2644,8 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
                 {
                     thisPtrReg = REGI_NA;
                 }
-                if  (iptrRegs & regMask)
-                {
-                    iptrRegs &= ~regMask;
-                }
+
+                iptrRegs &= ~regMask;
             }
             iptr = isThis = false;
             continue;
