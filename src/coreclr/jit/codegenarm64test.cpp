@@ -5872,6 +5872,40 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_PATTERN_I(INS_sve_incw, EA_SCALABLE, REG_V5, SVE_PATTERN_VL6, 16,
                                     INS_OPTS_SCALABLE_S); // INCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
 
+    // IF_SVE_BO_1A
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecb, EA_4BYTE, REG_R0, SVE_PATTERN_POW2,
+                                    1); // SQDECB <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecd, EA_4BYTE, REG_R1, SVE_PATTERN_VL1,
+                                    2); // SQDECD <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdech, EA_4BYTE, REG_R2, SVE_PATTERN_VL2,
+                                    3); // SQDECH <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecw, EA_4BYTE, REG_R3, SVE_PATTERN_VL3,
+                                    4); // SQDECW <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincb, EA_4BYTE, REG_R4, SVE_PATTERN_VL4,
+                                    5); // SQINCB <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincd, EA_4BYTE, REG_R5, SVE_PATTERN_VL5,
+                                    6); // SQINCD <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqinch, EA_4BYTE, REG_R6, SVE_PATTERN_VL6,
+                                    7); // SQINCH <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincw, EA_4BYTE, REG_R7, SVE_PATTERN_VL7,
+                                    8); // SQINCW <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecb, EA_4BYTE, REG_R8, SVE_PATTERN_VL8,
+                                    9); // UQDECB <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecd, EA_4BYTE, REG_R9, SVE_PATTERN_VL16,
+                                    10); // UQDECD <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdech, EA_4BYTE, REG_R10, SVE_PATTERN_VL32,
+                                    11); // UQDECH <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecw, EA_4BYTE, REG_R11, SVE_PATTERN_VL64,
+                                    12); // UQDECW <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincb, EA_4BYTE, REG_R12, SVE_PATTERN_VL128,
+                                    13); // UQINCB <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincd, EA_4BYTE, REG_R13, SVE_PATTERN_VL256,
+                                    14); // UQINCD <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqinch, EA_4BYTE, REG_R14, SVE_PATTERN_MUL4,
+                                    15); // UQINCH <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincw, EA_4BYTE, REG_R15, SVE_PATTERN_ALL,
+                                    16); // UQINCW <Wdn>{, <pattern>{, MUL #<imm>}}
+
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
                               INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
