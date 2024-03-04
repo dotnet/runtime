@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -132,6 +131,102 @@ namespace System.Linq.Tests
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ValueType_ReturnsOriginal()
+        {
+            IEnumerable<int> e = Enumerable.Range(0, 10);
+            Assert.Same(e, e.OfType<int>());
+        }
+
+        [Fact]
+        public void NullableValueType_ReturnsNewEnumerable()
+        {
+            IEnumerable<int?> e = Enumerable.Range(0, 10).Select(i => (int?)i);
+            Assert.NotSame(e, e.OfType<int>());
+            Assert.NotSame(e, e.OfType<int?>());
+        }
+
+        [Fact]
+        public void ReferenceType_ReturnsNewEnumerable()
+        {
+            IEnumerable<object> e = Enumerable.Range(0, 10).Select(i => (object)i);
+            Assert.NotSame(e, e.OfType<int>());
+            Assert.NotSame(e, e.OfType<int?>());
+            Assert.NotSame(e, e.OfType<object>());
+            Assert.NotSame(e, e.OfType<object?>());
+        }
+
+        [Fact]
+        public void ToArray()
+        {
+            IEnumerable<object> source = new object[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(new int[] { 1, 2, 3, 4, 5 }, source.OfType<int>().ToArray());
+            Assert.Empty(source.OfType<double>().ToArray());
+        }
+
+        [Fact]
+        public void ToList()
+        {
+            IEnumerable<object> source = new object[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(new int[] { 1, 2, 3, 4, 5 }, source.OfType<int>().ToList());
+            Assert.Empty(source.OfType<double>().ToList());
+        }
+
+        [Fact]
+        public void Count()
+        {
+            Assert.Equal(0, new object[] { }.OfType<string>().Count());
+            Assert.Equal(1, new object[] { "abc" }.OfType<string>().Count());
+            Assert.Equal(2, new object[] { "abc", "def" }.OfType<string>().Count());
+            Assert.Equal(2, new object[] { "abc", 42, "def" }.OfType<string>().Count());
+            Assert.Equal(2, new object[] { "abc", 42, null, "def" }.OfType<string>().Count());
+            Assert.Equal(3, new object[] { null, new object(), null, new object(), new object(), null }.OfType<object>().Count());
+
+            Assert.False(new object[] { "abc" }.OfType<string>().TryGetNonEnumeratedCount(out _));
+            Assert.False(new object[] { "abc" }.OfType<int>().TryGetNonEnumeratedCount(out _));
+            Assert.False(new int[] { 42 }.OfType<object>().TryGetNonEnumeratedCount(out _));
+        }
+
+        [Fact]
+        public void First_Last_ElementAt()
+        {
+            IEnumerable<object> source = new object[] { 1, 2, 3, 4, 5 };
+
+            Assert.Equal(1, source.OfType<int>().First());
+            Assert.Equal(0, source.OfType<long>().FirstOrDefault());
+
+            Assert.Equal(5, source.OfType<int>().Last());
+            Assert.Equal(0, source.OfType<long>().LastOrDefault());
+
+            Assert.Equal(4, source.OfType<int>().ElementAt(3));
+            Assert.Equal(0, source.OfType<long>().ElementAtOrDefault(6));
+        }
+
+        [Fact]
+        public void OfTypeSelect()
+        {
+            IEnumerable<object> objects = new object[] { "1", null, "22", null, 3, 4, "55555" };
+            Assert.Equal(new int[] { 1, 2, 5 }, objects.OfType<string>().Select(s => s.Length));
+
+            Assert.Equal(new int[] { 1, 2, 3, 4, 5 }, new int[] { 1, 2, 3, 4, 5 }.OfType<object>().Select(o => (int)o));
+        }
+
+        [Fact]
+        public void MultipleIterations()
+        {
+            var orig = new object[] { null, null, null, null, null };
+            IEnumerable<object> objects = orig.OfType<object>();
+
+            for (int i = 0; i < orig.Length; i++)
+            {
+                orig[i] = i.ToString();
+
+                int count = 0;
+                foreach (object o in objects) count++;
+                Assert.Equal(i + 1, count);
+            }
         }
     }
 }

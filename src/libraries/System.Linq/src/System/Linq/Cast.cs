@@ -16,17 +16,57 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return OfTypeIterator<TResult>(source);
+            if (default(TResult) is not null && source is IEnumerable<TResult> typedSource)
+            {
+                // The source was already an IEnumerable<TResult> and TResult can't be null. As
+                // such, all values the original input can yield are valid, and we can just return
+                // the strongly-typed input directly as if this were Cast rather than OfType.
+                return typedSource;
+            }
+
+            return new OfTypeIterator<TResult>(source);
         }
 
-        private static IEnumerable<TResult> OfTypeIterator<TResult>(IEnumerable source)
+        private sealed partial class OfTypeIterator<TResult>(IEnumerable source) : Iterator<TResult>
         {
-            foreach (object? obj in source)
+            private readonly IEnumerable _source = source;
+            private IEnumerator? _enumerator;
+
+            public override Iterator<TResult> Clone() => new OfTypeIterator<TResult>(_source);
+
+            public override bool MoveNext()
             {
-                if (obj is TResult result)
+                switch (_state)
                 {
-                    yield return result;
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        _state = 2;
+                        goto case 2;
+
+                    case 2:
+                        Debug.Assert(_enumerator != null);
+                        while (_enumerator.MoveNext())
+                        {
+                            if (_enumerator.Current is TResult result)
+                            {
+                                _current = result;
+                                return true;
+                            }
+                        }
+
+                        Dispose();
+                        break;
                 }
+
+                return false;
+            }
+
+            public override void Dispose()
+            {
+                (_enumerator as IDisposable)?.Dispose();
+                _enumerator = null;
+
+                base.Dispose();
             }
         }
 
