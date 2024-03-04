@@ -1398,7 +1398,7 @@ void DelegateObject::SetMethodBase(OBJECTREF newMethodBase)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
