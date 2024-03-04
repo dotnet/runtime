@@ -57,12 +57,22 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    assert(m_domTree != nullptr);
-    assert(fgReturnBlocksComputed);
+
+    assert(m_dfsTree != nullptr);
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
 
     bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
+
+    fgComputeReturnBlocks();
 
     // TODO-Quirk: Previously, this code ran on a dominator tree based only on
     // regular flow. This meant that all handlers were not considered to be
@@ -2482,12 +2492,16 @@ void Compiler::optMarkLoopHeads()
     {
         printf("*************** In optMarkLoopHeads()\n");
     }
-
-    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
 #endif
+
+    assert(m_dfsTree != nullptr);
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
 
     bool hasLoops = false;
 
@@ -2669,13 +2683,14 @@ PhaseStatus Compiler::optFindLoopsPhase()
     }
 #endif
 
-    optMarkLoopHeads();
+    fgRenumberBlocks();
 
     assert(m_dfsTree != nullptr);
     optFindLoops();
 
-    if (fgHasLoops)
+    if (fgMightHaveNaturalLoops)
     {
+        optMarkLoopHeads();
         optFindAndScaleGeneralLoopBlocks();
     }
 
