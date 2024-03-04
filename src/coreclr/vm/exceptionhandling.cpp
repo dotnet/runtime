@@ -130,6 +130,7 @@ static void DoEHLog(DWORD lvl, _In_z_ const char *fmt, ...);
 
 TrackerAllocator    g_theTrackerAllocator;
 uint32_t            g_exceptionCount;
+bool                g_chainFatalError;
 
 bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
                              Thread*   pThread,
@@ -1045,6 +1046,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
             // Failfast if exception indicates corrupted process state
             if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, pTracker->GetThrowable()))
             {
+                // Allow other handlers installed in the process to handle this exception.
+                // Remove once we have proper support for crash handling via embedding interface.
+                 if (g_chainFatalError)
+                 {
+                     returnDisposition = ExceptionContinueSearch;
+                     goto lExit;
+                 }
+
                 OBJECTREF oThrowable = NULL;
                 SString message;
 

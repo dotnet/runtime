@@ -941,3 +941,13 @@ extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_concurrent_mode(gboole
 
     return currentState;
 }
+
+
+extern bool g_chainFatalError;
+
+extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_set_chain_fatal_error(gboolean state)
+{
+    bool prev = g_chainFatalError;
+    g_chainFatalError = (bool)state;
+    return prev;
+}
