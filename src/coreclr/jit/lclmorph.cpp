@@ -823,15 +823,6 @@ private:
             else
             {
                 isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
-
-                if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout())
-                {
-                    // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
-                    // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the
-                    // variable ends up untracked and VN treats untracked-not-exposed locals more conservatively
-                    // than exposed ones.
-                    m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-                }
             }
         }
 

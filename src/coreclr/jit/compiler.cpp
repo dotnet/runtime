@@ -9717,6 +9717,7 @@ JITDBGAPI void __cdecl cScev(Compiler* comp, Scev* scev)
     else
     {
         scev->Dump(comp);
+        printf("\n");
     }
 }
 
