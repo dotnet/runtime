@@ -1118,14 +1118,14 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+        }
 
-            // Returns the object as a IntPtr - safe when only used for logging
-            internal static nint ObjectIDForEvents(object o)
-            {
+        // Returns the object as a IntPtr - safe when only used for logging
+        internal static nint ObjectIDForEvents(object o)
+        {
 #pragma warning disable CS8500
-                return *(nint*)&o;
+            return *(nint*)&o;
 #pragma warning restore CS8500
-            }
         }
 
 #pragma warning restore 1591
