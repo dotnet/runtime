@@ -17,7 +17,17 @@ For a detailed overview of EventPipe, see [the EventPipe documentation pages on 
 
 For basic scenarios, you can use the [`dotnet-counters`](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters) tool to monitor events and performance counters the runtime reports through EventPipe. For example, to collect the default counters from a project while running it, you could use `dotnet-counters collect -- dotnet exec myapp.dll`, where the part after `--` specifies a command to trace.
 
-You can also use the [`dotnet-trace`](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace) tool to capture EventPipe events from the runtime on the fly. It provides command line options you can use to filter events by severity level or based on keywords. For example, to capture informational GC events only from a project while running it, you could use `dotnet-trace collect --clreventlevel informational --clrevents gc -- dotnet exec myapp.dll`, where the part after `--` specifies a command to trace.
+You can also use the [`dotnet-trace`](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace) tool to capture EventPipe events from the runtime on the fly. It provides command line options you can use to filter events by severity level or based on keywords. For example, to capture informational GC events from a project while running it, you could use `dotnet-trace collect --clreventlevel informational --clrevents gc -- dotnet exec myapp.dll`, where the part after `--` specifies a command to trace. The `collect` command also supports a set of convenient default profiles, accessible via the `--profile` switch, i.e. `--profile gc-collect`:
+```
+cpu-sampling     - Useful for tracking CPU usage and general .NET runtime information. This is the default option if no profile or providers are specified.
+gc-verbose       - Tracks GC collections and samples object allocations.
+gc-collect       - Tracks GC collections only at very low overhead.
+database         - Captures ADO.NET and Entity Framework database commands
+```
+
+The `dotnet-trace collect` command will produce a `.nettrace` file, which you can analyze via `dotnet-trace report topN` (for CPU sampling information) or `dotnet-trace convert`. You can also open this `.nettrace` file directly in Visual Studio to inspect it, for example by double-clicking it in solution explorer or dragging it into the Visual Studio window.
+
+If your application fails to run under `dotnet-counters` or `dotnet-trace`'s monitoring, try passing the `--show-child-io` tool argument to make the child process's output visible so you can spot any error messages. Make sure you're running it from the right working directory with any necessary environment variables.
 
 Please see the linked documentation pages for more information on how to use each of the above tools. They have an extensive set of options and some helpful features like time limits, attaching to existing processes, and configurable output formatting.
 
