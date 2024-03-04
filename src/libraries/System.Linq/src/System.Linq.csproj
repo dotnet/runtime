@@ -26,6 +26,7 @@
     <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
     <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
     <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
+    <Compile Include="System\Linq\OfType.SpeedOpt.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.SpeedOpt.cs" />
     <Compile Include="System\Linq\Range.SpeedOpt.cs" />
     <Compile Include="System\Linq\Repeat.SpeedOpt.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="System\Linq\Max.cs" />
     <Compile Include="System\Linq\MaxMin.cs" />
     <Compile Include="System\Linq\Min.cs" />
+    <Compile Include="System\Linq\OfType.cs" />
     <Compile Include="System\Linq\OrderBy.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.cs" />
     <Compile Include="System\Linq\Range.cs" />
