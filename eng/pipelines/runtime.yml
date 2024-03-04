@@ -86,7 +86,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-      
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -178,7 +178,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-      
+
       #
       # Build CoreCLR and Libraries with the respective tests
       # for the test configurations we run.
@@ -1456,6 +1456,8 @@ extends:
                   testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
       #
       # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
