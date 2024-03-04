@@ -39,7 +39,7 @@ namespace BasicEventSourceTests
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
             if (TraceEventSession.IsElevated() != true)
             {
-                throw new Exception("Need to be elevated to run. ");
+                throw new SkipTestException("Need to be elevated to run. ");
             }
 
             if (dataFileName == null)
