@@ -195,15 +195,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static uint Div96By32(ref Buf12 bufNum, uint den)
             {
-                if (X86.X86Base.X64.IsSupported)
-                {
-                    ulong remainder = bufNum.U2;
-
-                    (bufNum.U2, remainder) = (remainder >= den) ? X86.X86Base.DivRem(bufNum.U2, 0u, den) : (0u, remainder);
-                    (bufNum.Low64, remainder) = X86.X86Base.X64.DivRem(bufNum.Low64, remainder, (ulong)den);
-                    return (uint)remainder;
-                }
-                else if (X86.X86Base.IsSupported)
+                if (X86.X86Base.IsSupported)
                 {
                     uint remainder = 0;
 
