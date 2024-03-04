@@ -709,10 +709,10 @@ endif()
 
 ##
 
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT MONO_CROSS_COMPILE)
     set(STATIC_LIBS_ONLY 1)
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+endif(NOT MONO_CROSS_COMPILE)
 ##
 
 ######################################
