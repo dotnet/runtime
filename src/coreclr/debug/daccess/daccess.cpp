@@ -67,10 +67,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 #endif
         }
 
-#ifdef HAVE_HELLOMANAGED
-	hellomanaged_Hello();
-#endif
-
 #ifdef HOST_UNIX
         int err = PAL_InitializeDLL();
         if(err != 0)
@@ -7047,6 +7043,11 @@ STDAPI CLRDataAccessCreateInstance(ICLRDataTarget * pLegacyTarget,
     {
         return E_INVALIDARG;
     }
+
+#ifdef HAVE_HELLOMANAGED
+    hellomanaged_Hello();
+#endif
+
 
     *pClrDataAccess = NULL;
 
