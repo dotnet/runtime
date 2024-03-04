@@ -307,8 +307,8 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCall
 #define DelegateObject___invocationCount    0x14
 
 ASMCONSTANTS_C_ASSERT(DelegateObject___target           == offsetof(DelegateObject, _target));
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr        == offsetof(DelegateObject, _methodPtr));
 ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtrAux     == offsetof(DelegateObject, _methodPtrAux));
+ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr        == offsetof(DelegateObject, _methodPtr));
 ASMCONSTANTS_C_ASSERT(DelegateObject___invocationList   == offsetof(DelegateObject, _invocationList));
 ASMCONSTANTS_C_ASSERT(DelegateObject___invocationCount  == offsetof(DelegateObject, _invocationCount));
 
