@@ -140,7 +140,7 @@ if ($NoR2R) {
 }
 
 if ($ExperimentName) {
-    $SetupArguments = "$SetupArguments --experiment-name '$ExperimentName'"
+    $SetupArguments = "$SetupArguments --experiment-name $ExperimentName"
 }
 
 if ($UseLocalCommitTime) {
