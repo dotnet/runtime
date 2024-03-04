@@ -99,7 +99,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
                 foreach (IPAddress addr in addresses)
                 {
-                    connection = new QuicConnection();
+                    if (connection._disposed != 0)
+                    {
+                        connection = new QuicConnection();
+                    }
                     try
                     {
                         await connection.FinishConnectAsync(options, host, addr, port, linkedCts.Token).ConfigureAwait(false);
