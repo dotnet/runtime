@@ -935,11 +935,5 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(nuint.IsPow2(alignment));
             return (nuint)AsPointer(ref AsRef(in address)) & (alignment - 1);
         }
-
-        // Returns the object as a IntPtr - safe when object is pinned, or when only used for logging;
-        internal static nint GetPinnedObjectPointer(object o)
-        {
-            return *(nint*)&o;
-        }
     }
 }
