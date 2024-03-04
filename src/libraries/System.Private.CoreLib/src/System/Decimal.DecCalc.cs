@@ -201,20 +201,21 @@ namespace System
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static (uint Quotient, uint Remainder) DivRem32Carry32By32(uint leftBase, uint leftCarry, uint right)
+            private static (uint Quotient, uint Remainder) DivRem32Carry32By32(uint left, uint carry, uint right)
             {
-                Debug.Assert(leftCarry < right);
-                uint quotient = (uint)((((ulong)leftCarry << 32) | leftBase) / right);
-                return (quotient, leftBase - quotient * right);
+                Debug.Assert(carry < right);
+                ulong num = ((ulong)carry << 32) | left;
+                uint quotient = (uint)(num / right);
+                return (quotient, left - quotient * right);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static (uint Quotient, uint Remainder) DivRem16Carry16By16(uint leftBase, uint leftCarry, uint right)
+            private static (uint Quotient, uint Remainder) DivRem16Carry16By16(uint left, uint carry, uint right)
             {
-                Debug.Assert(leftBase <= ushort.MaxValue);
+                Debug.Assert(left <= ushort.MaxValue);
                 Debug.Assert(right <= ushort.MaxValue);
-                Debug.Assert(leftCarry < right);
-                return Math.DivRem((leftCarry << 16) | leftBase, right);
+                Debug.Assert(carry < right);
+                return Math.DivRem((carry << 16) | left, right);
             }
 
             /// <summary>
