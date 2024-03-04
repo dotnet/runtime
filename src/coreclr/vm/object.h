@@ -1984,13 +1984,13 @@ public:
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
 
-    PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }
-    void SetMethodPtr(PCODE methodPtr) { LIMITED_METHOD_CONTRACT; _methodPtr = methodPtr; }
-    static int GetOffsetOfMethodPtr() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtr); }
-
     PCODE GetMethodPtrAux() { LIMITED_METHOD_CONTRACT; return _methodPtrAux; }
     void SetMethodPtrAux(PCODE methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodPtrAux = methodPtrAux; }
     static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
+
+    PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }
+    void SetMethodPtr(PCODE methodPtr) { LIMITED_METHOD_CONTRACT; _methodPtr = methodPtr; }
+    static int GetOffsetOfMethodPtr() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtr); }
 
     OBJECTREF GetInvocationList() { LIMITED_METHOD_CONTRACT; return _invocationList; }
     void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList); }
@@ -2008,16 +2008,16 @@ public:
 private:
     // System.Delegate
     OBJECTREF   _target;
-    PCODE       _methodPtr;
     PCODE       _methodPtrAux;
+    PCODE       _methodPtr;
     // System.MulticastDelegate
     OBJECTREF   _invocationList;
     INT_PTR     _invocationCount;
 };
 
 #define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
-#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__methodPtrAux + TARGET_POINTER_SIZE /* _methodPtrAux */)
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;

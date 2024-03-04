@@ -301,8 +301,8 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCall
 #ifdef FEATURE_STUBS_AS_IL
 // DelegateObject from src/vm/object.h
 #define DelegateObject___target             0x04    // offset 0 is m_pMethTab of base class Object
-#define DelegateObject___methodPtr          0x08
-#define DelegateObject___methodPtrAux       0x0c
+#define DelegateObject___methodPtrAux       0x08
+#define DelegateObject___methodPtr          0x0c
 #define DelegateObject___invocationList     0x10
 #define DelegateObject___invocationCount    0x14
 

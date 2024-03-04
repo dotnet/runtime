@@ -138,7 +138,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
 
 
 
-#define           OFFSETOF__DelegateObject___methodPtr      0x10
+#define           OFFSETOF__DelegateObject___methodPtr      0x18
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
 
 #define           OFFSETOF__DelegateObject___target         0x08
