@@ -1146,6 +1146,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
             elemsize = id->idOpSize();
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -16588,6 +16589,13 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_uqincb:
         case INS_sve_sqdecb:
         case INS_sve_uqdecb:
+            assert(insOptsNone(opt));
+            assert(isGeneralRegister(reg1)); // ddddd
+            assert(isValidUimm4From1(imm));  // iiii
+            assert(size == EA_4BYTE);
+            fmt = IF_SVE_BO_1A;
+            break;
+
         case INS_sve_sqinch:
         case INS_sve_uqinch:
         case INS_sve_sqdech:
@@ -16600,11 +16608,21 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_uqincd:
         case INS_sve_sqdecd:
         case INS_sve_uqdecd:
-            assert(insOptsNone(opt));
-            assert(isGeneralRegister(reg1)); // ddddd
-            assert(isValidUimm4From1(imm));  // iiii
-            assert(size == EA_4BYTE);
-            fmt = IF_SVE_BO_1A;
+            assert(isValidUimm4From1(imm)); // iiii
+
+            if (insOptsNone(opt))
+            {
+                assert(isGeneralRegister(reg1)); // ddddd
+                assert(size == EA_4BYTE);
+                fmt = IF_SVE_BO_1A;
+            }
+            else
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isVectorRegister(reg1)); // ddddd
+                assert(size == EA_SCALABLE);
+                fmt = IF_SVE_BP_1A;
+            }
             break;
 
         default:
@@ -24389,6 +24407,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
@@ -28597,6 +28616,7 @@ void emitter::emitDispInsHelp(
         // <Zdn>.H{, <pattern>{, MUL #<imm>}}
         // <Zdn>.S{, <pattern>{, MUL #<imm>}}
         case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
             imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispSvePattern(id->idSvePattern(), (imm > 1));  // ppppp
@@ -32600,6 +32620,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
         case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
         case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
