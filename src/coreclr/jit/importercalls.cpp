@@ -6730,7 +6730,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     // candidate, we're done.
     if (call->IsInlineCandidate() || !call->IsGuardedDevirtualizationCandidate())
     {
-        // Runtime lookup is expected to be spilled into a temp.
+        // Runtime lookup is expected to be spilled into a temp for inline candidates.
         CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
         if ((instParam != nullptr) && instParam->GetNode()->OperIs(GT_RUNTIMELOOKUP))
         {
