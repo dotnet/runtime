@@ -24933,8 +24933,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
+            // Bit 23 should not be set by below call
+            assert(insOptsScalableWide(id->idInsOpt()));
             code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
@@ -24942,15 +24944,20 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
-            code |= insEncodeUimm5_20_to_16(emitGetInsSC(id));                                     // iii
+            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
+            code |= insEncodeUimm5_20_to_16(emitGetInsSC(id)); // iii
+            // Bit 23 should not be set by below call
+            assert(insOptsScalableWide(id->idInsOpt()));
             code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
+            // Bit 23 should not be set by call to insEncodeSveElemsize_tszh_23_tszl_20_to_19,
+            // nor should we pass INS_OPTS_SCALABLE_D to insGetImmDiff.
+            assert(insOptsScalableWide(id->idInsOpt()));
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
