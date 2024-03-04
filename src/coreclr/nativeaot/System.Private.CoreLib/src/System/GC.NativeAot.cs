@@ -695,9 +695,9 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning disable CS8500 // takes address of managed type
             RuntimeImports.RhEnumerateConfigurationValues(&context, &ConfigCallback);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning restore CS8500
             return context.Configurations!;
         }
 
@@ -832,9 +832,9 @@ namespace System
                     throw new OverflowException();
 
                 T[]? array = null;
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning disable CS8500 // takes address of managed type
                 RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning restore CS8500
                 if (array == null)
                     throw new OutOfMemoryException();
 
@@ -861,9 +861,9 @@ namespace System
                 throw new OverflowException();
 
             T[]? array = null;
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning disable CS8500 // takes address of managed type
             RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning restore CS8500
             if (array == null)
                 throw new OutOfMemoryException();
 
