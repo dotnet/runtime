@@ -11,7 +11,7 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> OfType<TResult>(this IEnumerable source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -41,7 +41,7 @@ namespace System.Linq
                 return typedSource;
             }
 
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -80,7 +80,7 @@ namespace System.Linq
                         goto case 2;
 
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = (TResult)_enumerator.Current;
