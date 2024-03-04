@@ -352,7 +352,7 @@ namespace Internal.JitInterface
             uint codeSize;
 #pragma warning disable CS8500
             var result = JitCompileMethod(out exception,
-                    _jit, (IntPtr)&_this, _unmanagedCallbacks,
+                    _jit, (IntPtr)(&_this), _unmanagedCallbacks,
                     ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
 #pragma warning restore CS8500
             if (exception != IntPtr.Zero)
