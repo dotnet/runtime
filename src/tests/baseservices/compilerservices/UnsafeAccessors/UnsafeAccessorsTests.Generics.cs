@@ -1,0 +1,370 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+using Xunit;
+
+struct Struct { }
+
+public static unsafe class UnsafeAccessorsTestsGenerics
+{
+    class MyList<T>
+    {
+        public const string StaticGenericFieldName = nameof(_GF);
+        public const string StaticFieldName = nameof(_F);
+        public const string GenericFieldName = nameof(_list);
+
+        static MyList()
+        {
+            _F = typeof(T).ToString();
+        }
+
+        public static void SetStaticGenericField(T val) => _GF = val;
+        private static T _GF;
+        private static string _F;
+
+        private List<T> _list;
+
+        public MyList() => _list = new();
+
+        private MyList(int i) => _list = new(i);
+
+        private MyList(List<T> list) => _list = list;
+
+        private void Clear() => _list.Clear();
+
+        private void Add(T t) => _list.Add(t);
+
+        private bool CanCastToElementType<U>(U t) => t is T;
+
+        private static bool CanUseElementType<U>(U t) => t is T;
+
+        private static Type ElementType() => typeof(T);
+
+        private void Add(int a) =>
+            Unsafe.As<List<int>>(_list).Add(a);
+
+        private void Add(string a) =>
+            Unsafe.As<List<string>>(_list).Add(a);
+
+        private void Add(Struct a) =>
+            Unsafe.As<List<Struct>>(_list).Add(a);
+
+        public int Count => _list.Count;
+
+        public int Capacity => _list.Capacity;
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_AccessStaticFieldClass()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_AccessStaticFieldClass)}");
+
+        Assert.Equal(typeof(int).ToString(), GetPrivateStaticFieldInt((MyList<int>)null));
+
+        Assert.Equal(typeof(string).ToString(), GetPrivateStaticFieldString((MyList<string>)null));
+
+        Assert.Equal(typeof(Struct).ToString(), GetPrivateStaticFieldStruct((MyList<Struct>)null));
+
+        {
+            int expected = 10;
+            MyList<int>.SetStaticGenericField(expected);
+            Assert.Equal(expected, GetPrivateStaticField((MyList<int>)null));
+        }
+        {
+            string expected = "abc";
+            MyList<string>.SetStaticGenericField(expected);
+            Assert.Equal(expected, GetPrivateStaticField((MyList<string>)null));
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldInt(MyList<int> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<string>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldString(MyList<string> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<Struct>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldStruct(MyList<Struct> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
+        extern static ref T GetPrivateStaticField<T>(MyList<T> d);
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_AccessFieldClass()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_AccessFieldClass)}");
+        {
+            MyList<int> a = new();
+            Assert.NotNull(GetPrivateField(a));
+        }
+        {
+            MyList<string> a = new();
+            Assert.NotNull(GetPrivateField(a));
+        }
+        {
+            MyList<Struct> a = new();
+            Assert.NotNull(GetPrivateField(a));
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=MyList<object>.GenericFieldName)]
+        extern static ref List<T> GetPrivateField<T>(MyList<T> a);
+    }
+
+    class Base
+    {
+        protected virtual string CreateMessage<T>(T t) => $"{nameof(Base)}:{t}";
+    }
+
+    class Derived1 : Base
+    {
+        protected override string CreateMessage<T>(T t) => $"{nameof(Derived1)}:{t}";
+    }
+
+    sealed class Derived2 : Derived1
+    {
+        protected override string CreateMessage<T>(T t) => $"{nameof(Derived2)}:{t}";
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_InheritanceMethodResolution()
+    {
+        string expect = "abc";
+        Console.WriteLine($"Running {nameof(Verify_Generic_InheritanceMethodResolution)}");
+        {
+            Base a = new();
+            Assert.Equal($"{nameof(Base)}:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Base)}:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Base)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+        }
+        {
+            Derived1 a = new();
+            Assert.Equal($"{nameof(Derived1)}:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Derived1)}:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Derived1)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+        }
+        {
+            Derived2 a = new();
+            Assert.Equal($"{nameof(Derived2)}:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Derived2)}:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Derived2)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
+        extern static string CreateMessage<U>(Base b, U t);
+    }
+
+    sealed class Accessors<T>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        public extern static MyList<T> Create(int a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        public extern static MyList<T> CreateWithList<U>(List<U> a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
+        public extern static void CallCtorAsMethod<U>(MyList<T> l, List<U> a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void AddInt(MyList<T> l, int a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void AddString(MyList<T> l, string a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void AddStruct(MyList<T> l, Struct a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Clear")]
+        public extern static void Clear(MyList<T> l);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void Add<U>(MyList<T> l, U element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CanCastToElementType")]
+        public extern static bool CanCastToElementType<U>(MyList<T> l, U element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
+        public extern static Type ElementType(MyList<T> l);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CanUseElementType")]
+        public extern static bool CanUseElementType<U>(MyList<T> l, U element);
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_CallCtor()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_CallCtor)}");
+
+        // Call constructor with non-generic parameter
+        {
+            MyList<int> a = Accessors<int>.Create(1);
+            Assert.Equal(1, a.Capacity);
+        }
+        {
+            MyList<string> a = Accessors<string>.Create(2);
+            Assert.Equal(2, a.Capacity);
+        }
+        {
+            MyList<Struct> a = Accessors<Struct>.Create(3);
+            Assert.Equal(3, a.Capacity);
+        }
+
+        // Call constructor using generic parameter
+        {
+            MyList<int> a = Accessors<int>.CreateWithList<int>([ 1 ]);
+            Assert.Equal(1, a.Count);
+        }
+        {
+            MyList<string> a = Accessors<string>.CreateWithList<string>([ "1", "2" ]);
+            Assert.Equal(2, a.Count);
+        }
+        {
+            MyList<Struct> a = Accessors<Struct>.CreateWithList<Struct>([new Struct(), new Struct(), new Struct()]);
+            Assert.Equal(3, a.Count);
+        }
+
+        // Call constructors as methods
+        {
+            MyList<int> a = (MyList<int>)RuntimeHelpers.GetUninitializedObject(typeof(MyList<int>));
+            Accessors<int>.CallCtorAsMethod<int>(a, [1]);
+            Assert.Equal(1, a.Count);
+        }
+        {
+            MyList<string> a = (MyList<string>)RuntimeHelpers.GetUninitializedObject(typeof(MyList<string>));
+            Accessors<string>.CallCtorAsMethod<string>(a, ["1", "2"]);
+            Assert.Equal(2, a.Count);
+        }
+        {
+            MyList<Struct> a = (MyList<Struct>)RuntimeHelpers.GetUninitializedObject(typeof(MyList<Struct>));
+            Accessors<Struct>.CallCtorAsMethod<Struct>(a, [new Struct(), new Struct(), new Struct()]);
+            Assert.Equal(3, a.Count);
+        }
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_GenericTypeNonGenericInstanceMethod()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericInstanceMethod)}");
+        {
+            MyList<int> a = new();
+            Accessors<int>.AddInt(a, 1);
+            Assert.Equal(1, a.Count);
+            Accessors<int>.Clear(a);
+            Assert.Equal(0, a.Count);
+        }
+        {
+            MyList<string> a = new();
+            Accessors<string>.AddString(a, "1");
+            Accessors<string>.AddString(a, "2");
+            Assert.Equal(2, a.Count);
+            Accessors<string>.Clear(a);
+            Assert.Equal(0, a.Count);
+        }
+        {
+            MyList<Struct> a = new();
+            Accessors<Struct>.AddStruct(a, new Struct());
+            Accessors<Struct>.AddStruct(a, new Struct());
+            Accessors<Struct>.AddStruct(a, new Struct());
+            Assert.Equal(3, a.Count);
+            Accessors<Struct>.Clear(a);
+            Assert.Equal(0, a.Count);
+        }
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_GenericTypeGenericInstanceMethod()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeGenericInstanceMethod)}");
+        {
+            MyList<int> a = new();
+            Assert.True(Accessors<int>.CanCastToElementType<int>(a, 1));
+            Assert.False(Accessors<int>.CanCastToElementType<string>(a, string.Empty));
+            Assert.False(Accessors<int>.CanCastToElementType<Struct>(a, new Struct()));
+            Accessors<int>.Add<int>(a, 1);
+            Assert.Equal(1, a.Count);
+        }
+        {
+            MyList<string> a = new();
+            Assert.False(Accessors<string>.CanCastToElementType<int>(a, 1));
+            Assert.True(Accessors<string>.CanCastToElementType<string>(a, string.Empty));
+            Assert.False(Accessors<string>.CanCastToElementType<Struct>(a, new Struct()));
+            Accessors<string>.Add<string>(a, string.Empty);
+            Assert.Equal(1, a.Count);
+        }
+        {
+            MyList<Struct> a = new();
+            Assert.False(Accessors<Struct>.CanCastToElementType<int>(a, 1));
+            Assert.False(Accessors<Struct>.CanCastToElementType<string>(a, string.Empty));
+            Assert.True(Accessors<Struct>.CanCastToElementType<Struct>(a, new Struct()));
+            Accessors<Struct>.Add<Struct>(a, new Struct());
+            Assert.Equal(1, a.Count);
+        }
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_GenericTypeNonGenericStaticMethod()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericStaticMethod)}");
+        {
+            Assert.Equal(typeof(int), Accessors<int>.ElementType(null));
+            Assert.Equal(typeof(string), Accessors<string>.ElementType(null));
+            Assert.Equal(typeof(Struct), Accessors<Struct>.ElementType(null));
+        }
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_GenericTypeGenericStaticMethod()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeGenericStaticMethod)}");
+        {
+            Assert.True(Accessors<int>.CanUseElementType<int>(null, 1));
+            Assert.False(Accessors<int>.CanUseElementType<string>(null, string.Empty));
+            Assert.False(Accessors<int>.CanUseElementType<Struct>(null, new Struct()));
+        }
+        {
+            Assert.False(Accessors<string>.CanUseElementType<int>(null, 1));
+            Assert.True(Accessors<string>.CanUseElementType<string>(null, string.Empty));
+            Assert.False(Accessors<string>.CanUseElementType<Struct>(null, new Struct()));
+        }
+        {
+            Assert.False(Accessors<Struct>.CanUseElementType<int>(null, 1));
+            Assert.False(Accessors<Struct>.CanUseElementType<string>(null, string.Empty));
+            Assert.True(Accessors<Struct>.CanUseElementType<Struct>(null, new Struct()));
+        }
+    }
+
+    class Invalid
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        public static extern string CallToString<U>(U a);
+    }
+
+    class Invalid<T>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        public static extern string CallToString(T a);
+    }
+
+    [Fact]
+    [ActiveIssue("", TestRuntimes.Mono)]
+    public static void Verify_Generic_InvalidUseUnsafeAccessor()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_InvalidUseUnsafeAccessor)}");
+
+        Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
+        Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
+    }
+}
