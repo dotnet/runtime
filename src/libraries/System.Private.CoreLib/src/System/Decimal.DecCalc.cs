@@ -1081,10 +1081,8 @@ AlignedScale:
 
                     (high, uint rem) = DivRem32Carry32By32(high, 1, 10);
                     (uint div, rem) = DivRem32Carry32By32((uint)(low64 >> 32), rem, 10);
-                    low64 = div;
-                    low64 <<= 32;
-                    (div, rem) = DivRem32Carry32By32((uint)low64, rem, 10);
-                    low64 |= div;
+                    (low64, rem) = DivRem32Carry32By32((uint)low64, rem, 10);
+                    low64 |= (ulong)div << 32;
 
                     // See if we need to round up.
                     //
