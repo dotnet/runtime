@@ -1547,20 +1547,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = RBM_ALLMASK;
-            switch (intrin.id)
-            {
-                case NI_Sve_ConvertVectorToMask: // Uses INS_sve_cmpne
-                case NI_Sve_LoadVector:          // TODO-SVE: are we sure?
-                    predMask = RBM_LOWMASK;
-                    break;
-
-                case NI_Sve_ConvertMaskToVector: // Uses INS_sve_pmov
-                    break;
-
-                default:
-                    noway_assert(!"Not a supported predicated result SVE operation");
-            }
+            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())

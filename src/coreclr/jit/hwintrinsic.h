@@ -188,6 +188,9 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic uses a mask in arg1 to select elements present in the result
     HW_Flag_MaskedOperation = 0x20000,
 
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    HW_Flag_LowMaskedOperation = 0x40000,
+
 #else
 #error Unsupported platform
 #endif
@@ -869,8 +872,15 @@ struct HWIntrinsicInfo
     static bool IsMaskedOperation(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_MaskedOperation) != 0;
+        return ((flags & HW_Flag_MaskedOperation) != 0) || IsLowMaskedOperation(id);
     }
+
+    static bool IsLowMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
