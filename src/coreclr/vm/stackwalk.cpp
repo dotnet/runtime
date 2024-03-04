@@ -2145,20 +2145,7 @@ ProcessFuncletsForGCReporting:
                                                 "STACKWALK: Reached parent of funclet which didn't report GC roots is not a funclet, resetting m_fDidFuncletReportGCReferences to true\n");
                                         }
 
-                                        if (g_isNewExceptionHandlingEnabled)
-                                        {
-                                            _ASSERTE(!ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(&m_crawl));
-                                            if (m_fFuncletNotSeen && m_crawl.IsFunclet())
-                                            {
-                                                _ASSERTE(!m_fProcessIntermediaryNonFilterFunclet);
-                                                _ASSERTE(m_crawl.fShouldCrawlframeReportGCReferences);
-                                                m_fDidFuncletReportGCReferences = true;
-                                                shouldSkipReporting = false;
-                                                m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = true;
-                                                m_crawl.ehClauseForCatch = pExInfo->m_ClauseForCatch;
-                                            }                                                
-                                        }
-                                        else
+                                        if (!g_isNewExceptionHandlingEnabled)
                                         {
                                             STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                             "Funclet didn't report references: handling frame: %p, m_sfFuncletParent = %p, is funclet: %d, skip reporting %d\n",
