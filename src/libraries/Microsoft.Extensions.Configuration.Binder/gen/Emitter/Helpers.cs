@@ -107,7 +107,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string Get = nameof(Get);
                 public const string GetBinderOptions = nameof(GetBinderOptions);
                 public const string GetChildren = nameof(GetChildren);
-                public const string GetEnumerator = nameof(GetEnumerator);
                 public const string GetSection = nameof(GetSection);
                 public const string GetValue = nameof(GetValue);
                 public const string HasConfig = nameof(HasConfig);
@@ -122,7 +121,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string IOptionsChangeTokenSource = nameof(IOptionsChangeTokenSource);
                 public const string IServiceCollection = nameof(IServiceCollection);
                 public const string Length = nameof(Length);
-                public const string MoveNext = nameof(MoveNext);
                 public const string Name = nameof(Name);
                 public const string NumberStyles = nameof(NumberStyles);
                 public const string Parse = nameof(Parse);

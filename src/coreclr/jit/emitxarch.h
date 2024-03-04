@@ -468,6 +468,16 @@ void SetContains256bitOrMoreAVX(bool value)
     contains256bitOrMoreAVXInstruction = value;
 }
 
+bool containsCallNeedingVzeroupper = false;
+bool ContainsCallNeedingVzeroupper() const
+{
+    return containsCallNeedingVzeroupper;
+}
+void SetContainsCallNeedingVzeroupper(bool value)
+{
+    containsCallNeedingVzeroupper = value;
+}
+
 bool IsDstDstSrcAVXInstruction(instruction ins) const;
 bool IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool IsThreeOperandAVXInstruction(instruction ins) const;
@@ -625,7 +635,7 @@ void emitIns_R_I(instruction ins,
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
+void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival);
 
@@ -829,8 +839,13 @@ void emitIns_SIMD_R_R_R_C(instruction          ins,
                           regNumber            op2Reg,
                           CORINFO_FIELD_HANDLE fldHnd,
                           int                  offs);
-void emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg);
+void emitIns_SIMD_R_R_R_R(instruction ins,
+                          emitAttr    attr,
+                          regNumber   targetReg,
+                          regNumber   op1Reg,
+                          regNumber   op2Reg,
+                          regNumber   op3Reg,
+                          insOpts     instOptions = INS_OPTS_NONE);
 void emitIns_SIMD_R_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int varx, int offs);
 

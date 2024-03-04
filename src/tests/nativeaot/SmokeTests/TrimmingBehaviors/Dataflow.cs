@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable 649 // 'blah' is never assigned to
 #pragma warning disable 169 // 'blah' is never used
@@ -26,6 +27,7 @@ class Dataflow
         TestDynamicDependencyWithGenerics.Run();
         TestObjectGetTypeDataflow.Run();
         TestMarshalIntrinsics.Run();
+        Regression97758.Run();
 
         return 100;
     }
@@ -629,6 +631,34 @@ class Dataflow
                 if (!thrown)
                     throw new Exception();
             }
+        }
+    }
+
+    class Regression97758
+    {
+        class Foo<T>
+        {
+            public static void Trigger()
+            {
+                typeof(Bar).GetConstructor([]).Invoke([]);
+
+                if (typeof(T).IsValueType && (object)default(T) == null)
+                {
+                    if (!RuntimeFeature.IsDynamicCodeCompiled)
+                        return;
+
+                    Unreachable();
+                }
+
+                static void Unreachable() { }
+            }
+        }
+
+        class Bar { }
+
+        public static void Run()
+        {
+            Foo<int>.Trigger();
         }
     }
 }

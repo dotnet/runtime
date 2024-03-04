@@ -6,10 +6,10 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import type {
     MonoAssembly, MonoClass,
     MonoMethod, MonoObject,
-    MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
+    MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments, PThreadPtr
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
-import { linkerEnableAotProfiler, linkerEnableBrowserProfiler, Module } from "./globals";
+import { Module, runtimeHelpers } from "./globals";
 import { mono_log_error } from "./logging";
 import { mono_assert } from "./globals";
 
@@ -25,6 +25,10 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
     [false, "mono_wasm_init_finalizer_thread", null, []],
+    [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
+    [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
+    [true, "mono_wasm_create_deputy_thread", "number", []],
+    [true, "mono_wasm_register_ui_thread", "void", []],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -48,24 +52,20 @@ const fn_signatures: SigLine[] = [
 
     [true, "mono_wasm_assembly_load", "number", ["string"]],
     [true, "mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
-    [true, "mono_wasm_runtime_run_module_cctor", "void", ["number"]],
     [true, "mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
-    [false, "mono_wasm_invoke_method_ref", "void", ["number", "number", "number", "number", "number"]],
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
-    [true, "mono_wasm_assembly_get_entry_point", "number", ["number", "number"]],
 
     [false, "mono_wasm_exit", "void", ["number"]],
     [false, "mono_wasm_abort", "void", []],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These two need to be lazy because they may be missing
-    [() => !linkerEnableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !linkerEnableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
-    [false, "mono_wasm_invoke_method_bound", "number", ["number", "number", "number"]],
-    [false, "mono_wasm_invoke_method_raw", "number", ["number", "number"]],
+    [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     [true, "mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
     [true, "mono_wasm_i52_to_f64", "number", ["number", "number"]],
@@ -144,6 +144,10 @@ export interface t_ThreadingCwraps {
     mono_wasm_diagnostic_server_post_resume_runtime(): void;
     mono_wasm_diagnostic_server_create_stream(): VoidPtr;
     mono_wasm_init_finalizer_thread(): void;
+    mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
+    mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
+    mono_wasm_create_deputy_thread(): PThreadPtr;
+    mono_wasm_register_ui_thread(): void;
 }
 
 export interface t_ProfilerCwraps {
@@ -166,15 +170,13 @@ export interface t_Cwraps {
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
-    mono_wasm_load_runtime(unused: string, debugLevel: number): void;
+    mono_wasm_load_runtime(debugLevel: number): void;
     mono_wasm_change_debugger_log_level(value: number): void;
 
     mono_wasm_assembly_load(name: string): MonoAssembly;
     mono_wasm_assembly_find_class(assembly: MonoAssembly, namespace: string, name: string): MonoClass;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
-    mono_wasm_invoke_method_ref(method: MonoMethod, this_arg: MonoObjectRef, params: VoidPtr, out_exc: MonoObjectRef, out_result: MonoObjectRef): void;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
     mono_wasm_exit(exit_code: number): void;
@@ -182,15 +184,13 @@ export interface t_Cwraps {
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments, fail: MonoStringRef): number;
-    mono_wasm_invoke_method_raw(method: MonoMethod, fail: MonoStringRef): number;
+    mono_wasm_invoke_jsexport(method: MonoMethod, args: JSMarshalerArguments): void;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
     mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;
     mono_wasm_u52_to_f64(source: VoidPtr, error: Int32Ptr): number;
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
-    mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
     mono_wasm_method_get_name(method: MonoMethod): CharPtr;
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
     mono_wasm_gc_lock(): void;

@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -1321,6 +1321,9 @@ class Cfg {
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
@@ -1557,7 +1560,6 @@ export function getWasmFunctionTable() {
 
 export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
     mono_assert(f, "Attempting to set null function into table");
-    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
     const index = cwraps.mono_jiterp_allocate_table_entry(table);
     if (index > 0) {
@@ -2017,8 +2019,8 @@ export function jiterpreter_allocate_tables() {
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
     const traceTableSize = options.tableSize,
-        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
-        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
+        jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable();

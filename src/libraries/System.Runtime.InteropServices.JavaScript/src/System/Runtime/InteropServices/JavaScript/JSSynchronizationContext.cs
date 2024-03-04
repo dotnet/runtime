@@ -44,12 +44,16 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // this need to be called from JSWebWorker or UI thread
-        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
+        public static unsafe JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
         {
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
-            Monitor.ThrowOnBlockingWaitOnJSInteropThread = true;
+
+            if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.NoBlockingWait)
+            {
+                Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+            }
 
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;
@@ -61,7 +65,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             ctx.AwaitNewData();
 
-            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
+            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.BeforeSyncJSExport,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.AfterSyncJSExport);
 
             return ctx;
         }
@@ -163,7 +169,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
@@ -201,6 +207,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
+            Thread.AssureBlockingPossible();
+
             using (var signal = new ManualResetEventSlim(false))
             {
                 var workItem = new WorkItem(d, state, signal);
@@ -216,16 +224,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
 
-                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
-                try
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
-                    signal.Wait();
-                }
-                finally
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
-                }
+                signal.Wait();
 
                 if (_isCancellationRequested)
                 {

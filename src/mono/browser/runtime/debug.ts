@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+
+import { INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
@@ -18,7 +19,6 @@ let _debugger_buffer: VoidPtr;
 let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
 let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
-//if function name is changed, update the name in BrowserDebugProxy
 export function mono_wasm_runtime_ready(): void {
     INTERNAL.mono_wasm_runtime_is_ready = runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
@@ -33,7 +33,6 @@ export function mono_wasm_runtime_ready(): void {
         debugger;
 }
 
-//if function name is changed, update the name in BrowserDebugProxy
 export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String: string): void {
     //keep this console.assert, otherwise optimization will remove the assignments
     // eslint-disable-next-line no-console
@@ -84,7 +83,7 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
 
     const { res_ok, res } = commands_received.remove(id);
     if (!res_ok)
-        throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
+        throw new Error("Failed on mono_wasm_send_dbg_command_with_parms");
     return res;
 }
 
@@ -160,9 +159,9 @@ export function mono_wasm_debugger_attached(): void {
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
-export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
+export function mono_wasm_set_entrypoint_breakpoint(entrypoint_method_token: number): void {
     //keep these assignments, these values are used by BrowserDebugProxy
-    _assembly_name_str = utf8ToString(assembly_name).concat(".dll");
+    _assembly_name_str = loaderHelpers.config.mainAssemblyName + ".dll";
     _entrypoint_method_token = entrypoint_method_token;
     //keep this console.assert, otherwise optimization will remove the assignments
     // eslint-disable-next-line no-console

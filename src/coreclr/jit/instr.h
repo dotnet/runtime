@@ -375,6 +375,8 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
     INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
 
+    INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
+
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
     INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
@@ -400,6 +402,28 @@ enum insSvePattern : unsigned
     SVE_PATTERN_MUL4 = 29,  // The largest multiple of 3.
     SVE_PATTERN_MUL3 = 30,  // The largest multiple of 4.
     SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
+};
+
+// Prefetch operation specifier for SVE instructions such as prfb.
+enum insSvePrfop : unsigned
+{
+    SVE_PRFOP_PLDL1KEEP = 0b0000,
+    SVE_PRFOP_PLDL1STRM = 0b0001, 
+    SVE_PRFOP_PLDL2KEEP = 0b0010, 
+    SVE_PRFOP_PLDL2STRM = 0b0011, 
+    SVE_PRFOP_PLDL3KEEP = 0b0100, 
+    SVE_PRFOP_PLDL3STRM = 0b0101, 
+    SVE_PRFOP_PSTL1KEEP = 0b1000, 
+    SVE_PRFOP_PSTL1STRM = 0b1001, 
+    SVE_PRFOP_PSTL2KEEP = 0b1010, 
+    SVE_PRFOP_PSTL2STRM = 0b1011, 
+    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PSTL3STRM = 0b1101,
+
+    SVE_PRFOP_CONST6    = 0b0110,
+    SVE_PRFOP_CONST7    = 0b0111,
+    SVE_PRFOP_CONST14   = 0b1110,
+    SVE_PRFOP_CONST15   = 0b1111
 };
 
 enum insCond : unsigned

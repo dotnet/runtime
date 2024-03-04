@@ -41,8 +41,12 @@ public:
 
         errno = 0;
         LPSTR endPtr;
-        result = strtoul(_value, &endPtr, radix);
-        bool fSuccess = (errno != ERANGE) && (endPtr != _value);
+        unsigned long rawResult = strtoul(_value, &endPtr, radix);
+        if ((DWORD)rawResult != rawResult || errno == ERANGE)
+        {
+            return false;
+        }
+        bool fSuccess = endPtr != _value;
         return fSuccess;
     }
 

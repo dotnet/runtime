@@ -137,6 +137,7 @@ set( JIT_SOURCES
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
+  jitmetadata.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -334,6 +335,8 @@ set( JIT_HEADERS
   jitexpandarray.h
   jitgcinfo.h
   jithashtable.h
+  jitmetadata.h
+  jitmetadatalist.h
   jitpch.h
   jitstd.h
   lir.h
@@ -402,6 +405,7 @@ set( JIT_ARM64_HEADERS
     emitfmtsarm64.h
     emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
+    hwintrinsiclistarm64sve.h
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h

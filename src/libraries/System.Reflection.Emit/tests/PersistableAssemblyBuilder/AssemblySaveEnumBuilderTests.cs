@@ -200,5 +200,53 @@ namespace System.Reflection.Emit.Tests
             Assert.True(testType.IsPointer);
             Assert.Equal("TestEnum*", testType.Name);
         }
+
+        public enum Test
+        {
+            First,
+            Second,
+            Third
+        }
+
+        [Fact]
+        public void EnumTypeField_DefaultValueShouldMatchUnderlyingType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("TestType", TypeAttributes.Class | TypeAttributes.Public);
+                EnumBuilder eb =  mb.DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
+                FieldBuilder literal = eb.DefineLiteral("FieldOne", 1);
+                FieldBuilder literal2 = eb.DefineLiteral("FieldTwo", 2);
+
+                FieldBuilder field  = tb.DefineField("EnumField1", eb, FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
+                field.SetConstant(2);
+
+                FieldBuilder field2 = tb.DefineField("EnumField2", typeof(Test), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
+                field2.SetConstant(Test.Third);
+
+                tb.CreateType();
+                eb.CreateType();
+
+                assemblyBuilder.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Module moduleFromDisk = mlc.LoadFromAssemblyPath(file.Path).Modules.First();
+                    Type testType = moduleFromDisk.GetType("TestType");
+                    Type enumType = moduleFromDisk.GetType("TestEnum");
+                    FieldInfo testField1 = testType.GetField("EnumField1");
+                    FieldInfo testField2 = testType.GetField("EnumField2");
+
+                    Assert.True(testField1.FieldType.IsEnum);
+                    Assert.True(testField2.FieldType.IsEnum);
+                    Assert.Equal(enumType.FullName, testField1.FieldType.FullName);
+                    Assert.Equal(typeof(Test).FullName, testField2.FieldType.FullName);
+                    Assert.Equal(2, testField1.GetRawConstantValue());
+                    Assert.Equal(Test.Third, (Test)testField2.GetRawConstantValue());
+                }
+            }
+        }
     }
 }

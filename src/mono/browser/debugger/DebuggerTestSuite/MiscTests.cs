@@ -1173,6 +1173,7 @@ namespace DebuggerTests
             return data;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98110")]
         [ConditionalTheory(nameof(WasmMultiThreaded))]
         [MemberData(nameof(CountToTen))]
         public async Task TestDebugUsingMultiThreadedRuntime(int _attempt)
@@ -1198,36 +1199,6 @@ namespace DebuggerTests
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             Assert.Equal(locals[1]["value"]["type"], "number");
             Assert.Equal(locals[1]["name"], "currentThread");
-        }
-
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task CheckDebuggerEvalScriptsAreNotSentToIDE()
-        {
-           var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "Math.IntAdd",
-                locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    await Task.CompletedTask;
-                }
-            );
-            var oldValue = noUrlScripts;
-            await SendCommandAndCheck(null, "Debugger.resume",
-                "dotnet://debugger-test.dll/debugger-test.cs",
-                10,
-                8,
-                "Math.IntAdd",
-                locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    await Task.CompletedTask;
-                }
-            );
-            Assert.Equal(oldValue, noUrlScripts);
         }
     }
 }
