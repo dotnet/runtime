@@ -1227,6 +1227,7 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
 struct CORINFO_LOOKUP_KIND
 {
     bool                        needsRuntimeLookup;
+    bool                        inlinedLookup;
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
 
     // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields

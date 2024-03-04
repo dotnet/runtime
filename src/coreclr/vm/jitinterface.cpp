@@ -3086,24 +3086,28 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
+    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+
+    const bool inlinedLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
+
     // Runtime lookups in inlined contexts are not supported by the runtime for now
-    if (pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT())
+    if (inlinedLookup && (pContextMD == nullptr || pContextMD->IsSharedByGenericInstantiations()))
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
         return;
     }
 
-    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    pResultLookup->lookupKind.inlinedLookup = inlinedLookup;
+
     MethodTable* pContextMT = pContextMD->GetMethodTable();
-    bool isStaticVirtual = (pConstrainedResolvedToken != nullptr && pContextMD != nullptr && pContextMD->IsStatic());
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
-    if (!pContextMD->IsSharedByGenericInstantiations())
+    if (!inlinedLookup && !pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
     BOOL fInstrument = FALSE;
 
-    if (pContextMD->RequiresInstMethodDescArg())
+    if (pContextMD->RequiresInstMethodDescArg() || inlinedLookup)
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
     }
@@ -3116,7 +3120,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     }
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
-    if (pContextMD->RequiresInstMethodDescArg())
+    if (pContextMD->RequiresInstMethodDescArg() || inlinedLookup)
     {
         pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG : CORINFO_HELP_RUNTIMEHANDLE_METHOD;
 

@@ -6918,11 +6918,11 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pRuntimeLookup->testForNull)
     {
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
-                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
+                                                getRuntimeContextTree(pLookup->lookupKind),
                                                 compileTimeHandle);
     }
 
-    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    GenTree* result = getRuntimeContextTree(pLookup->lookupKind);
 
     ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
 
@@ -14365,7 +14365,7 @@ GenTree* Compiler::fgInitThisClass()
             }
 
             // We need a runtime lookup.
-            GenTree* ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
+            GenTree* ctxTree = getRuntimeContextTree(kind);
 
             // CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE with a zeroed out resolvedToken means "get the static
             // base of the class that owns the method being compiled". If we're in this method, it means we're not

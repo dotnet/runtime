@@ -4620,7 +4620,7 @@ public:
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
-    GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
+    GenTree* getRuntimeContextTree(CORINFO_LOOKUP_KIND kind);
 
     GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_LOOKUP*         pLookup,

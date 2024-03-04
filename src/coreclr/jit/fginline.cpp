@@ -1251,6 +1251,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                                      pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
                 pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
                 pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+                pParam->inlineInfo->lclCtx                   = BAD_VAR_NUM;
 
                 JITLOG_THIS(pParam->pThis,
                             (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",

@@ -1546,7 +1546,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 // Notes:
 //    Reports about generic context using.
 
-GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
+GenTree* Compiler::getRuntimeContextTree(CORINFO_LOOKUP_KIND kind)
 {
     GenTree* ctxTree = nullptr;
 
@@ -1557,7 +1557,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 
     Compiler* pRoot = impInlineRoot();
 
-    if (kind == CORINFO_LOOKUP_THISOBJ)
+    if (kind.runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
     {
         // this Object
         ctxTree = gtNewLclvNode(pRoot->info.compThisArg, TYP_REF);
@@ -1568,7 +1568,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     }
     else
     {
-        assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
+        assert(kind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM || kind.runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
 
         // Exact method descriptor as passed in
         ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
@@ -1601,7 +1601,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
-    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind);
 
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
@@ -2787,7 +2787,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
         else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
+            GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind);
 
             call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pCallInfo->codePointerLookup.lookupKind, ctxTree);
@@ -3931,7 +3931,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
             assert(kind.needsRuntimeLookup);
 
-            GenTree* ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
+            GenTree* ctxTree = getRuntimeContextTree(kind);
 
             CorInfoHelpFunc helper    = CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
             GenTreeFlags    callFlags = GTF_EMPTY;
