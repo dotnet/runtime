@@ -1902,6 +1902,10 @@ def aggregate_diff_metrics(details_file):
     diff_minopts = base_minopts.copy()
     diff_fullopts = base_minopts.copy()
 
+    # Project out these fields for the saved diffs, to use for further
+    # processing. Saving everything into memory is costly on memory when there
+    # are a large number of diffs.
+    diffs_fields = ["Context", "Context size", "Base size", "Diff size", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
     for row in read_csv(details_file):
@@ -1957,7 +1961,7 @@ def aggregate_diff_metrics(details_file):
             if row["Has diff"] == "True":
                 base_dict["Contexts with diffs"] += 1
                 diff_dict["Contexts with diffs"] += 1
-                diffs.append(row)
+                diffs.append({key: row[key] for key in diffs_fields})
 
     base_overall = base_minopts.copy()
     for k in base_overall.keys():
