@@ -2690,6 +2690,7 @@ void CEEInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKU
     /* Initialize fields of result for debug build warning */
     pLookupKind->needsRuntimeLookup = false;
     pLookupKind->runtimeLookupKind  = CORINFO_LOOKUP_THISOBJ;
+    pLookupKind->inlinedLookup      = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -3090,14 +3091,14 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     const bool inlinedLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
 
+    pResultLookup->lookupKind.inlinedLookup = inlinedLookup;
+
     // Runtime lookups in inlined contexts are not supported by the runtime for now
     if (inlinedLookup && (pContextMD == nullptr || pContextMD->IsSharedByGenericInstantiations()))
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
         return;
     }
-
-    pResultLookup->lookupKind.inlinedLookup = inlinedLookup;
 
     MethodTable* pContextMT = pContextMD->GetMethodTable();
 

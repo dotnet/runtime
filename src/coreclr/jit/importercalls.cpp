@@ -6730,6 +6730,16 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     // candidate, we're done.
     if (call->IsInlineCandidate() || !call->IsGuardedDevirtualizationCandidate())
     {
+        // Runtime lookup is expected to be spilled into a temp.
+        CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+        if ((instParam != nullptr) && instParam->GetNode()->OperIs(GT_RUNTIMELOOKUP))
+        {
+            const unsigned lookupTmp = lvaGrabTemp(true DEBUGARG("spilling runtimelookup"));
+            impStoreTemp(lookupTmp, instParam->GetNode(), CHECK_SPILL_NONE);
+            GenTreeLclVar* lcl = gtNewLclvNode(lookupTmp, TYP_I_IMPL);
+            lcl->gtFlags |= GTF_VAR_CONTEXT;
+            instParam->SetEarlyNode(lcl);
+        }
         return;
     }
 

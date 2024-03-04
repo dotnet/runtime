@@ -203,6 +203,10 @@ namespace Internal.JitInterface
     {
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
+
+        private byte _inlinedLookup;
+        public bool inlinedLookup { get { return _inlinedLookup != 0; } set { _inlinedLookup = value ? (byte)1 : (byte)0; } }
+
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
 
         // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields

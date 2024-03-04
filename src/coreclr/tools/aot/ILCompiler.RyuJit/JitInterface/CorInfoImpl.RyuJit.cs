@@ -244,6 +244,7 @@ namespace Internal.JitInterface
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
                 lookup.lookupKind.needsRuntimeLookup = true;
+                lookup.lookupKind.inlinedLookup = false;
                 lookup.runtimeLookup.signature = null;
 
                 // Do not bother computing the runtime lookup if we are inlining. The JIT is going

@@ -443,6 +443,7 @@ inline Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LO
     if (pGenericLookupKind != nullptr)
     {
         genericLookupKind.needsRuntimeLookup = (DWORD)pGenericLookupKind->needsRuntimeLookup;
+        genericLookupKind.inlinedLookup      = (DWORD)pGenericLookupKind->inlinedLookup;
         genericLookupKind.runtimeLookupKind  = (DWORD)pGenericLookupKind->runtimeLookupKind;
         genericLookupKind.runtimeLookupFlags = pGenericLookupKind->runtimeLookupFlags;
     }
@@ -455,6 +456,7 @@ inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
 {
     CORINFO_LOOKUP_KIND genericLookupKind;
     genericLookupKind.needsRuntimeLookup = lookupKind.needsRuntimeLookup != 0;
+    genericLookupKind.inlinedLookup      = lookupKind.inlinedLookup != 0;
     genericLookupKind.runtimeLookupKind  = (CORINFO_RUNTIME_LOOKUP_KIND)lookupKind.runtimeLookupKind;
     genericLookupKind.runtimeLookupFlags = lookupKind.runtimeLookupFlags;
     genericLookupKind.runtimeLookupArgs  = nullptr; // We don't store this opaque data. Ok?

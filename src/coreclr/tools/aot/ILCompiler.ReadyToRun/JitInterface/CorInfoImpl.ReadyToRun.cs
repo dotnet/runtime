@@ -2561,6 +2561,7 @@ namespace Internal.JitInterface
             ref CORINFO_LOOKUP pResultLookup)
         {
             pResultLookup.lookupKind.needsRuntimeLookup = true;
+            pResultLookup.lookupKind.inlinedLookup = false;
             pResultLookup.lookupKind.runtimeLookupFlags = 0;
 
             ref CORINFO_RUNTIME_LOOKUP pResult = ref pResultLookup.runtimeLookup;

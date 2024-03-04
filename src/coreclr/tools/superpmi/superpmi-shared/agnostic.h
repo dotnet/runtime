@@ -258,6 +258,7 @@ struct Agnostic_CORINFO_CONST_LOOKUP
 struct Agnostic_CORINFO_LOOKUP_KIND
 {
     DWORD needsRuntimeLookup;
+    DWORD inlinedLookup;
     DWORD runtimeLookupKind;
     WORD  runtimeLookupFlags;
 };
