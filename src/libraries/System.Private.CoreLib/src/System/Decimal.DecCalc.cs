@@ -197,15 +197,9 @@ namespace System
             {
                 if (X86.X86Base.X64.IsSupported)
                 {
-                    uint hiRes = 0;
                     ulong remainder = bufNum.U2;
 
-                    if (remainder >= den)
-                    {
-                        (hiRes, remainder) = X86.X86Base.DivRem(bufNum.U2, 0u, den);
-                    }
-
-                    bufNum.U2 = hiRes;
+                    (bufNum.U2, remainder) = (remainder >= den) ? X86.X86Base.DivRem(bufNum.U2, 0u, den) : (0u, remainder);
                     (bufNum.Low64, remainder) = X86.X86Base.X64.DivRem(bufNum.Low64, remainder, (ulong)den);
                     return (uint)remainder;
                 }
@@ -222,10 +216,7 @@ namespace System
                     bufNum.U1 = 0;
                     goto Div1Word;
 Div3Word:
-                    if (bufNum.U2 < den)
-                        (bufNum.U2, remainder) = (0, bufNum.U2);
-                    else
-                        (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
+                    (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
 Div2Word:
                     (bufNum.U1, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
 Div1Word:
