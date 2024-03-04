@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -1519,15 +1520,28 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (ReturnAsErrorException ree)
             {
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
+                SendExceptionToTelemetry(ree, msg_id, token);
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
-                var exc = new ReturnAsErrorException(e.Message, e.GetType().Name);
-                SendResponse(msg_id, AddCallStackInfoToException(exc.Error, context, scopeId), token);
+                var ree = new ReturnAsErrorException(e.Message, e.GetType().Name);
+                SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
+                SendExceptionToTelemetry(ree, msg_id, token);
             }
 
             return true;
+        }
+
+        private void SendExceptionToTelemetry(ReturnAsErrorException ree, SessionId msg_id, CancellationToken token)
+        {
+            var exceptionWithCallStackInfo = $"{ree.Error}\n{new StackTrace(1, true)}";
+            JObject reportBlazorDebugError = JObject.FromObject(new
+            {
+                exceptionType = "uncaughtException",
+                error = $"{exceptionWithCallStackInfo}",
+            });
+            SendEvent(msg_id, "DotnetDebugger.reportBlazorDebugError", reportBlazorDebugError, token);
         }
 
         internal async Task<GetMembersResult> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
