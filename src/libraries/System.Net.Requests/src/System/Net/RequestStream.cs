@@ -143,6 +143,10 @@ namespace System.Net
 
         public override async ValueTask DisposeAsync()
         {
+            if (!_disposed)
+            {
+                _disposed = true;
+            }
             await _internalStream.FlushAsync().ConfigureAwait(false);
             Complete();
             await base.DisposeAsync().ConfigureAwait(false);

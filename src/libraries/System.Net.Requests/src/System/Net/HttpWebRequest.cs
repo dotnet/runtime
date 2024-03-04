@@ -1056,10 +1056,11 @@ namespace System.Net
 
         public override Stream GetRequestStream()
         {
+            CheckRequestStream();
             return InternalGetRequestStream().Result;
         }
 
-        private Task<Stream> InternalGetRequestStream()
+        private void CheckRequestStream()
         {
             CheckAbort();
 
@@ -1077,7 +1078,10 @@ namespace System.Net
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
+        }
 
+        private async Task<Stream> InternalGetRequestStream()
+        {
             // If we aren't buffering we need to open the connection right away.
             // Because we need to send the data as soon as possible when it's available from the RequestStream.
             // Making this allows us to keep the sync send request path for buffering cases.
@@ -1088,14 +1092,14 @@ namespace System.Net
                 TaskCompletionSource<Stream> getStreamTcs = new();
                 TaskCompletionSource completeTcs = new();
                 _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
-                _requestStream = new RequestStream(getStreamTcs.Task.GetAwaiter().GetResult(), completeTcs);
+                _requestStream = new RequestStream(await getStreamTcs.Task.ConfigureAwait(false), completeTcs);
             }
             else
             {
                 _requestStream = new RequestBufferingStream();
             }
 
-            return Task.FromResult(_requestStream);
+            return _requestStream;
         }
 
         public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext? context)
@@ -1118,6 +1122,8 @@ namespace System.Net
             {
                 throw new InvalidOperationException(SR.net_repcall);
             }
+
+            CheckRequestStream();
 
             _requestStreamCallback = callback;
             _requestStreamOperation = InternalGetRequestStream().ToApm(callback, state);

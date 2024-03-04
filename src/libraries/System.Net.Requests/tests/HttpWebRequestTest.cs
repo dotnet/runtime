@@ -2140,12 +2140,13 @@ namespace System.Net.Tests
         [InlineData(true)]
         public async Task SendHttpRequest_WhenNotBuffering_SendSuccess(bool isChunked)
         {
+            byte[] firstBlock = "Hello"u8.ToArray();
+            byte[] secondBlock = "WorlddD"u8.ToArray();
             SemaphoreSlim sem = new(0);
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    Console.WriteLine(uri);
                     request.Method = "POST";
                     if (isChunked is false)
                     {
@@ -2155,10 +2156,10 @@ namespace System.Net.Tests
                     
                     using (Stream requestStream = await request.GetRequestStreamAsync())
                     {
-                        requestStream.Write("Hello"u8);
+                        requestStream.Write(firstBlock);
                         requestStream.Flush();
                         await sem.WaitAsync();
-                        requestStream.Write("WorlddD"u8);
+                        requestStream.Write(secondBlock);
                         requestStream.Flush();
                     }
                     await request.GetResponseAsync();
@@ -2173,20 +2174,23 @@ namespace System.Net.Tests
                         if (isChunked)
                         {
                             // Discard chunk length and CRLF.
-                            await connection.ReadBlockAsync(buffer, 0, 3);
+                            //await connection.ReadBlockAsync(buffer, 0, 3);
+                            await connection.ReadLineAsync();
                         }
-                        int readBytes = await connection.ReadBlockAsync(buffer, 0, 5);
-                        Assert.Equal(5, readBytes);
-                        Assert.Equal("Hello"u8, buffer[..readBytes]);
+                        int readBytes = await connection.ReadBlockAsync(buffer, 0, firstBlock.Length);
+                        Assert.Equal(firstBlock.Length, readBytes);
+                        Assert.Equal(firstBlock, buffer[..readBytes]);
                         sem.Release();
                         if (isChunked)
                         {
+                            await connection.ReadLineAsync();
+                            await connection.ReadLineAsync();
                             // Discard CRLF, chunk length and CRLF.
-                            await connection.ReadBlockAsync(buffer, 0, 5);
+                            //await connection.ReadBlockAsync(buffer, 0, 5);
                         }
-                        readBytes = await connection.ReadBlockAsync(buffer, 0, 7);
-                        Assert.Equal(7, readBytes);
-                        Assert.Equal("WorlddD"u8, buffer[..readBytes]);
+                        readBytes = await connection.ReadBlockAsync(buffer, 0, secondBlock.Length);
+                        Assert.Equal(secondBlock.Length, readBytes);
+                        Assert.Equal(secondBlock, buffer[..readBytes]);
                         await connection.SendResponseAsync();
                         await sem.WaitAsync();
                     });
