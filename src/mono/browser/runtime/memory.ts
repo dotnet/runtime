@@ -322,19 +322,26 @@ export function getEnv(name: string): string | null {
     }
 }
 
-const BuiltinAtomics = globalThis.Atomics;
-
-export const Atomics = WasmEnableThreads ? {
-    storeI32(offset: MemOffset, value: number): void {
-        BuiltinAtomics.store(localHeapViewI32(), <any>offset >>> 2, value);
-    },
-    notifyI32(offset: MemOffset, count: number): void {
-        BuiltinAtomics.notify(localHeapViewI32(), <any>offset >>> 2, count);
+export function compareExchangeI32(offset: MemOffset, value: number, expected: number): number {
+    if (!WasmEnableThreads) {
+        const actual = getI32(offset);
+        if (actual === expected) {
+            setI32(offset, value);
+        }
+        return actual;
     }
-} : {
-    storeI32: setI32,
-    notifyI32: () => { /*empty*/ }
-};
+    return globalThis.Atomics.compareExchange(localHeapViewI32(), <any>offset >>> 2, value, expected);
+}
+
+export function storeI32(offset: MemOffset, value: number): void {
+    if (!WasmEnableThreads) return setI32(offset, value);
+    globalThis.Atomics.store(localHeapViewI32(), <any>offset >>> 2, value);
+}
+
+export function notifyI32(offset: MemOffset, count: number): void {
+    if (!WasmEnableThreads) return;
+    globalThis.Atomics.notify(localHeapViewI32(), <any>offset >>> 2, count);
+}
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewI8(): Int8Array {

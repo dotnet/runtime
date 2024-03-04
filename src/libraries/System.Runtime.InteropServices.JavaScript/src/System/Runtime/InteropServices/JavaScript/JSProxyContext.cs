@@ -386,6 +386,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     holder.IsDisposed = true;
                     handle.Free();
                 }
+#if FEATURE_WASM_MANAGED_THREADS
+                Marshal.FreeHGlobal((IntPtr)holder.State);
+#endif
             }
         }
 
@@ -423,6 +426,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     holderCallback = holder.Callback;
                     holder.IsDisposed = true;
+#if FEATURE_WASM_MANAGED_THREADS
+                    Marshal.FreeHGlobal((IntPtr)holder.State);
+#endif
                 }
             }
             holderCallback?.Invoke(null);

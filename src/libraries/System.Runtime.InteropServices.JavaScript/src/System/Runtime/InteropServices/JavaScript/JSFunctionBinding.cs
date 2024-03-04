@@ -310,6 +310,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var holder = targetContext.CreatePromiseHolder();
                 res.slot.Type = MarshalerType.TaskPreCreated;
                 res.slot.GCHandle = holder.GCHandle;
+                res.slot.IntPtrValue = (IntPtr)holder.State;
             }
 #if FEATURE_WASM_MANAGED_THREADS
             else

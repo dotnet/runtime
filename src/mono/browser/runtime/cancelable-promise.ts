@@ -1,11 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { _lookup_js_owned_object } from "./gc-handles";
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
+import { _lookup_js_owned_object, teardown_managed_proxy } from "./gc-handles";
 import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
-import { mono_log_warn } from "./logging";
-import { PromiseHolder } from "./marshal-to-cs";
-import { ControllablePromise, GCHandle } from "./types/internal";
+import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
+import { ManagedObject } from "./marshal";
+import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
+import { mono_log_debug } from "./logging";
+import { settleUnsettledPromise } from "./pthreads";
+import { complete_task } from "./managed-exports";
+import { marshal_cs_object_to_cs } from "./marshal-to-cs";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -32,17 +38,121 @@ export function wrap_as_cancelable<T>(inner: Promise<T>): ControllablePromise<T>
 export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
     const holder = _lookup_js_owned_object(task_holder_gc_handle) as PromiseHolder;
     mono_assert(!!holder, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
-
-    const promise = holder.promise;
-    loaderHelpers.assertIsControllablePromise(promise);
-    const promise_control = loaderHelpers.getPromiseController(promise);
-    if (holder.isResolved) {
-        // FIXME: something needs to free the GCHandle
-        mono_log_warn("Canceling a promise that has already resolved.");
-        return;
-    }
-    mono_assert(!holder.isCanceled, "This promise already canceled.");
-    holder.isCanceled = true;
-    promise_control.reject(new Error("OperationCanceledException"));
+    holder.cancel();
 }
 
+// NOTE: layout has to match PromiseHolderState in JSHostImplementation.Types.cs
+const enum PromiseHolderState {
+    IsResolving = 0,
+}
+
+const promise_holder_symbol = Symbol.for("wasm promise_holder");
+
+export class PromiseHolder extends ManagedObject {
+    public isResolved = false;
+    public isPosted = false;
+    public data: any = null;
+    public reason: any = null;
+    public constructor(public promise: Promise<any>,
+        private gc_handle: GCHandle,
+        private promiseHolderPtr: number, // could be null for GCV_handle 
+        private res_converter?: MarshalerToCs) {
+        super();
+    }
+
+    // returns true if the promise is being canceled by managed code
+    setIsResolving(): boolean {
+        if (!WasmEnableThreads || this.promiseHolderPtr === 0) {
+            return false;
+        }
+        forceThreadMemoryViewRefresh();
+        if (compareExchangeI32(this.promiseHolderPtr + PromiseHolderState.IsResolving, 1, 0) === 0) {
+            return false;
+        }
+        return true;
+    }
+
+    resolve(data: any) {
+        if (this.isResolved) {
+            return;
+        }
+        if (WasmEnableThreads && this.setIsResolving()) {
+            // we know that cancelation is in flight
+            // because we need to keep the GCHandle alive until until the cancelation arrives
+            // we skip the this resolve and let the cancelation to reject the Task
+            // we store the original data and use it later
+            this.data = data;
+            return;
+        }
+        this.isResolved = true;
+        this.complete_task(data, null);
+    }
+
+    reject(reason: any) {
+        const isCancelation = reason && reason[promise_holder_symbol] === this;
+        if (this.isResolved && !isCancelation) {
+            return;
+        }
+        if (WasmEnableThreads && !isCancelation && this.setIsResolving()) {
+            // we know that cancelation is in flight
+            // because we need to keep the GCHandle alive until until the cancelation arrives
+            // we skip the this reject and let the cancelation to reject the Task
+            // we store the original reason and use it later
+            this.reason = reason;
+            return;
+        }
+        this.isResolved = true;
+        this.complete_task(null, reason);
+    }
+
+    cancel() {
+        if (this.isResolved) {
+            return;
+        }
+        this.isResolved = true;
+
+        const promise = this.promise;
+        loaderHelpers.assertIsControllablePromise(promise);
+        const promise_control = loaderHelpers.getPromiseController(promise);
+
+        const reason = this.reason || new Error("OperationCanceledException") as any;
+        reason[promise_holder_symbol] = this;
+
+        if (promise_control.isDone) {
+            this.setIsResolving();
+            this.complete_task(null, reason);
+        } else {
+            promise_control.reject(reason);
+        }
+    }
+
+    // we can do this just once, because it will be dispose the GCHandle
+    complete_task(data: any, reason: any) {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
+        try {
+            mono_assert(!this.isPosted, "Promise is already posted to managed.");
+            this.isPosted = true;
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+                settleUnsettledPromise();
+            }
+
+            // we can unregister the GC handle just on JS side
+            teardown_managed_proxy(this, this.gc_handle, /*skipManaged: */ true);
+            // order of operations with teardown_managed_proxy matters
+            // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
+            complete_task(this.gc_handle, reason, data, this.res_converter || marshal_cs_object_to_cs);
+        }
+        catch (ex) {
+            try {
+                loaderHelpers.mono_exit(1, ex);
+            }
+            catch (ex2) {
+                // there is no point to propagate the exception into the unhandled promise rejection
+            }
+        }
+    }
+}
