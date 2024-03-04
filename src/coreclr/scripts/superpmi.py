@@ -1810,11 +1810,11 @@ def calculate_perfscore_improvements_regressions(base_diff_perfscores):
             num_ps_regressions += 1
             sum_log_ps_regressions += log_relative_perfscore
 
-    ps_improvements = None
+    ps_improvements = 0.0
     if num_ps_improvements > 0:
         ps_improvements = math.exp(sum_log_ps_improvements / num_ps_improvements) - 1
 
-    ps_regressions = None
+    ps_regressions = 0.0
     if num_ps_regressions > 0:
         ps_regressions = math.exp(sum_log_ps_regressions / num_ps_regressions) - 1
 
@@ -2430,12 +2430,12 @@ class SuperPMIReplayAsmDiffs:
                         elif byte_regressions > 0:
                             logging.info("  +{:,d} bytes".format(byte_regressions))
 
-                        if ps_improvements is not None and ps_regressions is not None:
+                        if num_ps_improvements > 0 and num_ps_regressions > 0:
                             logging.info("  {:.2f}%/+{:.2f}% PerfScore".format(ps_improvements * 100, ps_regressions * 100))
-                        elif ps_improvements is not None:
-                            logging.info("  -{:.2f}% PerfScore".format(ps_improvements))
-                        elif ps_regressions is not None:
-                            logging.info("  +{:.2f}% PerfScore".format(ps_regressions))
+                        elif num_ps_improvements > 0:
+                            logging.info("  -{:.2f}% PerfScore".format(ps_improvements * 100))
+                        elif num_ps_regressions > 0:
+                            logging.info("  +{:.2f}% PerfScore".format(ps_regressions * 100))
 
                         logging.info("")
                         logging.info("")
