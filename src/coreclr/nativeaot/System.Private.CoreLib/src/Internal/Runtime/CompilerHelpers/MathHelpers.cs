@@ -164,6 +164,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (j == 0)
                 return ThrowLngDivByZero();
+            else if (j == -1 && i == long.MinValue)
+                return ThrowLngOvf();
             else
                 return RhpLMod(i, j);
         }
@@ -189,7 +191,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (j == 0)
                 return ThrowLngDivByZero();
             else if (j == -1 && i == long.MinValue)
-                return ThrowLngArithExc();
+                return ThrowLngOvf();
             else
                 return RhpLDiv(i, j);
         }
@@ -204,12 +206,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static ulong ThrowULngDivByZero()
         {
             throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngArithExc()
-        {
-            throw new ArithmeticException();
         }
 #endif // TARGET_64BIT
 

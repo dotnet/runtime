@@ -423,14 +423,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1CharPackedSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1CharPackedIgnoreCaseSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2CharPackedIgnoreCaseSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3CharPackedSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2CharPackedSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1SearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2SearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\BitVector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticWithAsciiCharSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SingleCharSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SingleByteSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2ByteSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2CharSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3ByteSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3CharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any4SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any5SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\AsciiByteSearchValues.cs" />
@@ -1082,6 +1084,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\CryptographicException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IPermission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\ISecurityEncodable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IStackWalk.cs" />
@@ -1116,6 +1119,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.BinarySearch.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Byte.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.ByteMemOps.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Packed.cs" />
@@ -2138,7 +2142,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Windows.cs" />
@@ -2456,7 +2459,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.ThreadPoolValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Unix.cs" />

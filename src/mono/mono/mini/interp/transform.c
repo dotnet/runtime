@@ -1938,9 +1938,21 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 	} else if (in_corlib &&
 			!strcmp (klass_name_space, "System") &&
-			!strcmp (klass_name, "SpanHelpers") &&
-			!strcmp (tm, "ClearWithReferences")) {
-		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
+			!strcmp (klass_name, "SpanHelpers")) {
+		if (!strcmp (tm, "ClearWithReferences")) {
+			*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
+		} else if (!strcmp (tm, "ClearWithoutReferences")) {
+			*op = MINT_ZEROBLK;
+		} else if (!strcmp (tm, "Fill") && csignature->param_count == 3) {
+			int align;
+			if (mono_type_size (csignature->params [2], &align) == 1) {
+				interp_add_ins (td, MINT_INITBLK);
+				td->sp -= 3;
+				interp_ins_set_sregs3 (td->last_ins, td->sp [0].var, td->sp [2].var, td->sp [1].var);
+				td->ip += 5;
+				return TRUE;
+			}
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block")) {
 			InterpInst *ldloca2 = td->last_ins;
@@ -8125,7 +8137,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				CHECK_TYPELOAD (klass);
 				if (m_class_is_valuetype (klass)) {
 					--td->sp;
-					interp_add_ins (td, MINT_INITOBJ);
+					interp_add_ins (td, MINT_ZEROBLK_IMM);
 					interp_ins_set_sreg (td->last_ins, td->sp [0].var);
 					i32 = mono_class_value_size (klass, NULL);
 					g_assert (i32 < G_MAXUINT16);
@@ -8746,11 +8758,6 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	int patchpoint_data_index = 0;
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
-#if HOST_BROWSER
-	#define BACKWARD_BRANCH_OFFSETS_SIZE 64
-	unsigned int backward_branch_offsets_count = 0;
-	guint16 backward_branch_offsets[BACKWARD_BRANCH_OFFSETS_SIZE] = { 0 };
-#endif
 
 	// This iteration could be avoided at the cost of less precise size result, following
 	// super instruction pass
@@ -8771,13 +8778,6 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 		g_assert (bb->native_offset <= bb->native_offset_estimate);
 		td->cbb = bb;
 
-#if HOST_BROWSER
-		if (bb->backwards_branch_target && rtm->contains_traces) {
-			if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
-				backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
-		}
-#endif
-
 		if (bb->patchpoint_data)
 			patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, bb->native_offset, bb->index);
 		if (!td->optimized && bb->patchpoint_bb) {
@@ -8790,17 +8790,6 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
 				int native_offset = (int)(ip - td->new_code);
 				patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, native_offset, -ins->data [0]);
-#if HOST_BROWSER
-			} else if (rtm->contains_traces && (
-				(ins->opcode == MINT_CALL_HANDLER_S) || (ins->opcode == MINT_CALL_HANDLER)
-			)) {
-				// While this formally isn't a backward branch target, we want to record
-				//  the offset of its following instruction so that the jiterpreter knows
-				//  to generate the necessary dispatch code to enable branching back to it.
-				ip = emit_compacted_instruction (td, ip, ins);
-				if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
-					backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
-#endif
 			} else {
 				ip = emit_compacted_instruction (td, ip, ins);
 			}
@@ -8815,16 +8804,6 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	handle_relocations (td);
 
 	g_ptr_array_free (td->relocs, TRUE);
-
-#if HOST_BROWSER
-	if (backward_branch_offsets_count > 0) {
-		rtm->backward_branch_offsets = imethod_alloc0 (td, backward_branch_offsets_count * sizeof(guint16));
-		rtm->backward_branch_offsets_count = backward_branch_offsets_count;
-		memcpy(rtm->backward_branch_offsets, backward_branch_offsets, backward_branch_offsets_count * sizeof(guint16));
-	}
-
-	#undef BACKWARD_BRANCH_OFFSETS_SIZE
-#endif
 }
 
 /*
@@ -9022,12 +9001,6 @@ retry:
 	if (td->optimized) {
 		MONO_TIME_TRACK (mono_interp_stats.optimize_time, interp_optimize_code (td));
 		interp_alloc_offsets (td);
-		// Offset allocator uses computed ref counts from var values. We have to free this
-		// table later here.
-		if (td->var_values != NULL) {
-			g_free (td->var_values);
-			td->var_values = NULL;
-		}
 		interp_squash_initlocals (td);
 #if HOST_BROWSER
 		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
@@ -9036,6 +9009,15 @@ retry:
 	}
 
 	generate_compacted_code (rtm, td);
+
+	if (td->optimized) {
+		// Offset allocator and compacted code generation use computed ref counts
+		// from var values. We have to free this table later here.
+		if (td->var_values != NULL) {
+			g_free (td->var_values);
+			td->var_values = NULL;
+		}
+	}
 
 	if (td->total_locals_size >= G_MAXUINT16) {
 		if (td->disable_inlining && td->optimized) {

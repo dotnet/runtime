@@ -1148,7 +1148,7 @@ class Cfg {
     blockStack: Array<MintOpcodePtr> = [];
     backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
-    observedBranchTargets = new Set<MintOpcodePtr>();
+    observedBackBranchTargets = new Set<MintOpcodePtr>();
     trace = 0;
 
     constructor(builder: WasmBuilder) {
@@ -1165,7 +1165,7 @@ class Cfg {
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
-        this.observedBranchTargets.clear();
+        this.observedBackBranchTargets.clear();
         this.trace = trace;
         this.backDispatchOffsets.length = 0;
     }
@@ -1212,7 +1212,9 @@ class Cfg {
     }
 
     branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
-        this.observedBranchTargets.add(target);
+        if (isBackward)
+            this.observedBackBranchTargets.add(target);
+
         this.appendBlob();
         this.segments.push({
             type: "branch",
@@ -1224,7 +1226,10 @@ class Cfg {
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
         this.overheadBytes += 4; // forward branches are a constant br + depth (optimally 2 bytes)
+
         if (isBackward) {
+            // TODO: Make this smaller by setting the flag inside the dispatcher when disp != 0,
+            //  this will save space for any trace with more than one back-branch
             // get_local <cinfo>
             // i32_const 1
             // i32_store 0 0
@@ -1298,7 +1303,7 @@ class Cfg {
                 const breakDepth = this.blockStack.indexOf(offset);
                 if (breakDepth < 0)
                     continue;
-                if (!this.observedBranchTargets.has(offset))
+                if (!this.observedBackBranchTargets.has(offset))
                     continue;
 
                 this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
@@ -1321,6 +1326,9 @@ class Cfg {
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough

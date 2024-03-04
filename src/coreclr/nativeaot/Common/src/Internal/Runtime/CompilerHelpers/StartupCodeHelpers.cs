@@ -290,12 +290,7 @@ namespace Internal.Runtime.CompilerHelpers
                         {
                             // At the time of writing this, 90% of DehydratedDataCommand.Copy cases
                             // would fall into the above specialized cases. 10% fall back to memmove.
-                            memmove(pDest, pCurrent, (nuint)payload);
-
-                            // Not a DllImport - we don't need a GC transition since this is early startup
-                            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-                            [RuntimeImport("*", "memmove")]
-                            static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+                            Unsafe.CopyBlock(pDest, pCurrent, (uint)payload);
                         }
 
                         pDest += payload;

@@ -381,7 +381,7 @@ namespace System.Reflection
             if ((_fieldInfo.Attributes & FieldAttributes.InitOnly) == FieldAttributes.InitOnly &&
                 _fieldAccessType != FieldAccessorType.SlowPathUntilClassInitialized)
             {
-                ThrowHelperFieldAccessException(_fieldInfo.Name, _fieldInfo.DeclaringType?.FullName);
+                ThrowHelperFieldAccessException(_fieldInfo);
             }
         }
 
@@ -480,8 +480,8 @@ namespace System.Reflection
         private static void ThrowHelperArgumentException(object target, FieldInfo fieldInfo) =>
             throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, fieldInfo.Name, fieldInfo.DeclaringType, target.GetType()));
 
-        private static void ThrowHelperFieldAccessException(string fieldName, string? declaringTypeName) =>
-            throw new FieldAccessException(SR.Format(SR.RFLCT_CannotSetInitonlyStaticField, fieldName, declaringTypeName));
+        private static void ThrowHelperFieldAccessException(FieldInfo fieldInfo) =>
+            throw new FieldAccessException(SR.Format(SR.RFLCT_CannotSetInitonlyStaticField, fieldInfo.Name, fieldInfo.DeclaringType));
 
         private enum FieldAccessorType
         {

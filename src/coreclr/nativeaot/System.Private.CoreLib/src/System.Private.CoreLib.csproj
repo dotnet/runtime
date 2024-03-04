@@ -184,7 +184,6 @@
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
-    <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\RuntimeType.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />

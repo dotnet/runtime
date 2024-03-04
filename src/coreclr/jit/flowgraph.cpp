@@ -266,16 +266,10 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock* top         = block;
-        BBKinds     oldJumpKind = top->GetKind();
+        BasicBlock* top = block;
 
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
-
-        poll->SetTarget(bottom);
-        assert(poll->JumpsToNext());
-
-        bottom->TransferTarget(top);
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
@@ -300,7 +294,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         // Remove the last statement from Top and add it to Bottom if necessary.
-        if ((oldJumpKind == BBJ_COND) || (oldJumpKind == BBJ_RETURN) || (oldJumpKind == BBJ_THROW))
+        if (top->KindIs(BBJ_COND, BBJ_RETURN, BBJ_THROW))
         {
             Statement* stmt = top->firstStmt();
             while (stmt->GetNextStmt() != nullptr)
@@ -364,37 +358,46 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
-        fgAddRefPred(bottom, poll);
-        fgAddRefPred(bottom, top);
-        fgAddRefPred(poll, top);
+        FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
+        FlowEdge* const falseEdge = fgAddRefPred(poll, top);
+
+        FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
+        poll->SetTargetEdge(newEdge);
+        assert(poll->JumpsToNext());
 
         // Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom
         // (1 for unconditional branches, 2 for conditional branches, N for switches).
-        switch (oldJumpKind)
+        switch (top->GetKind())
         {
             case BBJ_RETURN:
             case BBJ_THROW:
                 // no successors
                 break;
+
             case BBJ_COND:
                 // replace predecessor in true/false successors.
                 noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->GetFalseTarget(), top, bottom);
-                fgReplacePred(bottom->GetTrueTarget(), top, bottom);
+                fgReplacePred(top->GetFalseEdge(), bottom);
+                fgReplacePred(top->GetTrueEdge(), bottom);
                 break;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgReplacePred(bottom->GetTarget(), top, bottom);
+                fgReplacePred(top->GetTargetEdge(), bottom);
                 break;
+
             case BBJ_SWITCH:
                 NO_WAY("SWITCH should be a call rather than an inlined poll.");
                 break;
+
             default:
                 NO_WAY("Unknown block type for updating predecessor lists.");
+                break;
         }
+
+        bottom->TransferTarget(top);
+        top->SetCond(trueEdge, falseEdge);
 
         if (compCurBB == top)
         {
@@ -1625,9 +1628,9 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
     FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
     newEdge->setLikelihood(1.0);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
 #ifdef DEBUG
     if (verbose)
@@ -2097,9 +2100,9 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
                     FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
                     newEdge->setLikelihood(1.0);
+                    returnBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
@@ -2758,15 +2761,14 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS, block);
+    BasicBlock* newHead = BasicBlock::New(this);
     newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
     fgInsertBBbefore(block, newHead); // insert the new block in the block list
-    assert(newHead->JumpsToNext());
-    fgExtendEHRegionBefore(block); // Update the EH table to make the prolog block the first block in the block's EH
-                                   // block.
+    fgExtendEHRegionBefore(block);    // Update the EH table to make the prolog block the first block in the block's EH
+                                      // block.
 
     // Distribute the pred list between newHead and block. Incoming edges coming from outside
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
@@ -2782,11 +2784,13 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             switch (predBlock->GetKind())
             {
                 case BBJ_CALLFINALLY:
+                {
                     noway_assert(predBlock->TargetIs(block));
-                    predBlock->SetTarget(newHead);
-                    fgRemoveRefPred(block, predBlock);
-                    fgAddRefPred(newHead, predBlock);
+                    fgRemoveRefPred(predBlock->GetTargetEdge());
+                    FlowEdge* const newEdge = fgAddRefPred(newHead, predBlock);
+                    predBlock->SetTargetEdge(newEdge);
                     break;
+                }
 
                 default:
                     // The only way into the handler is via a BBJ_CALLFINALLY (to a finally handler), or
@@ -2797,10 +2801,10 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
         }
     }
 
-    assert(nullptr == fgGetPredForBlock(block, newHead));
-    fgAddRefPred(block, newHead);
-
-    assert(newHead->HasFlag(BBF_INTERNAL));
+    assert(fgGetPredForBlock(block, newHead) == nullptr);
+    FlowEdge* const newEdge = fgAddRefPred(block, newHead);
+    newHead->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    assert(newHead->JumpsToNext());
 }
 
 //------------------------------------------------------------------------
@@ -3374,7 +3378,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
         assert(add->acdKind != SCK_NONE);
 
-        BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* jumpDest */ nullptr,
+        BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk,
                                                    /* runRarely */ true, /* insertAtEnd */ true);
 
         // Update the descriptor
@@ -3438,7 +3442,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 #endif // DEBUG
 
         //  Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no bbTarget points to these blocks.
+        // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 
@@ -5602,36 +5606,9 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
         // Jump target should not be set yet
         assert(!newBlk->HasInitializedTarget());
 
-        // First copy the jump destination(s) from "blk".
-        newBlk->CopyTarget(comp, blk);
-
-        // Now redirect the new block according to "blockMap".
-        comp->optRedirectBlock(newBlk, map);
-
-        // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newBlk->GetKind())
-        {
-            case BBJ_ALWAYS:
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-                comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
-                break;
-
-            case BBJ_COND:
-                comp->fgAddRefPred(newBlk->GetFalseTarget(), newBlk);
-                comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const switchDest : newBlk->SwitchTargets())
-                {
-                    comp->fgAddRefPred(switchDest, newBlk);
-                }
-                break;
-
-            default:
-                break;
-        }
+        // Redirect the new block according to "blockMap".
+        // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+        comp->optSetMappedBlockTargets(blk, newBlk, map);
 
         return BasicBlockVisit::Continue;
     });

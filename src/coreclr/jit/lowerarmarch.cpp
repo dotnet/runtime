@@ -585,8 +585,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
-            src->OperIs(GT_CNS_INT))
+        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -634,7 +633,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
         }
     }
     else
@@ -650,7 +650,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
 
         ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        bool         doCpObj              = layout->HasGCPtr();
         unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
         if (doCpObj && (size <= copyBlockUnrollLimit))
@@ -685,9 +685,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            LowerBlockStoreAsHelperCall(blkNode);
         }
     }
 }

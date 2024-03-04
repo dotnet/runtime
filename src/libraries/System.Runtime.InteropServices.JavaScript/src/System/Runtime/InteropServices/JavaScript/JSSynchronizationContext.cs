@@ -44,28 +44,16 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // this need to be called from JSWebWorker or UI thread
-        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
+        public static unsafe JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
         {
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
 
-            // FIXME: make this configurable
-            // we could have 3 different modes of this
-            // 1) throwing on UI + JSWebWorker
-            // 2) throwing only on UI - small risk, more convenient.
-            // 3) not throwing at all - quite risky
-            // deadlock scenarios are:
-            // - .Wait for more than 5000ms and deadlock the GC suspend
-            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also be a chain of promises.
-            // - try to create new pthread when UI thread is blocked and we run out of posix/emscripten pool of loaded workers.
-            // Things which lead to it are
-            // - Task.Wait, Signal.Wait etc
-            // - Monitor.Enter etc, if the lock is held by another thread for long time
-            // - synchronous [JSExport] into managed code, which would block
-            // - synchronous [JSImport] to another thread, which would block
-            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+            if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.NoBlockingWait)
+            {
+                Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+            }
 
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;
@@ -77,7 +65,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             ctx.AwaitNewData();
 
-            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
+            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.BeforeSyncJSExport,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.AfterSyncJSExport);
 
             return ctx;
         }
@@ -179,7 +169,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.JSNativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         public override void Post(SendOrPostCallback d, object? state)

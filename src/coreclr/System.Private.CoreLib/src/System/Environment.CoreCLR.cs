@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 
 namespace System
@@ -33,12 +34,15 @@ namespace System
             set;
         }
 
-        // Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
-        // to assign blame for crashes.  Don't mess with this, such as by making it call
-        // another managed helper method, unless you consult with some CLR Watson experts.
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string? message);
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        public static void FailFast(string? message)
+        {
+            // Note: The CLR's Watson bucketization code looks at the our caller
+            // to assign blame for crashes.
+            StackCrawlMark mark = StackCrawlMark.LookForMyCaller;
+            FailFast(ref mark, message, exception: null, errorMessage: null);
+        }
 
         // This overload of FailFast will allow you to specify the exception object
         // whose bucket details *could* be used when undergoing the failfast process.
@@ -54,12 +58,34 @@ namespace System
         //    IP for bucketing. If the exception object is not preallocated, it will use the bucket
         //    details contained in the object (if any).
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string? message, Exception? exception);
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        public static void FailFast(string? message, Exception? exception)
+        {
+            // Note: The CLR's Watson bucketization code looks at the our caller
+            // to assign blame for crashes.
+            StackCrawlMark mark = StackCrawlMark.LookForMyCaller;
+            FailFast(ref mark, message, exception, errorMessage: null);
+        }
 
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void FailFast(string? message, Exception? exception, string? errorMessage);
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        internal static void FailFast(string? message, Exception? exception, string? errorMessage)
+        {
+            // Note: The CLR's Watson bucketization code looks at the our caller
+            // to assign blame for crashes.
+            StackCrawlMark mark = StackCrawlMark.LookForMyCaller;
+            FailFast(ref mark, message, exception, errorMessage);
+        }
+
+        [DoesNotReturn]
+        private static void FailFast(ref StackCrawlMark mark, string? message, Exception? exception, string? errorMessage)
+        {
+            FailFast(new StackCrawlMarkHandle(ref mark), new StringHandleOnStack(ref message), ObjectHandleOnStack.Create(ref exception), new StringHandleOnStack(ref errorMessage));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast")]
+        [DoesNotReturn]
+        private static partial void FailFast(StackCrawlMarkHandle mark, StringHandleOnStack message, ObjectHandleOnStack exception, StringHandleOnStack errorMessage);
 
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {

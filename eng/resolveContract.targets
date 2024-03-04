@@ -76,7 +76,7 @@
        all the inputs available, some suppressions might only apply to one or the other and hence unnecessary
        suppressions can't be determined.
        Disable the validation under source build as that might use an out-of-date SDK and not the ApiCompat.Task package. -->
-  <PropertyGroup Condition="('$(IsPackable)' == 'true' and '$(IsRuntimeAndReferenceAssembly)' != 'true') or '$(DotNetBuildFromSource)' == 'true'">
+  <PropertyGroup Condition="('$(IsPackable)' == 'true' and '$(IsRuntimeAndReferenceAssembly)' != 'true') or '$(DotNetBuildSourceOnly)' == 'true'">
     <ApiCompatPreserveUnnecessarySuppressions>true</ApiCompatPreserveUnnecessarySuppressions>
     <ApiCompatPermitUnnecessarySuppressions>true</ApiCompatPermitUnnecessarySuppressions>
   </PropertyGroup>
@@ -137,7 +137,7 @@
                       Version="$(MicrosoftDotNetGenApiVersion)"
                       PrivateAssets="all"
                       IsImplicitlyDefined="true"
-                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <!-- Generate a .txt file with all public types of the project referenced by ProjectForGenAPIDocIdGeneration (e.g. System.Private.CoreLib or System.Private.Uri implementation assembly).

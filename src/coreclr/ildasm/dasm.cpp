@@ -3081,7 +3081,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if ((attr & gpNotNullableValueTypeConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "valuetype ");
         CHECK_REMAINING_SIZE;
-        if ((attr & gpAcceptByRefLike) != 0)
+        if ((attr & gpAllowByRefLike) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "byreflike ");
         CHECK_REMAINING_SIZE;
         if ((attr & gpDefaultConstructorConstraint) != 0)
@@ -7352,9 +7352,14 @@ void CloseNamespace(__inout __nullterminated char* szString)
 
 FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
+#ifdef HOST_WINDOWS
     FILE*   pfile = NULL;
         if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
         else _wfopen_s(&pfile,wzFileName,W("wt"));
+#else
+    FILE*   pfile = NULL;
+    _wfopen_s(&pfile,wzFileName,W("w"));
+#endif
 
     if(pfile)
     {

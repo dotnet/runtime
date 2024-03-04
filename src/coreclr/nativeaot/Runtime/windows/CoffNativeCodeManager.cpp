@@ -593,7 +593,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
             return true;
         }
 #else
-        PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
+        PORTABILITY_ASSERT("UnwindStackFrame");
         RhFailFast();
 #endif
     }

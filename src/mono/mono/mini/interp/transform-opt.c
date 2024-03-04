@@ -4,6 +4,7 @@
 
 #include "mintops.h"
 #include "transform.h"
+#include "interp-intrins.h"
 
 /*
  * VAR OFFSET ALLOCATOR
@@ -1681,6 +1682,16 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	mark_bb_as_dead (td, bb, bb->next_bb);
 }
 
+static int
+get_bb_links_capacity (int links)
+{
+	if (links <= 2)
+		return links;
+	// Return the next power of 2 bigger or equal to links
+	int leading_zero = interp_intrins_clz_i4 (links - 1);
+	return 1 << (32 - leading_zero);
+}
+
 void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to)
 {
@@ -1694,12 +1705,15 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		}
 	}
 	if (!found) {
-		InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, sizeof (InterpBasicBlock*) * (from->out_count + 1));
-		for (i = 0; i < from->out_count; ++i)
-			newa [i] = from->out_bb [i];
-		newa [i] = to;
+		int prev_capacity = get_bb_links_capacity (from->out_count);
+		int new_capacity = get_bb_links_capacity (from->out_count + 1);
+		if (new_capacity > prev_capacity) {
+			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
+			memcpy (newa, from->out_bb, from->out_count * sizeof (InterpBasicBlock*));
+			from->out_bb = newa;
+		}
+		from->out_bb [from->out_count] = to;
 		from->out_count++;
-		from->out_bb = newa;
 	}
 
 	found = FALSE;
@@ -1710,12 +1724,15 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		}
 	}
 	if (!found) {
-		InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, sizeof (InterpBasicBlock*) * (to->in_count + 1));
-		for (i = 0; i < to->in_count; ++i)
-			newa [i] = to->in_bb [i];
-		newa [i] = from;
+		int prev_capacity = get_bb_links_capacity (to->in_count);
+		int new_capacity = get_bb_links_capacity (to->in_count + 1);
+		if (new_capacity > prev_capacity) {
+			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
+			memcpy (newa, to->in_bb, to->in_count * sizeof (InterpBasicBlock*));
+			to->in_bb = newa;
+		}
+		to->in_bb [to->in_count] = from;
 		to->in_count++;
-		to->in_bb = newa;
 	}
 }
 
@@ -1942,7 +1959,8 @@ interp_reorder_bblocks (TransformData *td)
 				InterpInst *last_ins = interp_last_ins (in_bb);
 				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
 						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
-						last_ins->info.target_bb == bb) {
+						last_ins->info.target_bb == bb &&
+						in_bb != bb) {
 					InterpBasicBlock *target_bb = first->info.target_bb;
 					last_ins->info.target_bb = target_bb;
 					interp_unlink_bblocks (in_bb, bb);
@@ -2112,6 +2130,12 @@ interp_get_mt_for_ldind (int ldind_op)
 		result.field = op val->field; \
 		break;
 
+#define INTERP_FOLD_SHIFTOP_IMM(opcode,local_type,field,shift_op,cast_type) \
+	case opcode: \
+		result.type = local_type; \
+		result.field = (cast_type)val->field shift_op ins->data [0]; \
+		break;
+
 #define INTERP_FOLD_CONV(opcode,val_type_dst,field_dst,val_type_src,field_src,cast_type) \
 	case opcode: \
 		result.type = val_type_dst; \
@@ -2150,6 +2174,19 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 		INTERP_FOLD_UNOP (MINT_NOT_I4, VAR_VALUE_I4, i, ~);
 		INTERP_FOLD_UNOP (MINT_NOT_I8, VAR_VALUE_I8, l, ~);
 		INTERP_FOLD_UNOP (MINT_CEQ0_I4, VAR_VALUE_I4, i, 0 ==);
+
+		INTERP_FOLD_UNOP (MINT_ADD_I4_IMM, VAR_VALUE_I4, i, ((gint32)(gint16)ins->data [0])+);
+		INTERP_FOLD_UNOP (MINT_ADD_I8_IMM, VAR_VALUE_I8, l, ((gint64)(gint16)ins->data [0])+);
+
+		INTERP_FOLD_UNOP (MINT_MUL_I4_IMM, VAR_VALUE_I4, i, ((gint32)(gint16)ins->data [0])*);
+		INTERP_FOLD_UNOP (MINT_MUL_I8_IMM, VAR_VALUE_I8, l, ((gint64)(gint16)ins->data [0])*);
+
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_UN_I4_IMM, VAR_VALUE_I4, i, >>, guint32);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_UN_I8_IMM, VAR_VALUE_I8, l, >>, guint64);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHL_I4_IMM, VAR_VALUE_I4, i, <<, gint32);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHL_I8_IMM, VAR_VALUE_I8, l, <<, gint64);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_I4_IMM, VAR_VALUE_I4, i, >>, gint32);
+		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_I8_IMM, VAR_VALUE_I8, l, >>, gint64);
 
 		INTERP_FOLD_CONV (MINT_CONV_I1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint8);
 		INTERP_FOLD_CONV (MINT_CONV_I1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint8);
@@ -2884,7 +2921,7 @@ retry_instruction:
 				td->var_values [dreg].type = VAR_VALUE_I4;
 				td->var_values [dreg].i = (gint32)td->data_items [ins->data [0]];
 #endif
-			} else if (MINT_IS_UNOP (opcode)) {
+			} else if (MINT_IS_UNOP (opcode) || MINT_IS_BINOP_IMM (opcode)) {
 				ins = interp_fold_unop (td, ins);
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, ins);
@@ -3004,12 +3041,12 @@ retry_instruction:
 						interp_dump_ins (ins, td->data_items);
 					}
 				}
-			} else if (opcode == MINT_INITOBJ) {
+			} else if (opcode == MINT_ZEROBLK_IMM) {
 				InterpInst *ldloca = get_var_value_def (td, sregs [0]);
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int size = ins->data [0];
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + INITOBJ with or LDC
+					// Replace LDLOCA + ZEROBLK_IMM with or LDC
 					if (size <= 4)
 						ins->opcode = MINT_LDC_I4_0;
 					else if (size <= 8)
@@ -3020,7 +3057,7 @@ retry_instruction:
 					ins->dreg = local;
 
 					if (td->verbose_level) {
-						g_print ("Replace ldloca/initobj pair :\n\t");
+						g_print ("Replace ldloca/zeroblk pair :\n\t");
 						interp_dump_ins (ins, td->data_items);
 					}
 				}

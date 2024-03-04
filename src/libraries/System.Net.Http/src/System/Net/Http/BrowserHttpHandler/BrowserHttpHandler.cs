@@ -511,7 +511,6 @@ namespace System.Net.Http
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
             _controller.ThrowIfDisposed();
 
             MemoryHandle pinBuffer = buffer.Pin();

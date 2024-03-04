@@ -184,12 +184,17 @@ RtlVirtualUnwind_Unsafe(
 #ifdef HOST_X86
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
+    // NOTE: R2R doesn't include EndAddress (see docs/design/coreclr/botr/readytorun-format.md).
+    // NativeAOT does include the EndAddress because the Microsoft linker expects it. In NativeAOT
+    // the info is generated in the managed ObjectWriter, so the structures don't have to match.
+    // DWORD EndAddress;
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
 typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #endif // HOST_X86
 #endif // !HOST_UNIX
 
@@ -207,7 +212,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    PTR_UNWIND_INFO pUnwindInfo = (PTR_UNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
+    PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
 
     return FunctionEntry->BeginAddress + pUnwindInfo->FunctionLength;
 }

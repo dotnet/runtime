@@ -340,6 +340,8 @@ class DeadCodeElimination
 
     class TestTypeEquals
     {
+        sealed class Gen<T> { }
+
         sealed class Never { }
 
         static Type s_type = null;
@@ -349,6 +351,9 @@ class DeadCodeElimination
             // This was asserting the BCL because Never would not have reflection metadata
             // despite the typeof
             Console.WriteLine(s_type == typeof(Never));
+
+            // This was a compiler crash
+            Console.WriteLine(typeof(object) == typeof(Gen<>));
 
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
