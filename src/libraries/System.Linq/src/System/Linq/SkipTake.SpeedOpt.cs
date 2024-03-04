@@ -21,7 +21,7 @@ namespace System.Linq
 
             public IListSkipTakeIterator(IList<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 Debug.Assert(minIndexInclusive >= 0);
                 Debug.Assert(minIndexInclusive <= maxIndexInclusive);
                 _source = source;
@@ -209,7 +209,7 @@ namespace System.Linq
 
             internal IEnumerableSkipTakeIterator(IEnumerable<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 Debug.Assert(!(source is IList<TSource>), $"The caller needs to check for {nameof(IList<TSource>)}.");
                 Debug.Assert(minIndexInclusive >= 0);
                 Debug.Assert(maxIndexInclusive >= -1);
@@ -235,7 +235,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -293,7 +293,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (!SkipBeforeFirst(_enumerator))
                         {
                             // Reached the end before we finished skipping.
@@ -303,7 +303,7 @@ namespace System.Linq
                         _state = 3;
                         goto default;
                     default:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if ((!HasLimit || taken < Limit) && _enumerator.MoveNext())
                         {
                             if (HasLimit)
@@ -524,7 +524,7 @@ namespace System.Linq
 
             private static uint SkipAndCount(uint index, IEnumerator<TSource> en)
             {
-                Debug.Assert(en != null);
+                Debug.Assert(en is not null);
 
                 for (uint i = 0; i < index; i++)
                 {
