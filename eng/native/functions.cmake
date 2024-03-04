@@ -228,9 +228,12 @@ function(preprocess_file inputFilename outputFilename)
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
   else()
+    if (CMAKE_CXX_COMPILER_TARGET AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(_LOCAL_CROSS_TARGET "--target=${CMAKE_CXX_COMPILER_TARGET}")
+    endif()
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
+        COMMAND ${CMAKE_CXX_COMPILER} ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
