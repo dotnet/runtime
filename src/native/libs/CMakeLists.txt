@@ -11,7 +11,7 @@ include_directories(${CLR_SRC_NATIVE_DIR})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if(STATIC_LIBS_ONLY OR NOT Core_CLR)
+if(STATIC_LIBS_ONLY)
     # Suppress exporting of the PAL APIs
     add_definitions(-DPALEXPORT=EXTERN_C)
 
