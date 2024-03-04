@@ -144,6 +144,27 @@ namespace NetCoreServer
                     {
                         await Task.Delay(5000);
                     }
+                    else if (receivedMessage == ".shutdownAfterTwoMessages")
+                    {
+                        byte[] buffer = new byte[1024];
+                        string message = DateTime.Now.ToString("HH:mm:ss");
+                        buffer = System.Text.Encoding.UTF8.GetBytes(message);
+                        await socket.SendAsync(
+                            new ArraySegment<byte>(buffer, 0, message.Length),
+                            WebSocketMessageType.Text,
+                            true,
+                            CancellationToken.None);
+                        await Task.Delay(1990); // try to sync with receive request from the client: 1.9k is too little, 2k too much
+
+                        message = DateTime.Now.ToString("HH:mm:ss");
+                        buffer = System.Text.Encoding.UTF8.GetBytes(message);
+                        await socket.SendAsync(
+                            new ArraySegment<byte>(buffer, 0, message.Length),
+                            WebSocketMessageType.Text,
+                            true,
+                            CancellationToken.None);
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                    }
                     else if (socket.State == WebSocketState.Open)
                     {
                         sendMessage = true;

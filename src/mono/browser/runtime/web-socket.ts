@@ -80,6 +80,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     };
     const local_on_message = (ev: MessageEvent) => {
         try {
+            mono_log_warn("local_on_message triggered by " + ev.data.toString());
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
             if (WasmEnableThreads) {
@@ -93,6 +94,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     };
     const local_on_close = (ev: CloseEvent) => {
         try {
+            mono_log_warn("local_on_close triggered");
             ws.removeEventListener("message", local_on_message);
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
@@ -212,6 +214,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
     const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
 
     if (receive_event_queue.getLength()) {
+        mono_log_warn("ws_wasm_receive message was sent before receive requested, processing message immediately");
         mono_assert(receive_promise_queue.getLength() == 0, "ERR20: Invalid WS state");
 
         web_socket_receive_buffering(ws, receive_event_queue, buffer_ptr, buffer_length);
@@ -221,6 +224,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 
     const readyState = ws.readyState;
     if (readyState == WebSocket.CLOSED) {
+        mono_log_warn("ws_wasm_receive unsafe block of code reached, readyState == WebSocket.CLOSED");
         const receive_status_ptr = ws[wasm_ws_receive_status_ptr];
         setI32(receive_status_ptr, 0); // count
         setI32(<any>receive_status_ptr + 4, 2); // type:close
@@ -233,6 +237,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
     receive_promise_control.buffer_ptr = buffer_ptr;
     receive_promise_control.buffer_length = buffer_length;
     receive_promise_queue.enqueue(receive_promise_control);
+    mono_log_warn("ws_wasm_receive receive requested before message arrived, waiting for message");
 
     return promise;
 }

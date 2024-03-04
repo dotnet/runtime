@@ -362,6 +362,38 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task CloseOutputAsync_ServerInitiated_CanSendRepeatedly(Uri server)
+        {
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                await cws.SendAsync(
+                    WebSocketData.GetBufferFromText(".shutdownAfterTwoMessages"),
+                    WebSocketMessageType.Text,
+                    true,
+                    cts.Token);
+
+                var recvBuffer = new ArraySegment<byte>(new byte[1024]);
+                WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
+                var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
+                Console.WriteLine($"Received: {message}");
+                Assert.Equal(WebSocketState.Open, cws.State);
+
+                await Task.Delay(2000);
+
+                recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
+                message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
+                Console.WriteLine($"2nd Received: {message}");
+                await Task.Delay(1000); // otherwise it might be not closed yet
+                Assert.Equal(WebSocketState.Closed, cws.State);
+            }
+        }
+
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
