@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -289,7 +290,25 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console", projectDir: _projectDir);
+                IPage? page = null;
+                int iteration = 0;
+                while (iteration < 3)
+                {
+                    try
+                    {
+                        page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console", projectDir: _projectDir);
+                    }
+                    catch (Exception e) when(e.Message == "Timed out waiting for the web server url")
+                    {
+                        _testOutput.WriteLine($"Exception (iteration: {iteration}): {e}");
+                        iteration++;
+                        continue;
+                    }
+                }
+
+                if (page == null)
+                    throw new Exception("Timed out waiting for the web server url (after retry)");
+
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
