@@ -6,6 +6,7 @@
 #define _JIT_H_
 /*****************************************************************************/
 
+
 //
 // clr.sln only defines _DEBUG
 // The jit uses DEBUG rather than _DEBUG
