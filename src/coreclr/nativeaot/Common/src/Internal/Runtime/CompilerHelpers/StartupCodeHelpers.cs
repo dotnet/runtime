@@ -206,11 +206,12 @@ namespace Internal.Runtime.CompilerHelpers
                 nint blockAddr = MethodTable.SupportsRelativePointers ? (nint)ReadRelPtr32(pBlock) : *pBlock;
                 if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
+#pragma warning disable CS8500
                     object? obj = null;
                     RuntimeImports.RhAllocateNewObject(
                         new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask),
                         (uint)GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP,
-                        Unsafe.AsPointer(ref obj));
+                        &obj);
                     if (obj == null)
                     {
                         RuntimeExceptionHelpers.FailFast("Failed allocating GC static bases");
@@ -232,7 +233,8 @@ namespace Internal.Runtime.CompilerHelpers
                     Unsafe.Add(ref rawSpineData, currentBase) = obj;
 
                     // Update the base pointer to point to the pinned object
-                    *pBlock = *(IntPtr*)Unsafe.AsPointer(ref obj);
+                    *pBlock = *(IntPtr*)&obj;
+#pragma warning restore CS8500
                 }
 
                 currentBase++;

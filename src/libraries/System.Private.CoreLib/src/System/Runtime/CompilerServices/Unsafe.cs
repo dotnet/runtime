@@ -923,5 +923,17 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(nuint.IsPow2(alignment));
             return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) == 0;
         }
+
+        // Determines the misalignment of the address with respect to the specified `alignment`.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint OpportunisticMisalignment<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return (nuint)AsPointer(ref AsRef(in address)) & (alignment - 1);
+        }
     }
 }

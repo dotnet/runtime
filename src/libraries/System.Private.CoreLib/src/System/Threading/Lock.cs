@@ -641,7 +641,9 @@ namespace System.Threading
             get
             {
                 Lock lockObj = this;
-                return *(nint*)Unsafe.AsPointer(ref lockObj);
+#pragma warning disable CS8500
+                return *(nint*)&lockObj;
+#pragma warning restore CS8500
             }
         }
 

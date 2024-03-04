@@ -162,7 +162,7 @@ namespace System
                 //
                 // dest is more important to align than src because an unaligned store is more expensive
                 // than an unaligned load.
-                nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref dest) & 63;
+                nuint misalignedElements = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
                 Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
                 src = ref Unsafe.Add(ref src, misalignedElements);
                 dest = ref Unsafe.Add(ref dest, misalignedElements);
@@ -366,7 +366,7 @@ namespace System
             {
                 // Try to opportunistically align the destination below. The input isn't pinned, so the GC
                 // is free to move the references. We're therefore assuming that reads may still be unaligned.
-                nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref dest) & 63;
+                nuint misalignedElements = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
                 Unsafe.WriteUnaligned<Block64>(ref dest, default);
                 dest = ref Unsafe.Add(ref dest, misalignedElements);
                 len -= misalignedElements;

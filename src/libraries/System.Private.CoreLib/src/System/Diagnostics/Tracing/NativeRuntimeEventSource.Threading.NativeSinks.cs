@@ -355,12 +355,14 @@ namespace System.Diagnostics.Tracing
             LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID);
         }
 
+#pragma warning disable CS8500
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
             object? associatedObject = null) =>
-            WaitHandleWaitStart(waitSource, *(nint*)Unsafe.AsPointer(ref associatedObject));
+            WaitHandleWaitStart(waitSource, *(nint*)&associatedObject);
+#pragma warning restore CS8500
 
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
         public void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)

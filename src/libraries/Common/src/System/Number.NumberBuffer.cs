@@ -29,7 +29,9 @@ namespace System
             public bool IsNegative;
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
-            public Span<byte> Digits;
+            public byte* DigitsPtr;
+            public int DigitsLength;
+            public readonly Span<byte> Digits => new Span<byte>(DigitsPtr, DigitsLength);
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
             {
@@ -48,7 +50,8 @@ namespace System
                 IsNegative = false;
                 HasNonZeroTail = false;
                 Kind = kind;
-                Digits = digits;
+                DigitsPtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(digits)); // Safe since memory must be fixed
+                DigitsLength = digits.Length;
 #if DEBUG
                 Digits.Fill(0xCC);
 #endif
@@ -82,13 +85,6 @@ namespace System
 #endif // DEBUG
             }
 #pragma warning restore CA1822
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public byte* GetDigitsPointer()
-            {
-                // This is safe to do since we are a ref struct
-                return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits));
-            }
 
             //
             // Code coverage note: This only exists so that Number displays nicely in the VS watch window. So yes, I know it works.

@@ -695,7 +695,9 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+#pragma warning disable CS8500
+            RuntimeImports.RhEnumerateConfigurationValues(&context, &ConfigCallback);
+#pragma warning restore CS8500
             return context.Configurations!;
         }
 
@@ -830,7 +832,9 @@ namespace System
                     throw new OverflowException();
 
                 T[]? array = null;
-                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+#pragma warning disable CS8500
+                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
+#pragma warning restore CS8500
                 if (array == null)
                     throw new OutOfMemoryException();
 
@@ -857,7 +861,9 @@ namespace System
                 throw new OverflowException();
 
             T[]? array = null;
-            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+#pragma warning disable CS8500
+            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
+#pragma warning restore CS8500
             if (array == null)
                 throw new OutOfMemoryException();
 

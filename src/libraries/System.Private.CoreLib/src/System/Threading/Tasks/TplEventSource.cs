@@ -501,8 +501,10 @@ namespace System.Threading.Tasks
             }
         }
 
+#pragma warning disable CS8500
         [NonEvent]
-        public unsafe void RunningContinuation(int TaskID, object Object) { RunningContinuation(TaskID, (long)*((void**)Unsafe.AsPointer(ref Object))); }
+        public unsafe void RunningContinuation(int TaskID, object Object) { RunningContinuation(TaskID, (long)*((void**)&Object)); }
+#pragma warning restore CS8500
         [Event(20, Keywords = Keywords.Debug)]
         private void RunningContinuation(int TaskID, long Object)
         {
@@ -510,8 +512,10 @@ namespace System.Threading.Tasks
                 WriteEvent(20, TaskID, Object);
         }
 
+#pragma warning disable CS8500
         [NonEvent]
-        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) { RunningContinuationList(TaskID, Index, (long)*((void**)Unsafe.AsPointer(ref Object))); }
+        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) { RunningContinuationList(TaskID, Index, (long)*((void**)&Object)); }
+#pragma warning restore CS8500
 
         [Event(21, Keywords = Keywords.Debug)]
         public void RunningContinuationList(int TaskID, int Index, long Object)

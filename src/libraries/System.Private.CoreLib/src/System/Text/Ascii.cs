@@ -141,7 +141,7 @@ namespace System.Text
                     // Try to opportunistically align the reads below. The input isn't pinned, so the GC
                     // is free to move the references. We're therefore assuming that reads may still be unaligned.
                     // They may also be unaligned if the input chars aren't 2-byte aligned.
-                    nuint misalignedElements = ((nuint)Unsafe.AsPointer(ref searchSpace) & (nuint)(Vector256<byte>.Count - 1)) / (nuint)sizeof(T);
+                    nuint misalignedElements = Unsafe.OpportunisticMisalignment(ref searchSpace, Vector256<byte>.Count) / (nuint)sizeof(T);
                     i -= misalignedElements;
                     Debug.Assert((int)i > 3 * Vector256<T>.Count);
 
@@ -193,7 +193,7 @@ namespace System.Text
                     // Try to opportunistically align the reads below. The input isn't pinned, so the GC
                     // is free to move the references. We're therefore assuming that reads may still be unaligned.
                     // They may also be unaligned if the input chars aren't 2-byte aligned.
-                    nuint misalignedElements = ((nuint)Unsafe.AsPointer(ref searchSpace) & (nuint)(Vector128<byte>.Count - 1)) / (nuint)sizeof(T);
+                    nuint misalignedElements = Unsafe.OpportunisticMisalignment(ref searchSpace, Vector128<byte>.Count) / (nuint)sizeof(T);
                     i -= misalignedElements;
                     Debug.Assert((int)i > 3 * Vector128<T>.Count);
 
