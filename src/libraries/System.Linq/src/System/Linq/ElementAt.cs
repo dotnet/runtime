@@ -11,7 +11,7 @@ namespace System.Linq
     {
         public static TSource ElementAt<TSource>(this IEnumerable<TSource> source, int index)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -38,7 +38,7 @@ namespace System.Linq
         /// </remarks>
         public static TSource ElementAt<TSource>(this IEnumerable<TSource> source, Index index)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -63,7 +63,7 @@ namespace System.Linq
 
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -83,7 +83,7 @@ namespace System.Linq
         /// </remarks>
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, Index index)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -110,7 +110,7 @@ namespace System.Linq
 
         private static TSource? TryGetElementAtNonIterator<TSource>(IEnumerable<TSource> source, int index, out bool found, bool guardIListLength = true)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             if (source is IList<TSource> list)
             {
@@ -147,7 +147,7 @@ namespace System.Linq
 
         private static bool TryGetElementFromEnd<TSource>(IEnumerable<TSource> source, int indexFromEnd, [MaybeNullWhen(false)] out TSource element)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             if (indexFromEnd > 0)
             {

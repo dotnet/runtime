@@ -1153,6 +1153,22 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            imm = emitGetInsSC(id);
+            assert(insOptsScalableStandard(id->idInsOpt()));                  // xx
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isPredicateRegister(id->idReg2()));                        // gggg
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+
+            if (!isValidSimm8(imm))
+            {
+                // Size specifier must be able to fit a left-shifted immediate
+                assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
+                assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            }
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             assert(isPredicateRegister(id->idReg1())); // DDDD
             assert(isVectorRegister(id->idReg2()));    // nnnnn
@@ -10055,6 +10071,30 @@ void emitter::emitIns_R_R_I(instruction     ins,
             reg1 = encodingSPtoZR(reg1);
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_SVE_BB_2A;
+            break;
+
+        case INS_sve_mov:
+        case INS_sve_cpy:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));    // DDDDD
+            assert(isPredicateRegister(reg2)); // GGGG
+            if (!isValidSimm8(imm))
+            {
+                // Size specifier must be able to fit a left-shifted immediate
+                assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
+                assert(insOptsScalableAtLeastHalf(opt));
+            }
+            if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            {
+                fmt = IF_SVE_BV_2A_J;
+            }
+            else
+            {
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
+                fmt = IF_SVE_BV_2A;
+            }
+            // MOV is an alias for CPY, and is always the preferred disassembly.
+            ins = INS_sve_mov;
             break;
 
         case INS_sve_pmov:
@@ -24364,6 +24404,25 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_P_19_to_16(id->idReg2()); // gggg
+
+            if (!isValidSimm8(imm))
+            {
+                assert(isValidSimm8_MultipleOf256(imm));
+                imm >>= 8;
+                code |= 0x2000; // h
+            }
+
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
@@ -29273,16 +29332,16 @@ void emitter::emitDispInsHelp(
         // MOV <Zd>.<T>, #<imm>{, <shift>}
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
         {
-            imm                = emitGetInsSC(id);
-            const bool isShift = !isValidSimm8(imm);
+            imm                 = emitGetInsSC(id);
+            const bool hasShift = !isValidSimm8(imm);
 
-            if (isShift)
+            if (hasShift)
             {
                 imm >>= 8;
             }
 
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImmOptsLSL(imm, isShift, 8);                // h iiiiiiii
+            emitDispImmOptsLSL(imm, hasShift, 8);               // h iiiiiiii
             break;
         }
 
@@ -29295,17 +29354,17 @@ void emitter::emitDispInsHelp(
         // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
         {
-            imm                = emitGetInsSC(id);
-            const bool isShift = !isValidUimm8(imm);
+            imm                 = emitGetInsSC(id);
+            const bool hasShift = !isValidUimm8(imm);
 
-            if (isShift)
+            if (hasShift)
             {
                 imm >>= 8;
             }
 
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImmOptsLSL(imm, isShift, 8);                // h iiiiiiii
+            emitDispImmOptsLSL(imm, hasShift, 8);               // h iiiiiiii
             break;
         }
 
@@ -30053,6 +30112,24 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
             emitDispImm(imm, false);
             break;
+
+        // <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        {
+            imm                 = emitGetInsSC(id);
+            const bool hasShift = !isValidUimm8(imm);
+
+            if (hasShift)
+            {
+                imm >>= 8;
+            }
+
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // gggg
+            emitDispImmOptsLSL(imm, hasShift, 8);                                               // iiiiiiii, h
+            break;
+        }
 
         // <Zd>.<T>, <Zn>.<T>[<imm>]
         case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
@@ -32593,6 +32670,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BD_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
         case IF_SVE_AW_2A: // ........xx.xxiii ......mmmmmddddd -- sve_int_rotate_imm
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 

@@ -6675,6 +6675,8 @@ private:
 public:
     bool fgIsBigOffset(size_t offset);
 
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+
 private:
     bool fgNeedReturnSpillTemp();
 
