@@ -11,12 +11,6 @@ include_directories(${CLR_SRC_NATIVE_DIR})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if (CLR_CMAKE_TARGET_WIN32 AND NOT Core_CLR)
-# Suppress exporting of the PAL APIs
-add_definitions(-DPALEXPORT=EXTERN_C)
-# set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
-endif()
-
 if (STATIC_LIBS_ONLY)
     # Suppress exporting of the PAL APIs
     add_definitions(-DPALEXPORT=EXTERN_C)
@@ -104,10 +98,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 else ()
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
-    # we only need to build System.Globalization.Native when building static libs.
-    if (STATIC_LIBS_ONLY)
-        add_subdirectory(System.Globalization.Native)
-    endif ()
+    add_subdirectory(System.Globalization.Native)
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)

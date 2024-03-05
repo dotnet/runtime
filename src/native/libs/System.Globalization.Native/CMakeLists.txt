@@ -142,12 +142,20 @@ if (GEN_SHARED_LIB)
         include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
-
-    add_library(System.Globalization.Native
-        SHARED
-        ${NATIVEGLOBALIZATION_SOURCES}
-        ${VERSION_FILE_PATH}
-    )
+    
+    if (CLR_CMAKE_TARGET_WIN32)
+        add_library(System.Globalization.Native
+            SHARED
+            ${NATIVEGLOBALIZATION_SOURCES}
+            ${VERSION_HEADER_PATH}
+        )
+    else()
+        add_library(System.Globalization.Native
+            SHARED
+            ${NATIVEGLOBALIZATION_SOURCES}
+            ${VERSION_FILE_PATH}
+        )
+    endif()
 
     target_link_libraries(System.Globalization.Native
         PRIVATE
