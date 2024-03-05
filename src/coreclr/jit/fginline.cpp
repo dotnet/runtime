@@ -1550,11 +1550,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->TargetIs(bottomBlock));
-        fgRemoveRefPred(topBlock->GetTargetEdge());
-        FlowEdge* const newEdge = fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock, topBlock->GetTargetEdge());
+        fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetTargetEdge(newEdge);
         topBlock->SetFlags(BBF_NONE_QUIRK);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 

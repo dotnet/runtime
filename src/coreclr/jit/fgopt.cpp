@@ -834,9 +834,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgRemoveRefPred(fgFirstBB->GetTargetEdge());
-                    FlowEdge* const newEdge = fgAddRefPred(entryJumpTarget, fgFirstBB, fgFirstBB->GetTargetEdge());
-                    fgFirstBB->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(fgFirstBB, entryJumpTarget);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1570,9 +1568,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             {
-                fgRemoveRefPred(block->GetTargetEdge());
-                FlowEdge* const newEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetTargetEdge());
-                block->SetTargetEdge(newEdge);
+                fgRedirectTargetEdge(block, bDest->GetTarget());
                 break;
             }
 

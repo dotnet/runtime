@@ -4683,12 +4683,15 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTargetEdge());
+                    fgRedirectTargetEdge(step, exitBlock);
+                }
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
+                    step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
+                                                  // exit) returns to this block
                 }
 
-                FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
-                step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
-                                              // exit) returns to this block
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);
@@ -4729,9 +4732,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                fgRemoveRefPred(block->GetTargetEdge());
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, block);
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                fgRedirectTargetEdge(block, callBlock);
+                block->SetKind(BBJ_ALWAYS);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4796,11 +4798,14 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     if (step == block)
                     {
-                        fgRemoveRefPred(step->GetTargetEdge());
+                        fgRedirectTargetEdge(step, step2);
+                    }
+                    else
+                    {
+                        FlowEdge* const newEdge = fgAddRefPred(step2, step);
+                        step->SetTargetEdge(newEdge);
                     }
 
-                    FlowEdge* const newEdge = fgAddRefPred(step2, step);
-                    step->SetTargetEdge(newEdge);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
@@ -4836,12 +4841,14 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTargetEdge());
+                    fgRedirectTargetEdge(step, callBlock);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
-                                              // finally in the chain)
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                    step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
+                                                  // finally in the chain)
+                }
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4940,11 +4947,13 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTargetEdge());
+                    fgRedirectTargetEdge(step, catchStep);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
-                step->SetTargetEdge(newEdge);
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
+                    step->SetTargetEdge(newEdge);
+                }
 
                 // The new block will inherit this block's weight.
                 catchStep->inheritWeight(block);
@@ -4993,12 +5002,16 @@ void Compiler::impImportLeave(BasicBlock* block)
     {
         assert((step == block) || !step->HasInitializedTarget());
 
+        // leaveTarget is the ultimate destination of the LEAVE
         if (step == block)
         {
-            fgRemoveRefPred(step->GetTargetEdge());
+            fgRedirectTargetEdge(step, leaveTarget);
         }
-        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
-        step->SetTargetEdge(newEdge); // this is the ultimate destination of the LEAVE
+        else
+        {
+            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
+            step->SetTargetEdge(newEdge);
+        }
 
 #ifdef DEBUG
         if (verbose)
@@ -5089,9 +5102,8 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgInitBBLookup();
 
-    fgRemoveRefPred(block->GetTargetEdge());
-    FlowEdge* const newEdge = fgAddRefPred(fgLookupBB(jmpAddr), block);
-    block->SetKindAndTargetEdge(BBJ_LEAVE, newEdge);
+    fgRedirectTargetEdge(block, fgLookupBB(jmpAddr));
+    block->SetKind(BBJ_LEAVE);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
     // the BBJ_ALWAYS block will be unreachable, and will be removed after. The

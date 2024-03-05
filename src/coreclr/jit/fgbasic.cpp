@@ -4192,9 +4192,7 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS) && fgFirstBB->JumpsToNext());
-    fgRemoveRefPred(fgFirstBB->GetTargetEdge());
-    FlowEdge* const newEdge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
-    fgFirstBB->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
 
     // We don't know the right weight for this block, since
     // execution of the method was interrupted within the

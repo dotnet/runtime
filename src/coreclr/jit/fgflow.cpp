@@ -380,6 +380,51 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
     }
 }
 
+void Compiler::fgUpdateEdgeTarget(FlowEdge* edge, BasicBlock* newTarget)
+{
+    assert(edge != nullptr);
+    assert(newTarget != nullptr);
+    assert(fgPredsComputed);
+    
+    newTarget->bbRefs++;
+
+    FlowEdge** listp = &newTarget->bbPreds;
+
+    // References are added randomly, so we have to search.
+    //
+    BasicBlock* const blockPred = edge->getSourceBlock();
+    while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
+    {
+        listp = (*listp)->getNextPredEdgeRef();
+    }
+
+    // Splice new edge into the list in the correct ordered location.
+    //
+    edge->setNextPredEdge(*listp);
+    edge->setDestinationBlock(newTarget);
+    *listp = edge;
+    
+    // Pred list should (still) be ordered.
+    //
+    assert(newTarget->checkPredListOrder());
+}
+
+void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
+{
+    assert(block != nullptr);
+    assert(newTarget != nullptr);
+
+    const bool fgModifiedOld = fgModified;
+    FlowEdge* targetEdge = block->GetTargetEdge();
+    BasicBlock* oldTarget = targetEdge->getDestinationBlock();
+
+    fgRemoveAllRefPreds(oldTarget, block);
+    fgUpdateEdgeTarget(targetEdge, newTarget);
+    assert(targetEdge->getLikelihood() == 1.0);
+
+    fgModified = fgModifiedOld || (newTarget != oldTarget);
+}
+
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
     assert(switchBlk->KindIs(BBJ_SWITCH));

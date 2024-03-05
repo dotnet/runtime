@@ -2206,10 +2206,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bNewCond->SetTrueEdge(trueEdge);
     bNewCond->SetFalseEdge(falseEdge);
 
-    fgRemoveRefPred(block->GetTargetEdge());
-    FlowEdge* const newEdge = fgAddRefPred(bNewCond, block);
-
-    block->SetTargetEdge(newEdge);
+    fgRedirectTargetEdge(block, bNewCond);
     block->SetFlags(BBF_NONE_QUIRK);
     assert(block->JumpsToNext());
 
