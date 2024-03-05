@@ -99,7 +99,7 @@ else ()
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
     # we only need to build System.Globalization.Native when building static libs.
-    if (STATIC_LIBS_ONLY OR (NOT Core_CLR AND CLR_CMAKE_TARGET_WIN32))
+    if (STATIC_LIBS_ONLY)
         add_subdirectory(System.Globalization.Native)
     endif ()
 endif ()
