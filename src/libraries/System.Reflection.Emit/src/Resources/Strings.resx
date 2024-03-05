@@ -117,8 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="InvalidOperation_CannotSaveMultipleTimes" xml:space="preserve">
-    <value>Cannot save an assembly multiple times.</value>
+  <data name="InvalidOperation_CannotPopulateMultipleTimes" xml:space="preserve">
+    <value>Cannot populate assembly metadata multiple times.</value>
   </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>

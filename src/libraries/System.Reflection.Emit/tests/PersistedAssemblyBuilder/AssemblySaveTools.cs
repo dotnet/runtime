@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
 
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
-            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilder(assemblyName);
+            PersistedAssemblyBuilder assemblyBuilder = PopulateAssemblyBuilder(assemblyName);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types);
@@ -67,7 +67,7 @@ namespace System.Reflection.Emit.Tests
 
         internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream)
         {
-            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilder(assemblyName);
+            PersistedAssemblyBuilder assemblyBuilder = PopulateAssemblyBuilder(assemblyName);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types);
@@ -75,15 +75,15 @@ namespace System.Reflection.Emit.Tests
             assemblyBuilder.Save(stream);
         }
 
-        internal static AssemblyBuilder PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder)
+        internal static PersistedAssemblyBuilder PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder)
         {
-            AssemblyBuilder ab = PopulateAssemblyBuilder(s_assemblyName, null);
+            PersistedAssemblyBuilder ab = PopulateAssemblyBuilder(s_assemblyName, null);
             typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
             return ab;
         }
 
-        internal static AssemblyBuilder PopulateAssemblyBuilder(AssemblyName assemblyName, List<CustomAttributeBuilder>? assemblyAttributes = null) =>
-            AssemblyBuilder.DefinePersistedAssembly(assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes);
+        internal static PersistedAssemblyBuilder PopulateAssemblyBuilder(AssemblyName assemblyName, List<CustomAttributeBuilder>? assemblyAttributes = null) =>
+            new PersistedAssemblyBuilder(assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes);
 
         internal static void AssertAssemblyNameAndModule(AssemblyName sourceAName, AssemblyName aNameFromDisk, Module moduleFromDisk)
         {
