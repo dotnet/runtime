@@ -319,11 +319,11 @@ namespace Internal.IL.Stubs
             }
 
             // Fill in delegateArrayLocal
-            // Wrapper[] delegateArrayLocal = (Wrapper[])this._helperObject
+            // Delegate.Wrapper[] delegateArrayLocal = (Delegate.Wrapper[])this._helperObject
 
             // ldarg.0 (this pointer)
-            // ldfld Delegate.HelperObjectField
-            // castclass Wrapper[]
+            // ldfld Delegate._helperObject
+            // castclass Delegate.Wrapper[]
             // stloc delegateArrayLocal
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
@@ -332,6 +332,7 @@ namespace Internal.IL.Stubs
 
             // Fill in invocationCountLocal
             // int invocationCountLocal = this._extraFunctionPointerOrData
+
             // ldarg.0 (this pointer)
             // ldfld Delegate._extraFunctionPointerOrData
             // stloc invocationCountLocal
@@ -357,8 +358,8 @@ namespace Internal.IL.Stubs
 
             // ldloc delegateArrayLocal
             // ldloc iteratorLocal
-            // ldelema System.Delegate
-            // ldfld Wrapper.Value
+            // ldelema Delegate.Wrapper
+            // ldfld Delegate.Wrapper.Value
             // stloc delegateToCallLocal
             codeStream.EmitLdLoc(delegateArrayLocal);
             codeStream.EmitLdLoc(iteratorLocal);
@@ -370,10 +371,10 @@ namespace Internal.IL.Stubs
             // returnValueLocal = delegateToCallLocal(...);
 
             // ldloc delegateToCallLocal
-            // ldfld System.Delegate._firstParameter
+            // ldfld Delegate._firstParameter
             // ldarg 1, n
             // ldloc delegateToCallLocal
-            // ldfld System.Delegate._functionPointer
+            // ldfld Delegate._functionPointer
             // calli returnValueType thiscall (all the params)
             // IF there is a return value
             // stloc returnValueLocal
