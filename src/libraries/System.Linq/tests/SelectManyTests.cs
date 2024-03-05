@@ -345,7 +345,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SelectMany(i => new int[0]);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -353,7 +353,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SelectMany((e, i) => new int[0]);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -361,7 +361,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SelectMany(i => new int[0], (e, i) => e);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -369,7 +369,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SelectMany((e, i) => new int[0], (e, i) => e);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Theory]

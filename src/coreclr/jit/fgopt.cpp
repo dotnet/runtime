@@ -648,7 +648,6 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         else
                         {
                             FlowEdge* const newEdge = fgAddRefPred(newTryEntry->Next(), newTryEntry);
-                            newEdge->setLikelihood(1.0);
                             newTryEntry->SetFlags(BBF_NONE_QUIRK);
                             newTryEntry->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                         }
@@ -2634,7 +2633,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
     /* Conditional is gone - always jump to target */
 
-    block->SetKind(BBJ_ALWAYS);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
     assert(block->TargetIs(target));
 
     // TODO-NoFallThrough: Set BBF_NONE_QUIRK only when false target is the next block
