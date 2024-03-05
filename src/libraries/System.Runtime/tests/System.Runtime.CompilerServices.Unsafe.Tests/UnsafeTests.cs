@@ -14,7 +14,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void ReadInt32()
         {
             int expected = 10;
-            void* address = Unsafe.AsPointer(ref expected);
+            void* address = &expected;
             int ret = Unsafe.Read<int>(address);
             Assert.Equal(expected, ret);
         }
@@ -23,7 +23,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void WriteInt32()
         {
             int value = 10;
-            int* address = (int*)Unsafe.AsPointer(ref value);
+            int* address = &value;
             int expected = 20;
             Unsafe.Write(address, expected);
 
@@ -36,7 +36,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void WriteBytesIntoInt32()
         {
             int value = 20;
-            int* intAddress = (int*)Unsafe.AsPointer(ref value);
+            int* intAddress = &value;
             byte* byteAddress = (byte*)intAddress;
             for (int i = 0; i < 4; i++)
             {
@@ -70,7 +70,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void LongIntoCompoundStruct()
         {
             long value = 1234567891011121314L;
-            long* longAddress = (long*)Unsafe.AsPointer(ref value);
+            long* longAddress = &value;
             Byte4Short2 b4s2 = Unsafe.Read<Byte4Short2>(longAddress);
             if (BitConverter.IsLittleEndian)
             {
@@ -117,7 +117,7 @@ namespace System.Runtime.CompilerServices
         {
             int value1 = 10;
             int value2 = 20;
-            int* valueAddress = (int*)Unsafe.AsPointer(ref value1);
+            int* valueAddress = &value1;
             int** valueAddressPtr = &valueAddress;
             Unsafe.Write(valueAddressPtr, new IntPtr(&value2));
 
@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices
         {
             int value = 10;
             int destination = -1;
-            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Unsafe.Copy(ref destination, &value);
             Assert.Equal(10, destination);
             Assert.Equal(10, value);
 
@@ -147,7 +147,7 @@ namespace System.Runtime.CompilerServices
         {
             int value = 10;
             int destination = -1;
-            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Unsafe.Copy(&destination, ref value);
             Assert.Equal(10, destination);
             Assert.Equal(10, value);
 
@@ -157,13 +157,14 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(10, value);
         }
 
+#pragma warning disable CS8500 // takes address of managed type
         [Fact]
         public static unsafe void CopyToRefGenericStruct()
         {
             Int32Generic<string> destination = default;
             Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
 
-            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Unsafe.Copy(ref destination, &value);
 
             Assert.Equal(5, destination.Int32);
             Assert.Equal("a", destination.Value);
@@ -175,11 +176,12 @@ namespace System.Runtime.CompilerServices
             Int32Generic<string> destination = default;
             Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
 
-            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Unsafe.Copy(&destination, ref value);
 
             Assert.Equal(5, destination.Int32);
             Assert.Equal("a", destination.Value);
         }
+#pragma warning restore CS8500
 
         [Fact]
         public static unsafe void SizeOf()
