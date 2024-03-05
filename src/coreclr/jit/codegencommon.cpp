@@ -5884,7 +5884,7 @@ void CodeGen::genFnProlog()
     // If they aren't available we use one of the caller-saved integer registers.
     else
     {
-        tempMask = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
+        tempMask = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_TRASH & ~excludeMask & ~regSet.rsMaskResvd;
         if (tempMask != RBM_NONE)
         {
             // We pick the lowest register number
