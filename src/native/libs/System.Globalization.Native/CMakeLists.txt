@@ -5,7 +5,7 @@ project(System.Globalization.Native C)
 
 if (CLR_CMAKE_TARGET_WIN32)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
-    enable_language(CXX)
+    enable_language(%CMAKE_LANGS%)
 endif()
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
