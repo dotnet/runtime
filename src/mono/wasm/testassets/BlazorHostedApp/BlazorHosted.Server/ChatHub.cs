@@ -12,11 +12,4 @@ public class ChatHub : Hub
         string changedMessage = $"{message}-pong";
         await Clients.All.SendAsync("ReceiveMessage", changedMessage).ConfigureAwait(false);
     }
-
-    public async Task Exit(int code)
-    {
-        Console.WriteLine($"Received exit code {code} from client. Waiting 5 sec for the client to close and exiting the server");
-        await Task.Delay(5000);
-        Environment.Exit(code);
-    }
 }
