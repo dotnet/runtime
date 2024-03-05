@@ -88,7 +88,7 @@ namespace System.Linq.Parallel.Tests
         // The basic tests are covered elsewhere, although without WithDegreeOfParallelism
         // or WithMergeOptions
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
@@ -105,7 +105,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [OuterLoop]
         [MemberData(nameof(PartitioningData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Partitioning_Default_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
@@ -157,7 +157,7 @@ namespace System.Linq.Parallel.Tests
             Merge_Ordered(labeled, count, options);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(ThrowOnCount_AllMergeOptions_MemberData), new[] { 4, 8 })]
         // FailingMergeData has enumerables that throw errors when attempting to perform the nth enumeration.
         // This test checks whether the query runs in a pipelined or buffered fashion.
@@ -166,7 +166,7 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(0, labeled.Item.WithDegreeOfParallelism(count - 1).WithMergeOptions(options).First());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(MergeData), new[] { 4, 8 })]
         // This test checks whether the query runs in a pipelined or buffered fashion.
         public static void Merge_Ordered_Pipelining_Select(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)

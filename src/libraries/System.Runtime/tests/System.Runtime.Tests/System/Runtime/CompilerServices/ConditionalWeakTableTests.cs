@@ -203,7 +203,7 @@ namespace System.Runtime.CompilerServices.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Concurrent_GetValue_Read_Remove_SameObject()
         {
             object key = new object();
