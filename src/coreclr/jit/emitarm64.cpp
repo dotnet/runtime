@@ -1150,7 +1150,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             elemsize = id->idOpSize();
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
-            assert(elemsize == EA_SCALABLE);
+            assert(isScalableVectorSize(elemsize));
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
@@ -1158,7 +1158,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_NONE);
             assert(isGeneralRegister(id->idReg1()));
-            assert(elemsize == EA_4BYTE);
+            assert(isValidGeneralDatasize(elemsize));
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
@@ -16595,8 +16595,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
 void emitter::emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern /* = SVE_PATTERN_ALL*/)
 {
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -16641,9 +16640,8 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
                                   ssize_t       imm,
                                   insOpts       opt /* = INS_OPTS_NONE */)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -16694,9 +16692,9 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_sqdecb:
         case INS_sve_uqdecb:
             assert(insOptsNone(opt));
-            assert(isGeneralRegister(reg1)); // ddddd
-            assert(isValidUimm4From1(imm));  // iiii
-            assert(size == EA_4BYTE);
+            assert(isGeneralRegister(reg1));      // ddddd
+            assert(isValidUimm4From1(imm));       // iiii
+            assert(isValidGeneralDatasize(size)); // X
             fmt = IF_SVE_BO_1A;
             break;
 
@@ -16716,15 +16714,15 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
 
             if (insOptsNone(opt))
             {
-                assert(isGeneralRegister(reg1)); // ddddd
-                assert(size == EA_4BYTE);
+                assert(isGeneralRegister(reg1));      // ddddd
+                assert(isValidGeneralDatasize(size)); // X
                 fmt = IF_SVE_BO_1A;
             }
             else
             {
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(isVectorRegister(reg1)); // ddddd
-                assert(size == EA_SCALABLE);
+                assert(isScalableVectorSize(size));
                 fmt = IF_SVE_BP_1A;
             }
             break;
@@ -16741,6 +16739,7 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idInsOpt(opt);
+    id->idOpSize(size);
 
     id->idReg1(reg1);
     id->idSvePattern(pattern);
@@ -16763,9 +16762,8 @@ void emitter::emitIns_PRFOP_R_R_R(instruction     ins,
                                   insOpts         opt /* = INS_OPTS_NONE */,
                                   insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -16874,9 +16872,8 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
                                   int         imm,
                                   insOpts     opt /* = INS_OPTS_NONE */)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -19608,6 +19605,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         case EA_8BYTE:
             return (1 << 18) | (1 << 17); // set the bit at location 18 and 17
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'sz' at bit location '20'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_sz_20(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_4BYTE:
+            return 0;
+
+        case EA_8BYTE:
+            return (1 << 20);
 
         default:
             assert(!"Invalid insOpt for vector register");
@@ -24512,12 +24531,21 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         // Immediate and pattern to general purpose.
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
         case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
-        case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_Rd(id->idReg1());           // ddddd
             code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
             code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_Rd(id->idReg1());              // ddddd
+            code |= insEncodeSvePattern(id->idSvePattern());    // ppppp
+            code |= insEncodeUimm4From1_19_to_16(imm);          // iiii
+            code |= insEncodeSveElemsize_sz_20(id->idOpSize()); // X
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -28776,6 +28804,7 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+        // <Xdn>{, <pattern>{, MUL #<imm>}}
         // <Wdn>{, <pattern>{, MUL #<imm>}}
         case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
             switch (id->idIns())
@@ -28789,11 +28818,15 @@ void emitter::emitDispInsHelp(
                 case INS_sve_sqincd:
                 case INS_sve_sqdecd:
                     emitDispReg(id->idReg1(), EA_8BYTE, true); // ddddd
-                    emitDispReg(id->idReg1(), EA_4BYTE, true);
+
+                    if (size == EA_4BYTE)
+                    {
+                        emitDispReg(id->idReg1(), EA_4BYTE, true);
+                    }
                     break;
 
                 default:
-                    emitDispReg(id->idReg1(), EA_4BYTE, true); // ddddd
+                    emitDispReg(id->idReg1(), size, true); // ddddd
                     break;
             }
 
