@@ -3,7 +3,7 @@
 set(MODE "SHARED")
 set(NAME "${libArtifactName}")
 set(EXT "${libArtifactExt}")
-set(LIBBASEPATH "${libArtifactLibPath}")
+set(LIBBASEPATH "${libArtifactLibBasePath}")
 set(IMPLIBPATH "${libArtifactImpLibFullPath}")
 set(INCLUDE_DIRS "${libArtifactIncludePath}")
 
