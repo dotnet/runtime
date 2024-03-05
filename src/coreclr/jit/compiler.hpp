@@ -4453,7 +4453,7 @@ inline void printRegMask(AllRegsMask mask)
 
 #ifdef HAS_PREDICATE_REGS
     printf(" ");
-    printf(REG_MASK_ALL_FMT, mask);
+    printf(REG_MASK_ALL_FMT, mask.predicateRegs);
 #endif // HAS_PREDICATE_REGS
 }
 

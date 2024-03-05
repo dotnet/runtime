@@ -3474,6 +3474,8 @@ const char* emitter::emitGetFrameReg()
 
 void emitter::emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyOne regs)
 {
+    printf(" {");
+
     regNumber reg;
     bool      sp = false;
 
@@ -3503,6 +3505,7 @@ void emitter::emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyO
 
         printf("%s", emitRegName(reg));
     }
+    printf("}");
 }
 
 void emitter::emitDispGprRegSet(regMaskGpr regs)
@@ -3512,8 +3515,6 @@ void emitter::emitDispGprRegSet(regMaskGpr regs)
 
 void emitter::emitDispRegSet(AllRegsMask regs)
 {
-    printf(" {");
-
     if (regs.gprRegs != RBM_NONE)
     {
         emitDispGprRegSet(regs.gprRegs);
@@ -3528,7 +3529,6 @@ void emitter::emitDispRegSet(AllRegsMask regs)
         emitDispRegSet(REG_MASK_FIRST, REG_MASK_LAST, regs.predicateRegs);
     }
 #endif
-    printf("}");
 }
 
 /*****************************************************************************
