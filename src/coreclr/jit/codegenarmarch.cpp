@@ -4934,7 +4934,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #ifdef TARGET_ARM64
     // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
     // for arm64, genAllocLclFrame only probes the frame; it does not actually allocate it (it does not change SP).
-    genAllocLclFrame(compiler->compLclFrameSize, intReg, pInitRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
+    genAllocLclFrame(compiler->compLclFrameSize, initReg, pInitRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
