@@ -33,6 +33,7 @@ switch (testCase) {
                 Math.floor(Math.random() * 5) + 5,
                 Math.floor(Math.random() * 5) + 10
             ];
+            console.log(`Failing test at assembly indexes [${failAtAssemblyNumbers.join(", ")}]`);
             let alreadyFailed = [];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
                 if (type === "dotnetjs") {
@@ -45,8 +46,8 @@ switch (testCase) {
                     return defaultUri;
                 }
 
-                assemblyCounter++;
-                if (!failAtAssemblyNumbers.includes(assemblyCounter) || alreadyFailed.includes(defaultUri))
+                const currentCounter = assemblyCounter++;
+                if (!failAtAssemblyNumbers.includes(currentCounter) || alreadyFailed.includes(defaultUri))
                     return defaultUri;
 
                 alreadyFailed.push(defaultUri);
