@@ -256,7 +256,8 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         if (pszMessageBuffer == NULL)
         {
             // Truncate the message to what will fit in the static buffer.
-            cchMessage = FAIL_FAST_STATIC_BUFFER_LENGTH - 1;
+            if(cchMessage >= FAIL_FAST_STATIC_BUFFER_LENGTH)
+            	cchMessage = FAIL_FAST_STATIC_BUFFER_LENGTH - 1;
             pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
         }
     }
