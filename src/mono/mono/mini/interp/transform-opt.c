@@ -2130,12 +2130,6 @@ interp_get_mt_for_ldind (int ldind_op)
 		result.field = op val->field; \
 		break;
 
-#define INTERP_FOLD_SHIFTOP_IMM(opcode,local_type,field,shift_op,cast_type) \
-	case opcode: \
-		result.type = local_type; \
-		result.field = (cast_type)val->field shift_op ins->data [0]; \
-		break;
-
 #define INTERP_FOLD_CONV(opcode,val_type_dst,field_dst,val_type_src,field_src,cast_type) \
 	case opcode: \
 		result.type = val_type_dst; \
@@ -2174,19 +2168,6 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 		INTERP_FOLD_UNOP (MINT_NOT_I4, VAR_VALUE_I4, i, ~);
 		INTERP_FOLD_UNOP (MINT_NOT_I8, VAR_VALUE_I8, l, ~);
 		INTERP_FOLD_UNOP (MINT_CEQ0_I4, VAR_VALUE_I4, i, 0 ==);
-
-		INTERP_FOLD_UNOP (MINT_ADD_I4_IMM, VAR_VALUE_I4, i, ((gint32)(gint16)ins->data [0])+);
-		INTERP_FOLD_UNOP (MINT_ADD_I8_IMM, VAR_VALUE_I8, l, ((gint64)(gint16)ins->data [0])+);
-
-		INTERP_FOLD_UNOP (MINT_MUL_I4_IMM, VAR_VALUE_I4, i, ((gint32)(gint16)ins->data [0])*);
-		INTERP_FOLD_UNOP (MINT_MUL_I8_IMM, VAR_VALUE_I8, l, ((gint64)(gint16)ins->data [0])*);
-
-		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_UN_I4_IMM, VAR_VALUE_I4, i, >>, guint32);
-		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_UN_I8_IMM, VAR_VALUE_I8, l, >>, guint64);
-		INTERP_FOLD_SHIFTOP_IMM (MINT_SHL_I4_IMM, VAR_VALUE_I4, i, <<, gint32);
-		INTERP_FOLD_SHIFTOP_IMM (MINT_SHL_I8_IMM, VAR_VALUE_I8, l, <<, gint64);
-		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_I4_IMM, VAR_VALUE_I4, i, >>, gint32);
-		INTERP_FOLD_SHIFTOP_IMM (MINT_SHR_I8_IMM, VAR_VALUE_I8, l, >>, gint64);
 
 		INTERP_FOLD_CONV (MINT_CONV_I1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint8);
 		INTERP_FOLD_CONV (MINT_CONV_I1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint8);
@@ -2921,7 +2902,7 @@ retry_instruction:
 				td->var_values [dreg].type = VAR_VALUE_I4;
 				td->var_values [dreg].i = (gint32)td->data_items [ins->data [0]];
 #endif
-			} else if (MINT_IS_UNOP (opcode) || MINT_IS_BINOP_IMM (opcode)) {
+			} else if (MINT_IS_UNOP (opcode)) {
 				ins = interp_fold_unop (td, ins);
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, ins);
@@ -3926,8 +3907,15 @@ optimization_retry:
 
 	// We run this after var deadce to detect more single use vars. This pass will clear
 	// unnecessary instruction on the fly so deadce is no longer needed to run.
-	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)
-		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
+	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS) {
+		// This pass is enough to be called only once, after all cprop and other optimizations
+		// are done. The problem is that currently it needs to run over code in SSA form, so we
+		// can't just run it at the very end of optimization cycles. Also bblock optimization can
+		// lead to another optimization iteration, so we can still end up running it multiple times.
+		// Basic block optimization currently needs to run after we exited SSA.
+		if (!ssa_enabled_retry && !td->need_optimization_retry)
+			MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
+	}
 
 	if (!td->disable_ssa)
 		interp_exit_ssa (td);
