@@ -85,6 +85,16 @@ export const unopTable: { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CLZ_I8]:        [WasmOpcode.i64_clz,    WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_CTZ_I8]:        [WasmOpcode.i64_ctz,    WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_POPCNT_I8]:     [WasmOpcode.i64_popcnt, WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_ADD_I4_IMM2]:   [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_MUL_I4_IMM2]:   [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ADD_I8_IMM2]:   [WasmOpcode.i64_add, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_MUL_I8_IMM2]:   [WasmOpcode.i64_mul, WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_AND_I4_IMM]:    [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_AND_I4_IMM2]:   [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4_IMM]:     [WasmOpcode.i32_or,  WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4_IMM2]:    [WasmOpcode.i32_or,  WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.

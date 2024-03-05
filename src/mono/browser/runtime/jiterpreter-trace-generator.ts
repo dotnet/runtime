@@ -1525,7 +1525,7 @@ export function generateWasmBody(
                     } else
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDC_I4_M1) &&
+                    (opcode >= MintOpcode.MINT_LDC_I4_0) &&
                     (opcode <= MintOpcode.MINT_LDC_R8)
                 ) {
                     if (!emit_ldc(builder, ip, opcode))
@@ -2610,6 +2610,8 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
 
         case MintOpcode.MINT_ADD_I4_IMM:
         case MintOpcode.MINT_MUL_I4_IMM:
+        case MintOpcode.MINT_AND_I4_IMM:
+        case MintOpcode.MINT_OR_I4_IMM:
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
@@ -2617,6 +2619,14 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I4_IMM2:
+        case MintOpcode.MINT_MUL_I4_IMM2:
+        case MintOpcode.MINT_AND_I4_IMM2:
+        case MintOpcode.MINT_OR_I4_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i32_const(getArgI32(ip, 3));
             break;
 
         case MintOpcode.MINT_ADD_I8_IMM:
@@ -2628,6 +2638,12 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I8_IMM2:
+        case MintOpcode.MINT_MUL_I8_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i52_const(getArgI32(ip, 3));
             break;
 
         default:
