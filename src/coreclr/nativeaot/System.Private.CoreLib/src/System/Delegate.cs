@@ -566,7 +566,7 @@ namespace System
                     int invocationCount = (int)_extraFunctionPointerOrData;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (d.Equals(invocationList[i]))
+                        if (d.Equals(invocationList[i].Value))
                         {
                             if (invocationCount == 2)
                             {
