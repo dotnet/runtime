@@ -4367,7 +4367,7 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg);
 
 #ifdef SWIFT_SUPPORT
     void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
@@ -5878,8 +5878,6 @@ public:
 
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred);
 
-    FlowEdge* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
-
     void fgRemoveRefPred(FlowEdge* edge);
 
     FlowEdge* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
@@ -6676,6 +6674,8 @@ private:
 
 public:
     bool fgIsBigOffset(size_t offset);
+
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset);
 
 private:
     bool fgNeedReturnSpillTemp();

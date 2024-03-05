@@ -8211,18 +8211,6 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
 
     NotifyExceptionPassStarted(pThis, pThread, pExInfo);
 
-    if (pFrame == FRAME_TOP)
-    {
-        // There are no managed frames on the stack, fail fast and report unhandled exception
-        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
-#ifdef HOST_WINDOWS
-        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
-        RaiseFailFastException(pExInfo->m_ptrs.ExceptionRecord, NULL, 0);
-#else
-        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
-#endif
-    }
-
     REGDISPLAY* pRD = &pExInfo->m_regDisplay;
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
@@ -8291,6 +8279,18 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
+    }
+    else
+    {
+        // There are no managed frames on the stack, fail fast and report unhandled exception
+        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
+#ifdef HOST_WINDOWS
+        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
+#else
+        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
+#endif
     }
 
     return result;

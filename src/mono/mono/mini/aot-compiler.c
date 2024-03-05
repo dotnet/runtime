@@ -448,6 +448,7 @@ static MonoAotCompile *llvm_acfg;
 static MonoAotCompile *current_acfg;
 static MonoAssembly *dedup_assembly;
 static GHashTable *dedup_methods;
+static GPtrArray *dedup_methods_list;
 
 /* Cache of decoded method external icall symbol names. */
 /* Owned by acfg, but kept in this static as well since it is */
@@ -4351,11 +4352,13 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 			return TRUE;
 		// Remember for later
 		g_assert (acfg->dedup_phase == DEDUP_COLLECT);
-		if (!g_hash_table_lookup (dedup_methods, method))
+		if (!g_hash_table_lookup (dedup_methods, method)) {
 			g_hash_table_insert (dedup_methods, method, method);
-		else
+			g_ptr_array_add (dedup_methods_list, method);
+		} else {
 			// Already processed when compiling another assembly
 			return TRUE;
+		}
 	}
 	return FALSE;
 }
@@ -15099,13 +15102,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		/* Add collected dedup-able methods */
 		aot_printf (acfg, "Adding %d dedup-ed methods.\n", g_hash_table_size (dedup_methods));
 
-		GHashTableIter iter;
-		MonoMethod *key;
-		MonoMethod *method;
-
-		g_hash_table_iter_init (&iter, dedup_methods);
-		while (g_hash_table_iter_next (&iter, (gpointer *)&key, (gpointer *)&method))
+		for (guint i = 0; i < dedup_methods_list->len; ++i) {
+			MonoMethod *method = (MonoMethod*)g_ptr_array_index (dedup_methods_list, i);
 			add_method_full (acfg, method, TRUE, 0);
+		}
 	}
 
 	{
@@ -15570,6 +15570,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		assemblies [dedup_aindex] = atmp;
 
 		dedup_methods = g_hash_table_new (NULL, NULL);
+		dedup_methods_list = g_ptr_array_new ();
 	}
 
 	if (aot_opts.trimming_eligible_methods_outfile) {

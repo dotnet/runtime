@@ -16,7 +16,7 @@ namespace System.Linq.Tests
 
         private static void AssertGroupingCorrect<TKey, TElement>(IEnumerable<TKey> keys, IEnumerable<TElement> elements, IEnumerable<IGrouping<TKey, TElement>> grouping, IEqualityComparer<TKey> keyComparer)
         {
-            if (grouping == null)
+            if (grouping is null)
             {
                 Assert.Null(elements);
                 Assert.Null(keys);
@@ -37,7 +37,7 @@ namespace System.Linq.Tests
 
                     TKey key = keyEn.Current;
 
-                    if (key == null)
+                    if (key is null)
                     {
                         groupingForNullKeys.Add(elEn.Current);
                     }
@@ -57,7 +57,7 @@ namespace System.Linq.Tests
                 TKey key = group.Key;
                 List<TElement> list;
 
-                if (key == null)
+                if (key is null)
                 {
                     Assert.Equal(groupingForNullKeys, group);
                     groupingForNullKeys.Clear();
