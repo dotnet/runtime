@@ -264,6 +264,15 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
     ReturnKind returnKind = callMD->GetReturnKind(true);
+    if (!IsValidReturnKind(returnKind))
+    {
+#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
+        _ASSERTE(!"Unexpected return kind for x64 Unix.");
+#else
+        // SKip GC coverage after the call.
+        return;
+#endif
+    }
     _ASSERTE(IsValidReturnKind(returnKind));
 
     bool ispointerKind = IsPointerReturnKind(returnKind);
