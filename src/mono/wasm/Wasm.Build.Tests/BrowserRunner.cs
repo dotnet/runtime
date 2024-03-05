@@ -81,6 +81,22 @@ internal class BrowserRunner : IAsyncDisposable
         var runTask = cmd.ExecuteAsync(args);
 
         await Task.WhenAny(runTask, urlAvailable.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+
+        string? launchContent = null;
+        if (projectDir != null)
+        {
+            string launchFile = Path.Combine(projectDir, "Properties", "launchSettings.json");
+            if (File.Exists(launchFile))
+            {
+                launchContent = File.ReadAllText(launchFile);
+                _testOutput.WriteLine($"launchSettings.json: {launchContent}");
+            }
+            else
+            {
+                _testOutput.WriteLine("launchSettings.json: Doesn't exist");
+            }
+        }
+
         if (runTask.IsCompleted)
         {
             var res = await runTask;
@@ -90,32 +106,21 @@ internal class BrowserRunner : IAsyncDisposable
         }
         if (!urlAvailable.Task.IsCompleted)
         {
-            if (projectDir != null)
+            if (launchContent != null)
             {
-                string launchFile = Path.Combine(projectDir, "Properties", "launchSettings.json");
-                if (File.Exists(launchFile))
+                var jsonOptions = new JsonSerializerOptions()
                 {
-                    string launchContent = File.ReadAllText(launchFile);
-                    _testOutput.WriteLine($"launchSettings.json: {launchContent}");
-
-                    var jsonOptions = new JsonSerializerOptions()
+                    AllowTrailingCommas = true
+                };
+                var launchSettings = JsonSerializer.Deserialize<RootObject>(launchContent, jsonOptions);
+                if (launchSettings != null && launchSettings.profiles != null && launchSettings.profiles.Count > 0)
+                {
+                    var firstServerUrl = launchSettings.profiles.First().Value.applicationUrl?.Split(";", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                    if (firstServerUrl != null)
                     {
-                        AllowTrailingCommas = true
-                    };
-                    var launchSettings = JsonSerializer.Deserialize<RootObject>(launchContent, jsonOptions);
-                    if (launchSettings != null && launchSettings.profiles != null && launchSettings.profiles.Count > 0)
-                    {
-                        var firstServerUrl = launchSettings.profiles.First().Value.applicationUrl?.Split(";", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                        if (firstServerUrl != null)
-                        {
-                            _testOutput.WriteLine($"launchSettings.json: Found server URL {firstServerUrl}");
-                            urlAvailable.TrySetResult(firstServerUrl);
-                        }
+                        _testOutput.WriteLine($"launchSettings.json: The process '{cmd.CurrentProcess?.Id}' didn't provided URLs, but found server URL {firstServerUrl} in launch settings");
+                        urlAvailable.TrySetResult(firstServerUrl);
                     }
-                }
-                else
-                {
-                    _testOutput.WriteLine("launchSettings.json: Doesn't exist");
                 }
             }
 
