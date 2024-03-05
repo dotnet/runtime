@@ -100,7 +100,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
-    CallArg* swiftErrorArg = nullptr;
+    GenTree* swiftErrorArg = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -1837,63 +1837,148 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 /*****************************************************************************/
 
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
-                                          CORINFO_SIG_INFO*   sig,
-                                          /* OUT */ CallArg** swiftErrorArg)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
-    /* Since we push the arguments in reverse order (i.e. right -> left)
-     * spill any side effects from the stack
-     *
-     * OBS: If there is only one side effect we do not need to spill it
-     *      thus we have to spill all side-effects except last one
-     */
-
-    unsigned lastLevelWithSideEffects = UINT_MAX;
-
-    unsigned argsToReverse = sig->numArgs;
-
-    // For "thiscall", the first argument goes in a register. Since its
-    // order does not need to be changed, we do not need to spill it
-
-    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+#ifdef SWIFT_SUPPORT
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
-        assert(argsToReverse != 0);
-        argsToReverse--;
+        impPopArgsForSwiftCall(call, sig, swiftErrorArg);
+    }
+    else
+#endif
+    {
+        /* Since we push the arguments in reverse order (i.e. right -> left)
+         * spill any side effects from the stack
+         *
+         * OBS: If there is only one side effect we do not need to spill it
+         *      thus we have to spill all side-effects except last one
+         */
+
+        unsigned lastLevelWithSideEffects = UINT_MAX;
+
+        unsigned argsToReverse = sig->numArgs;
+
+        // For "thiscall", the first argument goes in a register. Since its
+        // order does not need to be changed, we do not need to spill it
+
+        if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+        {
+            assert(argsToReverse != 0);
+            argsToReverse--;
+        }
+
+#ifndef TARGET_X86
+        // Don't reverse args on ARM or x64 - first four args always placed in regs in order
+        argsToReverse = 0;
+#endif
+
+        for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth;
+             level++)
+        {
+            if (verCurrentState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
+            {
+                assert(lastLevelWithSideEffects == UINT_MAX);
+
+                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
+                                              DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
+            }
+            else if (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
+            {
+                if (lastLevelWithSideEffects != UINT_MAX)
+                {
+                    /* We had a previous side effect - must spill it */
+                    impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(
+                                                                     "impPopArgsForUnmanagedCall - side effect"));
+
+                    /* Record the level for the current side effect in case we will spill it */
+                    lastLevelWithSideEffects = level;
+                }
+                else
+                {
+                    /* This is the first side effect encountered - record its level */
+
+                    lastLevelWithSideEffects = level;
+                }
+            }
+        }
+
+        /* The argument list is now "clean" - no out-of-order side effects
+         * Pop the argument list in reverse order */
+
+        impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
+
+        if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+        {
+            GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
+            impBashVarAddrsToI(thisPtr);
+            assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
+        }
     }
 
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        GenTree* argNode = arg.GetEarlyNode();
+
+        // We should not be passing gc typed args to an unmanaged call.
+        if (varTypeIsGC(argNode->TypeGet()))
+        {
+            // Tolerate byrefs by retyping to native int.
+            //
+            // This is needed or we'll generate inconsistent GC info
+            // for this arg at the call site (gc info says byref,
+            // pinvoke sig says native int).
+            //
+            if (argNode->TypeGet() == TYP_BYREF)
+            {
+                argNode->ChangeType(TYP_I_IMPL);
+            }
+            else
+            {
+                assert(!"*** invalid IL: gc ref passed to unmanaged call");
+            }
+        }
+    }
+}
+
 #ifdef SWIFT_SUPPORT
+void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorArg)
+{
+    JITDUMP("Creating args for Swift call [%06u]\n", dspTreeID(call));
+
     unsigned short swiftErrorIndex = sig->numArgs;
     unsigned short swiftSelfIndex  = sig->numArgs;
 
     // We are importing an unmanaged Swift call, which might require special parameter handling
-    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
+    bool checkEntireStack = false;
+
+    // Check the signature of the Swift call for the special types
+    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+
+    CORINFO_SWIFT_LOWERING** lowerings = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING*[sig->numArgs]{};
+
+    for (unsigned short argIndex = 0; argIndex < sig->numArgs;
+         sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
     {
-        bool checkEntireStack = false;
+        CORINFO_CLASS_HANDLE argClass;
+        CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+        bool                 argIsByrefOrPtr = false;
 
-        // Check the signature of the Swift call for the special types
-        CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-
-        for (unsigned short argIndex = 0; argIndex < sig->numArgs;
-             sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
+        if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
         {
-            CORINFO_CLASS_HANDLE argClass;
-            CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
-            bool                 argIsByrefOrPtr = false;
+            argClass        = info.compCompHnd->getArgClass(sig, sigArg);
+            argType         = info.compCompHnd->getChildType(argClass, &argClass);
+            argIsByrefOrPtr = true;
+        }
 
-            if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
-            {
-                argClass        = info.compCompHnd->getArgClass(sig, sigArg);
-                argType         = info.compCompHnd->getChildType(argClass, &argClass);
-                argIsByrefOrPtr = true;
-            }
+        if (argType != CORINFO_TYPE_VALUECLASS)
+        {
+            continue;
+        }
 
-            if ((argType != CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(argClass))
-            {
-                continue;
-            }
-
+        if (info.compCompHnd->isIntrinsicType(argClass))
+        {
             const char* namespaceName;
             const char* className = info.compCompHnd->getClassNameFromMetadata(argClass, &namespaceName);
 
@@ -1929,111 +2014,190 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
                 }
 
                 swiftSelfIndex = argIndex;
+                // Fall through to make sure the struct value becomes a local.
             }
             // TODO: Handle SwiftAsync
         }
 
-        // Don't need to reverse args for Swift calls
-        argsToReverse = 0;
-
-        // If using SwiftError*, check entire stack for side effects
-        if (checkEntireStack)
+        if (argIsByrefOrPtr)
         {
-            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
+            continue;
+        }
+
+        if (argIndex != swiftSelfIndex)
+        {
+            // This is a struct type. Check if it needs to be lowered.
+            // TODO-Bug: SIMD types are not handled correctly by this.
+            CORINFO_SWIFT_LOWERING lowering;
+            info.compCompHnd->getSwiftLowering(argClass, &lowering);
+            if (!lowering.byReference)
+            {
+                lowerings[argIndex] = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING(lowering);
+                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
+                        typGetObjLayout(argClass)->GetClassName(), lowering.numLoweredElements);
+                for (size_t i = 0; i < lowering.numLoweredElements; i++)
+                {
+                    JITDUMP("    [%zu] %s\n", i, varTypeName(JitType2PreciseVarType(lowering.loweredElements[i])));
+                }
+            }
+        }
+
+        // We must spill this struct to a local to be able to expand it into primitives.
+        GenTree* node = impStackTop(sig->numArgs - 1 - argIndex).val;
+        if (!node->OperIsLocalRead())
+        {
+            // TODO-CQ: If we enable FEATURE_IMPLICIT_BYREFS on all platforms
+            // where we support Swift we can probably let normal implicit byref
+            // handling handle the unlowered case.
+            impSpillStackEntry(verCurrentState.esStackDepth - sig->numArgs + argIndex,
+                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("Swift struct arg with lowering"));
         }
     }
-#endif // SWIFT_SUPPORT
 
-#ifndef TARGET_X86
-    // Don't reverse args on ARM or x64 - first four args always placed in regs in order
-    argsToReverse = 0;
-#endif
-
-    for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth; level++)
+    // If using SwiftError*, check entire stack for side effects
+    if (checkEntireStack)
     {
-        if (verCurrentState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
-        {
-            assert(lastLevelWithSideEffects == UINT_MAX);
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift call"));
+    }
 
-            impSpillStackEntry(level,
-                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
+    impPopCallArgs(sig, call);
+
+    JITDUMP("Node after popping args:\n");
+    DISPTREE(call);
+    JITDUMP("\n");
+
+    CallArg* swiftErrorCallArg = nullptr;
+    if (swiftErrorIndex != sig->numArgs)
+    {
+        swiftErrorCallArg = call->gtArgs.GetArgByIndex(swiftErrorIndex);
+        *swiftErrorArg    = swiftErrorCallArg->GetNode();
+    }
+
+    // Now expand struct args that must be lowered into primitives
+    unsigned argIndex = 0;
+    for (CallArg* arg = call->gtArgs.Args().begin().GetArg(); arg != nullptr; argIndex++)
+    {
+        if (!varTypeIsStruct(arg->GetSignatureType()))
+        {
+            arg = arg->GetNext();
+            continue;
         }
-        else if (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
-        {
-            if (lastLevelWithSideEffects != UINT_MAX)
-            {
-                /* We had a previous side effect - must spill it */
-                impSpillStackEntry(lastLevelWithSideEffects,
-                                   BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - side effect"));
 
-                /* Record the level for the current side effect in case we will spill it */
-                lastLevelWithSideEffects = level;
+        JITDUMP("  Argument %u is a struct [%06u]\n", argIndex, dspTreeID(arg->GetNode()));
+
+        assert(arg->GetNode()->OperIsLocalRead());
+        GenTreeLclVarCommon* structVal = arg->GetNode()->AsLclVarCommon();
+
+        CallArg* insertAfter = arg;
+        if (argIndex == swiftSelfIndex)
+        {
+            assert(arg->GetNode()->OperIsLocalRead());
+            GenTree*   primitiveSelf = gtNewLclFldNode(structVal->GetLclNum(), TYP_I_IMPL, structVal->GetLclOffs());
+            NewCallArg newArg = NewCallArg::Primitive(primitiveSelf, TYP_I_IMPL).WellKnown(WellKnownArg::SwiftSelf);
+            insertAfter       = call->gtArgs.InsertAfter(this, insertAfter, newArg);
+        }
+        else
+        {
+            // TODO-Bug: This does not handle SIMDs correctly.
+
+            CORINFO_SWIFT_LOWERING* lowering = lowerings[argIndex];
+
+            if (lowering == nullptr)
+            {
+                GenTree* addrNode = gtNewLclAddrNode(structVal->GetLclNum(), structVal->GetLclOffs());
+                JITDUMP("    Passing by reference\n", dspTreeID(addrNode), dspTreeID(call));
+
+                insertAfter = call->gtArgs.InsertAfter(this, insertAfter, NewCallArg::Primitive(addrNode, TYP_I_IMPL));
             }
             else
             {
-                /* This is the first side effect encountered - record its level */
+                unsigned offset = 0;
+                for (size_t i = 0; i < lowering->numLoweredElements; i++)
+                {
+                    var_types loweredType = JITtype2varType(lowering->loweredElements[i]);
+                    offset                = AlignUp(offset, genTypeSize(loweredType));
 
-                lastLevelWithSideEffects = level;
+                    GenTree* loweredNode = nullptr;
+                    unsigned sizeToRead = min(structVal->GetLayout(this)->GetSize() - offset, genTypeSize(loweredType));
+                    assert(sizeToRead > 0);
+
+                    if (sizeToRead == genTypeSize(loweredType))
+                    {
+                        loweredNode =
+                            gtNewLclFldNode(structVal->GetLclNum(), loweredType, structVal->GetLclOffs() + offset);
+                        offset += genTypeSize(loweredType);
+                    }
+                    else
+                    {
+                        unsigned relOffset = 0;
+                        auto addSegment = [=, &loweredNode, &relOffset](var_types type) {
+                            GenTree* val = gtNewLclFldNode(structVal->GetLclNum(), type,
+                                                           structVal->GetLclOffs() + offset + relOffset);
+
+                            if (loweredType == TYP_LONG)
+                            {
+                                val = gtNewCastNode(TYP_LONG, val, true, TYP_LONG);
+                            }
+
+                            if (relOffset > 0)
+                            {
+                                val = gtNewOperNode(GT_LSH, genActualType(loweredType), val,
+                                                    gtNewIconNode(relOffset * 8));
+                            }
+
+                            if (loweredNode == nullptr)
+                            {
+                                loweredNode = val;
+                            }
+                            else
+                            {
+                                loweredNode = gtNewOperNode(GT_OR, genActualType(loweredType), loweredNode, val);
+                            }
+
+                            relOffset += genTypeSize(type);
+                        };
+
+                        if (sizeToRead - relOffset >= 4)
+                        {
+                            addSegment(TYP_INT);
+                        }
+                        if (sizeToRead - relOffset >= 2)
+                        {
+                            addSegment(TYP_USHORT);
+                        }
+                        if (sizeToRead - relOffset >= 1)
+                        {
+                            addSegment(TYP_UBYTE);
+                        }
+
+                        assert(relOffset == sizeToRead);
+                        offset += sizeToRead;
+                    }
+
+                    JITDUMP("    Adding expanded primitive argument [%06u]\n", dspTreeID(loweredNode), dspTreeID(call));
+                    DISPTREE(loweredNode);
+
+                    insertAfter =
+                        call->gtArgs.InsertAfter(this, insertAfter, NewCallArg::Primitive(loweredNode, loweredType));
+                }
             }
         }
+
+        JITDUMP("  Removing plain struct argument [%06u]\n", dspTreeID(structVal));
+        call->gtArgs.Remove(arg);
+        arg = insertAfter->GetNext();
     }
 
-    /* The argument list is now "clean" - no out-of-order side effects
-     * Pop the argument list in reverse order */
-
-    impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
-
-    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+    if (swiftErrorCallArg != nullptr)
     {
-        GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
-        impBashVarAddrsToI(thisPtr);
-        assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
+        call->gtArgs.Remove(swiftErrorCallArg);
     }
 
-    unsigned short argIndex = 0;
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        GenTree* argNode = arg.GetEarlyNode();
-
-        // We should not be passing gc typed args to an unmanaged call.
-        if (varTypeIsGC(argNode->TypeGet()))
-        {
-            // Tolerate byrefs by retyping to native int.
-            //
-            // This is needed or we'll generate inconsistent GC info
-            // for this arg at the call site (gc info says byref,
-            // pinvoke sig says native int).
-            //
-            if (argNode->TypeGet() == TYP_BYREF)
-            {
-                argNode->ChangeType(TYP_I_IMPL);
-            }
-            else
-            {
-                assert(!"*** invalid IL: gc ref passed to unmanaged call");
-            }
-        }
-
-#ifdef SWIFT_SUPPORT
-        if (argIndex == swiftErrorIndex)
-        {
-            // Found the SwiftError* arg
-            assert(swiftErrorArg != nullptr);
-            *swiftErrorArg = &arg;
-        }
-        else if (argIndex == swiftSelfIndex)
-        {
-            // Found the SwiftSelf arg
-            arg.SetWellKnownArg(WellKnownArg::SwiftSelf);
-        }
-// TODO: SwiftAsync
-#endif // SWIFT_SUPPORT
-
-        argIndex++;
-    }
+    JITDUMP("Final result after Swift call lowering:\n");
+    DISPTREE(call);
+    JITDUMP("\n");
 }
 
-#ifdef SWIFT_SUPPORT
 //------------------------------------------------------------------------
 // impAppendSwiftErrorStore: Append IR to store the Swift error register value
 // to the SwiftError* argument specified by swiftErrorArg, post-Swift call
@@ -2042,28 +2206,22 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
 //    call - the Swift call
 //    swiftErrorArg - the SwiftError* argument passed to call
 //
-void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
+void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, GenTree* const swiftErrorArg)
 {
     assert(call != nullptr);
     assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
     assert(swiftErrorArg != nullptr);
-
-    GenTree* const argNode = swiftErrorArg->GetNode();
-    assert(argNode != nullptr);
 
     // Store the error register value to where the SwiftError* points to
     GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
     errorRegNode->SetHasOrderingSideEffect();
     errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
 
-    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(swiftErrorArg->TypeGet(), swiftErrorArg, errorRegNode);
     impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
 
     // Indicate the error register will be checked after this call returns
     call->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
-
-    // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
-    call->gtArgs.Remove(swiftErrorArg);
 }
 #endif // SWIFT_SUPPORT
 

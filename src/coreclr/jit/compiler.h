@@ -4367,10 +4367,11 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorArg);
+    void impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorArg);
 
 #ifdef SWIFT_SUPPORT
-    void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
+    void impAppendSwiftErrorStore(GenTreeCall* call, GenTree* const swiftErrorArg);
 #endif // SWIFT_SUPPORT
 
     void impInsertHelperCall(CORINFO_HELPER_DESC* helperCall);

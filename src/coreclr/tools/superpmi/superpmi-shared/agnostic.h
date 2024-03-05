@@ -614,6 +614,13 @@ struct Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor
     DWORD result;
 };
 
+struct Agnostic_GetSwiftLowering
+{
+    DWORD byReference;
+    DWORD loweredElements[4];
+    DWORD numLoweredElements;
+};
+
 struct Agnostic_ResolveVirtualMethodKey
 {
     DWORDLONG                       virtualMethod;

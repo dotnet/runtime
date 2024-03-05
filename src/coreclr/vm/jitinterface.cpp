@@ -2627,6 +2627,22 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #endif // !defined(UNIX_AMD64_ABI_ITF)
 }
 
+void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    pLowering->byReference = true;
+    pLowering->numLoweredElements = 0;
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
