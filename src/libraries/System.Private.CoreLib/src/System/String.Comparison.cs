@@ -831,9 +831,37 @@ namespace System
                 // a very wide net because it will change, e.g., '^' to '~'. But that should
                 // be ok because we expect this to be very rare in practice.
 
-                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
+                if(Vector128.IsHardwareAccelerated)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
+                    if(length < Vector128<ushort>.Count)
+                    {
+                        // if the input is less than a vector128 length, pad with trailing zero.
+                        uint[] arrWithPad = new uint[4];
+
+                        for(int i = 0; i < length / 2; i++)
+                        {
+                            arrWithPad[i] = ptr[i];
+                        }
+
+                        for(int i = length; length < 4; length++)
+                        {
+                            arrWithPad[i] = 0;
+                        }
+
+                        Vector128<uint> srcVecPad = Vector128.Create(0u);
+                        Vector128.CopyTo<uint>(srcVecPad, arrWithPad, 0);
+                        hashVector = Vector128.Xor(Vector128.Add(hashVector, RotateLeft(hashVector, 5)), srcVecPad);
+
+                        uint hashed1Pad = hashVector.GetElement(0);
+                        uint hashed2Pad = hashVector.GetElement(1);
+                        uint hashed3Pad = hashVector.GetElement(2);
+                        uint hashed4Pad = hashVector.GetElement(3);
+
+                        uint resPad = (((BitOperations.RotateLeft(hashed1Pad, 5) + hashed1Pad)) ^ hashed3Pad) + 1566083941 * (((BitOperations.RotateLeft(hashed2Pad, 5) + hashed2Pad)) ^ hashed4Pad);
+                        return (int)resPad;
+                    }
+
                     while(length > 4)
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
@@ -867,6 +895,7 @@ namespace System
                     return (int)res;
                 }
 
+                Debug.Assert(!Vector128.IsHardwareAccelerated);
                 while (length > 2)
                 {
                     uint p0 = ptr[0];
@@ -907,10 +936,39 @@ namespace System
                 // be ok because we expect this to be very rare in practice.
                 const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
-                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
+                if(Vector128.IsHardwareAccelerated)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
                     Vector128<uint> NormalizeToLowercaseVec = Vector128.Create(NormalizeToLowercase);
+
+                    if(length < Vector128<ushort>.Count)
+                    {
+                        // if the input is less than a vector128 length, pad with trailing zero.
+                        uint[] arrWithPad = new uint[4];
+
+                        for(int i = 0; i < length / 2; i++)
+                        {
+                            arrWithPad[i] = ptr[i];
+                        }
+
+                        for(int i = length; length < 4; length++)
+                        {
+                            arrWithPad[i] = 0;
+                        }
+
+                        Vector128<uint> srcVecPad = Vector128.Create(0u);
+                        Vector128.CopyTo<uint>(srcVecPad, arrWithPad, 0);
+                        hashVector = Vector128.Xor(Vector128.Add(hashVector, RotateLeft(hashVector, 5)), Vector128.BitwiseOr(srcVecPad, NormalizeToLowercaseVec));
+
+                        uint hashed1Pad = hashVector.GetElement(0);
+                        uint hashed2Pad = hashVector.GetElement(1);
+                        uint hashed3Pad = hashVector.GetElement(2);
+                        uint hashed4Pad = hashVector.GetElement(3);
+
+                        uint resPad = (((BitOperations.RotateLeft(hashed1Pad, 5) + hashed1Pad)) ^ hashed3Pad) + 1566083941 * (((BitOperations.RotateLeft(hashed2Pad, 5) + hashed2Pad)) ^ hashed4Pad);
+                        return (int)resPad;
+                    }
+
                     while(length > 4)
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
@@ -956,6 +1014,7 @@ namespace System
                     return (int)res;
                 }
 
+                Debug.Assert(!Vector128.IsHardwareAccelerated);
                 while (length > 2)
                 {
                     uint p0 = ptr[0];
