@@ -5285,6 +5285,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + (gint16)ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + READ32 (ip + 3);
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD1_I8)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + 1;
 			ip += 3;
@@ -5292,6 +5296,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_I8_IMM)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + (gint16)ip [3];
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_I8_IMM2)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + READ32 (ip + 3);
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_I4)
 			BINOP(gint32, -);
@@ -5323,9 +5331,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * (gint16)ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MUL_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * READ32 (ip + 3);
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_I8_IMM)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint16)ip [3];
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MUL_I8_IMM2)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * READ32 (ip + 3);
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_MUL_I4_IMM)
 			LOCAL_VAR (ip [1], gint32) = (LOCAL_VAR (ip [2], gint32) + (gint16)ip [3]) * (gint16)ip [4];
@@ -5434,11 +5450,27 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_AND_I4)
 			BINOP(gint32, &);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_AND_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) & (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_AND_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) & READ32 (ip + 3);
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_AND_I8)
 			BINOP(gint64, &);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_OR_I4)
 			BINOP(gint32, |);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_OR_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) | (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_OR_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) | READ32 (ip + 3);
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_OR_I8)
 			BINOP(gint64, |);

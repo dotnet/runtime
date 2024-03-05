@@ -3382,31 +3382,39 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			} else if (opcode == MINT_ADD_I4 || opcode == MINT_ADD_I8 ||
-					opcode == MINT_MUL_I4 || opcode == MINT_MUL_I8) {
+					opcode == MINT_MUL_I4 || opcode == MINT_MUL_I8 ||
+					opcode == MINT_OR_I4 || opcode == MINT_AND_I4) {
 				int sreg = -1;
 				int sreg_imm = -1;
 				int imm_mt;
 				gint32 imm;
-				if (get_sreg_imm (td, ins->sregs [0], &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
+				if (get_sreg_imm (td, ins->sregs [0], &imm, &imm_mt)) {
 					sreg = ins->sregs [1];
 					sreg_imm = ins->sregs [0];
-				} else if (get_sreg_imm (td, ins->sregs [1], &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
+				} else if (get_sreg_imm (td, ins->sregs [1], &imm, &imm_mt)) {
 					sreg = ins->sregs [0];
 					sreg_imm = ins->sregs [1];
 				}
 				if (sreg != -1) {
 					int binop;
 					switch (opcode) {
-						case MINT_ADD_I4: binop = MINT_ADD_I4_IMM; break;
-						case MINT_ADD_I8: binop = MINT_ADD_I8_IMM; break;
-						case MINT_MUL_I4: binop = MINT_MUL_I4_IMM; break;
-						case MINT_MUL_I8: binop = MINT_MUL_I8_IMM; break;
+						case MINT_ADD_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_ADD_I4_IMM : MINT_ADD_I4_IMM2; break;
+						case MINT_ADD_I8: binop = (imm_mt == MINT_TYPE_I2) ? MINT_ADD_I8_IMM : MINT_ADD_I8_IMM2; break;
+						case MINT_MUL_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_MUL_I4_IMM : MINT_MUL_I4_IMM2; break;
+						case MINT_MUL_I8: binop = (imm_mt == MINT_TYPE_I2) ? MINT_MUL_I8_IMM : MINT_MUL_I8_IMM2; break;
+						case MINT_OR_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_OR_I4_IMM : MINT_OR_I4_IMM2; break;
+						case MINT_AND_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_AND_I4_IMM : MINT_AND_I4_IMM2; break;
 						default: g_assert_not_reached ();
 					}
 					InterpInst *new_inst = interp_insert_ins (td, ins, binop);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = sreg;
-					new_inst->data [0] = (gint16)imm;
+					if (imm_mt == MINT_TYPE_I2)
+						new_inst->data [0] = (gint16)imm;
+					else if (imm_mt == MINT_TYPE_I4)
+						WRITE32_INS (new_inst, 0, &imm);
+					else
+						g_assert_not_reached ();
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
