@@ -421,7 +421,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_FixupCrst.Init(CrstModuleFixup, (CrstFlags)(CRST_HOST_BREAKABLE|CRST_REENTRANCY));
     m_InstMethodHashTableCrst.Init(CrstInstMethodHashTable, CRST_REENTRANCY);
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
-    m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     AllocateMaps();
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state

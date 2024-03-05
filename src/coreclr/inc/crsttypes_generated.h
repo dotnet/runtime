@@ -41,20 +41,20 @@ enum CrstType
     CrstDebuggerJitInfo = 23,
     CrstDebuggerMutex = 24,
     CrstDelegateToFPtrHash = 25,
-    CrstDomainLocalBlock = 26,
-    CrstDynamicIL = 27,
-    CrstDynamicMT = 28,
-    CrstEtwTypeLogHash = 29,
-    CrstEventPipe = 30,
-    CrstEventStore = 31,
-    CrstException = 32,
-    CrstExecutableAllocatorLock = 33,
-    CrstExecuteManRangeLock = 34,
-    CrstFCall = 35,
-    CrstFrozenObjectHeap = 36,
-    CrstFuncPtrStubs = 37,
-    CrstFusionAppCtx = 38,
-    CrstGCCover = 39,
+    CrstDynamicIL = 26,
+    CrstDynamicMT = 27,
+    CrstEtwTypeLogHash = 28,
+    CrstEventPipe = 29,
+    CrstEventStore = 30,
+    CrstException = 31,
+    CrstExecutableAllocatorLock = 32,
+    CrstExecuteManRangeLock = 33,
+    CrstFCall = 34,
+    CrstFrozenObjectHeap = 35,
+    CrstFuncPtrStubs = 36,
+    CrstFusionAppCtx = 37,
+    CrstGCCover = 38,
+    CrstGenericDictionaryExpansion = 39,
     CrstGlobalStrLiteralMap = 40,
     CrstHandleTable = 41,
     CrstIbcProfile = 42,
@@ -112,30 +112,29 @@ enum CrstType
     CrstSingleUseLock = 94,
     CrstSpecialStatics = 95,
     CrstStackSampler = 96,
-    CrstStaticBoxInit = 97,
-    CrstStressLog = 98,
-    CrstStubCache = 99,
-    CrstStubDispatchCache = 100,
-    CrstStubUnwindInfoHeapSegments = 101,
-    CrstSyncBlockCache = 102,
-    CrstSyncHashLock = 103,
-    CrstSystemBaseDomain = 104,
-    CrstSystemDomain = 105,
-    CrstSystemDomainDelayedUnloadList = 106,
-    CrstThreadIdDispenser = 107,
-    CrstThreadLocalStorageLock = 108,
-    CrstThreadStore = 109,
-    CrstTieredCompilation = 110,
-    CrstTypeEquivalenceMap = 111,
-    CrstTypeIDMap = 112,
-    CrstUMEntryThunkCache = 113,
-    CrstUMEntryThunkFreeListLock = 114,
-    CrstUniqueStack = 115,
-    CrstUnresolvedClassLock = 116,
-    CrstUnwindInfoTableLock = 117,
-    CrstVSDIndirectionCellLock = 118,
-    CrstWrapperTemplate = 119,
-    kNumberOfCrstTypes = 120
+    CrstStressLog = 97,
+    CrstStubCache = 98,
+    CrstStubDispatchCache = 99,
+    CrstStubUnwindInfoHeapSegments = 100,
+    CrstSyncBlockCache = 101,
+    CrstSyncHashLock = 102,
+    CrstSystemBaseDomain = 103,
+    CrstSystemDomain = 104,
+    CrstSystemDomainDelayedUnloadList = 105,
+    CrstThreadIdDispenser = 106,
+    CrstThreadLocalStorageLock = 107,
+    CrstThreadStore = 108,
+    CrstTieredCompilation = 109,
+    CrstTypeEquivalenceMap = 110,
+    CrstTypeIDMap = 111,
+    CrstUMEntryThunkCache = 112,
+    CrstUMEntryThunkFreeListLock = 113,
+    CrstUniqueStack = 114,
+    CrstUnresolvedClassLock = 115,
+    CrstUnwindInfoTableLock = 116,
+    CrstVSDIndirectionCellLock = 117,
+    CrstWrapperTemplate = 118,
+    kNumberOfCrstTypes = 119
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -172,7 +171,6 @@ int g_rgCrstLevelMap[] =
     4,          // CrstDebuggerJitInfo
     13,         // CrstDebuggerMutex
     0,          // CrstDelegateToFPtrHash
-    18,         // CrstDomainLocalBlock
     0,          // CrstDynamicIL
     3,          // CrstDynamicMT
     0,          // CrstEtwTypeLogHash
@@ -186,6 +184,7 @@ int g_rgCrstLevelMap[] =
     7,          // CrstFuncPtrStubs
     10,         // CrstFusionAppCtx
     10,         // CrstGCCover
+    18,         // CrstGenericDictionaryExpansion
     17,         // CrstGlobalStrLiteralMap
     1,          // CrstHandleTable
     0,          // CrstIbcProfile
@@ -243,7 +242,6 @@ int g_rgCrstLevelMap[] =
     5,          // CrstSingleUseLock
     0,          // CrstSpecialStatics
     0,          // CrstStackSampler
-    15,         // CrstStaticBoxInit
     -1,         // CrstStressLog
     5,          // CrstStubCache
     0,          // CrstStubDispatchCache
@@ -297,7 +295,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstDebuggerJitInfo",
     "CrstDebuggerMutex",
     "CrstDelegateToFPtrHash",
-    "CrstDomainLocalBlock",
     "CrstDynamicIL",
     "CrstDynamicMT",
     "CrstEtwTypeLogHash",
@@ -311,6 +308,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstFuncPtrStubs",
     "CrstFusionAppCtx",
     "CrstGCCover",
+    "CrstGenericDictionaryExpansion",
     "CrstGlobalStrLiteralMap",
     "CrstHandleTable",
     "CrstIbcProfile",
@@ -368,7 +366,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstSingleUseLock",
     "CrstSpecialStatics",
     "CrstStackSampler",
-    "CrstStaticBoxInit",
     "CrstStressLog",
     "CrstStubCache",
     "CrstStubDispatchCache",

@@ -3961,24 +3961,14 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
 
     // Static fields are not pinned in collectible types so we need to protect the address
     GCPROTECT_BEGININTERIOR(boxedStaticHandle);
-    if (VolatileLoad(boxedStaticHandle) == nullptr)
-    {
-        // Grab field's type handle before we enter lock
-        MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
-        bool hasFixedAddr = HasFixedAddressVTStatics();
+    _ASSERTE(*boxedStaticHandle == nullptr);
+    MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+    bool hasFixedAddr = HasFixedAddressVTStatics();
 
-        // Taking a lock since we might come here from multiple threads/places
-        CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
-
-        // double-checked locking
-        if (VolatileLoad(boxedStaticHandle) == nullptr)
-        {
-            LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-            const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, canBeFrozen);
-            SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
-        }
-    }
+    LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
+    const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+    OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, canBeFrozen);
+    SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
     GCPROTECT_END();
 }
 

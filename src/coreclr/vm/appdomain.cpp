@@ -612,7 +612,7 @@ void BaseDomain::Init()
         m_DomainCrst.Init(CrstBaseDomain);
 
     m_DomainCacheCrst.Init(CrstAppDomainCache);
-    m_DomainLocalBlockCrst.Init(CrstDomainLocalBlock);
+    m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
 
     // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
     // If you remove this flag, we will switch to preemptive mode when entering
@@ -637,7 +637,6 @@ void BaseDomain::Init()
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
-    m_crstStaticBoxInitLock.Init(CrstStaticBoxInit);
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));

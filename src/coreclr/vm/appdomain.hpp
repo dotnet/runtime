@@ -540,15 +540,6 @@ public:
         return m_pMngStdInterfacesInfo;
     }
 #endif // FEATURE_COMINTEROP
-#ifdef _DEBUG
-    BOOL OwnDomainLocalBlockLock()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_DomainLocalBlockCrst.OwnedByCurrentThread();
-    }
-#endif
-
     //****************************************************************************************
     // Get the class init lock. The method is limited to friends because inappropriate use
     // will cause deadlocks in the system
@@ -681,10 +672,10 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
-    CrstExplicitInit* GetStaticBoxInitLock()
+    CrstExplicitInit* GetGenericDictionaryExpansionLock()
     {
         LIMITED_METHOD_CONTRACT;
-        return &m_crstStaticBoxInitLock;
+        return &m_crstGenericDictionaryExpansionLock;
     }
 
     static CrstStatic* GetMethodTableExposedClassObjectLock()
@@ -708,10 +699,9 @@ protected:
     PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
     CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
     CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
-    CrstExplicitInit m_DomainLocalBlockCrst;
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-    CrstExplicitInit m_crstStaticBoxInitLock;
+    CrstExplicitInit m_crstGenericDictionaryExpansionLock;
 
     //#AssemblyListLock
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
@@ -779,17 +769,6 @@ public:
             WRAPPER_NO_CONTRACT;
         }
     };
-
-    class DomainLocalBlockLockHolder : public CrstHolder
-    {
-    public:
-        DomainLocalBlockLockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainLocalBlockCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class DomainLocalBlockLockHolder;
 
     class LoadLockHolder :  public PEFileListLockHolder
     {
