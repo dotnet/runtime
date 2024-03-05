@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>7.0.17</ProductVersion>
+    <ProductVersion>7.0.18</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>7</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>17</PatchVersion>
+    <PatchVersion>18</PatchVersion>
     <SdkBandVersion>7.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($(PatchVersion), 11))</PackageVersionNet6>
     <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
