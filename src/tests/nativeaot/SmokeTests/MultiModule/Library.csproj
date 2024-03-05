@@ -5,6 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="MultiModuleLibrary.cs" />
+    <Compile Include="Library.cs" />
   </ItemGroup>
 </Project>

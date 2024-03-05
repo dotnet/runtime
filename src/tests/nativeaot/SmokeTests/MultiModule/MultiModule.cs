@@ -5,15 +5,13 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 public class ReflectionTest
 {
     const int Pass = 100;
     const int Fail = -1;
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         if (TestStaticBases() == Fail)
             return Fail;

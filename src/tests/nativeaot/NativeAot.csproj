@@ -1,6 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
+
+    <!-- Due to the nature of the MultiModule tests, it is unfeasible to convert
+         them to the Merged Wrapper system.
+
+         The main idea of these ones is that we pre-NativeAOT the whole framework,
+         then NativeAOT each assembly separately, and then link them all together
+         at the end using the native linker.
+
+         So, when we try using the Merged Wrapper system, nothing ends up producing
+         the code for xunit.assert, as its assembly is not in the actual framework.
+    -->
+    <MergedWrapperProjectReference Remove="SmokeTests/MultiModule/*.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -8,17 +20,4 @@
   </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
-
-  <!-- Target IlcCompile returns the library object (MultiModuleLibrary.o),
-       and therefore, it ends up in the "_ResolvedProjectReferencePaths" list.
-       However, at this point, it is no longer needed and causes build issues if
-       if left there, so we added this target to remove it from the list. -->
-
-  <Target Name="RemoveObjectFileFromResolvedAssemblies"
-          BeforeTargets="ResolveAssemblyReferences">
-    <ItemGroup>
-      <_ResolvedProjectReferencePaths Remove="@(_ResolvedProjectReferencePaths)"
-                                      Condition="'%(Extension)' != '.dll'" />
-    </ItemGroup>
-  </Target>
 </Project>
