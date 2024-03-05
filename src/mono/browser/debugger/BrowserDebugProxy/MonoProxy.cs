@@ -17,6 +17,7 @@ using BrowserDebugProxy;
 using static System.Formats.Asn1.AsnWriter;
 using System.Reflection;
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -917,13 +918,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {ree}");
                 SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {ree.Message}", token, type: "error");
                 bp.ConditionAlreadyEvaluatedWithError = true;
-                SendExceptionToTelemetry(ree.Message, sessionId, token);
+                SendExceptionToTelemetry(ree, sessionId, token);
             }
             catch (Exception e)
             {
                 Log("info", $"Unable to evaluate breakpoint condition '{condition}': {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
-                SendExceptionToTelemetry(e.Message, sessionId, token);
+                SendExceptionToTelemetry(e, sessionId, token);
             }
             return false;
         }
@@ -1522,22 +1523,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (ReturnAsErrorException ree)
             {
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
-                SendExceptionToTelemetry(ree.Message, msg_id, token);
+                SendExceptionToTelemetry(ree, msg_id, token);
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
                 var ree = new ReturnAsErrorException(e.Message, e.GetType().Name);
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
-                SendExceptionToTelemetry(e.Message, msg_id, token);
+                SendExceptionToTelemetry(e, msg_id, token);
             }
 
             return true;
         }
 
-        private void SendExceptionToTelemetry(string message, SessionId msg_id, CancellationToken token)
+        private void SendExceptionToTelemetry(Exception exc, SessionId msg_id, CancellationToken token)
         {
-            var exceptionWithCallStackInfo = $"{message}\n{new StackTrace(1, true)}";
+            var stackTrace = exc.StackTrace ?? new StackTrace(1, true).ToString();
+            var stackTraceLines = stackTrace.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            var exceptionWithCallStackInfo = new StringBuilder($"{exc.Message}");
+
+            for (int i = 0; i < 5 && i < stackTraceLines.Length; i++)
+            {
+                exceptionWithCallStackInfo.Append($"\n{stackTraceLines[i]}");
+            }
+
             JObject reportBlazorDebugError = JObject.FromObject(new
             {
                 exceptionType = "uncaughtException",
