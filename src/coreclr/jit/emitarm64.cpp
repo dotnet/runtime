@@ -1171,13 +1171,17 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+        {
             imm = emitGetInsSC(id);
+            floatImm8 fpImm;
+            fpImm.immFPIVal = (unsigned)imm;
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
-            assert(isValidSimm8(imm) || isValidUimm8(imm));                   // iiiiiiii
+            assert(isValidSimm8((ssize_t)emitDecodeFloatImm8(fpImm)));        // iiiiiiii
             assert(isPredicateRegister(id->idReg2()));                        // gggg
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
+        }
 
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             assert(isPredicateRegister(id->idReg1())); // DDDD
