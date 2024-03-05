@@ -1,10 +1,14 @@
 # This is a Config-style package configuration file for cmake's find_package command for ${libArtifactName}
 set(CMAKE_FRAGMENT_PATH "${libArtifactConfigFragment}")
 
-include("`${CLR_ENG_NATIVE_DIR}/import-nativeaot-library.cmake")
-
 include("`${CMAKE_FRAGMENT_PATH}")
 
-# adds a ${libArtifactName}::${libArtifactName} target
-add_imported_nativeaot_library("${libArtifactName}" "${libCmakeName}" NAMESPACE "${libArtifactName}::")
+# add a ${libArtifactName}::libs target
+add_library("${libArtifactName}::libs" SHARED IMPORTED GLOBAL)
+set_property(TARGET "${libArtifactName}::libs" PROPERTY IMPORTED_LOCATION "`${${libCMakeName}_LIBPATH}/`${${libCmakeName}_NAME}`${${libCmakeName}_EXT}")
+if("`${CLR_CMAKE_HOST_WIN32}")
+  set_property(TARGET "${libArtifactName}::libs" PROPERTY IMPORTED_IMPLIB "`${${libCmakeName}_IMPLIBPATH}")
+endif()
 
+add_library("${libArtifactName}::headers" INTERFACE IMPORTED GLOBAL)
+target_include_directories("${libArtifactName}::headers" INTERFACE "`${${libCmakeName}_INCLUDE}")

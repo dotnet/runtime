@@ -44,10 +44,8 @@ set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
 
 if("${libhellomanaged_FOUND}")
-  target_link_libraries(daccess PRIVATE libhellomanaged::libhellomanaged)
+  target_link_libraries(daccess PRIVATE libhellomanaged::libs libhellomanaged::headers)
   target_compile_definitions(daccess PRIVATE HAVE_LIBHELLOMANAGED)
-  # FIXME: can we put this with mscordaccore instead?
-  install_clr(TARGETS libhellomanaged::libhellomanaged DESTINATIONS . sharedFramework COMPONENT debug)
 endif()
 
 add_dependencies(daccess eventing_headers)
