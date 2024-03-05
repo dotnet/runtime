@@ -1,6 +1,0 @@
-set(${libCmakeName}_MODE "SHARED")
-set(${libCmakeName}_NAME "${libArtifactName}")
-set(${libCmakeName}_EXT "${libArtifactExt}")
-set(${libCmakeName}_LIBPATH "${libArtifactLibPath}")
-set(${libCmakeName}_IMPLIBPATH "${libArtifactImpLibFullPath}")
-set(${libCmakeName}_INCLUDE "${libArtifactIncludePath}")

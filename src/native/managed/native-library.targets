@@ -17,22 +17,17 @@
     <!-- Write a ProjectName.cmake fragment into the publish artifact folder with that helps with consuming the NativeAOT produced library -->
 
     <Target Name="WriteNativeLibraryCMakeFragment" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentCommon;WriteNativeLibraryCMakeFragmentShared" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'"
-            Outputs="$(NativeLibraryCMakeFragmentPath);$(NativeLibraryCMakeFindPackageConfigPath)">
+            Outputs="$(NativeLibraryCMakeFindPackageConfigPath)">
         <!-- Note: GenerateFileFromTemplate uses ${replacementVar} syntax for things that it will replace.
              Use a backtick to write a normal cmake variable reference: `${nonReplacedVar}
              Wish: GenerateFileFromTemplate should provide a way to specify the replacement sigil.
         -->
         <PropertyGroup>
-            <NativeLibraryCmakeFragmentTemplateFile Condition="'$(NativeLib)' == 'shared'">$(MSBuildThisFileDirectory)Templates/native-lib.shared.cmake.in</NativeLibraryCmakeFragmentTemplateFile>
             <NativeLibraryCmakeFindPackageConfigTemplateFile>$(MSBuildThisFileDirectory)Templates/native-lib.find_package-config.cmake.in</NativeLibraryCmakeFindPackageConfigTemplateFile>
         </PropertyGroup>
 
         <Error Text="Generating a cmake fragment is only supported for a shared library" Condition="'$(NativeLib)' != 'shared'" />
 
-        <GenerateFileFromTemplate
-            TemplateFile="$(NativeLibraryCmakeFragmentTemplateFile)"
-            OutputPath="$(NativeLibraryCMakeFragmentPath)"
-            Properties="@(NativeLibraryCmakeFragmentProperties->'%(Identity)=%(Value)')" />
         <GenerateFileFromTemplate
             TemplateFile="$(NativeLibraryCmakeFindPackageConfigTemplateFile)"
             OutputPath="$(NativeLibraryCMakeFindPackageConfigPath)"
@@ -42,7 +37,6 @@
     <Target Name="WriteNativeLibraryCMakeFragmentCommon" DependsOnTargets="SetupProperties" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'">
         <PropertyGroup>
             <NativeLibraryCMakeVarPrefix>$(TargetName.ToUpper())</NativeLibraryCMakeVarPrefix>
-            <NativeLibraryCMakeFragmentPath Condition="'$(NativeLibraryCMakeFragmentPath)' == ''">$(ArtifactsObjDir)$(TargetName)\$(TargetName).cmake</NativeLibraryCMakeFragmentPath>
             <NativeLibraryArtifactName>$(TargetName)</NativeLibraryArtifactName>
             <NativeLibraryCMakeFindPackageConfigPath>$(NativeLibraryCMakeFindPackageConfigOutputPath)$(NativeLibraryArtifactName)-config.cmake</NativeLibraryCMakeFindPackageConfigPath>
             <NativeLibraryArtifactExt>$(NativeBinaryExt)</NativeLibraryArtifactExt>
@@ -52,9 +46,6 @@
             <!-- make a semicolon-separted list from the item group, then fixup the backslashes -->
             <NativeLibraryArtifactIncludePath>@(NativeLibraryCmakeFragmentIncludePath, ';')</NativeLibraryArtifactIncludePath>
             <NativeLibraryArtifactIncludePath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactIncludePath.Replace('\', '/'))</NativeLibraryArtifactIncludePath>
-            <!-- when writing the location of the cmake fragment file into the config file, use unix-style paths even on Windows -->
-            <NativeLibraryCMakeFragmentPath_ Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryCMakeFragmentPath.Replace('\', '/'))</NativeLibraryCMakeFragmentPath_>
-            <NativeLibraryCMakeFragmentPath_ Condition="'$(TargetOS)' != 'windows'">$(NativeLibraryCMakeFragmentPath)</NativeLibraryCMakeFragmentPath_>
         </PropertyGroup>
         <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libCmakeName" Value="$(NativeLibraryCMakeVarPrefix)" />
@@ -62,7 +53,6 @@
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibPath" Value="$(NativeLibraryArtifactLibPath.TrimEnd('\/'))" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="$(NativeLibraryArtifactIncludePath.TrimEnd('\/'))" />
-            <NativeLibraryCmakeFragmentProperties Include="libArtifactConfigFragment" Value="$(NativeLibraryCMakeFragmentPath_)" />
         </ItemGroup>
     </Target>
 
