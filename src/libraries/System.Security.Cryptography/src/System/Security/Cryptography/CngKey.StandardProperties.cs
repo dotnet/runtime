@@ -40,9 +40,7 @@ namespace System.Security.Cryptography
                 }
 
                 return _cachedAlgorithm;
-
             }
-
         }
 
         /// <summary>
@@ -259,7 +257,6 @@ namespace System.Security.Cryptography
         ///     Usage restrictions on the key
         /// </summary>
         public CngKeyUsages KeyUsage
-
         {
             get
             {
@@ -296,7 +293,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (!_hasCachedProvider || _keyHandle.IsClosed)
+                if (!_hasCachedProvider || _providerHandle.IsClosed)
                 {
                     string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
 
