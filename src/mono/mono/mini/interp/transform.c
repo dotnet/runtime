@@ -8548,8 +8548,15 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			gboolean is_short = interp_is_short_offset (br_offset, target_bb_estimated_offset);
 			if (is_short)
 				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-			else
-				g_assert (!MINT_IS_SUPER_BRANCH (opcode)); // FIXME missing handling for long branch
+			else if (MINT_IS_SUPER_BRANCH (opcode)) {
+				g_printf (
+					"long superbranch detected with opcode %d (%s) in method %s.%s\n",
+					opcode, mono_interp_opname (opcode),
+					td->method->klass->name, td->method->name
+				);
+				// FIXME missing handling for long branch
+				g_assert (FALSE);
+			}
 
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
