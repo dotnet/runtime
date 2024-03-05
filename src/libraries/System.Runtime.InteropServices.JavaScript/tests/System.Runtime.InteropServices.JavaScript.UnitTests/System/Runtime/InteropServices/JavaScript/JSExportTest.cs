@@ -150,6 +150,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalIntPtrCases))]
         public unsafe void JsExportVoidPtr(IntPtr xvalue)
         {
+            JavaScriptTestHelper.AssertWasmBackgroundExec();
             void* value = (void*)xvalue;
             void* res = JavaScriptTestHelper.invoke1_VoidPtr(value, nameof(JavaScriptTestHelper.EchoVoidPtr));
             Assert.True(value == res);
@@ -180,6 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalNullableBooleanCases))]
         public void JsExportNullableBoolean(bool? value)
         {
+            JavaScriptTestHelper.AssertWasmBackgroundExec();
             JsExportTest(value,
                 JavaScriptTestHelper.invoke1_NullableBoolean,
                 nameof(JavaScriptTestHelper.EchoNullableBoolean),
