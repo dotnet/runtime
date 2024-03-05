@@ -54,9 +54,18 @@ namespace Microsoft.Workload.Build.Tasks
 
             Directory.CreateDirectory(projecDir);
 
-            File.WriteAllText(Path.Combine(projecDir, "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(projecDir, "Directory.Packages.props"), "<Project />");
-            File.WriteAllText(Path.Combine(projecDir, "Directory.Build.targets"), "<Project />");
+            File.WriteAllText(Path.Combine(projecDir, "Directory.Build.props"), """
+<Project>
+
+  <!-- This is an empty Directory.Build.props file to prevent projects which reside
+       under this directory to use any of the repository local settings. -->
+  <PropertyGroup>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+
+</Project>
+""");
             File.WriteAllText(projectPath, GenerateProject(references));
             File.WriteAllText(Path.Combine(projecDir, "nuget.config"), _nugetConfigContents);
 

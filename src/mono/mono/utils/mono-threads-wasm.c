@@ -541,9 +541,15 @@ mono_threads_wasm_on_thread_registered (void)
 }
 
 #ifndef DISABLE_THREADS
+static pthread_t deputy_thread_tid;
 extern void mono_wasm_start_deputy_thread_async (void);
 extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
-static pthread_t deputy_thread_tid;
+extern void mono_wasm_dump_threads (void);
+
+void mono_wasm_dump_threads_async (void)
+{
+	mono_threads_wasm_async_run_in_target_thread (mono_threads_wasm_ui_thread_tid (), mono_wasm_dump_threads);
+}
 
 gboolean
 mono_threads_wasm_is_deputy_thread (void)

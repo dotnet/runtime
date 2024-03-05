@@ -50,7 +50,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
-				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode)) {
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
 				foreach (var diagnostic in ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod))
 					diagnosticContext.AddDiagnostic (diagnostic);
 			}

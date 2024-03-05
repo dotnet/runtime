@@ -33,3 +33,7 @@ public func getMyErrorMessage(from error: Error, messageLength: inout Int32) -> 
     }
     return nil
 }
+
+public func freeStringBuffer(buffer: UnsafeMutablePointer<unichar>) {
+    buffer.deallocate()
+}

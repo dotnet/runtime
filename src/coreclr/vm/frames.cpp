@@ -1364,10 +1364,10 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     {
         VASigCookie *varArgSig = GetVASigCookie();
 
-        //Note: no instantiations needed for varargs
+        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
         MetaSig msig(varArgSig->signature,
                      varArgSig->pModule,
-                     NULL);
+                     &typeContext);
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
 }
@@ -1498,10 +1498,10 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             {
                 VASigCookie *varArgSig = dac_cast<PTR_VASigCookie>(*ppObj);
 
-                //Note: no instantiations needed for varargs
+                SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
                 MetaSig msig(varArgSig->signature,
                                 varArgSig->pModule,
-                                NULL);
+                                &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
             }
             break;
@@ -1525,10 +1525,10 @@ void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    // no instantiations needed for varargs
+    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
     MetaSig msig(varArgSig->signature,
                  varArgSig->pModule,
-                 NULL);
+                 &typeContext);
     PromoteCallerStackHelper(fn, sc, NULL, &msig);
 }
 

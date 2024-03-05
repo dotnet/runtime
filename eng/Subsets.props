@@ -255,7 +255,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.nativeprereqs+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime-prereqs.proj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime-prereqs.proj" Category="clr" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">

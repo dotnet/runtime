@@ -247,6 +247,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Array out of bounds");
                             }
 
+                            if (elementType.RequiresAlign8())
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+                            }
+
                             AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
                             stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount, allocSite));
                         }
@@ -535,6 +540,11 @@ namespace ILCompiler
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                            }
+
+                            if (owningType.RequiresAlign8())
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
                             }
 
                             Value[] ctorParameters = new Value[ctorSig.Length + 1];
@@ -1622,6 +1632,9 @@ namespace ILCompiler
                             {
                                 if (type.IsNullable)
                                     return Status.Fail(methodIL.OwningMethod, opcode);
+
+                                if (type.RequiresAlign8())
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
 
                                 Value value = stack.PopIntoLocation(type);
                                 AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
