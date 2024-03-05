@@ -2105,7 +2105,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             if (lowering == nullptr)
             {
                 GenTree* addrNode = gtNewLclAddrNode(structVal->GetLclNum(), structVal->GetLclOffs());
-                JITDUMP("    Passing by reference\n", dspTreeID(addrNode), dspTreeID(call));
+                JITDUMP("    Passing by reference\n");
 
                 insertAfter = call->gtArgs.InsertAfter(this, insertAfter, NewCallArg::Primitive(addrNode, TYP_I_IMPL));
             }
@@ -2174,7 +2174,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                         offset += sizeToRead;
                     }
 
-                    JITDUMP("    Adding expanded primitive argument [%06u]\n", dspTreeID(loweredNode), dspTreeID(call));
+                    JITDUMP("    Adding expanded primitive argument [%06u]\n", dspTreeID(loweredNode));
                     DISPTREE(loweredNode);
 
                     insertAfter =
