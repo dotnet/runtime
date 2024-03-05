@@ -4994,22 +4994,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             {
                                 ehUpdateLastBlocks(bNext, bDest);
                             }
-
-                            // Add fall through fixup block, if needed.
-                            //
-                            if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
-                            {
-                                BasicBlock* const bDestFalseTarget = bDest->GetFalseTarget();
-                                BasicBlock* const bFixup           = fgNewBBafter(BBJ_ALWAYS, bDest, true);
-                                bFixup->inheritWeight(bDestFalseTarget);
-
-                                fgRemoveRefPred(bDest->GetFalseEdge());
-                                FlowEdge* const falseEdge = fgAddRefPred(bFixup, bDest);
-                                bDest->SetFalseEdge(falseEdge);
-
-                                FlowEdge* const newEdge = fgAddRefPred(bDestFalseTarget, bFixup);
-                                bFixup->SetTargetEdge(newEdge);
-                            }
                         }
                     }
 
