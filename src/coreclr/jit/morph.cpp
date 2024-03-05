@@ -13209,7 +13209,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 fgRemoveRefPred(block->GetFalseEdge());
 
                 edgeTaken = block->GetTrueEdge();
-                block->SetKind(BBJ_ALWAYS);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, edgeTaken);
             }
             else
             {
