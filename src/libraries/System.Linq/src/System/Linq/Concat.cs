@@ -10,12 +10,12 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Concat<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second)
         {
-            if (first == null)
+            if (first is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
-            if (second == null)
+            if (second is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
@@ -58,8 +58,8 @@ namespace System.Linq
             /// <param name="second">The second source to concatenate.</param>
             internal Concat2Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second)
             {
-                Debug.Assert(first != null);
-                Debug.Assert(second != null);
+                Debug.Assert(first is not null);
+                Debug.Assert(second is not null);
 
                 _first = first;
                 _second = second;
@@ -139,8 +139,8 @@ namespace System.Linq
             /// </param>
             internal ConcatNIterator(ConcatIterator<TSource> tail, IEnumerable<TSource> head, int headIndex, bool hasOnlyCollections)
             {
-                Debug.Assert(tail != null);
-                Debug.Assert(head != null);
+                Debug.Assert(tail is not null);
+                Debug.Assert(head is not null);
                 Debug.Assert(headIndex >= 2);
 
                 _tail = tail;
@@ -185,7 +185,7 @@ namespace System.Linq
                         return node._head;
                     }
                 }
-                while ((previousN = node.PreviousN) != null);
+                while ((previousN = node.PreviousN) is not null);
 
                 Debug.Assert(index == 0 || index == 1);
                 Debug.Assert(node._tail is Concat2Iterator<TSource>);
@@ -206,7 +206,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -240,7 +240,7 @@ namespace System.Linq
                 {
                     while (true)
                     {
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = _enumerator.Current;
@@ -248,7 +248,7 @@ namespace System.Linq
                         }
 
                         IEnumerable<TSource>? next = GetEnumerable(_state++ - 1);
-                        if (next != null)
+                        if (next is not null)
                         {
                             _enumerator.Dispose();
                             _enumerator = next.GetEnumerator();

@@ -636,15 +636,6 @@ namespace System.Threading
             }
         }
 
-        internal unsafe nint ObjectIdForEvents
-        {
-            get
-            {
-                Lock lockObj = this;
-                return *(nint*)Unsafe.AsPointer(ref lockObj);
-            }
-        }
-
         internal ulong OwningThreadId => _owningThreadId;
 
         private static short DetermineMaxSpinCount() =>
