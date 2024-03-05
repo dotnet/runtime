@@ -366,40 +366,19 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-function(get_symbol_file_name targetName outputSymbolFilename)
-  get_target_property(importedCopyTarget "${targetName}" CLR_IMPORTED_COPY_TARGET) # see add_imported_library_clr
-  if ("${importedCopyTarget}" STREQUAL "importedCopyTarget-NOTFOUND")
-    if (CLR_CMAKE_HOST_UNIX)
-      if (CLR_CMAKE_TARGET_APPLE)
-        set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
-      else ()
-        set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
-      endif ()
+function (get_symbol_file_name targetName outputSymbolFilename)
+  if (CLR_CMAKE_HOST_UNIX)
+    if (CLR_CMAKE_TARGET_APPLE)
+      set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+    else ()
+      set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
+    endif ()
 
-      set(${outputSymbolFilename} ${strip_destination_file} PARENT_SCOPE)
-    elseif(CLR_CMAKE_HOST_WIN32)
-      # We can't use the $<TARGET_PDB_FILE> generator expression here since
-      # the generator expression isn't supported on resource DLLs.
-      set(${outputSymbolFilename} $<TARGET_FILE_DIR:${targetName}>/$<TARGET_FILE_PREFIX:${targetName}>$<TARGET_FILE_BASE_NAME:${targetName}>.pdb PARENT_SCOPE)
-    endif()
-  else()
-    get_target_property(libraryType "${targetName}" TYPE)
-    message(TRACE "Target ${targetName} is imported of type ${libraryType}")
-    if ("${libraryType}" STREQUAL "SHARED_LIBRARY")
-      get_property(importedLocation TARGET ${targetName} PROPERTY IMPORTED_LOCATION)
-      message(TRACE "Target ${targetName} is imported from  ${importedLocation}")
-      if (CLR_CMAKE_HOST_UNIX)
-        if (CLR_CMAKE_TARGET_APPLE)
-          set(importedLocation "${importedLocation}.dwarf")
-        else()
-          set(importedLocation "${importedLocation}.dbg")
-        endif()
-      elseif(CLR_CMAKE_HOST_WIN32)
-        cmake_path(REPLACE_EXTENSION importedLocation ".pdb")
-      endif()
-      set(${outputSymbolFilename} "${importedLocation}" PARENT_SCOPE)
-      message(TRACE "Target ${targetName} symbols will be in ${importedLocation}")
-    endif()
+    set(${outputSymbolFilename} ${strip_destination_file} PARENT_SCOPE)
+  elseif(CLR_CMAKE_HOST_WIN32)
+    # We can't use the $<TARGET_PDB_FILE> generator expression here since
+    # the generator expression isn't supported on resource DLLs.
+    set(${outputSymbolFilename} $<TARGET_FILE_DIR:${targetName}>/$<TARGET_FILE_PREFIX:${targetName}>$<TARGET_FILE_BASE_NAME:${targetName}>.pdb PARENT_SCOPE)
   endif()
 endfunction()
 
@@ -407,16 +386,7 @@ function(strip_symbols targetName outputFilename)
   get_symbol_file_name(${targetName} strip_destination_file)
   set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   if (CLR_CMAKE_HOST_UNIX)
-    get_target_property(copy_target "${targetName}" CLR_IMPORTED_COPY_TARGET)
-    if ("${copy_target}" STREQUAL "copy_target-NOTFOUND")
-      # normal target, we will add the post-build event to it
-      set(strip_source_file $<TARGET_FILE:${targetName}>)
-      set(post_build_target "${targetName}")
-    else()
-      # for an imported library, we will add the post-build event on the copy target
-      get_property(strip_source_file TARGET ${targetName} PROPERTY IMPORTED_LOCATION)
-      set(post_build_target "${copy_target}")
-    endif()
+    set(strip_source_file $<TARGET_FILE:${targetName}>)
 
     if (CLR_CMAKE_TARGET_APPLE)
 
@@ -452,7 +422,7 @@ function(strip_symbols targetName outputFilename)
       endif ()
 
       add_custom_command(
-        TARGET ${post_build_target}
+        TARGET ${targetName}
         POST_BUILD
         VERBATIM
         COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
@@ -462,7 +432,7 @@ function(strip_symbols targetName outputFilename)
     else (CLR_CMAKE_TARGET_APPLE)
 
       add_custom_command(
-        TARGET ${post_build_target}
+        TARGET ${targetName}
         POST_BUILD
         VERBATIM
         COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
@@ -563,8 +533,7 @@ function(install_clr)
       endif()
       add_dependencies(${INSTALL_CLR_COMPONENT} ${targetName})
     endif()
-    get_property(hasCopyTarget TARGET "${targetName}" PROPERTY CLR_IMPORTED_COPY_TARGET SET)
-    get_target_property(targetType "${targetName}" TYPE)
+    get_target_property(targetType ${targetName} TYPE)
     if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC_LIBRARY")
       get_symbol_file_name(${targetName} symbolFile)
     endif()
@@ -572,17 +541,7 @@ function(install_clr)
     foreach(destination ${destinations})
       # We don't need to install the export libraries for our DLLs
       # since they won't be directly linked against.
-      if (NOT "${hasCopyTarget}")
-        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      elseif("${targetType}" STREQUAL "SHARED_LIBRARY")
-        # for shared libraries added with add_imported_library_clr install the imported artifacts
-
-        if ("${CMAKE_VERSION}" VERSION_LESS "3.21")
-          install(PROGRAMS $<TARGET_PROPERTY:${targetName},IMPORTED_LOCATION> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-        else()
-          install(IMPORTED_RUNTIME_ARTIFACTS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-        endif()
-      endif()
+      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       if (NOT "${symbolFile}" STREQUAL "")
         install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       endif()
