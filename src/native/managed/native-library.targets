@@ -73,9 +73,50 @@
          - on mac, leave a .dylib.dwarf file next to the library.
          - on linux leave a .so.dbg file next to to the library
     -->
-    <Target Name="StripLibraryLikeCoreCLRBuild" AfterTargets="Publish" Condition="'$(IsRuntimeComponent)' == 'true'"/>
+    <Target Name="StripLibraryLikeCoreCLRSetupPaths"
+            DependsOnTargets="CopyNativeBinary"
+            Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'">
+        <PropertyGroup>
+            <StrippedOutputPath>$(OutputPath)stripped\</StrippedOutputPath>
+            <StripSourceFile>$(StrippedOutputPath)$(TargetName)$(NativeBinaryExt)</StripSourceFile>
+            <StrippedExt Condition="'$(StrippedExt)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true')">.dylib.dwarf</StrippedExt>
+            <StrippedExt Condition="'$(TargetsUnix)' == 'true' and '$(StrippedExt)' == ''">.so.dbg</StrippedExt>
+            <StripDestinationFile>$(StrippedOutputPath)$(TargetName)$(StrippedExt)</StripDestinationFile>
+        </PropertyGroup>
+    </Target>
+            
+    <Target Name="StripLibraryLikeCoreCLRBuild"
+            DependsOnTargets="CopyNativeBinary;StripLibraryLikeCoreCLRSetupPaths"
+            Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
+            Inputs="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
+            Outputs="$(StripSourceFile);$(StripDestinationFile)">
+        <Error Text="Do not set StripSymbols to true - runtime components stripping is controlled by native-library.targets" Condition="'$(StripSymbols)' == 'true'" />
 
-    <Target Name="InstallRuntimeComponentToFinalDest" AfterTargets="Publish" DependsOnTargets="StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
+        <Message Importance="High" Text="Stripping $(PublishDir)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
+        
+        <!-- copy from the published/ subfolder to the stripped/ subfolder -->
+        <Copy SourceFiles="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
+              DestinationFolder="$(StrippedOutputPath)"
+              SkipUnchangedFiles="true" />
+
+        <PropertyGroup>
+            <_StripLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true'">apple</_StripLike>
+            <_StripLike Condition="'$(_StripLike)' == ''">gnu</_StripLike>
+        </PropertyGroup>
+
+        <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/> <!-- produces the .dylib.dwarf file -->
+        <Exec Command="strip -no_code_signature_warning -S $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/>
+        <!-- runtime build runs "codesign -s -f - libWhatever.dylib" in release configurations -->
+        <Exec Command="codesign -s -f - $(StripSourceFile)" Condition="'$(RuntimeConfiguration)' == 'Release' and '$(_StripLike)' == 'apple'" />
+
+        <Exec Command="strip --only-keep-debug $(StripSourceFile) $(StripDestinationFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+        <Exec Command="strip --strip-debug --strip-unneeded $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+        <Exec Command="strip --add-gnu-debuglink=$(StripDestinationFile) $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+    </Target>
+
+    <Target Name="InstallRuntimeComponentToFinalDest"
+            AfterTargets="CopyNativeBinary"
+            DependsOnTargets="CopyNativeBinary;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
         <Error Text="Set at least one @InstallRuntimeComponentDest item" Condition="@(InstallRuntimeComponentDest->Count()) == 0" />
 
         <PropertyGroup>
@@ -83,17 +124,22 @@
             <FinalRuntimeComponentDestinationBase>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(RuntimeFlavor.ToLower())', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</FinalRuntimeComponentDestinationBase>
         </PropertyGroup>
         
-        <!-- TODO: on Windows, copy the pdb to PDB/libName.pdb for each InstallRuntimeComponentDest -->
-        <!-- TODO: on Linxu/Mac copy the .dylib.dwarf or .so.dbg file into each InstallRuntimeComponentDest -->
         <ItemGroup>
             <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDest.Identity)'))" />
         </ItemGroup>
 
-        <Message Importance="High" Text="Would  install $(TargetName) into %(_NormalizedInstallRuntimeComponentDest.Identity)" />
+        <!-- TODO: windows --> 
+        <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+            <CopyFinalFiles Include="$(StripSourceFile)" />
+            <CopyFinalFiles Include="$(StripDestinationFile)" />
+        </ItemGroup>
 
-        <Copy SourceFiles="$(PublishDir)/$(TargetName)$(NativeBinaryExt)"
+        <Message Importance="High" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)" Condition="'$(TargetsWindows)' != 'true'"/>
+
+        <Copy SourceFiles="@(CopyFinalFiles)"
               DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)"
-              SkipUnchangedFiles="true" />
+              SkipUnchangedFiles="true"
+              Condition="'$(TargetsWindows)' != 'true'"/>
     </Target>
 
 
