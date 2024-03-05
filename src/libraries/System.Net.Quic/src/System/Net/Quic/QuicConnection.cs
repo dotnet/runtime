@@ -65,7 +65,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {
+            MsQuicSafeHandle? config = MsQuicConfiguration.Create(options);
             QuicConnection connection = new QuicConnection();
+            connection._configuration = config;
 
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -102,20 +104,24 @@ public sealed partial class QuicConnection : IAsyncDisposable
                     if (connection._disposed != 0)
                     {
                         connection = new QuicConnection();
+                        connection._configuration = config;
                     }
                     try
                     {
                         await connection.FinishConnectAsync(options, host, addr, port, linkedCts.Token).ConfigureAwait(false);
                         lastException = null;
+                        config = null;
                         break;
                     }
                     catch (Exception ex)
                     {
                         lastException = ExceptionDispatchInfo.Capture(ex);
+                        connection._configuration = null; // Ignore disposal of config on failure, to reuse it.
                         await connection.DisposeAsync().ConfigureAwait(false);
                     }
                 }
 
+                config?.Dispose();
                 lastException?.Throw();
             }
             catch (OperationCanceledException)
@@ -354,7 +360,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
                 options.ClientAuthenticationOptions.CertificateChainPolicy?.Clone());
-            _configuration = MsQuicConfiguration.Create(options);
 
             // RFC 6066 forbids IP literals.
             // IDN mapping is handled by MsQuic.
@@ -367,7 +372,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
                         _handle,
-                        _configuration,
+                        _configuration!,
                         (ushort)remoteQuicAddress.Family,
                         (sbyte*)targetHostPtr,
                         (ushort)port),
