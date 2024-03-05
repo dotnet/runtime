@@ -86,7 +86,7 @@
     </Target>
             
     <Target Name="StripLibraryLikeCoreCLRBuild"
-            DependsOnTargets="CopyNativeBinary;StripLibraryLikeCoreCLRSetupPaths"
+            DependsOnTargets="SetupOSSpecificProps;CopyNativeBinary;StripLibraryLikeCoreCLRSetupPaths"
             Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
             Inputs="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
             Outputs="$(StripSourceFile);$(StripDestinationFile)">
@@ -106,12 +106,12 @@
 
         <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/> <!-- produces the .dylib.dwarf file -->
         <Exec Command="strip -no_code_signature_warning -S $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/>
-        <!-- runtime build runs "codesign -s -f - libWhatever.dylib" in release configurations -->
-        <Exec Command="codesign -s -f - $(StripSourceFile)" Condition="'$(RuntimeConfiguration)' == 'Release' and '$(_StripLike)' == 'apple'" />
+        <!-- runtime build runs "codesign -f -s - libWhatever.dylib" in release configurations -->
+        <Exec Command="codesign -f -s - $(StripSourceFile)" Condition="'$(RuntimeConfiguration)' == 'Release' and '$(_StripLike)' == 'apple'" />
 
-        <Exec Command="strip --only-keep-debug $(StripSourceFile) $(StripDestinationFile)" Condition="'$(_StripLike)' == 'gnu'"/>
-        <Exec Command="strip --strip-debug --strip-unneeded $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
-        <Exec Command="strip --add-gnu-debuglink=$(StripDestinationFile) $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+        <Exec Command="$(ObjCopyName) --only-keep-debug $(StripSourceFile) $(StripDestinationFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+        <Exec Command="$(ObjCopyName) --strip-debug --strip-unneeded $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+        <Exec Command="$(ObjCopyName) --add-gnu-debuglink=$(StripDestinationFile) $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
     </Target>
 
     <Target Name="InstallRuntimeComponentToFinalDest"
