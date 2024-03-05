@@ -15,7 +15,7 @@ public class ChatHub : Hub
 
     public async Task Exit(int code)
     {
-        TestOutputWriteLine($"Received exit code {code} from client. Waiting 5 sec for the client to close and exiting the server");
+        Console.WriteLine($"Received exit code {code} from client. Waiting 5 sec for the client to close and exiting the server");
         await Task.Delay(5000);
         Environment.Exit(code);
     }
