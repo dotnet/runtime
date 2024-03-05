@@ -507,7 +507,7 @@ namespace System.Tests
             r.NextBytes(Span<byte>.Empty);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Shared_IsSingleton()
         {
             Assert.NotNull(Random.Shared);
@@ -515,7 +515,7 @@ namespace System.Tests
             Assert.Same(Random.Shared, Task.Run(() => Random.Shared).Result);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Shared_ParallelUsage()
         {
             using var barrier = new Barrier(2);
