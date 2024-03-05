@@ -15330,13 +15330,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
             {
-                if (id->idAddr()->iiaSecRel)
-                {
-                    // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                    emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
-                }
+                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
             }
             else
             {

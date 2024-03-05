@@ -891,7 +891,7 @@ function generate_wasm(
         //  suites or benchmarks if you've enabled stats
         const tracesCompiled = getCounter(JiterpCounter.TracesCompiled);
         if (builder.options.enableStats && tracesCompiled && (tracesCompiled % autoDumpInterval) === 0)
-            jiterpreter_dump_stats(false, true);
+            jiterpreter_dump_stats(true);
 
         return idx;
     } catch (exc: any) {
@@ -1074,14 +1074,14 @@ export function mono_jiterp_free_method_data_js(
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
+export function jiterpreter_dump_stats(concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }
-    if (!mostRecentOptions || (b !== undefined))
+    if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    if (!mostRecentOptions.enableStats && (b !== undefined))
+    if (!mostRecentOptions.enableStats)
         return;
 
     const backBranchesEmitted = getCounter(JiterpCounter.BackBranchesEmitted),
@@ -1243,10 +1243,4 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
 
     for (const k in simdFallbackCounters)
         mono_log_info(`// simd ${k}: ${simdFallbackCounters[k]} fallback insn(s)`);
-
-    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
-        setTimeout(
-            () => jiterpreter_dump_stats(b),
-            15000
-        );
 }

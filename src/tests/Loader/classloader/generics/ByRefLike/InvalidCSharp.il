@@ -439,15 +439,6 @@
 }
 
 // Invalid generic substitution of non-allow-byreflike with allow-byreflike
-.class interface public auto ansi abstract InvalidCSharp.GenericDerivedInterface_Invalid`1<byreflike T>
-    implements class InvalidCSharp.GenericInterface_Invalid`1<!T>
-{
-}
-
-.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericDerivedClass_Invalid`1<byreflike T>
-    extends class InvalidCSharp.GenericClass_Invalid`1<!T>
-{
-}
 
 .class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericValueTypeWrapper_Invalid`1<byreflike T>
     extends [System.Runtime]System.ValueType
@@ -798,27 +789,9 @@
         callvirt instance string [System.Runtime]System.Object::ToString()
         ret
     }
-    
-    .method public hidebysig static
-        string TypeSubstitutionInterfaceImplementationAllowByRefLikeIntoNonByRefLike() cil managed
-    {
-        ldtoken class InvalidCSharp.GenericDerivedInterface_Invalid`1<valuetype RegularValueType>
-        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-        callvirt instance string [System.Runtime]System.Object::ToString()
-        ret
-    }
 
     .method public hidebysig static
-        string TypeSubstitutionInheritanceAllowByRefLikeIntoNonByRefLike() cil managed
-    {
-        ldtoken class InvalidCSharp.GenericDerivedClass_Invalid`1<valuetype RegularValueType>
-        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-        callvirt instance string [System.Runtime]System.Object::ToString()
-        ret
-    }
-
-    .method public hidebysig static
-        string TypeSubstitutionFieldAllowByRefLikeIntoNonByRefLike() cil managed
+        string TypeSubstitutionFieldAllowNonByRefLikeIntoNonByRefLike() cil managed
     {
         ldtoken valuetype InvalidCSharp.GenericValueTypeWrapper_Invalid`1<valuetype RegularValueType>
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)

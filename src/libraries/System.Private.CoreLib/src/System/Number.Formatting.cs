@@ -3498,7 +3498,6 @@ namespace System
             {
                 if (groupDigits != null)
                 {
-                    Debug.Assert(sGroup != null, "Must be null when groupDigits != null");
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
                     int bufferSize = digPos;                            // The length of the result buffer string.
                     int groupSize = 0;                                  // The current group size.
@@ -3583,7 +3582,6 @@ namespace System
 
             if (nMaxDigits > 0)
             {
-                Debug.Assert(sDecimal != null);
                 vlb.Append(sDecimal);
                 if ((digPos < 0) && (nMaxDigits > 0))
                 {

@@ -78,7 +78,7 @@ namespace System.Net
             }
         }
 
-        public static bool UseNagleAlgorithm { get; set; } = true;
+        public static bool UseNagleAlgorithm { get; set; }
 
         public static bool Expect100Continue { get; set; } = true;
 
@@ -156,7 +156,8 @@ namespace System.Net
                     IdleSince = DateTime.Now,
                     Expect100Continue = Expect100Continue,
                     UseNagleAlgorithm = UseNagleAlgorithm,
-                    KeepAlive = KeepAlive
+                    KeepAlive = KeepAlive,
+                    MaxIdleTime = MaxServicePointIdleTime
                 };
                 s_servicePointTable[tableKey] = new WeakReference<ServicePoint>(sp);
 
