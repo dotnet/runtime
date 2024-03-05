@@ -705,7 +705,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private readonly struct ConstructorMatcher
+        private readonly ref struct ConstructorMatcher
         {
             private readonly ConstructorInfoEx _constructor;
             private readonly object?[] _parameterValues;
