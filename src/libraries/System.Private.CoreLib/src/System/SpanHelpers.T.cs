@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
 #pragma warning disable 8500 // sizeof of managed types
 
@@ -16,6 +15,7 @@ namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        [Intrinsic] // Unrolled for small sizes
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.

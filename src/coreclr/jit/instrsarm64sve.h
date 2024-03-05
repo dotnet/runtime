@@ -285,7 +285,7 @@ INST6(prfb,              "prfb",                  0,                       IF_SV
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]                                   SVE_HY_3A           100001000h1mmmmm 000gggnnnnn0oooo     8420 0000   
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]                                   SVE_HY_3A_A         110001000h1mmmmm 000gggnnnnn0oooo     C420 0000   
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D]                                          SVE_HY_3B           11000100011mmmmm 100gggnnnnn0oooo     C460 8000   
-    // PRFB    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]                                         SVE_HZ_2A_B         10000100000iiiii 111gggnnnnn0oooo     8400 E000   
+    // PRFB    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]                                         SVE_HZ_2A_B         10000100000iiiii 111gggnnnnn0oooo     8400 E000   
     // PRFB    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                                SVE_IA_2A           1000010111iiiiii 000gggnnnnn0oooo     85C0 0000   
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Xm>]                                            SVE_IB_3A           10000100000mmmmm 110gggnnnnn0oooo     8400 C000   
 
@@ -293,7 +293,7 @@ INST6(prfd,              "prfd",                  0,                       IF_SV
     // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #3]                                SVE_HY_3A           100001000h1mmmmm 011gggnnnnn0oooo     8420 6000   
     // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]                                SVE_HY_3A_A         110001000h1mmmmm 011gggnnnnn0oooo     C420 6000   
     // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]                                  SVE_HY_3B           11000100011mmmmm 111gggnnnnn0oooo     C460 E000   
-    // PRFD    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]                                         SVE_HZ_2A_B         10000101100iiiii 111gggnnnnn0oooo     8580 E000   
+    // PRFD    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]                                         SVE_HZ_2A_B         10000101100iiiii 111gggnnnnn0oooo     8580 E000   
     // PRFD    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                                SVE_IA_2A           1000010111iiiiii 011gggnnnnn0oooo     85C0 6000   
     // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #3]                                    SVE_IB_3A           10000101100mmmmm 110gggnnnnn0oooo     8580 C000   
 
@@ -301,7 +301,7 @@ INST6(prfh,              "prfh",                  0,                       IF_SV
     // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]                                SVE_HY_3A           100001000h1mmmmm 001gggnnnnn0oooo     8420 2000   
     // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #1]                                SVE_HY_3A_A         110001000h1mmmmm 001gggnnnnn0oooo     C420 2000   
     // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]                                  SVE_HY_3B           11000100011mmmmm 101gggnnnnn0oooo     C460 A000   
-    // PRFH    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]                                         SVE_HZ_2A_B         10000100100iiiii 111gggnnnnn0oooo     8480 E000   
+    // PRFH    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]                                         SVE_HZ_2A_B         10000100100iiiii 111gggnnnnn0oooo     8480 E000   
     // PRFH    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                                SVE_IA_2A           1000010111iiiiii 001gggnnnnn0oooo     85C0 2000   
     // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #1]                                    SVE_IB_3A           10000100100mmmmm 110gggnnnnn0oooo     8480 C000   
 
@@ -309,7 +309,7 @@ INST6(prfw,              "prfw",                  0,                       IF_SV
     // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]                                SVE_HY_3A           100001000h1mmmmm 010gggnnnnn0oooo     8420 4000   
     // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]                                SVE_HY_3A_A         110001000h1mmmmm 010gggnnnnn0oooo     C420 4000   
     // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]                                  SVE_HY_3B           11000100011mmmmm 110gggnnnnn0oooo     C460 C000   
-    // PRFW    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]                                         SVE_HZ_2A_B         10000101000iiiii 111gggnnnnn0oooo     8500 E000   
+    // PRFW    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]                                         SVE_HZ_2A_B         10000101000iiiii 111gggnnnnn0oooo     8500 E000   
     // PRFW    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                                SVE_IA_2A           1000010111iiiiii 010gggnnnnn0oooo     85C0 4000   
     // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #2]                                    SVE_IB_3A           10000101000mmmmm 110gggnnnnn0oooo     8500 C000   
 

@@ -35,7 +35,7 @@ namespace System.Linq
         /// </exception>
         public static IEnumerable<TSource[]> Chunk<TSource>(this IEnumerable<TSource> source, int size)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -45,15 +45,31 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.size);
             }
 
-            if (IsEmptyArray(source))
+            if (source is TSource[] array)
             {
-                return [];
+                // Special-case arrays, which have an immutable length. This enables us to not only do an
+                // empty check and avoid allocating an iterator object when empty, it enables us to have a
+                // much more efficient (and simpler) implementation for chunking up the array.
+                return array.Length != 0 ?
+                    ArrayChunkIterator(array, size) :
+                    [];
             }
 
-            return ChunkIterator(source, size);
+            return EnumerableChunkIterator(source, size);
         }
 
-        private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size)
+        private static IEnumerable<TSource[]> ArrayChunkIterator<TSource>(TSource[] source, int size)
+        {
+            int index = 0;
+            while (index < source.Length)
+            {
+                TSource[] chunk = new ReadOnlySpan<TSource>(source, index, Math.Min(size, source.Length - index)).ToArray();
+                index += chunk.Length;
+                yield return chunk;
+            }
+        }
+
+        private static IEnumerable<TSource[]> EnumerableChunkIterator<TSource>(IEnumerable<TSource> source, int size)
         {
             using IEnumerator<TSource> e = source.GetEnumerator();
 

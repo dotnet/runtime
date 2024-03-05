@@ -75,17 +75,23 @@ get_storage (MonoType *type, MonoType **etype, gboolean is_return)
 	case MONO_TYPE_R8:
 		return ArgOnStack;
 
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
 		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		/* fall through */
+
+		if (mini_wasm_is_scalar_vtype (type, etype))
+			return ArgVtypeAsScalar;
+
+		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
+	}
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
 		if (mini_wasm_is_scalar_vtype (type, etype))
 			return ArgVtypeAsScalar;
+
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
 	case MONO_TYPE_VAR:
@@ -771,7 +777,12 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		if (nfields > 1)
 			return FALSE;
 		MonoType *t = mini_get_underlying_type (field->type);
-		if (MONO_TYPE_ISSTRUCT (t)) {
+		int align, field_size = mono_type_size (t, &align);
+		// inlinearray and fixed both work by having a single field that is bigger than its element type.
+		// we also don't want to scalarize a struct that has padding in its metadata, even if it would fit.
+		if (field_size != size) {
+			return FALSE;
+		} else if (MONO_TYPE_ISSTRUCT (t)) {
 			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {

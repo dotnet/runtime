@@ -27,6 +27,8 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [false, "mono_wasm_init_finalizer_thread", null, []],
     [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
     [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
+    [true, "mono_wasm_create_deputy_thread", "number", []],
+    [true, "mono_wasm_register_ui_thread", "void", []],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -144,6 +146,8 @@ export interface t_ThreadingCwraps {
     mono_wasm_init_finalizer_thread(): void;
     mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
     mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
+    mono_wasm_create_deputy_thread(): PThreadPtr;
+    mono_wasm_register_ui_thread(): void;
 }
 
 export interface t_ProfilerCwraps {

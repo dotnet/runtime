@@ -6,7 +6,7 @@ export {
     mono_wasm_pthread_ptr, update_thread_info, isMonoThreadMessage, monoThreadInfo,
 } from "./shared";
 export {
-    dumpThreads, thread_available, cancelThreads, is_thread_available,
+    mono_wasm_dump_threads, thread_available, cancelThreads, is_thread_available,
     populateEmscriptenPool, mono_wasm_init_threads, init_finalizer_thread,
     waitForThread, replaceEmscriptenPThreadUI
 } from "./ui-thread";
@@ -14,5 +14,7 @@ export { addUnsettledPromise, settleUnsettledPromise, mono_wasm_eventloop_has_un
 export {
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
     mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, currentWorkerThreadEvents,
-    dotnetPthreadCreated, initWorkerThreadEvents, replaceEmscriptenPThreadWorker, pthread_self
+    dotnetPthreadCreated, initWorkerThreadEvents, replaceEmscriptenTLSInit, pthread_self
 } from "./worker-thread";
+
+export { mono_wasm_start_deputy_thread_async } from "./deputy-thread";

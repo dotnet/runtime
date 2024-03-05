@@ -350,9 +350,11 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
+#pragma warning disable CS8500 // takes address of managed type
             var result = JitCompileMethod(out exception,
-                    _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
+                    _jit, (IntPtr)(&_this), _unmanagedCallbacks,
                     ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
+#pragma warning restore CS8500
             if (exception != IntPtr.Zero)
             {
                 if (_lastException != null)
@@ -3157,6 +3159,12 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
+        private void reportMetadata(byte* key, void* value, nuint length)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
         private void* allocateArray(UIntPtr cBytes)
 #pragma warning restore CA1822 // Mark members as static
         {
@@ -4112,6 +4120,9 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
                     Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
+
+                    if ((_compilation.InstructionSetSupport.Flags & InstructionSetSupportFlags.Vector512Throttling) != 0)
+                        flags.Set(CorJitFlag.CORJIT_FLAG_VECTOR512_THROTTLING);
                     break;
 
                 case TargetArchitecture.ARM64:

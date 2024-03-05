@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
     }
 
-    //TODO [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Theory]
@@ -383,7 +383,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             //GC.Collect();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -399,7 +399,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntIntThrow()
         {
             int called = -1;

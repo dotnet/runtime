@@ -857,12 +857,27 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    printf("Exact Type MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    {
+                        printf("Exact Type MT(0x%p)", dspPtr(iconVal));
+                    }
+                    else
+                    {
+                        printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
+                               eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    }
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    {
+                        printf("MT(0x%p)", dspPtr(iconVal));
+                    }
+                    else
+                    {
+                        printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                    }
                     assert(curAssertion->op2.HasIconFlag());
                 }
                 else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
@@ -2678,10 +2693,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
 {
     switch (call->GetHelperNum())
     {
-        //
-        // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
-        // where CAST is either ISINST or CASTCLASS.
-        //
         case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTINTERFACE:
@@ -2691,10 +2702,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
         case CORINFO_HELP_ISINSTANCEOFANY:
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         {
-            GenTree* castClsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* castObjArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
-            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
+            GenTree* castClsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* castObjArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
             {
@@ -2704,17 +2713,26 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 return nullptr;
             }
 
-            VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf))
+            // If object has the same VN as the cast, then the cast is effectively a no-op.
+            //
+            if (((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0) && (castObjArg->gtVNPair == call->gtVNPair))
             {
-                ValueNum innerCastClsVN = funcApp.m_args[0];
-                if (innerCastClsVN == castClsArgVN)
+                return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+            }
+
+            // Let's see if gtGetClassHandle may help us to fold the cast (since VNForCast did not).
+            if (castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                bool                 isExact;
+                bool                 isNonNull;
+                CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull);
+                if (castFrom != NO_CLASS_HANDLE)
                 {
-                    // The outer cast is redundant, remove it and preserve its side effects
-                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
-                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
-                    fgSetTreeSeq(result);
-                    return result;
+                    CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
+                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    {
+                        return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    }
                 }
             }
         }
@@ -4198,20 +4216,20 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             return assertionIndex;
         }
 
-        // Look for matching exact type assertions based on vtable accesses
+        // Look for matching exact type assertions based on vtable accesses. E.g.:
+        //
+        //   op1:       VNF_InvariantLoad(myObj) or in other words: a vtable access
+        //   op2:       'MyType' class handle
+        //   Assertion: 'myObj's type is exactly MyType
+        //
         if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_EXACT_TYPE) &&
-            op1->OperIs(GT_IND))
+            (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)) && op1->TypeIs(TYP_I_IMPL))
         {
-            GenTree* indirAddr = op1->AsIndir()->Addr();
-
-            if (indirAddr->OperIs(GT_LCL_VAR) && (indirAddr->TypeGet() == TYP_REF))
+            VNFuncApp funcApp;
+            if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
+                (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
-                // op1 is accessing vtable of a ref type local var
-                if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(indirAddr->gtVNPair)) &&
-                    (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
-                {
-                    return assertionIndex;
-                }
+                return assertionIndex;
             }
         }
     }
@@ -5475,7 +5493,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_IND:
         case GT_STOREIND:
         case GT_NULLCHECK:
-        case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
@@ -6129,7 +6146,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 AssertionIndex valueAssertionIndex;
                 AssertionIndex jumpDestAssertionIndex;
 
-                if (info.IsNextEdgeAssertion())
+                if (info.AssertionHoldsOnFalseEdge())
                 {
                     valueAssertionIndex    = info.GetAssertionIndex();
                     jumpDestAssertionIndex = optFindComplementary(info.GetAssertionIndex());

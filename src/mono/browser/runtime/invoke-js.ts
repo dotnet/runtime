@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free } from "./marshal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid } from "./marshal";
 import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
@@ -132,31 +132,17 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         }
     }
 
-    // this is just to make debugging easier by naming the function in the stack trace.
-    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
-    // in Release configuration, it would be a trimmed by rollup
-    if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
-        try {
-            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
-        }
-        catch (ex) {
-            runtimeHelpers.cspPolicy = true;
-        }
-    }
-
     function async_bound_fn(args: JSMarshalerArguments): void {
-        if (WasmEnableThreads) {
-            forceThreadMemoryViewRefresh();
-        }
+        forceThreadMemoryViewRefresh();
         bound_fn(args);
     }
+
     function sync_bound_fn(args: JSMarshalerArguments): void {
         const previous = runtimeHelpers.isPendingSynchronousCall;
         try {
-            runtimeHelpers.isPendingSynchronousCall = true;
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
+            forceThreadMemoryViewRefresh();
+            const caller_tid = get_caller_native_tid(args);
+            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.currentThreadTID === caller_tid;
             bound_fn(args);
         }
         finally {
@@ -164,12 +150,29 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         }
     }
 
-    let wrapped_fn: WrappedJSFunction;
-    if (is_async || is_discard_no_wait) {
-        wrapped_fn = async_bound_fn;
+    let wrapped_fn: WrappedJSFunction = bound_fn;
+    if (WasmEnableThreads) {
+        if (is_async || is_discard_no_wait) {
+            wrapped_fn = async_bound_fn;
+        }
+        else {
+            wrapped_fn = sync_bound_fn;
+        }
     }
-    else {
-        wrapped_fn = sync_bound_fn;
+
+    // this is just to make debugging easier by naming the function in the stack trace.
+    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+    // in Release configuration, it would be a trimmed by rollup
+    if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+        try {
+            const fname = js_function_name.replaceAll(".", "_");
+            const url = `//# sourceURL=https://dotnet/JSImport/${fname}`;
+            const body = `return (function JSImport_${fname}(){ return fn.apply(this, arguments)});`;
+            wrapped_fn = new Function("fn", url + "\r\n" + body)(wrapped_fn);
+        }
+        catch (ex) {
+            runtimeHelpers.cspPolicy = true;
+        }
     }
 
     (<any>wrapped_fn)[imported_js_function_symbol] = closure;

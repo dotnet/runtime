@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     // this maps to src\mono\browser\runtime\managed-exports.ts
     // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
-    // TODO: all the calls here should be running on deputy or TP in MT, not in UI thread
+    // TODO: change all of these to [UnmanagedCallersOnly] and drop the reflection in mono_wasm_invoke_jsexport
     internal static unsafe partial class JavaScriptExports
     {
         // the marshaled signature is: Task<int>? CallEntrypoint(char* assemblyNamePtr, string[] args)
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("CallEntrypoint: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"CallEntrypoint: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -205,7 +205,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("CompleteTask: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"CompleteTask: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -240,15 +240,21 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // this is here temporarily, until JSWebWorker becomes public API
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]
-        // the marshaled signature is: GCHandle InstallMainSynchronizationContext(nint jsNativeTID)
+        // the marshaled signature is: GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode, JSThreadInteropMode jsThreadInteropMode, MainThreadingMode mainThreadingMode)
         public static void InstallMainSynchronizationContext(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             ref JSMarshalerArgument arg_res = ref arguments_buffer[1];// initialized and set by caller
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
+            ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];// initialized and set by caller
+            ref JSMarshalerArgument arg_3 = ref arguments_buffer[4];// initialized and set by caller
+            ref JSMarshalerArgument arg_4 = ref arguments_buffer[5];// initialized and set by caller
 
             try
             {
+                JSProxyContext.ThreadBlockingMode = (JSHostImplementation.JSThreadBlockingMode)arg_2.slot.Int32Value;
+                JSProxyContext.ThreadInteropMode = (JSHostImplementation.JSThreadInteropMode)arg_3.slot.Int32Value;
+                JSProxyContext.MainThreadingMode = (JSHostImplementation.MainThreadingMode)arg_4.slot.Int32Value;
                 var jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(true, CancellationToken.None);
                 jsSynchronizationContext.ProxyContext.JSNativeTID = arg_1.slot.IntPtrValue;
                 arg_res.slot.GCHandle = jsSynchronizationContext.ProxyContext.ContextHandle;
@@ -256,6 +262,42 @@ namespace System.Runtime.InteropServices.JavaScript
             catch (Exception ex)
             {
                 arg_exc.ToJS(ex);
+            }
+        }
+
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        // TODO ideally this would be public API callable from generated C# code for JSExport
+        public static void BeforeSyncJSExport(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            try
+            {
+                var ctx = arg_exc.AssertCurrentThreadContext();
+                ctx.IsPendingSynchronousCall = true;
+            }
+            catch (Exception ex)
+            {
+                Environment.FailFast($"BeforeSyncJSExport: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
+            }
+        }
+
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        // TODO ideally this would be public API callable from generated C# code for JSExport
+        public static void AfterSyncJSExport(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            try
+            {
+                var ctx = arg_exc.AssertCurrentThreadContext();
+                ctx.IsPendingSynchronousCall = false;
+            }
+            catch (Exception ex)
+            {
+                Environment.FailFast($"AfterSyncJSExport: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -280,7 +322,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast("BindAssemblyExports: Unexpected synchronous failure. " + ex);
+                Environment.FailFast($"BindAssemblyExports: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 

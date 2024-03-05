@@ -11,11 +11,11 @@ import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_ow
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedError,
-    set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
+    set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_bool, set_arg_date,
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, forceThreadMemoryViewRefresh, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
@@ -105,7 +105,7 @@ export function marshal_bool_to_cs(arg: JSMarshalerArgument, value: any): void {
     }
     else {
         set_arg_type(arg, MarshalerType.Boolean);
-        set_arg_b8(arg, value);
+        set_arg_bool(arg, value);
     }
 }
 
@@ -285,7 +285,7 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
             if (arg3_converter) {
                 arg3_js = arg3_converter(arg3);
             }
-            runtimeHelpers.isPendingSynchronousCall = true; // this is alway synchronous call for now
+            runtimeHelpers.isPendingSynchronousCall = true; // this is always synchronous call for now
             const res_js = value(arg1_js, arg2_js, arg3_js);
             if (res_converter) {
                 res_converter(res, res_js);
@@ -441,6 +441,7 @@ export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): v
 export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
+        set_arg_proxy_context(arg);
     }
     else {
         // if value was ManagedObject, it would be double proxied, but the C# signature requires that
@@ -459,6 +460,7 @@ export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): v
 function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
+        set_arg_proxy_context(arg);
     }
     else {
         const gc_handle = value[js_owned_gc_handle_symbol];
@@ -478,7 +480,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
             }
             else if (js_type === "boolean") {
                 set_arg_type(arg, MarshalerType.Boolean);
-                set_arg_b8(arg, value);
+                set_arg_bool(arg, value);
             }
             else if (value instanceof Date) {
                 set_arg_type(arg, MarshalerType.DateTime);
