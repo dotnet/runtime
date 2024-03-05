@@ -2482,19 +2482,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         }
         else // if (tree->OperIs(GT_UDIV, GT_UMOD))
         {
-            // Only one possible exception
-            //     (AnyVal /  0) => DivideByZeroException
-            //
-            // Note that division by the constant 0 was already checked for above by the
-            // op2->IsIntegralConst(0) check
-
-            if ((exceptions & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None &&
-                !divisorOp->IsCnsIntOrI())
-            {
-                // divisorOp is not a constant, so it could be zero
-                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-            }
-
             if (tree->OperIs(GT_UDIV))
             {
                 ins = is4 ? INS_divuw : INS_divu;
