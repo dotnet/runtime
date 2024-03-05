@@ -13,6 +13,7 @@ using Wasm.Tests.Internal;
 using Xunit.Abstractions;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Linq;
 
 namespace Wasm.Build.Tests;
 
@@ -41,7 +42,8 @@ internal class BrowserRunner : IAsyncDisposable
         string args,
         Action<string>? onServerMessage = null,
         string? projectDir = null
-    ) {
+    )
+    {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
         {
@@ -95,6 +97,21 @@ internal class BrowserRunner : IAsyncDisposable
                 {
                     string launchContent = File.ReadAllText(launchFile);
                     _testOutput.WriteLine($"launchSettings.json: {launchContent}");
+
+                    var jsonOptions = new JsonSerializerOptions()
+                    {
+                        AllowTrailingCommas = true
+                    };
+                    var launchSettings = JsonSerializer.Deserialize<RootObject>(launchContent, jsonOptions);
+                    if (launchSettings != null && launchSettings.profiles != null && launchSettings.profiles.Count > 0)
+                    {
+                        var firstServerUrl = launchSettings.profiles.First().Value.applicationUrl?.Split(";", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                        if (firstServerUrl != null)
+                        {
+                            _testOutput.WriteLine($"launchSettings.json: Found server URL {firstServerUrl}");
+                            urlAvailable.TrySetResult(firstServerUrl);
+                        }
+                    }
                 }
                 else
                 {
@@ -102,22 +119,25 @@ internal class BrowserRunner : IAsyncDisposable
                 }
             }
 
-            foreach (var p in Process.GetProcesses())
+            if (!urlAvailable.Task.IsCompleted)
             {
-                string processMsg = $"Process: {p.Id} - {p.ProcessName}";
-                try
+                foreach (var p in Process.GetProcesses())
                 {
-                    processMsg += $" - {p.MainModule?.FileName}";
-                }
-                catch (Exception e)
-                {
-                    processMsg += $" - Failed to get MainModule - {e.Message}";
+                    string processMsg = $"Process: {p.Id} - {p.ProcessName}";
+                    try
+                    {
+                        processMsg += $" - {p.MainModule?.FileName}";
+                    }
+                    catch (Exception e)
+                    {
+                        processMsg += $" - Failed to get MainModule - {e.Message}";
+                    }
+
+                    _testOutput.WriteLine(processMsg);
                 }
 
-                _testOutput.WriteLine(processMsg);
+                throw new Exception("Timed out waiting for the web server url");
             }
-
-            throw new Exception("Timed out waiting for the web server url");
         }
 
         RunTask = runTask;
@@ -127,13 +147,15 @@ internal class BrowserRunner : IAsyncDisposable
     public async Task<IBrowser> SpawnBrowserAsync(
         string browserUrl,
         bool headless = true
-    ) {
+    )
+    {
         var url = new Uri(browserUrl);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors" };
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
-        return Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
+        return Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        {
             ExecutablePath = s_chromePath.Value,
             Headless = headless,
             Args = chromeArgs
@@ -167,9 +189,10 @@ internal class BrowserRunner : IAsyncDisposable
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null,
         bool resetExitedState = false
-    ) {
+    )
+    {
         if (resetExitedState)
-            _exited = new ();
+            _exited = new();
 
         if (modifyBrowserUrl != null)
             browserUrl = modifyBrowserUrl(browserUrl);
@@ -201,7 +224,7 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (_exited.Task.IsCompleted)
         {
-            _testOutput.WriteLine ($"Exited with {await _exited.Task}");
+            _testOutput.WriteLine($"Exited with {await _exited.Task}");
             return;
         }
 
@@ -216,7 +239,7 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (RunTask.IsCanceled)
         {
-            _testOutput.WriteLine ($"Exited with {(await RunTask).ExitCode}");
+            _testOutput.WriteLine($"Exited with {(await RunTask).ExitCode}");
             return;
         }
 
@@ -230,3 +253,19 @@ internal class BrowserRunner : IAsyncDisposable
         Playwright?.Dispose();
     }
 }
+
+
+public class RootObject
+{
+    public Dictionary<string, ProfileObject>? profiles { get; set; }
+}
+
+public class ProfileObject
+{
+    public string? commandName { get; set; }
+    public bool launchBrowser { get; set; }
+    public Dictionary<string, string>? environmentVariables { get; set; }
+    public string? applicationUrl { get; set; }
+    public string? inspectUri { get; set; }
+}
+
