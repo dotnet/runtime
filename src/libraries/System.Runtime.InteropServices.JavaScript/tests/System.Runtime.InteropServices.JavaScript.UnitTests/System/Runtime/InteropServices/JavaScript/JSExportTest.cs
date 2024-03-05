@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedNotBrowserBackgroundExec))]
         public void SyncJsImportJsExportThrows()
         {
             var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
