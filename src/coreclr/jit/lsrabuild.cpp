@@ -1508,15 +1508,12 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         // Make sure that `liveLargeVectors` captures the currentLiveVars as well.
         VARSET_TP liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
 
-#ifdef DEBUG
-        assert(VarSetOps::IsEmpty(compiler, liveLargeVectors) ||
-               VarSetOps::IsSubset(compiler, liveLargeVectors, liveDefsLargeVectors));
-#endif
+        assert(VarSetOps::IsSubset(compiler, liveLargeVectors, liveDefsLargeVectors));
 
         VarSetOps::Iter iter(compiler, liveDefsLargeVectors);
-        unsigned        varIndex          = 0;
-        bool            blockAlwaysReturn = compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET,
-                                                             BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_RETURN);
+        unsigned        varIndex = 0;
+        bool            blockAlwaysReturn =
+            compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
 
         while (iter.NextElem(&varIndex))
         {
@@ -1528,10 +1525,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
-                if (VarSetOps::IsMember(compiler, liveLargeVectors, varIndex))
-                {
-                    pos->liveVarUpperSave = true;
-                }
+                pos->liveVarUpperSave           = VarSetOps::IsMember(compiler, liveLargeVectors, varIndex);
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
