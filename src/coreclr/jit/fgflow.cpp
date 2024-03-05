@@ -136,32 +136,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
-
-                // This edge should have been given a likelihood when it was created.
-                // Since we're increasing its duplicate count, update the likelihood.
-                //
-                assert(flow->hasLikelihood());
-                const unsigned numSucc = blockPred->NumSucc();
-                assert(numSucc > 0);
-
-                if (numSucc == 1)
-                {
-                    // BasicBlock::NumSucc() returns 1 for BBJ_CONDs with the same true/false target.
-                    // For blocks that only ever have one successor (BBJ_ALWAYS, BBJ_LEAVE, etc.),
-                    // their successor edge should never have a duplicate count over 1.
-                    //
-                    assert(blockPred->KindIs(BBJ_COND));
-                    assert(blockPred->TrueEdgeIs(blockPred->GetFalseEdge()));
-                    flow->setLikelihood(1.0);
-                }
-                else
-                {
-                    // Duplicate count isn't updated until later, so add 1 for now.
-                    //
-                    const unsigned dupCount = flow->getDupCount() + 1;
-                    assert(dupCount > 1);
-                    flow->setLikelihood((1.0 / numSucc) * dupCount);
-                }
             }
         }
     }
@@ -211,19 +185,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         if (initializingPreds)
         {
             block->bbLastPred = flow;
-
-            // When initializing preds, ensure edge likelihood is set,
-            // such that this edge is as likely as any other successor edge
-            // Note: We probably shouldn't call NumSucc on a new BBJ_COND block.
-            // NumSucc compares bbTrueEdge and bbFalseEdge to determine if this BBJ_COND block has only one successor,
-            // but these members are uninitialized. Aside from the fact that this compares uninitialized memory,
-            // we don't know if the true and false targets are the same in NumSucc until both edges exist.
-            // TODO: Move this edge likelihood logic to fgLinkBasicBlocks.
-            //
-            const unsigned numSucc = blockPred->NumSucc();
-            assert(numSucc > 0);
-            assert(flow->getDupCount() == 1);
-            flow->setLikelihood(1.0 / numSucc);
         }
         else if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
         {
@@ -273,10 +234,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     //
     assert(block->checkPredListOrder());
 
-    // When initializing preds, edge likelihood should always be set.
-    //
-    assert(!initializingPreds || flow->hasLikelihood());
-
     return flow;
 }
 
@@ -287,62 +244,6 @@ template FlowEdge* Compiler::fgAddRefPred<false>(BasicBlock* block,
 template FlowEdge* Compiler::fgAddRefPred<true>(BasicBlock* block,
                                                 BasicBlock* blockPred,
                                                 FlowEdge*   oldEdge /* = nullptr */);
-
-//------------------------------------------------------------------------
-// fgRemoveRefPred: Decrements the reference count of a predecessor edge from "blockPred" to "block",
-// removing the edge if it is no longer necessary.
-//
-// Arguments:
-//    block -- A block to operate on.
-//    blockPred -- The predecessor block to remove from the predecessor list. It must be a predecessor of "block".
-//
-// Return Value:
-//    If the flow edge was removed (the predecessor has a "dup count" of 1),
-//        returns the flow graph edge that was removed. This means "blockPred" is no longer a predecessor of "block".
-//    Otherwise, returns nullptr. This means that "blockPred" is still a predecessor of "block" (because "blockPred"
-//        is a switch with multiple cases jumping to "block", or a BBJ_COND with both conditional and fall-through
-//        paths leading to "block").
-//
-// Assumptions:
-//    -- "blockPred" must be a predecessor block of "block".
-//
-// Notes:
-//    -- block->bbRefs is decremented by one to account for the reduction in incoming edges.
-//    -- block->bbRefs is adjusted even if preds haven't been computed. If preds haven't been computed,
-//       the preds themselves aren't touched.
-//    -- fgModified is set if a flow edge is removed (but not if an existing flow edge dup count is decremented),
-//       indicating that the flow graph shape has changed.
-//
-FlowEdge* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
-{
-    noway_assert(block != nullptr);
-    noway_assert(blockPred != nullptr);
-    noway_assert(block->countOfInEdges() > 0);
-    assert(fgPredsComputed);
-    block->bbRefs--;
-
-    FlowEdge** ptrToPred;
-    FlowEdge*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
-    noway_assert(pred != nullptr);
-    noway_assert(pred->getDupCount() > 0);
-
-    pred->decrementDupCount();
-
-    if (pred->getDupCount() == 0)
-    {
-        // Splice out the predecessor edge since it's no longer necessary.
-        *ptrToPred = pred->getNextPredEdge();
-
-        // Any changes to the flow graph invalidate the dominator sets.
-        fgModified = true;
-
-        return pred;
-    }
-    else
-    {
-        return nullptr;
-    }
-}
 
 //------------------------------------------------------------------------
 // fgRemoveRefPred: Decrements the reference count of `edge`, removing it from its successor block's pred list
@@ -440,12 +341,12 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            fgRemoveRefPred(block->GetTarget(), block);
+            fgRemoveRefPred(block->GetTargetEdge());
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->GetTrueTarget(), block);
-            fgRemoveRefPred(block->GetFalseTarget(), block);
+            fgRemoveRefPred(block->GetTrueEdge());
+            fgRemoveRefPred(block->GetFalseEdge());
             break;
 
         case BBJ_EHFINALLYRET:
@@ -507,16 +408,20 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // Now we have a set of unique successors.
         unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
 
-        BasicBlock** nonDups = new (getAllocator()) BasicBlock*[numNonDups];
+        FlowEdge** nonDups = new (getAllocator()) FlowEdge*[numNonDups];
 
         unsigned nonDupInd = 0;
+
         // At this point, all unique targets are in "uniqueSuccBlocks".  As we encounter each,
         // add to nonDups, remove from "uniqueSuccBlocks".
-        for (BasicBlock* const targ : switchBlk->SwitchTargets())
+        BBswtDesc* const swtDesc = switchBlk->GetSwitchTargets();
+        for (unsigned i = 0; i < swtDesc->bbsCount; i++)
         {
+            FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
+            BasicBlock* const targ     = succEdge->getDestinationBlock();
             if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
-                nonDups[nonDupInd] = targ;
+                nonDups[nonDupInd] = succEdge;
                 nonDupInd++;
                 BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
             }

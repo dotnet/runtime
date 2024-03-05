@@ -318,7 +318,7 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
         memset(this, 0, sizeof(REGDISPLAY));
 
         // Setup the pointer to ControlPC field
-        pPC = &ControlPC;
+        pPC = (DWORD *)&ControlPC;
     }
 };
 

@@ -10,12 +10,12 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -30,12 +30,12 @@ namespace System.Linq
 
         public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -67,17 +67,17 @@ namespace System.Linq
 
         public static IEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(this IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (collectionSelector == null)
+            if (collectionSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collectionSelector);
             }
 
-            if (resultSelector == null)
+            if (resultSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
@@ -109,17 +109,17 @@ namespace System.Linq
 
         public static IEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (collectionSelector == null)
+            if (collectionSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collectionSelector);
             }
 
-            if (resultSelector == null)
+            if (resultSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
@@ -152,8 +152,8 @@ namespace System.Linq
 
             internal SelectManySingleSelectorIterator(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
 
                 _source = source;
                 _selector = selector;
@@ -166,13 +166,13 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_subEnumerator != null)
+                if (_subEnumerator is not null)
                 {
                     _subEnumerator.Dispose();
                     _subEnumerator = null;
                 }
 
-                if (_sourceEnumerator != null)
+                if (_sourceEnumerator is not null)
                 {
                     _sourceEnumerator.Dispose();
                     _sourceEnumerator = null;
@@ -192,7 +192,7 @@ namespace System.Linq
                         goto case 2;
                     case 2:
                         // Take the next element from the source enumerator.
-                        Debug.Assert(_sourceEnumerator != null);
+                        Debug.Assert(_sourceEnumerator is not null);
                         if (!_sourceEnumerator.MoveNext())
                         {
                             break;
@@ -206,7 +206,7 @@ namespace System.Linq
                         goto case 3;
                     case 3:
                         // Take the next element from the sub-collection and yield.
-                        Debug.Assert(_subEnumerator != null);
+                        Debug.Assert(_subEnumerator is not null);
                         if (!_subEnumerator.MoveNext())
                         {
                             _subEnumerator.Dispose();

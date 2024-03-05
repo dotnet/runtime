@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Append<TSource>(this IEnumerable<TSource> source, TSource element)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -22,7 +22,7 @@ namespace System.Linq
 
         public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> source, TSource element)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -43,13 +43,13 @@ namespace System.Linq
 
             protected AppendPrependIterator(IEnumerable<TSource> source)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 _source = source;
             }
 
             protected void GetSourceEnumerator()
             {
-                Debug.Assert(_enumerator == null);
+                Debug.Assert(_enumerator is null);
                 _enumerator = _source.GetEnumerator();
             }
 
@@ -59,7 +59,7 @@ namespace System.Linq
 
             protected bool LoadFromEnumerator()
             {
-                Debug.Assert(_enumerator != null);
+                Debug.Assert(_enumerator is not null);
                 if (_enumerator.MoveNext())
                 {
                     _current = _enumerator.Current;
@@ -72,7 +72,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -176,7 +176,7 @@ namespace System.Linq
             public AppendPrependN(IEnumerable<TSource> source, SingleLinkedNode<TSource>? prepended, SingleLinkedNode<TSource>? appended, int prependCount, int appendCount)
                 : base(source)
             {
-                Debug.Assert(prepended != null || appended != null);
+                Debug.Assert(prepended is not null || appended is not null);
                 Debug.Assert(prependCount > 0 || appendCount > 0);
                 Debug.Assert(prependCount + appendCount >= 2);
                 Debug.Assert((prepended?.GetCount() ?? 0) == prependCount);
@@ -199,7 +199,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        if (_node != null)
+                        if (_node is not null)
                         {
                             _current = _node.Item;
                             _node = _node.Linked;
@@ -215,7 +215,7 @@ namespace System.Linq
                             return true;
                         }
 
-                        if (_appended == null)
+                        if (_appended is null)
                         {
                             return false;
                         }
@@ -233,13 +233,13 @@ namespace System.Linq
 
             public override AppendPrependIterator<TSource> Append(TSource item)
             {
-                var appended = _appended != null ? _appended.Add(item) : new SingleLinkedNode<TSource>(item);
+                var appended = _appended is not null ? _appended.Add(item) : new SingleLinkedNode<TSource>(item);
                 return new AppendPrependN<TSource>(_source, _prepended, appended, _prependCount, _appendCount + 1);
             }
 
             public override AppendPrependIterator<TSource> Prepend(TSource item)
             {
-                var prepended = _prepended != null ? _prepended.Add(item) : new SingleLinkedNode<TSource>(item);
+                var prepended = _prepended is not null ? _prepended.Add(item) : new SingleLinkedNode<TSource>(item);
                 return new AppendPrependN<TSource>(_source, prepended, _appended, _prependCount + 1, _appendCount);
             }
         }

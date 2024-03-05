@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InvalidCSharpNegative.il" />
+  </ItemGroup>
+</Project>
