@@ -113,8 +113,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         if (bestLength < length)
                         {
-                            // When a preferred constructor is found, it is always selected however subsequent constructors
-                            // will be selected if they have more parameters.
                             bestLength = length;
                             bestMatcher = matcher;
                             multipleBestLengthFound = false;
