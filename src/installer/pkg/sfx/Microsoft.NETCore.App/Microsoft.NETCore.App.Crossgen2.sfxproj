@@ -41,7 +41,7 @@
                              KeepMetadata="REMOVE_ALL" />
     </ItemGroup>
     <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
-      <FilesToPackage Include="@(_CrossgenPublishFiles->Distinct())"
+      <FilesToPackage Include="@(_CrossgenPublishFiles)"
                       Exclude="*.pdb;*.h;*.lib"
                       TargetPath="tools/" />
     </ItemGroup>
