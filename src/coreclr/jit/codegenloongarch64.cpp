@@ -2927,33 +2927,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned   jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    FlowEdge** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned   jmpTabOffs;
-    unsigned   jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = (*jumpTable)->getDestinationBlock();
-        jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
@@ -5316,7 +5290,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->IsLclVarAddr())
+                if (addrNode->isContained() && addrNode->IsLclVarAddr())
                 {
                     // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
@@ -5589,7 +5563,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->IsLclVarAddr())
+        if (addrNode->isContained() && addrNode->IsLclVarAddr())
         {
             // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
@@ -6357,27 +6331,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
-    }
-}
-
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    emitter* emit = GetEmitter();
-
-    if (base->OperIs(GT_LCL_ADDR))
-    {
-        if (base->gtOper == GT_LCL_ADDR)
-        {
-            offset += base->AsLclFld()->GetLclOffs();
-        }
-        emit->emitIns_R_S(ins, size, dst, base->AsLclVarCommon()->GetLclNum(), offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, dst, base->GetRegNum(), offset);
     }
 }
 

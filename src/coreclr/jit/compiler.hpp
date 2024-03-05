@@ -664,27 +664,27 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
             // These are "pseudo-blocks" and control never actually flows into them
             // (codegen directly jumps to its successor after finally calls).
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -694,7 +694,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -744,14 +744,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return BasicBlockVisit::Continue;
@@ -761,7 +761,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
             }
 
             return BasicBlockVisit::Continue;
@@ -3163,6 +3163,24 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 inline bool Compiler::fgIsBigOffset(size_t offset)
 {
     return (offset > compMaxUncheckedOffsetForNullObject);
+}
+
+//------------------------------------------------------------------------
+// IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+//
+// Local address nodes cannot point beyond the local and can only store
+// 16 bits worth of offset.
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The address' offset
+//
+// Return Value:
+//    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+//
+inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
+{
+    return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
 /*

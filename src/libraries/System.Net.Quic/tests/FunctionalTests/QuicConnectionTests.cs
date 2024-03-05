@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -15,6 +16,7 @@ namespace System.Net.Quic.Tests
 
     [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
@@ -22,7 +24,7 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(LocalAddresses))]
         public async Task TestConnect(IPAddress address)
         {

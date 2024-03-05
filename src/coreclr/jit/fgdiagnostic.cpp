@@ -134,7 +134,7 @@ void Compiler::fgDebugCheckUpdate()
 
         // Check for an unnecessary jumps to the next block.
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
-        if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
+        if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
         {
             noway_assert(!"Unnecessary jump to the next block!");
         }
@@ -3003,7 +3003,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 {
                     for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
                     {
-                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i];
+                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i]->getDestinationBlock();
                         assert(nonDuplicateSucc != nullptr);
                         assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
                     }
@@ -3981,7 +3981,8 @@ void Compiler::fgDebugCheckBlockLinks()
                 assert(uniqueSuccSet.numDistinctSuccs == count);
                 for (unsigned i = 0; i < uniqueSuccSet.numDistinctSuccs; i++)
                 {
-                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks, uniqueSuccSet.nonDuplicates[i]->bbNum));
+                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks,
+                                               uniqueSuccSet.nonDuplicates[i]->getDestinationBlock()->bbNum));
                 }
             }
         }
