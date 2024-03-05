@@ -870,7 +870,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
-    READYTORUN_HELPER_Flt2UInt                  = 0xD8,
 
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,

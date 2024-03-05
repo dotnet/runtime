@@ -1909,10 +1909,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("DBL2UINT");
                     break;
 
-                case ReadyToRunHelper.Flt2UInt:
-                    builder.Append("FLT2UINT");
-                    break;
-
                 case ReadyToRunHelper.Dbl2UIntOvf:
                     builder.Append("DBL2UINTOVF");
                     break;

@@ -274,7 +274,6 @@ DEFINE_METHOD(MATH,                 DOUBLE_TO_ULONG_OVERFLOW,DoubleToULongOverfl
 DEFINE_METHOD(MATH,                 DOUBLE_REMINDER,        DoubleReminder,             NoSig)
 DEFINE_METHOD(MATH,                 DOUBLE_TO_INT,          DoubleToInt,                NoSig)
 DEFINE_METHOD(MATH,                 DOUBLE_TO_UINT,         DoubleToUInt,               NoSig)
-DEFINE_METHOD(MATH,                 FLOAT_TO_UINT,          FloatToUInt,                NoSig)
 DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
 
 DEFINE_CLASS(MATHF,                 System,                 MathF)

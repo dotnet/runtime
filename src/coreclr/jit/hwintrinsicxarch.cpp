@@ -1524,13 +1524,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // SNAN: 0b1000
                 // ZERO: 0b0000:
                 // +ONE: 0b0000
-                // -INF: 0b0000
+                // -INF: 0b1000
                 // +INF: 0b0000
                 // -VAL: 0b1000: Saturate to Zero
                 // +VAL: 0b0000
                 for (int i = 0; i < 16; i++)
                 {
-                    tbl->gtSimdVal.i32[i] = 0x08000088;
+                    tbl->gtSimdVal.i32[i] = 0x08080088;
                 }
 
                 // Generate first operand
@@ -1573,13 +1573,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // SNAN: 0b1000
                 // ZERO: 0b0000:
                 // +ONE: 0b0000
-                // -INF: 0b0000
+                // -INF: 0b1000
                 // +INF: 0b0000
                 // -VAL: 0b1000: Saturate to Zero
                 // +VAL: 0b0000
                 for (int i = 0; i < 8; i++)
                 {
-                    tbl->gtSimdVal.i64[i] = 0x08000088;
+                    tbl->gtSimdVal.i64[i] = 0x08080088;
                 }
 
                 // Generate first operand

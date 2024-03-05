@@ -353,11 +353,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // SNAN: 0b1000
                     // ZERO: 0b0000:
                     // +ONE: 0b0000
-                    // -INF: 0b0000
+                    // -INF: 0b1000
                     // +INF: 0b0000
                     // -VAL: 0b1000: Saturate to Zero
                     // +VAL: 0b0000
-                    tbl->gtSimdVal.i32[0] = 0x08000088;
+                    tbl->gtSimdVal.i32[0] = 0x08080088;
 
                     // Generate first operand
                     // The logic is that first and second operand are basically the same because we want
@@ -440,22 +440,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     return fgMorphTree(saturate_val);
                 }
             }
-            // does not work, need to convert into helper function
-            else if (srcType == TYP_FLOAT && dstType == TYP_UINT)
-            {
-                return fgMorphCastIntoHelper(tree, CORINFO_HELP_FLT2UINT, oper);
-            }
-            else if (srcType == TYP_DOUBLE && dstType == TYP_UINT)
-            {
-                /*oper = gtNewCastNode(TYP_LONG, oper, false, TYP_LONG);
-                tree = gtNewCastNode(TYP_INT, oper, false, TYP_UINT);
-                return fgMorphTree(tree);*/
-                return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-            }
-            else if (srcType == TYP_DOUBLE && dstType == TYP_INT)
-            {
-                return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
-            }
         }
     } while (false);
 
@@ -472,14 +456,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || ((dstType == TYP_INT || dstType == TYP_ULONG || dstType == TYP_LONG) &&
-                                       !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
+            && (tree->gtOverflow() || !compOpportunisticallyDependsOn(InstructionSet_AVX512F))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
 #else
             // x86: src = float, dst = uint32/int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsLong(dstType) || (dstType == TYP_UINT))
+            && (tree->gtOverflow() || varTypeIsIntegral(dstType))
 #endif
                 )
         {
@@ -519,16 +502,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     case TYP_UINT:
 #if defined(TARGET_ARM)
                         return nullptr;
-#else  // TARGET_X86
+#elif defined(TARGET_XARCH)
                         if (tree->IsSaturatedConversion())
                         {
                             return nullptr;
                         }
-                        /*oper = gtNewCastNode(TYP_LONG, oper, false, TYP_LONG);
-                        tree = gtNewCastNode(TYP_INT, oper, false, TYP_UINT);
-                        return fgMorphTree(tree);*/
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-#endif // TARGET_X86
 
                     case TYP_LONG:
 #ifdef TARGET_XARCH
