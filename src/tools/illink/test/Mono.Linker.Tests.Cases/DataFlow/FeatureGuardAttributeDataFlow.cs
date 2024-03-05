@@ -63,12 +63,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureGuard (typeof(DynamicCodeAndUnreferencedCode))]
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
-
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
-			static class DynamicCodeAndUnreferencedCode {}
 
 			static void TestMultipleGuards ()
 			{
@@ -78,14 +75,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			static class DynamicCode1 {}
+			static class DynamicCode1 {
+				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+				public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported;
+			}
 
-			[FeatureDependsOn (typeof (DynamicCode1))]
-			static class DynamicCode2 {}
+			static class DynamicCode2 {
+				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+				public static bool IsSupported => DynamicCode1.IsSupported;
+			}
 
-			[FeatureGuard (typeof (DynamicCode2))]
-			static bool GuardDynamicCodeIndirect => RuntimeFeature.IsDynamicCodeSupported;
+			// Currently there is no way to annotate a feature type as depending on another feature,
+			// so indirect guards are expressed the same way as direct guards, by using
+			// FeatureGuardAttribute that references the underlying feature type.
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+			static bool GuardDynamicCodeIndirect => DynamicCode2.IsSupported;
 
 			static void TestIndirectGuard ()
 			{
@@ -93,12 +97,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			[FeatureDependsOn (typeof (DynamicCodeCycle))]
-			static class DynamicCodeCycle {}
+			static class DynamicCodeCycle {
+				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+				public static bool IsSupported => DynamicCodeCycle.IsSupported;
+			}
 
-			[FeatureGuard (typeof (DynamicCodeCycle))]
-			static bool GuardDynamicCodeCycle => RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+			static bool GuardDynamicCodeCycle => DynamicCodeCycle.IsSupported;
 
 			[FeatureGuard (typeof (DynamicCodeCycle))]
 			static void TestFeatureDependencyCycle1 ()
@@ -107,18 +112,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
-			[FeatureDependsOn (typeof (DynamicCodeCycle2_B))]
-			static class DynamicCodeCycle2_A {}
+			static class DynamicCodeCycle2_A {
+				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+				public static bool IsSupported => DynamicCodeCycle2_B.IsSupported;
+			}
 
-			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
-			[FeatureDependsOn (typeof (DynamicCodeCycle2_A))]
-			static class DynamicCodeCycle2_B {}
+			static class DynamicCodeCycle2_B {
+				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+				public static bool IsSupported => DynamicCodeCycle2_A.IsSupported;
+			}
 
-			[FeatureDependsOn (typeof (DynamicCodeCycle2_A))]
-			static class DynamicCodeCycle2 {}
+			static class DynamicCodeCycle2 {
+				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+				public static bool IsSupported => DynamicCodeCycle2_A.IsSupported;
+			}
 
-			[FeatureGuard (typeof (DynamicCodeCycle2))]
-			static bool GuardDynamicCodeCycle2 => RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+			static bool GuardDynamicCodeCycle2 => DynamicCodeCycle2.IsSupported;
 
 			static void TestFeatureDependencyCycle2 ()
 			{
