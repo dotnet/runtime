@@ -3488,33 +3488,28 @@ interp_super_instructions (TransformData *td)
 				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
 					int amount_var = ins->sregs [1];
 					InterpInst *amount_def = get_var_value_def (td, amount_var);
-					if (amount_def != NULL && td->var_values [amount_var].ref_count == 1 && amount_def->opcode == MINT_AND_I4) {
-						int mask_var = amount_def->sregs [1];
-						if (get_sreg_imm (td, mask_var, &imm, NULL)) {
-							// ldc + and + shl -> shl_and_imm
-							int new_opcode = -1;
-							if (opcode == MINT_SHL_I4 && imm == 31)
-								new_opcode = MINT_SHL_AND_I4;
-							else if (opcode == MINT_SHL_I8 && imm == 63)
-								new_opcode = MINT_SHL_AND_I8;
+					if (amount_def != NULL && td->var_values [amount_var].ref_count == 1 && amount_def->opcode == MINT_AND_I4_IMM) {
+						// and_imm + shl -> shl_and_imm
+						int new_opcode = -1;
+						if (opcode == MINT_SHL_I4 && amount_def->data [0] == 31)
+							new_opcode = MINT_SHL_AND_I4;
+						else if (opcode == MINT_SHL_I8 && amount_def->data [0] == 63)
+							new_opcode = MINT_SHL_AND_I8;
 
-							if (new_opcode != -1) {
-								InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
-								new_inst->dreg = ins->dreg;
-								new_inst->sregs [0] = ins->sregs [0];
-								new_inst->sregs [1] = amount_def->sregs [0];
+						if (new_opcode != -1) {
+							InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
+							new_inst->dreg = ins->dreg;
+							new_inst->sregs [0] = ins->sregs [0];
+							new_inst->sregs [1] = amount_def->sregs [0];
 
-								td->var_values [amount_var].ref_count--; // 0
-								td->var_values [mask_var].ref_count--; // 0
-								td->var_values [new_inst->dreg].def = new_inst;
+							td->var_values [amount_var].ref_count--; // 0
+							td->var_values [new_inst->dreg].def = new_inst;
 
-								interp_clear_ins (td->var_values [mask_var].def);
-								interp_clear_ins (amount_def);
-								interp_clear_ins (ins);
-								if (td->verbose_level) {
-									g_print ("superins: ");
-									interp_dump_ins (new_inst, td->data_items);
-								}
+							interp_clear_ins (amount_def);
+							interp_clear_ins (ins);
+							if (td->verbose_level) {
+								g_print ("superins: ");
+								interp_dump_ins (new_inst, td->data_items);
 							}
 						}
 					}
