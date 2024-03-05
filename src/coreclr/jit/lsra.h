@@ -1806,8 +1806,31 @@ private:
     bool isRegAvailable(regNumber reg, var_types regType) // only used in asserts
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        return (m_AvailableRegs[regTypeIndex(regType)] & regMask) == regMask;
+
+        #ifdef TARGET_ARM64
+        if (emitter::isGeneralRegisterOrZR(reg))
+#else
+        if (emitter::isGeneralRegister(reg))
+#endif
+        {
+            return (m_AvailableRegs[0] & regMask) == regMask;
+        }
+        else if (emitter::isFloatReg(reg))
+        {
+            return (m_AvailableRegs[1] & regMask) == regMask;
+        }
+
+        else
+        {
+#ifdef HAS_PREDICATE_REGS
+            assert(emitter::isMaskReg(reg));
+            return (m_AvailableRegs[2] & regMask) == regMask;
+#else
+            unreached();
+#endif
+        }
     }
+
     void setRegsInUse(regMaskMixed regMask)
     {
         //TODO: Fix this later.
@@ -1816,28 +1839,97 @@ private:
 #ifdef HAS_PREDICATE_REGS
         m_AvailableRegs[2] &= ~(regMask & RBM_ALLMASK);
 #endif
+
+        assert(compiler->IsGprRegMask(m_AvailableRegs[0]));
+        assert(compiler->IsFloatRegMask(m_AvailableRegs[1]));
     }
     void setRegInUse(regNumber reg, var_types regType)
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        m_AvailableRegs[regTypeIndex(regType)] &= ~regMask;
+
+#ifdef TARGET_ARM64
+        if (emitter::isGeneralRegisterOrZR(reg))
+#else
+        if (emitter::isGeneralRegister(reg))
+#endif
+        {
+            m_AvailableRegs[0] &= ~regMask;
+        }
+        else if (emitter::isFloatReg(reg))
+        {
+            m_AvailableRegs[1] &= ~regMask;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else
+        {
+            assert(emitter::isMaskReg(reg));
+            m_AvailableRegs[2] &= ~regMask;
+        }
+#endif
     }
     void makeRegsAvailable(regMaskMixed regMask)
     {
         // TODO: This will be just `regMask`
-        makeRegAvailable(regMask & ~RBM_ALLFLOAT, IntRegisterType);
-        makeRegAvailable(regMask & RBM_ALLFLOAT, FloatRegisterType);
+        m_AvailableRegs[0] |= regMask & ~RBM_ALLFLOAT;
+        m_AvailableRegs[1] |= regMask & RBM_ALLFLOAT;
 #ifdef HAS_PREDICATE_REGS
-        makeRegAvailable(regMask & RBM_ALLMASK, MaskRegisterType);
+        m_AvailableRegs[2] |= regMask & RBM_ALLMASK;
 #endif
+
     }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        makeRegAvailable(regMask, regType);
+#ifdef TARGET_ARM64
+        // TODO: Convert it in to a lookup array that maps register number
+        // to '0', '1' or '2'. So something like this:
+        // rax - 0
+        // rbx - 0
+        // ...
+        // xmm0 - 1
+        // here it will be, m_AvailableRegs[regTypeIndex[reg]] = 
+        if (emitter::isGeneralRegisterOrZR(reg))
+#else
+        if (emitter::isGeneralRegister(reg))
+#endif
+        {
+            m_AvailableRegs[0] |= regMask;
+        }
+        else if (emitter::isFloatReg(reg))
+        {
+            m_AvailableRegs[1] |= regMask;
+        }
+
+        else
+        {
+#ifdef HAS_PREDICATE_REGS
+            assert(emitter::isMaskReg(reg));
+            m_AvailableRegs[2] |= regMask;
+#else
+            unreached();
+#endif
+        }
     }
+
     void makeRegAvailable(regMaskOnlyOne regMask, var_types regType)
     {
+#ifdef DEBUG
+        if (varTypeUsesIntReg(regType))
+        {
+            assert(compiler->IsGprRegMask(regMask));
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeUsesMaskReg(regType))
+        {
+            assert(compiler->IsPredicateRegMask(regMask));
+        }
+#endif // HAS_PREDICATE_REGS
+        else
+        {
+            assert(varTypeUsesFloatReg(regType));
+            assert(compiler->IsFloatRegMask(regMask));
+        }
+#endif
         m_AvailableRegs[regTypeIndex(regType)] |= regMask;
     }
 
