@@ -789,6 +789,5 @@ function(find_nativeaot_library libraryName)
     find_package(${libraryName} CONFIG REQUIRED NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
   endif()
   set("${libraryName}_FOUND" "${${libraryName}_FOUND}" PARENT_SCOPE)
-  set("${libCmakeName}_CMAKE_FRAGMENT_PATH")
 endfunction()
 
