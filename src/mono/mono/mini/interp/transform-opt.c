@@ -3207,8 +3207,10 @@ mono_test_interp_cprop (TransformData *td)
 	interp_cprop (td);
 }
 
+// If sreg is constant, it returns the value in `imm` and the smallest
+// containing type for it in `imm_mt`.
 static gboolean
-get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
+get_sreg_imm (TransformData *td, int sreg, gint32 *imm, int *imm_mt)
 {
 	if (var_has_indirects (td, sreg))
 		return FALSE;
@@ -3224,32 +3226,15 @@ get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
 			ct = interp_get_const_from_ldc_i8 (def);
 		else
 			return FALSE;
-		gint64 min_val, max_val;
-		// We only propagate the immediate only if it fits into the desired type,
-		// so we don't accidentaly handle conversions wrong
-		switch (result_mt) {
-			case MINT_TYPE_I1:
-				min_val = G_MININT8;
-				max_val = G_MAXINT8;
-				break;
-			case MINT_TYPE_I2:
-				min_val = G_MININT16;
-				max_val = G_MAXINT16;
-				break;
-			case MINT_TYPE_U1:
-				min_val = 0;
-				max_val = G_MAXUINT8;
-				break;
-			case MINT_TYPE_U2:
-				min_val = 0;
-				max_val = G_MAXINT16;
-				break;
-			default:
-				g_assert_not_reached ();
-
-		}
-		if (ct >= min_val && ct <= max_val) {
+		if (ct >= G_MININT16 && ct <= G_MAXINT16) {
 			*imm = (gint16)ct;
+			if (imm_mt)
+				*imm_mt = MINT_TYPE_I2;
+			return TRUE;
+		} else if (ct >= G_MININT32 && ct <= G_MAXINT32) {
+			*imm = (gint32)ct;
+			if (imm_mt)
+				*imm_mt = MINT_TYPE_I4;
 			return TRUE;
 		}
 	}
@@ -3388,29 +3373,43 @@ interp_super_instructions (TransformData *td)
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
 				int sreg = ins->sregs [0];
-				gint16 imm;
-				if (get_sreg_imm (td, sreg, &imm, (opcode == MINT_RET) ? MINT_TYPE_I2 : opcode - MINT_RET_I1)) {
-					InterpInst *def = td->var_values [sreg].def;
-					int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
-					InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
-					new_inst->data [0] = imm;
-					interp_clear_ins (def);
-					interp_clear_ins (ins);
-					td->var_values [sreg].ref_count--; // 0
-					if (td->verbose_level) {
-						g_print ("superins: ");
-						interp_dump_ins (new_inst, td->data_items);
+				gint32 imm;
+				if (get_sreg_imm (td, sreg, &imm, NULL)) {
+					// compute the casting as done by the ret opcode
+					int ret_mt = (opcode == MINT_RET) ? MINT_TYPE_I8 : opcode - MINT_RET_I1;
+					if (ret_mt == MINT_TYPE_I1)
+						imm = (gint8)imm;
+					else if (ret_mt == MINT_TYPE_U1)
+						imm = (guint8)imm;
+					else if (ret_mt == MINT_TYPE_I2)
+						imm = (gint16)imm;
+					else if (ret_mt == MINT_TYPE_U2)
+						imm = (guint16)imm;
+
+					if (imm >= G_MININT16 && imm <= G_MAXINT16) {
+						InterpInst *def = td->var_values [sreg].def;
+						int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
+						InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
+						new_inst->data [0] = (gint16)imm;
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						td->var_values [sreg].ref_count--; // 0
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							interp_dump_ins (new_inst, td->data_items);
+						}
 					}
 				}
 			} else if (opcode == MINT_ADD_I4 || opcode == MINT_ADD_I8 ||
 					opcode == MINT_MUL_I4 || opcode == MINT_MUL_I8) {
 				int sreg = -1;
 				int sreg_imm = -1;
-				gint16 imm;
-				if (get_sreg_imm (td, ins->sregs [0], &imm, MINT_TYPE_I2)) {
+				int imm_mt;
+				gint32 imm;
+				if (get_sreg_imm (td, ins->sregs [0], &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
 					sreg = ins->sregs [1];
 					sreg_imm = ins->sregs [0];
-				} else if (get_sreg_imm (td, ins->sregs [1], &imm, MINT_TYPE_I2)) {
+				} else if (get_sreg_imm (td, ins->sregs [1], &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
 					sreg = ins->sregs [0];
 					sreg_imm = ins->sregs [1];
 				}
@@ -3426,7 +3425,7 @@ interp_super_instructions (TransformData *td)
 					InterpInst *new_inst = interp_insert_ins (td, ins, binop);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = sreg;
-					new_inst->data [0] = imm;
+					new_inst->data [0] = (gint16)imm;
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
@@ -3438,14 +3437,15 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_SUB_I4 || opcode == MINT_SUB_I8) {
 				// ldc + sub -> add.-imm
-				gint16 imm;
+				gint32 imm;
+				int imm_mt;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2) && imm != G_MININT16) {
+				if (get_sreg_imm (td, sreg_imm, &imm, &imm_mt) && imm_mt == MINT_TYPE_I2 && imm != G_MININT16) {
 					int add_op = opcode == MINT_SUB_I4 ? MINT_ADD_I4_IMM : MINT_ADD_I8_IMM;
 					InterpInst *new_inst = interp_insert_ins (td, ins, add_op);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
-					new_inst->data [0] = -imm;
+					new_inst->data [0] = (gint16)-imm;
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
@@ -3478,15 +3478,16 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			} else if (MINT_IS_BINOP_SHIFT (opcode)) {
-				gint16 imm;
+				gint32 imm;
+				int imm_mt;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
+				if (get_sreg_imm (td, sreg_imm, &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
 					// ldc + sh -> sh.imm
 					int shift_op = MINT_SHR_UN_I4_IMM + (opcode - MINT_SHR_UN_I4);
 					InterpInst *new_inst = interp_insert_ins (td, ins, shift_op);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
-					new_inst->data [0] = imm;
+					new_inst->data [0] = (gint16)imm;
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
@@ -3500,7 +3501,7 @@ interp_super_instructions (TransformData *td)
 					InterpInst *amount_def = get_var_value_def (td, amount_var);
 					if (amount_def != NULL && td->var_values [amount_var].ref_count == 1 && amount_def->opcode == MINT_AND_I4) {
 						int mask_var = amount_def->sregs [1];
-						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
+						if (get_sreg_imm (td, mask_var, &imm, NULL)) {
 							// ldc + and + shl -> shl_and_imm
 							int new_opcode = -1;
 							if (opcode == MINT_SHL_I4 && imm == 31)
@@ -3675,9 +3676,10 @@ interp_super_instructions (TransformData *td)
 					td->var_values [obj_sreg].ref_count--;
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
-				gint16 imm;
+				gint32 imm;
+				int imm_mt;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
+				if (get_sreg_imm (td, sreg_imm, &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
 					int condbr_op = get_binop_condbr_imm_sp (opcode);
 					if (condbr_op != MINT_NOP) {
 						InterpInst *prev_ins = interp_prev_ins (ins);
@@ -3686,7 +3688,7 @@ interp_super_instructions (TransformData *td)
 							interp_clear_ins (prev_ins);
 						InterpInst *new_ins = interp_insert_ins (td, ins, condbr_op);
 						new_ins->sregs [0] = ins->sregs [0];
-						new_ins->data [0] = imm;
+						new_ins->data [0] = (gint16)imm;
 						new_ins->info.target_bb = ins->info.target_bb;
 						interp_clear_ins (td->var_values [sreg_imm].def);
 						interp_clear_ins (ins);
