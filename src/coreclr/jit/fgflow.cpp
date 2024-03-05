@@ -157,6 +157,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     if (flow != nullptr)
     {
         // The predecessor block already exists in the flow list; simply add to its duplicate count.
+        //
         noway_assert(flow->getDupCount());
         flow->incrementDupCount();
     }
