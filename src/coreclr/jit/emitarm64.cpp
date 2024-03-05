@@ -7650,12 +7650,11 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction     ins,
-                          emitAttr        attr,
-                          regNumber       reg,
-                          ssize_t         imm,
-                          insOpts         opt /* = INS_OPTS_NONE */,
-                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
+void emitter::emitIns_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg,
+                          ssize_t     imm,
+                          insOpts     opt /* = INS_OPTS_NONE */
                           DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     emitAttr  size      = EA_SIZE(attr);
