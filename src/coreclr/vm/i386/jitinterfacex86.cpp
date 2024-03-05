@@ -790,113 +790,6 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     return (void *)pStub->GetEntryPoint();
 }
-// For this helper,
-// If bCCtorCheck == true
-//          ECX contains the domain neutral module ID
-//          EDX contains the class domain ID, and the
-// else
-//          ECX contains the domain neutral module ID
-//          EDX is junk
-// shared static base is returned in EAX.
-
-// "init" should be the address of a routine which takes an argument of
-// the module domain ID, the class domain ID, and returns the static base pointer
-void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic)
-{
-    STANDARD_VM_CONTRACT;
-
-    CodeLabel *DoInit = 0;
-    if (bCCtorCheck)
-    {
-        DoInit = psl->NewCodeLabel();
-    }
-
-    // mov eax, ecx
-    psl->Emit8(0x89);
-    psl->Emit8(0xc8);
-
-    if (bCCtorCheck)
-    {
-        // test [eax + edx + offsetof(DomainLocalModule, m_pDataBlob], ClassInitFlags::INITIALIZED_FLAG       // Is class inited
-        _ASSERTE(FitsInI1(ClassInitFlags::INITIALIZED_FLAG));
-        _ASSERTE(FitsInI1(DomainLocalModule::GetOffsetOfDataBlob()));
-
-        BYTE testClassInit[] = { 0xF6, 0x44, 0x10,
-            (BYTE) DomainLocalModule::GetOffsetOfDataBlob(), (BYTE)ClassInitFlags::INITIALIZED_FLAG };
-
-        psl->EmitBytes(testClassInit, sizeof(testClassInit));
-
-        // jz  init                                    // no, init it
-        psl->X86EmitCondJump(DoInit, X86CondCode::kJZ);
-    }
-
-    if (bGCStatic)
-    {
-        // Indirect to get the pointer to the first GC Static
-        psl->X86EmitIndexRegLoad(kEAX, kEAX, (__int32) DomainLocalModule::GetOffsetOfGCStaticPointer());
-    }
-
-    // ret
-    psl->X86EmitReturn(0);
-
-    if (bCCtorCheck)
-    {
-        // DoInit:
-        psl->EmitLabel(DoInit);
-
-        psl->X86EmitPushEBPframe();
-
-#ifdef UNIX_X86_ABI
-#define STACK_ALIGN_PADDING 4
-        // sub esp, STACK_ALIGN_PADDING; to align the stack
-        psl->X86EmitSubEsp(STACK_ALIGN_PADDING);
-#endif // UNIX_X86_ABI
-
-        // push edx (must be preserved)
-        psl->X86EmitPushReg(kEDX);
-
-        // call init
-        psl->X86EmitCall(init, 0);
-
-        // pop edx
-        psl->X86EmitPopReg(kEDX);
-
-#ifdef UNIX_X86_ABI
-        // add esp, STACK_ALIGN_PADDING
-        psl->X86EmitAddEsp(STACK_ALIGN_PADDING);
-#undef STACK_ALIGN_PADDING
-#endif // UNIX_X86_ABI
-
-        psl->X86EmitPopReg(kEBP);
-
-        // ret
-        psl->X86EmitReturn(0);
-    }
-
-}
-
-void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
-{
-    STANDARD_VM_CONTRACT;
-
-    CPUSTUBLINKER sl;
-
-    CodeLabel *init;
-    if (bGCStatic)
-    {
-        init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedGCStaticBase);
-    }
-    else
-    {
-        init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedNonGCStaticBase);
-    }
-
-    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic);
-
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-
-    return (void*) pStub->GetEntryPoint();
-}
 
 #define NUM_WRITE_BARRIERS 6
 
@@ -1014,16 +907,6 @@ void InitJITHelpers1()
         // generated method. Find this workaround in Ecall::Init() in ecall.cpp.
         ECall::DynamicallyAssignFCallImpl((PCODE) JIT_TrialAlloc::GenAllocString(flags), ECall::FastAllocateString);
     }
-
-    // Replace static helpers with faster assembly versions
-    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE, pMethodAddresses[6]);
-    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE, pMethodAddresses[7]);
-    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR, pMethodAddresses[8]);
-    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR, pMethodAddresses[9]);
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);
 

@@ -1379,7 +1379,7 @@ HCIMPL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable* pMT)
     FCALL_CONTRACT;
 
     PTR_BYTE pBase;
-    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndNonGCStaticsPointer(&pBase))
+    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
     {
         return pBase;
     }
@@ -1396,7 +1396,7 @@ HCIMPL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStat
     FCALL_CONTRACT;
 
     PTR_BYTE pBase;
-    if (pStaticsInfo->GetIsInitedAndNonGCStaticsPointer(&pBase))
+    if (pStaticsInfo->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
     {
         return pBase;
     }
@@ -1431,7 +1431,7 @@ HCIMPL1(void*, JIT_GetGCStaticBase_Portable, MethodTable* pMT)
     FCALL_CONTRACT;
 
     PTR_OBJECTREF pBase;
-    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndGCStaticsPointer(&pBase))
+    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
     {
         return pBase;
     }
@@ -1447,7 +1447,7 @@ HCIMPL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStatics
     FCALL_CONTRACT;
 
     PTR_OBJECTREF pBase;
-    if (pStaticsInfo->GetIsInitedAndGCStaticsPointer(&pBase))
+    if (pStaticsInfo->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
     {
         return pBase;
     }
