@@ -1743,11 +1743,5 @@ namespace System
         {
             return double.IsNaN(val) || (val < 0) ? 0 : ((ulong)val > uint.MaxValue) ? uint.MaxValue : (uint)(ulong)val;
         }
-
-        private static uint FloatToUInt(float val)
-        {
-            //return 0;
-            return float.IsNaN(val) || (val < 0) ? 0 : ((ulong)val > uint.MaxValue) ? uint.MaxValue : (uint)(ulong)val;
-        }
     }
 }

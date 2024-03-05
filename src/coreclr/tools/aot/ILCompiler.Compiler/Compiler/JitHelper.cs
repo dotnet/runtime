@@ -183,10 +183,6 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2Int:
                     methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToInt");
                     break;
-                case ReadyToRunHelper.Flt2UInt:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "FloatToUInt");
-                    //mangledName = "RhpFlt2UInt";
-                    break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToIntOverflow");
