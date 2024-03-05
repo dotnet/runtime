@@ -3626,7 +3626,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = cpObjNode->ExtractTempReg();
+    regNumber tmpReg  = cpObjNode->ExtractTempReg(RBM_ALLINT);
     regNumber tmpReg2 = REG_NA;
 
     assert(genIsValidIntReg(tmpReg));
@@ -3635,7 +3635,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (slots > 1)
     {
-        tmpReg2 = cpObjNode->GetSingleTempReg();
+        tmpReg2 = cpObjNode->ExtractTempReg(RBM_ALLINT);
         assert(tmpReg2 != tmpReg);
         assert(genIsValidIntReg(tmpReg2));
         assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
@@ -3682,26 +3682,60 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     {
         unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
 
+        // We might also need SIMD regs if we have 4 or more continuous non-gc slots
+        // On ARM64, SIMD loads/stores provide 8-byte atomicity guarantees when aligned to 8 bytes.
+        regNumber tmpSimdReg1 = REG_NA;
+        regNumber tmpSimdReg2 = REG_NA;
+        if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
+        {
+            tmpSimdReg1 = cpObjNode->ExtractTempReg(RBM_ALLFLOAT);
+            tmpSimdReg2 = cpObjNode->ExtractTempReg(RBM_ALLFLOAT);
+        }
+
         unsigned i = 0;
         while (i < slots)
         {
             if (!layout->IsGCPtr(i))
             {
-                // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
-                if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
+                // How many continuous non-gc slots do we have?
+                unsigned nonGcSlots = 0;
+                do
                 {
-                    emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
-                                          2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                    emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
-                                          2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                    ++i; // extra increment of i, since we are copying two items
-                }
-                else
+                    nonGcSlots++;
+                    i++;
+                } while ((i < slots) && !layout->IsGCPtr(i));
+
+                const regNumber srcReg = REG_WRITE_BARRIER_SRC_BYREF;
+                const regNumber dstReg = REG_WRITE_BARRIER_DST_BYREF;
+                while (nonGcSlots > 0)
                 {
-                    emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
-                    emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
+                    regNumber tmp1 = tmpReg;
+                    regNumber tmp2 = tmpReg2;
+                    emitAttr  size = EA_8BYTE;
+                    insOpts   opts = INS_OPTS_POST_INDEX;
+
+                    // Copy at least two slots at a time
+                    if (nonGcSlots >= 2)
+                    {
+                        // Do 4 slots at a time if SIMD is supported
+                        if ((nonGcSlots >= 4) && compiler->IsBaselineSimdIsaSupported())
+                        {
+                            // We need SIMD temp regs now
+                            tmp1 = tmpSimdReg1;
+                            tmp2 = tmpSimdReg2;
+                            size = EA_16BYTE;
+                            nonGcSlots -= 2;
+                        }
+                        nonGcSlots -= 2;
+                        emit->emitIns_R_R_R_I(INS_ldp, size, tmp1, tmp2, srcReg, EA_SIZE(size) * 2, opts);
+                        emit->emitIns_R_R_R_I(INS_stp, size, tmp1, tmp2, dstReg, EA_SIZE(size) * 2, opts);
+                    }
+                    else
+                    {
+                        nonGcSlots--;
+                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmp1, srcReg, EA_SIZE(size), opts);
+                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmp1, dstReg, EA_SIZE(size), opts);
+                    }
                 }
             }
             else
@@ -3709,8 +3743,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                 // In the case of a GC-Pointer we'll call the ByRef write barrier helper
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
                 gcPtrCount--;
+                i++;
             }
-            ++i;
         }
         assert(gcPtrCount == 0);
     }
@@ -3750,33 +3784,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned   jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    FlowEdge** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned   jmpTabOffs;
-    unsigned   jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = (*jumpTable)->getDestinationBlock();
-        jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.

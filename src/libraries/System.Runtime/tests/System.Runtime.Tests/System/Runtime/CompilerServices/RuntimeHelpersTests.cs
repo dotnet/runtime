@@ -69,6 +69,26 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void EqualsTest()
+        {
+            // Boolean RuntimeHelpers.Equals(Object, Object)
+
+            Assert.True(RuntimeHelpers.Equals(Guid.Empty, Guid.Empty));
+            Assert.False(RuntimeHelpers.Equals(Guid.Empty, Guid.NewGuid()));
+
+            // Reference equal
+            object o = new object();
+            Assert.True(RuntimeHelpers.Equals(o, o));
+
+            // Type mismatch
+            Assert.False(RuntimeHelpers.Equals(Guid.Empty, string.Empty));
+
+            // Non value types
+            Assert.False(RuntimeHelpers.Equals(new object(), new object()));
+            Assert.False(RuntimeHelpers.Equals(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 }));
+        }
+
+        [Fact]
         public static void InitializeArray()
         {
             // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)
@@ -374,7 +394,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        [SkipOnMono("Not presently implemented on Mono")]
         public static void AllocateTypeAssociatedMemoryInvalidArguments()
         {
             Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
@@ -382,7 +401,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        [SkipOnMono("Not presently implemented on Mono")]
         public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);

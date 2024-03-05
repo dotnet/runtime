@@ -101,13 +101,12 @@ private:
     // Arguments:
     //    jumpKind - jump kind for the new basic block
     //    insertAfter - basic block, after which compiler has to insert the new one.
-    //    jumpDest - jump target for the new basic block. Defaults to nullptr.
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
+    BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter)
     {
-        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
+        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
         block->SetFlags(BBF_IMPORTED);
         return block;
     }
@@ -143,21 +142,22 @@ private:
 
         // Current block now becomes the test block
         BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block, block->Next());
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block);
 
         // Update flow and flags
-        block->SetCond(remainderBlock, helperBlock);
         block->SetFlags(BBF_INTERNAL);
-
         helperBlock->SetFlags(BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
+        assert(block->TargetIs(remainderBlock));
         FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
-        FlowEdge* const trueEdge  = compiler->fgGetPredForBlock(remainderBlock, block);
+        FlowEdge* const trueEdge  = block->GetTargetEdge();
         trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
         falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
+        block->SetCond(trueEdge, falseEdge);
 
         FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
         newEdge->setLikelihood(1.0);
+        helperBlock->SetTargetEdge(newEdge);
 
         // Update weights
         remainderBlock->inheritWeight(block);
@@ -238,7 +238,7 @@ private:
         }
 
         // Update flow
-        block->SetKindAndTarget(BBJ_THROW);
+        block->SetKindAndTargetEdge(BBJ_THROW);
 
         // Add helper call
         //
