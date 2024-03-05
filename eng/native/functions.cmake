@@ -366,75 +366,6 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-define_property(TARGET PROPERTY CLR_IMPORTED_COPY_TARGET
-  BRIEF_DOCS "set to the COPY_TARGET option that was used to define the target using add_imported_library_clr"
-  FULL_DOCS "set to the COPY_TARGET option that was used to define the target using add_imported_library_clr"
-  "Since imported targets don't have build events, the COPY_TARGET's POST_BUILD event can be used instead")
-
-# add_imported_library_clr(targetName COPY_TARGET copyTargetName IMPORTED_LOCATION importLocation)
-#
-# same as add_library(targetName SHARED IMPORTED GLOBAL) but it will first copy the library from
-# importLocation into our build tree using the target copyTargetName.  We do this so that we can
-# strip the symbols from the library and place them into a separate symbol file.
-#
-# Incidentally this also makes cmake dependency analysis work correctly: if the imported library
-# changes (for example, if it is built during an earlier stage of our build that cmake can't see,
-# the dependencies of targetName will be rebuilt)
-function(add_imported_library_clr targetName)
-  set(options)
-  set(oneValueArgs COPY_TARGET IMPORTED_LOCATION)
-  set(multiValueArgs)
-  cmake_parse_arguments(PARSE_ARGV 1 opt "${options}" "${oneValueArgs}" "${multiValueArgs}")
-  if ("${opt_COPY_TARGET}" STREQUAL "" OR "${opt_KEYWORDS_MISSING_VALUES}" MATCHES "COPY_TARGET")
-    message(FATAL_ERROR "add_imported_library_clr requires COPY_TARGET option")
-  endif()
-  if ("${opt_IMPORTED_LOCATION}" STREQUAL "" OR "${opt_KEYWORDS_MISSING_VALUES}" MATCHES "IMPORTED_LOCATION")
-    message(FATAL_ERROR "add_imported_library_clr requires IMPORTED_LOCATION option")
-  endif()
-  if (NOT "${opt_UNPARSED_ARGUMENTS}" STREQUAL "")
-    message(FATAL_ERROR "add_imported_library_clr called with unrecognized options ${opt_UNPARSED_ARGUMENTS}")
-  endif()
-
-  # Copy the imported library into our binary dir.
-  # We do this so that we may strip it and also so that cmake dependency tracking will be aware if the file changes
-
-  set(src "${opt_IMPORTED_LOCATION}")
-  cmake_path(GET src FILENAME srcFilename)
-
-  # for namespaced targets replace :: by _ - otherwise the make generator produces a Makefile rule that make doesn't like
-  string(REPLACE "::" "_" destSubdir "${targetName}")
-  set(dest "${CMAKE_CURRENT_BINARY_DIR}/imported_library/${destSubdir}/${srcFilename}")
-  
-  add_custom_command(OUTPUT "${dest}"
-    DEPENDS "${src}"
-    COMMAND ${CMAKE_COMMAND} -E true "${src}" "${dest}"
-  )
-
-  if (CLR_CMAKE_HOST_WIN32)
-    cmake_path(REPLACE_EXTENSION opt_IMPORTED_LOCATION ".pdb" OUTPUT_VARIABLE srcPdb)
-    cmake_path(GET srcPdb FILENAME srcPdbFilename)
-    set(destPdb "${CMAKE_CURRENT_BINARY_DIR}/imported_library/${destSubdir}/${srcPdbFilename}")
-
-    add_custom_command(OUTPUT "${destPdb}"
-      DEPENDS "${srcPdb}"
-      COMMAND ${CMAKE_COMMAND} -E true "${srcPdb}" "${destPdb}"
-    )
-  endif()
-
-  if (CLR_CMAKE_HOST_WIN32)
-    add_custom_target("${opt_COPY_TARGET}" DEPENDS "${dest}" "${destPdb}")
-  else()
-    add_custom_target("${opt_COPY_TARGET}" DEPENDS "${dest}")
-  endif()
-
-  add_library(${targetName} SHARED IMPORTED GLOBAL)
-  add_dependencies(${targetName} "${opt_COPY_TARGET}")
-  set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${dest}")
-  set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_COPY_TARGET "${opt_COPY_TARGET}")
-
-  strip_symbols(${targetName} symbolFile)
-endfunction()
-
 function(get_symbol_file_name targetName outputSymbolFilename)
   get_target_property(importedCopyTarget "${targetName}" CLR_IMPORTED_COPY_TARGET) # see add_imported_library_clr
   if ("${importedCopyTarget}" STREQUAL "importedCopyTarget-NOTFOUND")
@@ -779,8 +710,6 @@ endfunction()
 # If the library is found, sets libraryName_FOUND to true, else false.
 # If the library is found, a target libraryName::libraryName is defined.
 # If REQUIRED is specified, it's a fatal error not to find the library, otherwise the library is considered optional.
-#
-# For implementation details see import-nativeaot-library.cmake
 function(find_nativeaot_library libraryName)
   cmake_parse_arguments(PARSE_ARGV 1 "findNativeAOT_opt" "REQUIRED" "" "")
   if (NOT "${findNativeAOT_opt_REQUIRED}")
