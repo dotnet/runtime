@@ -41,6 +41,17 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
+	public static class DictOfListE
+	{
+		public static void AddToList<TKey, TValueElement>(this Dictionary<TKey, List<TValueElement>> me, TKey key, TValueElement value) where TKey : notnull
+		{
+			if (!me.TryGetValue (key, out List<TValueElement>? methods)) {
+				methods = new List<TValueElement> ();
+				me[key] = methods;
+			}
+			methods.Add (value);
+		}
+	}
 
 	public class TypeMapInfo
 	{
@@ -166,8 +177,9 @@ namespace Mono.Linker
 			if (_interfaces.ContainsKey (type))
 				return;
 
+			Dictionary<TypeDefinition, List<ImplNode>> waysToImplementIface = new();
+			//List<(InterfaceImplementor, string)> unresolveableInterfaceImplrs = new();
 			List<InterfaceImplementor> implrs = [];
-			// There may be many different chains of interface implementations that lead to the same interface. We should only keep one for each.
 			// This should use TypeReferences since the interfaceImpl could point to different generic instantiations of the interface
 			HashSet<TypeDefinition> interfacesSeen = [];
 
@@ -175,9 +187,13 @@ namespace Mono.Linker
 			foreach (var iface in type.Interfaces) {
 				var inflatedIface = iface.InterfaceType;
 				var ifaceType = context.Resolve (iface.InterfaceType);
-				implrs.Add (new (type, ifaceType, inflatedIface, new ImplNode (iface, type, null), context));
-				if (ifaceType is not null)
+				ImplNode implNode = new ImplNode (iface, type, []);
+				//InterfaceImplementor impl = new (type, ifaceType, inflatedIface, implNode, context);
+				//implrs.Add (impl);
+				if (ifaceType is not null) {
+					waysToImplementIface.AddToList (ifaceType, implNode);
 					interfacesSeen.Add (ifaceType);
+				}
 			}
 
 			// Add interfaces on base type with the same implementation chain
@@ -185,11 +201,11 @@ namespace Mono.Linker
 				MapInterfacesOnType (baseDef);
 				var baseInterfaces = _interfaces[baseDef];
 				foreach (var item in baseInterfaces) {
-					if (item.InterfaceType is null || interfacesSeen.Add (item.InterfaceType)) {
-						implrs.Add (new (type, item.InterfaceType, item.InflatedInterface, item.InterfaceImplChain, context));
+					//if (item.InterfaceType is null || interfacesSeen.Add (item.InterfaceType)) {
+						implrs.Add (new (type, item.InterfaceType, item.InflatedInterface, item.InterfaceImplementationNode, context));
 						if (item.InterfaceType is not null)
 							interfacesSeen.Add (item.InterfaceType);
-					}
+					//}
 				}
 			}
 			// Add interfaces on base interfaces with their interfaces
@@ -203,9 +219,9 @@ namespace Mono.Linker
 				foreach (var item in baseInterfaces) {
 					if (item.InterfaceType is null)
 						continue;
-					if (interfacesSeen.Add (item.InterfaceType)) {
-						implrs.Add (new InterfaceImplementor (type, item.InterfaceType, item.InflatedInterface, new ImplNode (iface.InterfaceImplChain.Value, iface.InterfaceType, item.InterfaceImplChain), context));
-					}
+					//if (interfacesSeen.Add (item.InterfaceType)) {
+						implrs.Add (new InterfaceImplementor (type, item.InterfaceType, item.InflatedInterface, new ImplNode (iface.InterfaceImplementationNode, iface.InterfaceType, item.InterfaceImplementationNode), context));
+					//}
 				}
 			}
 			_interfaces.Add (type, implrs);
@@ -218,7 +234,7 @@ namespace Mono.Linker
 
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.
-			var allInflatedInterface = _interfaces[type];
+			var allInflatedInterface = _interfaces[type].DistinctBy(static i => i.InterfaceType);
 			foreach(var interfaceImplementor in allInflatedInterface) {
 				foreach (MethodReference interfaceMethod in interfaceImplementor.InflatedInterface.GetMethods (context)) {
 					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
@@ -374,7 +390,7 @@ namespace Mono.Linker
 		{
 			// Can I maybe only look at types in the implNode chain? I'd need all the chains that lead to the interfaceType, but it could be possible.
 			bool foundImpl = false;
-			foreach (var potentialDimProviderImplementation in _interfaces[typeThatImplementsInterface]) {
+			foreach (var potentialDimProviderImplementation in _interfaces[typeThatImplementsInterface].DistinctBy(static i => i.InterfaceType)) {
 				if (potentialDimProviderImplementation.InterfaceType is null)
 					continue;
 				// If this interface doesn't implement the interface with the method we're looking for, it can't provide a default implementation.

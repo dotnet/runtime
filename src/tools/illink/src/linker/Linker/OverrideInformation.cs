@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Mono.Cecil;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Mono.Linker
 {
@@ -39,7 +40,7 @@ namespace Mono.Linker
 		}
 
 		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> InterfaceImplementor?.InterfaceImplementations[^1];
+			=> InterfaceImplementor?.InterfaceImplementationNode.GetLast();
 
 		public TypeDefinition? InterfaceType
 			=> InterfaceImplementor?.InterfaceType;

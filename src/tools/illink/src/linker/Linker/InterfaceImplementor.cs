@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Mono.Cecil;
@@ -18,113 +19,64 @@ namespace Mono.Linker
 		public TypeDefinition Implementor { get; }
 
 		/// <summary>
-		/// The .interfaceimpl on <see cref="InterfaceImplementor.Implementor"/>that points to <see cref="InterfaceImplementor.InterfaceType"/>
-		/// </summary>
-		public InterfaceImplementation[] InterfaceImplementations => InterfaceImplChain.ToArray ();
-
-		public ImplNode InterfaceImplChain { get; }
-
-		/// <summary>
 		/// The type of the interface that is implemented by <see cref="InterfaceImplementor.Implementor"/>
 		/// </summary>
 		public TypeDefinition? InterfaceType { get; }
 
-		public TypeReference InterfaceTypeReference => InterfaceImplChain.GetLast ().InterfaceType;
+		public ImplNode InterfaceImplementationNode { get; }
+
 		public TypeReference InflatedInterface { get; }
 
 		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImplNode implNode, LinkContext context)
 		{
 			Implementor = implementor;
 			InterfaceType = interfaceType;
-			InterfaceImplChain = implNode;
+			InterfaceImplementationNode = implNode;
 			InflatedInterface = inflatedInterface;
 			Debug.Assert (interfaceType == context.Resolve (implNode.GetLast ().InterfaceType));
 		}
-
-		public void FindMostDerivedImplsForEachInterface (TypeDefinition type)
-		{
-			// Should be a field with all interfaces
-			Dictionary<TypeDefinition, TypeDefinition[]> _ifacesRecursively = new();
-
-			Dictionary<TypeDefinition, List<TypeDefinition>> MostDerivedImpls = new ();
-			Dictionary<TypeDefinition, List<TypeDefinition>> IsMostDerivedImplOf = new ();
-			// All InterfaceImplementations on this type and base type
-			foreach (var iface in _ifacesRecursively[type]) {
-				var ifaceType = iface;
-				foreach (var impledIface in _ifacesRecursively[ifaceType]) {
-					if (MostDerivedImpls.TryGetValue (impledIface, out var mostDerived)) {
-						// If this interface derives from all the currently most derived implementors, this interface (or the most derived implementor of it) is the new most derived
-						if (mostDerived.All (d => _ifacesRecursively[ifaceType].Contains (d))) {
-							SetAsMoreDerivedThan (impledIface, ifaceType);
-						}
-						else {
-							bool addToList = true;
-							for (int i = 0; i < MostDerivedImpls[impledIface].Count; i++) {
-								if (_ifacesRecursively[ifaceType].Contains(MostDerivedImpls[impledIface][i])) {
-									MostDerivedImpls[impledIface][i] = ifaceType;
-									addToList = false;
-								}
-								if (MostDerivedImpls[ifaceType].Contains (MostDerivedImpls[impledIface][i])) {
-									addToList = false;
-									break;
-								}
-							}
-							if (addToList)
-								MostDerivedImpls[impledIface].Add (ifaceType);
-						}
-					} else {
-						MostDerivedImpls.Add (impledIface, [ifaceType]);
-					}
-				}
-			}
-
-			void SetAsMoreDerivedThan (TypeDefinition type, TypeDefinition moreDerivedType)
-			{
-				MostDerivedImpls[type] = MostDerivedImpls[moreDerivedType!];
-
-				if (IsMostDerivedImplOf.TryGetValue(type, out var mostDerivedImpls)) {
-					foreach(var lessDerivedThanType in mostDerivedImpls) {
-						SetAsMoreDerivedThan (lessDerivedThanType, moreDerivedType);
-					}
-				}
-
-				List<TypeDefinition>? marr;
-				if (!IsMostDerivedImplOf.TryGetValue (moreDerivedType!, out marr)) {
-					marr = [];
-					IsMostDerivedImplOf[moreDerivedType!] = marr;
-				}
-				marr.Add (type);
-			}
-		}
 	}
 
-	public sealed record ImplNode (InterfaceImplementation Value, TypeDefinition InterfaceImplementationProvider, ImplNode? Next) : IEnumerable<InterfaceImplementation>
+	public sealed record ImplNode (InterfaceImplementation InterfaceImplementation, TypeDefinition InterfaceImplementationProvider, ImplNode? Next) : IEnumerable<InterfaceImplementation>
 	{
-		sealed class Enumerator : IEnumerator<InterfaceImplementation>
+		public struct Enumerator : IEnumerator<InterfaceImplementation>
 		{
-			public Enumerator (ImplNode original)
-			{
-				_current = new ImplNode (null!, null!, original);
-				_original = _current;
-			}
 			ImplNode _current;
 			ImplNode _original;
+			bool _hasBeenMovedOnce;
+
+			public Enumerator (ImplNode original)
+			{
+				_current = original;
+				_original = original;
+				_hasBeenMovedOnce = false;
+			}
+
 			public InterfaceImplementation Current => _current.Value;
 
 			object IEnumerator.Current => _current.Value;
 
 			public void Dispose () { }
+
 			public bool MoveNext ()
 			{
-				if (_current.Next == null)
+				if (!_hasBeenMovedOnce) {
+					_hasBeenMovedOnce = true;
+					return true;
+				}
+				if (_current is null)
+					throw new InvalidOperationException ();
+				if (_current.Next is null)
 					return false;
-				_current = _current.Next!;
+				_current = _current.Next;
 				return true;
 			}
 
 			public void Reset () => _current = _original;
 		}
-		public IEnumerator<InterfaceImplementation> GetEnumerator () => new Enumerator (this);
+
+		public Enumerator GetEnumerator () => new Enumerator (this);
+		IEnumerator<InterfaceImplementation> IEnumerable<InterfaceImplementation>.GetEnumerator () => new Enumerator (this);
 
 		public InterfaceImplementation GetLast ()
 		{
@@ -133,16 +85,6 @@ namespace Mono.Linker
 				curr = curr.Next;
 			}
 			return curr.Value;
-		}
-		public InterfaceImplementation[] ToArray ()
-		{
-			List<InterfaceImplementation> builder = new ();
-			var curr = this;
-			while (curr is not null) {
-				builder.Add (curr.Value);
-				curr = curr.Next;
-			}
-			return builder.ToArray ();
 		}
 
 		IEnumerator IEnumerable.GetEnumerator () => new Enumerator (this);

@@ -804,14 +804,20 @@ namespace Mono.Linker.Steps
 			if (typeToExamine == interfaceType)
 				return true;
 
-			if (typeToExamine.HasInterfaces) {
-				foreach (var iface in typeToExamine.Interfaces) {
-					var resolved = Context.TryResolve (iface.InterfaceType);
-					if (resolved == null)
-						continue;
+			//if (typeToExamine.HasInterfaces) {
+			//foreach (var iface in typeToExamine.Interfaces) {
+			//var resolved = Context.TryResolve (iface.InterfaceType);
+			//if (resolved == null)
+			//continue;
 
-					if (RequiresInterfaceRecursively (resolved, interfaceType))
-						return true;
+			//if (RequiresInterfaceRecursively (resolved, interfaceType))
+			//return true;
+			//}
+			//}
+
+			foreach (var iface in Annotations.GetRecursiveInterfaces (interfaceType)) {
+				if (iface.InterfaceType == interfaceType) {
+					return true;
 				}
 			}
 
@@ -825,7 +831,7 @@ namespace Mono.Linker.Steps
 				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor.Implementor))
 				return;
 
-			foreach(var ifaceImpl in ov.InterfaceImplementor.InterfaceImplementations) {
+			foreach (var ifaceImpl in ov.InterfaceImplementor.InterfaceImplementationNode) {
 				MarkInterfaceImplementation (ifaceImpl);
 			}
 		}
@@ -2452,15 +2458,9 @@ namespace Mono.Linker.Steps
 
 		void MarkInterfaceImplementations (TypeDefinition type)
 		{
-			//if (!type.HasInterfaces)
-			//return;
-
-			// Should look at all recursive interfaces
-			foreach(var iface in Annotations.GetRecursiveInterfaces(type)) {
-				if (ShouldMarkInterfaceImplementation(iface))
-				{
-					foreach(InterfaceImplementation interfaceImpl in iface.InterfaceImplChain)
-					{
+			foreach (var iface in Annotations.GetRecursiveInterfaces (type)) {
+				if (ShouldMarkInterfaceImplementation (iface)) {
+					foreach (InterfaceImplementation interfaceImpl in iface.InterfaceImplementationNode) {
 						MarkInterfaceImplementation (interfaceImpl, new MessageOrigin (type));
 					}
 				}
@@ -2469,8 +2469,15 @@ namespace Mono.Linker.Steps
 
 		protected virtual bool ShouldMarkInterfaceImplementation (InterfaceImplementor interfaceImplementor)
 		{
-			// if (Annotations.IsMarked (iface))
-			// return false;
+			//bool allMarked = true;
+			//foreach (var iface in interfaceImplementor.InterfaceImplementationNode) {
+			//if (!Annotations.IsMarked (iface)) {
+			//allMarked = false;
+			//break;
+			//}
+			//}
+			//if (allMarked)
+			//return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, interfaceImplementor.Implementor))
 				return true;
@@ -2570,8 +2577,12 @@ namespace Mono.Linker.Steps
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
 			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
 			if (!((iface is not null && Annotations.IsMarked (iface))
-				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
+					|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
 				return false;
+			//foreach (var iface in overrideInformation.InterfaceImplementor.InterfaceImplementationNode) {
+			//if (!Annotations.IsMarked (iface))
+			//return false;
+			//}
 
 			// If the interface method is not marked and the interface doesn't come from a preserved scope, do not mark the implementation method
 			// Unmarked interface methods from link assemblies will be removed so the implementing method does not need to be kept.
@@ -3770,8 +3781,7 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					}
-					else {
+					} else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;
