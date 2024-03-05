@@ -14,6 +14,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmBackgroundExec))]
+        public void SyncJsImportJsExportThrows()
+        {
+            var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
+            Assert.Contains("Cannot call synchronous C# method", ex.Message);
+        }
+
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public async Task JsExportBooleanAsync(bool value)
