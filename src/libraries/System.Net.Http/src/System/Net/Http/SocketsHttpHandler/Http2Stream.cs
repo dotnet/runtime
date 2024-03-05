@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
@@ -38,9 +35,6 @@ namespace System.Net.Http
 
             private MultiArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private Http2StreamWindowManager _windowManager;
-            private CreditWaiter? _creditWaiter;
-            private int _availableCredit;
-            private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -81,7 +75,8 @@ namespace System.Net.Http
             /// </summary>
             private bool _hasWaiter;
 
-            private readonly CancellationTokenSource? _requestBodyCancellationSource;
+            private readonly CancellationTokenSource _requestBodyCancellationSource;
+            private readonly Http2StreamWriteAwaitable _streamWriteAwaitable;
 
             private readonly TaskCompletionSource<bool>? _expect100ContinueWaiter;
 
@@ -108,22 +103,9 @@ namespace System.Net.Http
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
-                    if (_request.IsExtendedConnectRequest)
-                    {
-                        _requestBodyCancellationSource = new CancellationTokenSource();
-                    }
                 }
                 else
                 {
-                    // Create this here because it can be canceled before SendRequestBodyAsync is even called.
-                    // To avoid race conditions that can result in this being disposed in response to a server reset
-                    // and then used to issue cancellation, we simply avoid disposing it; that's fine as long as we don't
-                    // construct this via CreateLinkedTokenSource, in which case disposal is necessary to avoid a potential
-                    // leak.  If how this is constructed ever changes, we need to revisit disposing it, such as by
-                    // using synchronization (e.g. using an Interlocked.Exchange to "consume" the _requestBodyCancellationSource
-                    // for either disposal or issuing cancellation).
-                    _requestBodyCancellationSource = new CancellationTokenSource();
-
                     if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
                     {
                         // Create a TCS for handling Expect: 100-continue semantics. See WaitFor100ContinueAsync.
@@ -131,6 +113,9 @@ namespace System.Net.Http
                         _expect100ContinueWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     }
                 }
+
+                _requestBodyCancellationSource = new CancellationTokenSource();
+                _streamWriteAwaitable = new Http2StreamWriteAwaitable(this, _requestBodyCancellationSource);
 
                 _response = new HttpResponseMessage()
                 {
@@ -145,7 +130,7 @@ namespace System.Net.Http
             public void Initialize(int streamId, int initialWindowSize)
             {
                 StreamId = streamId;
-                _availableCredit = initialWindowSize;
+                _streamWriteAwaitable.SetInitialStreamWindow(initialWindowSize);
                 if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(initialWindowSize)}={initialWindowSize}");
             }
 
@@ -155,7 +140,11 @@ namespace System.Net.Http
 
             public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
 
+            public bool ExpectContinue => _expect100ContinueWaiter is not null;
+
             public Http2Connection Connection => _connection;
+
+            public HttpRequestMessage Request => _request;
 
             public bool ConnectProtocolEstablished { get; private set; }
 
@@ -171,6 +160,11 @@ namespace System.Net.Http
                 return r;
             }
 
+            public ValueTask SendHeadersAsync(ReadOnlyMemory<byte> headers, CancellationToken cancellationToken)
+            {
+                return _streamWriteAwaitable.SendHeadersAsync(headers, cancellationToken);
+            }
+
             public async Task SendRequestBodyAsync(CancellationToken cancellationToken)
             {
                 if (_request.Content == null)
@@ -180,7 +174,6 @@ namespace System.Net.Http
                 }
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"{_request.Content}");
-                Debug.Assert(_requestBodyCancellationSource != null);
 
                 // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
                 // Normally we might create a linked token, but once cancellation is requested, we can't recover anyway,
@@ -308,7 +301,7 @@ namespace System.Net.Http
                         {
                             // Send EndStream asynchronously and without cancellation.
                             // If this fails, it means that the connection is aborting and we will be reset.
-                            _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
+                            _connection._frameWriter.SendEndStream(StreamId);
                         }
 
                         if (complete)
@@ -367,7 +360,7 @@ namespace System.Net.Http
                 {
                     // If execution reached this line, it's guaranteed that
                     // _requestCompletionState == StreamCompletionState.Failed or _responseCompletionState == StreamCompletionState.Failed
-                    _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
+                    _connection._frameWriter.SendRstStream(StreamId, Http2ProtocolErrorCode.Cancel);
                 }
             }
 
@@ -381,15 +374,7 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                lock (_creditSyncObject)
-                {
-                    CreditWaiter? waiter = _creditWaiter;
-                    if (waiter != null)
-                    {
-                        waiter.Dispose();
-                        _creditWaiter = null;
-                    }
-                }
+                _streamWriteAwaitable.Complete();
             }
 
             private void Cancel()
@@ -459,18 +444,7 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount)
             {
-                lock (_creditSyncObject)
-                {
-                    _availableCredit = checked(_availableCredit + amount);
-                    if (_availableCredit > 0 && _creditWaiter != null)
-                    {
-                        int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
-                        if (_creditWaiter.TrySetResult(granted))
-                        {
-                            _availableCredit -= granted;
-                        }
-                    }
-                }
+                _streamWriteAwaitable.AdjustStreamWindow(amount);
             }
 
             private const int FirstHPackRequestPseudoHeaderId = 1;
@@ -942,7 +916,6 @@ namespace System.Net.Http
                         {
                             _requestBodyAbandoned = true;
                             requestBodyCancellationSource = _requestBodyCancellationSource;
-                            Debug.Assert(requestBodyCancellationSource != null);
                         }
                     }
                     else
@@ -1220,93 +1193,22 @@ namespace System.Net.Http
                 }
             }
 
-            private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            public Exception? ReplaceExceptionOnRequestBodyCancellationIfNeeded()
             {
-                Debug.Assert(_requestBodyCancellationSource != null);
-
-                // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
-                CancellationTokenRegistration linkedRegistration = cancellationToken.CanBeCanceled && cancellationToken != _requestBodyCancellationSource.Token ?
-                    RegisterRequestBodyCancellation(cancellationToken) :
-                    default;
-
-                try
+                lock (SyncObject)
                 {
-                    while (buffer.Length > 0)
+                    if (_resetException is Exception resetException)
                     {
-                        int sendSize = -1;
-                        bool flush = false;
-                        lock (_creditSyncObject)
+                        if (_canRetry)
                         {
-                            if (_availableCredit > 0)
-                            {
-                                sendSize = Math.Min(buffer.Length, _availableCredit);
-                                _availableCredit -= sendSize;
-
-                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
-                                if (_availableCredit == 0)
-                                {
-                                    flush = true;
-                                }
-                            }
-                            else
-                            {
-                                if (_creditWaiter is null)
-                                {
-                                    _creditWaiter = new CreditWaiter(_requestBodyCancellationSource.Token);
-                                }
-                                else
-                                {
-                                    _creditWaiter.ResetForAwait(_requestBodyCancellationSource.Token);
-                                }
-                                _creditWaiter.Amount = buffer.Length;
-                            }
+                            return CreateRetryException(SR.net_http_request_aborted, resetException);
                         }
 
-                        if (sendSize == -1)
-                        {
-                            // Logically this is part of the else block above, but we can't await while holding the lock.
-                            Debug.Assert(_creditWaiter != null);
-                            sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-
-                            lock (_creditSyncObject)
-                            {
-                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
-                                if (_availableCredit == 0)
-                                {
-                                    flush = true;
-                                }
-                            }
-                        }
-
-                        Debug.Assert(sendSize > 0);
-
-                        ReadOnlyMemory<byte> current;
-                        (current, buffer) = SplitBuffer(buffer, sendSize);
-
-                        await _connection.SendStreamDataAsync(StreamId, current, flush, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                        return GetRequestAbortedException(resetException);
                     }
                 }
-                catch (OperationCanceledException e) when (e.CancellationToken == _requestBodyCancellationSource.Token)
-                {
-                    lock (SyncObject)
-                    {
-                        if (_resetException is Exception resetException)
-                        {
-                            if (_canRetry)
-                            {
-                                ThrowRetry(SR.net_http_request_aborted, resetException);
-                            }
 
-                            ThrowRequestAborted(resetException);
-                        }
-                    }
-
-                    throw;
-                }
-                finally
-                {
-                    linkedRegistration.Dispose();
-                }
+                return null;
             }
 
             private void CloseResponseBody()
@@ -1329,10 +1231,9 @@ namespace System.Net.Http
                 }
                 else if (_sendRstOnResponseClose)
                 {
-                    // Send RST_STREAM with CANCEL to notify the server that it shouldn't
-                    // expect the request body.
+                    // Send RST_STREAM with CANCEL to notify the server that it shouldn't expect the request body.
                     // If this fails, it means that the connection is aborting and we will be reset.
-                    _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
+                    _connection._frameWriter.SendRstStream(StreamId, Http2ProtocolErrorCode.Cancel);
                 }
 
                 lock (SyncObject)
@@ -1440,6 +1341,18 @@ namespace System.Net.Http
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => ValueTask.FromException(new NotSupportedException(SR.net_http_content_readonly_stream));
+
+                public override Task FlushAsync(CancellationToken cancellationToken)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Task.FromCanceled(cancellationToken);
+                    }
+
+                    return Task.CompletedTask;
+                }
+
+                public override void Flush() { }
             }
 
             private sealed class Http2WriteStream : Http2ReadWriteStream
@@ -1573,7 +1486,6 @@ namespace System.Net.Http
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
-
                     Http2Stream? http2Stream = _http2Stream;
 
                     if (http2Stream == null)
@@ -1581,7 +1493,7 @@ namespace System.Net.Http
                         return ValueTask.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
                     }
 
-                    return http2Stream.SendDataAsync(buffer, cancellationToken);
+                    return http2Stream._streamWriteAwaitable.WriteStreamDataAsync(buffer, cancellationToken);
                 }
 
                 public override Task FlushAsync(CancellationToken cancellationToken)
@@ -1591,17 +1503,9 @@ namespace System.Net.Http
                         return Task.FromCanceled(cancellationToken);
                     }
 
-                    Http2Stream? http2Stream = _http2Stream;
+                    _http2Stream?._streamWriteAwaitable.QueueStreamDataFlushIfNeeded();
 
-                    if (http2Stream == null)
-                    {
-                        return Task.CompletedTask;
-                    }
-
-                    // In order to flush this stream's previous writes, we need to flush the connection. We
-                    // really only need to do any work here if the connection's buffer has any pending writes
-                    // from this stream, but we currently lack a good/efficient/safe way of doing that.
-                    return http2Stream._connection.FlushAsync(cancellationToken);
+                    return Task.CompletedTask;
                 }
             }
         }

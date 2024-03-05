@@ -59,9 +59,9 @@ namespace System.Net
             byte[] array = _bytes;
             _bytes = null!;
 
-            if (array is not null)
+            if (_usePool && array is not null)
             {
-                ReturnBufferIfPooled(array);
+                ArrayPool<byte>.Shared.Return(array);
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.Net
 
             byte[] bufferToReturn = _bytes;
             _bytes = Array.Empty<byte>();
-            ReturnBufferIfPooled(bufferToReturn);
+            ArrayPool<byte>.Shared.Return(bufferToReturn);
         }
 
         public int ActiveLength => _availableStart - _activeStart;
@@ -166,7 +166,10 @@ namespace System.Net
             _activeStart = 0;
 
             _bytes = newBytes;
-            ReturnBufferIfPooled(oldBytes);
+            if (_usePool)
+            {
+                ArrayPool<byte>.Shared.Return(oldBytes);
+            }
 
             Debug.Assert(byteCount <= AvailableLength);
         }
@@ -174,16 +177,6 @@ namespace System.Net
         public void Grow()
         {
             EnsureAvailableSpaceCore(AvailableLength + 1);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ReturnBufferIfPooled(byte[] buffer)
-        {
-            // The buffer may be Array.Empty<byte>()
-            if (_usePool && buffer.Length > 0)
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
         }
     }
 }

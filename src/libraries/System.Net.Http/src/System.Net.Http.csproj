@@ -183,14 +183,14 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditManager.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditWaiter.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2FrameWriter.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolErrorCode.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWriteAwaitable.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />
