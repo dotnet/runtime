@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.10..3.20)
 
 project(System.Globalization.Native C)
 
+if (CLR_CMAKE_TARGET_WIN32)
+    enable_language(CXX)
+endif()
+
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     if (ANDROID_FORCE_ICU_DATA_DIR)
         add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
@@ -143,11 +147,19 @@ if (GEN_SHARED_LIB)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
 
-    add_library(System.Globalization.Native
-        SHARED
-        ${NATIVEGLOBALIZATION_SOURCES}
-        ${VERSION_FILE_PATH}
-    )
+    if (CLR_CMAKE_TARGET_WIN32)
+        add_library(System.Globalization.Native
+            SHARED
+            ${NATIVEGLOBALIZATION_SOURCES}
+            ${VERSION_HEADER_PATH}
+        )
+    else()
+        add_library(System.Globalization.Native
+            SHARED
+            ${NATIVEGLOBALIZATION_SOURCES}
+            ${VERSION_FILE_PATH}
+        )
+    endif()
 
     target_link_libraries(System.Globalization.Native
         PRIVATE
