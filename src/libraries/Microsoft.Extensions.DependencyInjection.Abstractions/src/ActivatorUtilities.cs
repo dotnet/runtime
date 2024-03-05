@@ -103,23 +103,27 @@ namespace Microsoft.Extensions.DependencyInjection
                         {
                             ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                         }
-                    }
 
-                    if (isPreferred || bestLength < length)
-                    {
-                        // When a preferred constructor is found, it is always selected however subsequent constructors
-                        // will be selected if they have more parameters.
+                        seenPreferred = true;
                         bestLength = length;
                         bestMatcher = matcher;
                         multipleBestLengthFound = false;
                     }
-                    else if (bestLength == length && bestMatcher.Constructor?.IsPreferred == false)
+                    else if (!seenPreferred)
                     {
-                        // The best constructor was not the one with the attribute, so we have an ambiguous case.
-                        multipleBestLengthFound = true;
+                        if (bestLength < length)
+                        {
+                            // When a preferred constructor is found, it is always selected however subsequent constructors
+                            // will be selected if they have more parameters.
+                            bestLength = length;
+                            bestMatcher = matcher;
+                            multipleBestLengthFound = false;
+                        }
+                        else if (bestLength == length)
+                        {
+                            multipleBestLengthFound = true;
+                        }
                     }
-
-                    seenPreferred |= isPreferred;
                 }
 
                 if (bestLength != -1)
@@ -718,8 +722,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 _constructor = constructor;
                 _parameterValues = new object[constructor.Parameters.Length];
             }
-
-            public ConstructorInfoEx Constructor { get { return _constructor; } }
 
             public int Match(object[] givenParameters, IServiceProviderIsService serviceProviderIsService)
             {

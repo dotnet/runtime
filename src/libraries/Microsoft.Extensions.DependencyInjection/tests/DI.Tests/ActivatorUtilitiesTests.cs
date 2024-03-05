@@ -239,10 +239,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var service = ActivatorUtilities.CreateInstance<ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
 
-            // Ensure ctor(AB) was selected even though ctor(A) had [ActivatorUtilitiesConstructor].
-            // Longer constructors are selected if they appear after the one with [ActivatorUtilitiesConstructor].
+            // Ensure ctor(A) was selected since A has [ActivatorUtilitiesConstructor].
             Assert.NotNull(service.A);
-            Assert.NotNull(service.B);
+            Assert.Null(service.B);
         }
 
         [Fact]
@@ -256,7 +255,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var service = ActivatorUtilities.CreateInstance<ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
 
-            // Ensure ctor(A) was selected since it has [ActivatorUtilitiesConstructor]. It exists after ctor(AB).
+            // Ensure ctor(A) was selected since it has [ActivatorUtilitiesConstructor].
             Assert.NotNull(service.A);
             Assert.Null(service.B);
         }
