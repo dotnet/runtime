@@ -582,9 +582,9 @@ public:
 
     // Returns an array of OBJECTREF* that can be used to store domain specific data.
     // Statics and reflection info (Types, MemberInfo,..) are stored this way
-    // If ppLazyAllocate != 0, allocation will only take place if *ppLazyAllocate != 0 (and the allocation
+    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
     // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL);
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL);
 
     //****************************************************************************************
     // Handles
@@ -1505,11 +1505,11 @@ public:
 #endif // DEBUGGING_SUPPORTED
 
 #ifndef DACCESS_COMPILE
-    OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTREF** ppLazyAllocate = NULL)
+    OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested)
     {
         WRAPPER_NO_CONTRACT;
 
-        return AllocateObjRefPtrsInLargeTable(nRequested, ppLazyAllocate);
+        return AllocateObjRefPtrsInLargeTable(nRequested);
     }
 #endif // DACCESS_COMPILE
 

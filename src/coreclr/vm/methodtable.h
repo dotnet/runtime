@@ -530,11 +530,76 @@ public:
 // when looking for statics pointers
 struct DynamicStaticsInfo
 {
-    PTR_OBJECTREF m_pGCStatics;
-    PTR_BYTE m_pNonGCStatics;
+private:
+    // The detail of whether or not the class has been initialized is stored in the statics pointers as well as in
+    // its normal flag location. This is done so that when getting the statics base for a class, we can get the statics
+    // base address and check to see if it is initialized without needing a barrier between reading the flag and reading
+    // the static field address.
+    static constexpr TADDR ISCLASSNOTINITED = 1;
+    static constexpr TADDR ISCLASSNOTINITEDMASK = ISCLASSNOTINITED;
+    static constexpr TADDR STATICSPOINTERMASK = ~ISCLASSNOTINITEDMASK;
+
+    void InterlockedSetClassInited(bool isGC)
+    {
+        TADDR oldVal;
+        TADDR oldValFromInterlockedOp;
+        TADDR *pAddr = isGC ? &m_pGCStatics : &m_pNonGCStatics;
+        do
+        {
+            oldVal = VolatileLoadWithoutBarrier(pAddr);
+            // Mask off the ISCLASSNOTINITED bit
+            oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, oldVal & STATICSPOINTERMASK, oldVal);
+        } while(oldValFromInterlockedOp != oldVal); // We can loop if we happened to allocate the statics pointer in the middle of this operation
+    }
+
+public:
+    TADDR m_pGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
+    TADDR m_pNonGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     PTR_MethodTable m_pMethodTable;
     MethodTableAuxiliaryData m_AuxData;
-    bool IsClassInited() const { return m_AuxData.IsClassInited(); }
+    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
+    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
+    PTR_OBJECTREF GetGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE(staticsVal & ISCLASSNOTINITEDMASK == 0); return dac_cast<PTR_OBJECTREF>(staticsVal); }
+    PTR_BYTE GetNonGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pNonGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE(staticsVal & ISCLASSNOTINITEDMASK == 0); return dac_cast<PTR_BYTE>(staticsVal); }
+    bool GetIsInitedAndGCStaticsPointer(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(ISCLASSNOTINITEDMASK); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndNonGCStaticsPointer(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(ISCLASSNOTINITEDMASK); return !(staticsVal & ISCLASSNOTINITED); }
+
+    // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
+    bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal)
+    {
+        TADDR oldVal;
+        TADDR oldValFromInterlockedOp;
+        TADDR *pAddr = isGC ? &m_pGCStatics : &m_pNonGCStatics;
+        do
+        {
+            oldVal = VolatileLoad(pAddr);
+
+            // Check to see if statics value has already been set
+            if ((oldVal & STATICSPOINTERMASK) != 0)
+            {
+                // If it has, then we don't need to do anything
+                return false;
+            }
+            
+            oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
+        } while(oldValFromInterlockedOp != oldVal);
+        return true;
+    }
+    void SetClassInited()
+    {
+        InterlockedSetClassInited(true);
+        InterlockedSetClassInited(false);
+    }
+
+#ifndef DACCESS_COMPILE
+    void Init(MethodTable* pMT)
+    {
+        m_pGCStatics = ISCLASSNOTINITED;
+        m_pNonGCStatics = ISCLASSNOTINITED;
+        m_pMethodTable = pMT;
+    }
+#endif
+
     PTR_MethodTable GetMethodTable() const { return m_pMethodTable; }
 };
 
@@ -966,6 +1031,10 @@ public:
     void SetClassInited()
     {
         GetAuxiliaryDataForWrite()->SetClassInited();
+        if (IsDynamicStatics())
+        {
+            GetDynamicStaticsInfo()->SetClassInited();
+        }
     }
 
     void AttemptToPreinit();

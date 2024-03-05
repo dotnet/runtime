@@ -202,10 +202,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
 ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
-#define                OFFSETOF__DynamicStaticsInfo__m_AuxData__m_dwFlags 0x18
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_AuxData__m_dwFlags
-                    == offsetof(DynamicStaticsInfo, m_AuxData) + offsetof(MethodTableAuxiliaryData, m_dwFlags));
-
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
 
 #define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8

@@ -2199,7 +2199,7 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifndef DACCESS_COMPILE
-void LoaderAllocator::AllocateBytesForStaticVariables(uint8_t** ppbMem, uint32_t cbMem)
+void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem)
 {
     CONTRACTL
     {
@@ -2212,11 +2212,11 @@ void LoaderAllocator::AllocateBytesForStaticVariables(uint8_t** ppbMem, uint32_t
     if (cbMem > 0)
     {
         uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
-        InterlockedCompareExchangeT(ppbMem, pbMem, NULL);
+        pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
     }
 }
 
-void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(PTR_OBJECTREF* ppbObjectMem, uint32_t cSlots, MethodTable* pMTWithStaticBoxes)
+void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes)
 {
     CONTRACTL
     {
@@ -2228,7 +2228,7 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(PTR_OBJECTREF* pp
 
     if (cSlots > 0)
     {
-        GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, (OBJECTREF**)ppbObjectMem, pMTWithStaticBoxes);
+        GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTWithStaticBoxes);
     }
 }
 #endif // !DACCESS_COMPILE

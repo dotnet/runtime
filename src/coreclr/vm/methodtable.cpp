@@ -667,7 +667,7 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
 
     if (HasFlag(staticsFlags, MethodTableStaticsFlags::Present))
     {
-        MethodTableAuxiliaryData::GetDynamicStaticsInfo(pMTAuxiliaryData)->m_pMethodTable = this;
+        MethodTableAuxiliaryData::GetDynamicStaticsInfo(pMTAuxiliaryData)->Init(this);
     }
 }
 
@@ -4387,11 +4387,11 @@ void MethodTable::EnsureStaticDataAllocated()
     {
         DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
         // Allocate space for normal statics if we might have them
-        if (pDynamicStaticsInfo->m_pNonGCStatics == NULL)
-            GetLoaderAllocator()->AllocateBytesForStaticVariables(&pDynamicStaticsInfo->m_pNonGCStatics, GetClass()->GetNonGCRegularStaticFieldBytes());
+        if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
+            GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes());
 
-        if (pDynamicStaticsInfo->m_pGCStatics == NULL)
-            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(&pDynamicStaticsInfo->m_pGCStatics, GetClass()->GetNumHandleRegularStatics(), this);
+        if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
+            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this);
     }
     pAuxiliaryData->SetIsStaticDataAllocated();
 }

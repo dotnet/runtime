@@ -16,9 +16,9 @@ extern JIT_GetDynamicGCStaticBase_Portable:proc
 
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
         ; If class is not initialized, bail to C++ helper
-        test    byte ptr [rcx + OFFSETOF__DynamicStaticsInfo__m_AuxData__m_dwFlags], 1
-        jz      CallHelper
         mov     rax, [rcx + OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+        test    rax, 1
+        jnz     CallHelper
         REPRET
 
     align 16
@@ -29,9 +29,9 @@ LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
         ; If class is not initialized, bail to C++ helper
-        test    byte ptr [rcx + OFFSETOF__DynamicStaticsInfo__m_AuxData__m_dwFlags], 1
-        jz      CallHelper
-        mov     rax, [rcx + OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+        mov     rax,   [rcx + OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+        test    rax, 1
+        jnz     CallHelper
         REPRET
 
     align 16

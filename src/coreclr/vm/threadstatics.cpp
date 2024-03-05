@@ -3,16 +3,6 @@
 #include "common.h"
 #include "threadstatics.h"
 
-struct TLSArray
-{
-    int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
-    TADDR pTLSArrayData; // Points at the Thread local array data.
-};
-typedef DPTR(TLSArray) PTR_TLSArray;
-
-// Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
-struct InFlightTLSData;
-typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
 struct InFlightTLSData
 {
 #ifndef DACCESS_COMPILE
@@ -30,13 +20,6 @@ struct ThreadLocalLoaderAllocator
     LoaderAllocator* pLoaderAllocator; // The loader allocator that has a TLS used in this thread
 };
 typedef DPTR(ThreadLocalLoaderAllocator) PTR_ThreadLocalLoaderAllocator;
-
-struct ThreadLocalData
-{
-    TLSArray tlsArray; // TLS data
-    Thread *pThread;
-    PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-};
 
 // This can be used for out of thread access to TLS data. Since that isn't safe in general, we only support it for DAC.
 PTR_VOID GetThreadLocalStaticBaseNoCreate(PTR_ThreadLocalData pThreadLocalData, TLSIndex index)
@@ -100,8 +83,8 @@ void ScanThreadStaticRoots(PTR_ThreadLocalData pThreadLocalData, promote_func* f
         fn(dac_cast<PTR_PTR_Object>(pInFlightData->pTLSData), sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
         pInFlightData = pInFlightData->pNext;
     }
-    PTR_BYTE pTLSArrayData = dac_cast<PTR_BYTE>(pThreadLocalData->tlsArray.pTLSArrayData);
-    int32_t cTLSData = pThreadLocalData->tlsArray.cTLSData;
+    PTR_BYTE pTLSArrayData = dac_cast<PTR_BYTE>(pThreadLocalData->pTLSArrayData);
+    int32_t cTLSData = pThreadLocalData->cTLSData;
     for (int32_t i = 0; i < cTLSData; i += sizeof(TADDR))
     {
         TLSIndex index(i);
@@ -120,28 +103,6 @@ void ScanThreadStaticRoots(PTR_ThreadLocalData pThreadLocalData, promote_func* f
 }
 
 #ifndef DACCESS_COMPILE
-#ifdef _MSC_VER
-__declspec(thread)  ThreadLocalData t_ThreadStatics;
-#else
-__thread ThreadLocalData t_ThreadStatics;
-#endif // _MSC_VER
-
-void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
-{
-    LIMITED_METHOD_CONTRACT;
-    TADDR pTLSBaseAddress = NULL;
-    TLSArray* pTLSArray = reinterpret_cast<TLSArray*>((uint8_t*)&t_ThreadStatics + index.GetTLSArrayOffset());
-
-    int32_t cTLSData = pTLSArray->cTLSData;
-    if (cTLSData < index.GetByteIndex())
-    {
-        return NULL;
-    }
-
-    TADDR pTLSArrayData = pTLSArray->pTLSArrayData;
-    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
-    return reinterpret_cast<void*>(pTLSBaseAddress);
-}
 
 uint32_t g_NextTLSSlot = (uint32_t)sizeof(TADDR);
 CrstStatic g_TLSCrst;
@@ -199,9 +160,9 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
 
 void FreeCurrentThreadStaticData()
 {
-    delete[] (uint8_t*)t_ThreadStatics.tlsArray.pTLSArrayData;
+    delete[] (uint8_t*)t_ThreadStatics.pTLSArrayData;
 
-    t_ThreadStatics.tlsArray.pTLSArrayData = 0;
+    t_ThreadStatics.pTLSArrayData = 0;
 
     while (t_ThreadStatics.pInFlightData != NULL)
     {
@@ -282,7 +243,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             GCPROTECT_BEGIN(gc);
             if (isGCStatic)
             {
-                gc.ptrRef = AllocateObjectArray(pMT->GetClass()->GetNumHandleThreadStatics(), g_pObjectClass);
+                gc.ptrRef = (PTRARRAYREF)AllocateObjectArray(pMT->GetClass()->GetNumHandleThreadStatics(), g_pObjectClass);
                 if (pMT->HasBoxedThreadStatics())
                 {
                     AllocateThreadStaticBoxes(pMT, &gc.ptrRef);
@@ -330,6 +291,29 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
 
     // TODO Handle collectible cases
     *pIndex = TLSIndex(tlsRawIndex);
+}
+
+bool CanJITOptimizeTLSAccess()
+{
+    bool optimizeThreadStaticAccess = false;
+#if defined(TARGET_ARM)
+    // Optimization is disabled for linux/windows arm
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
+    // Optimization is disabled for linux/x86
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
+    // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
+    // Optimization is disabled for FreeBSD/arm64
+#else
+    optimizeThreadStaticAccess = true;
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
+    // For linux/x64, check if compiled coreclr as .so file and not single file.
+    // For single file, the `tls_index` might not be accurate.
+    // Do not perform this optimization in such case.
+    optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
+#endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
+#endif
+    return optimizeThreadStaticAccess;
 }
 
 #if defined(TARGET_WINDOWS)
@@ -459,7 +443,7 @@ void EnumThreadMemoryRegions(PTR_ThreadLocalData pThreadLocalData, CLRDataEnumMe
 {
     SUPPORTS_DAC;
     DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData), sizeof(ThreadLocalData), flags);
-    DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData->tlsArray.pTLSArrayData), pThreadLocalData->tlsArray.cTLSData, flags);
+    DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData->pTLSArrayData), pThreadLocalData->cTLSData, flags);
     PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
     while (pInFlightData != NULL)
     {

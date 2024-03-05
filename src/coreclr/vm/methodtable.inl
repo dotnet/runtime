@@ -1089,7 +1089,7 @@ inline PTR_BYTE MethodTable::GetNonGCStaticsBasePointer()
     }
     else
     {
-        return GetDynamicStaticsInfo()->m_pNonGCStatics;
+        return GetDynamicStaticsInfo()->GetNonGCStaticsPointer();
     }
 }
 
@@ -1103,7 +1103,7 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     }
     else
     {
-        return (PTR_BYTE)GetDynamicStaticsInfo()->m_pGCStatics;
+        return (PTR_BYTE)GetDynamicStaticsInfo()->GetGCStaticsPointer();
     }
 }
 

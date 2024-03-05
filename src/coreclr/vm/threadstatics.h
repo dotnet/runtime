@@ -88,6 +88,8 @@
 #ifndef __THREADLOCALSTORAGE_H__
 #define __THREADLOCALSTORAGE_H__
 
+class Thread;
+
 struct TLSIndex
 {
     TLSIndex(uint32_t rawIndex) : TLSIndexRawIndex(rawIndex) { }
@@ -99,8 +101,34 @@ struct TLSIndex
     bool operator != (TLSIndex index) { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != index.TLSIndexRawIndex; }
 };
 
-struct ThreadLocalData;
+struct TLSArray
+{
+    int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
+    TADDR pTLSArrayData; // Points at the Thread local array data.
+};
+typedef DPTR(TLSArray) PTR_TLSArray;
+
+// Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
+struct InFlightTLSData;
+typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
+
+struct ThreadLocalData
+{
+    int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
+    TADDR pTLSArrayData; // Points at the Thread local array data.
+    Thread *pThread;
+    PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
+};
+
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
+
+#ifndef DACCESS_COMPILE
+#ifdef _MSC_VER
+extern __declspec(thread)  ThreadLocalData t_ThreadStatics;
+#else
+extern __thread ThreadLocalData t_ThreadStatics;
+#endif // _MSC_VER
+#endif // DACCESS_COMPILE
 
 template<typename T>
 struct LookupMap;
@@ -120,8 +148,8 @@ void FreeCurrentThreadStaticData();
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex);
 void FreeTLSIndexForThreadStatic(TLSIndex index);
 void* GetThreadLocalStaticBase(TLSIndex index);
-void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+bool CanJITOptimizeTLSAccess();
 #else
 void EnumThreadMemoryRegions(PTR_ThreadLocalData pThreadLocalData, CLRDataEnumMemoryFlags flags);
 #endif

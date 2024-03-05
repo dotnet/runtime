@@ -1378,9 +1378,10 @@ HCIMPL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    if (pMT->IsClassInited())
+    PTR_BYTE pBase;
+    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndNonGCStaticsPointer(&pBase))
     {
-        return pMT->GetDynamicStaticsInfo()->m_pNonGCStatics;
+        return pBase;
     }
 
     // Tailcall to the slow helper
@@ -1394,9 +1395,10 @@ HCIMPL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStat
 {
     FCALL_CONTRACT;
 
-    if (pStaticsInfo->IsClassInited())
+    PTR_BYTE pBase;
+    if (pStaticsInfo->GetIsInitedAndNonGCStaticsPointer(&pBase))
     {
-        return pStaticsInfo->m_pNonGCStatics;
+        return pBase;
     }
 
     // Tailcall to the slow helper
@@ -1410,7 +1412,7 @@ HCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    return pMT->GetDynamicStaticsInfo()->m_pNonGCStatics;
+    return pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
@@ -1420,7 +1422,7 @@ HCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo*
 {
     FCALL_CONTRACT;
 
-    return pDynamicStaticsInfo->m_pNonGCStatics;
+    return pDynamicStaticsInfo->GetNonGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
@@ -1428,9 +1430,10 @@ HCIMPL1(void*, JIT_GetGCStaticBase_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    if (pMT->IsClassInited())
+    PTR_OBJECTREF pBase;
+    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndGCStaticsPointer(&pBase))
     {
-        return pMT->GetDynamicStaticsInfo()->m_pGCStatics;
+        return pBase;
     }
 
     // Tailcall to the slow helper
@@ -1443,9 +1446,10 @@ HCIMPL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStatics
 {
     FCALL_CONTRACT;
 
-    if (pStaticsInfo->IsClassInited())
+    PTR_OBJECTREF pBase;
+    if (pStaticsInfo->GetIsInitedAndGCStaticsPointer(&pBase))
     {
-        return pStaticsInfo->m_pGCStatics;
+        return pBase;
     }
 
     // Tailcall to the slow helper
@@ -1460,7 +1464,7 @@ HCIMPL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    return pMT->GetDynamicStaticsInfo()->m_pGCStatics;
+    return pMT->GetDynamicStaticsInfo()->GetGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
@@ -1470,7 +1474,7 @@ HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pD
 {
     FCALL_CONTRACT;
 
-    return pDynamicStaticsInfo->m_pGCStatics;
+    return pDynamicStaticsInfo->GetGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
@@ -1489,7 +1493,7 @@ HCIMPL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable* pMT)
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
 
-    return (void*)pMT->GetDynamicStaticsInfo()->m_pNonGCStatics;
+    return (void*)pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointer();
 }
 HCIMPLEND
 
@@ -1503,7 +1507,7 @@ HCIMPL1(void*, JIT_GetGCStaticBase_Helper, MethodTable* pMT)
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
 
-    return (void*)pMT->GetDynamicStaticsInfo()->m_pGCStatics;
+    return (void*)pMT->GetDynamicStaticsInfo()->GetGCStaticsPointer();
 }
 HCIMPLEND
 
@@ -1513,6 +1517,32 @@ HCIMPLEND
 //
 //========================================================================
 
+// Define the t_ThreadStatics variable here, so that these helpers can use
+// the most optimal TLS access pattern for the platform when inlining the
+// GetThreadLocalStaticBaseIfExistsAndInitialized function
+#ifdef _MSC_VER
+__declspec(thread)  ThreadLocalData t_ThreadStatics;
+#else
+__thread ThreadLocalData t_ThreadStatics;
+#endif // _MSC_VER
+
+// This is the routine used by the JIT helpers for the fast path. It is not used by the JIT for the slow path, or by the EE for any path.
+// This is inlined in the header to improve code gen quality
+FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
+{
+    LIMITED_METHOD_CONTRACT;
+    TADDR pTLSBaseAddress = NULL;
+
+    int32_t cTLSData = t_ThreadStatics.cTLSData;
+    if (cTLSData < index.GetByteIndex())
+    {
+        return NULL;
+    }
+
+    TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
+    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
+    return reinterpret_cast<void*>(pTLSBaseAddress);
+}
 
 // *** These framed helpers get called if allocation needs to occur or
 //     if the class constructor needs to run
