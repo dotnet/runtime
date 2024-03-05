@@ -28,12 +28,12 @@
     <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
+      GetNuGetsToBuildForWorkloadTesting;
+      _PreparePackagesForWorkloadInstall;
       ProvisionDotNetForWorkloadTesting;
       _GetDotNetVersion;
       _FirstDotNetRun;
       _SetPackageVersionForWorkloadsTesting;
-      GetNuGetsToBuildForWorkloadTesting;
-      _PreparePackagesForWorkloadInstall;
       GetWorkloadInputs;
       _InstallWorkloads
     </InstallWorkloadUsingArtifactsDependsOn>
