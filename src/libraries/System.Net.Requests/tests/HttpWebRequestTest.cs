@@ -1914,7 +1914,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [InlineData(HttpRequestCacheLevel.NoCacheNoStore, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache"})]
+        [InlineData(HttpRequestCacheLevel.NoCacheNoStore, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(HttpRequestCacheLevel.Reload, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
         [InlineData(HttpRequestCacheLevel.CacheOrNextCacheOnly, null, null, new string[] { "Cache-Control: only-if-cached" })]
         [InlineData(HttpRequestCacheLevel.Default, HttpCacheAgeControl.MinFresh, 10, new string[] { "Cache-Control: min-fresh=10" })]
@@ -2078,6 +2078,125 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public async Task SendHttpPostRequest_BufferingDisabled_ConnectionShouldStartWithRequestStream()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    request.AllowWriteStreamBuffering = false;
+                    request.SendChunked = true;
+                    var stream = await request.GetRequestStreamAsync();
+                    await Assert.ThrowsAnyAsync<Exception>(() => request.GetResponseAsync());
+                },
+                async (server) => 
+                {
+                    await server.AcceptConnectionAsync(_ =>
+                    {
+                        return Task.CompletedTask;
+                    });
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendHttpPostRequest_WhenBufferingChanges_Success(bool buffering)
+        {
+            byte[] randomData = Encoding.ASCII.GetBytes("Hello World!!!!\n");
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    int size = randomData.Length * 100;
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    request.AllowWriteStreamBuffering = buffering;
+                    using var stream = await request.GetRequestStreamAsync();
+                    for (int i = 0; i < size / randomData.Length; i++)
+                    {
+                        await stream.WriteAsync(new ReadOnlyMemory<byte>(randomData));
+                    }
+                    await request.GetResponseAsync();
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var data = await connection.ReadRequestDataAsync();
+                        for (int i = 0; i < data.Body.Length; i += randomData.Length)
+                        {
+                            Assert.Equal(randomData, data.Body[i..(i + randomData.Length)]);
+                        }
+                        await connection.SendResponseAsync();
+                    });
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendHttpRequest_WhenNotBuffering_SendSuccess(bool isChunked)
+        {
+            byte[] firstBlock = "Hello"u8.ToArray();
+            byte[] secondBlock = "WorlddD"u8.ToArray();
+            SemaphoreSlim sem = new(0);
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    if (isChunked is false)
+                    {
+                        request.ContentLength = 5 + 7;
+                    }
+                    request.AllowWriteStreamBuffering = false;
+                    
+                    using (Stream requestStream = await request.GetRequestStreamAsync())
+                    {
+                        requestStream.Write(firstBlock);
+                        requestStream.Flush();
+                        await sem.WaitAsync();
+                        requestStream.Write(secondBlock);
+                        requestStream.Flush();
+                    }
+                    await request.GetResponseAsync();
+                    sem.Release();
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(async (connection) =>
+                    {
+                        byte[] buffer = new byte[1024];
+                        await connection.ReadRequestHeaderAsync();
+                        if (isChunked)
+                        {
+                            // Discard chunk length and CRLF.
+                            await connection.ReadLineAsync();
+                        }
+                        int readBytes = await connection.ReadBlockAsync(buffer, 0, firstBlock.Length);
+                        Assert.Equal(firstBlock.Length, readBytes);
+                        Assert.Equal(firstBlock, buffer[..readBytes]);
+                        sem.Release();
+                        if (isChunked)
+                        {
+                            // Discard CRLF, chunk length and CRLF.
+                            await connection.ReadLineAsync();
+                            await connection.ReadLineAsync();
+                        }
+                        readBytes = await connection.ReadBlockAsync(buffer, 0, secondBlock.Length);
+                        Assert.Equal(secondBlock.Length, readBytes);
+                        Assert.Equal(secondBlock, buffer[..readBytes]);
+                        await connection.SendResponseAsync();
+                        await sem.WaitAsync();
+                    });
+                }
+            );
+        }
+        
+        [Fact]
         public async Task SendHttpPostRequest_WithContinueTimeoutAndBody_BodyIsDelayed()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -2087,18 +2206,20 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = true;
                     request.ContinueTimeout = 30000;
-                    Stream requestStream = await request.GetRequestStreamAsync();
-                    requestStream.Write("aaaa\r\n\r\n"u8);
+                    using (Stream requestStream = await request.GetRequestStreamAsync())
+                    {
+                        requestStream.Write("aaaa\r\n\r\n"u8);
+                    }
                     await GetResponseAsync(request);
                 },
                 async (server) =>
                 {
-                    await server.AcceptConnectionAsync(async (client) => 
+                    await server.AcceptConnectionAsync(async (connection) => 
                     {
-                        await client.ReadRequestHeaderAsync();
+                        await connection.ReadRequestHeaderAsync();
                         // This should time out, because we're expecting the body itself but we'll get it after 30 sec.
-                        await Assert.ThrowsAsync<TimeoutException>(() => client.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
-                        await client.SendResponseAsync();
+                        await Assert.ThrowsAsync<TimeoutException>(() => connection.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
+                        await connection.SendResponseAsync();
                     });
                 }
             );
@@ -2116,19 +2237,21 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
                     request.ContinueTimeout = continueTimeout;
-                    Stream requestStream = await request.GetRequestStreamAsync();
-                    requestStream.Write("aaaa\r\n\r\n"u8);
+                    using (Stream requestStream = await request.GetRequestStreamAsync())
+                    {
+                        requestStream.Write("aaaa\r\n\r\n"u8);
+                    }
                     await GetResponseAsync(request);
                 },
                 async (server) =>
                 {
-                    await server.AcceptConnectionAsync(async (client) => 
+                    await server.AcceptConnectionAsync(async (connection) => 
                     {
-                        await client.ReadRequestHeaderAsync();
+                        await connection.ReadRequestHeaderAsync();
                         // This should not time out, because we're expecting the body itself and we should get it after 1 sec.
-                        string data = await client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                        string data = await connection.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
                         Assert.StartsWith("aaaa", data);
-                        await client.SendResponseAsync();
+                        await connection.SendResponseAsync();
                     });
                 });
         }
@@ -2149,9 +2272,9 @@ namespace System.Net.Tests
                 async (server) =>
                 {
                     await server.AcceptConnectionAsync(
-                        async (client) =>
+                        async (connection) =>
                         {
-                            List<string> headers = await client.ReadRequestHeaderAsync();
+                            List<string> headers = await connection.ReadRequestHeaderAsync();
                             if (expect100Continue)
                             {
                                 Assert.Contains("Expect: 100-continue", headers);
@@ -2160,7 +2283,7 @@ namespace System.Net.Tests
                             {
                                 Assert.DoesNotContain("Expect: 100-continue", headers);
                             }
-                            await client.SendResponseAsync();
+                            await connection.SendResponseAsync();
                         }
                     );
                 }

@@ -2103,28 +2103,14 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
     assert(predBlock->KindIs(BBJ_COND));
     assert(predBlock->FalseTargetIs(nonCanonicalBlock));
 
-    BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true);
-
-    JITDUMP("*** " FMT_BB " now falling through to empty " FMT_BB " and then to " FMT_BB "\n", predBlock->bbNum,
-            newBlock->bbNum, canonicalBlock->bbNum);
+    JITDUMP("*** " FMT_BB " false target is now " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
 
     // Remove the old flow
     fgRemoveRefPred(predEdge);
 
     // Wire up the new flow
-    FlowEdge* const falseEdge = fgAddRefPred(newBlock, predBlock, predEdge);
+    FlowEdge* const falseEdge = fgAddRefPred(canonicalBlock, predBlock, predEdge);
     predBlock->SetFalseEdge(falseEdge);
-
-    FlowEdge* const newEdge = fgAddRefPred(canonicalBlock, newBlock, predEdge);
-    newBlock->SetTargetEdge(newEdge);
-
-    // If nonCanonicalBlock has only one pred, all its flow transfers.
-    // If it has multiple preds, then we need edge counts or likelihoods
-    // to figure things out.
-    //
-    // For now just do a minimal update.
-    //
-    newBlock->inheritWeight(nonCanonicalBlock);
 }
 
 //------------------------------------------------------------------------
