@@ -1799,7 +1799,9 @@ def calculate_perfscore_improvements_regressions(base_diff_perfscores):
     sum_log_ps_improvements = 0
     sum_log_ps_regressions = 0
     for (base_ps, diff_ps) in base_diff_perfscores:
-        log_relative_perfscore = math.log(max(diff_ps, 1.0) / max(base_ps, 1.0))
+        base_ps = max(base_ps, 1.0)
+        diff_ps = max(diff_ps, 1.0)
+        log_relative_perfscore = math.log(diff_ps / base_ps)
 
         if abs(diff_ps - base_ps) < 0.01:
             num_ps_same += 1
@@ -2437,7 +2439,7 @@ class SuperPMIReplayAsmDiffs:
                         if num_ps_improvements > 0 and num_ps_regressions > 0:
                             logging.info("  {:.2f}%/+{:.2f}% PerfScore".format(ps_improvements * 100, ps_regressions * 100))
                         elif num_ps_improvements > 0:
-                            logging.info("  -{:.2f}% PerfScore".format(ps_improvements * 100))
+                            logging.info("  {:.2f}% PerfScore".format(ps_improvements * 100))
                         elif num_ps_regressions > 0:
                             logging.info("  +{:.2f}% PerfScore".format(ps_regressions * 100))
 
