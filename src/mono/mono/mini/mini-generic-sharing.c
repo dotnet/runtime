@@ -584,6 +584,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
@@ -649,6 +650,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {

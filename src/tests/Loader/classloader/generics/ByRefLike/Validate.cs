@@ -53,7 +53,6 @@ public class Validate
     }
 
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void Validate_InvalidOpCode_Scenarios()
     {
         Console.WriteLine($"{nameof(Validate_InvalidOpCode_Scenarios)}...");
@@ -61,23 +60,12 @@ public class Validate
         // These methods uses opcodes that are not able to handle ByRefLike type operands.
         // The TypeLoader prevents these invalid types from being constructed. We rely on
         // the failure to construct these invalid types to block opcode usage.
+        Assert.Throws<TypeLoadException>(() => { Exec.AllocArrayOfT_Invalid(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.AllocMultiDimArrayOfT_Invalid(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericClassWithStaticField_Invalid(); });
 
         // Test that explicitly tries to box a ByRefLike type.
         Assert.Throws<InvalidProgramException>(() => { Exec.BoxAsObject(); });
-    }
-
-    [Fact]
-    public static void Validate_InvalidOpCode_Scenarios_ArrayOfT()
-    {
-        Console.WriteLine($"{nameof(Validate_InvalidOpCode_Scenarios_ArrayOfT)}...");
-
-        // These methods uses opcodes that are not able to handle ByRefLike type operands.
-        // The TypeLoader prevents these invalid types from being constructed. We rely on
-        // the failure to construct these invalid types to block opcode usage.
-
-        Assert.Throws<TypeLoadException>(() => { Exec.AllocArrayOfT_Invalid(); });
-        Assert.Throws<TypeLoadException>(() => { Exec.AllocMultiDimArrayOfT_Invalid(); });
     }
 
     [Fact]
