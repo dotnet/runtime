@@ -163,7 +163,7 @@
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
   <Target Name="InstallWorkloadUsingArtifacts"
-          AfterTargets="$(RunInstallWorkloadUsingArtifactsAfterThisTarget)"
+          AfterTargets="$(InstallWorkloadUsingArtifactsAfterThisTarget)"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
