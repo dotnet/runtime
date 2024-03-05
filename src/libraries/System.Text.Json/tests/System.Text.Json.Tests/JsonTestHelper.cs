@@ -398,7 +398,7 @@ namespace System.Text.Json
                 ReadOnlySpan<byte> valueSpan = json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan;
                 if (json.HasValueSequence)
                 {
-                    Assert.True(json.ValueSpan == default);
+                    Assert.True(json.ValueSpan.IsEmpty);
                     if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetString().Length != 0)
                     {
                         // Empty strings could still make this true, i.e. ""
@@ -411,7 +411,7 @@ namespace System.Text.Json
                     if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetString().Length != 0)
                     {
                         // Empty strings could still make this true, i.e. ""
-                        Assert.False(json.ValueSpan == default);
+                        Assert.False(json.ValueSpan.IsEmpty);
                     }
                 }
                 switch (tokenType)

@@ -1089,7 +1089,7 @@ namespace System.Text.Json.Tests
                     builder.Append(Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray()));
                     if (json.HasValueSequence)
                     {
-                        Assert.True(json.ValueSpan == default);
+                        Assert.True(json.ValueSpan.IsEmpty);
                     }
                     else
                     {
@@ -1112,7 +1112,7 @@ namespace System.Text.Json.Tests
                     builder.Append(Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray()));
                     if (json.HasValueSequence)
                     {
-                        Assert.True(json.ValueSpan == default);
+                        Assert.True(json.ValueSpan.IsEmpty);
                     }
                     else
                     {
@@ -1158,7 +1158,7 @@ namespace System.Text.Json.Tests
 
                     if (json.HasValueSequence)
                     {
-                        Assert.True(json.ValueSpan == default);
+                        Assert.True(json.ValueSpan.IsEmpty);
                     }
                     else
                     {
