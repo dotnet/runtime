@@ -3086,24 +3086,30 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    // Runtime lookups in inlined contexts are not supported by the runtime for now
-    if (pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT())
+    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    if (pContextMD == nullptr)
+    {
+        // Class context is not yet supported
+        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
+        return;
+    }
+
+    bool inlinedRuntimeLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
+    MethodTable* pContextMT = pContextMD->GetMethodTable();
+
+    if (inlinedRuntimeLookup && !pContextMD->HasMethodInstantiation())
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
         return;
     }
 
-    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-    MethodTable* pContextMT = pContextMD->GetMethodTable();
-    bool isStaticVirtual = (pConstrainedResolvedToken != nullptr && pContextMD != nullptr && pContextMD->IsStatic());
-
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
-    if (!pContextMD->IsSharedByGenericInstantiations())
+    if (!inlinedRuntimeLookup && !pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
     BOOL fInstrument = FALSE;
 
-    if (pContextMD->RequiresInstMethodDescArg())
+    if (pContextMD->RequiresInstMethodDescArg() || inlinedRuntimeLookup)
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
     }
@@ -3116,7 +3122,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     }
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
-    if (pContextMD->RequiresInstMethodDescArg())
+    if (pContextMD->RequiresInstMethodDescArg() || inlinedRuntimeLookup)
     {
         pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG : CORINFO_HELP_RUNTIMEHANDLE_METHOD;
 

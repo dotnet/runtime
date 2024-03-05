@@ -1570,6 +1570,19 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     {
         assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
 
+        if (compIsForInlining() && (kind == CORINFO_LOOKUP_METHODPARAM))
+        {
+            // Grab the generic context from the callsite for current inlinee
+            CallArg* instParam = impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
+            {
+                assert(instParam->GetNode()->OperIs(GT_LCL_VAR));
+                ctxTree = gtNewLclvNode(instParam->GetNode()->AsLclVar()->GetLclNum(), TYP_I_IMPL);
+                ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+                return ctxTree;
+            }
+        }
+
         // Exact method descriptor as passed in
         ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
