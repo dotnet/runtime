@@ -2174,7 +2174,6 @@ namespace System.Net.Tests
                         if (isChunked)
                         {
                             // Discard chunk length and CRLF.
-                            //await connection.ReadBlockAsync(buffer, 0, 3);
                             await connection.ReadLineAsync();
                         }
                         int readBytes = await connection.ReadBlockAsync(buffer, 0, firstBlock.Length);
@@ -2183,10 +2182,9 @@ namespace System.Net.Tests
                         sem.Release();
                         if (isChunked)
                         {
-                            await connection.ReadLineAsync();
-                            await connection.ReadLineAsync();
                             // Discard CRLF, chunk length and CRLF.
-                            //await connection.ReadBlockAsync(buffer, 0, 5);
+                            await connection.ReadLineAsync();
+                            await connection.ReadLineAsync();
                         }
                         readBytes = await connection.ReadBlockAsync(buffer, 0, secondBlock.Length);
                         Assert.Equal(secondBlock.Length, readBytes);
