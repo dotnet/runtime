@@ -1160,13 +1160,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isPredicateRegister(id->idReg2()));                        // gggg
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
-
-            if (!isValidSimm8(imm))
-            {
-                // Size specifier must be able to fit a left-shifted immediate
-                assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
-                assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
-            }
+            assert(isValidSimm8(imm));                                        // iiiiiiii
             break;
 
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
@@ -2025,13 +2019,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
-
-            if (!isValidSimm8(imm))
-            {
-                // Size specifier must be able to fit a left-shifted immediate
-                assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
-                assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
-            }
+            assert(isValidSimm8(imm));                                        // iiiiiiii
             break;
 
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
@@ -2039,13 +2027,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
-
-            if (!isValidUimm8(imm))
-            {
-                // Size specifier must be able to fit a left-shifted immediate
-                assert(isValidUimm8_MultipleOf256(imm)); // iiiiiiii
-                assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
-            }
+            assert(isValidUimm8(imm));                                        // iiiiiiii
             break;
 
         case IF_SVE_EB_1B: // ........xx...... ...........ddddd -- SVE broadcast integer immediate (unpredicated)
@@ -7681,6 +7663,7 @@ void emitter::emitIns_R_I(instruction     ins,
     insFormat fmt       = IF_NONE;
     bool      canEncode = false;
     bool      signedImm = false;
+    bool      hasShift  = false;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -7962,6 +7945,8 @@ void emitter::emitIns_R_I(instruction     ins,
                 // Size specifier must be able to fit a left-shifted immediate
                 assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
                 assert(insOptsScalableAtLeastHalf(opt));
+                hasShift = true;
+                imm >>= 8;
             }
 
             fmt       = IF_SVE_EB_1A;
@@ -7981,12 +7966,13 @@ void emitter::emitIns_R_I(instruction     ins,
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg));                         // ddddd
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-
             if (!isValidUimm8(imm))
             {
                 // Size specifier must be able to fit left-shifted immediate
                 assert(isValidUimm8_MultipleOf256(imm)); // iiiiiiii
                 assert(insOptsScalableAtLeastHalf(opt));
+                hasShift = true;
+                imm >>= 8;
             }
 
             fmt       = IF_SVE_EC_1A;
@@ -8002,13 +7988,24 @@ void emitter::emitIns_R_I(instruction     ins,
     assert(canEncode);
     assert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSC(attr, imm);
+    // For encodings with shifted immediates, we need a way to determine if the immediate has been shifted or not.
+    // We could just leave the immediate in its unshifted form, and call emitNewInstrSC,
+    // but that would allocate unnecessarily large descriptors. Therefore:
+    // - For encodings without any shifting, just call emitNewInstrSC.
+    // - For unshifted immediates, call emitNewInstrSC.
+    //   If it allocates a small descriptor, idHasShift() will always return false.
+    //   Else, idHasShift still returns false, as we set the dedicated bit in large descriptors to false.
+    // - For immediates that need a shift, call emitNewInstrCns so a normal or large descriptor is used.
+    //   idHasShift will always check the dedicated bit, as it is always available. We set this bit to true below.
+    instrDesc* id = !hasShift ? emitNewInstrSC(attr, imm) : emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idInsOpt(opt);
 
     id->idReg1(reg);
+
+    id->idHasShift(hasShift);
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
@@ -9429,6 +9426,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
     bool      setFlags   = false;
     unsigned  scale      = 0;
     bool      unscaledOp = false;
+    bool      hasShift   = false;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -10078,12 +10076,16 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));    // DDDDD
             assert(isPredicateRegister(reg2)); // GGGG
+
             if (!isValidSimm8(imm))
             {
                 // Size specifier must be able to fit a left-shifted immediate
                 assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
                 assert(insOptsScalableAtLeastHalf(opt));
+                hasShift = true;
+                imm >>= 8;
             }
+
             if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
             {
                 fmt = IF_SVE_BV_2A_J;
@@ -10093,6 +10095,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
                 assert(sopt == INS_SCALABLE_OPTS_NONE);
                 fmt = IF_SVE_BV_2A;
             }
+
             // MOV is an alias for CPY, and is always the preferred disassembly.
             ins = INS_sve_mov;
             break;
@@ -10516,7 +10519,16 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
     assert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSC(attr, imm);
+    // For encodings with shifted immediates, we need a way to determine if the immediate has been shifted or not.
+    // We could just leave the immediate in its unshifted form, and call emitNewInstrSC,
+    // but that would allocate unnecessarily large descriptors. Therefore:
+    // - For encodings without any shifting, just call emitNewInstrSC.
+    // - For unshifted immediates, call emitNewInstrSC.
+    //   If it allocates a small descriptor, idHasShift() will always return false.
+    //   Else, idHasShift still returns false, as we set the dedicated bit in large descriptors to false.
+    // - For immediates that need a shift, call emitNewInstrCns so a normal or large descriptor is used.
+    //   idHasShift will always check the dedicated bit, as it is always available. We set this bit to true below.
+    instrDesc* id = !hasShift ? emitNewInstrSC(attr, imm) : emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -10524,6 +10536,9 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
     id->idReg1(reg1);
     id->idReg2(reg2);
+
+    id->idHasShift(hasShift);
+
     if (EA_IS_CNS_TLSGD_RELOC(attr))
     {
         assert(imm != 0);
@@ -24408,17 +24423,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_19_to_16(id->idReg2()); // gggg
-
-            if (!isValidSimm8(imm))
-            {
-                assert(isValidSimm8_MultipleOf256(imm));
-                imm >>= 8;
-                code |= 0x2000; // h
-            }
-
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
             code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= id->idHasShift() ? 0x2000 : 0;                        // h
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25175,15 +25183,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-
-            if (!isValidSimm8(imm))
-            {
-                assert(isValidSimm8_MultipleOf256(imm));
-                imm >>= 8;
-                code |= 0x2000; // h
-            }
-
-            code |= insEncodeImm8_12_to_5(imm); // iiiiiiii
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= id->idHasShift() ? 0x2000 : 0;                        // h
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25192,15 +25193,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-
-            if (!isValidUimm8(imm))
-            {
-                assert(isValidUimm8_MultipleOf256(imm));
-                imm >>= 8;
-                code |= 0x2000; // h
-            }
-
-            code |= insEncodeImm8_12_to_5(imm); // iiiiiiii
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= id->idHasShift() ? 0x2000 : 0;                        // h
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -29332,16 +29326,9 @@ void emitter::emitDispInsHelp(
         // MOV <Zd>.<T>, #<imm>{, <shift>}
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
         {
-            imm                 = emitGetInsSC(id);
-            const bool hasShift = !isValidSimm8(imm);
-
-            if (hasShift)
-            {
-                imm >>= 8;
-            }
-
+            imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImmOptsLSL(imm, hasShift, 8);               // h iiiiiiii
+            emitDispImmOptsLSL(imm, id->idHasShift(), 8);       // h iiiiiiii
             break;
         }
 
@@ -29354,17 +29341,10 @@ void emitter::emitDispInsHelp(
         // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
         {
-            imm                 = emitGetInsSC(id);
-            const bool hasShift = !isValidUimm8(imm);
-
-            if (hasShift)
-            {
-                imm >>= 8;
-            }
-
+            imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            emitDispImmOptsLSL(imm, hasShift, 8);               // h iiiiiiii
+            emitDispImmOptsLSL(imm, id->idHasShift(), 8);       // h iiiiiiii
             break;
         }
 
@@ -30117,17 +30097,10 @@ void emitter::emitDispInsHelp(
         case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
         case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
         {
-            imm                 = emitGetInsSC(id);
-            const bool hasShift = !isValidUimm8(imm);
-
-            if (hasShift)
-            {
-                imm >>= 8;
-            }
-
+            imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // gggg
-            emitDispImmOptsLSL(imm, hasShift, 8);                                               // iiiiiiii, h
+            emitDispImmOptsLSL(imm, id->idHasShift(), 8);                                       // iiiiiiii, h
             break;
         }
 

@@ -1478,6 +1478,17 @@ protected:
             assert(!idIsSmallDsc());
             idAddr()->_idReg4 = (regNumber)idSvePrfop;
         }
+        bool idHasShift() const
+        {
+            return !idIsSmallDsc() && (idAddr()->_idRegBit == 1);
+        }
+        void idHasShift(bool val)
+        {
+            if (!idIsSmallDsc())
+            {
+                idAddr()->_idRegBit = val ? 1 : 0;
+            }
+        }
 #endif // TARGET_ARM64
 
 #endif // TARGET_ARMARCH
