@@ -6172,8 +6172,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Many tailcalls will have call and ret in the same block, and thus be
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
-        // (compCurBB may have a jump target, so use SetKind() to avoid nulling it)
-        compCurBB->SetKind(BBJ_RETURN);
+        compCurBB->SetKindAndTargetEdge(BBJ_RETURN);
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
