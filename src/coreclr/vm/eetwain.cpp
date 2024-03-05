@@ -4406,10 +4406,10 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 {
     WRAPPER_NO_CONTRACT;
 
-    //Note: no instantiations needed for varargs
+    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
     MetaSig msig(varArgSig->signature,
                  varArgSig->pModule,
-                 NULL);
+                 &typeContext);
 
     PTR_BYTE pFrameBase = argsStart - TransitionBlock::GetOffsetOfArgs();
 

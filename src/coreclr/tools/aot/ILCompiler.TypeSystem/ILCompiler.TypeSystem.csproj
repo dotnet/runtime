@@ -134,6 +134,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\ExplicitLayoutValidator.cs">
       <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\FieldLayoutIntervalCalculator.cs">
+      <Link>TypeSystem\Common\FieldLayoutIntervalCalculator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\FunctionPointerType.cs">
       <Link>TypeSystem\Common\FunctionPointerType.cs</Link>
     </Compile>
