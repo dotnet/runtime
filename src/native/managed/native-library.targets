@@ -81,7 +81,13 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="InstallRuntimeComponentToFinalDest" AfterTargets="Publish" Condition="'$(IsRuntimeComponent)' == 'true'">
+    <!-- strip the library the same way as the cmake build for coreclr does it:
+         - on mac, leave a .dylib.dwarf file next to the library.
+         - on linux leave a .so.dbg file next to to the library
+    -->
+    <Target Name="StripLibraryLikeCoreCLRBuild" AfterTargets="Publish" Condition="'$(IsRuntimeComponent)' == 'true'"/>
+
+    <Target Name="InstallRuntimeComponentToFinalDest" AfterTargets="Publish" DependsOnTargets="StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
         <Error Text="Set at least one @InstallRuntimeComponentDest item" Condition="@(InstallRuntimeComponentDest->Count()) == 0" />
 
         <PropertyGroup>
@@ -89,6 +95,8 @@
             <FinalRuntimeComponentDestinationBase>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(RuntimeFlavor.ToLower())', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</FinalRuntimeComponentDestinationBase>
         </PropertyGroup>
         
+        <!-- TODO: on Windows, copy the pdb to PDB/libName.pdb for each InstallRuntimeComponentDest -->
+        <!-- TODO: on Linxu/Mac copy the .dylib.dwarf or .so.dbg file into each InstallRuntimeComponentDest -->
         <ItemGroup>
             <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDest.Identity)'))" />
         </ItemGroup>
@@ -99,5 +107,6 @@
               DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)"
               SkipUnchangedFiles="true" />
     </Target>
+
 
 </Project>
