@@ -3646,6 +3646,12 @@
         </ExcludeList>
    </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'coreclr' or ('$(TestBuildMode)' != 'crossgen2' and '$(TestBuildMode)' != 'nativeaot')">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftAbiStress/**">
+            <Issue>Swift frozen struct support is not implemented everywhere yet</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/*">
             <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
