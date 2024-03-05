@@ -884,7 +884,8 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
 		//  the new instruction counter will be the number of instructions in the block, so if
 		//  it's big enough we'll be able to insert another entry point right away.
-		instruction_count += bb->in_count;
+		for (InterpInst * ins = bb->first_ins; ins != NULL; ins = ins->next)
+			instruction_count++;
 
 		build_address_taken_bitset (td, bb, bitset_size);
 	}
