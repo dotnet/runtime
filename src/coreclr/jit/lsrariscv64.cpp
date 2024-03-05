@@ -309,7 +309,7 @@ int LinearScan::BuildNode(GenTree* tree)
                         needTemp = true;
                 }
 
-                if (!needTemp && (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD))
+                if (!needTemp && tree->OperIs(GT_DIV, GT_MOD))
                 {
                     if ((exceptions & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                         needTemp = true;
@@ -512,7 +512,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -884,6 +883,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~(genRegMask(REG_GSCOOKIE_TMP_0) | genRegMask(REG_GSCOOKIE_TMP_1));
+            }
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }
@@ -1256,13 +1259,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                assert(!src->isContained());
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
-                break;
-
             default:
                 unreached();
         }
@@ -1311,22 +1307,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode);
                 break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_ARG_1;
-                }
-                sizeRegMask = RBM_ARG_2;
-                break;
-
             default:
                 unreached();
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    if (sizeRegMask != RBM_NONE)
     {
         // Reserve a temp register for the block size argument.
         buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
@@ -1355,12 +1341,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             useCount += BuildAddrUses(srcAddrOrFill->AsAddrMode()->Base());
         }
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
     buildInternalRegisterUses();

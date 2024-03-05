@@ -7150,8 +7150,6 @@ void Thread::ClearContext()
     if (!m_pDomain)
         return;
 
-    // must set exposed context to null first otherwise object verification
-    // checks will fail AV when m_Context is null
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
@@ -8278,12 +8276,7 @@ void Thread::InitializeSpecialUserModeApc()
         return;
     }
 
-    // In the future, once code paths using the special user-mode APC get some bake time, it should be used regardless of
-    // whether CET shadow stacks are enabled
-    if (AreCetShadowStacksEnabled())
-    {
-        s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
-    }
+    s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC

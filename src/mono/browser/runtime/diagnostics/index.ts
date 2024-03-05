@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type {
     DiagnosticOptions,
@@ -16,7 +16,7 @@ import { mono_assert, runtimeHelpers } from "../globals";
 
 // called from C on the main thread
 export function mono_wasm_event_pipe_early_startup_callback(): void {
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         return;
     }
 }
@@ -37,12 +37,9 @@ let diagnosticsServerEnabled = false;
 let diagnosticsInitialized = false;
 
 export async function mono_wasm_init_diagnostics(): Promise<void> {
-    if (diagnosticsInitialized)
-        return;
-    if (!MonoWasmThreads) {
-        mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
-        return;
-    }
+    if (!WasmEnableThreads) return;
+    if (diagnosticsInitialized) return;
+
     const options = diagnostic_options_from_environment();
     if (!options)
         return;
@@ -144,7 +141,7 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
-    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
+    mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
     if (diagnosticsServerEnabled) {
         /* called on the main thread when the runtime is sufficiently initialized */
         const controller = getController();

@@ -547,6 +547,27 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 #endif // TARGET_X86
 
+        case NI_VectorT_CreateSequence:
+        {
+            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+            {
+#if defined(TARGET_XARCH)
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong multiplication
+                    return nullptr;
+                }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_X86) || defined(TARGET_ARM64)
+                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
+                // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                return nullptr;
+#endif // TARGET_X86 || TARGET_ARM64
+            }
+            break;
+        }
+
         case NI_VectorT_As:
         case NI_VectorT_AsVectorByte:
         case NI_VectorT_AsVectorDouble:
@@ -824,6 +845,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT_get_AllBitsSet:
                 {
                     return gtNewAllBitsSetConNode(retType);
+                }
+
+                case NI_VectorT_get_Indices:
+                {
+                    assert(sig->numArgs == 0);
+                    return gtNewSimdGetIndicesNode(retType, simdBaseJitType, simdSize);
                 }
 
                 case NI_Vector2_get_One:
@@ -1301,6 +1328,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     copyBlkDst = op1;
                     copyBlkSrc = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize);
                     break;
+                }
+
+                case NI_VectorT_CreateSequence:
+                {
+                    return gtNewSimdCreateSequenceNode(simdType, op1, op2, simdBaseJitType, simdSize);
                 }
 
                 case NI_Plane_CreateFromVector4:

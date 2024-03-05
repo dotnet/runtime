@@ -238,7 +238,7 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
                 // Web browsers need special treatment that is implemented in TaskReplicator
                 if (OperatingSystem.IsBrowser() ||
 #else

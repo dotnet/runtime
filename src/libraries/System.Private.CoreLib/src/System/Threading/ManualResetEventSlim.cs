@@ -344,7 +344,7 @@ namespace System.Threading
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public void Wait()
@@ -367,7 +367,7 @@ namespace System.Threading
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public void Wait(CancellationToken cancellationToken)
@@ -390,7 +390,7 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(TimeSpan timeout)
@@ -423,7 +423,7 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
@@ -449,7 +449,7 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(int millisecondsTimeout)
@@ -475,7 +475,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)

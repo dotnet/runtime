@@ -916,18 +916,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #endif // FEATURE_HW_INTRINSICS
         }
 
-        switch (addr->OperGet())
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
         {
-            case GT_LCL_ADDR:
-            {
-                assert(addr->isContained());
-                varNum = addr->AsLclFld()->GetLclNum();
-                offset = addr->AsLclFld()->GetLclOffs();
-                break;
-            }
-
-            default:
-                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+            varNum = addr->AsLclFld()->GetLclNum();
+            offset = addr->AsLclFld()->GetLclOffs();
+        }
+        else
+        {
+            return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
         }
     }
     else
@@ -1211,6 +1207,22 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 
     return op->AsHWIntrinsic()->OperIsBroadcastScalar();
 }
+
+//------------------------------------------------------------------------
+// AddEmbBroadcastMode: Adds the embedded broadcast mode to the insOpts
+//
+// Arguments:
+//    instOptions - The existing insOpts
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddEmbBroadcastMode(insOpts instOptions)
+{
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    unsigned result = static_cast<unsigned>(instOptions);
+    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
+}
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -1225,21 +1237,26 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //    op1Reg       -- The first operand register
 //    op2          -- The second operand, which may be a memory node or a node producing a register
 //    isRMW        -- true if the instruction is RMW; otherwise, false
-void CodeGen::inst_RV_RV_TT(
-    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
+//    instOptions  -- The options that modify how the instruction is generated
+void CodeGen::inst_RV_RV_TT(instruction ins,
+                            emitAttr    size,
+                            regNumber   targetReg,
+                            regNumber   op1Reg,
+                            GenTree*    op2,
+                            bool        isRMW,
+                            insOpts     instOptions)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-    // TODO-XArch-CQ: Commutative operations can have op1 be contained
-    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+// TODO-XArch-CQ: Commutative operations can have op1 be contained
+// TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    insOpts instOptions = INS_OPTS_NONE;
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
-    if (IsEmbBroadcast)
+    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
-        instOptions = INS_OPTS_EVEX_eb_er_rd;
+        instOptions = AddEmbBroadcastMode(instOptions);
+
         if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)
@@ -1266,7 +1283,9 @@ void CodeGen::inst_RV_RV_TT(
         }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
+
     OperandDesc op2Desc = genOperandDesc(op2);
+
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:

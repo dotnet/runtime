@@ -235,5 +235,24 @@ namespace System.Linq.Tests
             Array.Reverse(randomized);
             Assert.Equal(randomized, ordered);
         }
+
+        [Fact]
+        public void OrderDescending_FirstLast_MatchesArray()
+        {
+            object[][] arrays =
+            [
+                [1],
+                [1, 1],
+                [1, 2, 1],
+                [1, 2, 1, 3],
+                [2, 1, 3, 1, 4],
+            ];
+
+            foreach (object[] objects in arrays)
+            {
+                Assert.Same(objects.OrderDescending().First(), objects.OrderDescending().ToArray().First());
+                Assert.Same(objects.OrderDescending().Last(), objects.OrderDescending().ToArray().Last());
+            }
+        }
     }
 }

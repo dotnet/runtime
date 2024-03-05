@@ -343,14 +343,12 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
     {
         *instrToReplace = INTERRUPT_INSTR;
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool protectReturn = ispointerKind;
     if (protectReturn)
         *(DWORD*)instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
     else
         *(DWORD*)instrToReplace = INTERRUPT_INSTR;
-#elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
 #else
     _ASSERTE(!"not implemented for platform");
 #endif
@@ -680,6 +678,15 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+#ifdef TARGET_RISCV64
+enum
+{
+    REG_RA = 1,
+    JAL = 0x6f,
+    JALR = 0x67,
+};
+#endif
+
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID pGCCover)
@@ -780,7 +787,15 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         instructionIsACallThroughRegister = TRUE;
     }
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+    const INT32 instr = *((INT32*)savedInstrPtr - 1);
+
+    int opcode = instr & ~(-1 << 7);
+    int linkReg = (instr >> 7) & ~(-1 << 5);
+
+    if ((opcode == JAL) && (linkReg == REG_RA))
+        instructionIsACallThroughImmediate = TRUE;
+    else if ((opcode == JALR) && (linkReg == REG_RA))
+        instructionIsACallThroughRegister = TRUE;
 #endif  // _TARGET_XXXX_
 
     // safe point must always be after a call instruction
@@ -1028,7 +1043,38 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
         return 0; // Fail
     }
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+    INT32 instr = *reinterpret_cast<INT32*>(instrPtr);
+    int opcode = instr & ~(-1 << 7);
+    int linkReg = (instr >> 7) & ~(-1 << 5);
+
+    if ((opcode == JAL) && (linkReg == REG_RA))
+    {
+        // call through immediate
+        int imm = (instr >> 12);
+
+        int bits12to19 = imm & ~(-1 << 8);
+        imm >>= 8;
+        int bit11 = imm & ~(-1 << 1);
+        imm >>= 1;
+        int bits1to10 = imm & ~(-1 << 10);
+        imm >>= 10;
+        int signBits = imm;
+
+        int offset = (bits1to10 << 1) | (bit11 << 11) | (bits12to19 << 12) | (signBits << 20);
+
+        *nextInstr = instrPtr + 4;
+        return PC + offset;
+    }
+    else if ((opcode == JALR) && (linkReg == REG_RA))
+    {
+        // call through register
+        *nextInstr = instrPtr + 4;  // TODO: adjust once we support "C" (compressed instructions)
+
+        int offset = (instr >> 20);
+        int jumpBaseReg = (instr >> 15) & ~(-1 << 5);
+        size_t value = (getRegVal(jumpBaseReg, regs) + offset) & ~(size_t)1;
+        return (BYTE *)value;
+    }
 #endif
 
 #ifdef TARGET_AMD64
@@ -1495,7 +1541,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+
     DWORD instrVal = *(DWORD *)instrPtr;
     forceStack[6] = &instrVal;            // This is so I can see it fastchecked
 

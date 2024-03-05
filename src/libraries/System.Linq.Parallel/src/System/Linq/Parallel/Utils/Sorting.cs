@@ -351,7 +351,7 @@ namespace System.Linq.Parallel
         // negatively impact speedups.
         //
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
 #endif
         private void MergeSortCooperatively()

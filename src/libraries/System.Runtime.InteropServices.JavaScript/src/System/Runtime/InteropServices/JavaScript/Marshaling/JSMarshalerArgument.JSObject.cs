@@ -12,7 +12,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out JSObject? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -29,7 +31,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public void ToJS(JSObject? value)
         {
             if (value == null)
@@ -41,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 value.AssertNotDisposed();
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 var ctx = value.ProxyContext;
 
                 if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
@@ -64,7 +68,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out JSObject?[]? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -90,7 +96,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToJS(JSObject?[] value)
         {
             if (value == null)

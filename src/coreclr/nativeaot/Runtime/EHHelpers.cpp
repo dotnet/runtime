@@ -29,13 +29,25 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 
+struct MethodRegionInfo
+{
+    void* hotStartAddress;
+    size_t hotSize;
+    void* coldStartAddress;
+    size_t coldSize;
+};
+
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator, (
-    StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
+    StackFrameIterator* pFrameIter, MethodRegionInfo* pMethodRegionInfoOut, EHEnum* pEHEnum))
 {
     ICodeManager * pCodeManager = pFrameIter->GetCodeManager();
     pEHEnum->m_pCodeManager = pCodeManager;
 
-    FC_RETURN_BOOL(pCodeManager->EHEnumInit(pFrameIter->GetMethodInfo(), pMethodStartAddressOut, &pEHEnum->m_state));
+    pMethodRegionInfoOut->hotSize = 0; // unknown
+    pMethodRegionInfoOut->coldStartAddress = nullptr;
+    pMethodRegionInfoOut->coldSize = 0;
+
+    FC_RETURN_BOOL(pCodeManager->EHEnumInit(pFrameIter->GetMethodInfo(), &pMethodRegionInfoOut->hotStartAddress, &pEHEnum->m_state));
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClause))
@@ -281,25 +293,25 @@ EXTERN_C void* RhpThrowHwEx2 = NULL;
 EXTERN_C void* RhpRethrow2   = NULL;
 #endif
 
-EXTERN_C void * RhpAssignRefAVLocation;
-EXTERN_C void * RhpCheckedAssignRefAVLocation;
-EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
-EXTERN_C void * RhpCheckedXchgAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedLockCmpXchgAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedXchgAVLocation;
 #if !defined(HOST_AMD64) && !defined(HOST_ARM64)
-EXTERN_C void * RhpLockCmpXchg8AVLocation;
-EXTERN_C void * RhpLockCmpXchg16AVLocation;
-EXTERN_C void * RhpLockCmpXchg32AVLocation;
-EXTERN_C void * RhpLockCmpXchg64AVLocation;
+EXTERN_C CODE_LOCATION RhpLockCmpXchg8AVLocation;
+EXTERN_C CODE_LOCATION RhpLockCmpXchg16AVLocation;
+EXTERN_C CODE_LOCATION RhpLockCmpXchg32AVLocation;
+EXTERN_C CODE_LOCATION RhpLockCmpXchg64AVLocation;
 #endif
-EXTERN_C void * RhpByRefAssignRefAVLocation1;
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
 #if !defined(HOST_ARM64)
-EXTERN_C void * RhpByRefAssignRefAVLocation2;
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
 #endif
 
 #if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
-EXTERN_C void* RhpCheckedLockCmpXchgAVLocation2;
-EXTERN_C void* RhpCheckedXchgAVLocation2;
+EXTERN_C CODE_LOCATION RhpCheckedLockCmpXchgAVLocation2;
+EXTERN_C CODE_LOCATION RhpCheckedXchgAVLocation2;
 #endif
 
 static bool InWriteBarrierHelper(uintptr_t faultingIP)
@@ -336,7 +348,7 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
-        if (PCODEToPINSTR(writeBarrierAVLocations[i]) == faultingIP)
+        if (writeBarrierAVLocations[i] == faultingIP)
             return true;
     }
 #endif // USE_PORTABLE_HELPERS
@@ -344,14 +356,14 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
     return false;
 }
 
-EXTERN_C void* RhpInitialInterfaceDispatch;
-EXTERN_C void* RhpInterfaceDispatchAVLocation1;
-EXTERN_C void* RhpInterfaceDispatchAVLocation2;
-EXTERN_C void* RhpInterfaceDispatchAVLocation4;
-EXTERN_C void* RhpInterfaceDispatchAVLocation8;
-EXTERN_C void* RhpInterfaceDispatchAVLocation16;
-EXTERN_C void* RhpInterfaceDispatchAVLocation32;
-EXTERN_C void* RhpInterfaceDispatchAVLocation64;
+EXTERN_C CODE_LOCATION RhpInitialInterfaceDispatch;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation1;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation2;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation4;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation8;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation16;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation32;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation64;
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
@@ -377,7 +389,7 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
         ASSERT(*(uint8_t*)interfaceDispatchAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
-        if (PCODEToPINSTR(interfaceDispatchAVLocations[i]) == faultingIP)
+        if (interfaceDispatchAVLocations[i] == faultingIP)
             return true;
     }
 #endif // USE_PORTABLE_HELPERS

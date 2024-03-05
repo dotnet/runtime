@@ -15,6 +15,25 @@ namespace System.Tests
             Assert.NotNull(delegates);
             Assert.Equal(1, delegates.Length);
             Assert.True(dfoo.Equals(delegates[0]));
+
+            Assert.True(dfoo.HasSingleTarget);
+
+            int count = 0;
+            foreach (DFoo d in Delegate.EnumerateInvocationList(dfoo))
+            {
+                Assert.Same(d, dfoo);
+                count++;
+            }
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
+        public static void EnumerateInvocationListNull()
+        {
+            foreach (Action d in Delegate.EnumerateInvocationList<Action>(null))
+            {
+                Assert.Fail();
+            }
         }
 
         [Fact]
@@ -182,10 +201,20 @@ namespace System.Tests
             }
             Assert.Same(combo.Target, expected[expected.Length - 1].Target);
             Assert.Same(combo.Target, target);
+            Assert.Equal(combo.HasSingleTarget, invokeList.Length == 1);
+            int count = 0;
+            foreach (D d in Delegate.EnumerateInvocationList(combo))
+            {
+                Assert.Same(d, invokeList[count]);
+                count++;
+            }
+            Assert.Equal(count, invokeList.Length);
         }
 
         private static void CheckIsSingletonDelegate(D expected, D actual, Tracker target)
         {
+            Assert.True(actual.HasSingleTarget);
+
             Assert.True(expected.Equals(actual));
             Delegate[] invokeList = actual.GetInvocationList();
             Assert.Equal(1, invokeList.Length);

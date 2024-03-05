@@ -74,7 +74,7 @@ ALTERNATE_ENTRY Rhp&FunctionName&@0
         lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToReturnFrom&FunctionName
+ALTERNATE_ENTRY ReturnFrom&FunctionName
 
         ; We cannot make the label public as that tricks DIA stackwalker into thinking
         ; it's the beginning of a method. For this reason we export an auxiliary variable

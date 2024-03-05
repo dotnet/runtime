@@ -82,7 +82,7 @@ namespace System.Linq.Parallel
         //     taskScheduler   - the task manager on which to execute
         //
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
 #endif
         internal static void SpoolPipeline<TInputOutput, TIgnoreKey>(
@@ -264,7 +264,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     /// <typeparam name="TIgnoreKey"></typeparam>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class PipelineSpoolingTask<TInputOutput, TIgnoreKey> : SpoolingTaskBase

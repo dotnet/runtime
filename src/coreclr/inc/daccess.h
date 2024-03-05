@@ -558,6 +558,7 @@
 #ifndef __daccess_h__
 #define __daccess_h__
 
+#ifndef NATIVEAOT
 #include <stdint.h>
 
 #include "switches.h"
@@ -613,8 +614,7 @@ struct DacTableHeader
 // Define TADDR as a non-pointer value so use of it as a pointer
 // will not work properly.  Define it as unsigned so
 // pointer comparisons aren't affected by sign.
-// This requires special casting to ULONG64 to sign-extend if necessary.
-typedef ULONG_PTR TADDR;
+typedef uintptr_t TADDR;
 
 // TSIZE_T used for counts or ranges that need to span the size of a
 // target pointer.  For cross-plat, this may be different than SIZE_T
@@ -660,6 +660,8 @@ public:
 #include "vptr_list.h"
 #undef VPTR_CLASS
 } DacGlobals;
+
+#endif // !NATIVEAOT
 
 #ifdef DACCESS_COMPILE
 
@@ -2125,7 +2127,7 @@ inline void DACCOP_IGNORE(DacCopWarningCode code, const char * szReasonString)
 // Declare TADDR as a non-pointer type so that arithmetic
 // can be done on it directly, as with the DACCESS_COMPILE definition.
 // This also helps expose pointer usage that may need to be changed.
-typedef ULONG_PTR TADDR;
+typedef uintptr_t TADDR;
 
 typedef void* PTR_VOID;
 typedef LPVOID* PTR_PTR_VOID;
@@ -2365,10 +2367,17 @@ inline type* DacUnsafeMarshalSingleElement( ArrayDPTR(type) arrayPtr )
 //
 //----------------------------------------------------------------------------
 
-typedef ArrayDPTR(BYTE)    PTR_BYTE;
+typedef DPTR(size_t)       PTR_size_t;
 typedef ArrayDPTR(uint8_t) PTR_uint8_t;
+typedef DPTR(PTR_uint8_t)  PTR_PTR_uint8_t;
+typedef DPTR(int32_t)      PTR_int32_t;
+typedef DPTR(uint32_t)     PTR_uint32_t;
+typedef DPTR(uint64_t)     PTR_uint64_t;
+typedef DPTR(uintptr_t)    PTR_uintptr_t;
+
+#ifndef NATIVEAOT
+typedef ArrayDPTR(BYTE)    PTR_BYTE;
 typedef DPTR(PTR_BYTE) PTR_PTR_BYTE;
-typedef DPTR(PTR_uint8_t) PTR_PTR_uint8_t;
 typedef DPTR(PTR_PTR_BYTE) PTR_PTR_PTR_BYTE;
 typedef ArrayDPTR(signed char) PTR_SBYTE;
 typedef ArrayDPTR(const BYTE) PTR_CBYTE;
@@ -2378,7 +2387,6 @@ typedef DPTR(UINT16)  PTR_UINT16;
 typedef DPTR(WORD)    PTR_WORD;
 typedef DPTR(USHORT)  PTR_USHORT;
 typedef DPTR(DWORD)   PTR_DWORD;
-typedef DPTR(uint32_t) PTR_uint32_t;
 typedef DPTR(LONG)    PTR_LONG;
 typedef DPTR(ULONG)   PTR_ULONG;
 typedef DPTR(INT32)   PTR_INT32;
@@ -2387,7 +2395,6 @@ typedef DPTR(ULONG64) PTR_ULONG64;
 typedef DPTR(INT64)   PTR_INT64;
 typedef DPTR(UINT64)  PTR_UINT64;
 typedef DPTR(SIZE_T)  PTR_SIZE_T;
-typedef DPTR(size_t)  PTR_size_t;
 typedef DPTR(TADDR)   PTR_TADDR;
 typedef DPTR(int)     PTR_int;
 typedef DPTR(BOOL)    PTR_BOOL;
@@ -2417,6 +2424,7 @@ typedef DPTR(IMAGE_NT_HEADERS64)    PTR_IMAGE_NT_HEADERS64;
 typedef DPTR(IMAGE_SECTION_HEADER)  PTR_IMAGE_SECTION_HEADER;
 typedef DPTR(IMAGE_EXPORT_DIRECTORY)  PTR_IMAGE_EXPORT_DIRECTORY;
 typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
+#endif
 
 #if defined(DACCESS_COMPILE)
 #include <corhdr.h>
@@ -2424,6 +2432,7 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #include <xclrdata.h>
 #endif
 
+#ifndef NATIVEAOT
 #if defined(TARGET_X86) && defined(TARGET_UNIX)
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 #endif
@@ -2438,6 +2447,7 @@ typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
 
 #ifdef TARGET_ARM
 typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
+#endif
 #endif
 
 //----------------------------------------------------------------------------

@@ -204,7 +204,7 @@ namespace System.Net.Security.Tests
                 intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
                 keySize: 2048,
-                extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
+                extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];
             X509Certificate2 issuerCert = issuingAuthority.CloneIssuerCert();

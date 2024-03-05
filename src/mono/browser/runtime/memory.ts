@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
@@ -324,7 +324,7 @@ export function getEnv(name: string): string | null {
 
 const BuiltinAtomics = globalThis.Atomics;
 
-export const Atomics = MonoWasmThreads ? {
+export const Atomics = WasmEnableThreads ? {
     storeI32(offset: MemOffset, value: number): void {
         BuiltinAtomics.store(localHeapViewI32(), <any>offset >>> 2, value);
     },
@@ -390,10 +390,15 @@ export function localHeapViewF64(): Float64Array {
     return Module.HEAPF64;
 }
 
+export function copyBytes(srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): void {
+    const heap = localHeapViewU8();
+    heap.copyWithin(dstPtr as any, srcPtr as any, srcPtr as any + bytes);
+}
+
 // when we run with multithreading enabled, we need to make sure that the memory views are updated on each worker
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews() {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     const memory = runtimeHelpers.getMemory();
     if (memory.buffer !== Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
@@ -403,7 +408,7 @@ export function receiveWorkerHeapViews() {
 const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
 export function isSharedArrayBuffer(buffer: any): buffer is SharedArrayBuffer {
     // this condition should be eliminated by rollup on non-threading builds
-    if (!MonoWasmThreads) return false;
+    if (!WasmEnableThreads) return false;
     // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
     // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
     // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
@@ -417,7 +422,7 @@ This is likely V8 bug. We don't have direct evidence, just failed debugger unit 
 */
 export function forceThreadMemoryViewRefresh() {
     // this condition should be eliminated by rollup on non-threading builds and it would become empty method.
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
 
     const wasmMemory = runtimeHelpers.getMemory();
 

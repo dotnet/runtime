@@ -62,22 +62,32 @@ export function http_wasm_create_controller(): HttpController {
 }
 
 export function http_wasm_abort_request(controller: HttpController): void {
-    if (controller.streamWriter) {
-        controller.streamWriter.abort();
+    try {
+        if (controller.streamWriter) {
+            controller.streamWriter.abort();
+        }
+    }
+    catch (err) {
+        // ignore
     }
     http_wasm_abort_response(controller);
 }
 
 export function http_wasm_abort_response(controller: HttpController): void {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
-    controller.abortController.abort();
-    if (controller.streamReader) {
-        controller.streamReader.cancel().catch((err) => {
-            if (err && err.name !== "AbortError") {
-                Module.err("Error in http_wasm_abort_response: " + err);
-            }
-            // otherwise, it's expected
-        });
+    try {
+        if (controller.streamReader) {
+            controller.streamReader.cancel().catch((err) => {
+                if (err && err.name !== "AbortError") {
+                    Module.err("Error in http_wasm_abort_response: " + err);
+                }
+                // otherwise, it's expected
+            });
+        }
+        controller.abortController.abort();
+    }
+    catch (err) {
+        // ignore
     }
 }
 
@@ -150,7 +160,7 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
     controller.responsePromise = wrap_as_cancelable_promise(() => {
         return loaderHelpers.fetch_like(url, options);
     });
-    // avoid processing headers if the fetch is cancelled
+    // avoid processing headers if the fetch is canceled
     controller.responsePromise.then((res: Response) => {
         controller.response = res;
         controller.responseHeaderNames = [];

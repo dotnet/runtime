@@ -1890,14 +1890,9 @@ public:
 #endif
     void SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares = TRUE);
 
-    //****************************************************************************************
-
-    // This can be used to override the binding behavior of the appdomain.   It
-    // is overridden in the compilation domain.  It is important that all
-    // static binding goes through this path.
-    virtual PEAssembly * BindAssemblySpec(
+    PEAssembly * BindAssemblySpec(
         AssemblySpec *pSpec,
-        BOOL fThrowOnFileNotFound) DAC_EMPTY_RET(NULL);
+        BOOL fThrowOnFileNotFound);
 
     //****************************************************************************************
     //

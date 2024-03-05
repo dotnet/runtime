@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasiObjDir>$(ArtifactsObjDir)wasi</WasiObjDir>
@@ -124,15 +124,15 @@
       -->
     </ItemGroup>
 
-    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
     </ItemGroup>
 
     <ItemGroup>
       <_WasiFlags Include="@(_WasiCommonFlags)" />
 
-      <_WasiCompileFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
+      <_WasiCompileFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
+      <_WasiCompileFlags Condition="'$(WasmEnableThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'mono-include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))"/>
@@ -217,7 +217,7 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; wasm &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeOptions Condition="'$(MonoVerboseBuild)' != ''">-v</CMakeOptions>

@@ -860,17 +860,18 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     {
         for (unsigned i = 0; i < conds.Size(); ++i)
         {
-            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
+            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
             newBlk->inheritWeight(insertAfter);
 
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
-            comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
+            FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
+            newBlk->SetTrueEdge(trueEdge);
 
             if (insertAfter->KindIs(BBJ_COND))
             {
                 JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-                insertAfter->SetFalseTarget(newBlk);
-                comp->fgAddRefPred(newBlk, insertAfter);
+                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
+                insertAfter->SetFalseEdge(falseEdge);
             }
 
             JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
@@ -894,16 +895,18 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     }
     else
     {
-        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
         newBlk->inheritWeight(insertAfter);
 
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
-        comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
+        FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
+        newBlk->SetTrueEdge(trueEdge);
 
-        if (insertAfter->bbFallsThrough())
+        if (insertAfter->KindIs(BBJ_COND))
         {
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-            comp->fgAddRefPred(newBlk, insertAfter);
+            FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
+            insertAfter->SetFalseEdge(falseEdge);
         }
 
         JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
@@ -1841,17 +1844,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
             return false;
         }
 
-        // TODO-Quirk: Can be removed, loop invariant is validated by
-        // `FlowGraphNaturalLoop::AnalyzeIteration`.
-        if (!iterInfo->TestTree->OperIsCompare() || ((iterInfo->TestTree->gtFlags & GTF_RELOP_ZTT) == 0))
-        {
-            JITDUMP("Loop cloning: rejecting loop " FMT_LP
-                    ". Loop inversion NOT present, loop test [%06u] may not protect "
-                    "entry from head.\n",
-                    loop->GetIndex(), iterInfo->TestTree->gtTreeID);
-            return false;
-        }
-
 #ifdef DEBUG
         const unsigned ivLclNum = iterInfo->IterVar;
         GenTree* const op1      = iterInfo->Iterator();
@@ -1967,18 +1959,14 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // ...
     // slow preheader --> slow header
 
-    assert(preheader->HasFlag(BBF_LOOP_PREHEADER));
-
     // Make a new pre-header block for the fast loop.
     JITDUMP("Create new preheader block for fast loop\n");
 
-    BasicBlock* fastPreheader =
-        fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
+    BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->SetFlags(BBF_LOOP_PREHEADER);
 
-    if (fastPreheader->JumpsToNext())
+    if (fastPreheader->NextIs(loop->GetHeader()))
     {
         fastPreheader->SetFlags(BBF_NONE_QUIRK);
     }
@@ -1986,12 +1974,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
 
-    fgReplacePred(loop->GetHeader(), preheader, fastPreheader);
+    FlowEdge* const oldEdge = preheader->GetTargetEdge();
+    fgReplacePred(oldEdge, fastPreheader);
+    fastPreheader->SetTargetEdge(oldEdge);
+
     JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", preheader->bbNum,
             loop->GetHeader()->bbNum, fastPreheader->bbNum, loop->GetHeader()->bbNum);
-
-    // 'preheader' is no longer the loop preheader; 'fastPreheader' is!
-    preheader->RemoveFlags(BBF_LOOP_PREHEADER);
 
     // We are going to create blocks after the lexical last block. If it falls
     // out of the loop then insert an explicit jump and insert after that
@@ -2006,25 +1994,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomNext
     BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
     BasicBlock* newPred = bottom;
-    if (bottom->KindIs(BBJ_COND))
-    {
-        // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
-        BasicBlock* bottomNext = bottom->Next();
-        assert(bottom->FalseTargetIs(bottomNext));
-        JITDUMP("Create branch around cloned loop\n");
-        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
-        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
-        bottomRedirBlk->bbWeight = bottomRedirBlk->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-        bottom->SetFalseTarget(bottomRedirBlk);
-        fgAddRefPred(bottomRedirBlk, bottom);
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
-        fgReplacePred(bottomNext, bottom, bottomRedirBlk);
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomNext->bbNum,
-                bottomRedirBlk->bbNum, bottomNext->bbNum);
-
-        newPred = bottomRedirBlk;
-    }
 
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
@@ -2041,7 +2010,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor, /* bottomNeedsRedirection */ false);
+    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor);
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
@@ -2075,9 +2044,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // We haven't set the jump target yet
     assert(slowPreheader->KindIs(BBJ_ALWAYS));
     assert(!slowPreheader->HasInitializedTarget());
-    slowPreheader->SetTarget(slowHeader);
 
-    fgAddRefPred(slowHeader, slowPreheader);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(slowHeader, slowPreheader);
+        slowPreheader->SetTargetEdge(newEdge);
+    }
+
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowPreheader->bbNum, slowHeader->bbNum);
 
     BasicBlock* condLast = optInsertLoopChoiceConditions(context, loop, slowPreheader, preheader);
@@ -2085,14 +2057,18 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // Now redirect the old preheader to jump to the first new condition that
     // was inserted by the above function.
     assert(preheader->KindIs(BBJ_ALWAYS));
-    preheader->SetTarget(preheader->Next());
-    fgAddRefPred(preheader->Next(), preheader);
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(preheader->Next(), preheader);
+        preheader->SetTargetEdge(newEdge);
+    }
+
     preheader->SetFlags(BBF_NONE_QUIRK);
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));
-    condLast->SetFalseTarget(fastPreheader);
-    fgAddRefPred(fastPreheader, condLast);
+    FlowEdge* const falseEdge = fgAddRefPred(fastPreheader, condLast);
+    condLast->SetFalseEdge(falseEdge);
 }
 
 //-------------------------------------------------------------------------
@@ -2991,31 +2967,38 @@ PhaseStatus Compiler::optCloneLoops()
 #endif
 #endif
 
-    assert(optLoopsCloned == 0); // It should be initialized, but not yet changed.
+    assert(Metrics.LoopsCloned == 0); // It should be initialized, but not yet changed.
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
-            optLoopsCloned++;
+            Metrics.LoopsCloned++;
             context.OptimizeConditions(loop->GetIndex() DEBUGARG(verbose));
             context.OptimizeBlockConditions(loop->GetIndex() DEBUGARG(verbose));
             optCloneLoop(loop, &context);
         }
     }
 
-    if (optLoopsCloned > 0)
+    if (Metrics.LoopsCloned > 0)
     {
-        fgRenumberBlocks();
-
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        if (optCanonicalizeLoops())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        fgRenumberBlocks();
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Loops cloned: %d\n", optLoopsCloned);
+        printf("Loops cloned: %d\n", Metrics.LoopsCloned);
         printf("Loops statically optimized: %d\n", optStaticallyOptimizedLoops);
         printf("After loop cloning:\n");
         fgDispBasicBlocks(/*dumpTrees*/ true);

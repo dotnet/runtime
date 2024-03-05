@@ -119,9 +119,5 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
-  </ItemGroup>
-
   <Import Project="$(BrowserProjectRoot)\build\WasmApp.InTree.targets" />
 </Project>

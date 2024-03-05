@@ -44,6 +44,10 @@ namespace System.SpanTests
                 "aaa",
                 "aaaa",
                 "aaaaa",
+                "Aa",
+                "AaBb",
+                "AaBbCc",
+                "[]{}",
                 "\uFFF0",
                 "\uFFF0\uFFF2",
                 "\uFFF0\uFFF2\uFFF4",
@@ -403,7 +407,7 @@ namespace System.SpanTests
         private static class SearchValuesTestHelper
         {
             private const int MaxNeedleLength = 10;
-            private const int MaxHaystackLength = 100;
+            private const int MaxHaystackLength = 200;
 
             private static readonly char[] s_randomAsciiChars;
             private static readonly char[] s_randomLatin1Chars;

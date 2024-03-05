@@ -281,6 +281,24 @@ jobs:
         logicalmachine: 'perfowl'
         experimentName: 'gdv3'
 
+  # run coreclr perfowl microbenchmarks perf rlcse jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfowl'
+        experimentName: 'rlcse'
+
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -316,30 +334,29 @@ jobs:
             parameters:
               name: MonoRuntimePacks
 
-  # Disabled due to: https://github.com/dotnet/performance/issues/3655
-  # # build PerfBDN app
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: mono
-  #     platforms:
-  #     - ios_arm64
-  #     jobParameters:
-  #       dependsOn:
-  #        - Build_android_arm64_release_Mono_Packs
-  #       buildArgs: -s mono -c $(_BuildConfig)
-  #       nameSuffix: PerfBDNApp
-  #       isOfficialBuild: false
-  #       pool:
-  #         vmImage: 'macos-12'
-  #       postBuildSteps:
-  #         - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
-  #           parameters:
-  #             rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-  #             includeRootFolder: true
-  #             displayName: Android BDN App Artifacts
-  #             artifactName: PerfBDNAppArm
-  #             archiveExtension: '.tar.gz'
-  #             archiveType: tar
-  #             tarCompression: gz
+  # build PerfBDN app
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        dependsOn:
+         - Build_android_arm64_release_Mono_Packs
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: PerfBDNApp
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-12'
+        postBuildSteps:
+          - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: Android BDN App Artifacts
+              artifactName: PerfBDNAppArm
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz

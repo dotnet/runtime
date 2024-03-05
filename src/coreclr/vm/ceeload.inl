@@ -64,7 +64,7 @@ inline
 void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
-    VolatileStore(pValue, value | flags);
+    VolatileStore(pValue, dac_cast<TADDR>(value | flags));
 }
 #endif // DACCESS_COMPILE
 
@@ -470,7 +470,7 @@ inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
 inline CodeVersionManager * Module::GetCodeVersionManager()
 {
     LIMITED_METHOD_CONTRACT;
-    return GetDomain()->GetCodeVersionManager();
+    return AppDomain::GetCurrentDomain()->GetCodeVersionManager();
 }
 #endif // FEATURE_CODE_VERSIONING
 

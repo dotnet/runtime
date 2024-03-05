@@ -118,8 +118,9 @@ DumpDataTarget::ReadVirtual(
     /* [in] */ ULONG32 size,
     /* [optional][out] */ ULONG32 *done)
 {
+    address = CONVERT_FROM_SIGN_EXTENDED(address);
     size_t read = 0;
-    if (!m_crashInfo.ReadProcessMemory((void*)(ULONG_PTR)address, buffer, size, &read))
+    if (!m_crashInfo.ReadProcessMemory(address, buffer, size, &read))
     {
         TRACE("DumpDataTarget::ReadVirtual %p %d FAILED\n", (void*)address, size);
         *done = 0;

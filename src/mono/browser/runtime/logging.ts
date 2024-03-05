@@ -8,8 +8,8 @@ import { CharPtr, VoidPtr } from "./types/emscripten";
 
 let prefix = "MONO_WASM: ";
 
-export function mono_set_thread_name(threadName: string) {
-    prefix = `MONO_WASM [${threadName}]: `;
+export function set_thread_prefix(threadPrefix: string) {
+    prefix = `[${threadPrefix}] MONO_WASM: `;
 }
 
 export function mono_log_debug(msg: string, ...data: any) {
@@ -89,14 +89,19 @@ export function mono_wasm_symbolicate_string(message: string): string {
     }
 }
 
-export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
-    let errObj: any = err;
-    if (!errObj || !errObj.stack) {
-        errObj = new Error(errObj ? ("" + errObj) : "Unknown error");
+export function mono_wasm_stringify_as_error_with_stack(reason: any): string {
+    let stack: string;
+    if (typeof reason === "string") {
+        stack = reason;
+    }
+    else if (reason === undefined || reason === null || reason.stack === undefined) {
+        stack = new Error().stack + "";
+    } else {
+        stack = reason.stack + "";
     }
 
     // Error
-    return mono_wasm_symbolicate_string(errObj.stack);
+    return mono_wasm_symbolicate_string(stack);
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
@@ -152,4 +157,8 @@ export function parseSymbolMapFile(text: string) {
 
 export function mono_wasm_get_func_id_to_name_mappings() {
     return [...wasm_func_map.values()];
+}
+
+export function mono_wasm_console_clear() {
+    console.clear();
 }

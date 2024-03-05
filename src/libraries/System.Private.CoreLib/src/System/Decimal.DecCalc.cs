@@ -232,20 +232,20 @@ namespace System
 #else
                 // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
                 Debug.Assert(pow <= ushort.MaxValue);
-                uint num, mid32, low16, div;
+                uint num, mid32, low16, div, rem;
                 if (high64 <= uint.MaxValue)
                 {
                     num = (uint)high64;
-                    mid32 = num / pow;
-                    num = (num - mid32 * pow) << 16;
+                    (mid32, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += low >> 16;
-                    low16 = num / pow;
-                    num = (num - low16 * pow) << 16;
+                    (low16, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (ushort)low;
-                    div = num / pow;
-                    if (num == div * pow)
+                    (div, rem) = Math.DivRem(num, pow);
+                    if (rem == 0)
                     {
                         high64 = mid32;
                         low = (low16 << 16) + div;
@@ -255,25 +255,25 @@ namespace System
                 else
                 {
                     num = (uint)(high64 >> 32);
-                    uint high32 = num / pow;
-                    num = (num - high32 * pow) << 16;
+                    (uint high32, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (uint)high64 >> 16;
-                    mid32 = num / pow;
-                    num = (num - mid32 * pow) << 16;
+                    (mid32, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (ushort)high64;
-                    div = num / pow;
-                    num = (num - div * pow) << 16;
+                    (div, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
                     mid32 = div + (mid32 << 16);
 
                     num += low >> 16;
-                    low16 = num / pow;
-                    num = (num - low16 * pow) << 16;
+                    (low16, rem) = Math.DivRem(num, pow);
+                    num = rem << 16;
 
                     num += (ushort)low;
-                    div = num / pow;
-                    if (num == div * pow)
+                    (div, rem) = Math.DivRem(num, pow);
+                    if (rem == 0)
                     {
                         high64 = ((ulong)high32 << 32) | mid32;
                         low = (low16 << 16) + div;
@@ -322,7 +322,6 @@ namespace System
             private static uint Div96By64(ref Buf12 bufNum, ulong den)
             {
                 Debug.Assert(den > bufNum.High64);
-                uint quo;
                 ulong num;
                 uint num2 = bufNum.U2;
                 if (num2 == 0)
@@ -332,13 +331,11 @@ namespace System
                         // Result is zero.  Entire dividend is remainder.
                         return 0;
 
-                    // TODO: https://github.com/dotnet/runtime/issues/5213
-                    quo = (uint)(num / den);
-                    num -= quo * den; // remainder
-                    bufNum.Low64 = num;
-                    return quo;
+                    (ulong quo64, bufNum.Low64) = Math.DivRem(num, den);
+                    return (uint)quo64;
                 }
 
+                uint quo;
                 uint denHigh32 = (uint)(den >> 32);
                 if (num2 >= denHigh32)
                 {
@@ -674,7 +671,7 @@ ThrowOverflow:
             private static unsafe uint DivByConst(uint* result, uint hiRes, out uint quotient, out uint remainder, uint power)
             {
                 uint high = result[hiRes];
-                remainder = high - (quotient = high / power) * power;
+                (quotient, remainder) = Math.DivRem(high, power);
                 for (uint i = hiRes - 1; (int)i >= 0; i--)
                 {
 #if TARGET_64BIT
@@ -690,13 +687,11 @@ ThrowOverflow:
 #endif
                     // byte* is used here because Roslyn doesn't do constant propagation for pointer arithmetic
                     uint num = *(ushort*)((byte*)result + i * 4 + high16) + (remainder << 16);
-                    uint div = num / power;
-                    remainder = num - div * power;
+                    (uint div, remainder) = Math.DivRem(num, power);
                     *(ushort*)((byte*)result + i * 4 + high16) = (ushort)div;
 
                     num = *(ushort*)((byte*)result + i * 4 + low16) + (remainder << 16);
-                    div = num / power;
-                    remainder = num - div * power;
+                    (div, remainder) = Math.DivRem(num, power);
                     *(ushort*)((byte*)result + i * 4 + low16) = (ushort)div;
 #endif
                 }
@@ -1332,10 +1327,7 @@ ThrowOverflow:
                             scale -= DEC_SCALE_MAX + 1;
                             ulong power = UInt64Powers10[scale];
 
-                            // TODO: https://github.com/dotnet/runtime/issues/5213
-                            tmp = low64 / power;
-                            ulong remainder = low64 - tmp * power;
-                            low64 = tmp;
+                            (low64, ulong remainder) = Math.DivRem(low64, power);
 
                             // Round result.  See if remainder >= 1/2 of divisor.
                             // Divisor is a power of 10, so it is always even.
@@ -1629,9 +1621,8 @@ ReturnZero:
 
                     if ((mant & 0xF) == 0 && lmax >= 4)
                     {
-                        const uint den = 10000;
-                        uint div = mant / den;
-                        if (mant == div * den)
+                        (uint div, uint rem) = Math.DivRem(mant, 10000);
+                        if (rem == 0)
                         {
                             mant = div;
                             power -= 4;
@@ -1641,9 +1632,8 @@ ReturnZero:
 
                     if ((mant & 3) == 0 && lmax >= 2)
                     {
-                        const uint den = 100;
-                        uint div = mant / den;
-                        if (mant == div * den)
+                        (uint div, uint rem) = Math.DivRem(mant, 100);
+                        if (rem == 0)
                         {
                             mant = div;
                             power -= 2;
@@ -1653,9 +1643,8 @@ ReturnZero:
 
                     if ((mant & 1) == 0 && lmax >= 1)
                     {
-                        const uint den = 10;
-                        uint div = mant / den;
-                        if (mant == div * den)
+                        (uint div, uint rem) = Math.DivRem(mant, 10);
+                        if (rem == 0)
                         {
                             mant = div;
                             power--;
@@ -2372,8 +2361,7 @@ ThrowOverflow:
                     else
                     {
                         uint q;
-                        d.uhi = q = n / divisor;
-                        remainder = n - q * divisor;
+                        (d.uhi, remainder) = Math.DivRem(n, divisor);
                         n = d.umid;
                         if ((n | remainder) != 0)
                         {
@@ -2414,8 +2402,7 @@ ThrowOverflow:
                     else
                     {
                         uint q;
-                        d.uhi = q = n / power;
-                        remainder = n - q * power;
+                        (d.uhi, remainder) = Math.DivRem(n, power);
                         n = d.umid;
                         if ((n | remainder) != 0)
                         {

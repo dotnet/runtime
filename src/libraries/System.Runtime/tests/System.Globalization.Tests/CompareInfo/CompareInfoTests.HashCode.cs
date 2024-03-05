@@ -25,7 +25,8 @@ namespace System.Globalization.Tests
 
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
-                yield return new object[] { new CultureInfo("en-GB").CompareInfo, "100", "100!", CompareOptions.IgnoreSymbols }; // HG: equal: True, hashCodesEqual: False
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    yield return new object[] { new CultureInfo("en-GB").CompareInfo, "100", "100!", CompareOptions.IgnoreSymbols }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("ja-JP").CompareInfo, "\u30A2", "\u3042", CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("en-GB").CompareInfo, "caf\u00E9", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
             }
@@ -99,6 +100,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(CheckHashingOfSkippedChars_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void CheckHashingOfSkippedChars(char character, CompareInfo cmpInfo)
         {
             string str1 = $"a{character}b";

@@ -54,6 +54,7 @@
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
     <!-- FIXME: is the blazor condition here correct? -->
     <_WasmNativeWorkloadNeeded Condition="
+        '$(WasmEnableThreads)' == 'true' or
         '$(_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded)' == 'true' or
         '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or

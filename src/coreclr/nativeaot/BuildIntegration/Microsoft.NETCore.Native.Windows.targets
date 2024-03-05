@@ -33,6 +33,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerSubsystem Condition="'$(OutputType)' == 'Exe' and '$(LinkerSubsystem)' == ''">CONSOLE</LinkerSubsystem>
     <EventPipeName>eventpipe-disabled</EventPipeName>
     <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">eventpipe-enabled</EventPipeName>
+    <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">1572864</IlcDefaultStackSize>
   </PropertyGroup>
 
   <!-- Ensure that runtime-specific paths have already been set -->
@@ -94,6 +95,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe'" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
       <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
+      <LinkerArg Condition="'$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe'" Include="/STACK:$(IlcDefaultStackSize)" />
+      <!-- Do not warn if someone declares UnmanagedCallersOnly with an entrypoint of 'DllGetClassObject' and similar -->
+      <LinkerArg Include="/IGNORE:4104" />
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">

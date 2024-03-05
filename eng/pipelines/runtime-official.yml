@@ -310,8 +310,10 @@ extends:
           - iossimulator_arm64
           - ios_arm64
           - linux_x64
+          - linux_arm
           - linux_arm64
           - linux_musl_x64
+          - linux_musl_arm
           - linux_musl_arm64
           - linux_bionic_x64
           - linux_bionic_arm64
@@ -394,7 +396,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread

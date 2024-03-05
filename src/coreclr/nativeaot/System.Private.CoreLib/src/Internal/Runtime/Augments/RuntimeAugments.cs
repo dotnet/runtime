@@ -194,6 +194,9 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return *(IntPtr*)address;
+
             return ReflectionPointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
         }
 
@@ -212,6 +215,10 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref address);
+
             return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
 
@@ -274,9 +281,11 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
-            Debug.Assert(fieldTypeHandle.ToMethodTable()->IsPointer);
-
             IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+
+            if (fieldTypeHandle.ToMethodTable()->IsFunctionPointer)
+                return ptrValue;
+
             return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
         }
 

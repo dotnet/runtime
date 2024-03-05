@@ -1591,7 +1591,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
             if (!resolveBreakpoints)
                 return;
-            foreach (var req in context.BreakpointRequests.Values)
+            var breakpointRequests = context.BreakpointRequests.Values.ToList<BreakpointRequest>(); //this can be changed while we are looping it and cause an exception
+            foreach (var req in breakpointRequests)
             {
                 if (req.TryResolve(source))
                 {

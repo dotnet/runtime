@@ -548,7 +548,7 @@ namespace
                                                                              pTypeContext,
                                                                              ClassLoader::LoadTypes,
                                                                              CLASS_LOAD_APPROXPARENTS,
-                                                                             TRUE, NULL, NULL, NULL, 
+                                                                             TRUE, NULL, NULL, NULL,
                                                                              &recursiveControl);
 
                     if (typeHandleMaybe.IsNull())
@@ -828,7 +828,7 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     if (pClass->GetNativeLayoutInfo() == nullptr)
     {
         GCX_PREEMP();
-        ListLockHolder nativeTypeLoadLock(pMT->GetDomain()->GetNativeTypeLoadLock());
+        ListLockHolder nativeTypeLoadLock(AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock());
         ListLockEntryHolder entry(ListLockEntry::Find(nativeTypeLoadLock, pMT->GetClass()));
         ListLockEntryLockHolder pEntryLock(entry, FALSE);
         nativeTypeLoadLock.Release();

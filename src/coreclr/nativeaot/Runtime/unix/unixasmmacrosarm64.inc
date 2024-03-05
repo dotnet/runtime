@@ -298,22 +298,6 @@ C_FUNC(\Name):
 0:
 .endm
 
-
-.macro EXPORT_POINTER_TO_ADDRESS Name
-
-1:
-
-        .data
-        .align      8
-C_FUNC(\Name):
-        .quad       1b
-        .global     C_FUNC(\Name)
-#if !defined(__APPLE__)
-        .hidden     C_FUNC(\Name)
-#endif
-        .text
-.endm
-
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_SP            = 0x00000400
 PTFF_SAVE_X0            = 0x00000800

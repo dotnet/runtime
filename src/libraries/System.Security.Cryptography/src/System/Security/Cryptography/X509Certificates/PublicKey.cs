@@ -272,7 +272,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private AsnWriter EncodeSubjectPublicKeyInfo()
+        internal AsnWriter EncodeSubjectPublicKeyInfo()
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {

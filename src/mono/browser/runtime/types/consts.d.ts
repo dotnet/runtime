@@ -7,7 +7,7 @@ declare module "consts:*" {
     export default constant;
 }
 
-declare module "consts:monoWasmThreads" {
+declare module "consts:wasmEnableThreads" {
     const constant: boolean;
     export default constant;
 }

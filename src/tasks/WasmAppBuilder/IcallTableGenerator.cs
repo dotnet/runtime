@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using WasmAppBuilder;
 
 internal sealed class IcallTableGenerator
 {
@@ -19,7 +20,7 @@ internal sealed class IcallTableGenerator
     private readonly HashSet<string> _signatures = new();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
-    private TaskLoggingHelper Log { get; set; }
+    private LogAdapter Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
 
     //
@@ -28,7 +29,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, TaskLoggingHelper log)
+    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, LogAdapter log)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
@@ -141,7 +142,7 @@ internal sealed class IcallTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Could not get icall, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
+                Log.Warning("WASM0001", $"Could not get icall, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
                 continue;
             }
 
@@ -193,7 +194,7 @@ internal sealed class IcallTableGenerator
                 }
                 catch (NotImplementedException nie)
                 {
-                    Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
+                    Log.Warning("WASM0001", $"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
                                     $" because type '{nie.Message}' is not supported for parameter named '{par.Name}'. Ignoring.");
                     return null;
                 }
@@ -206,7 +207,7 @@ internal sealed class IcallTableGenerator
 
         void AddSignature(Type type, MethodInfo method)
         {
-            string? signature = SignatureMapper.MethodToSignature(method);
+            string? signature = SignatureMapper.MethodToSignature(method, Log);
             if (signature == null)
             {
                 throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");

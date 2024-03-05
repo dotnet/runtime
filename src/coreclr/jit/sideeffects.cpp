@@ -174,7 +174,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 
     // Is the operation a write? If so, set `node` to the location that is being written to.
     bool isWrite = false;
-    if (node->OperIsStore() || node->OperIs(GT_STORE_DYN_BLK, GT_MEMORYBARRIER))
+    if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }

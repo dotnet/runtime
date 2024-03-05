@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
 #pragma warning disable 8500 // sizeof of managed types
 
@@ -16,6 +15,7 @@ namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        [Intrinsic] // Unrolled for small sizes
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
@@ -1672,6 +1672,15 @@ namespace System
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
             {
+                if ((*(char*)&value0 ^ *(char*)&value1) == 0x20)
+                {
+                    char lowerCase = (char)Math.Max(*(char*)&value0, *(char*)&value1);
+
+                    return typeof(TNegator) == typeof(DontNegate<short>)
+                        ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length)
+                        : PackedSpanHelpers.IndexOfAnyExceptIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length);
+                }
+
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length)
                     : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length);

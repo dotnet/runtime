@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -297,6 +299,142 @@ namespace System.Reflection.Tests
             args = new object[1] { Activator.CreateInstance(otherEquivalentValueType) };
             Assert.Equal(42, mi.Invoke(null, args));
         }
+
+        [Fact]
+        public void IgnoreLeadingDotForTypeNamesWithoutNamespace()
+        {
+            Type typeWithNoNamespace = typeof(NoNamespace);
+
+            Assert.Equal(typeWithNoNamespace, Type.GetType($".{typeWithNoNamespace.AssemblyQualifiedName}"));
+            Assert.Equal(typeWithNoNamespace, Type.GetType(typeWithNoNamespace.AssemblyQualifiedName));
+
+            Assert.Equal(typeWithNoNamespace, typeWithNoNamespace.Assembly.GetType($".{typeWithNoNamespace.FullName}"));
+            Assert.Equal(typeWithNoNamespace, typeWithNoNamespace.Assembly.GetType(typeWithNoNamespace.FullName));
+
+            Assert.Equal(typeof(List<NoNamespace>), Type.GetType($"{typeof(List<>).FullName}[[{typeWithNoNamespace.AssemblyQualifiedName}]]"));
+            Assert.Equal(typeof(List<NoNamespace>), Type.GetType($"{typeof(List<>).FullName}[[.{typeWithNoNamespace.AssemblyQualifiedName}]]"));
+
+            Type typeWithNamespace = typeof(int);
+
+            Assert.Equal(typeWithNamespace, Type.GetType(typeWithNamespace.AssemblyQualifiedName));
+            Assert.Null(Type.GetType($".{typeWithNamespace.AssemblyQualifiedName}"));
+        }
+
+        public static IEnumerable<object[]> GetTypesThatRequireEscaping()
+        {
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TypeNamesThatRequireEscaping"), AssemblyBuilderAccess.Run);
+                ModuleBuilder module = assembly.DefineDynamicModule("TypeNamesThatRequireEscapingModule");
+
+                yield return new object[] { module.DefineType("TypeNameWith+ThatIsNotNestedType").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith\\TheEscapingCharacter").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith&Ampersand").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith*Asterisk").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith[OpeningSquareBracket").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith]ClosingSquareBracket").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith[]BothSquareBrackets").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith[[]]NestedSquareBrackets").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith,Comma").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith\\[]+*&,AllSpecialCharacters").CreateType(), assembly };
+
+                TypeBuilder containingType = module.DefineType("ContainingTypeWithA+Plus");
+                _ = containingType.CreateType(); // containing type must exist!
+                yield return new object[] { containingType.DefineNestedType("NoSpecialCharacters").CreateType(), assembly };
+                yield return new object[] { containingType.DefineNestedType("Contains+Plus").CreateType(), assembly };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45033", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [MemberData(nameof(GetTypesThatRequireEscaping))]
+        public void TypeNamesThatRequireEscaping(Type type, Assembly assembly)
+        {
+            Assert.Contains('\\', type.FullName);
+
+            Assert.Equal(type, assembly.GetType(type.FullName));
+            Assert.Equal(type, assembly.GetType(type.FullName.ToLower(), throwOnError: true, ignoreCase: true));
+            Assert.Equal(type, assembly.GetType(type.FullName.ToUpper(), throwOnError: true, ignoreCase: true));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45033", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        public void EscapingCharacterThatDoesNotRequireEscapingIsTreatedAsError()
+        {
+            for (char character = (char)0; character <= 255; character++)
+            {
+                Func<Type> testCode = () => Type.GetType($"System.\\{character}", throwOnError: true);
+
+                if (character is '\\' or '[' or ']' or '+' or '*' or '&' or ',')
+                {
+                    Assert.Throws<TypeLoadException>(testCode); // such type does not exist
+                }
+                else
+                {
+                    Assert.Throws<ArgumentException>(testCode); // such name is invalid
+                }
+
+                Assert.Null(Type.GetType($"System.\\{character}", throwOnError: false));
+            }
+        }
+
+        public static IEnumerable<object[]> AllWhitespacesArguments()
+        {
+            // leading whitespaces are allowed for type names:
+            yield return new object[]
+            {
+                " \t\r\nSystem.Int32",
+                typeof(int)
+            };
+            yield return new object[]
+            {
+                $"System.Collections.Generic.List`1[\r\n\t [\t\r\n {typeof(int).AssemblyQualifiedName}]], {typeof(List<>).Assembly.FullName}",
+                typeof(List<int>)
+            };
+            yield return new object[]
+            {
+                $"System.Collections.Generic.List`1[\r\n\t{typeof(int).FullName}]",
+                typeof(List<int>)
+            };
+            // leading whitespaces are NOT allowed for modifiers:
+            yield return new object[]
+            {
+                "System.Int32\t\r\n []",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32\r\n\t [,]",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32 \r\n\t [*]",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32 *",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32\t&",
+                null
+            };
+            // trailing whitespaces are NOT allowed:
+            yield return new object[]
+            {
+                $"System.Int32 \t\r\n",
+                null
+            };
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45033", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [MemberData(nameof(AllWhitespacesArguments))]
+        public void AllWhitespaces(string input, Type? expectedType)
+            => Assert.Equal(expectedType, Type.GetType(input));
     }
 
     namespace MyNamespace1
@@ -351,4 +489,9 @@ namespace System.Reflection.Tests
     public class MyClass1 { }
 
     public class GenericClass<T> { }
+}
+
+public class NoNamespace
+{
+
 }

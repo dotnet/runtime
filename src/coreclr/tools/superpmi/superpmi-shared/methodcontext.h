@@ -886,6 +886,13 @@ public:
 
     bool WasEnvironmentChanged(const Environment& prevEnv);
 
+    void Reset()
+    {
+        delete cr;
+        FreeTempAllocations();
+        cr = new CompileResult();
+    }
+
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;

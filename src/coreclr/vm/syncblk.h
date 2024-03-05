@@ -826,7 +826,7 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
         {
             NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (InterlockedCompareExchangeT((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
             }
@@ -917,7 +917,7 @@ private:
     void* m_externalComObjectContext;
 
     CrstExplicitInit m_managedObjectComWrapperLock;
-    NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
+    ManagedObjectComWrapperByIdMap* m_managedObjectComWrapperMap;
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL

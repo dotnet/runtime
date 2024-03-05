@@ -781,6 +781,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach)
 	MonoInternalThread *internal;
 	MonoDomain *domain = mono_get_root_domain ();
 	MonoGCHandle gchandle;
+	MonoNativeThreadId tid;
 
 	g_assert (thread);
 
@@ -799,7 +800,8 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach)
 
 	internal->handle = mono_threads_open_thread_handle (info->handle);
 	internal->native_handle = MONO_NATIVE_THREAD_HANDLE_TO_GPOINTER (mono_threads_open_native_thread_handle (info->native_handle));
-	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ());
+	tid = mono_native_thread_id_get ();
+	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 	internal->thread_info = info;
 	internal->small_id = info->small_id;
 
@@ -808,6 +810,10 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach)
 	SET_CURRENT_OBJECT (internal);
 
 	mono_domain_set_fast (domain);
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_attached (tid, internal->name.chars, (internal->state & ThreadState_Background) != 0, internal->threadpool_thread, internal->external_eventloop, internal->debugger_thread != 0);
+#endif
 
 	mono_threads_lock ();
 

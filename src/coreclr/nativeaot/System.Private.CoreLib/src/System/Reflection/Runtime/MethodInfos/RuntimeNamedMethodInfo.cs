@@ -309,7 +309,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (invoker != null)
                     return invoker;
 
-                return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
+                return GetUncachedMethodInvoker(GenericTypeParameters, this);
             }
         }
 

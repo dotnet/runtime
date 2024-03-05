@@ -11,11 +11,6 @@
 class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
-struct EETypeRef;
-
-#if !defined(USE_PORTABLE_HELPERS)
-#define SUPPORTS_WRITABLE_DATA 1
-#endif
 
 //-------------------------------------------------------------------------------------------------
 // The subset of TypeFlags that Redhawk knows about at runtime
@@ -195,21 +190,10 @@ public:
     bool IsParameterizedType()
         { return (GetKind() == ParameterizedEEType); }
 
-    bool IsGenericTypeDefinition()
-        { return (GetKind() == GenericTypeDefEEType); }
-
-    bool IsCanonical()
-        { return GetKind() == CanonicalEEType; }
-
     bool IsInterface()
         { return GetElementType() == ElementType_Interface; }
 
     MethodTable * GetRelatedParameterType();
-
-    // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
-    // an array but some other parameterized type (see: ParameterizedTypeShapeConstants)
-    // For arrays, this number uniquely captures both Sz/Md array flavor and rank.
-    uint32_t GetParameterizedTypeShape() { return m_uBaseSize; }
 
     bool IsValueType()
         { return GetElementType() < ElementType_Class; }
@@ -257,11 +241,6 @@ public:
         return (m_uFlags & HasPointersFlag) != 0;
     }
 
-    bool HasOptionalFields()
-    {
-        return (m_uFlags & OptionalFieldsFlag) != 0;
-    }
-
     // How many vtable slots are there?
     uint16_t GetNumVtableSlots()
         { return m_usNumVtableSlots; }
@@ -269,13 +248,6 @@ public:
     // How many entries are in the interface map after the vtable slots?
     uint16_t GetNumInterfaces()
         { return m_usNumInterfaces; }
-
-    // Does this class (or its base classes) implement any interfaces?
-    bool HasInterfaces()
-        { return GetNumInterfaces() != 0; }
-
-    bool IsGeneric()
-        { return (m_uFlags & IsGenericFlag) != 0; }
 
     TypeManagerHandle* GetTypeManagerPtr();
 
@@ -285,11 +257,6 @@ public:
     // not query them and the rest of the runtime will never hold a reference to free object.
     inline void InitializeAsGcFreeType();
 
-#ifdef DACCESS_COMPILE
-    bool DacVerify();
-    static bool DacVerifyWorker(MethodTable* pThis);
-#endif // DACCESS_COMPILE
-
     // Mark or determine that a type is generic and one or more of it's type parameters is co- or
     // contra-variant. This only applies to interface and delegate types.
     bool HasGenericVariance()
@@ -298,15 +265,9 @@ public:
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_uFlags & ElementTypeMask) >> ElementTypeShift); }
 
-    // Determine whether a type is an instantiation of Nullable<T>.
-    bool IsNullable()
-        { return GetElementType() == ElementType_Nullable; }
-
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
         { return (m_uFlags & IsDynamicTypeFlag) != 0; }
-
-    uint32_t GetHashCode();
 
     // Helper methods that deal with MethodTable topology (size and field layout). These are useful since as we
     // optimize for pay-for-play we increasingly want to customize exactly what goes into an MethodTable on a

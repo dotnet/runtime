@@ -3668,6 +3668,7 @@ void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_
     value.tlsIndexObject      = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndexObject);
     value.offsetOfThreadLocalStoragePointer       = pInfo->offsetOfThreadLocalStoragePointer;
     value.threadStaticBaseSlow       = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->threadStaticBaseSlow);
+    value.tlsGetAddrFtnPtr           = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsGetAddrFtnPtr);
 
     DWORDLONG key = 1;
 
@@ -3678,11 +3679,12 @@ void MethodContext::dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG             
                                                           const Agnostic_GetThreadStaticInfo_NativeAOT& value)
 {
     printf("GetThreadLocalStaticInfo_NativeAOT key %016" PRIX64 ", tlsRootObject-%s, tlsIndexObject-%s,  offsetOfThreadLocalStoragePointer-%u, "
-           "threadStaticBaseSlow-%s",
+           "threadStaticBaseSlow-%s, tlsGetAddrFtnPtr-%s",
            key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsRootObject).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndexObject).c_str(),
            value.offsetOfThreadLocalStoragePointer,
-           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow).c_str());
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow).c_str(),
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsGetAddrFtnPtr).c_str());
 }
 
 void MethodContext::repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
@@ -3697,6 +3699,7 @@ void MethodContext::repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_
     pInfo->tlsIndexObject                    = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsIndexObject);
     pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
     pInfo->threadStaticBaseSlow              = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.threadStaticBaseSlow);
+    pInfo->tlsGetAddrFtnPtr                  = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsGetAddrFtnPtr);
 }
 
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,

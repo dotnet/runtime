@@ -69,6 +69,24 @@ unsigned SsaStressHashHelper()
 #endif
 
 //------------------------------------------------------------------------
+// setLikelihood: set the likelihood of aflow edge
+//
+// Arguments:
+//   likelihood -- value in range [0.0, 1.0] indicating how likely
+//     the source block is to transfer control along this edge.
+//
+void FlowEdge::setLikelihood(weight_t likelihood)
+{
+    assert(likelihood >= 0.0);
+    assert(likelihood <= 1.0);
+    m_likelihoodSet = true;
+    m_likelihood    = likelihood;
+
+    JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum, m_destBlock->bbNum,
+            m_likelihood);
+}
+
+//------------------------------------------------------------------------
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
@@ -142,7 +160,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
     {
         if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallFinallyPairTail())
         {
-            res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
+            res = new (this, CMK_FlowEdge) FlowEdge(bb, blk, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -164,7 +182,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
                      filterBlk             = filterBlk->Next())
                 {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
                     assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
@@ -239,7 +257,7 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
                 for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
                      filterBlk             = filterBlk->Next())
                 {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
                     assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
@@ -297,22 +315,24 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------
-// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+// CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
+//    target - true/false target of the BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if block is a BBJ_COND that can fall into its false target
+//    true if block is a BBJ_COND that can fall into target
 //
-bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
     assert(KindIs(BBJ_COND));
-    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
+    assert(TrueTargetIs(target) || FalseTargetIs(target));
+    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
 //------------------------------------------------------------------------
@@ -511,7 +531,6 @@ void BasicBlock::dspFlags() const
         {BBF_NO_CSE_IN, "no-cse"},
         {BBF_CAN_ADD_PRED, "add-pred"},
         {BBF_RETLESS_CALL, "retless"},
-        {BBF_LOOP_PREHEADER, "preheader"},
         {BBF_COLD, "cold"},
         {BBF_KEEP_BBJ_ALWAYS, "KEEP"},
         {BBF_CLONED_FINALLY_BEGIN, "cfb"},
@@ -521,7 +540,6 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
         {BBF_NONE_QUIRK, "q"},
-        {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
     };
 
     bool first = true;
@@ -658,12 +676,12 @@ void BasicBlock::dspKind() const
             }
             else
             {
-                const unsigned     jumpCnt = bbEhfTargets->bbeCount;
-                BasicBlock** const jumpTab = bbEhfTargets->bbeSuccs;
+                const unsigned   jumpCnt = bbEhfTargets->bbeCount;
+                FlowEdge** const jumpTab = bbEhfTargets->bbeSuccs;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
                 }
             }
 
@@ -676,11 +694,11 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> %s (fltret)", dspBlockNum(bbTarget));
+            printf(" -> %s (fltret)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> %s (cret)", dspBlockNum(bbTarget));
+            printf(" -> %s (cret)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_THROW:
@@ -694,40 +712,40 @@ void BasicBlock::dspKind() const
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> %s (ALWAYS)", dspBlockNum(bbTarget));
+                printf(" -> %s (ALWAYS)", dspBlockNum(GetTarget()));
             }
             else
             {
-                printf(" -> %s (always)", dspBlockNum(bbTarget));
+                printf(" -> %s (always)", dspBlockNum(GetTarget()));
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> %s (leave)", dspBlockNum(bbTarget));
+            printf(" -> %s (leave)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> %s (callf)", dspBlockNum(bbTarget));
+            printf(" -> %s (callf)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_CALLFINALLYRET:
-            printf(" -> %s (callfr)", dspBlockNum(bbTarget));
+            printf(" -> %s (callfr)", dspBlockNum(GetTarget()));
             break;
 
         case BBJ_COND:
-            printf(" -> %s,%s (cond)", dspBlockNum(bbTrueTarget), dspBlockNum(bbFalseTarget));
+            printf(" -> %s,%s (cond)", dspBlockNum(GetTrueTarget()), dspBlockNum(GetFalseTarget()));
             break;
 
         case BBJ_SWITCH:
         {
             printf(" ->");
 
-            const unsigned     jumpCnt = bbSwtTargets->bbsCount;
-            BasicBlock** const jumpTab = bbSwtTargets->bbsDstTab;
+            const unsigned   jumpCnt = bbSwtTargets->bbsCount;
+            FlowEdge** const jumpTab = bbSwtTargets->bbsDstTab;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
 
                 const bool isDefault = bbSwtTargets->bbsHasDefault && (i == jumpCnt - 1);
                 if (isDefault)
@@ -838,47 +856,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
 }
 
 //------------------------------------------------------------------------
-// CopyTarget: Copy the block kind and targets. The targets in the `from` block remain valid.
-// Use `TransferTarget` to copy the pointer to the target descriptor (e.g., for BBJ_SWITCH/BBJ_EHFINALLYRET)
-// after which the `from` block target is invalid.
-//
-// Arguments:
-//    compiler - Jit compiler instance
-//    from - Block to copy from
-//
-void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
-{
-    switch (from->GetKind())
-    {
-        case BBJ_SWITCH:
-            SetSwitch(new (compiler, CMK_BasicBlock) BBswtDesc(compiler, from->GetSwitchTargets()));
-            break;
-        case BBJ_EHFINALLYRET:
-            SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
-            break;
-        case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
-            break;
-        case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            CopyFlags(from, BBF_NONE_QUIRK);
-            break;
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            break;
-        default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
-            break;
-    }
-    assert(KindIs(from->GetKind()));
-}
-
-//------------------------------------------------------------------------
 // TransferTarget: Like CopyTarget, but copies the target descriptors for block types which have
 // them (BBJ_SWITCH/BBJ_EHFINALLYRET), that is, take their memory, after which the `from` block
 // target is invalid.
@@ -898,12 +875,16 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             SetEhf(from->GetEhfTargets());
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
+
+        // TransferTarget may be called after setting the source block of `from`'s
+        // successor edges to this block.
+        // This means calling GetTarget/GetTrueTarget/GetFalseTarget would trigger asserts.
+        // Avoid this by accessing the edges directly.
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->bbTrueEdge, from->bbFalseEdge);
             break;
         case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(BBJ_ALWAYS, from->bbTargetEdge);
             CopyFlags(from, BBF_NONE_QUIRK);
             break;
         case BBJ_CALLFINALLY:
@@ -911,10 +892,10 @@ void BasicBlock::TransferTarget(BasicBlock* from)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(from->GetKind(), from->bbTargetEdge);
             break;
         default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
+            SetKindAndTargetEdge(from->GetKind()); // Clear the target
             break;
     }
     assert(KindIs(from->GetKind()));
@@ -1027,7 +1008,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
-    return KindIs(BBJ_ALWAYS) ? bbTarget : nullptr;
+    return KindIs(BBJ_ALWAYS) ? GetTarget() : nullptr;
 }
 
 // Static vars.
@@ -1125,11 +1106,13 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
     return stmt;
 }
 
-/*****************************************************************************
- *
- *  Can a BasicBlock be inserted after this without altering the flowgraph
- */
-
+//------------------------------------------------------------------------
+// bbFallsThrough: Check if inserting a BasicBlock after this one will alter
+// the flowgraph.
+//
+// Returns:
+//    True if so.
+//
 bool BasicBlock::bbFallsThrough() const
 {
     switch (bbKind)
@@ -1185,7 +1168,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1220,15 +1203,15 @@ unsigned BasicBlock::NumSucc() const
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc().
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i) const
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
 {
     assert(i < NumSucc()); // Index bounds check.
     switch (bbKind)
@@ -1239,18 +1222,18 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueEdge();
             }
 
         case BBJ_EHFINALLYRET:
@@ -1262,6 +1245,20 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc().
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i) const
+{
+    return GetSuccEdge(i)->getDestinationBlock();
 }
 
 //------------------------------------------------------------------------
@@ -1310,7 +1307,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1331,16 +1328,16 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc(comp).
 //    comp - Compiler instance
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
 {
     assert(comp != nullptr);
 
@@ -1349,8 +1346,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     {
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == bbTarget);
-            return bbTarget;
+            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
+            return GetTargetEdge();
 
         case BBJ_EHFINALLYRET:
             assert(bbEhfTargets != nullptr);
@@ -1362,18 +1359,18 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueEdge();
             }
 
         case BBJ_SWITCH:
@@ -1386,6 +1383,21 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc(comp).
+//    comp - Compiler instance
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+{
+    return GetSuccEdge(i, comp)->getDestinationBlock();
 }
 
 void BasicBlock::InitVarSets(Compiler* comp)
@@ -1625,15 +1637,10 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-
-    // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
-    // yet.
-    // The checks will be done any time the jump kind/target is read or written to after initialization.
-    block->bbKind   = kind;
-    block->bbTarget = target;
+    block->bbKind     = kind;
 
     if (block->KindIs(BBJ_THROW))
     {
@@ -1782,6 +1789,22 @@ bool BasicBlock::hasEHBoundaryOut() const
 }
 
 //------------------------------------------------------------------------
+// BBswtDesc copy ctor: copy a switch descriptor, but don't set up the jump table
+//
+// Arguments:
+//    other - existing switch descriptor to copy (except for its jump table)
+//
+BBswtDesc::BBswtDesc(const BBswtDesc* other)
+    : bbsDstTab(nullptr)
+    , bbsCount(other->bbsCount)
+    , bbsDominantCase(other->bbsDominantCase)
+    , bbsDominantFraction(other->bbsDominantFraction)
+    , bbsHasDefault(other->bbsHasDefault)
+    , bbsHasDominantCase(other->bbsHasDominantCase)
+{
+}
+
+//------------------------------------------------------------------------
 // BBswtDesc copy ctor: copy a switch descriptor
 //
 // Arguments:
@@ -1798,7 +1821,7 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 {
     // Allocate and fill in a new dst tab
     //
-    bbsDstTab = new (comp, CMK_BasicBlock) BasicBlock*[bbsCount];
+    bbsDstTab = new (comp, CMK_FlowEdge) FlowEdge*[bbsCount];
     for (unsigned i = 0; i < bbsCount; i++)
     {
         bbsDstTab[i] = other->bbsDstTab[i];
@@ -1816,7 +1839,7 @@ BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->b
 {
     // Allocate and fill in a new dst tab
     //
-    bbeSuccs = new (comp, CMK_BasicBlock) BasicBlock*[bbeCount];
+    bbeSuccs = new (comp, CMK_FlowEdge) FlowEdge*[bbeCount];
     for (unsigned i = 0; i < bbeCount; i++)
     {
         bbeSuccs[i] = other->bbeSuccs[i];

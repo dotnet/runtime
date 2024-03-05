@@ -14,11 +14,11 @@ namespace System.Threading
         {
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout, useTrivialWaits: false);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout, bool useTrivialWaits)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -27,8 +27,7 @@ namespace System.Threading
                 waitAll = false;
 
 #if NATIVEAOT // TODO: reentrant wait support https://github.com/dotnet/runtime/issues/49518
-            // Trivial waits don't allow reentrance
-            bool reentrantWait = !useTrivialWaits && Thread.ReentrantWaitsEnabled;
+            bool reentrantWait = Thread.ReentrantWaitsEnabled;
 
             if (reentrantWait)
             {
@@ -93,9 +92,9 @@ namespace System.Threading
             return result;
         }
 
-        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits)
+        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout)
         {
-            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, useTrivialWaits);
+            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
         }
 
         private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)

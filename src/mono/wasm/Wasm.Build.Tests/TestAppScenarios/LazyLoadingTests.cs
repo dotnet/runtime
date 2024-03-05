@@ -21,24 +21,22 @@ public class LazyLoadingTests : AppTestBase
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
+        var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
         Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task FailOnMissingLazyAssembly()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(
+        var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
             TestScenario: "LazyLoadingTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },

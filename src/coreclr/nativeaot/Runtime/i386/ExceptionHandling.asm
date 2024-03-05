@@ -74,7 +74,7 @@ FASTCALL_FUNC  RhpThrowHwEx, 0
         ;; edx contains the address of the ExInfo
         call    RhThrowHwEx
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToRhpThrowHwEx2
+ALTERNATE_ENTRY RhpThrowHwEx2
 
         ;; no return
         int 3
@@ -151,7 +151,7 @@ FASTCALL_FUNC  RhpThrowEx, 0
         ;; edx contains the address of the ExInfo
         call    RhThrowEx
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToRhpThrowEx2
+ALTERNATE_ENTRY RhpThrowEx2
 
         ;; no return
         int 3
@@ -221,7 +221,7 @@ FASTCALL_FUNC  RhpRethrow, 0
         ;; edx contains the address of the new ExInfo
         call    RhRethrow
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToRhpRethrow2
+ALTERNATE_ENTRY _RhpRethrow2
 
         ;; no return
         int 3
@@ -315,7 +315,7 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 0
         ;; EAX: funclet EBP
         call        RhpCallFunclet
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallCatchFunclet2
+ALTERNATE_ENTRY RhpCallCatchFunclet2
 
         ;; eax: resume IP
         mov         [esp + esp_offsetof_ResumeIP], eax              ;; save for later
@@ -411,7 +411,7 @@ FASTCALL_FUNC  RhpCallFinallyFunclet, 0
         ;; EAX: funclet EBP
         call        RhpCallFunclet
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallFinallyFunclet2
+ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         pop         edx     ;; restore REGDISPLAY*
 
@@ -465,7 +465,7 @@ FASTCALL_FUNC  RhpCallFilterFunclet, 0
 
         call        RhpCallFunclet
 
-        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallFilterFunclet2
+ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ;; EAX contains the result of the filter execution
         mov         edx, [ebp + 8]

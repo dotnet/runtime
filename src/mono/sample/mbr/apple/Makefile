@@ -1,6 +1,6 @@
 TOP=../../../../../
 CONFIG?=Debug
-MONO_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
+MONO_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
 DOTNET:=$(TOP)dotnet.sh
 
 run-sim:

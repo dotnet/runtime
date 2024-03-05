@@ -20,8 +20,10 @@
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     lr, [r0, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
         str     r11, [r0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
-        str     sp, [r0, #OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs]
-        mov     r3, #PTFF_SAVE_SP
+        // We need to save R9 which could be frame pointer if the caller method uses stackalloc (REG_SAVED_LOCALLOC_SP)
+        str     r9, [r0, #OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs]
+        str     sp, [r0, #OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs + 4]
+        mov     r3, #(PTFF_SAVE_R9 + PTFF_SAVE_SP)
         str     r3, [r0, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
         PROLOG_PUSH "{r5,lr}"

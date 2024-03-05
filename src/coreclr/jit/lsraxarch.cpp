@@ -425,11 +425,17 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 3;
             assert(dstCount == 1);
 
+            GenTree* addr      = tree->AsCmpXchg()->Addr();
+            GenTree* data      = tree->AsCmpXchg()->Data();
+            GenTree* comparand = tree->AsCmpXchg()->Comparand();
+
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
-            BuildUse(tree->AsCmpXchg()->Addr(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->Data(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->Comparand(), RBM_RAX);
+
+            const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            BuildUse(addr, nonRaxCandidates);
+            BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
+            BuildUse(comparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
         break;
@@ -438,10 +444,16 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XAND:
             if (!tree->IsUnusedValue())
             {
+                GenTree* addr = tree->gtGetOp1();
+                GenTree* data = tree->gtGetOp2();
+
+                // These don't support byte operands.
+                assert(!varTypeIsByte(data));
+
                 // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
                 buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
-                BuildUse(tree->gtGetOp1(), availableIntRegs & ~RBM_RAX);
-                BuildUse(tree->gtGetOp2(), availableIntRegs & ~RBM_RAX);
+                BuildUse(addr, availableIntRegs & ~RBM_RAX);
+                BuildUse(data, availableIntRegs & ~RBM_RAX);
                 BuildDef(tree, RBM_RAX);
                 buildInternalRegisterUses();
                 srcCount = 2;
@@ -463,7 +475,7 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
             assert(!data->isContained());
-            BuildUse(data);
+            BuildUse(data, varTypeIsByte(tree) ? RBM_BYTE_REGS : RBM_NONE);
             srcCount = 2;
             assert(dstCount == 1);
             BuildDef(tree);
@@ -495,7 +507,6 @@ int LinearScan::BuildNode(GenTree* tree)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -620,6 +631,20 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
         }
         break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            // Any register should do here, but the error register value should immediately
+            // be moved from GT_SWIFT_ERROR's destination register to the SwiftError struct,
+            // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
+            // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
+            // we can ensure the redundant move is elided.
+            BuildDef(tree, RBM_SWIFT_ERROR);
+            break;
+#endif // SWIFT_SUPPORT
 
     } // end switch (tree->OperGet())
 
@@ -1329,11 +1354,45 @@ int LinearScan::BuildCall(GenTreeCall* call)
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
+    if (call->NeedsVzeroupper(compiler))
+    {
+        // Much like for Contains256bitOrMoreAVX, we want to track if any
+        // call needs a vzeroupper inserted. This allows us to reduce
+        // the total number of vzeroupper being inserted for cases where
+        // no 256+ AVX is used directly by the method.
+
+        compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
+    }
+
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+
+#ifdef SWIFT_SUPPORT
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        // Tree is a Swift call with error handling; error register should have been killed
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        assert((killMask & RBM_SWIFT_ERROR) != 0);
+
+        // After a Swift call that might throw returns, we expect the error register to be consumed
+        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
+        // before GT_SWIFT_ERROR can consume it.
+        // (For example, the PInvoke epilog comes before the error register store.)
+        // To do so, delay the freeing of the error register until the next node.
+        // This only works if the next node after the call is the GT_SWIFT_ERROR node.
+        // (InsertPInvokeCallEpilog should have moved the GT_SWIFT_ERROR node during lowering.)
+        assert(call->gtNext != nullptr);
+        assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
+
+        // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
+        // during register allocation should be cheaper in terms of TP.
+        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
+        setDelayFree(pos);
+    }
+#endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
@@ -1412,14 +1471,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
-#ifdef TARGET_AMD64
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
-                break;
-#endif
-
             default:
                 unreached();
         }
@@ -1455,7 +1506,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // We need a float temporary if we're doing SIMD operations
 
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags(size);
+                    SetContainsAVXFlags(regSize);
 
                     remainder %= regSize;
                 }
@@ -1540,14 +1591,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 sizeRegMask    = RBM_RCX;
                 break;
 
-#ifdef TARGET_AMD64
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
-                break;
-#endif
-
             default:
                 unreached();
         }
@@ -1560,7 +1603,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    if (sizeRegMask != RBM_NONE)
     {
         // Reserve a temp register for the block size argument.
         buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
@@ -1589,12 +1632,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             useCount += BuildAddrUses(srcAddrOrFill);
         }
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
 #ifdef TARGET_X86
@@ -2142,8 +2179,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
-            numArgs == HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) && !lastOp->IsCnsIntOrI())
+        if (intrinsicTree->OperIsEmbRoundingEnabled() && !lastOp->IsCnsIntOrI())
         {
             buildInternalIntRegisterDefForNode(intrinsicTree);
             buildInternalIntRegisterDefForNode(intrinsicTree);
@@ -2380,13 +2416,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_FMA_MultiplySubtractNegatedScalar:
             case NI_FMA_MultiplySubtractScalar:
             case NI_AVX512F_FusedMultiplyAdd:
+            case NI_AVX512F_FusedMultiplyAddScalar:
             case NI_AVX512F_FusedMultiplyAddNegated:
+            case NI_AVX512F_FusedMultiplyAddNegatedScalar:
             case NI_AVX512F_FusedMultiplyAddSubtract:
             case NI_AVX512F_FusedMultiplySubtract:
+            case NI_AVX512F_FusedMultiplySubtractScalar:
             case NI_AVX512F_FusedMultiplySubtractAdd:
             case NI_AVX512F_FusedMultiplySubtractNegated:
+            case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
             {
-                assert(numArgs == 3);
+                assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
                 assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
 
@@ -2484,7 +2524,58 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
                 srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
 
+                if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
+                {
+                    srcCount += BuildOperandUses(intrinsicTree->Op(4));
+                }
+
                 buildUses = false;
+                break;
+            }
+
+            case NI_AVX512F_BlendVariableMask:
+            {
+                assert(numArgs == 3);
+
+                if (op2->IsEmbMaskOp())
+                {
+                    // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
+                    assert(!op2->isRMWHWIntrinsic(compiler));
+
+                    if (isRMW)
+                    {
+                        assert(!op1->isContained());
+
+                        tgtPrefUse = BuildUse(op1);
+                        srcCount += 1;
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildDelayFreeUses(operand, op1);
+                        }
+                    }
+                    else
+                    {
+                        assert(op1->isContained() && op1->IsVectorZero());
+                        srcCount += BuildOperandUses(op1);
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildOperandUses(operand);
+                        }
+                    }
+
+                    assert(!op3->isContained());
+                    srcCount += BuildOperandUses(op3);
+
+                    buildUses = false;
+                }
                 break;
             }
 
@@ -2995,18 +3086,9 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 
     compiler->GetEmitter()->SetContainsAVX(true);
 
-    if (sizeOfSIMDVector == 32)
+    if (sizeOfSIMDVector >= 32)
     {
-        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
-    }
-
-    if (!compiler->canUseEvexEncoding())
-    {
-        return;
-    }
-
-    if (sizeOfSIMDVector == 64)
-    {
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncoding()));
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }

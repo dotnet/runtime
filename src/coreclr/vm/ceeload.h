@@ -338,7 +338,10 @@ struct VASigCookie
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
+    PTR_Module      pLoaderModule;
     Signature       signature;
+    Instantiation   classInst;
+    Instantiation   methodInst;
 };
 
 //
@@ -891,7 +894,6 @@ protected:
     OBJECTREF GetExposedObject();
 
     ClassLoader *GetClassLoader();
-    PTR_BaseDomain GetDomain();
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
@@ -1322,8 +1324,6 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
-
 public:
 
     // Debugger stuff
@@ -1361,7 +1361,9 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature);
+    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+private:
+    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
@@ -1515,7 +1517,7 @@ public:
         return &m_FixupCrst;
     }
 
-    void                AllocateRegularStaticHandles(AppDomain* pDomainMT);
+    void                AllocateRegularStaticHandles();
 
     void                FreeModuleIndex();
 

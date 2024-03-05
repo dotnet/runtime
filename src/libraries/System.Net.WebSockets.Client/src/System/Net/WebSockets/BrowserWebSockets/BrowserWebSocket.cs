@@ -268,7 +268,7 @@ namespace System.Net.WebSockets
                 self.responseStatusHandle?.Dispose();
             }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // if this is finalizer thread, we need to postpone the abort -> dispose
             _innerWebSocket?.SynchronizationContext.Post(Cleanup, this);
 #else
@@ -571,35 +571,22 @@ namespace System.Net.WebSockets
                 lock (_lockObject)
                 {
                     var state = State;
+                    ForceReadCloseStatusLocked();
                     if (state == WebSocketState.Aborted)
                     {
-                        ForceReadCloseStatusLocked();
                         throw new OperationCanceledException(nameof(WebSocketState.Aborted), ex);
                     }
-                    if (ex is OperationCanceledException)
+                    if (ex is OperationCanceledException || cancellationToken.IsCancellationRequested || ex.Message == "Error: OperationCanceledException")
                     {
                         if(state != WebSocketState.Closed)
                         {
                             FastState = WebSocketState.Aborted;
                         }
                         _cancelled = true;
-                        throw;
-                    }
-                    if (state != WebSocketState.Closed && cancellationToken.IsCancellationRequested)
-                    {
-                        FastState = WebSocketState.Aborted;
-                        _cancelled = true;
-                        throw new OperationCanceledException(cancellationToken);
-                    }
-                    if (state != WebSocketState.Closed && ex.Message == "Error: OperationCanceledException")
-                    {
-                        FastState = WebSocketState.Aborted;
-                        _cancelled = true;
                         throw new OperationCanceledException("The operation was cancelled.", ex, cancellationToken);
                     }
                     if (previousState == WebSocketState.Connecting)
                     {
-                        ForceReadCloseStatusLocked();
                         throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, ex);
                     }
                     throw new WebSocketException(WebSocketError.NativeError, ex);
