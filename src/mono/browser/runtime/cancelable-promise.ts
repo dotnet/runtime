@@ -51,6 +51,7 @@ const promise_holder_symbol = Symbol.for("wasm promise_holder");
 export class PromiseHolder extends ManagedObject {
     public isResolved = false;
     public isPosted = false;
+    public isPostponed = false;
     public data: any = null;
     public reason: any = null;
     public constructor(public promise: Promise<any>,
@@ -60,28 +61,27 @@ export class PromiseHolder extends ManagedObject {
         super();
     }
 
-    // returns true if the promise is being canceled by managed code
+    // returns false if the promise is being canceled by another thread in managed code
     setIsResolving(): boolean {
         if (!WasmEnableThreads || this.promiseHolderPtr === 0) {
-            return false;
+            return true;
         }
         forceThreadMemoryViewRefresh();
         if (compareExchangeI32(this.promiseHolderPtr + PromiseHolderState.IsResolving, 1, 0) === 0) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     resolve(data: any) {
-        if (this.isResolved) {
-            return;
-        }
-        if (WasmEnableThreads && this.setIsResolving()) {
+        mono_assert(!this.isResolved, "resolve could be called only once");
+        if (WasmEnableThreads && !this.setIsResolving()) {
             // we know that cancelation is in flight
             // because we need to keep the GCHandle alive until until the cancelation arrives
             // we skip the this resolve and let the cancelation to reject the Task
             // we store the original data and use it later
             this.data = data;
+            this.isPostponed = true;
             return;
         }
         this.isResolved = true;
@@ -89,16 +89,15 @@ export class PromiseHolder extends ManagedObject {
     }
 
     reject(reason: any) {
+        mono_assert(!this.isResolved, "reject could be called only once");
         const isCancelation = reason && reason[promise_holder_symbol] === this;
-        if (this.isResolved && !isCancelation) {
-            return;
-        }
-        if (WasmEnableThreads && !isCancelation && this.setIsResolving()) {
+        if (WasmEnableThreads && !isCancelation && !this.setIsResolving()) {
             // we know that cancelation is in flight
             // because we need to keep the GCHandle alive until until the cancelation arrives
             // we skip the this reject and let the cancelation to reject the Task
             // we store the original reason and use it later
             this.reason = reason;
+            this.isPostponed = true;
             return;
         }
         this.isResolved = true;
@@ -106,22 +105,26 @@ export class PromiseHolder extends ManagedObject {
     }
 
     cancel() {
-        if (this.isResolved) {
-            return;
-        }
-        this.isResolved = true;
+        mono_assert(!this.isResolved, "cancel could be called only once");
 
-        const promise = this.promise;
-        loaderHelpers.assertIsControllablePromise(promise);
-        const promise_control = loaderHelpers.getPromiseController(promise);
-
-        const reason = this.reason || new Error("OperationCanceledException") as any;
-        reason[promise_holder_symbol] = this;
-
-        if (promise_control.isDone) {
-            this.setIsResolving();
-            this.complete_task(null, reason);
+        if (this.isPostponed) {
+            // there was racing resolve/reject which was postponed, to retain valid GCHandle
+            // in this case we just finish the original resolve/reject 
+            // and we need to use the postponed data/reason
+            this.isResolved = true;
+            if (this.reason !== undefined) {
+                this.complete_task(null, this.reason);
+            } else {
+                this.complete_task(this.data, null);
+            }
         } else {
+            // there is no racing resolve/reject, we can reject/cancel the promise
+            const promise = this.promise;
+            loaderHelpers.assertIsControllablePromise(promise);
+            const promise_control = loaderHelpers.getPromiseController(promise);
+
+            const reason = new Error("OperationCanceledException") as any;
+            reason[promise_holder_symbol] = this;
             promise_control.reject(reason);
         }
     }

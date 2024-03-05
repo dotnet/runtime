@@ -326,7 +326,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     mono_check(isThenable(value), "Value is not a Promise");
 
     const gc_handle = handleIsPreallocated ? get_arg_gc_handle(arg) : alloc_gcv_handle();
-    const promiseHolderPtr = handleIsPreallocated ? get_arg_intptr(arg) : 0;
+    const promiseHolderPtr = WasmEnableThreads && handleIsPreallocated ? get_arg_intptr(arg) : 0;
     if (!handleIsPreallocated) {
         set_gc_handle(arg, gc_handle);
         set_arg_type(arg, MarshalerType.Task);
