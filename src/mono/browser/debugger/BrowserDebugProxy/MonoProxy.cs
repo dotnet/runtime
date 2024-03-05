@@ -912,16 +912,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return true;
                 }
             }
-            catch (ReturnAsErrorException raee)
+            catch (ReturnAsErrorException ree)
             {
-                logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {raee}");
-                SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {raee.Message}", token, type: "error");
+                logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {ree}");
+                SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {ree.Message}", token, type: "error");
                 bp.ConditionAlreadyEvaluatedWithError = true;
+                SendExceptionToTelemetry(ree, sessionId, token);
             }
             catch (Exception e)
             {
                 Log("info", $"Unable to evaluate breakpoint condition '{condition}': {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
+                var ree = new ReturnAsErrorException(e.Message, e.GetType().Name);
+                SendExceptionToTelemetry(ree, sessionId, token);
             }
             return false;
         }
