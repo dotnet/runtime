@@ -24425,7 +24425,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
             code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
-            code |= id->idHasShift() ? 0x2000 : 0;                        // h
+            code |= (id->idHasShift() ? 0x2000 : 0);                      // h
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25183,7 +25183,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
-            code |= id->idHasShift() ? 0x2000 : 0;                        // h
+            code |= (id->idHasShift() ? 0x2000 : 0);                      // h
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25193,7 +25193,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
-            code |= id->idHasShift() ? 0x2000 : 0;                        // h
+            code |= (id->idHasShift() ? 0x2000 : 0);                      // h
             dst += emitOutput_Instr(dst, code);
             break;
 
