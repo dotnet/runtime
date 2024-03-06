@@ -5884,7 +5884,11 @@ void CodeGen::genFnProlog()
     // If they aren't available we use one of the caller-saved integer registers.
     else
     {
+#if !defined(TARGET_AMD64) && !defined(TARGET_ARM)
         tempMask = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_TRASH & ~excludeMask & ~regSet.rsMaskResvd;
+#else
+        tempMask = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
+#endif
         if (tempMask != RBM_NONE)
         {
             // We pick the lowest register number
