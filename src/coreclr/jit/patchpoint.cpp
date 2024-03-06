@@ -156,7 +156,6 @@ private:
         block->SetCond(trueEdge, falseEdge);
 
         FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
-        newEdge->setLikelihood(1.0);
         helperBlock->SetTargetEdge(newEdge);
 
         // Update weights

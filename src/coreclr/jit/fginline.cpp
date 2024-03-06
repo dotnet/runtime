@@ -682,11 +682,8 @@ private:
                 else
                 {
                     m_compiler->fgRemoveRefPred(block->GetFalseEdge());
-                    block->SetKind(BBJ_ALWAYS);
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
                 }
-
-                FlowEdge* const edge = m_compiler->fgGetPredForBlock(block->GetTarget(), block);
-                edge->setLikelihood(1.0);
             }
         }
         else
@@ -1537,7 +1534,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                         bottomBlock->bbNum);
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
-                newEdge->setLikelihood(1.0);
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                 if (block == InlineeCompiler->fgLastBB)

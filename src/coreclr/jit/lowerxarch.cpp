@@ -545,7 +545,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
     {
         addr->SetContained();
         return;
@@ -6687,12 +6687,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
-
-        // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
@@ -7630,7 +7628,8 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
 
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
-        if (indirCandidateChild->OperIs(GT_LCL_ADDR))
+        if (indirCandidateChild->OperIs(GT_LCL_ADDR) &&
+            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->Size()))
         {
             indirDst->SetContained();
         }
@@ -8830,15 +8829,23 @@ void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 //  Arguments:
 //     node - The hardware intrinsic node
 //     addr - The address node to try contain
+//     size - Size of the memory access (can be an overestimate)
 //
-void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr)
+void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size)
 {
-    assert((addr->TypeGet() == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
-    TryCreateAddrMode(addr, true, node);
-    if ((addr->OperIs(GT_LCL_ADDR, GT_LEA) || (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
-        IsInvariantInRange(addr, node))
+    assert((genActualType(addr) == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
+    if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size)) ||
+        (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp)))
     {
         MakeSrcContained(node, addr);
+    }
+    else
+    {
+        TryCreateAddrMode(addr, true, node);
+        if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, node))
+        {
+            MakeSrcContained(node, addr);
+        }
     }
 }
 
@@ -8914,7 +8921,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         switch (category)
         {
             case HW_Category_MemoryLoad:
-                ContainCheckHWIntrinsicAddr(node, op1);
+                ContainCheckHWIntrinsicAddr(node, op1, simdSize);
                 break;
 
             case HW_Category_SimpleSIMD:
@@ -8972,7 +8979,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 16);
                             return;
                         }
                         break;
@@ -8985,7 +8992,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 8);
                             return;
                         }
 
@@ -9024,7 +9031,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 16);
                             return;
                         }
 
@@ -9123,16 +9130,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 case HW_Category_MemoryLoad:
                     if ((intrinsicId == NI_AVX_MaskLoad) || (intrinsicId == NI_AVX2_MaskLoad))
                     {
-                        ContainCheckHWIntrinsicAddr(node, op1);
+                        ContainCheckHWIntrinsicAddr(node, op1, simdSize);
                     }
                     else
                     {
-                        ContainCheckHWIntrinsicAddr(node, op2);
+                        ContainCheckHWIntrinsicAddr(node, op2, simdSize);
                     }
                     break;
 
                 case HW_Category_MemoryStore:
-                    ContainCheckHWIntrinsicAddr(node, op1);
+                    ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ simdSize);
                     break;
 
                 case HW_Category_SimpleSIMD:
@@ -9486,10 +9493,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (category)
             {
-                case HW_Category_MemoryStore:
-                    ContainCheckHWIntrinsicAddr(node, op1);
-                    break;
-
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:

@@ -309,12 +309,6 @@ public:
     unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
 #endif
 
-    inline bool ProbeForStackOverflow() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fProbeForStackOverflow;
-    }
-
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
     // held locks in DAC builds. This is determined by an environment variable.
@@ -421,10 +415,6 @@ public:
 
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
-
-    bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
-
-    DWORD   DisableStackwalkCache()         const {LIMITED_METHOD_CONTRACT;  return dwDisableStackwalkCache; }
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
@@ -594,15 +584,9 @@ private: //----------------------------------------------------------------
     // Assemblies which cannot use Ready to Run images.
     AssemblyNamesList * pReadyToRunExcludeList;
 
-    bool fNgenBindOptimizeNonGac;
-
     bool fStressLog;
     bool fForceEnc;
     bool fDebugAssembliesModifiable;
-    bool fProbeForStackOverflow;
-
-    // Stackwalk optimization flag
-    DWORD dwDisableStackwalkCache;
 
 #ifdef _DEBUG
     // interop logging

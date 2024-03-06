@@ -569,7 +569,7 @@ namespace System.Linq
         {
             private readonly Iterator<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
-            private IEnumerator<TSource>? _enumerator;
+            private Iterator<TSource>? _enumerator;
 
             public IteratorSelectIterator(Iterator<TSource> source, Func<TSource, TResult> selector)
             {

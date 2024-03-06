@@ -869,8 +869,6 @@ void EEStartupHelper()
         // Set up the sync block
         SyncBlockCache::Start();
 
-        StackwalkCache::Init();
-
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
         // of InitJITHelpers1.

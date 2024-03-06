@@ -13,7 +13,7 @@ namespace System.Reflection
         private readonly RtFieldInfo _fieldInfo;
         private IntPtr _addressOrOffset;
         private unsafe MethodTable* _methodTable;
-        private FieldAccessorType _fieldAccessType;
+        private volatile FieldAccessorType _fieldAccessType;
 
         internal FieldAccessor(FieldInfo fieldInfo)
         {
@@ -52,19 +52,19 @@ namespace System.Reflection
                     {
                         if (fieldType.IsEnum)
                         {
-                            _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType.GetEnumUnderlyingType());
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                            _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType.GetEnumUnderlyingType());
                         }
                         else if (RuntimeTypeHandle.GetCorElementType(fieldType) == CorElementType.ELEMENT_TYPE_VALUETYPE)
                         {
                             // The runtime stores non-primitive value types as a boxed value.
-                            _fieldAccessType = FieldAccessorType.StaticValueTypeBoxed;
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                            _fieldAccessType = FieldAccessorType.StaticValueTypeBoxed;
                         }
                         else
                         {
-                            _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType);
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                            _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType);
                         }
                     }
                     else if (fieldType.IsPointer)
@@ -73,8 +73,8 @@ namespace System.Reflection
                     }
                     else if (fieldType.IsFunctionPointer)
                     {
-                        _fieldAccessType = GetIntPtrAccessorTypeForStatic();
                         _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
+                        _fieldAccessType = GetIntPtrAccessorTypeForStatic();
                     }
                     else
                     {
@@ -87,13 +87,13 @@ namespace System.Reflection
 
                     if (fieldType.IsEnum)
                     {
-                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
                         _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
                     }
                     else if (fieldType.IsValueType)
                     {
-                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType);
                         _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType);
                     }
                     else if (fieldType.IsPointer)
                     {
@@ -101,8 +101,8 @@ namespace System.Reflection
                     }
                     else if (fieldType.IsFunctionPointer)
                     {
-                        _fieldAccessType = GetIntPtrAccessorTypeForInstance();
                         _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
+                        _fieldAccessType = GetIntPtrAccessorTypeForInstance();
                     }
                     else
                     {

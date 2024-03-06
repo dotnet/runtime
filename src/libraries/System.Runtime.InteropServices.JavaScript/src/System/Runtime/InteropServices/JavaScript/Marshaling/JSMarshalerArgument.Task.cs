@@ -189,7 +189,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_MANAGED_THREADS
-            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, taskHolder, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
@@ -273,7 +273,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_MANAGED_THREADS
-            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, taskHolder, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
@@ -350,7 +350,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_MANAGED_THREADS
-            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
 #endif

@@ -43,7 +43,7 @@ namespace System.SpanTests
 
             ref int theRef = ref MemoryMarshal.GetArrayDataReference(theArray);
 
-            Assert.True(Unsafe.AsPointer(ref theRef) != null);
+            Assert.False(Unsafe.IsNullRef(ref theRef));
             Assert.True(Unsafe.AreSame(ref theRef, ref MemoryMarshal.GetReference(theArray.AsSpan())));
 
             ref int theMdArrayRef = ref Unsafe.As<byte, int>(ref MemoryMarshal.GetArrayDataReference((Array)theArray)); // szarray passed to generalized Array helper

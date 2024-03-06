@@ -52,17 +52,6 @@ class AppDomain;
 // Enumerate all functions.
 //************************************************************************
 
-/* This enumerator is meant to be used for the most common cases, i.e. to
-   enumerate just all the functions of the requested thread. It is just a
-   cover for the "real" enumerator.
- */
-
-StackWalkAction StackWalkFunctions(Thread * thread, PSTACKWALKFRAMESCALLBACK pCallback, VOID * pData);
-
-/*<TODO>@ISSUE: Maybe use a define instead?</TODO>
-#define StackWalkFunctions(thread, callBack, userdata) thread->StackWalkFrames(METHODSONLY, (callBack),(userData))
-*/
-
 namespace AsmOffsetsAsserts
 {
     class AsmOffsets;
@@ -384,20 +373,6 @@ public:
         return codeInfo.GetCodeManager();
     }
 
-    inline StackwalkCacheEntry* GetStackwalkCacheEntry()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (isCachedMethod != stackWalkCache.IsEmpty());
-        if (isCachedMethod && stackWalkCache.m_CacheEntry.IsSafeToUseCache())
-        {
-            return &(stackWalkCache.m_CacheEntry);
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
     void CheckGSCookies();
 
     inline Thread* GetThread()
@@ -497,10 +472,6 @@ private:
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
-
-    // fields used for stackwalk cache
-    BOOL              isCachedMethod;
-    StackwalkCache    stackWalkCache;
 
     GSCookie         *pCurGSCookie;
     GSCookie         *pFirstGSCookie;

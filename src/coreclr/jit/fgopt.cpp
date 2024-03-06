@@ -648,7 +648,6 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         else
                         {
                             FlowEdge* const newEdge = fgAddRefPred(newTryEntry->Next(), newTryEntry);
-                            newEdge->setLikelihood(1.0);
                             newTryEntry->SetFlags(BBF_NONE_QUIRK);
                             newTryEntry->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                         }
@@ -2634,7 +2633,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
     /* Conditional is gone - always jump to target */
 
-    block->SetKind(BBJ_ALWAYS);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
     assert(block->TargetIs(target));
 
     // TODO-NoFallThrough: Set BBF_NONE_QUIRK only when false target is the next block
@@ -4994,22 +4993,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             if (ehIsBlockEHLast(bNext))
                             {
                                 ehUpdateLastBlocks(bNext, bDest);
-                            }
-
-                            // Add fall through fixup block, if needed.
-                            //
-                            if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
-                            {
-                                BasicBlock* const bDestFalseTarget = bDest->GetFalseTarget();
-                                BasicBlock* const bFixup           = fgNewBBafter(BBJ_ALWAYS, bDest, true);
-                                bFixup->inheritWeight(bDestFalseTarget);
-
-                                fgRemoveRefPred(bDest->GetFalseEdge());
-                                FlowEdge* const falseEdge = fgAddRefPred(bFixup, bDest);
-                                bDest->SetFalseEdge(falseEdge);
-
-                                FlowEdge* const newEdge = fgAddRefPred(bDestFalseTarget, bFixup);
-                                bFixup->SetTargetEdge(newEdge);
                             }
                         }
                     }

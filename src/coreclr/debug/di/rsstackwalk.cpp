@@ -776,7 +776,8 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                                 frameData.v.exactGenericArgsToken,
                                                                 frameData.v.dwExactGenericArgsTokenIndex,
                                                                 !!frameData.v.fVarArgs,
-                                                                pReJitCode));
+                                                                pReJitCode,
+                                                                pJITFuncData->justAfterILThrow));
 
             // Initialize the frame.  This is a nop if the method is not a vararg method.
             hr = pJITILFrame->Init();

@@ -634,18 +634,6 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
 NESTED_END ProfileTailcallNaked, _TEXT
 
 
-; EXTERN_C void moveOWord(LPVOID* src, LPVOID* target);
-; <NOTE>
-; MOVDQA is not an atomic operation.  You need to call this function in a crst.
-; </NOTE>
-LEAF_ENTRY moveOWord, _TEXT
-        movdqa      xmm0, [rcx]
-        movdqa      [rdx], xmm0
-
-        ret
-LEAF_END moveOWord, _TEXT
-
-
 extern JIT_InternalThrowFromHelper:proc
 
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT

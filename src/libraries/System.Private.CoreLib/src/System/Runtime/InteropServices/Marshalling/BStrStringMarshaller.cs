@@ -86,6 +86,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 else
                 {
                     // Set length and update buffer target
+                    // Unsafe.AsPointer is safe since buffer must be pinned
                     byte* pBuffer = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
                     *((uint*)pBuffer) = (uint)lengthInBytes;
                     ptrToFirstChar = (ushort*)(pBuffer + sizeof(uint));

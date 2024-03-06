@@ -35,8 +35,8 @@
 #define USE_GC_INFO_DECODER
 #endif
 
-#if (defined(TARGET_X86) && !defined(TARGET_UNIX)) || defined(TARGET_AMD64)
-#define HAS_QUICKUNWIND
+#ifdef TARGET_AMD64
+#define HAS_LIGHTUNWIND
 #endif
 
 #define CHECK_APP_DOMAIN    0
@@ -103,6 +103,8 @@ enum ICodeManagerFlags
     NoReportUntracked
                     =   0x0080, // EnumGCRefs/EnumerateLiveSlots should *not* include
                                 // any untracked slots
+
+    LightUnwind     =   0x0100, // Unwind just enough to get return addresses
 };
 
 //*****************************************************************************
@@ -201,8 +203,7 @@ virtual ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) = 0;
 virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
                               EECodeInfo     *pCodeInfo,
                               unsigned        flags,
-                              CodeManState   *pState,
-                              StackwalkCacheUnwindInfo  *pUnwindInfo) = 0;
+                              CodeManState   *pState) = 0;
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -425,11 +426,10 @@ bool UnwindStackFrame(
                 PREGDISPLAY     pContext,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
-                CodeManState   *pState,
-                StackwalkCacheUnwindInfo  *pUnwindInfo);
+                CodeManState   *pState);
 
-#ifdef HAS_QUICKUNWIND
-enum QuickUnwindFlag
+#ifdef HAS_LIGHTUNWIND
+enum LightUnwindFlag
 {
     UnwindCurrentStackFrame,
     EnsureCallerStackFrameIsValid
@@ -441,11 +441,11 @@ enum QuickUnwindFlag
   */
 
 static
-void QuickUnwindStackFrame(
+void LightUnwindStackFrame(
              PREGDISPLAY pRD,
-             StackwalkCacheEntry *pCacheEntry,
-             QuickUnwindFlag flag);
-#endif // HAS_QUICKUNWIND
+             EECodeInfo     *pCodeInfo,
+             LightUnwindFlag flag);
+#endif // HAS_LIGHTUNWIND
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -615,7 +615,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
-    static void EnsureCallerContextIsValid( PREGDISPLAY pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo = NULL );
+    static void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
     static size_t GetCallerSp( PREGDISPLAY  pRD );
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
@@ -632,8 +632,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 bool UnwindStackFrame(PREGDISPLAY     pContext,
                       EECodeInfo     *pCodeInfo,
                       unsigned        flags,
-                      CodeManState   *pState,
-                      StackwalkCacheUnwindInfo  *pUnwindInfo);
+                      CodeManState   *pState);
 
 size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
                        unsigned    curOffset,

@@ -114,7 +114,7 @@ private:
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
-    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
+    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
@@ -491,6 +491,8 @@ public:
 
         return false;
     }
+
+    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
 
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;

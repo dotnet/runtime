@@ -227,7 +227,6 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
         // The new scratch bb will fall through to the old first bb
         FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
-        edge->setLikelihood(1.0);
         block->SetKindAndTargetEdge(BBJ_ALWAYS, edge);
         fgInsertBBbefore(fgFirstBB, block);
     }
@@ -678,7 +677,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
                 if (block->KindIs(BBJ_ALWAYS))
                 {
-                    newEdge->setLikelihood(1.0);
                     block->SetTargetEdge(newEdge);
                 }
                 else
@@ -2964,7 +2962,6 @@ void Compiler::fgLinkBasicBlocks()
                 // Redundantly use SetKindAndTargetEdge() instead of SetTargetEdge() just this once,
                 // so we don't break the HasInitializedTarget() invariant of SetTargetEdge().
                 FlowEdge* const newEdge = fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
-                newEdge->setLikelihood(1.0);
                 curBBdesc->SetKindAndTargetEdge(curBBdesc->GetKind(), newEdge);
 
                 if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
@@ -3862,7 +3859,6 @@ void Compiler::fgFindBasicBlocks()
                 {
                     // Mark catch handler as successor.
                     FlowEdge* const newEdge = fgAddRefPred(hndBegBB, block);
-                    newEdge->setLikelihood(1.0);
                     block->SetTargetEdge(newEdge);
                     assert(hndBegBB->bbCatchTyp == BBCT_FILTER_HANDLER);
                     break;
@@ -4198,7 +4194,6 @@ void Compiler::fgFixEntryFlowForOSR()
     assert(fgFirstBB->KindIs(BBJ_ALWAYS) && fgFirstBB->JumpsToNext());
     fgRemoveRefPred(fgFirstBB->GetTargetEdge());
     FlowEdge* const newEdge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
-    newEdge->setLikelihood(1.0);
     fgFirstBB->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
     // We don't know the right weight for this block, since
@@ -4790,7 +4785,6 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 
     // Default to fallthrough, and add the arc for that.
     FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
-    newEdge->setLikelihood(1.0);
 
     // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
     // above code.
@@ -5041,7 +5035,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     // And 'succ' has 'newBlock' as a new predecessor.
     FlowEdge* const newEdge = fgAddRefPred(succ, newBlock);
-    newEdge->setLikelihood(1.0);
     newBlock->SetTargetEdge(newEdge);
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the

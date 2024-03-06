@@ -165,6 +165,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
@@ -173,6 +174,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
 #pragma warning disable 8500 // sizeof of managed types
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));

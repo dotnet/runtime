@@ -367,7 +367,7 @@ Crst PendingTypeLoadEntry
                    DomainLocalBlock Exception ExecuteManRangeLock FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
-                   Module ModuleLookupTable PEImage SecurityStackwalkCache
+                   Module ModuleLookupTable PEImage
                    SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
                    SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
     SameLevelAs PendingTypeLoadEntry
@@ -424,9 +424,6 @@ Crst SavedExceptionInfo
 End
 
 Crst SaveModuleProfileData
-End
-
-Crst SecurityStackwalkCache
 End
 
 Crst SigConvert
