@@ -7,7 +7,6 @@ using Internal.TypeSystem;
 using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
-using System.Xml.Linq;
 
 namespace Internal.IL
 {

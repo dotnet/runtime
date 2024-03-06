@@ -1617,7 +1617,7 @@ namespace System
         {
             double conv = (long)val;
             if (conv < 0)
-                conv += 4294967296.0 * 4294967296.0;  // add 2^64
+                conv += 4294967296.0 * 4294967296.0; // add 2^64
             Debug.Assert(conv >= 0);
             return conv;
         }
@@ -1626,6 +1626,7 @@ namespace System
         {
             const double two63 = 2147483648.0 * 4294967296.0;
             ulong ret;
+            // don't remove the double casts, the runtime would call this method recursively without them
             if (val < two63)
             {
                 ret = (ulong)(long)val;
@@ -1663,7 +1664,7 @@ namespace System
             // Note that this expression also works properly for val = NaN case
             if (val is > -1.0 and < 4294967296.0)
             {
-                uint ret = (uint)(long)val;
+                uint ret = (uint)val;
                 // since no overflow can occur, the value always has to be within 1
                 Debug.Assert(val - 1.0 <= ret);
                 Debug.Assert(ret <= val + 1.0);
@@ -1735,6 +1736,8 @@ namespace System
             return FMod(dividend, divisor);
         }
 
+        // those helpers are currently unused, they're only kept for R2R compatibility for now
+        // don't remove the double casts, the runtime would call the methods recursively without them
         private static int DoubleToInt(double val) => (int)(long)val;
         private static uint DoubleToUInt(double val) => (uint)(long)val;
     }
