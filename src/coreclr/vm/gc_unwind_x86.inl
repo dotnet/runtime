@@ -3077,14 +3077,6 @@ bool UnwindStackFrameX86(PREGDISPLAY     pContext,
                          IN_EH_FUNCLETS_COMMA(bool            isFunclet)
                          bool            updateAllRegs)
 {
-#ifndef FEATURE_NATIVEAOT
-    if (pUnwindInfo != NULL)
-    {
-        pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
-        pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
-    }
-#endif
-
     if  (info->epilogOffs != hdrInfo::NOT_IN_EPILOG)
     {
         /*---------------------------------------------------------------------
