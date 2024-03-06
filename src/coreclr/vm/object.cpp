@@ -22,17 +22,28 @@
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 
 // follow the necessary rules to get a new valid hashcode for an object
-DWORD Object::ComputeHashCode()
+//If you call this version of ComputeHashCode that takes the thread parameter, you must ensure no other call runs concurrently.
+DWORD Object::ComputeHashCode(Thread *pThread)
 {
     DWORD hashCode;
-
+    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
+    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
+    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
     do
     {
-        // we use the high order bits in this case because they're more random
-        hashCode = GetThread()->GetNewHashCode() >> (32-HASHCODE_BITS);
+        if (pThread == NULL)
+        {
+            dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
+            hashCode = (dwHashCodeSeed >> (32-HASHCODE_BITS));
+        }
+        else
+        {
+            // we use the high order bits in this case because they're more random
+            hashCode = pThread->GetNewHashCode() >> (32-HASHCODE_BITS);
+        }
     }
     while (hashCode == 0);   // need to enforce hashCode != 0
 
@@ -42,8 +53,14 @@ DWORD Object::ComputeHashCode()
     return hashCode;
 }
 
+DWORD Object::ComputeHashCode()
+{
+    return ComputeHashCode(GetThread());
+}
+
 #ifndef DACCESS_COMPILE
-INT32 Object::GetHashCodeEx()
+//If you call this version of GetHashCodeEx that takes the thread parameter, you must ensure no other call runs concurrently.
+INT32 Object::GetHashCodeEx(Thread *pThread)
 {
     CONTRACTL
     {
@@ -52,7 +69,6 @@ INT32 Object::GetHashCodeEx()
         GC_NOTRIGGER;
     }
     CONTRACTL_END
-
     // This loop exists because we're inspecting the header dword of the object
     // and it may change under us because of races with other threads.
     // On top of that, it may have the spin lock bit set, in which case we're
@@ -80,7 +96,7 @@ INT32 Object::GetHashCodeEx()
                 if (hashCode != 0)
                     return  hashCode;
 
-                hashCode = ComputeHashCode();
+                hashCode = ComputeHashCode(pThread);
 
                 return psb->SetHashCode(hashCode);
             }
@@ -112,7 +128,7 @@ INT32 Object::GetHashCodeEx()
                     continue;
                 }
 
-                DWORD hashCode = ComputeHashCode();
+                DWORD hashCode = ComputeHashCode(pThread);
 
                 DWORD newBits = bits | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | hashCode;
 
@@ -122,6 +138,11 @@ INT32 Object::GetHashCodeEx()
             }
         }
     }
+}
+
+INT32 Object::GetHashCodeEx()
+{
+    return GetHashCodeEx(GetThread());
 }
 #endif // #ifndef DACCESS_COMPILE
 

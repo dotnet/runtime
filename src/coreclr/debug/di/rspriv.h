@@ -9167,6 +9167,7 @@ class CordbObjectValue : public CordbValue,
                          public ICorDebugHeapValue3,
                          public ICorDebugHeapValue4,
                          public ICorDebugExceptionObjectValue,
+                         public ICorDebugExceptionObjectValue2,
                          public ICorDebugComObjectValue,
                          public ICorDebugDelegateObjectValue
 {
@@ -9288,6 +9289,11 @@ public:
     // ICorDebugExceptionObjectValue
     //-----------------------------------------------------------
     COM_METHOD EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
+
+    //-----------------------------------------------------------
+    // ICorDebugExceptionObjectValue2
+    //-----------------------------------------------------------
+    COM_METHOD ForceCatchHandlerFoundEvents(BOOL enableEvents);
 
     //-----------------------------------------------------------
     // ICorDebugComObjectValue

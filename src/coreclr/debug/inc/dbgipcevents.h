@@ -2056,6 +2056,12 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
             LSPTR_BREAKPOINT breakpointToken;
         } BreakpointSetErrorData;
 
