@@ -6,10 +6,6 @@ project(CoreFX C)
 
 include(../../../eng/native/configurepaths.cmake)
 
-if (CLR_CMAKE_TARGET_WIN32)
-    enable_language(CXX)
-endif()
-
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 include_directories(${CLR_SRC_NATIVE_DIR})
