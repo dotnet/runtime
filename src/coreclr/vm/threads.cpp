@@ -7050,12 +7050,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 }
 
 
-void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
+void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    ::FillRegDisplay(pRD, pctx);
+    ::FillRegDisplay(pRD, pctx, NULL, fLightUnwind);
 
 #if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);

@@ -238,6 +238,8 @@ typedef struct MonoAotOptions {
 	gboolean verbose;
 	gboolean deterministic;
 	gboolean allow_errors;
+	gboolean compile_in_child;
+	gboolean child;
 	char *tool_prefix;
 	char *as_prefix;
 	char *ld_flags;
@@ -258,6 +260,8 @@ typedef struct MonoAotOptions {
 	char *clangxx;
 	char *depfile;
 	char *runtime_init_callback;
+	GPtrArray *runtime_args;
+	const char *aot_options;
 } MonoAotOptions;
 
 typedef enum {
@@ -366,10 +370,12 @@ typedef struct MonoAotCompile {
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
 	char *tmpbasename;
-	char *tmpfname;
+	char *asm_fname;
 	char *temp_dir_to_delete;
 	char *llvm_sfile;
 	char *llvm_ofile;
+	char *bc_fname;
+	char *optbc_fname;
 	GSList *cie_program;
 	GHashTable *unwind_info_offsets;
 	GPtrArray *unwind_ops;
@@ -482,8 +488,14 @@ get_patch_name (int info)
 static int
 aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options);
 
+static void
+set_paths (MonoAotCompile *acfg);
+
 static int
 emit_aot_image (MonoAotCompile *acfg);
+
+static int
+assemble_link (MonoAotCompile *acfg);
 
 static guint32
 get_unwind_info_offset (MonoAotCompile *acfg, guint8 *encoded, guint32 encoded_len);
@@ -508,6 +520,9 @@ is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method
 
 static inline const char*
 lookup_direct_pinvoke_symbol_name_aot (MonoAotCompile *acfg, MonoMethod *method);
+
+static int
+compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options);
 
 static gboolean
 mono_aot_mode_is_full (MonoAotOptions *opts)
@@ -9073,6 +9088,10 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		// direct pinvokes (managed-to-native wrappers) and fallbacks to JIT for majority of managed methods.
 		} else if (str_begins_with (arg, "wrappers-only")) {
 			opts->wrappers_only = TRUE;
+		} else if (!strcmp (arg, "compile-in-child")) {
+			opts->compile_in_child = TRUE;
+		} else if (!strcmp (arg, "_child")) {
+			opts->child = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly                              - \n");
@@ -9123,6 +9142,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    verbose                              - \n");
 			printf ("    allow-errors                         - \n");
 			printf ("    no-opt                               - \n");
+			printf ("    compile-in-child                     - \n");
 			printf ("    llvmopts=<value>                     - \n");
 			printf ("    llvmllc=<value>                      - \n");
 			printf ("    clangxx=<value>                      - \n");
@@ -10652,31 +10672,20 @@ execute_system (const char * command)
 #endif
 
 /*
- * emit_llvm_file:
+ * compile_llvm_file:
  *
- *   Emit the LLVM code into an LLVM bytecode file, and compile it using the LLVM
- * tools.
+ *  Compile the llvm bitcode file using the LLVM tools.
  */
 static gboolean
-emit_llvm_file (MonoAotCompile *acfg)
+compile_llvm_file (MonoAotCompile *acfg)
 {
 	char *command, *opts, *tempbc, *optbc, *output_fname;
 
-	if (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only) {
-		if (acfg->aot_opts.no_opt)
-			tempbc = g_strdup (acfg->aot_opts.llvm_outfile);
-		else
-			tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
-		optbc = g_strdup (acfg->aot_opts.llvm_outfile);
-	} else {
-		tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
-		optbc = g_strdup_printf ("%s.opt.bc", acfg->tmpbasename);
-	}
-
-	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name));
-
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
+
+	tempbc = acfg->bc_fname;
+	optbc = acfg->optbc_fname;
 
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
 	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
@@ -10800,7 +10809,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC) || defined(TARGET_ANDROID)
 	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
 #else
-	if (llvm_acfg->aot_opts.static_link)
+	if (acfg->aot_opts.static_link)
 		g_string_append_printf (acfg->llc_args, " -relocation-model=static");
 	else
 		g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
@@ -13183,7 +13192,7 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	if (acfg->aot_opts.asm_only) {
-		aot_printf (acfg, "Output file: '%s'.\n", acfg->tmpfname);
+		aot_printf (acfg, "Output file: '%s'.\n", acfg->asm_fname);
 		if (acfg->aot_opts.static_link)
 			aot_printf (acfg, "Linking symbol: '%s'.\n", acfg->static_linking_symbol);
 		if (acfg->llvm)
@@ -13197,7 +13206,7 @@ compile_asm (MonoAotCompile *acfg)
 		else
 			objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->image->name);
 	} else {
-		objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname);
+		objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->asm_fname);
 	}
 
 #ifdef TARGET_OSX
@@ -13206,7 +13215,7 @@ compile_asm (MonoAotCompile *acfg)
 
 	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
-			wrap_path (objfile), wrap_path (acfg->tmpfname));
+			wrap_path (objfile), wrap_path (acfg->asm_fname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
 	if (execute_system (command) != 0) {
 		g_free (command);
@@ -13291,7 +13300,7 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",
 							wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
-							wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname)), ld_flags);
+							wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->asm_fname)), ld_flags);
 
 #if defined(TARGET_MACH)
 	g_string_append_printf (str, " \"-Wl,-install_name,%s%s\"", g_path_get_basename (acfg->image->name), MONO_SOLIB_EXT);
@@ -13358,7 +13367,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->aot_opts.save_temps)
 		aot_printf (acfg, "Retained input file.\n");
 	else
-		g_unlink (acfg->tmpfname);
+		g_unlink (acfg->asm_fname);
 
 	return 0;
 }
@@ -14891,14 +14900,14 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
-	if (acfg->dedup_phase != DEDUP_COLLECT)
+	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.child)
 		aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 	if (!acfg->aot_opts.deterministic)
 		generate_aotid ((guint8*) &acfg->image->aotid);
 
 	char *aotid = mono_guid_to_string (acfg->image->aotid);
-	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.deterministic)
+	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.deterministic && !acfg->aot_opts.child)
 		aot_printf (acfg, "AOTID %s\n", aotid);
 	g_free (aotid);
 
@@ -15053,6 +15062,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	arch_init (acfg);
 
 	if (mono_use_llvm || acfg->aot_opts.llvm) {
+		acfg->llvm = TRUE;
 		/*
 		 * Emit all LLVM code into a separate assembly/object file and link with it
 		 * normally.
@@ -15066,6 +15076,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 				acfg->llvm_owriter = TRUE;
 		}
 	}
+
+	set_paths (acfg);
 
 	if (acfg->llvm && acfg->thumb_mixed)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_THUMB);
@@ -15085,6 +15097,21 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
  	if (acfg->llvm) {
 		acfg->llvm_got_symbol = g_strdup_printf ("%s_llvm_got", acfg->global_prefix);
 		acfg->llvm_eh_frame_symbol = g_strdup_printf ("%s_eh_frame", acfg->global_prefix);
+	}
+
+	if (acfg->aot_opts.compile_in_child) {
+		if (acfg->aot_opts.dedup_include) {
+			if (acfg->image->assembly == dedup_assembly)
+				return assemble_link (acfg);
+			else
+				return 0;
+		} else {
+			res = compile_assemblies_in_child (&acfg->aot_opts, &acfg->image->assembly, 1, acfg->aot_opts.runtime_args, acfg->aot_opts.aot_options);
+			if (res)
+				return res;
+
+			return assemble_link (acfg);
+		}
 	}
 
 	acfg->method_index = 1;
@@ -15288,24 +15315,18 @@ create_depfile (MonoAotCompile *acfg)
 	fclose (depfile);
 }
 
-static int
-emit_aot_image (MonoAotCompile *acfg)
+static void
+set_paths (MonoAotCompile *acfg)
 {
-	int res;
-	TV_DECLARE (atv);
-	TV_DECLARE (btv);
-
-	TV_GETTIME (atv);
-
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		if (acfg->aot_opts.asm_only) {
 			if (acfg->aot_opts.outfile) {
-				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
-				acfg->tmpbasename = g_strdup (acfg->tmpfname);
+				acfg->asm_fname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+				acfg->tmpbasename = g_strdup (acfg->asm_fname);
 			} else {
 				acfg->tmpbasename = g_strdup_printf ("%s", acfg->image->name);
-				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+				acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			}
 			g_assert (acfg->aot_opts.llvm_outfile);
 			acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
@@ -15324,7 +15345,7 @@ emit_aot_image (MonoAotCompile *acfg)
 			}
 
 			acfg->tmpbasename = g_build_filename (temp_path, "temp", (const char*)NULL);
-			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
 
 			if (acfg->aot_opts.static_link)
@@ -15334,26 +15355,88 @@ emit_aot_image (MonoAotCompile *acfg)
 
 			g_free (temp_path);
 		}
+
+		if (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only) {
+			if (acfg->aot_opts.no_opt)
+				acfg->bc_fname = g_strdup (acfg->aot_opts.llvm_outfile);
+			else
+				acfg->bc_fname = g_strdup_printf ("%s.bc", acfg->tmpbasename);
+			acfg->optbc_fname = g_strdup (acfg->aot_opts.llvm_outfile);
+		} else {
+			acfg->bc_fname = g_strdup_printf ("%s.bc", acfg->tmpbasename);
+			acfg->optbc_fname = g_strdup_printf ("%s.opt.bc", acfg->tmpbasename);
+		}
 	}
 #endif
 
 	if (acfg->aot_opts.asm_only && !acfg->aot_opts.llvm_only) {
 		if (acfg->aot_opts.outfile)
-			acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+			acfg->asm_fname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
-			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
-		acfg->fp = g_fopen (acfg->tmpfname, "w+");
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->image->name);
 	} else {
 		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
-			acfg->fp = fdopen (g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL), "w+");
+			/* Done later */
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
-			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
-			acfg->fp = g_fopen (acfg->tmpfname, "w+");
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+		}
+	}
+}
+
+/* Run external tools to assemble/link the aot image */
+static int
+assemble_link (MonoAotCompile *acfg)
+{
+	int res;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
+
+	TV_GETTIME (atv);
+
+#ifdef ENABLE_LLVM
+	if (acfg->llvm) {
+		gboolean emit_res;
+
+		emit_res = compile_llvm_file (acfg);
+		if (!emit_res)
+			return 1;
+	}
+#endif
+
+	if (!acfg->aot_opts.llvm_only) {
+		res = compile_asm (acfg);
+		if (res != 0) {
+			acfg_free (acfg);
+			return res;
+		}
+	}
+	TV_GETTIME (btv);
+	acfg->stats.link_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
+
+	return 0;
+}
+
+static int
+emit_aot_image (MonoAotCompile *acfg)
+{
+	int res;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
+
+	TV_GETTIME (atv);
+
+	if (acfg->aot_opts.asm_only && !acfg->aot_opts.llvm_only) {
+		acfg->fp = g_fopen (acfg->asm_fname, "w+");
+	} else {
+		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
+			acfg->fp = fdopen (g_file_open_tmp ("mono_aot_XXXXXX", &acfg->asm_fname, NULL), "w+");
+		} else {
+			acfg->fp = g_fopen (acfg->asm_fname, "w+");
 		}
 	}
 	if (acfg->fp == 0 && !acfg->aot_opts.llvm_only) {
-		aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
+		aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->asm_fname, strerror (errno));
 		return 1;
 	}
 	if (acfg->fp)
@@ -15471,13 +15554,8 @@ emit_aot_image (MonoAotCompile *acfg)
 		fclose (acfg->data_outfile);
 
 #ifdef ENABLE_LLVM
-	if (acfg->llvm) {
-		gboolean emit_res;
-
-		emit_res = emit_llvm_file (acfg);
-		if (!emit_res)
-			return 1;
-	}
+	if (acfg->llvm)
+		mono_llvm_emit_aot_module (acfg->bc_fname, g_path_get_basename (acfg->image->name));
 #endif
 
 	emit_library_info (acfg);
@@ -15489,32 +15567,32 @@ emit_aot_image (MonoAotCompile *acfg)
 	if (!acfg->aot_opts.stats)
 		aot_printf (acfg, "Compiled: %d/%d\n", acfg->stats.ccount, acfg->stats.mcount);
 
-	TV_GETTIME (atv);
 	if (acfg->w) {
 		res = mono_img_writer_emit_writeout (acfg->w);
 		if (res != 0) {
 			acfg_free (acfg);
 			return res;
 		}
-		res = compile_asm (acfg);
-		if (res != 0) {
-			acfg_free (acfg);
-			return res;
-		}
 	}
-	TV_GETTIME (btv);
-	acfg->stats.link_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
-
-	if (acfg->aot_opts.stats)
-		print_stats (acfg);
-
-	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
 	if (acfg->aot_opts.depfile)
 		create_depfile (acfg);
 
 	if (acfg->aot_opts.dump_json)
 		aot_dump (acfg);
+
+	if (acfg->aot_opts.child)
+		/* The rest is done in the parent */
+		return 0;
+
+	res = assemble_link (acfg);
+	if (res)
+		return res;
+
+	if (acfg->aot_opts.stats)
+		print_stats (acfg);
+
+	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
 	if (!acfg->aot_opts.save_temps && acfg->temp_dir_to_delete) {
 		char *command = g_strdup_printf ("rm -r %s", acfg->temp_dir_to_delete);
@@ -15527,14 +15605,95 @@ emit_aot_image (MonoAotCompile *acfg)
 	return 0;
 }
 
+static int
+compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies, int nassemblies, GPtrArray *runtime_args, const char *aot_options)
+{
+	FILE *response = NULL;
+	char *response_fname = NULL;
+
+	/* Find --aot argument */
+	int aot_index = -1;
+	for (guint32 i = 1; i < runtime_args->len; ++i) {
+		const char *arg = (const char*)g_ptr_array_index (runtime_args, i);
+		if (strncmp (arg, "--aot=", strlen ("--aot=")) == 0) {
+			aot_index = i;
+			break;
+		}
+	}
+	g_assert (aot_index != -1);
+
+#ifdef HOST_WIN32
+	response_fname = g_build_filename (aot_opts->temp_path, "temp.rsp", (const char*)NULL);
+	response = fopen (response_fname, "w");
+	g_assert (response);
+#endif
+
+	GString *command;
+
+	command = g_string_new ("");
+
+	g_string_append_printf (command, "%s", (const char*)g_ptr_array_index (runtime_args, 0));
+
+	for (guint32 i = 1; i < runtime_args->len; ++i) {
+		const char *arg = (const char*)g_ptr_array_index (runtime_args, i);
+		if (strncmp (arg, "--response=", strlen ("--response=")) == 0)
+			/* Already expanded */
+			continue;
+		if (i != aot_index) {
+			if (response)
+				fprintf (response, "%s\n", arg);
+			else
+				g_string_append_printf (command, " \"%s\"", arg);
+		}
+	}
+
+	/* Pass '_child' instead of 'compile-in-child' */
+	GPtrArray *aot_split_args = mono_aot_split_options (aot_options);
+	GString *new_aot_args = g_string_new ("");
+	for (guint32 i = 0; i < aot_split_args->len; ++i) {
+		const char *aot_arg = (const char*)g_ptr_array_index (aot_split_args, i);
+		if (!strcmp (aot_arg, "compile-in-child"))
+			aot_arg = "_child";
+		if (i > 0)
+			g_string_append_printf (new_aot_args, ",");
+		g_string_append_printf (new_aot_args, "%s", aot_arg);
+	}
+
+	if (response)
+		fprintf (response, "\"--aot=%s\"\n", g_string_free (new_aot_args, FALSE));
+	else
+		g_string_append_printf (command, " \"--aot=%s\"", g_string_free (new_aot_args, FALSE));
+
+	for (int i = 0; i < nassemblies; ++i) {
+		if (response)
+			fprintf (response, "\"%s\"\n", assemblies [i]->image->name);
+		else
+			g_string_append_printf (command, " \"%s\"", assemblies [i]->image->name);
+	}
+
+	if (response)
+		fclose (response);
+
+	if (response)
+		g_string_append_printf (command, " \"--response=%s\"", response_fname);
+	char *cmd = g_string_free (command, FALSE);
+	printf ("Executing: %s\n", cmd);
+	int res = execute_system (cmd);
+	g_free (cmd);
+
+	return res;
+}
+
 int
-mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, const char *aot_options)
+mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, GPtrArray *runtime_args, const char *aot_options)
 {
 	int res = 0;
 	MonoAotOptions aot_opts;
 
 	init_options (&aot_opts);
 	mono_aot_parse_options (aot_options, &aot_opts);
+	aot_opts.runtime_args = runtime_args;
+	aot_opts.aot_options = aot_options;
 	if (aot_opts.direct_extern_calls && !(aot_opts.llvm && aot_opts.static_link)) {
 		fprintf (stderr, "The 'direct-extern-calls' option requires the 'llvm' and 'static' options.\n");
 		res = 1;
@@ -15545,6 +15704,22 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		fprintf (stderr, "The 'runtime-init-callback' option requires the 'static' option.\n");
 		res = 1;
 		goto early_exit;
+	}
+
+	if (aot_opts.compile_in_child) {
+		if (aot_opts.temp_path [0] == '\0') {
+			fprintf (stderr, "The 'compile-in-child' option requires the 'temp-path=' option.\n");
+			res = 1;
+			goto early_exit;
+		}
+		if (nassemblies > 1 && !aot_opts.dedup_include)
+			aot_opts.compile_in_child = FALSE;
+	}
+
+	if (aot_opts.dedup_include && aot_opts.compile_in_child) {
+		res = compile_assemblies_in_child (&aot_opts, assemblies, nassemblies, aot_opts.runtime_args, aot_opts.aot_options);
+		if (res)
+			return res;
 	}
 
 	if (aot_opts.dedup_include) {
@@ -15637,7 +15812,7 @@ mono_aot_get_method_index (MonoMethod *method)
 }
 
 int
-mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 opts, const char *aot_options)
+mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, GPtrArray *runtime_args, const char *aot_options)
 {
 	return 0;
 }
