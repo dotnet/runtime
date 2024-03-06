@@ -20,10 +20,6 @@
       <InstallRuntimeComponentDest Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/>
   </ItemGroup>
 
-  <ItemGroup>
-      <ProjectReference Include="..\..\..\..\tools\Microsoft.DotNet.HelloManaged\src\Microsoft.DotNet.HelloManaged.csproj" />
-  </ItemGroup>
-
   <Import Project="..\..\native-library.targets" />
 
 </Project>
