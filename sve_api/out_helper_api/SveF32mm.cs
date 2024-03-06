@@ -35,7 +35,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; FMMLA Zresult.S, Zop2.S, Zop3.S
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R(INS_sve_fmmla, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_D); // FMMLA <Zda>.D, <Zn>.D, <Zm>.D
+        ///    IF_SVE_HD_3A_A   FMMLA <Zda>.D, <Zn>.D, <Zm>.D
+        ///    theEmitter->emitIns_R_R_R(INS_sve_fmmla, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<float> MatrixMultiplyAccumulate(Vector<float> op1, Vector<float> op2, Vector<float> op3) => MatrixMultiplyAccumulate(op1, op2, op3);
 

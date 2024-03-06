@@ -35,9 +35,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; USDOT Zresult.S, Zop3.B, Zop2.B
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R(INS_sve_usdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B
+        ///    IF_SVE_EZ_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EZ_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EI_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B
+        ///    theEmitter->emitIns_R_R_R(INS_sve_usdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<int> DotProductSignedUnsigned(Vector<int> op1, Vector<sbyte> op2, Vector<byte> op3) => DotProductSignedUnsigned(op1, op2, op3);
 
@@ -47,8 +50,10 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; SUDOT Zresult.S, Zop2.B, Zop3.B[imm_index]
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_sudot, EA_SCALABLE, REG_V17, REG_V18, REG_V0, 0, INS_OPTS_SCALABLE_B); // SUDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_sudot, EA_SCALABLE, REG_V19, REG_V20, REG_V1, 1, INS_OPTS_SCALABLE_B); // SUDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    IF_SVE_EZ_3A   SUDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_sudot, EA_SCALABLE, REG_V17, REG_V18, REG_V0, 0, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EZ_3A   SUDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_sudot, EA_SCALABLE, REG_V19, REG_V20, REG_V1, 1, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<int> DotProductSignedUnsigned(Vector<int> op1, Vector<sbyte> op2, Vector<byte> op3, ulong imm_index) => DotProductSignedUnsigned(op1, op2, op3, imm_index);
 
@@ -61,9 +66,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; USDOT Zresult.S, Zop2.B, Zop3.B
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R(INS_sve_usdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B
+        ///    IF_SVE_EZ_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EZ_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EI_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B
+        ///    theEmitter->emitIns_R_R_R(INS_sve_usdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<int> DotProductUnsignedSigned(Vector<int> op1, Vector<byte> op2, Vector<sbyte> op3) => DotProductUnsignedSigned(op1, op2, op3);
 
@@ -73,9 +81,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; USDOT Zresult.S, Zop2.B, Zop3.B[imm_index]
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        ///    theEmitter->emitIns_R_R_R(INS_sve_usdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B
+        ///    IF_SVE_EZ_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EZ_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        ///    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_EI_3A   USDOT <Zda>.S, <Zn>.B, <Zm>.B
+        ///    theEmitter->emitIns_R_R_R(INS_sve_usdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<int> DotProductUnsignedSigned(Vector<int> op1, Vector<byte> op2, Vector<sbyte> op3, ulong imm_index) => DotProductUnsignedSigned(op1, op2, op3, imm_index);
 
@@ -88,7 +99,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; SMMLA Zresult.S, Zop2.B, Zop3.B
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R(INS_sve_smmla, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_S); // SMMLA <Zda>.S, <Zn>.B, <Zm>.B
+        ///    IF_SVE_FO_3A   SMMLA <Zda>.S, <Zn>.B, <Zm>.B
+        ///    theEmitter->emitIns_R_R_R(INS_sve_smmla, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_S);
         /// </summary>
         public static unsafe Vector<int> MatrixMultiplyAccumulate(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3) => MatrixMultiplyAccumulate(op1, op2, op3);
 
@@ -98,7 +110,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; UMMLA Zresult.S, Zop2.B, Zop3.B
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R(INS_sve_ummla, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_S); // UMMLA <Zda>.S, <Zn>.B, <Zm>.B
+        ///    IF_SVE_FO_3A   UMMLA <Zda>.S, <Zn>.B, <Zm>.B
+        ///    theEmitter->emitIns_R_R_R(INS_sve_ummla, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_S);
         /// </summary>
         public static unsafe Vector<uint> MatrixMultiplyAccumulate(Vector<uint> op1, Vector<byte> op2, Vector<byte> op3) => MatrixMultiplyAccumulate(op1, op2, op3);
 
@@ -111,7 +124,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult, Zop1; USMMLA Zresult.S, Zop2.B, Zop3.B
         ///
         /// codegenarm64test:
-        ///    theEmitter->emitIns_R_R_R(INS_sve_usmmla, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S); // USMMLA <Zda>.S, <Zn>.B, <Zm>.B
+        ///    IF_SVE_FO_3A   USMMLA <Zda>.S, <Zn>.B, <Zm>.B
+        ///    theEmitter->emitIns_R_R_R(INS_sve_usmmla, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
         /// </summary>
         public static unsafe Vector<int> MatrixMultiplyAccumulateUnsignedSigned(Vector<int> op1, Vector<byte> op2, Vector<sbyte> op3) => MatrixMultiplyAccumulateUnsignedSigned(op1, op2, op3);
 
