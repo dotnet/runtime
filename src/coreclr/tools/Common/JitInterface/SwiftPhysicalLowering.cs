@@ -171,6 +171,7 @@ namespace Internal.JitInterface
                         while (remainingIntervalSize > 0)
                         {
                             loweredSequenceSize += 1;
+                            remainingIntervalSize--;
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_BYTE);
                         }
                     }
