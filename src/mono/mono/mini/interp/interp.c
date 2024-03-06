@@ -5286,7 +5286,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_I4_IMM2)
-			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + READ32 (ip + 3);
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + (gint32)READ32 (ip + 3);
 			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD1_I8)
@@ -5298,7 +5298,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_I8_IMM2)
-			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + READ32 (ip + 3);
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + (gint32)READ32 (ip + 3);
 			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_I4)
@@ -5332,7 +5332,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_I4_IMM2)
-			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * READ32 (ip + 3);
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * (gint32)READ32 (ip + 3);
 			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_I8_IMM)
@@ -5340,7 +5340,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_I8_IMM2)
-			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * READ32 (ip + 3);
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint32)READ32 (ip + 3);
 			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_MUL_I4_IMM)
