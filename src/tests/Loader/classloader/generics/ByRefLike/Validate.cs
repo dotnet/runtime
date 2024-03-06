@@ -42,6 +42,7 @@ public class Validate
     }
 
     [Fact]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/99379")]
     public static void Validate_RecognizedOpCodeSequences_Scenarios()
     {
         Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_Scenarios)}...");
