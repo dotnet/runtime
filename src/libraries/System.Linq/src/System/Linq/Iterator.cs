@@ -69,7 +69,7 @@ namespace System.Linq
             /// that created this iterator, the result will be this iterator. Otherwise, the result
             /// will be a shallow copy of this iterator.
             /// </remarks>
-            public IEnumerator<TSource> GetEnumerator()
+            public Iterator<TSource> GetEnumerator()
             {
                 Iterator<TSource> enumerator = _state == 0 && _threadId == Environment.CurrentManagedThreadId ? this : Clone();
                 enumerator._state = 1;
@@ -104,6 +104,7 @@ namespace System.Linq
 
             object? IEnumerator.Current => Current;
 
+            IEnumerator<TSource> IEnumerable<TSource>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             void IEnumerator.Reset() => ThrowHelper.ThrowNotSupportedException();
