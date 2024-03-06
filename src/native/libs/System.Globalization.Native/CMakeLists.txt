@@ -3,10 +3,6 @@ cmake_minimum_required(VERSION 3.10..3.20)
 
 project(System.Globalization.Native C)
 
-if (CLR_CMAKE_TARGET_WIN32)
-    enable_language(CXX)
-endif()
-
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     if (ANDROID_FORCE_ICU_DATA_DIR)
         add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
@@ -135,8 +131,9 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
 endif()
 
-if (MSVC)
-    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+if (MSVC AND MSVC_VERSION LESS 1939)
+    # on VS < 17.9 we need to force compile sources as C++ since msvc doesn't support __typeof__ there
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES COMPILE_FLAGS "/TP")
 endif()
 
 include_directories("../Common")
@@ -167,7 +164,12 @@ if (GEN_SHARED_LIB)
         ${FOUNDATION}
     )
 
-    install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
+    if(CLR_CMAKE_TARGET_WIN32)
+        install (TARGETS System.Globalization.Native DESTINATION .)
+        install (FILES $<TARGET_PDB_FILE:System.Globalization.Native> DESTINATION .)
+    else()
+        install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
+    endif()
 endif()
 
 add_library(System.Globalization.Native-Static
@@ -182,7 +184,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
+if(NOT CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
