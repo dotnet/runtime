@@ -29,7 +29,7 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(PTR_ThreadLocalData pThreadLocalData, 
     PTR_TLSArray pTLSArray = dac_cast<PTR_TLSArray>(dac_cast<PTR_BYTE>(pThreadLocalData) + index.GetTLSArrayOffset());
 
     int32_t cTLSData = pTLSArray->cTLSData;
-    if (cTLSData < index.GetByteIndex())
+    if (cTLSData <= index.GetByteIndex())
     {
         return NULL;
     }
@@ -187,7 +187,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     TLSArray* pTLSArray = reinterpret_cast<TLSArray*>((uint8_t*)&t_ThreadStatics + index.GetTLSArrayOffset());
 
     int32_t cTLSData = pTLSArray->cTLSData;
-    if (cTLSData < index.GetByteIndex())
+    if (cTLSData <= index.GetByteIndex())
     {
         // Grow the underlying TLS array
         CrstHolder ch(&g_TLSCrst);

@@ -629,6 +629,11 @@ struct ThreadStaticsInfo
     TLSIndex NonGCTlsIndex;
     TLSIndex GCTlsIndex;
     GenericsStaticsInfo m_genericStatics;
+    void Init()
+    {
+        NonGCTlsIndex = TLSIndex::Unallocated();
+        GCTlsIndex = TLSIndex::Unallocated();
+    }
 };
 
 /* static */ inline PTR_ThreadStaticsInfo MethodTableAuxiliaryData::GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)

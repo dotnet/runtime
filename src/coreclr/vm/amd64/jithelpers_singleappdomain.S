@@ -13,8 +13,8 @@
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
         // If class is not initialized, bail to C++ helper
         mov     rax, [rdi + OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
-        test    rax, 1
-        jnz      CallHelper
+        test    al, 1
+        jnz     CallHelper
         rep ret
 
 .balign 16
@@ -26,8 +26,8 @@ LEAF_END_MARKED JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
         // If class is not initialized, bail to C++ helper
         mov     rax, [rdi + OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
-        test    rax, 1
-        jnz      CallHelper1
+        test    al, 1
+        jnz     CallHelper1
         rep ret
 
 .balign 16

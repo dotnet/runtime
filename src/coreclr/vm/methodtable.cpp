@@ -669,6 +669,10 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
     {
         MethodTableAuxiliaryData::GetDynamicStaticsInfo(pMTAuxiliaryData)->Init(this);
     }
+    if (HasFlag(staticsFlags, MethodTableStaticsFlags::Thread))
+    {
+        MethodTableAuxiliaryData::GetThreadStaticsInfo(pMTAuxiliaryData)->Init();
+    }
 }
 
 

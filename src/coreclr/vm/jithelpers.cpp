@@ -1534,7 +1534,7 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
     TADDR pTLSBaseAddress = NULL;
 
     int32_t cTLSData = t_ThreadStatics.cTLSData;
-    if (cTLSData < index.GetByteIndex())
+    if (cTLSData <= index.GetByteIndex())
     {
         return NULL;
     }

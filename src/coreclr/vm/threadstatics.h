@@ -96,7 +96,8 @@ struct TLSIndex
     uint32_t TLSIndexRawIndex;
     int32_t GetByteIndex() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex & 0xFFFFFF; }
     int8_t GetTLSArrayOffset() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex >> 24; }
-    bool IsAllocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != 0;}
+    bool IsAllocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != 0xFFFFFFFF;}
+    static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }
     bool operator != (TLSIndex index) { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != index.TLSIndexRawIndex; }
 };
