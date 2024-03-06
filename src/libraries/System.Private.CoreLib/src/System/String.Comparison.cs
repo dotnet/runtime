@@ -846,7 +846,7 @@ namespace System
 
                         for(int i = length / 2 + 1; length < 4; length++)
                         {
-                            arrWithPad[i] = 0;
+                            arrWithPad[i] = (uint)length;
                         }
 
                         Vector128<uint> srcVecPad = Vector128.Create(0u);
