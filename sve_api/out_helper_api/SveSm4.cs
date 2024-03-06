@@ -34,8 +34,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SM4E Ztied1.S, Ztied1.S, Zop2.S
         ///
         /// codegenarm64test:
-        ///    IF_SVE_GK_2A   SM4E <Zdn>.S,
-        ///    theEmitter->emitIns_R_R(INS_sve_sm4e, EA_SCALABLE, REG_V3, REG_V5, INS_OPTS_SCALABLE_S);
+        ///    IF_SVE_GK_2A  SM4E <Zdn>.S,
+        ///        theEmitter->emitIns_R_R(INS_sve_sm4e, EA_SCALABLE, REG_V3, REG_V5, INS_OPTS_SCALABLE_S);
         /// </summary>
         public static unsafe Vector<uint> Sm4EncryptionAndDecryption(Vector<uint> left, Vector<uint> right) => Sm4EncryptionAndDecryption(left, right);
 
@@ -47,8 +47,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SM4EKEY Zresult.S, Zop1.S, Zop2.S
         ///
         /// codegenarm64test:
-        ///    IF_SVE_GJ_3A   SM4EKEY <Zd>.S, <Zn>.S, <Zm>.S
-        ///    theEmitter->emitIns_R_R_R(INS_sve_sm4ekey, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_S);
+        ///    IF_SVE_GJ_3A  SM4EKEY <Zd>.S, <Zn>.S, <Zm>.S
+        ///        theEmitter->emitIns_R_R_R(INS_sve_sm4ekey, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_S);
         /// </summary>
         public static unsafe Vector<uint> Sm4KeyUpdates(Vector<uint> left, Vector<uint> right) => Sm4KeyUpdates(left, right);
 

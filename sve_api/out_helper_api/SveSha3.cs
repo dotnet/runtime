@@ -34,8 +34,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   RAX1 Zresult.D, Zop1.D, Zop2.D
         ///
         /// codegenarm64test:
-        ///    IF_SVE_GJ_3A   RAX1 <Zd>.D, <Zn>.D, <Zm>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_rax1, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_GJ_3A  RAX1 <Zd>.D, <Zn>.D, <Zm>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_rax1, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<long> BitwiseRotateLeftBy1AndXor(Vector<long> left, Vector<long> right) => BitwiseRotateLeftBy1AndXor(left, right);
 
@@ -44,8 +44,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   RAX1 Zresult.D, Zop1.D, Zop2.D
         ///
         /// codegenarm64test:
-        ///    IF_SVE_GJ_3A   RAX1 <Zd>.D, <Zn>.D, <Zm>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_rax1, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_GJ_3A  RAX1 <Zd>.D, <Zn>.D, <Zm>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_rax1, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<ulong> BitwiseRotateLeftBy1AndXor(Vector<ulong> left, Vector<ulong> right) => BitwiseRotateLeftBy1AndXor(left, right);
 

@@ -34,8 +34,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<sbyte> BitwiseClearXor(Vector128<sbyte> xor, Vector128<sbyte> value, Vector128<sbyte> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -44,8 +44,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<short> BitwiseClearXor(Vector128<short> xor, Vector128<short> value, Vector128<short> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -54,8 +54,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<int> BitwiseClearXor(Vector128<int> xor, Vector128<int> value, Vector128<int> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -64,8 +64,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<long> BitwiseClearXor(Vector128<long> xor, Vector128<long> value, Vector128<long> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -74,8 +74,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<byte> BitwiseClearXor(Vector128<byte> xor, Vector128<byte> value, Vector128<byte> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -84,8 +84,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<ushort> BitwiseClearXor(Vector128<ushort> xor, Vector128<ushort> value, Vector128<ushort> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -94,8 +94,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<uint> BitwiseClearXor(Vector128<uint> xor, Vector128<uint> value, Vector128<uint> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -104,8 +104,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  BCAX <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bcax, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<ulong> BitwiseClearXor(Vector128<ulong> xor, Vector128<ulong> value, Vector128<ulong> mask) => BitwiseClearXor(xor, value, mask);
 
@@ -117,8 +117,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   RAX1 Vd.2D,Vn.2D,Vm.2D
         ///
         /// codegenarm64test:
-        ///    IF_SVE_GJ_3A   RAX1 <Zd>.D, <Zn>.D, <Zm>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_rax1, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_GJ_3A  RAX1 <Zd>.D, <Zn>.D, <Zm>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_rax1, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<ulong> BitwiseRotateLeftBy1AndXor(Vector128<ulong> a, Vector128<ulong> b) => BitwiseRotateLeftBy1AndXor(a, b);
 
@@ -130,8 +130,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<sbyte> Xor(Vector128<sbyte> value1, Vector128<sbyte> value2, Vector128<sbyte> value3) => Xor(value1, value2, value3);
 
@@ -140,8 +140,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<short> Xor(Vector128<short> value1, Vector128<short> value2, Vector128<short> value3) => Xor(value1, value2, value3);
 
@@ -150,8 +150,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<int> Xor(Vector128<int> value1, Vector128<int> value2, Vector128<int> value3) => Xor(value1, value2, value3);
 
@@ -160,8 +160,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<long> Xor(Vector128<long> value1, Vector128<long> value2, Vector128<long> value3) => Xor(value1, value2, value3);
 
@@ -170,8 +170,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<byte> Xor(Vector128<byte> value1, Vector128<byte> value2, Vector128<byte> value3) => Xor(value1, value2, value3);
 
@@ -180,8 +180,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<ushort> Xor(Vector128<ushort> value1, Vector128<ushort> value2, Vector128<ushort> value3) => Xor(value1, value2, value3);
 
@@ -190,8 +190,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<uint> Xor(Vector128<uint> value1, Vector128<uint> value2, Vector128<uint> value3) => Xor(value1, value2, value3);
 
@@ -200,8 +200,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AV_3A   EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
-        ///    theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AV_3A  EOR3 <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+        ///        theEmitter->emitIns_R_R_R(INS_sve_eor3, EA_SCALABLE, REG_V12, REG_V13, REG_V14, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<ulong> Xor(Vector128<ulong> value1, Vector128<ulong> value2, Vector128<ulong> value3) => Xor(value1, value2, value3);
 
@@ -213,22 +213,15 @@ namespace System.Runtime.Intrinsics.Arm
         ///   XAR Vd.2D,Vn.2D,Vm.2D,imm6
         ///
         /// codegenarm64test:
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V0, REG_V1, 1, INS_OPTS_SCALABLE_B);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V2, REG_V3, 8, INS_OPTS_SCALABLE_B);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V4, REG_V5, 2, INS_OPTS_SCALABLE_H);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V6, REG_V7, 16, INS_OPTS_SCALABLE_H);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V8, REG_V9, 3, INS_OPTS_SCALABLE_S);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V10, REG_V11, 32, INS_OPTS_SCALABLE_S);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V12, REG_V13, 4, INS_OPTS_SCALABLE_D);
-        ///    IF_SVE_AW_2A   XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        ///    theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V14, REG_V15, 64, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_AW_2A  XAR <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V0, REG_V1, 1, INS_OPTS_SCALABLE_B);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V2, REG_V3, 8, INS_OPTS_SCALABLE_B);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V4, REG_V5, 2, INS_OPTS_SCALABLE_H);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V6, REG_V7, 16, INS_OPTS_SCALABLE_H);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V8, REG_V9, 3, INS_OPTS_SCALABLE_S);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V10, REG_V11, 32, INS_OPTS_SCALABLE_S);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V12, REG_V13, 4, INS_OPTS_SCALABLE_D);
+        ///        theEmitter->emitIns_R_R_I(INS_sve_xar, EA_SCALABLE, REG_V14, REG_V15, 64, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector128<ulong> XorRotateRight(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
 

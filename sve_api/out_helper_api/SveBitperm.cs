@@ -34,8 +34,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BEXT Zresult.B, Zop1.B, Zop2.B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
+        ///    IF_SVE_FQ_3A  BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
         /// </summary>
         public static unsafe Vector<byte> GatherLowerBitsFromPositionsSelectedByBitmask(Vector<byte> left, Vector<byte> right) => GatherLowerBitsFromPositionsSelectedByBitmask(left, right);
 
@@ -44,8 +44,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BEXT Zresult.H, Zop1.H, Zop2.H
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
+        ///    IF_SVE_FQ_3A  BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
         /// </summary>
         public static unsafe Vector<ushort> GatherLowerBitsFromPositionsSelectedByBitmask(Vector<ushort> left, Vector<ushort> right) => GatherLowerBitsFromPositionsSelectedByBitmask(left, right);
 
@@ -54,8 +54,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BEXT Zresult.S, Zop1.S, Zop2.S
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
+        ///    IF_SVE_FQ_3A  BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
         /// </summary>
         public static unsafe Vector<uint> GatherLowerBitsFromPositionsSelectedByBitmask(Vector<uint> left, Vector<uint> right) => GatherLowerBitsFromPositionsSelectedByBitmask(left, right);
 
@@ -64,8 +64,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BEXT Zresult.D, Zop1.D, Zop2.D
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
+        ///    IF_SVE_FQ_3A  BEXT <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bext, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);
         /// </summary>
         public static unsafe Vector<ulong> GatherLowerBitsFromPositionsSelectedByBitmask(Vector<ulong> left, Vector<ulong> right) => GatherLowerBitsFromPositionsSelectedByBitmask(left, right);
 
@@ -77,10 +77,9 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BGRP Zresult.B, Zop1.B, Zop2.B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_FQ_3A  BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<byte> GroupBitsToRightOrLeftAsSelectedByBitmask(Vector<byte> left, Vector<byte> right) => GroupBitsToRightOrLeftAsSelectedByBitmask(left, right);
 
@@ -89,10 +88,9 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BGRP Zresult.H, Zop1.H, Zop2.H
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_FQ_3A  BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<ushort> GroupBitsToRightOrLeftAsSelectedByBitmask(Vector<ushort> left, Vector<ushort> right) => GroupBitsToRightOrLeftAsSelectedByBitmask(left, right);
 
@@ -101,10 +99,9 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BGRP Zresult.S, Zop1.S, Zop2.S
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_FQ_3A  BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<uint> GroupBitsToRightOrLeftAsSelectedByBitmask(Vector<uint> left, Vector<uint> right) => GroupBitsToRightOrLeftAsSelectedByBitmask(left, right);
 
@@ -113,10 +110,9 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BGRP Zresult.D, Zop1.D, Zop2.D
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
-        ///    IF_SVE_FQ_3A   BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
+        ///    IF_SVE_FQ_3A  BGRP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S);
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bgrp, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D);
         /// </summary>
         public static unsafe Vector<ulong> GroupBitsToRightOrLeftAsSelectedByBitmask(Vector<ulong> left, Vector<ulong> right) => GroupBitsToRightOrLeftAsSelectedByBitmask(left, right);
 
@@ -128,8 +124,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BDEP Zresult.B, Zop1.B, Zop2.B
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_FQ_3A  BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<byte> ScatterLowerBitsIntoPositionsSelectedByBitmask(Vector<byte> left, Vector<byte> right) => ScatterLowerBitsIntoPositionsSelectedByBitmask(left, right);
 
@@ -138,8 +134,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BDEP Zresult.H, Zop1.H, Zop2.H
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_FQ_3A  BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<ushort> ScatterLowerBitsIntoPositionsSelectedByBitmask(Vector<ushort> left, Vector<ushort> right) => ScatterLowerBitsIntoPositionsSelectedByBitmask(left, right);
 
@@ -148,8 +144,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BDEP Zresult.S, Zop1.S, Zop2.S
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_FQ_3A  BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<uint> ScatterLowerBitsIntoPositionsSelectedByBitmask(Vector<uint> left, Vector<uint> right) => ScatterLowerBitsIntoPositionsSelectedByBitmask(left, right);
 
@@ -158,8 +154,8 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BDEP Zresult.D, Zop1.D, Zop2.D
         ///
         /// codegenarm64test:
-        ///    IF_SVE_FQ_3A   BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-        ///    theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
+        ///    IF_SVE_FQ_3A  BDEP <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        ///        theEmitter->emitIns_R_R_R(INS_sve_bdep, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);
         /// </summary>
         public static unsafe Vector<ulong> ScatterLowerBitsIntoPositionsSelectedByBitmask(Vector<ulong> left, Vector<ulong> right) => ScatterLowerBitsIntoPositionsSelectedByBitmask(left, right);
 
