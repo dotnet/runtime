@@ -11,7 +11,7 @@ using Microsoft.Quic;
 
 namespace System.Net.Quic;
 
-internal static class MsQuicConfiguration
+internal static partial class MsQuicConfiguration
 {
     private static bool HasPrivateKey(this X509Certificate certificate)
         => certificate is X509Certificate2 certificate2 && certificate2.Handle != IntPtr.Zero && certificate2.HasPrivateKey;
@@ -119,6 +119,11 @@ internal static class MsQuicConfiguration
 
     private static unsafe MsQuicSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
     {
+        if (cipherSuitesPolicy != null)
+        {
+            flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
+        }
+
         // Validate options and SSL parameters.
         if (alpnProtocols is null || alpnProtocols.Count <= 0)
         {
@@ -176,6 +181,26 @@ internal static class MsQuicConfiguration
                     : 0; // 0 disables the timeout
         }
 
+        CacheKey cacheKey = new CacheKey(
+            certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() },
+            flags,
+            settings,
+            alpnProtocols); // TODO: defensive copy
+
+        if (intermediates != null)
+        {
+            foreach (X509Certificate2 intermediate in intermediates)
+            {
+                cacheKey.CertificateThumbprints.Add(intermediate.GetCertHash());
+            }
+        }
+
+        MsQuicSafeHandle? configurationHandle = TryGetCachedConfigurationHandle(cacheKey);
+        if (configurationHandle != null)
+        {
+            return configurationHandle;
+        }
+
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
@@ -189,7 +214,7 @@ internal static class MsQuicConfiguration
             (void*)IntPtr.Zero,
             &handle),
             "ConfigurationOpen failed");
-        MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, SafeHandleType.Configuration);
+        configurationHandle = new MsQuicSafeHandle(handle, SafeHandleType.Configuration);
 
         try
         {
@@ -198,7 +223,6 @@ internal static class MsQuicConfiguration
 
             if (cipherSuitesPolicy != null)
             {
-                config.Flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
                 config.AllowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
             }
 
@@ -272,6 +296,8 @@ internal static class MsQuicConfiguration
             configurationHandle.Dispose();
             throw;
         }
+
+        CacheConfigurationHandle(cacheKey, configurationHandle);
 
         return configurationHandle;
     }
