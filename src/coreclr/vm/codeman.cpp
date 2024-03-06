@@ -4938,14 +4938,6 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     // a size of 0 is a signal to Nirvana to flush the entire cache
     FlushInstructionCache(GetCurrentProcess(),0,0);
 
-    /* StackwalkCacheEntry::EIP is an address into code. Since we are
-    unloading the code, we need to invalidate the cache. Otherwise,
-    its possible that another appdomain might generate code at the very
-    same address, and we might incorrectly think that the old
-    StackwalkCacheEntry corresponds to it. So flush the cache.
-    */
-    StackwalkCache::Invalidate(pLoaderAllocator);
-
     JumpStubCache * pJumpStubCache = (JumpStubCache *) pLoaderAllocator->m_pJumpStubCache;
     if (pJumpStubCache != NULL)
     {

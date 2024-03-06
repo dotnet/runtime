@@ -2889,7 +2889,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
     CONTRACTL_END;
 
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrow(throwable, FALSE);
+    RealCOMPlusThrowWorker(throwable, FALSE);
 }
 #endif // USE_CHECKED_OBJECTREFS
 
@@ -6292,9 +6292,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifdef FEATURE_EH_FUNCLETS
 
 #ifndef TARGET_X86
-EXTERN_C void JIT_MemSet_End();
-EXTERN_C void JIT_MemCpy_End();
-
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
 EXTERN_C void JIT_ByRefWriteBarrier_End();
@@ -6345,9 +6342,6 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifndef TARGET_X86
-    CHECK_RANGE(JIT_MemSet)
-    CHECK_RANGE(JIT_MemCpy)
-
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
@@ -7761,6 +7755,42 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 #endif
 }
 
+#ifdef FEATURE_EH_FUNCLETS
+//
+// This function continues exception interception unwind after it crossed native frames using
+// standard EH / SEH.
+//
+VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    GCX_COOP();
+
+    Thread *pThread = GetThread();
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
+    UINT_PTR uInterceptStackFrame  = 0;
+
+    pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL,
+                                                        (PBYTE*)&uInterceptStackFrame,
+                                                        NULL, NULL);
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__UNWIND_AND_INTERCEPT);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER((ExInfo*)pExState->GetCurrentExceptionTracker());
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(uInterceptStackFrame);
+    pThread->IncPreventAbort();
+
+    //Ex.RhUnwindAndIntercept(throwable, &exInfo)
+    CRITICAL_CALLSITE;
+    CALL_MANAGED_METHOD_NORET(args)
+
+    UNREACHABLE();
+}
+
+#endif // FEATURE_EH_FUNCLETS
+
 //
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
@@ -7784,7 +7814,18 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
     {
-        DispatchManagedException(orThrowable);
+        Thread *pThread = GetThread();
+        ThreadExceptionState* pExState = pThread->GetExceptionState();
+        ExInfo *pPrevExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
+        if (pPrevExInfo != NULL && pPrevExInfo->m_DebuggerExState.GetDebuggerInterceptContext() != NULL)
+        {
+            ContinueExceptionInterceptionUnwind();
+            UNREACHABLE();
+        }
+        else
+        {
+            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
+        }
     }
     else
 #endif // FEATURE_EH_FUNCLETS
