@@ -161,7 +161,7 @@ namespace System.Runtime.InteropServices.Tests
 
             if (PlatformDetection.IsPreciseGcSupported)
             {
-                while (IsNullTarget(handle))
+                while (!IsNullTarget(handle))
                 {
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
