@@ -667,7 +667,7 @@ endfunction()
 #
 # Imports a native library produced by NativeAOT (see src/native/managed).
 # If the library is found, sets libraryName_FOUND to true, else false.
-# If the library is found, a target libraryName::libraryName is defined.
+# If the library is found, it will provide targets libraryName::libs and libraryName::headers.
 # If REQUIRED is specified, it's a fatal error not to find the library, otherwise the library is considered optional.
 function(find_nativeaot_library libraryName)
   cmake_parse_arguments(PARSE_ARGV 1 "findNativeAOT_opt" "REQUIRED" "" "")

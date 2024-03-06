@@ -128,7 +128,6 @@
             <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDest.Identity)'))" />
         </ItemGroup>
 
-        <!-- TODO: windows -->
         <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
             <CopyFinalFiles Include="$(StripSourceFile)" />
             <CopyFinalFiles Include="$(StripDestinationFile)" />
