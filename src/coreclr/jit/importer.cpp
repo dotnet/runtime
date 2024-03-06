@@ -2026,7 +2026,6 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         FlowEdge* const newEdge = fgAddRefPred(hndBlk, newBlk);
-        newEdge->setLikelihood(1.0);
         newBlk->SetTargetEdge(newEdge);
 
         // Spill into a temp.
@@ -4437,7 +4436,6 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
                 FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                newEdge->setLikelihood(1.0);
                 step->SetTargetEdge(newEdge);
 
                 // The new block will inherit this block's weight.
@@ -4487,7 +4485,6 @@ void Compiler::impImportLeave(BasicBlock* block)
             assert(finallyNesting <= compHndBBtabCount);
 
             FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-            newEdge->setLikelihood(1.0);
             callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
@@ -4539,7 +4536,6 @@ void Compiler::impImportLeave(BasicBlock* block)
 
         {
             FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
-            newEdge->setLikelihood(1.0);
             step->SetTargetEdge(newEdge);
         }
 
@@ -4572,7 +4568,6 @@ void Compiler::impImportLeave(BasicBlock* block)
         // this is the ultimate destination of the LEAVE
         {
             FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
-            newEdge->setLikelihood(1.0);
             finalStep->SetTargetEdge(newEdge);
         }
 
@@ -4692,7 +4687,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
 
                 FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
-                newEdge->setLikelihood(1.0);
                 step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
                                               // exit) returns to this block
 
@@ -4737,7 +4731,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // next block, and flow optimizations will remove it.
                 fgRemoveRefPred(block->GetTargetEdge());
                 FlowEdge* const newEdge = fgAddRefPred(callBlock, block);
-                newEdge->setLikelihood(1.0);
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                 // The new block will inherit this block's weight.
@@ -4807,7 +4800,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                     }
 
                     FlowEdge* const newEdge = fgAddRefPred(step2, step);
-                    newEdge->setLikelihood(1.0);
                     step->SetTargetEdge(newEdge);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
@@ -4848,7 +4840,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
 
                 FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                newEdge->setLikelihood(1.0);
                 step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
                                               // finally in the chain)
 
@@ -4885,7 +4876,6 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif
 
             FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-            newEdge->setLikelihood(1.0);
             callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
@@ -4954,7 +4944,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
 
                 FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
-                newEdge->setLikelihood(1.0);
                 step->SetTargetEdge(newEdge);
 
                 // The new block will inherit this block's weight.
@@ -5009,7 +4998,6 @@ void Compiler::impImportLeave(BasicBlock* block)
             fgRemoveRefPred(step->GetTargetEdge());
         }
         FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
-        newEdge->setLikelihood(1.0);
         step->SetTargetEdge(newEdge); // this is the ultimate destination of the LEAVE
 
 #ifdef DEBUG
@@ -5072,7 +5060,6 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
         FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
-        newEdge->setLikelihood(1.0);
         dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
@@ -5104,7 +5091,6 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgRemoveRefPred(block->GetTargetEdge());
     FlowEdge* const newEdge = fgAddRefPred(fgLookupBB(jmpAddr), block);
-    newEdge->setLikelihood(1.0);
     block->SetKindAndTargetEdge(BBJ_LEAVE, newEdge);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
@@ -5421,7 +5407,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 //
 // Notes:
 //   May expand into a series of runtime checks or a helper call.
-
+//
 GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset)
 {
@@ -5466,7 +5452,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (!shouldExpandEarly)
     {
-        JITDUMP("\nImporting %s as call because %s\n", isCastClass ? "castclass" : "isinst");
+        JITDUMP("\nImporting %s as call\n", isCastClass ? "castclass" : "isinst");
 
         // If we CSE this class handle we prevent assertionProp from making SubType assertions
         // so instead we force the CSE logic to not consider CSE-ing this class handle.
@@ -7187,7 +7173,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
                         fgRemoveRefPred(block->GetFalseEdge());
-                        block->SetKind(BBJ_ALWAYS);
+                        block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
                         // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
@@ -7262,7 +7248,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetTrueTarget()->bbNum);
                             fgRemoveRefPred(block->GetFalseEdge());
-                            block->SetKind(BBJ_ALWAYS);
+                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
                         }
                         else
                         {
@@ -7276,9 +7262,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
-
-                        FlowEdge* const edge = fgGetPredForBlock(block->GetTarget(), block);
-                        edge->setLikelihood(1.0);
                     }
 
                     break;
@@ -7452,7 +7435,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
                         fgRemoveRefPred(block->GetFalseEdge());
-                        block->SetKind(BBJ_ALWAYS);
+                        block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
                         // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
@@ -7540,7 +7523,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // transform the basic block into a BBJ_ALWAYS
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
-                            curEdge->setLikelihood(1.0);
                             foundVal = true;
                         }
                         else

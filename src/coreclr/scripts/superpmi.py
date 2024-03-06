@@ -1799,7 +1799,9 @@ def calculate_perfscore_improvements_regressions(base_diff_perfscores):
     sum_log_ps_improvements = 0
     sum_log_ps_regressions = 0
     for (base_ps, diff_ps) in base_diff_perfscores:
-        log_relative_perfscore = math.log(max(diff_ps, 1.0) / max(base_ps, 1.0))
+        base_ps = max(base_ps, 1.0)
+        diff_ps = max(diff_ps, 1.0)
+        log_relative_perfscore = math.log(diff_ps / base_ps)
 
         if abs(diff_ps - base_ps) < 0.01:
             num_ps_same += 1
@@ -1810,11 +1812,11 @@ def calculate_perfscore_improvements_regressions(base_diff_perfscores):
             num_ps_regressions += 1
             sum_log_ps_regressions += log_relative_perfscore
 
-    ps_improvements = None
+    ps_improvements = 0.0
     if num_ps_improvements > 0:
         ps_improvements = math.exp(sum_log_ps_improvements / num_ps_improvements) - 1
 
-    ps_regressions = None
+    ps_regressions = 0.0
     if num_ps_regressions > 0:
         ps_regressions = math.exp(sum_log_ps_regressions / num_ps_regressions) - 1
 
@@ -1902,6 +1904,10 @@ def aggregate_diff_metrics(details_file):
     diff_minopts = base_minopts.copy()
     diff_fullopts = base_minopts.copy()
 
+    # Project out these fields for the saved diffs, to use for further
+    # processing. Saving everything into memory is costly on memory when there
+    # are a large number of diffs.
+    diffs_fields = ["Context", "Context size", "Base size", "Diff size", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
     for row in read_csv(details_file):
@@ -1957,7 +1963,7 @@ def aggregate_diff_metrics(details_file):
             if row["Has diff"] == "True":
                 base_dict["Contexts with diffs"] += 1
                 diff_dict["Contexts with diffs"] += 1
-                diffs.append(row)
+                diffs.append({key: row[key] for key in diffs_fields})
 
     base_overall = base_minopts.copy()
     for k in base_overall.keys():
@@ -2430,12 +2436,12 @@ class SuperPMIReplayAsmDiffs:
                         elif byte_regressions > 0:
                             logging.info("  +{:,d} bytes".format(byte_regressions))
 
-                        if ps_improvements is not None and ps_regressions is not None:
+                        if num_ps_improvements > 0 and num_ps_regressions > 0:
                             logging.info("  {:.2f}%/+{:.2f}% PerfScore".format(ps_improvements * 100, ps_regressions * 100))
-                        elif ps_improvements is not None:
-                            logging.info("  -{:.2f}% PerfScore".format(ps_improvements))
-                        elif ps_regressions is not None:
-                            logging.info("  +{:.2f}% PerfScore".format(ps_regressions))
+                        elif num_ps_improvements > 0:
+                            logging.info("  {:.2f}% PerfScore".format(ps_improvements * 100))
+                        elif num_ps_regressions > 0:
+                            logging.info("  +{:.2f}% PerfScore".format(ps_regressions * 100))
 
                         logging.info("")
                         logging.info("")
