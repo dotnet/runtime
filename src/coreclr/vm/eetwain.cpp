@@ -3302,7 +3302,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo /*= NULL*/ )
+void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)
 {
     CONTRACTL
     {
@@ -3314,19 +3314,22 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, StackwalkCache
 
     if( !pRD->IsCallerContextValid )
     {
-#if !defined(DACCESS_COMPILE) && defined(HAS_QUICKUNWIND)
-        if (pCacheEntry != NULL)
+        if ((flags & LightUnwind) && (pCodeInfo != NULL))
         {
-            // lightened schema: take stack unwind info from stackwalk cache
-            QuickUnwindStackFrame(pRD, pCacheEntry, EnsureCallerStackFrameIsValid);
+#if !defined(DACCESS_COMPILE) && defined(HAS_LIGHTUNWIND)
+            LightUnwindStackFrame(pRD, pCodeInfo, EnsureCallerStackFrameIsValid);
+#else
+            // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
+            *(pRD->pCallerContext) = *(pRD->pCurrentContext);
+            // Skip updating context registers for light unwind
+            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, NULL, pCodeInfo);
+#endif
         }
         else
-#endif // !DACCESS_COMPILE
         {
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
-
             Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pRD->pCallerContextPointers, pCodeInfo);
         }
 
@@ -3356,48 +3359,24 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
 
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef HAS_QUICKUNWIND
+#ifdef HAS_LIGHTUNWIND
 /*
   *  Light unwind the current stack frame, using provided cache entry.
   *  pPC, Esp and pEbp of pContext are updated.
   */
 
 // static
-void EECodeManager::QuickUnwindStackFrame(PREGDISPLAY pRD, StackwalkCacheEntry *pCacheEntry, QuickUnwindFlag flag)
+void EECodeManager::LightUnwindStackFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo, LightUnwindFlag flag)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    _ASSERTE(pCacheEntry);
-    _ASSERTE(GetControlPC(pRD) == (PCODE)(pCacheEntry->IP));
+#ifdef TARGET_AMD64
+    ULONG RBPOffset, RSPOffset;
+    pCodeInfo->GetOffsetsFromUnwindInfo(&RSPOffset, &RBPOffset);
 
-#if defined(TARGET_X86)
-    _ASSERTE(flag == UnwindCurrentStackFrame);
-
-    _ASSERTE(!pCacheEntry->fUseEbp || pCacheEntry->fUseEbpAsFrameReg);
-
-    if (pCacheEntry->fUseEbpAsFrameReg)
-    {
-        _ASSERTE(pCacheEntry->fUseEbp);
-        TADDR curEBP = GetRegdisplayFP(pRD);
-
-        // EBP frame, update ESP through EBP, since ESPOffset may vary
-        pRD->SetEbpLocation(PTR_DWORD(curEBP));
-        pRD->SP = curEBP + sizeof(void*);
-    }
-    else
-    {
-        _ASSERTE(!pCacheEntry->fUseEbp);
-        // ESP frame, update up to retAddr using ESPOffset
-        pRD->SP += pCacheEntry->ESPOffset;
-    }
-    pRD->PCTAddr  = (TADDR)pRD->SP;
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->SP     += sizeof(void*) + pCacheEntry->argSize;
-
-#elif defined(TARGET_AMD64)
     if (pRD->IsCallerContextValid)
     {
         pRD->pCurrentContext->Rbp = pRD->pCallerContext->Rbp;
@@ -3420,17 +3399,17 @@ void EECodeManager::QuickUnwindStackFrame(PREGDISPLAY pRD, StackwalkCacheEntry *
         }
 
         // Unwind RBP.  The offset is relative to the current sp.
-        if (pCacheEntry->RBPOffset == 0)
+        if (RBPOffset == 0)
         {
             pTargetCtx->Rbp = pSourceCtx->Rbp;
         }
         else
         {
-            pTargetCtx->Rbp = *(UINT_PTR*)(pSourceCtx->Rsp + pCacheEntry->RBPOffset);
+            pTargetCtx->Rbp = *(UINT_PTR*)(pSourceCtx->Rsp + RBPOffset);
         }
 
         // Adjust the sp.  From this pointer onwards pCurrentContext->Rsp is the caller sp.
-        pTargetCtx->Rsp = pSourceCtx->Rsp + pCacheEntry->RSPOffset;
+        pTargetCtx->Rsp = pSourceCtx->Rsp + RSPOffset;
 
         // Retrieve the return address.
         pTargetCtx->Rip = *(UINT_PTR*)((pTargetCtx->Rsp) - sizeof(UINT_PTR));
@@ -3442,12 +3421,11 @@ void EECodeManager::QuickUnwindStackFrame(PREGDISPLAY pRD, StackwalkCacheEntry *
         pRD->IsCallerContextValid = FALSE;
         pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
-
-#else  // !TARGET_X86 && !TARGET_AMD64
-    PORTABILITY_ASSERT("EECodeManager::QuickUnwindStackFrame is not implemented on this platform.");
-#endif // !TARGET_X86 && !TARGET_AMD64
+#else
+    PORTABILITY_ASSERT("EECodeManager::LightUnwindStackFrame is not implemented on this platform.");
+#endif
 }
-#endif // HAS_QUICKUNWIND
+#endif // HAS_LIGHTUNWIND
 
 /*****************************************************************************/
 #ifdef TARGET_X86 // UnwindStackFrame
@@ -4043,8 +4021,7 @@ bool UnwindEbpDoubleAlignFrame(
         PTR_CBYTE       table,
         PTR_CBYTE       methodStart,
         DWORD           curOffs,
-        unsigned        flags,
-        StackwalkCacheUnwindInfo  *pUnwindInfo) // out-only, perf improvement
+        unsigned        flags)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -4072,6 +4049,7 @@ bool UnwindEbpDoubleAlignFrame(
             // Set baseSP as initial SP
             baseSP += GetPushedArgSize(info, table, curOffs);
 
+#ifdef UNIX_X86_ABI
             // 16-byte stack alignment padding (allocated in genFuncletProlog)
             // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
             //   prolog: sub esp, 12
@@ -4082,6 +4060,7 @@ bool UnwindEbpDoubleAlignFrame(
             const TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
             if (funcletStart != pCodeInfo->GetCodeAddress() && methodStart[pCodeInfo->GetRelOffset()] != X86_INSTR_RETN)
                 baseSP += 12;
+#endif
 
             pContext->PCTAddr = baseSP;
             pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
@@ -4136,13 +4115,6 @@ bool UnwindEbpDoubleAlignFrame(
                 pContext->SetEdiLocation(&s_badData);
             }
 #endif
-
-            if (pUnwindInfo)
-            {
-                // The filter funclet is like an ESP-framed-method.
-                pUnwindInfo->fUseEbp = FALSE;
-                pUnwindInfo->fUseEbpAsFrameReg = FALSE;
-            }
 
             return true;
         }
@@ -4199,8 +4171,7 @@ bool UnwindEbpDoubleAlignFrame(
 bool UnwindStackFrame(PREGDISPLAY     pContext,
                       EECodeInfo     *pCodeInfo,
                       unsigned        flags,
-                      CodeManState   *pState,
-                      StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
+                      CodeManState   *pState)
 {
     CONTRACTL {
         NOTHROW;
@@ -4237,12 +4208,6 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
     info->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
 
-    if (pUnwindInfo != NULL)
-    {
-        pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
-        pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
-    }
-
     if  (info->epilogOffs != hdrInfo::NOT_IN_EPILOG)
     {
         /*---------------------------------------------------------------------
@@ -4267,7 +4232,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  Now we know that have an EBP frame
          */
 
-        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, table, methodStart, curOffs, flags, pUnwindInfo))
+        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, table, methodStart, curOffs, flags))
             return false;
     }
 
@@ -4349,11 +4314,10 @@ size_t EECodeManager::GetResumeSp( PCONTEXT  pContext )
 bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
                                      EECodeInfo     *pCodeInfo,
                                      unsigned        flags,
-                                     CodeManState   *pState,
-                                     StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
+                                     CodeManState   *pState)
 {
 #ifdef TARGET_X86
-    return ::UnwindStackFrame(pContext, pCodeInfo, flags, pState, pUnwindInfo);
+    return ::UnwindStackFrame(pContext, pCodeInfo, flags, pState);
 #else // TARGET_X86
     PORTABILITY_ASSERT("EECodeManager::UnwindStackFrame");
     return false;
@@ -4367,25 +4331,23 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
                                      EECodeInfo     *pCodeInfo,
                                      unsigned        flags,
-                                     CodeManState   *pState,
-                                     StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
+                                     CodeManState   *pState)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#if defined(TARGET_AMD64)
-    // To avoid unnecessary computation, we only crack the unwind info if pUnwindInfo is not NULL, which only happens
-    // if the LIGHTUNWIND flag is passed to StackWalkFramesEx().
-    if (pUnwindInfo != NULL)
-    {
-        pCodeInfo->GetOffsetsFromUnwindInfo(&(pUnwindInfo->RSPOffsetFromUnwindInfo),
-                                            &(pUnwindInfo->RBPOffset));
-    }
-#endif // TARGET_AMD64
-
     _ASSERTE(pCodeInfo != NULL);
+
+#ifdef HAS_LIGHTUNWIND
+    if (flags & LightUnwind)
+    {
+        LightUnwindStackFrame(pContext, pCodeInfo, UnwindCurrentStackFrame);
+        return true;
+    }
+#endif
+
     Thread::VirtualUnwindCallFrame(pContext, pCodeInfo);
     return true;
 }
@@ -4404,10 +4366,10 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 {
     WRAPPER_NO_CONTRACT;
 
-    //Note: no instantiations needed for varargs
+    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
     MetaSig msig(varArgSig->signature,
                  varArgSig->pModule,
-                 NULL);
+                 &typeContext);
 
     PTR_BYTE pFrameBase = argsStart - TransitionBlock::GetOffsetOfArgs();
 
@@ -4578,6 +4540,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
 #endif // _DEBUG
 
+#ifndef FEATURE_EH_FUNCLETS
     /* What kind of a frame is this ? */
 
     FrameType   frameType = FR_NORMAL;
@@ -4622,6 +4585,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                                      &info);
         }
     }
+#endif
 
     bool        willContinueExecution = !(flags & ExecutionAborted);
     unsigned    pushedSize = 0;
@@ -4712,16 +4676,45 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
             {
                 _ASSERTE(willContinueExecution);
 
+#ifdef FEATURE_EH_FUNCLETS
+                // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
+                // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
+                // See UnwindStackFrame for details.
+                if (pCodeInfo->IsFunclet())
+                {
+                    PTR_CBYTE methodStart = PTR_CBYTE(pCodeInfo->GetSavedMethodCode());
+                    TADDR baseSP = ESP;
+                    // Set baseSP as initial SP
+                    baseSP += GetPushedArgSize(&info, table, curOffs);
+
+#ifdef UNIX_X86_ABI
+                    // 16-byte stack alignment padding (allocated in genFuncletProlog)
+                    // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
+                    //   prolog: sub esp, 12
+                    //   epilog: add esp, 12
+                    //           ret
+                    // SP alignment padding should be added for all instructions except the first one and the last one.
+                    // Epilog may not exist (unreachable), so we need to check the instruction code.
+                    const PTR_CBYTE funcletStart = PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo));
+                    if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
+                        baseSP += 12;
+#endif
+
+                    // -sizeof(void*) because we want to point *AT* first parameter
+                    pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
+                }
+#else // FEATURE_EH_FUNCLETS
                 if (info.handlers)
                 {
                     // -sizeof(void*) because we want to point *AT* first parameter
                     pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
                 }
+#endif
                 else if (info.localloc)
                 {
-                    baseSP = *(DWORD *)(size_t)(EBP - GetLocallocSPOffset(&info));
+                    TADDR locallocBaseSP = *(DWORD *)(size_t)(EBP - GetLocallocSPOffset(&info));
                     // -sizeof(void*) because we want to point *AT* first parameter
-                    pPendingArgFirst = (DWORD *)(size_t) (baseSP - sizeof(void*));
+                    pPendingArgFirst = (DWORD *)(size_t) (locallocBaseSP - sizeof(void*));
                 }
                 else
                 {
