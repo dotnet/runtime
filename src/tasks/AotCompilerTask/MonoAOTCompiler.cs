@@ -373,7 +373,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!Enum.TryParse(Mode, true, out parsedAotMode))
         {
-            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(",", Enum.GetNames<MonoAotMode>())}");
+            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(",", Enum.GetNames(typeof(MonoAotMode)))}");
             return false;
         }
 
