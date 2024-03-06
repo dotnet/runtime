@@ -3491,6 +3491,11 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     Statics:
         th.AsMethodTable()->EnsureInstanceActive();
         th.AsMethodTable()->CheckRunClassInitThrowing();
+        if (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER ||
+            (kind == ENCODE_FIELD_ADDRESS && pFD->IsThreadStatic()))
+        {
+            th.AsMethodTable()->EnsureTlsIndexAllocated();
+        }
         fReliable = true;
         break;
 
