@@ -235,6 +235,16 @@ namespace System
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
         }
 
+        /// <summary>Produces the full product of two 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The full product of the specified numbers.</returns>
+        internal static Int128 BigMul(long a, long b)
+        {
+            long high = Math.BigMul(a, b, out long low);
+            return new Int128((ulong)high, (ulong)low);
+        }
+
         public static double BitDecrement(double x)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(x);

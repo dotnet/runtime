@@ -98,10 +98,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_SIG_INFO calliSig;
     NewCallArg       extraArg;
 
-    // Swift calls may use special register types that require additional IR to handle,
-    // so if we're importing a Swift call, look for these types in the signature
+    // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
+    // so if we're importing a Swift call, look for this type in the signature
     CallArg* swiftErrorArg = nullptr;
-    CallArg* swiftSelfArg  = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -670,7 +669,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         checkForSmallType = true;
 
-        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg, &swiftSelfArg);
+        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg);
 
         goto DONE;
     }
@@ -1840,8 +1839,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
                                           CORINFO_SIG_INFO*   sig,
-                                          /* OUT */ CallArg** swiftErrorArg,
-                                          /* OUT */ CallArg** swiftSelfArg)
+                                          /* OUT */ CallArg** swiftErrorArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
@@ -1867,6 +1865,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
 
 #ifdef SWIFT_SUPPORT
     unsigned short swiftErrorIndex = sig->numArgs;
+    unsigned short swiftSelfIndex  = sig->numArgs;
 
     // We are importing an unmanaged Swift call, which might require special parameter handling
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
@@ -1915,13 +1914,29 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
                 swiftErrorIndex  = argIndex;
                 checkEntireStack = true;
             }
-            // TODO: Handle SwiftSelf, SwiftAsync
+            else if ((strcmp(className, "SwiftSelf") == 0) &&
+                     (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // We expect a SwiftSelf struct to be passed, not a pointer/reference
+                if (argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftSelf struct, got pointer/reference");
+                }
+
+                if (swiftSelfIndex != sig->numArgs)
+                {
+                    BADCODE("Duplicate SwiftSelf parameter");
+                }
+
+                swiftSelfIndex = argIndex;
+            }
+            // TODO: Handle SwiftAsync
         }
 
         // Don't need to reverse args for Swift calls
         argsToReverse = 0;
 
-        // If using one of the Swift register types, check entire stack for side effects
+        // If using SwiftError*, check entire stack for side effects
         if (checkEntireStack)
         {
             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
@@ -2006,7 +2021,12 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
             assert(swiftErrorArg != nullptr);
             *swiftErrorArg = &arg;
         }
-// TODO: SwiftSelf, SwiftAsync
+        else if (argIndex == swiftSelfIndex)
+        {
+            // Found the SwiftSelf arg
+            arg.SetWellKnownArg(WellKnownArg::SwiftSelf);
+        }
+// TODO: SwiftAsync
 #endif // SWIFT_SUPPORT
 
         argIndex++;

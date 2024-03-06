@@ -1137,11 +1137,61 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_NONE);
             assert(isGeneralRegister(id->idReg1()));
             assert(elemsize == EA_8BYTE);
             assert(isValidUimm4From1(emitGetInsSC(id)));
+            break;
+
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
+            elemsize = id->idOpSize();
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isValidUimm4From1(emitGetInsSC(id)));
+            break;
+
+        case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_NONE);
+            assert(isGeneralRegister(id->idReg1()));
+            assert(isValidGeneralDatasize(elemsize));
+            assert(isValidUimm4From1(emitGetInsSC(id)));
+            break;
+
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+        case IF_SVE_BQ_2B: // ...........iiiii ...iiimmmmmddddd -- SVE extract vector (immediate offset, destructive)
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isValidUimm8(emitGetInsSC(id))); // iiiii iii
+            break;
+
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+        {
+            imm = emitGetInsSC(id);
+            floatImm8 fpImm;
+            fpImm.immFPIVal = (unsigned)imm;
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm8((ssize_t)emitDecodeFloatImm8(fpImm)));        // iiiiiiii
+            assert(isPredicateRegister(id->idReg2()));                        // gggg
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+        }
+
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            assert(insOptsScalableStandard(id->idInsOpt())); // xx
+            // Size specifier must be able to fit left-shifted immediate
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()) || !id->idOptionalShift());
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isPredicateRegister(id->idReg2()));                        // gggg
+            assert(isValidSimm8(emitGetInsSC(id)));                           // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
@@ -1746,6 +1796,64 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idOpSize() == EA_8BYTE);
             assert(isGeneralRegister(id->idReg1())); // ddddd
             assert(isValidSimm6(emitGetInsSC(id)));  // iiiiii
+            break;
+
+        case IF_SVE_AW_2A: // ........xx.xxiii ......mmmmmddddd -- sve_int_rotate_imm
+        {
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isVectorRegister(id->idReg2()));                           // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx xx
+            const ssize_t imm = emitGetInsSC(id);
+
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm3From1(imm)); // iii
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm4From1(imm)); // xiii
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm5From1(imm)); // xxiii
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidUimm6From1(imm)); // xx xiii
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+            break;
+        }
+
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+            {
+                ssize_t imm1;
+                ssize_t imm2;
+                insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+                assert(insOptsScalableStandard(id->idInsOpt()));
+                assert(isVectorRegister(id->idReg1()));                           // ddddd
+                assert(isValidSimm5(imm1));                                       // iiiii
+                assert(isValidSimm5(imm2));                                       // iiiii
+                assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+                break;
+            }
+
+        case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
+                           // increment)
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm5(emitGetInsSC(id)));                           // iiiii
+            assert(isIntegerRegister(id->idReg2()));                          // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
@@ -2720,6 +2828,48 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+#ifdef DEBUG
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm4(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm));
+                    break;
+
+                default:
+                    break;
+            }
+#endif // DEBUG
+            break;
+
+        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isValidUimm4(imm));
             break;
 
         default:
@@ -9246,6 +9396,17 @@ void emitter::emitIns_R_I_I(instruction ins,
             }
             break;
 
+        case INS_sve_index:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidSimm5(imm1));                            // iiiii
+            assert(isValidSimm5(imm2));                            // iiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            immOut    = insEncodeTwoSimm5(imm1, imm2);
+            canEncode = true;
+            fmt       = IF_SVE_AX_1A;
+            break;
+
         default:
             unreached();
             break;
@@ -9258,6 +9419,7 @@ void emitter::emitIns_R_I_I(instruction ins,
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idInsOpt(opt);
 
     id->idReg1(reg);
 
@@ -9283,16 +9445,18 @@ void emitter::emitIns_R_R_I(instruction     ins,
                             insOpts         opt /* = INS_OPTS_NONE */,
                             insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    emitAttr  size       = EA_SIZE(attr);
-    emitAttr  elemsize   = EA_UNKNOWN;
-    insFormat fmt        = IF_NONE;
-    bool      isLdSt     = false;
-    bool      isLdrStr   = false;
-    bool      isSIMD     = false;
-    bool      isAddSub   = false;
-    bool      setFlags   = false;
-    unsigned  scale      = 0;
-    bool      unscaledOp = false;
+    emitAttr  size          = EA_SIZE(attr);
+    emitAttr  elemsize      = EA_UNKNOWN;
+    insFormat fmt           = IF_NONE;
+    bool      isLdSt        = false;
+    bool      isLdrStr      = false;
+    bool      isSIMD        = false;
+    bool      isAddSub      = false;
+    bool      setFlags      = false;
+    unsigned  scale         = 0;
+    bool      unscaledOp    = false;
+    bool      optionalShift = false;
+    bool      hasShift      = false;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -9875,6 +10039,56 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
             break;
 
+        case INS_sve_xar:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx xx
+
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm3From1(imm)); // iii
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm4From1(imm)); // xiii
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm5From1(imm)); // xxiii
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidUimm6From1(imm)); // x xxiii
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+
+            fmt = IF_SVE_AW_2A;
+            break;
+
+        case INS_sve_index:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isValidSimm5(imm));                             // iiiii
+            assert(isIntegerRegister(reg2));                       // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            if (sopt == INS_SCALABLE_OPTS_IMM_FIRST)
+            {
+                fmt = IF_SVE_AY_2A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_AZ_2A;
+            }
+            break;
+
         case INS_sve_addvl:
         case INS_sve_addpl:
             assert(insOptsNone(opt));
@@ -9885,6 +10099,32 @@ void emitter::emitIns_R_R_I(instruction     ins,
             reg1 = encodingSPtoZR(reg1);
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_SVE_BB_2A;
+            break;
+
+        case INS_sve_mov:
+        case INS_sve_cpy:
+            optionalShift = true;
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));    // DDDDD
+            assert(isPredicateRegister(reg2)); // GGGG
+            if (!isValidSimm8(imm))
+            {
+                assert(isValidSimm8_MultipleOf256(imm));
+                assert(insOptsScalableAtLeastHalf(opt));
+                hasShift = true;
+                imm      = imm / 256;
+            }
+            if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            {
+                fmt = IF_SVE_BV_2A_J;
+            }
+            else
+            {
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
+                fmt = IF_SVE_BV_2A;
+            }
+            // MOV is an alias for CPY, and is always the preferred disassembly.
+            ins = INS_sve_mov;
             break;
 
         case INS_sve_pmov:
@@ -10131,6 +10371,65 @@ void emitter::emitIns_R_R_I(instruction     ins,
             fmt = IF_SVE_FU_2A;
             break;
 
+        case INS_sve_ext:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isValidUimm8(imm));      // iiiii iii
+
+            if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
+            {
+                fmt = IF_SVE_BQ_2A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_BQ_2B;
+            }
+            break;
+
+        case INS_sve_dupq:
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+#ifdef DEBUG
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm4(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm));
+                    break;
+
+                default:
+                    break;
+            }
+#endif // DEBUG
+            fmt = IF_SVE_BX_2A;
+            break;
+
+        case INS_sve_extq:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+            assert(isValidUimm4(imm));
+            fmt = IF_SVE_BY_2A;
+            break;
+
         default:
             unreached();
             break;
@@ -10264,7 +10563,18 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
     assert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSC(attr, imm);
+    instrDesc* id;
+
+    if (!optionalShift)
+    {
+        id = emitNewInstrSC(attr, imm);
+    }
+    else
+    {
+        // Instructions with optional shifts (MOV, DUP, etc.) need larger instrDesc to store state
+        id = emitNewInstrCns(attr, imm);
+        id->idOptionalShift(hasShift);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -10310,6 +10620,22 @@ void emitter::emitIns_R_R_F(
             assert(isScalableVectorSize(size));
             imm = emitEncodeSmallFloatImm(immDbl, ins);
             fmt = IF_SVE_HM_2A;
+            break;
+
+        case INS_sve_fmov:
+        case INS_sve_fcpy:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isPredicateRegister(reg2));                     // gggg
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            floatImm8 fpi;
+            fpi.immFPIVal = 0;
+            canEncodeFloatImm8(immDbl, &fpi);
+            imm = fpi.immFPIVal;
+            fmt = IF_SVE_BU_2A;
+
+            // FMOV is an alias for FCPY, and is always the preferred disassembly.
+            ins = INS_sve_fmov;
             break;
 
         default:
@@ -16212,7 +16538,7 @@ void emitter::emitIns_R_R_FLAGS_COND(
  */
 
 void emitter::emitIns_R_I_FLAGS_COND(
-    instruction ins, emitAttr attr, regNumber reg, int imm, insCflags flags, insCond cond)
+    instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insCflags flags, insCond cond)
 {
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
@@ -16269,8 +16595,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
 void emitter::emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern /* = SVE_PATTERN_ALL*/)
 {
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -16308,11 +16633,15 @@ void emitter::emitIns_R_PATTERN(
  *  Add an instruction referencing a register, a SVE Pattern and an immediate.
  */
 
-void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm)
+void emitter::emitIns_R_PATTERN_I(instruction   ins,
+                                  emitAttr      attr,
+                                  regNumber     reg1,
+                                  insSvePattern pattern,
+                                  ssize_t       imm,
+                                  insOpts       opt /* = INS_OPTS_NONE */)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -16321,10 +16650,81 @@ void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1
         case INS_sve_cntd:
         case INS_sve_cnth:
         case INS_sve_cntw:
-            assert(isGeneralRegister(reg1));
+            assert(insOptsNone(opt));
+            assert(isGeneralRegister(reg1)); // ddddd
+            assert(isValidUimm4From1(imm));  // iiii
             assert(size == EA_8BYTE);
-            assert(isValidUimm4From1(imm));
             fmt = IF_SVE_BL_1A;
+            break;
+
+        case INS_sve_incd:
+        case INS_sve_inch:
+        case INS_sve_incw:
+        case INS_sve_decd:
+        case INS_sve_dech:
+        case INS_sve_decw:
+            assert(isValidUimm4From1(imm)); // iiii
+
+            if (insOptsNone(opt))
+            {
+                assert(isGeneralRegister(reg1)); // ddddd
+                assert(size == EA_8BYTE);
+                fmt = IF_SVE_BM_1A;
+            }
+            else
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isVectorRegister(reg1)); // ddddd
+                fmt = IF_SVE_BN_1A;
+            }
+            break;
+
+        case INS_sve_incb:
+        case INS_sve_decb:
+            assert(isGeneralRegister(reg1)); // ddddd
+            assert(isValidUimm4From1(imm));  // iiii
+            assert(size == EA_8BYTE);
+            fmt = IF_SVE_BM_1A;
+            break;
+
+        case INS_sve_sqincb:
+        case INS_sve_uqincb:
+        case INS_sve_sqdecb:
+        case INS_sve_uqdecb:
+            assert(insOptsNone(opt));
+            assert(isGeneralRegister(reg1));      // ddddd
+            assert(isValidUimm4From1(imm));       // iiii
+            assert(isValidGeneralDatasize(size)); // X
+            fmt = IF_SVE_BO_1A;
+            break;
+
+        case INS_sve_sqinch:
+        case INS_sve_uqinch:
+        case INS_sve_sqdech:
+        case INS_sve_uqdech:
+        case INS_sve_sqincw:
+        case INS_sve_uqincw:
+        case INS_sve_sqdecw:
+        case INS_sve_uqdecw:
+        case INS_sve_sqincd:
+        case INS_sve_uqincd:
+        case INS_sve_sqdecd:
+        case INS_sve_uqdecd:
+            assert(isValidUimm4From1(imm)); // iiii
+
+            if (insOptsNone(opt))
+            {
+                assert(isGeneralRegister(reg1));      // ddddd
+                assert(isValidGeneralDatasize(size)); // X
+                fmt = IF_SVE_BO_1A;
+            }
+            else
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isVectorRegister(reg1)); // ddddd
+                assert(isScalableVectorSize(size));
+                fmt = IF_SVE_BP_1A;
+            }
             break;
 
         default:
@@ -16338,6 +16738,8 @@ void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+    id->idOpSize(size);
 
     id->idReg1(reg1);
     id->idSvePattern(pattern);
@@ -16360,9 +16762,8 @@ void emitter::emitIns_PRFOP_R_R_R(instruction     ins,
                                   insOpts         opt /* = INS_OPTS_NONE */,
                                   insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -16471,9 +16872,8 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
                                   int         imm,
                                   insOpts     opt /* = INS_OPTS_NONE */)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -19215,6 +19615,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'sz' at bit location '20'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_sz_20(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_4BYTE:
+            return 0;
+
+        case EA_8BYTE:
+            return (1 << 20);
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
  *  This specifically encodes the field 'sz' at bit location '21'.
  */
 
@@ -19237,10 +19659,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
- *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+ *  This specifically encodes the field 'tszh:tszl' at bit locations '23-22:20-19'.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size)
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_tszh_23_tszl_20_to_19(emitAttr size)
 {
     switch (size)
     {
@@ -19252,6 +19674,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         case EA_4BYTE:
             return 0x400000; // set the bit at location 22
+
+        case EA_8BYTE:
+            return 0x800000; // set the bit at location 23
 
         default:
             assert(!"Invalid size for vector register");
@@ -19403,6 +19828,49 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
     return (encoding | (code_t)(imm << 16));
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the field 'i1:tsz' at bit locations '20:19-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsizeWithImmediate_i1_tsz(const insOpts opt, ssize_t imm)
+{
+    code_t encoding = 0;
+
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+            assert(isValidUimm4(imm));
+            encoding |= (1 << 16);   // bit 16
+            encoding |= (imm << 17); // bits 20-17
+            break;
+
+        case INS_OPTS_SCALABLE_H:
+            assert(isValidUimm3(imm));
+            encoding |= (1 << 17);   // bit 17
+            encoding |= (imm << 18); // bits 20-18
+            break;
+
+        case INS_OPTS_SCALABLE_S:
+            assert(isValidUimm2(imm));
+            encoding |= (1 << 18);   // bit 18
+            encoding |= (imm << 19); // bits 20-19
+            break;
+
+        case INS_OPTS_SCALABLE_D:
+            assert(isValidImm1(imm));
+            encoding |= (1 << 19);   // bit 19
+            encoding |= (imm << 20); // bit 20
+            break;
+
+        default:
+            assert(!"Invalid size for vector register");
+            break;
+    }
+
+    return encoding;
 }
 
 /*****************************************************************************
@@ -21351,6 +21819,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 5-bits at bit locations '9-5'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm5_9_to_5(ssize_t imm)
+{
+    assert(isValidSimm5(imm));
+    if (imm < 0)
+    {
+        imm = (imm & 0x1F);
+    }
+    return (code_t)imm << 5;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
  */
 
@@ -21510,6 +21993,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm4_19_to_16(ssize_t imm)
+{
+    assert(isValidUimm4(imm));
+    return (code_t)imm << 16;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
  */
 
@@ -21550,6 +22044,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isValidSimm8(imm) || isValidUimm8(imm));
     return (code_t)((imm & 0xFF) << 5);
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm3_12_to_10(ssize_t imm)
+{
+    assert(isValidUimm3(imm));
+    return (code_t)imm << 10;
 }
 
 /*****************************************************************************
@@ -21600,12 +22105,79 @@ void emitter::emitIns_Call(EmitCallType          callType,
             assert(isValidUimm5From1(imm));
             return (32 - imm);
 
+        case INS_OPTS_SCALABLE_D:
+            assert(isValidUimm6From1(imm));
+            return (64 - imm);
+
         default:
             unreached();
             break;
     }
 
     return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the two 5-bit signed immediates encoded in the following format:
+ *  njjj jjmi iiii
+ *  - iiiii: the absolute value of imm1
+ *  - m: 1 if imm1 is negative, 0 otherwise
+ *  - jjjjj: the absolute value of imm2
+ *  - n: 1 if imm2 is negative, 0 otherwise
+ */
+/*static*/ ssize_t emitter::insEncodeTwoSimm5(ssize_t imm1, ssize_t imm2)
+{
+    assert(isValidSimm5(imm1));
+    assert(isValidSimm5(imm2));
+    ssize_t immOut = 0;
+
+    if (imm1 < 0)
+    {
+        // Set bit location 5 to indicate imm1 is negative
+        immOut |= 0x20;
+        imm1 *= -1;
+    }
+
+    if (imm2 < 0)
+    {
+        // Set bit location 11 to indicate imm2 is negative
+        immOut |= 0x800;
+        imm2 *= -1;
+    }
+
+    immOut |= imm1;
+    immOut |= (imm2 << 6);
+    return immOut;
+}
+
+/*****************************************************************************
+ *
+ *  Decodes imm into two 5-bit signed immediates,
+ *  using the encoding format from insEncodeTwoSimm5.
+ */
+/*static*/ void emitter::insDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2)
+{
+    assert(imm1 != nullptr);
+    assert(imm2 != nullptr);
+
+    *imm1 = (imm & 0x1F);
+
+    if ((imm & 0x20) != 0)
+    {
+        *imm1 *= -1;
+    }
+
+    imm >>= 6;
+    *imm2 = (imm & 0x1F);
+
+    if ((imm & 0x20) != 0)
+    {
+        *imm2 *= -1;
+    }
+
+    assert(isValidSimm5(*imm1));
+    assert(isValidSimm5(*imm2));
 }
 
 /*****************************************************************************
@@ -23956,13 +24528,67 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        // Immediate and patterm to general purpose.
+        // Immediate and pattern to general purpose.
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_Rd(id->idReg1());           // ddddd
             code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
             code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_Rd(id->idReg1());              // ddddd
+            code |= insEncodeSvePattern(id->idSvePattern());    // ppppp
+            code |= insEncodeUimm4From1_19_to_16(imm);          // iiii
+            code |= insEncodeSveElemsize_sz_20(id->idOpSize()); // X
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+        case IF_SVE_BQ_2B: // ...........iiiii ...iiimmmmmddddd -- SVE extract vector (immediate offset, destructive)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());  // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());  // nnnnn/mmmmm
+            code |= insEncodeUimm3_12_to_10(imm & 0b111); // iii
+            code |= insEncodeUimm5_20_to_16(imm >> 3);    // iiiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
+            code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= (id->idOptionalShift() ? 0x2000 : 0);                 // h
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -24189,6 +24815,52 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_20_to_16(id->idReg2()); // mmmmm
             code |= insEncodeReg_V_9_to_5(id->idReg3());   // kkkkk
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_AW_2A: // ........xx.xxiii ......mmmmmddddd -- sve_int_rotate_imm
+            imm  = insGetImmDiff(emitGetInsSC(id), id->idInsOpt());
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // mmmmm
+            code |= insEncodeUimm5_20_to_16(imm & 0b11111);                                        // xxiii
+            code |= insEncodeImm1_22(imm >> 5);                                                    // x
+            code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+            {
+                ssize_t imm1;
+                ssize_t imm2;
+                insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+                code = emitInsCodeSve(ins, fmt);
+                code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+                code |= insEncodeSimm5_9_to_5(imm1);                          // iiiii
+                code |= insEncodeSimm5_20_to_16(imm2);                        // iiiii
+                code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+                dst += emitOutput_Instr(dst, code);
+                break;
+            }
+
+        case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
+                           // increment)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeSimm5_9_to_5(emitGetInsSC(id));              // iiiii
+            code |= insEncodeReg_R_20_to_16(id->idReg2());                // mmmmm
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_R_9_to_5(id->idReg2());                  // mmmmm
+            code |= insEncodeSimm5_20_to_16(emitGetInsSC(id));            // iiiii
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -24488,29 +25160,36 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
-            code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
+            // Bit 23 should not be set by below call
+            assert(insOptsScalableWide(id->idInsOpt()));
+            code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
-            code |= insEncodeUimm5_20_to_16(emitGetInsSC(id));                                     // iii
-            code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
+            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
+            code |= insEncodeUimm5_20_to_16(emitGetInsSC(id)); // iii
+            // Bit 23 should not be set by below call
+            assert(insOptsScalableWide(id->idInsOpt()));
+            code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
+            // Bit 23 should not be set by call to insEncodeSveElemsize_tszh_23_tszl_20_to_19,
+            // nor should we pass INS_OPTS_SCALABLE_D to insGetImmDiff.
+            assert(insOptsScalableWide(id->idInsOpt()));
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
             code |= insEncodeUimm5_20_to_16(insGetImmDiff(emitGetInsSC(id), id->idInsOpt()));      // iii
-            code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
+            code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25430,6 +26109,24 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
             code |= insEncodeSveElemsizeWithShift_tszh_tszl_imm3(id->idInsOpt(), imm,
                                                                  emitInsIsVectorRightShift(ins)); // xx xxiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                           // nnnnn
+            code |= insEncodeSveElemsizeWithImmediate_i1_tsz(id->idInsOpt(), imm); // ixxxx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // mmmmm
+            code |= insEncodeUimm4_19_to_16(imm);        // iiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -27988,6 +28685,41 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // kkkkk
             break;
 
+        // <Zd>.<T>, #<imm1>, #<imm2>
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+            {
+                ssize_t imm1;
+                ssize_t imm2;
+                insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispImm(imm1, true);                            // iiiii
+                emitDispImm(imm2, false);                           // iiiii
+                break;
+            }
+
+        // <Zd>.<T>, #<imm>, <R><m>
+        case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
+                           // increment)
+            {
+                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispImm(emitGetInsSC(id), true);                // iiiii
+                emitDispReg(id->idReg2(), intRegSize, false);       // mmmmm
+                break;
+            }
+
+        // <Zd>.<T>, <R><n>, #<imm>
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
+            {
+                const emitAttr intRegSize = (id->idInsOpt() == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+                emitDispReg(id->idReg2(), intRegSize, true);        // mmmmm
+                emitDispImm(emitGetInsSC(id), false);               // iiiii
+                break;
+            }
+
         // <Zda>.H, <Zn>.B, <Zm>.B
         case IF_SVE_GN_3A:   // ...........mmmmm ......nnnnnddddd -- SVE2 FP8 multiply-add long
         case IF_SVE_HA_3A_E: // ...........mmmmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product
@@ -28042,15 +28774,93 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg3(), size, false);             // mmmmm
             break;
 
+        // <Xd>{, <pattern>{, MUL #<imm>}}
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        // <Xdn>{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             imm = emitGetInsSC(id);
             emitDispReg(id->idReg1(), size, true);             // ddddd
             emitDispSvePattern(id->idSvePattern(), (imm > 1)); // ppppp
             if (imm > 1)
             {
                 printf("mul ");
-                emitDispImm(emitGetInsSC(id), false, false); // iiii
+                emitDispImm(imm, false, false); // iiii
             }
+            break;
+
+        // <Zdn>.D{, <pattern>{, MUL #<imm>}}
+        // <Zdn>.H{, <pattern>{, MUL #<imm>}}
+        // <Zdn>.S{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSvePattern(id->idSvePattern(), (imm > 1));  // ppppp
+            if (imm > 1)
+            {
+                printf("mul ");
+                emitDispImm(imm, false, false); // iiii
+            }
+            break;
+
+        // <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+        // <Xdn>{, <pattern>{, MUL #<imm>}}
+        // <Wdn>{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
+            switch (id->idIns())
+            {
+                case INS_sve_sqincb:
+                case INS_sve_sqdecb:
+                case INS_sve_sqinch:
+                case INS_sve_sqdech:
+                case INS_sve_sqincw:
+                case INS_sve_sqdecw:
+                case INS_sve_sqincd:
+                case INS_sve_sqdecd:
+                    emitDispReg(id->idReg1(), EA_8BYTE, true); // ddddd
+
+                    if (size == EA_4BYTE)
+                    {
+                        emitDispReg(id->idReg1(), EA_4BYTE, true);
+                    }
+                    break;
+
+                default:
+                    emitDispReg(id->idReg1(), size, true); // ddddd
+                    break;
+            }
+
+            imm = emitGetInsSC(id);
+            emitDispSvePattern(id->idSvePattern(), (imm > 1)); // ppppp
+            if (imm > 1)
+            {
+                printf("mul ");
+                emitDispImm(imm, false, false); // iiii
+            }
+            break;
+
+        // <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
+            emitDispVectorRegList(id->idReg2(), 2, id->idInsOpt(), true); // nnnnn
+            emitDispImm(imm, false);                                      // iiiii iii
+            break;
+
+        // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_BQ_2B: // ...........iiiii ...iiimmmmmddddd -- SVE extract vector (immediate offset, destructive)
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // mmmmm
+            emitDispImm(imm, false);                            // iiiii iii
+            break;
+
+        // <Zd>.<T>, <Pg>/M, #<const>
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                           // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(id->idInsFmt()), INS_OPTS_NONE, true); // gggg
+            emitDispFloatImm(emitGetInsSC(id));                                                           // iiiiiiii
             break;
 
         // <Zd>.<T>, <Zn>.<T>, <Zm>.D
@@ -29329,6 +30139,7 @@ void emitter::emitDispInsHelp(
 
         // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
         case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
+        case IF_SVE_AW_2A: // ........xx.xxiii ......mmmmmddddd -- sve_int_rotate_imm
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
@@ -29484,6 +30295,32 @@ void emitter::emitDispInsHelp(
         // <Zda>.<T>, <Zn>.<T>, #<const>
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
             imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispImm(imm, false);
+            break;
+
+        // <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // gggg
+            emitDispImmOptsLSL(emitGetInsSC(id), id->idOptionalShift(), 8);                     // iiiiiiii, h
+            break;
+
+        // <Zd>.<T>, <Zn>.<T>[<imm>]
+        case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
+            emitDispElementIndex(imm, false);
+            break;
+
+        // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);
             emitDispImm(imm, false);
@@ -31976,6 +32813,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_BA_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE index generation (register start, register
                            // increment)
+        case IF_SVE_AX_1A: // ........xx.iiiii ......iiiiiddddd -- SVE index generation (immediate start, immediate
+                           // increment)
+        case IF_SVE_AY_2A: // ........xx.mmmmm ......iiiiiddddd -- SVE index generation (immediate start, register
+                           // increment)
+        case IF_SVE_AZ_2A: // ........xx.iiiii ......nnnnnddddd -- SVE index generation (register start, immediate
+                           // increment)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_8C;
             break;
@@ -31988,6 +32831,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+        case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
+        case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
+        case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
+        case IF_SVE_BP_1A: // ............iiii ......pppppddddd -- SVE saturating inc/dec vector by element count
+        case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
+        case IF_SVE_BQ_2B: // ...........iiiii ...iiimmmmmddddd -- SVE extract vector (immediate offset, destructive)
+        case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
@@ -32001,7 +32851,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
         case IF_SVE_FN_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply long
         case IF_SVE_BD_3B: // ...........mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_AW_2A: // ........xx.xxiii ......mmmmmddddd -- sve_int_rotate_imm
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_BV_2A:   // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+        case IF_SVE_BV_2A_J: // ........xx..gggg ..hiiiiiiiiddddd -- SVE copy integer immediate (predicated)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
@@ -33685,6 +34542,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_SVE_BX_2A:                                  // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_BY_2A:                                  // ............iiii ......mmmmmddddd -- sve_int_perm_extq
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
         default:

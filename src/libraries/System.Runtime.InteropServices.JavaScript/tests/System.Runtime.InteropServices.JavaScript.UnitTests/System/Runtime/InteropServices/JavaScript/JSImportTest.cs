@@ -116,6 +116,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
         public unsafe void OptimizedPaths()
         {
+            JavaScriptTestHelper.AssertWasmBackgroundExec();
             JavaScriptTestHelper.optimizedReached = 0;
             JavaScriptTestHelper.invoke0V();
             Assert.Equal(1, JavaScriptTestHelper.optimizedReached);

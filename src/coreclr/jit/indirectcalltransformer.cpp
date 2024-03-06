@@ -207,6 +207,10 @@ private:
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
             remainderBlock->SetFlags(BBF_INTERNAL);
+
+            // We will be adding more blocks after currBlock, so remove edge to remainderBlock.
+            //
+            compiler->fgRemoveRefPred(currBlock->GetTargetEdge());
         }
 
         virtual void CreateCheck(uint8_t checkIdx) = 0;
@@ -266,13 +270,10 @@ private:
             assert(compiler->fgPredsComputed);
 
             // currBlock
-            compiler->fgRemoveRefPred(remainderBlock, currBlock);
-
             if (checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(checkBlock, currBlock);
-                newEdge->setLikelihood(1.0);
                 currBlock->SetTargetEdge(newEdge);
             }
 
@@ -290,7 +291,6 @@ private:
             {
                 assert(thenBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-                newEdge->setLikelihood(1.0);
                 thenBlock->SetTargetEdge(newEdge);
             }
 
@@ -298,7 +298,6 @@ private:
             {
                 assert(elseBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
-                newEdge->setLikelihood(1.0);
                 elseBlock->SetTargetEdge(newEdge);
             }
         }
@@ -569,10 +568,7 @@ private:
         {
             assert(compiler->fgPredsComputed);
 
-            // currBlock
-            compiler->fgRemoveRefPred(remainderBlock, currBlock);
-
-            // The rest of chaining is done in-place.
+            // Chaining is done in-place.
         }
 
         virtual void SetWeights()
@@ -1059,16 +1055,21 @@ private:
             thenBlock->scaleBBWeight(adjustedThenLikelihood);
             FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
             thenBlock->SetTargetEdge(thenRemainderEdge);
-            thenRemainderEdge->setLikelihood(1.0);
 
             // thenBlock has a single pred - last checkBlock.
             //
             assert(checkBlock->KindIs(BBJ_ALWAYS));
             FlowEdge* const checkThenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
-            checkThenEdge->setLikelihood(adjustedThenLikelihood);
             checkBlock->SetTargetEdge(checkThenEdge);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
+
+            // SetTargetEdge() gave checkThenEdge a (correct) likelihood of 1.0.
+            // Later on, we might convert this checkBlock into a BBJ_COND.
+            // Since we have the adjusted likelihood calculated here, set it prematurely.
+            // If we leave this block as a BBJ_ALWAYS, we'll assert later that the likelihood is 1.0.
+            //
+            checkThenEdge->setLikelihood(adjustedThenLikelihood);
 
             // We will set the "else edge" likelihood in CreateElse later,
             // based on the thenEdge likelihood.
@@ -1098,7 +1099,6 @@ private:
             //
             if (!checkFallsThrough)
             {
-                assert(checkBlock->KindIs(BBJ_ALWAYS));
                 assert(checkBlock->JumpsToNext());
                 FlowEdge* const checkElseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
                 checkElseEdge->setLikelihood(elseLikelihood);
@@ -1111,15 +1111,13 @@ private:
                 // by other phases.
                 assert(origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT);
 
-                // Since we're not modifying the check block a BBJ_COND, update the
-                // then edge likelihood (it should already have the right value, so perhaps assert instead?)
+                // We aren't converting checkBlock to a BBJ_COND. Its successor edge likelihood should remain 1.0.
                 //
-                checkThenEdge->setLikelihood(1.0);
+                assert(checkThenEdge->getLikelihood() == 1.0);
             }
 
             // elseBlock always flows into remainderBlock
             FlowEdge* const elseRemainderEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
-            elseRemainderEdge->setLikelihood(1.0);
             elseBlock->SetTargetEdge(elseRemainderEdge);
 
             // Remove everything related to inlining from the original call

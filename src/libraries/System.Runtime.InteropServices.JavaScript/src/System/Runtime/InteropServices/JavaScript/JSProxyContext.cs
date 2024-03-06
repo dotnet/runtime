@@ -280,15 +280,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (this)
             {
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
+
                 if (JSVHandleFreeList.Count > 0)
                 {
                     var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count - 1];
                     JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
                     return jsvHandle;
-                }
-                if (NextJSVHandle == IntPtr.Zero)
-                {
-                    NextJSVHandle = -2;
                 }
                 return NextJSVHandle--;
             }
@@ -386,6 +384,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     holder.IsDisposed = true;
                     handle.Free();
                 }
+#if FEATURE_WASM_MANAGED_THREADS
+                Marshal.FreeHGlobal((IntPtr)holder.State);
+                holder.State = null;
+#endif
             }
         }
 
@@ -423,6 +425,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     holderCallback = holder.Callback;
                     holder.IsDisposed = true;
+#if FEATURE_WASM_MANAGED_THREADS
+                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    holder.State = null;
+#endif
                 }
             }
             holderCallback?.Invoke(null);
