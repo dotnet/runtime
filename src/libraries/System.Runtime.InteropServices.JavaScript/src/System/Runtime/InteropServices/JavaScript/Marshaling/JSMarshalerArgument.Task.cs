@@ -229,18 +229,18 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task? task = value;
             var ctx = ToJSContext;
-            var isCurrentThread = ctx.IsCurrentThread();
+            var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
 
             if (task == null)
             {
-                if (!isCurrentThread)
+                if (!isCurrentThreadOrParameter)
                 {
-                    Environment.FailFast("Marshalling null task to JS is not supported in MT");
+                    Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
                 }
                 slot.Type = MarshalerType.None;
                 return;
             }
-            if (isCurrentThread && task.IsCompleted)
+            if (isCurrentThreadOrParameter && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -303,19 +303,19 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task<T>? task = value;
             var ctx = ToJSContext;
-            var isCurrentThread = ctx.IsCurrentThread();
+            var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
 
             if (task == null)
             {
-                if (!isCurrentThread)
+                if (!isCurrentThreadOrParameter)
                 {
-                    Environment.FailFast("NULL not supported in MT");
+                    Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
                 }
                 slot.Type = MarshalerType.None;
                 return;
             }
 
-            if (isCurrentThread && task.IsCompleted)
+            if (isCurrentThreadOrParameter && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
