@@ -20,9 +20,6 @@
     <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
     <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
     <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
-    <!-- Compute host architecture (taken from Microsoft.DotNet.ILCompiler.SingleEntry.targets) -->
-    <_hostArchitecture Condition="'$(OS)' != 'Windows_NT'">$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
-    <_hostArchitecture Condition="'$(OS)' == 'Windows_NT'">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostArchitecture>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
@@ -89,7 +86,7 @@
   </Target>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(HostOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(BuildArchitecture)' == '$(_targetArchitecture)' and '$(HostOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <Target Name="PublishCompiler"
