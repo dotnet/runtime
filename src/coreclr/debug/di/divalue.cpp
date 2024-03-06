@@ -1840,6 +1840,10 @@ HRESULT CordbObjectValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugExceptionObjectValue*>(this));
     }
+    else if (id == IID_ICorDebugExceptionObjectValue2 && m_fIsExceptionObject)
+    {
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugExceptionObjectValue2*>(this));
+    }
     else if (id == IID_ICorDebugComObjectValue && m_fIsRcw)
     {
         *pInterface = static_cast<ICorDebugComObjectValue*>(this);
@@ -2486,6 +2490,45 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
     if (pStackFrames)
         delete[] pStackFrames;
 
+    return hr;
+}
+
+HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        CordbProcess * pProcess = GetProcess();
+        RSLockHolder lockHolder(pProcess->GetProcessLock());
+
+        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
+
+        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
+        VMPTR_Object vmObj = pDAC->GetObject(objAddr);
+        //OBJECTREF exObjRef = ObjectToOBJECTREF(vmObj);
+
+        DebuggerIPCEvent event;
+        CordbAppDomain * pAppDomain = GetAppDomain();
+        _ASSERTE (pAppDomain != NULL);
+
+        pProcess->InitIPCEvent(&event, DB_IPCE_FORCE_CATCH_HANDLER_FOUND, true, pAppDomain->GetADToken());
+        event.ForceCatchHandlerFoundData.enableEvents = enableEvents;
+        event.ForceCatchHandlerFoundData.vmObj = vmObj;
+
+        lockHolder.Release();
+        hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+        lockHolder.Acquire();
+
+        _ASSERTE(event.type == DB_IPCE_CATCH_HANDLER_FOUND_RESULT);
+
+        hr = event.hr;
+    }
+    EX_CATCH_HRESULT(hr);
     return hr;
 }
 
