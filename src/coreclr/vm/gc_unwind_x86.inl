@@ -3134,8 +3134,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                    IN_EH_FUNCLETS_COMMA(bool            isFilterFunclet)
                    unsigned        flags,
                    GCEnumCallback  pCallBack,
-                   LPVOID          hCallBack
-                   NOT_IN_NATIVEAOT_PRE_COMMA(MethodDesc *    methodDesc))
+                   LPVOID          hCallBack)
 {
 #ifdef FEATURE_EH_FUNCLETS
     if (flags & ParentOfFuncletStackFrame)
@@ -3322,15 +3321,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 
         _ASSERTE((isZero(args) || pushedSize != 0) || info.ebpFrame);
         _ASSERTE((args & iargs) == iargs);
-        // Only synchronized methods and generic code that accesses
-        // the type context via "this" need to report "this".
-        // If its reported for other methods, its probably
-        // done incorrectly. So flag such cases.
-#ifndef FEATURE_NATIVEAOT
-        _ASSERTE(info.thisPtrResult == REGI_NA ||
-                 methodDesc->IsSynchronized()   ||
-                 methodDesc->AcquiresInstMethodTableFromThis());
-#endif
 
         /* now report registers and arguments if we are not interrupted */
 
@@ -3481,16 +3471,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
         ptrArgTP  iargMask = info.iargMaskResult;
         unsigned   argHnum = info.argHnumResult;
         PTR_CBYTE   argTab = info.argTabResult;
-
-        // Only synchronized methods and generic code that accesses
-        // the type context via "this" need to report "this".
-        // If its reported for other methods, its probably
-        // done incorrectly. So flag such cases.
-#ifndef FEATURE_NATIVEAOT
-        _ASSERTE(info.thisPtrResult == REGI_NA ||
-                 methodDesc->IsSynchronized()   ||
-                 methodDesc->AcquiresInstMethodTableFromThis());
-#endif
 
         /* now report registers and arguments if we are not interrupted */
 

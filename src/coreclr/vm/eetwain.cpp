@@ -1367,8 +1367,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                            IN_EH_FUNCLETS_COMMA(pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
                            flags,
                            pCallBack,
-                           hCallBack,
-                           pCodeInfo->GetMethodDesc());
+                           hCallBack);
 }
 
 #else // !USE_GC_INFO_DECODER
