@@ -33,10 +33,6 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
-#ifdef HAVE_HELLOMANAGED
-#include "libhellomanaged.h"
-#endif
-
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
@@ -7043,11 +7039,6 @@ STDAPI CLRDataAccessCreateInstance(ICLRDataTarget * pLegacyTarget,
     {
         return E_INVALIDARG;
     }
-
-#ifdef HAVE_HELLOMANAGED
-    hellomanaged_Hello();
-#endif
-
 
     *pClrDataAccess = NULL;
 

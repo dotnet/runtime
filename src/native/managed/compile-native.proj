@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <!-- add new projects here -->
-        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" />
+        <!-- NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" -->
     </ItemGroup>
 
     <!-- Decide if we're going to do the NativeAOT builds -->
