@@ -75,7 +75,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftInvalidCallConv/*">
             <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -1157,16 +1157,6 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
             <Issue>Dynamic code generation is not supported on this platform</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- NativeAOT arm32 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/castclassvaluetype_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
         </ExcludeList>
     </ItemGroup>
 

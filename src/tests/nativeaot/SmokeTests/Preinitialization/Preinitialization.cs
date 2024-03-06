@@ -404,7 +404,15 @@ class TestReferenceTypeAllocation
 
     public static void Run()
     {
-        Assert.IsPreinitialized(typeof(TestReferenceTypeAllocation));
+        if (RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Wasm)
+        {
+            // Because of the double field, this is not preinitialized
+            Assert.IsLazyInitialized(typeof(TestReferenceTypeAllocation));
+        }
+        else
+        {
+            Assert.IsPreinitialized(typeof(TestReferenceTypeAllocation));
+        }
         Assert.AreEqual(12345, s_referenceType.IntValue);
         Assert.AreEqual(3.14159, s_referenceType.DoubleValue);
     }

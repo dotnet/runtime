@@ -21,7 +21,7 @@
 
 /src/mono @marek-safar
 
-/src/mono/llvm @vargaz @SamMonoRT
+/src/mono/llvm @vargaz @steveisok
 
 /src/mono/mono/arch @vargaz
 /src/mono/mono/eglib @vargaz @lambdageek
@@ -36,7 +36,7 @@
 
 /src/mono/mono/eventpipe @lateralusX @lambdageek
 
-/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT
+/src/mono/mono/mini @vargaz @lambdageek @steveisok
 /src/mono/mono/mini/*cfgdump* @vargaz
 /src/mono/mono/mini/*exceptions* @vargaz @BrzVlad
 /src/mono/mono/mini/*llvm* @vargaz @fanyang-mono
@@ -50,7 +50,7 @@
 /src/mono/mono/mini/*simd* @fanyang-mono
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
-/src/mono/mono/sgen @BrzVlad @lambdageek @SamMonoRT
+/src/mono/mono/sgen @BrzVlad @lambdageek
 
 /src/mono/mono/utils @vargaz @lambdageek
 /src/mono/mono/utils/*-win* @lateralusX @lambdageek

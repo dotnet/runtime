@@ -98,6 +98,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_SIG_INFO calliSig;
     NewCallArg       extraArg;
 
+    // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
+    // so if we're importing a Swift call, look for this type in the signature
+    CallArg* swiftErrorArg = nullptr;
+
     /*-------------------------------------------------------------------------
      * First create the call node
      */
@@ -651,6 +655,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
+        assert(call->IsCall());
+
         // We set up the unmanaged call by linking the frame, disabling GC, etc
         // This needs to be cleaned up on return.
         // In addition, native calls have different normalization rules than managed code
@@ -663,7 +669,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         checkForSmallType = true;
 
-        impPopArgsForUnmanagedCall(call->AsCall(), sig);
+        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg);
 
         goto DONE;
     }
@@ -1485,6 +1491,15 @@ DONE_CALL:
         impPushOnStack(call, tiRetVal);
     }
 
+#ifdef SWIFT_SUPPORT
+    // If call is a Swift call with error handling, append additional IR
+    // to handle storing the error register's value post-call.
+    if (swiftErrorArg != nullptr)
+    {
+        impAppendSwiftErrorStore(call->AsCall(), swiftErrorArg);
+    }
+#endif // SWIFT_SUPPORT
+
     return callRetTyp;
 }
 #ifdef _PREFAST_
@@ -1822,7 +1837,9 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 /*****************************************************************************/
 
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
+                                          CORINFO_SIG_INFO*   sig,
+                                          /* OUT */ CallArg** swiftErrorArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
@@ -1842,9 +1859,90 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
-        assert(argsToReverse);
+        assert(argsToReverse != 0);
         argsToReverse--;
     }
+
+#ifdef SWIFT_SUPPORT
+    unsigned short swiftErrorIndex = sig->numArgs;
+    unsigned short swiftSelfIndex  = sig->numArgs;
+
+    // We are importing an unmanaged Swift call, which might require special parameter handling
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
+    {
+        bool checkEntireStack = false;
+
+        // Check the signature of the Swift call for the special types
+        CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+
+        for (unsigned short argIndex = 0; argIndex < sig->numArgs;
+             sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
+        {
+            CORINFO_CLASS_HANDLE argClass;
+            CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+            bool                 argIsByrefOrPtr = false;
+
+            if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
+            {
+                argClass        = info.compCompHnd->getArgClass(sig, sigArg);
+                argType         = info.compCompHnd->getChildType(argClass, &argClass);
+                argIsByrefOrPtr = true;
+            }
+
+            if ((argType != CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(argClass))
+            {
+                continue;
+            }
+
+            const char* namespaceName;
+            const char* className = info.compCompHnd->getClassNameFromMetadata(argClass, &namespaceName);
+
+            if ((strcmp(className, "SwiftError") == 0) &&
+                (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // For error handling purposes, we expect a pointer/reference to a SwiftError to be passed
+                if (!argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftError pointer/reference, got struct");
+                }
+
+                if (swiftErrorIndex != sig->numArgs)
+                {
+                    BADCODE("Duplicate SwiftError* parameter");
+                }
+
+                swiftErrorIndex  = argIndex;
+                checkEntireStack = true;
+            }
+            else if ((strcmp(className, "SwiftSelf") == 0) &&
+                     (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // We expect a SwiftSelf struct to be passed, not a pointer/reference
+                if (argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftSelf struct, got pointer/reference");
+                }
+
+                if (swiftSelfIndex != sig->numArgs)
+                {
+                    BADCODE("Duplicate SwiftSelf parameter");
+                }
+
+                swiftSelfIndex = argIndex;
+            }
+            // TODO: Handle SwiftAsync
+        }
+
+        // Don't need to reverse args for Swift calls
+        argsToReverse = 0;
+
+        // If using SwiftError*, check entire stack for side effects
+        if (checkEntireStack)
+        {
+            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
+        }
+    }
+#endif // SWIFT_SUPPORT
 
 #ifndef TARGET_X86
     // Don't reverse args on ARM or x64 - first four args always placed in regs in order
@@ -1892,6 +1990,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
+    unsigned short argIndex = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         GenTree* argNode = arg.GetEarlyNode();
@@ -1914,8 +2013,59 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
                 assert(!"*** invalid IL: gc ref passed to unmanaged call");
             }
         }
+
+#ifdef SWIFT_SUPPORT
+        if (argIndex == swiftErrorIndex)
+        {
+            // Found the SwiftError* arg
+            assert(swiftErrorArg != nullptr);
+            *swiftErrorArg = &arg;
+        }
+        else if (argIndex == swiftSelfIndex)
+        {
+            // Found the SwiftSelf arg
+            arg.SetWellKnownArg(WellKnownArg::SwiftSelf);
+        }
+// TODO: SwiftAsync
+#endif // SWIFT_SUPPORT
+
+        argIndex++;
     }
 }
+
+#ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// impAppendSwiftErrorStore: Append IR to store the Swift error register value
+// to the SwiftError* argument specified by swiftErrorArg, post-Swift call
+//
+// Arguments:
+//    call - the Swift call
+//    swiftErrorArg - the SwiftError* argument passed to call
+//
+void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
+{
+    assert(call != nullptr);
+    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+    assert(swiftErrorArg != nullptr);
+
+    GenTree* const argNode = swiftErrorArg->GetNode();
+    assert(argNode != nullptr);
+
+    // Store the error register value to where the SwiftError* points to
+    GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
+    errorRegNode->SetHasOrderingSideEffect();
+    errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
+    impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
+
+    // Indicate the error register will be checked after this call returns
+    call->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
+
+    // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
+    call->gtArgs.Remove(swiftErrorArg);
+}
+#endif // SWIFT_SUPPORT
 
 //------------------------------------------------------------------------
 // impInitializeArrayIntrinsic: Attempts to replace a call to InitializeArray
@@ -5629,8 +5779,7 @@ void Compiler::impCheckForPInvokeCall(
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
         unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
-        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
-        unmanagedCallConv == CorInfoCallConvExtension::Swift)
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
     {
         return;
     }

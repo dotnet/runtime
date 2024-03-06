@@ -635,7 +635,8 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     newRP->setRegOptional(false);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    newRP->skipSaveRestore = false;
+    newRP->skipSaveRestore  = false;
+    newRP->liveVarUpperSave = false;
 #endif
 
     associateRefPosWithInterval(newRP);
@@ -880,6 +881,19 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     assert(!call->IsVirtualStub() ||
            ((killMask & compiler->virtualStubParamInfo->GetRegMask()) == compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
+
+#ifdef SWIFT_SUPPORT
+    // Swift calls that throw may trash the callee-saved error register,
+    // so don't use the register post-call until it is consumed by SwiftError.
+    // GTF_CALL_M_SWIFT_ERROR_HANDLING indicates the call has a SwiftError* argument,
+    // so the error register value will eventually be consumed post-call.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    {
+        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        killMask |= RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
+
     return killMask;
 }
 
@@ -1043,7 +1057,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             killMask = getKillSetForBlockStore(tree->AsBlk());
             break;
 
@@ -1479,9 +1492,25 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_TRASH) != RBM_NONE);
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_SAVED) == RBM_NONE);
 
-        // We only need to save the upper half of any large vector vars that are currently live.
-        VARSET_TP       liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
-        VarSetOps::Iter iter(compiler, liveLargeVectors);
+        // We should only save the upper half of any large vector vars that are currently live.
+        // However, the liveness information may not be accurate, specially around the place where
+        // we load the LCL_VAR and the node that uses it. Hence, as a conservative approach, we will
+        // add all variables that are live-in/defined in the block. We need to add variable although
+        // it is not in the live-out set, because a variable may get defined before the call and
+        // (last) used after the call.
+        //
+        // This will create more UpperSave/UpperRestore RefPositions then needed, but we need to do
+        // this for correctness anyway.
+        VARSET_TP bbLiveDefs(VarSetOps::Union(compiler, compiler->compCurBB->bbLiveIn, compiler->compCurBB->bbVarDef));
+
+        VARSET_TP liveDefsLargeVectors(VarSetOps::Intersection(compiler, bbLiveDefs, largeVectorVars));
+
+        // Make sure that `liveLargeVectors` captures the currentLiveVars as well.
+        VARSET_TP liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
+
+        assert(VarSetOps::IsSubset(compiler, liveLargeVectors, liveDefsLargeVectors));
+
+        VarSetOps::Iter iter(compiler, liveDefsLargeVectors);
         unsigned        varIndex = 0;
         bool            blockAlwaysReturn =
             compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
@@ -1496,6 +1525,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
+                pos->liveVarUpperSave           = VarSetOps::IsMember(compiler, liveLargeVectors, varIndex);
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
@@ -1573,12 +1603,21 @@ void LinearScan::buildUpperVectorRestoreRefPosition(
 {
     if (lclVarInterval->isPartiallySpilled)
     {
-        unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
-        Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
-        RefPosition* savePos             = upperVectorInterval->recentRefPosition;
+        lclVarInterval->isPartiallySpilled = false;
+        unsigned     varIndex              = lclVarInterval->getVarIndex(compiler);
+        Interval*    upperVectorInterval   = getUpperVectorInterval(varIndex);
+        RefPosition* savePos               = upperVectorInterval->recentRefPosition;
+        if (!isUse && !savePos->liveVarUpperSave)
+        {
+            // If we are just restoring upper vector at the block boundary and if this is not
+            // a upperVector related to the liveVar, then ignore creating restore for them.
+            // During allocation, we will detect that this was an extra save-upper and skip
+            // the save/restore altogether.
+            return;
+        }
+
         RefPosition* restorePos =
             newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
-        lclVarInterval->isPartiallySpilled = false;
 
         restorePos->setMultiRegIdx(multiRegIdx);
 
@@ -1586,12 +1625,14 @@ void LinearScan::buildUpperVectorRestoreRefPosition(
         {
             // If there was a use of the restore before end of the block restore,
             // then it is needed and cannot be eliminated
-            savePos->skipSaveRestore = false;
+            savePos->skipSaveRestore  = false;
+            savePos->liveVarUpperSave = true;
         }
         else
         {
             // otherwise, just do the whatever was decided for save position
-            restorePos->skipSaveRestore = savePos->skipSaveRestore;
+            restorePos->skipSaveRestore  = savePos->skipSaveRestore;
+            restorePos->liveVarUpperSave = savePos->liveVarUpperSave;
         }
 
 #ifdef TARGET_XARCH
