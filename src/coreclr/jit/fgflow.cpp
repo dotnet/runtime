@@ -378,6 +378,18 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
     }
 }
 
+//------------------------------------------------------------------------
+// fgGetPredInsertPoint: Searches newTarget->bbPreds for where to insert an edge from blockPred.
+//
+// Arguments:
+//    blockPred -- The block we want to make a predecessor of newTarget (it could already be one).
+//    newTarget -- The block whose pred list we will search.
+//
+// Return Value:
+//    Returns a pointer to the next pointer of an edge in newTarget's pred list.
+//    A new edge from blockPred to newTarget can be inserted here
+//    without disrupting bbPreds' sorting invariant.
+//
 FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget)
 {
     assert(blockPred != nullptr);
@@ -396,6 +408,15 @@ FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* new
     return listp;
 }
 
+//------------------------------------------------------------------------
+// fgRedirectTargetEdge: Sets block->bbTargetEdge's target block to newTarget,
+// updating pred lists as necessary.
+//
+// Arguments:
+//    block -- The block we want to make a predecessor of newTarget.
+//             It could be one already, in which case nothing changes.
+//    newTarget -- The new successor of block.
+//
 void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
 {
     assert(block != nullptr);
@@ -404,6 +425,10 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
     FlowEdge* edge = block->GetTargetEdge();
     assert(edge->getDupCount() == 1);
     
+    // Update oldTarget's pred list.
+    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
+    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
+    //
     BasicBlock* oldTarget = edge->getDestinationBlock();
     fgRemoveAllRefPreds(oldTarget, block);
     
