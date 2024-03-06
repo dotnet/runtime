@@ -28,12 +28,12 @@ namespace System.Linq
         /// </description></item>
         /// </list>
         /// </remarks>
-        internal abstract partial class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
+        private abstract partial class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
         {
             private readonly int _threadId = Environment.CurrentManagedThreadId;
 
-            internal int _state;
-            internal TSource _current = default!;
+            private protected int _state;
+            private protected TSource _current = default!;
 
             /// <summary>
             /// The item currently yielded by this iterator.
@@ -46,7 +46,7 @@ namespace System.Linq
             /// <remarks>
             /// This method is called if <see cref="GetEnumerator"/> is called more than once.
             /// </remarks>
-            public abstract Iterator<TSource> Clone();
+            private protected abstract Iterator<TSource> Clone();
 
             /// <summary>
             /// Puts this iterator in a state whereby no further enumeration will take place.
