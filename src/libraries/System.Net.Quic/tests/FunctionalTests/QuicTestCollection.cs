@@ -13,10 +13,14 @@ using Xunit.Abstractions;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
+namespace System.Net.Quic.Tests;
+
 [CollectionDefinition(nameof(QuicTestCollection), DisableParallelization = true)]
 public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>, IDisposable
 {
     public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
+
+    public static Version MsQuicVersion { get; } = GetMsQuicVersion();
 
     public QuicTestCollection()
     {
@@ -78,6 +82,13 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         DumpCounter(QUIC_PERFORMANCE_COUNTERS.CONN_LOAD_REJECT);
 
         System.Console.WriteLine(sb.ToString());
+    }
+
+    private static Version GetMsQuicVersion()
+    {
+        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
+
+        return (Version)msQuicApiType.GetProperty("Version", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
     }
 
     private static string? GetMsQuicLibraryVersion()

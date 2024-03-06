@@ -60,6 +60,7 @@ namespace System.Net.Quic.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsRaspbian10), nameof(PlatformDetection.IsArmv6Process), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsPpc64leProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsS390xProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInHelix))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void SupportedLinuxPlatforms_IsSupportedIsTrue()

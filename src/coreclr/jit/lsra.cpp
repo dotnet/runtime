@@ -5109,6 +5109,13 @@ void LinearScan::allocateRegistersMinimal()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
+
+#ifdef SWIFT_SUPPORT
+                if (currentRefPosition.delayRegFree)
+                {
+                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                }
+#endif // SWIFT_SUPPORT
             }
             else
             {
@@ -5818,6 +5825,13 @@ void LinearScan::allocateRegisters()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
+
+#ifdef SWIFT_SUPPORT
+                if (currentRefPosition.delayRegFree)
+                {
+                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                }
+#endif // SWIFT_SUPPORT
             }
             else
             {
