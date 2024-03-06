@@ -9,8 +9,7 @@
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShipping>true</IsShipping>
-    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
-          WasmAppBuilder task and the BrowserDebugProxy -->
+    <!-- this assembly should produce a non-shipping package, because it will be used by BrowserDebugProxy -->
     <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
@@ -24,5 +23,5 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="..\Common\IsExternalInit.cs" />
   </ItemGroup>
-
+  <Target Name="GetFilesToPackage" />
 </Project>
