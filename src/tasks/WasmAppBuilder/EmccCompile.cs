@@ -75,7 +75,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             if (!Enum.TryParse(OutputMessageImportance, ignoreCase: true, out MessageImportance messageImportance))
             {
-                Log.LogError($"Invalid value for OutputMessageImportance={OutputMessageImportance}. Valid values: {string.Join(", ", Enum.GetNames(typeof(MessageImportance)))}");
+                Log.LogError($"Invalid value for OutputMessageImportance={OutputMessageImportance}. Valid values: {string.Join(", ", Enum.GetNames<MessageImportance>())}");
                 return false;
             }
 

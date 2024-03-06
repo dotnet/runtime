@@ -101,7 +101,7 @@ internal class WasmModuleReader : IDisposable
         shouldStop = false;
         byte code = _reader.ReadByte();
         Section section = (Section)code;
-        if (!Enum.IsDefined(typeof(Section), section))
+        if (!Enum.IsDefined(section))
             return false;
         uint sectionSize = ReadULEB128();
 
