@@ -67,6 +67,7 @@
   </ItemGroup>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
+    <Warning Condition="'$(WasmEnableThreads)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) is not supported when %24(WasmEnableThreads) is set to true."  />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
@@ -76,7 +77,7 @@
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
-      <HybridGlobalization Condition="'$(InvariantGlobalization)' == 'true'">false</HybridGlobalization>
+      <HybridGlobalization Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmEnableThreads)' == 'true'">false</HybridGlobalization>
       <_WasmIcuDataFileName Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
       <_WasmIcuDataFileName Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
