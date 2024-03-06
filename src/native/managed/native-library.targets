@@ -84,7 +84,7 @@
             <StripDestinationFile>$(StrippedOutputPath)$(TargetName)$(StrippedExt)</StripDestinationFile>
         </PropertyGroup>
     </Target>
-            
+
     <Target Name="StripLibraryLikeCoreCLRBuild"
             DependsOnTargets="SetupOSSpecificProps;CopyNativeBinary;StripLibraryLikeCoreCLRSetupPaths"
             Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
@@ -93,7 +93,7 @@
         <Error Text="Do not set StripSymbols to true - runtime components stripping is controlled by native-library.targets" Condition="'$(StripSymbols)' == 'true'" />
 
         <Message Importance="High" Text="Stripping $(PublishDir)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
-        
+
         <!-- copy from the published/ subfolder to the stripped/ subfolder -->
         <Copy SourceFiles="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
               DestinationFolder="$(StrippedOutputPath)"
@@ -123,23 +123,32 @@
             <!-- FIXME: this is the same as CoreCLRToolPath - but that doesn't seem like a good name -->
             <FinalRuntimeComponentDestinationBase>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(RuntimeFlavor.ToLower())', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</FinalRuntimeComponentDestinationBase>
         </PropertyGroup>
-        
+
         <ItemGroup>
             <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDest.Identity)'))" />
         </ItemGroup>
 
-        <!-- TODO: windows --> 
+        <!-- TODO: windows -->
         <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
             <CopyFinalFiles Include="$(StripSourceFile)" />
             <CopyFinalFiles Include="$(StripDestinationFile)" />
         </ItemGroup>
 
-        <Message Importance="High" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)" Condition="'$(TargetsWindows)' != 'true'"/>
+        <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+            <CopyFinalFiles Include="$(PublishDir)$(TargetName)$(NativeBinaryExt)" />
+            <CopyFinalFilesPDB Include="$(PublishDir)$(TargetName).pdb" />
+        </ItemGroup>
+
+        <Message Importance="High" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
+        <Message Importance="High" Text="Installing @(CopyFinalFilesPDB) into %(_NormalizedInstallRuntimeComponentDest.Identity)PDB\" Condition="'$(TargetsWindows)' == 'true'"/>
 
         <Copy SourceFiles="@(CopyFinalFiles)"
               DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)"
+              SkipUnchangedFiles="true"/>
+        <Copy SourceFiles="@(CopyFinalFilesPDB)"
+              DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)PDB\"
               SkipUnchangedFiles="true"
-              Condition="'$(TargetsWindows)' != 'true'"/>
+              Condition="'$(TargetsWindows)' == 'true'"/>
     </Target>
 
 
