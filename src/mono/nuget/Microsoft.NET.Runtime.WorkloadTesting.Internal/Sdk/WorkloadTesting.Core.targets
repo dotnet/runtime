@@ -14,7 +14,7 @@
     <SdkWithWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithWorkload_WorkloadStampPath>
 
     <TemplateNuGetConfigPathForWorkloadTesting Condition="'$(TemplateNuGetConfigPathForWorkloadTesting)' == '' and '$(RepoRoot)' != ''">$(RepoRoot)NuGet.config</TemplateNuGetConfigPathForWorkloadTesting>
-    <InstallWorkloadUsingArtifactsAfterTargets Condition="'$(InstallWorkloadUsingArtifactsAfterThisTarget)' == ''">ArchiveTests</InstallWorkloadUsingArtifactsAfterTargets>
+    <InstallWorkloadUsingArtifactsAfterThisTarget Condition="'$(InstallWorkloadUsingArtifactsAfterThisTarget)' == ''">ArchiveTests</InstallWorkloadUsingArtifactsAfterThisTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
