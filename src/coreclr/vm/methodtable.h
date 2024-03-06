@@ -840,9 +840,9 @@ public:
     bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
-#if defined(TARGET_APPLE)
+#if !defined(DACCESS_COMPILE)
     void GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering, bool useNativeLayout);
-#endif // defined(TARGET_APPLE)
+#endif
 
     // Copy m_dwFlags from another method table
     void CopyFlags(MethodTable * pOldMT)

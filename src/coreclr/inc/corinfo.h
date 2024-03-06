@@ -356,13 +356,6 @@ enum StructFloatFieldInfoFlags
     STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
 };
 
-struct CORINFO_SWIFT_LOWERING
-{
-    bool byReference;
-    CorInfoType loweredElements[4];
-    size_t numLoweredElements;
-};
-
 #include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
@@ -581,7 +574,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_MEMSET,                // Init block of memory
     CORINFO_HELP_MEMZERO,               // Init block of memory with zeroes
     CORINFO_HELP_MEMCPY,                // Copy block of memory
-    CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null, 
+    CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null,
                                         // not safe for unbounded size, does not trigger GC)
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
@@ -1987,6 +1980,13 @@ enum class GetTypeLayoutResult
     Success,
     Partial,
     Failure,
+};
+
+struct CORINFO_SWIFT_LOWERING
+{
+    bool byReference;
+    CorInfoType loweredElements[4];
+    size_t numLoweredElements;
 };
 
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
