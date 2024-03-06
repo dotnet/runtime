@@ -531,6 +531,10 @@ static code_t insEncodeSveElemsize_22_to_21(emitAttr size);
 static code_t insEncodeSveElemsize_18_to_17(emitAttr size);
 
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the field 'sz' at bit location '20'.
+static code_t insEncodeSveElemsize_sz_20(emitAttr size);
+
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the field 'sz' at bit location '21'.
 static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 
@@ -738,6 +742,9 @@ static code_t insEncodeUimm6_21_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
 
+// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+static code_t insEncodeUimm3_12_to_10(ssize_t imm);
+
 // Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
 static code_t insEncodeUimm3_18_to_16(ssize_t imm);
 
@@ -934,6 +941,12 @@ static bool isValidUimm8(ssize_t value)
 static bool isValidSimm8(ssize_t value)
 {
     return (-0x80 <= value) && (value <= 0x7F);
+};
+
+// Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
+static bool isValidSimm8_MultipleOf256(ssize_t value)
+{
+    return (-0x8000 <= value) && (value <= 0x7f00) && (value % 256 == 0);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
