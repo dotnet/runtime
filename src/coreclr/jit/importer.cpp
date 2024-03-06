@@ -1548,19 +1548,17 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
 GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 {
-    GenTree* ctxTree = nullptr;
+    GenTree* ctxTree;
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
     // context parameter is this that we don't need the eager reporting logic.)
     lvaGenericsContextInUse = true;
 
-    Compiler* pRoot = impInlineRoot();
-
     if (kind == CORINFO_LOOKUP_THISOBJ)
     {
         // this Object
-        ctxTree = gtNewLclvNode(pRoot->info.compThisArg, TYP_REF);
+        ctxTree = gtNewLclvNode(impInlineRoot()->info.compThisArg, TYP_REF);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
 
         // context is the method table pointer of the this object
@@ -1568,24 +1566,21 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     }
     else
     {
-        assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
+        assert((kind == CORINFO_LOOKUP_METHODPARAM) || (kind == CORINFO_LOOKUP_CLASSPARAM));
 
-        if (compIsForInlining() && (kind == CORINFO_LOOKUP_METHODPARAM))
+        if (compIsForInlining() && (impInlineInfo->iciCallInstParam != nullptr))
         {
-            // Grab the generic context from the callsite for current inlinee
-            CallArg* instParam = impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-            if (instParam != nullptr)
-            {
-                assert(instParam->GetNode()->OperIs(GT_LCL_VAR));
-                ctxTree = gtNewLclvNode(instParam->GetNode()->AsLclVar()->GetLclNum(), TYP_I_IMPL);
-                ctxTree->gtFlags |= GTF_VAR_CONTEXT;
-                return ctxTree;
-            }
+            // Grab the generic context from the callsite for current inlinee.
+            // For runtime lookups, the generic context is always spilled to a local
+            assert(impInlineInfo->iciCallInstParam->OperIs(GT_LCL_VAR));
+            ctxTree = gtClone(impInlineInfo->iciCallInstParam);
         }
-
-        // Exact method descriptor as passed in
-        ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
-        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        else
+        {
+            // Exact method descriptor as passed in
+            ctxTree = gtNewLclvNode(impInlineRoot()->info.compTypeCtxtArg, TYP_I_IMPL);
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        }
     }
     return ctxTree;
 }
@@ -12780,6 +12775,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     InlLclVarInfo*       lclVarInfo   = pInlineInfo->lclVarInfo;
     InlineResult*        inlineResult = pInlineInfo->inlineResult;
 
+    pInlineInfo->iciCallInstParam = nullptr;
+
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
@@ -12792,8 +12789,11 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 inlArgInfo[ilArgCnt].argIsThis = true;
                 break;
             case WellKnownArg::RetBuffer:
+                // This does not appear in the table of inline arg info; do not include them
+                continue;
             case WellKnownArg::InstParam:
-                // These do not appear in the table of inline arg info; do not include them
+                pInlineInfo->iciCallInstParam = arg.GetNode();
+                // This one does not appear in the table of inline arg info too.
                 continue;
             default:
                 break;
