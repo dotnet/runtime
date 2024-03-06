@@ -905,8 +905,10 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return false;
 #endif // defined(TARGET_AMD64)
 #else // defined(USE_GC_INFO_DECODER)
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
     hdrInfo infoBuf;
-    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(p), 0, &infoBuf);
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
 
     // TODO: Hijack with saving the return value in FP stack
     if (infoBuf.returnKind == RT_Float)
@@ -914,8 +916,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    PTR_uint8_t gcInfo;
-    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
     REGDISPLAY registerSet = *pRegisterSet;
 
     if (!::UnwindStackFrameX86(&registerSet,
