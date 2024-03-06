@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Transactions;
 using Mono.Cecil;
 
@@ -39,7 +40,7 @@ namespace Mono.Linker
 			Debug.Assert (implNode.All (i => interfaceType == context.Resolve (i.GetLast ().InterfaceType)));
 			// Ensure the ImplNode is sorted by Length
 			Debug.Assert (
-				implNode.Aggregate(
+				implNode.Aggregate (
 					(true, 0),
 					(acc, next) => {
 						if (!acc.Item1) return acc;
@@ -50,19 +51,38 @@ namespace Mono.Linker
 					.Item1);
 		}
 
-		public IEnumerable<InterfaceImplementation> ShortestInterfaceImplementationChain()
+		public ShortestInterfaceImplementationChainEnumerator ShortestInterfaceImplementationChain => new (this);
+
+		public struct ShortestInterfaceImplementationChainEnumerator
 		{
-			var curr = InterfaceImplementationNode[0];
-			yield return curr.InterfaceImplementation;
-			while (curr.Next.Length != 0) {
-				curr = curr.Next[0];
-				yield return curr.InterfaceImplementation;
+			ImplNode _current;
+			bool _hasMoved;
+			public ShortestInterfaceImplementationChainEnumerator (InterfaceImplementor implementor)
+			{
+				_current = implementor.InterfaceImplementationNode[0];
+				_hasMoved = false;
+			}
+			public ShortestInterfaceImplementationChainEnumerator GetEnumerator() => this;
+			public InterfaceImplementation Current => _current.InterfaceImplementation;
+
+			public bool MoveNext()
+			{
+				if (!_hasMoved) {
+					_hasMoved = true;
+					return true;
+				}
+				if (_current.Next.Length == 0)
+					return false;
+				_current = _current.Next[0];
+				return true;
 			}
 		}
+
 		public void MarkShortestImplementation(AnnotationStore annotations, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			InterfaceImplementationNode[0].MarkShortestImplementation (annotations, reason, origin);
 		}
+
 		public bool IsMarked(AnnotationStore annotations)
 		{
 			foreach(var i in InterfaceImplementationNode) {

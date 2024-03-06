@@ -835,7 +835,7 @@ namespace Mono.Linker.Steps
 				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor.Implementor))
 				return;
 
-			foreach (var ifaceImpl in ov.InterfaceImplementor.ShortestInterfaceImplementationChain ()) {
+			foreach (var ifaceImpl in ov.InterfaceImplementor.ShortestInterfaceImplementationChain) {
 				MarkInterfaceImplementation (ifaceImpl);
 			}
 		}
@@ -2464,7 +2464,7 @@ namespace Mono.Linker.Steps
 		{
 			foreach (var iface in Annotations.GetRecursiveInterfaces (type)) {
 				if (ShouldMarkInterfaceImplementation (iface)) {
-					foreach (InterfaceImplementation interfaceImpl in iface.ShortestInterfaceImplementationChain ()) {
+					foreach (InterfaceImplementation interfaceImpl in iface.ShortestInterfaceImplementationChain) {
 						MarkInterfaceImplementation (interfaceImpl, new MessageOrigin (type));
 					}
 				}

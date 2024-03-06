@@ -43,10 +43,10 @@ namespace Mono.Linker
 {
 	public static class DictOfListE
 	{
-		public static void AddToList<TKey, TValueElement> (this Dictionary<TKey, List<TValueElement>> me, TKey key, TValueElement value) where TKey : notnull
+		public static void AddToList<TKey, TList, TValueElement> (this Dictionary<TKey, TList> me, TKey key, TValueElement value) where TKey : notnull where TList : IList<TValueElement>, new()
 		{
-			if (!me.TryGetValue (key, out List<TValueElement>? methods)) {
-				methods = new List<TValueElement> ();
+			if (!me.TryGetValue (key, out TList? methods)) {
+				methods = new TList ();
 				me[key] = methods;
 			}
 			methods.Add (value);
@@ -171,17 +171,13 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		public static bool InterfaceTypeEquals (TypeReference? type, TypeReference? other, ITryResolveMetadata resolver)
+		public bool InterfaceTypeEquals (TypeReference? type, TypeReference? other)
 		{
-			GenericInstanceType?  genericInstanceType = other as GenericInstanceType;
-			_ = genericInstanceType;
-			//var asdf = TypeReferenceExtensions.InflateGenericType (genericInstanceType, type, resolver);
-
 			Debug.Assert (type is not null && other is not null);
 			if (type == other)
 				return true;
 
-			if (resolver.TryResolve (type) != resolver.TryResolve (other))
+			if (context.TryResolve (type) != context.TryResolve (other))
 				return false;
 
 			if (type is GenericInstanceType genericInstance1) {
@@ -193,7 +189,7 @@ namespace Mono.Linker
 					|| genericInstance2.GenericArguments.Count != genericInstance2.GenericArguments.Count)
 					return false;
 				for (var i = 0; i < genericInstance1.GenericArguments.Count; ++i) {
-					if (!InterfaceTypeEquals (genericInstance1.GenericArguments[i], genericInstance2.GenericArguments[i], resolver))
+					if (!InterfaceTypeEquals (genericInstance1.GenericArguments[i], genericInstance2.GenericArguments[i]))
 						return false;
 				}
 				return true;
@@ -202,48 +198,50 @@ namespace Mono.Linker
 			if (type is TypeSpecification typeSpec1) {
 				if (other is not TypeSpecification typeSpec2)
 					return false;
-				return InterfaceTypeEquals (typeSpec1.ElementType, typeSpec2.ElementType, resolver);
+				return InterfaceTypeEquals (typeSpec1.ElementType, typeSpec2.ElementType);
 			}
-
-			return true;
+			return type.FullName == other.FullName;
 		}
+
 		TypeReference? TryInflateType(TypeReference type, TypeReference genericProvider)
 		{
 			if (genericProvider is GenericInstanceType git)
 				return TypeReferenceExtensions.InflateGenericType (git, type, context);
 			return type;
 		}
+
+		EqualityComparer<TypeReference>? _inflatedInterfaceComparer;
+		EqualityComparer<TypeReference> InflatedInterfaceComparer => _inflatedInterfaceComparer ??= EqualityComparer<TypeReference>.Create (InterfaceTypeEquals, t => context.Resolve (t)?.GetHashCode () ?? 0);
+
 		protected void MapInterfacesOnType (TypeDefinition type)
 		{
 			if (_interfaces.ContainsKey (type))
 				return;
 
-			Dictionary<TypeReference, List<ImplNode>> waysToImplementIface = new (EqualityComparer<TypeReference>.Create ((t, other) => InterfaceTypeEquals (t, other, context), t => context.Resolve (t)?.GetHashCode () ?? 0));
-			Dictionary<string, List<ImplNode>> unresolvedImpls = new ();
+			Dictionary<TypeReference, List<ImplNode>> waysToImplementIface = new (InflatedInterfaceComparer);
+			//Dictionary<string, List<ImplNode>> unresolvedImpls = new ();
 
 			// Get all interfaces directly implemented by this type
 			foreach (var iface in type.Interfaces) {
-				var ifaceDirectlyOnType = context.Resolve (iface.InterfaceType);
 				ImplNode implNode = new ImplNode (iface, type, []);
+				waysToImplementIface.AddToList (iface.InterfaceType, implNode);
+				var ifaceDirectlyOnType = context.Resolve (iface.InterfaceType);
 				if (ifaceDirectlyOnType is null) {
-					unresolvedImpls.AddToList (iface.InterfaceType.FullName, implNode);
 					continue;
 				}
-				waysToImplementIface.AddToList (iface.InterfaceType, implNode);
 
 				MapInterfacesOnType (ifaceDirectlyOnType);
 				var recursiveInterfaces = _interfaces[ifaceDirectlyOnType];
 				foreach (var recursiveInterface in recursiveInterfaces) {
-					if (recursiveInterface.InterfaceType is null) {
-						unresolvedImpls.AddToList (recursiveInterface.InflatedInterface.FullName, implNode);
-						continue;
-					}
+					//if (recursiveInterface.InterfaceType is null) {
+					//unresolvedImpls.AddToList (recursiveInterface.InflatedInterface.FullName, implNode);
+					//continue;
+					//}
 					var ifaceImplr = new ImplNode (iface, type, recursiveInterface.InterfaceImplementationNode.ToImmutableArray ());
-					// inflate interface type reference here with the type
 
+					// inflate interface type reference here with the type
 					TypeReference inflatedIface = TryInflateType (iface.InterfaceType, type)!;
 					if (recursiveInterface.InterfaceImplementationNode.Length > 0) {
-						// foreach(var node in Nodes) inflatedIface = Inflate(node.InterfaceType, inflatedIface);
 						var currNode = recursiveInterface.InterfaceImplementationNode[0];
 						while(currNode.Next.Length > 0) {
 							inflatedIface = TryInflateType (currNode.InterfaceImplementation.InterfaceType, inflatedIface)!;
@@ -253,7 +251,6 @@ namespace Mono.Linker
 						inflatedIface = TryInflateType (currNode.InterfaceImplementation.InterfaceType, inflatedIface)!;
 					}
 					// After inflating the first
-					//var inflatedIface2 = TryInflateType (recursiveInterface.InflatedInterface, iface.InterfaceType);
 					waysToImplementIface.AddToList (inflatedIface, ifaceImplr);
 				}
 			}
@@ -264,15 +261,15 @@ namespace Mono.Linker
 				var baseInterfaces = _interfaces[baseDef];
 				foreach (var item in baseInterfaces) {
 					foreach (var node in item.InterfaceImplementationNode) {
-						if (item.InterfaceType is not null)
+						//if (item.InterfaceType is not null)
 							waysToImplementIface.AddToList (item.InflatedInterface, node);
-						else
-							unresolvedImpls.AddToList (item.InflatedInterface.FullName, node);
+						//else
+							//unresolvedImpls.AddToList (item.InflatedInterface.FullName, node);
 					}
 				}
 			}
-			List<InterfaceImplementor> implrs = waysToImplementIface.Select (kvp => new InterfaceImplementor (type, context.Resolve(kvp.Key), kvp.Key, kvp.Value.OrderBy (i => i.Length).ToArray (), context))
-				.Concat (unresolvedImpls.Select (kvp => new InterfaceImplementor (type, null, kvp.Value[0].GetLast ().InterfaceType, kvp.Value.OrderBy (i => i.Length).ToArray (), context))).ToList ();
+			List<InterfaceImplementor> implrs = waysToImplementIface.Select (kvp => new InterfaceImplementor (type, context.Resolve (kvp.Key), kvp.Key, kvp.Value.OrderBy (i => i.Length).ToArray (), context)).ToList ();
+				//.Concat (unresolvedImpls.Select (kvp => new InterfaceImplementor (type, null, kvp.Value[0].GetLast ().InterfaceType, kvp.Value.OrderBy (i => i.Length).ToArray (), context))).ToList ();
 			_interfaces.Add (type, implrs);
 		}
 

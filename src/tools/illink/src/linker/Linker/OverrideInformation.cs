@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Mono.Cecil;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Transactions;
 
 namespace Mono.Linker
 {
@@ -33,14 +34,23 @@ namespace Mono.Linker
 			Override = @override;
 			InterfaceImplementor = interfaceImplementor;
 			// Ensure we have an interface implementation if the base method is from an interface and the override method is on a class
-			Debug.Assert(@base.DeclaringType.IsInterface && interfaceImplementor != null
+			Debug.Assert (@base.DeclaringType.IsInterface && interfaceImplementor != null
 						|| !@base.DeclaringType.IsInterface && interfaceImplementor == null);
 			// Ensure the interfaceImplementor is for the interface we expect
 			Debug.Assert (@base.DeclaringType.IsInterface ? interfaceImplementor!.InterfaceType == @base.DeclaringType : true);
 		}
 
-		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> InterfaceImplementor?.ShortestInterfaceImplementationChain().Last();
+		public InterfaceImplementation? MatchingInterfaceImplementation {
+			get {
+				if (InterfaceImplementor is null)
+					return null;
+				InterfaceImplementation? last = null;
+				foreach (InterfaceImplementation curr in InterfaceImplementor!.ShortestInterfaceImplementationChain) {
+					last = curr;
+				}
+				return last;
+			}
+		}
 
 		public TypeDefinition? InterfaceType
 			=> InterfaceImplementor?.InterfaceType;
