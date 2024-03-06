@@ -159,7 +159,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone()
+            private protected override Iterator<TResult> Clone()
             {
                 return new SelectManySingleSelectorIterator<TSource, TResult>(_source, _selector);
             }
