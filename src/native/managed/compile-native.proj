@@ -7,46 +7,61 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- add new projects here -->
         <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" />
     </ItemGroup>
 
+    <!-- Decide if we're going to do the NativeAOT builds -->
     <PropertyGroup>
         <!-- disable on Mono, for now -->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(RuntimeFlavor)' == 'Mono'">false</SupportsNativeAotComponents>
-        <!-- native aot doesn't support cross-OS compilation. disable for crossdac-->
+        <!-- NativeAOT doesn't support cross-OS compilation. disable for crossdac-->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
+        <!-- unsupported targets -->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'))">true</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
     </PropertyGroup>
 
+    <!-- some special kinds of runtime builds need extra NativeAOT flags -->
     <PropertyGroup>
         <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
         <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
         <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
-        <ExtraProps Condition="'$(SysRoot)' != ''">$(ExtraProps);SysRoot=$(SysRoot)</ExtraProps>
-        <ExtraProps Condition="'$(LinkerFlavor)' != ''">$(ExtraProps);LinkerFlavor=$(LinkerFlavor)</ExtraProps>
-        <ExtraProps Condition="'$(CustomLinkerARgToolchainArg)' != ''">$(ExtraProps);CustomLinkerArgToolchainArg=$(CustomLinkerArgToolchainArg)</ExtraProps>
     </PropertyGroup>
+
+    <!-- properties to pass down to the subproject builds -->
+    <ItemGroup>
+        <SubprojectProps Include="Configuration" Value="$(NativeLibsPublishConfiguration)" />
+        <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
+        <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
+        <SubprojectProps Include="RuntimeIdentifier" Value="$(OutputRID)" />
+
+        <SubprojectProps Include="NativeLib" Value="$(NativeLibKind)" />
+
+        <SubprojectProps Condition="'$(SysRoot)' != ''" Include="SysRoot" Value="$(SysRoot)" />
+        <SubprojectProps Condition="'$(LinkerFlavor)' != ''" Include="LinkerFlavor" Value="$(LinkerFlavor)" />
+        <SubprojectProps Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="CustomLinkerArgToolchainArg" Value="$(CustomLinkerArgToolchainArg)" />
+    </ItemGroup>
 
     <ItemGroup Condition="$(SupportsNativeAotComponents)">
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
-                          AdditionalProperties="%(AdditionalProperties);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps)"/>
+                          AdditionalProperties="%(AdditionalProperties);@(SubprojectProps->'%(Identity)=%(Value)', ';')"/>
     </ItemGroup>
 
     <Target Name="BuildNativeLibs" BeforeTargets="Build" Condition="$(SupportsNativeAotComponents)">
-        <Message Importance="High" Text="Restoring native libs @(NativeLibsProjectsToBuild)" />
-        <Message Importance="High" Text="Restoring native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
+        <PropertyGroup>
+            <SplitSubprojectProps>@(SubprojectProps->'%(Identity)=%(Value)', ';')</SplitSubprojectProps>
+        </PropertyGroup>
+
         <!-- workaround https://github.com/dotnet/msbuild/issues/2811 - Restore has to be a separate exectution with a different evaluation -->
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+                 Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());$(SplitSubprojectProps)"
                  Targets="Restore" />
 
-        <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
-        <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="_IsPublishing=true;Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps);"
+                 Properties="_IsPublishing=true;$(SplitSubprojectProps)"
                  Targets="Build;Publish" />
     </Target>
 </Project>
