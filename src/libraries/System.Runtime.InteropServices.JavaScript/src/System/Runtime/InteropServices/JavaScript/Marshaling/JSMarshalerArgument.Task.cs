@@ -382,6 +382,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
 #if FEATURE_WASM_MANAGED_THREADS
         // We can't marshal resolved/rejected/null Task.Result directly into current argument when this is marshaling return of JSExport across threads
         private bool CanMarshalTaskResultOnSameCall(JSProxyContext ctx)
@@ -408,11 +411,13 @@ namespace System.Runtime.InteropServices.JavaScript
             return false;
         }
 #else
+#pragma warning disable CA1822 // Mark members as static
         private bool CanMarshalTaskResultOnSameCall(JSProxyContext _)
         {
             // in ST build this is always synchronous and we can marshal the result directly
             return true;
         }
+#pragma warning restore CA1822 // Mark members as static
 #endif
 
         private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
