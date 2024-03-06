@@ -848,7 +848,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         pData->TargetThread->GetInternal() == GetThread())
     {
         // Null target thread specifies current thread.
-        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | LIGHTUNWIND, pStartFrame);
+        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, pStartFrame);
     }
     else
     {

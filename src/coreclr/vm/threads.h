@@ -2715,7 +2715,10 @@ public:
                                                    // stack crawl. Eventually need to always do this but it
                                                    // breaks the debugger right now.
 
-    #define LIGHTUNWIND                     0x0020 // Unwind PC+SP+FP only. Implemented on x64 only. Expects the initial context to be outside prolog/epilog.
+    #define LIGHTUNWIND                     0x0020 // Unwind PC+SP+FP only.
+                                                   // - Implemented on x64 only.
+                                                   // - Expects the initial context to be outside prolog/epilog.
+                                                   // - Cannot unwind through methods with stackalloc
 
     #define NOTIFY_ON_U2M_TRANSITIONS       0x0040 // Provide a callback for native transitions.
                                                    // This is only useful to a debugger trying to find native code
