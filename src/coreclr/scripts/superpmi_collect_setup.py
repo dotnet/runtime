@@ -182,6 +182,7 @@ native_binaries_to_ignore = [
     "superpmi.exe",
     "System.CommandLine.resources.dll", # Managed, but uninteresting
     "System.IO.Compression.Native.dll",
+    "System.Globalization.Native.dll",
     "ucrtbase.dll",
     "UnloadableAssembly.dll",
     "vcruntime140.dll",
