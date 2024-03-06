@@ -21,8 +21,6 @@
     <Compile Include="LayoutClass/*.cs" />
     <Compile Include="ArrayMarshalling/**/*.cs" />
     <Compile Include="MarshalAPI/**/*.cs" />
-    <!-- Mono support: https://github.com/dotnet/runtime/issues/98819 -->
-    <Compile Condition="'$(RuntimeFlavor)' == 'mono'" Remove="MarshalAPI/FunctionPointer/GenericFunctionPointer.cs" />
     <Compile Include="PInvoke/Array/**/*.cs" />
     <Compile Include="PInvoke/ArrayWithOffset/**/*.cs" />
     <Compile Include="PInvoke/AsAny/**/*.cs" />
