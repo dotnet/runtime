@@ -4,7 +4,6 @@
 #if FEATURE_WASM_MANAGED_THREADS
 
 using System.Threading;
-using System.Threading.Tasks;
 using System.Threading.Channels;
 using System.Runtime.CompilerServices;
 using WorkItemQueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
