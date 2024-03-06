@@ -86,6 +86,11 @@ namespace Internal.TypeSystem
         {
             if (NeedsRecursiveLayout(offset, fieldType))
             {
+                if (fieldType is MetadataType { IsInlineArray: true } mdType)
+                {
+                    fieldType = new TypeWithRepeatedFields(mdType);
+                }
+
                 List<FieldLayoutInterval> nestedIntervals = new List<FieldLayoutInterval>();
                 foreach (FieldDesc field in fieldType.GetFields())
                 {
@@ -123,6 +128,11 @@ namespace Internal.TypeSystem
         {
             if (NeedsRecursiveLayout(offset, fieldType))
             {
+                if (fieldType is MetadataType { IsInlineArray: true } mdType)
+                {
+                    fieldType = new TypeWithRepeatedFields(mdType);
+                }
+
                 foreach (FieldDesc field in fieldType.GetFields())
                 {
                     int fieldOffset = offset + field.Offset.AsInt;

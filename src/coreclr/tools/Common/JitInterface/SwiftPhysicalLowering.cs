@@ -142,10 +142,10 @@ namespace Internal.JitInterface
                         // opaque range of > 4 bytes that we must not pad to 8 bytes.
 
 
-                        // As long as we need to fill more than 4 bytes and the sequence is currently 8-byte aligned, we'll split into 8-byte integers.
-                        // If we have more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
-                        // If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
-                        // If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
+                        // While we need to fill more than 4 bytes and the sequence is currently 8-byte aligned, we'll split into 8-byte integers.
+                        // While we need to fill more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
+                        // While we need to fill more than 1 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
+                        // While we need to fill at least 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
                         int remainingIntervalSize = interval.Size;
                         while (remainingIntervalSize > 4 && loweredSequenceSize == loweredSequenceSize.AlignUp(8))
                         {
@@ -154,21 +154,21 @@ namespace Internal.JitInterface
                             remainingIntervalSize -= 8;
                         }
 
-                        if (remainingIntervalSize > 2 && loweredSequenceSize == loweredSequenceSize.AlignUp(4))
+                        while (remainingIntervalSize > 2 && loweredSequenceSize == loweredSequenceSize.AlignUp(4))
                         {
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_INT);
                             loweredSequenceSize += 4;
                             remainingIntervalSize -= 4;
                         }
 
-                        if (remainingIntervalSize > 1 && loweredSequenceSize == loweredSequenceSize.AlignUp(2))
+                        while (remainingIntervalSize > 1 && loweredSequenceSize == loweredSequenceSize.AlignUp(2))
                         {
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_SHORT);
                             loweredSequenceSize += 2;
                             remainingIntervalSize -= 2;
                         }
 
-                        if (remainingIntervalSize == 1)
+                        while (remainingIntervalSize > 0)
                         {
                             loweredSequenceSize += 1;
                             loweredTypes.Add(CorInfoType.CORINFO_TYPE_BYTE);
