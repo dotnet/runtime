@@ -2015,12 +2015,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
-        case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
             imm = emitGetInsSC(id);
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             assert(isValidSimm8(imm));                                        // iiiiiiii
+            break;
+
+        case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
+            imm = emitGetInsSC(id);
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            assert(isValidUimm8(imm));                                        // iiiiiiii
             break;
 
         case IF_SVE_EB_1B: // ........xx...... ...........ddddd -- SVE broadcast integer immediate (unpredicated)
