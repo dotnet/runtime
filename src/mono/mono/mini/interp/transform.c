@@ -8560,7 +8560,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 				g_printf (
 					"long superbranch detected with opcode %d (%s) in method %s.%s\n",
 					opcode, mono_interp_opname (opcode),
-					td->method->klass->name, td->method->name
+					m_class_get_name (td->method->klass), td->method->name
 				);
 				// FIXME missing handling for long branch
 				g_assert (FALSE);
