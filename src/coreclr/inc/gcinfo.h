@@ -65,7 +65,7 @@ struct GCInfoToken
     }
 #endif
 
-    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion))
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
     {
         // Once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
         // delete the following and just return GCINFO_VERSION
