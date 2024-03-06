@@ -65,7 +65,7 @@ namespace System.Linq
                 _second = second;
             }
 
-            public override Iterator<TSource> Clone() => new Concat2Iterator<TSource>(_first, _second);
+            private protected override Iterator<TSource> Clone() => new Concat2Iterator<TSource>(_first, _second);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
@@ -151,7 +151,7 @@ namespace System.Linq
 
             private ConcatNIterator<TSource>? PreviousN => _tail as ConcatNIterator<TSource>;
 
-            public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
+            private protected override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {

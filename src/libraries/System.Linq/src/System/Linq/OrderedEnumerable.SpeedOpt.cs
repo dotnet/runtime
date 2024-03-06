@@ -10,7 +10,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        internal abstract partial class OrderedIterator<TElement>
+        private abstract partial class OrderedIterator<TElement>
         {
             public override TElement[] ToArray()
             {
@@ -247,7 +247,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
+        private sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
         {
             // For complicated cases, rely on the base implementation that's more comprehensive.
             // For the simple case of OrderBy(...).First() or OrderByDescending(...).First() (i.e. where
@@ -358,7 +358,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
+        private sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
         {
             public override TElement[] ToArray()
             {
@@ -435,7 +435,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed class SkipTakeOrderedIterator<TElement> : Iterator<TElement>
+        private sealed class SkipTakeOrderedIterator<TElement> : Iterator<TElement>
         {
             private readonly OrderedIterator<TElement> _source;
             private readonly int _minIndexInclusive;
@@ -452,7 +452,7 @@ namespace System.Linq
                 _maxIndexInclusive = maxIdxInclusive;
             }
 
-            public override Iterator<TElement> Clone() => new SkipTakeOrderedIterator<TElement>(_source, _minIndexInclusive, _maxIndexInclusive);
+            private protected override Iterator<TElement> Clone() => new SkipTakeOrderedIterator<TElement>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()
             {

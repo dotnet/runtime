@@ -1096,7 +1096,7 @@ namespace System.Tests
             var rng = new Random(0xAF);
 
             EmbeddedValueType<string>[] array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(length, pinned: true);
-            byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]);
+            byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]); // Unsafe.AsPointer is safe since array is pinned
             var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
 
             for(int i = 0; i < length; ++i)

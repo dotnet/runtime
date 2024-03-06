@@ -433,13 +433,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
 
-			// FeatureCheck validation needs to happen only for property getters.
+			// FeatureGuard validation needs to happen only for property getters.
 			// Include properties with setters here because they will get validated later.
 			if (method.MethodKind != MethodKind.PropertyGet)
 				return;
 
 			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
-			var featureCheckAnnotations = propertySymbol.GetFeatureCheckAnnotations ();
+			var featureCheckAnnotations = propertySymbol.GetFeatureGuardAnnotations ();
 
 			// If there are no feature checks, there is nothing to validate.
 			if (featureCheckAnnotations.IsEmpty())

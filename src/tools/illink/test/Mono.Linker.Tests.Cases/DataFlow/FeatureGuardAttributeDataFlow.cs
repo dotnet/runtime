@@ -19,11 +19,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Related: https://github.com/dotnet/runtime/issues/88647
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
 		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
-	[SetupCompileResource ("FeatureCheckAttributeDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[SetupCompileResource ("FeatureGuardAttributeDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
-	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitch", "false")]
-	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies", "true")]
-	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.XmlWinsOverAttribute_NewFeatureSwitch", "false")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureGuard.UnreferencedCodeWithSwitch", "false")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureGuard.UnreferencedCodeWithSwitchAndDependencies", "true")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.DataFlow.DefineFeatureGuard.XmlWinsOverAttribute_NewFeatureSwitch", "false")]
 	// For analyzer, FeatureDependsOnAttribute influences the guard behavior.
 	// ILLink/ILCompiler don't infer feature settings from FeatureDependsOnAttribute, so the following need to be set via
 	// FeatureSwitchDefinition and the explicit feature settings instead.
@@ -32,15 +32,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		public static void Main ()
 		{
-			DefineFeatureCheck.Test ();
+			DefineFeatureGuard.Test ();
 			ValidGuardBodies.Test ();
 			InvalidGuardBodies.Test ();
-			InvalidFeatureChecks.Test ();
+			InvalidFeatureGuards.Test ();
 			FeatureCheckPrecedence.Test ();
 		}
 
-		class DefineFeatureCheck {
-			[FeatureCheck (typeof(RequiresDynamicCodeAttribute))]
+		class DefineFeatureGuard {
+			[FeatureGuard (typeof(RequiresDynamicCodeAttribute))]
 			static bool GuardDynamicCode => RuntimeFeature.IsDynamicCodeSupported;
 
 			static void TestGuardDynamicCode ()
@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestGuardUnreferencedCode ()
@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresAssemblyFilesAttribute))]
+			[FeatureGuard (typeof(RequiresAssemblyFilesAttribute))]
 			static bool GuardAssemblyFiles => TestFeatures.IsAssemblyFilesSupported;
 
 			static void TestGuardAssemblyFiles ()
@@ -69,7 +69,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(DynamicCodeAndUnreferencedCode))]
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
 
 			[FeatureDependsOn (typeof (RequiresDynamicCodeAttribute))]
@@ -85,17 +86,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
-			static class UnreferencedCode {}
-
-			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
-			[FeatureDependsOn (typeof (UnreferencedCode))]
-			static class UnreferencedCodeIndirect {
-				[FeatureCheck (typeof (UnreferencedCode))]
+			static class UnreferencedCode {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 				public static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
 			}
 
-			[FeatureCheck (typeof (UnreferencedCodeIndirect))]
+			static class UnreferencedCodeIndirect {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool GuardUnreferencedCode => UnreferencedCode.IsSupported;
+			}
+
+			// Currently there is no way to annotate a feature type as depending on another feature,
+			// so indirect guards are expressed the same way as direct guards, by using
+			// FeatureGuardAttribute that references the underlying feature type.
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
 			static bool GuardUnreferencedCodeIndirect => UnreferencedCodeIndirect.GuardUnreferencedCode;
 
 			static void TestIndirectGuard ()
@@ -105,9 +110,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitch")]
-			static class FeatureWithSwitch {}
-
-			[FeatureCheck (typeof (FeatureWithSwitch))]
 			static bool GuardWithSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitch", out bool isEnabled) && isEnabled;
 
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)] // Analyzer doesn't respect FeatureSwitchDefinition or feature settings
@@ -117,12 +119,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies")]
-			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
-			static class UnreferencedCodeWithSwitchAndDependencies {}
-
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof (UnreferencedCodeWithSwitchAndDependencies))]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies")]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardUnreferencedCodeWithSwitchAndDependencies => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.UnreferencedCodeWithSwitchAndDependencies", out bool isEnabled) && isEnabled;
 
 			// FeatureSwitchDefinition settings should win over FeatureDependsOn for ILLink/ILCompiler.
@@ -135,33 +134,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
-			[FeatureDependsOn (typeof (UnreferencedCodeCycle))]
-			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
-			static class UnreferencedCodeCycle {}
+			static class UnreferencedCodeCycle {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle.IsSupported;
+			}
 
-			[FeatureCheck (typeof (UnreferencedCodeCycle))]
+			[FeatureGuard (typeof (UnreferencedCodeCycle))]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
 			static bool GuardUnreferencedCodeCycle => TestFeatures.IsUnreferencedCodeSupported;
 
-			[FeatureCheck (typeof (UnreferencedCodeCycle))]
+			[FeatureGuard (typeof (UnreferencedCodeCycle))]
 			static void TestFeatureDependencyCycle1 ()
 			{
 				if (GuardUnreferencedCodeCycle)
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureDependsOn (typeof (UnreferencedCodeCycle2_B))]
-			static class UnreferencedCodeCycle2_A {}
+			static class UnreferencedCodeCycle2_A {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle2_A.IsSupported;
+			}
 
-			[FeatureDependsOn (typeof (RequiresUnreferencedCodeAttribute))]
-			[FeatureDependsOn (typeof (UnreferencedCodeCycle2_A))]
-			static class UnreferencedCodeCycle2_B {}
+			static class UnreferencedCodeCycle2_B {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle2_B.IsSupported;
+			}
 
-			[FeatureDependsOn (typeof (UnreferencedCodeCycle2_A))]
+			static class UnreferencedCodeCycle2 {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCicle2_A.IsSupported;
+			}
+
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.DataFlow.DefineFeatureCheck.FeaturesThatDependOnUnreferencedCode")]
-			static class UnreferencedCodeCycle2 {}
-
-			[FeatureCheck (typeof (UnreferencedCodeCycle2))]
+			[FeatureGuard (typeof (UnreferencedCodeCycle2))]
 			static bool GuardUnreferencedCodeCycle2 => TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestFeatureDependencyCycle2 ()
@@ -186,7 +191,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class ValidGuardBodies {
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ReturnFalseGuard => false;
 
 			static void TestReturnFalseGuard ()
@@ -195,7 +200,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool DirectGuard => TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestDirectGuard ()
@@ -204,7 +209,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IndirectGuard => DirectGuard;
 
 			static void TestIndirectGuard ()
@@ -226,7 +231,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// The analyzer doesn't do constant propagation of the boolean, so it doesn't know that
 			// the return value is always false when TestFeatures.IsUnreferencedCodeSupported is false.
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool AndGuard => TestFeatures.IsUnreferencedCodeSupported && OtherCondition ();
 
 			static void TestAndGuard ()
@@ -235,7 +240,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool NotNotGuard => !!TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestNotNotGuard ()
@@ -244,7 +249,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool EqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported == true;
 
 			static void TestEqualsTrueGuard ()
@@ -253,7 +258,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool TrueEqualsGuard => true == TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestTrueEqualsGuard ()
@@ -262,7 +267,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool NotEqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported != false;
 
 			static void TestNotEqualsFalseGuard ()
@@ -271,7 +276,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool FalseNotEqualsGuard => false != TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestFalseNotEqualsGuard ()
@@ -280,7 +285,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IsTrueGuard => TestFeatures.IsUnreferencedCodeSupported is true;
 
 			static void TestIsTrueGuard ()
@@ -289,7 +294,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IsNotFalseGuard => TestFeatures.IsUnreferencedCodeSupported is not false;
 
 			static void TestIsNotFalseGuard ()
@@ -299,7 +304,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IfReturnTrueGuard {
 				get {
 					if (TestFeatures.IsUnreferencedCodeSupported)
@@ -309,7 +314,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ElseReturnTrueGuard {
 				get {
 					if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -331,7 +336,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool AssertReturnFalseGuard {
 				 get {
 					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
@@ -345,7 +350,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool AssertNotReturnFalseGuard {
 				 get {
 					Debug.Assert (!TestFeatures.IsUnreferencedCodeSupported);
@@ -360,7 +365,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool AssertReturnTrueGuard {
 				 get {
 					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
@@ -374,7 +379,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool ThrowGuard {
 				get {
 					if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -390,7 +395,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool TernaryIfGuard => TestFeatures.IsUnreferencedCodeSupported ? true : false;
 
 			static void TestTernaryIfGuard ()
@@ -400,7 +405,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool TernaryElseGuard => !TestFeatures.IsUnreferencedCodeSupported ? false : true;
 
 			static void TestTernaryElseGuard ()
@@ -436,7 +441,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class InvalidGuardBodies {
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ReturnTrueGuard => true;
 
 			static void TestReturnTrueGuard ()
@@ -446,7 +451,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool OtherConditionGuard => OtherCondition ();
 
 			static void TestOtherConditionGuard ()
@@ -456,7 +461,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool OrGuard => TestFeatures.IsUnreferencedCodeSupported || OtherCondition ();
 
 			static void TestOrGuard ()
@@ -466,7 +471,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool NotGuard => !TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestNotGuard ()
@@ -476,7 +481,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool EqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported == false;
 
 			static void TestEqualsFalseGuard ()
@@ -486,7 +491,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool FalseEqualsGuard => false == TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestFalseEqualsGuard ()
@@ -496,7 +501,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool NotEqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported != true;
 
 			static void TestNotEqualsTrueGuard ()
@@ -506,7 +511,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool TrueNotEqualsGuard => true != TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestTrueNotEqualsGuard ()
@@ -516,7 +521,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IsNotTrueGuard => TestFeatures.IsUnreferencedCodeSupported is not true;
 
 			static void TestIsNotTrueGuard ()
@@ -526,7 +531,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IsFalseGuard => TestFeatures.IsUnreferencedCodeSupported is false;
 
 			static void TestIsFalseGuard ()
@@ -536,7 +541,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IfReturnFalseGuard {
 				get {
 					if (TestFeatures.IsUnreferencedCodeSupported)
@@ -552,7 +557,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ElseReturnFalseGuard {
 				get {
 					if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -569,7 +574,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof (RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool AssertNotReturnTrueGuard {
 				 get {
 					Debug.Assert (!TestFeatures.IsUnreferencedCodeSupported);
@@ -602,9 +607,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class InvalidFeatureChecks {
+		class InvalidFeatureGuards {
 			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static int NonBooleanProperty => 0;
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
@@ -615,13 +620,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			bool NonStaticProperty => true;
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
 			static void TestNonStaticProperty ()
 			{
-				var instance = new InvalidFeatureChecks ();
+				var instance = new InvalidFeatureGuards ();
 				if (instance.NonStaticProperty)
 					RequiresUnreferencedCode ();
 			}
@@ -649,8 +654,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// No warning for this case because we don't validate that the attribute usage matches
 			// the expected AttributeUsage.Property for assemblies that define their own version
-			// of FeatureCheckAttributes.
-			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
+			// of FeatureGuardAttribute.
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool Method () => true;
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
