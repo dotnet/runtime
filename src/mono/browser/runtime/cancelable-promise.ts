@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { _lookup_js_owned_object, teardown_managed_proxy } from "./gc-handles";
+import { _lookup_js_owned_object, teardown_managed_proxy, upgrade_managed_proxy_to_strong_ref } from "./gc-handles";
 import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
@@ -82,6 +82,10 @@ export class PromiseHolder extends ManagedObject {
             // we store the original data and use it later
             this.data = data;
             this.isPostponed = true;
+
+            // but after the promise is resolved, nothing holds the weak reference to the PromiseHolder anymore
+            // we know that cancelation is in flight, so we upgrade the weak reference to strong for the meantime
+            upgrade_managed_proxy_to_strong_ref(this, this.gc_handle);
             return;
         }
         this.isResolved = true;
@@ -98,6 +102,10 @@ export class PromiseHolder extends ManagedObject {
             // we store the original reason and use it later
             this.reason = reason;
             this.isPostponed = true;
+
+            // but after the promise is resolved, nothing holds the weak reference to the PromiseHolder anymore
+            // we know that cancelation is in flight, so we upgrade the weak reference to strong for the meantime
+            upgrade_managed_proxy_to_strong_ref(this, this.gc_handle);
             return;
         }
         this.isResolved = true;
