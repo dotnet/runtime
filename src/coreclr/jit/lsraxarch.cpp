@@ -137,7 +137,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, AllRegsMask());
+            BuildKills(tree, AllRegsMask());
             break;
 
         case GT_PROF_HOOK:
@@ -145,7 +145,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 0);
             AllRegsMask killMask = getKillSetForProfilerHook();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
         }
 
@@ -192,7 +192,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             srcCount = BuildReturn(tree);
             AllRegsMask killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
         }
 
@@ -299,7 +299,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
         }
         break;
 
@@ -1133,7 +1133,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     const ReturnTypeDesc* retTypeDesc       = nullptr;
     int                   srcCount          = 0;
     int                   dstCount          = 0;
-    regMaskOnlyOne        dstCandidates     = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -1157,7 +1156,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         ctrlExpr = call->gtCallAddr;
     }
 
-    RegisterType registerType = regType(call);
+    AllRegsMask  dstReturnCandidates;
+    regMaskOnlyOne dstCandidates = RBM_NONE;
+    RegisterType   registerType  = regType(call);
 
     // Set destination candidates for return value of the call.
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -1175,8 +1176,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
-        assert((int)genCountBits(dstCandidates) == dstCount);
+        dstReturnCandidates = retTypeDesc->GetABIReturnRegs();
+        assert((int)dstReturnCandidates.Count() == dstCount);
     }
     else if (varTypeUsesFloatReg(registerType))
     {
@@ -1358,7 +1359,24 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Now generate defs and kills.
     AllRegsMask killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(dstReturnCandidates.Count() > 0);
+            BuildCallDefsWithKills(call, dstCount, dstReturnCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, dstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
 
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
@@ -1650,7 +1668,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     buildInternalRegisterUses();
     AllRegsMask killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    BuildKills(blkNode, killMask);
 
     return useCount;
 }
@@ -1943,7 +1961,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     buildInternalRegisterUses();
 
     AllRegsMask killMask(getKillSetForModDiv(tree->AsOp()), RBM_NONE);
-    BuildDefsWithKills(tree, 1, dstCandidates, killMask);
+    BuildDefWithKills(tree, dstCandidates, killMask);
     return srcCount;
 }
 
@@ -3064,7 +3082,7 @@ int LinearScan::BuildMul(GenTree* tree)
     assert(compiler->IsGprRegMask(dstCandidates));
 
     AllRegsMask killMask(getKillSetForMul(tree->AsOp()), RBM_NONE);
-    BuildDefsWithKills(tree, dstCount, dstCandidates, killMask);
+    BuildDefWithKills(tree, dstCandidates, killMask);
     return srcCount;
 }
 

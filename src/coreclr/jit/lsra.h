@@ -2120,8 +2120,15 @@ private:
     int BuildAddrUses(GenTree* addr, regMaskOnlyOne candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
-    void BuildDefs(GenTree* tree, int dstCount, regMaskMixed dstCandidates = RBM_NONE);
-    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
+    void BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates = RBM_NONE);
+    void BuildCallDefs(GenTree* tree, int dstCount, AllRegsMask dstCandidates);
+    void BuildKills(GenTree* tree, AllRegsMask killMask);
+#ifdef TARGET_ARMARCH
+    void BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
+#else
+    void BuildDefWithKills(GenTree* tree, regMaskGpr dstCandidates, AllRegsMask killMask);
+#endif
+    void         BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

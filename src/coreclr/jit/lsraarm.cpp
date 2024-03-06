@@ -372,7 +372,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
             AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
         }
 
@@ -422,7 +422,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, AllRegsMask());
+            BuildKills(tree, AllRegsMask());
             break;
 
         case GT_LONG:
@@ -470,7 +470,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             srcCount = BuildReturn(tree);
             AllRegsMask killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
         }
 
@@ -694,7 +694,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 srcCount = 0;
             }
-            BuildDefs(tree, dstCount, argMask);
+            BuildDefs(tree, dstCount, argMask); // This is regMaskGpr
         }
         break;
 

@@ -129,7 +129,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
 {
     bool                  hasMultiRegRetVal = false;
     const ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskOnlyOne        dstCandidates     = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -210,9 +209,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
 #endif // TARGET_ARM
 
+    // Set destination candidates for return value of the call.
+    AllRegsMask  dstReturnCandidates;
+    regMaskOnlyOne dstCandidates = RBM_NONE;
     RegisterType registerType = call->TypeGet();
-
-// Set destination candidates for return value of the call.
 
 #ifdef TARGET_ARM
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -226,7 +226,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
+        dstReturnCandidates = retTypeDesc->GetABIReturnRegs();
+        assert((int)dstReturnCandidates.Count() == dstCount);
     }
     else if (varTypeUsesFloatArgReg(registerType))
     {
@@ -391,12 +392,53 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Now generate defs and kills.
     AllRegsMask killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(dstReturnCandidates.Count() > 0);
+            BuildCallDefsWithKills(call, dstCount, dstReturnCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, dstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
 
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
     numPlacedArgLocals = 0;
     return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildDefWithKills: Build one RefTypeDef RefPositions for the given node,
+//           as well as kills as specified by the given mask.
+//
+// Arguments:
+//    tree          - The call node that defines a register
+//    dstCandidates - The candidate registers for the definition
+//    killMask      - The mask of registers killed by this node
+//
+// Notes:
+//    Adds the RefInfo for the definitions to the defList.
+//    The def and kill functionality is folded into a single method so that the
+//    save and restores of upper vector registers can be bracketed around the def.
+//
+void LinearScan::BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask)
+{
+    assert(!tree->AsCall()->HasMultiRegRetVal());
+    assert((int)genCountBits(dstCandidates) == 1);
+    assert(compiler->IsOnlyOneRegMask(dstCandidates));
+
+    // Build the kill RefPositions
+    BuildKills(tree, killMask);
+    BuildDef(tree, dstCandidates);
 }
 
 //------------------------------------------------------------------------
@@ -583,7 +625,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         }
     }
     buildInternalRegisterUses();
-    BuildDefs(argNode, dstCount, argMask);
+    BuildDefs(argNode, dstCount, argMask); // this should only be regMaskGpr
     return srcCount;
 }
 
@@ -843,7 +885,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     buildInternalRegisterUses();
     AllRegsMask killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    BuildKills(blkNode, killMask);
     return useCount;
 }
 

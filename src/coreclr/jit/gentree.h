@@ -4330,7 +4330,7 @@ public:
     regNumber GetABIReturnReg(unsigned idx) const;
 
     // Get reg mask of ABI return registers
-    regMaskMixed GetABIReturnRegs() const;
+    AllRegsMask GetABIReturnRegs() const;
 };
 
 class TailCallSiteInfo

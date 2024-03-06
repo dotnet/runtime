@@ -27312,14 +27312,31 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskMixed ReturnTypeDesc::GetABIReturnRegs() const
+AllRegsMask ReturnTypeDesc::GetABIReturnRegs() const
 {
-    regMaskMixed resultMask = RBM_NONE;
+    AllRegsMask resultMask;
 
     unsigned count = GetReturnRegCount();
     for (unsigned i = 0; i < count; ++i)
     {
-        resultMask |= genRegMask(GetABIReturnReg(i));
+        regNumber reg = GetABIReturnReg(i);
+        if ((reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST))
+        {
+            resultMask.gprRegs |= genRegMask(reg);
+        }
+        else if ((reg >= REG_FP_FIRST) && (reg <= REG_FP_LAST))
+        {
+            resultMask.floatRegs |= genRegMask(reg);
+        }
+        else
+        {
+#ifdef HAS_PREDICATE_REGS
+            assert((reg >= REG_MASK_FIRST) && (reg <= REG_MASK_LAST));
+            resultMask.predicateRegs |= genRegMask(reg);
+#else
+            unreached();
+#endif
+        }
     }
 
     return resultMask;
