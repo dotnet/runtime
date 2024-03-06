@@ -25178,15 +25178,6 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         }
 
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
-            imm  = emitGetInsSC(id);
-            code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
-            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
-            code |= (id->idHasShift() ? 0x2000 : 0);                      // h
-            dst += emitOutput_Instr(dst, code);
-            break;
-
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
