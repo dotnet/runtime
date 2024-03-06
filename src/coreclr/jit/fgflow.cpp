@@ -118,7 +118,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     // count of duplication. This also necessitates walking the flow list for every edge we add.
     //
     FlowEdge*  flow  = nullptr;
-    FlowEdge** listp = &block->bbPreds;
+    FlowEdge** listp;
 
     if (initializingPreds)
     {
@@ -126,6 +126,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         // increasing blockPred->bbNum order. The only possible
         // dup list entry is the last one.
         //
+        listp = &block->bbPreds;
         FlowEdge* flowLast = block->bbLastPred;
         if (flowLast != nullptr)
         {
@@ -143,10 +144,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     {
         // References are added randomly, so we have to search.
         //
-        while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
-        {
-            listp = (*listp)->getNextPredEdgeRef();
-        }
+        listp = fgGetPredInsertPoint(blockPred, block);
 
         if ((*listp != nullptr) && ((*listp)->getSourceBlock() == blockPred))
         {
@@ -380,9 +378,9 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
     }
 }
 
-FlowEdge** Compiler::fgGetPredInsertPoint(FlowEdge* edge, BasicBlock* newTarget)
+FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget)
 {
-    assert(edge != nullptr);
+    assert(blockPred != nullptr);
     assert(newTarget != nullptr);
     assert(fgPredsComputed);
     
@@ -390,7 +388,6 @@ FlowEdge** Compiler::fgGetPredInsertPoint(FlowEdge* edge, BasicBlock* newTarget)
 
     // Search pred list for insertion point
     //
-    BasicBlock* const blockPred = edge->getSourceBlock();
     while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
     {
         listp = (*listp)->getNextPredEdgeRef();
@@ -412,7 +409,7 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
     
     // Splice edge into new target block's pred list
     //
-    FlowEdge** predListPtr = fgGetPredInsertPoint(edge, newTarget);
+    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
     edge->setNextPredEdge(*predListPtr);
     edge->setDestinationBlock(newTarget);
     *predListPtr = edge;

@@ -5903,7 +5903,7 @@ public:
     FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
 private:
-    FlowEdge** fgGetPredInsertPoint(FlowEdge* edge, BasicBlock* newTarget);
+    FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
 
 public:
     void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
