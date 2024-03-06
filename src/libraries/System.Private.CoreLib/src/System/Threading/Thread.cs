@@ -542,41 +542,67 @@ namespace System.Threading
         public static void MemoryBarrier() => Interlocked.MemoryBarrier();
         public static void Sleep(TimeSpan timeout) => Sleep(WaitHandle.ToTimeoutMilliseconds(timeout));
 
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static byte VolatileRead(ref byte address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static double VolatileRead(ref double address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static short VolatileRead(ref short address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static int VolatileRead(ref int address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [return: NotNullIfNotNull(nameof(address))]
         public static object? VolatileRead([NotNullIfNotNull(nameof(address))] ref object? address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static ushort VolatileRead(ref ushort address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static uint VolatileRead(ref uint address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static ulong VolatileRead(ref ulong address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static UIntPtr VolatileRead(ref UIntPtr address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref byte address, byte value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref double address, double value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref short address, short value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref int address, int value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref sbyte address, sbyte value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         public static void VolatileWrite(ref float address, float value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref ushort address, ushort value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref uint address, uint value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref ulong address, ulong value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
 
