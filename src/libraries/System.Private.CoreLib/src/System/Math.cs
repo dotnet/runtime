@@ -1627,18 +1627,16 @@ namespace System
             if (double.IsNaN(val))
                 return 0;
 
-            const double two63 = 2147483648.0 * 4294967296.0;
-            ulong ret;
-            if (val < two63)
+            const double two64 = 4294967296.0 * 4294967296;
+            if (val <= 0.0)
             {
-                ret = (ulong)(long)val;
+                return 0;
             }
-            else
+            if (val >= two64)
             {
-                // subtract 0x8000000000000000, do the convert then add it back again
-                ret = (ulong)(long)(val - two63) + 0x8000000000000000UL;
+                return ulong.MaxValue;
             }
-            return ret;
+            return (ulong)(long)val;
         }
 
         [StackTraceHidden]
