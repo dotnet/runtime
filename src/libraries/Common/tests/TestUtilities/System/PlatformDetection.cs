@@ -136,7 +136,7 @@ namespace System
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
         public static bool IsWasmBackgroundExec => IsBrowser && IsWasmThreadingSupported && IsEnvironmentVariableTrue("IsWasmBackgroundExec");
-        public static bool IsWasmAllowBlockingWait => IsBrowser && IsWasmThreadingSupported && IsEnvironmentVariableTrue("IsWasmAllowBlockingWait");
+        public static bool IsThreadingSupportedNotBrowserBackgroundExec => IsWasmThreadingSupported && !IsWasmBackgroundExec;
         public static bool IsWasmBackgroundExecOrSingleThread => IsWasmBackgroundExec || IsNotWasmThreadingSupported;
         public static bool IsThreadingSupportedAndBlockingWait => IsWasmBackgroundExec || IsWasmAllowBlockingWait || (!IsWasi && !IsBrowser);
         public static bool IsThreadingSupportedAndNotBlockingWait => (!IsWasmBackgroundExec && !IsWasmAllowBlockingWait) && IsWasmThreadingSupported;
