@@ -122,6 +122,10 @@ internal class BrowserRunner : IAsyncDisposable
                         urlAvailable.TrySetResult(firstServerUrl);
                     }
                 }
+                else
+                {
+                    _testOutput.WriteLine($"launchSettings.json: Did not find any profiles or applicationUrl in launch settings");
+                }
             }
 
             if (!urlAvailable.Task.IsCompleted)
