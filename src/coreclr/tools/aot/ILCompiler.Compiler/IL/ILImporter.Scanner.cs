@@ -1288,7 +1288,7 @@ namespace Internal.IL
                 case WellKnownType.UInt32:
                     if (checkOverflow)
                     {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u8_ovf");
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u4_ovf");
                     }
                     break;
                 case WellKnownType.UInt64:
