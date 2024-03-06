@@ -443,7 +443,9 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
     //
     assert(newTarget->checkPredListOrder());
 
-    newTarget->bbRefs += edge->getDupCount();
+    // Edge should still have only one ref
+    assert(edge->getDupCount() == 1);
+    newTarget->bbRefs++;
 }
 
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
