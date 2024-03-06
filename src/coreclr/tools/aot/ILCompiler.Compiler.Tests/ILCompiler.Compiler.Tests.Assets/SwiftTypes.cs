@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ILCompiler.Compiler.Tests.Assets.SwiftTypes;
@@ -91,4 +92,21 @@ public struct F114_S0
     public ushort F1;
     public short F2;
     public ushort F3;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Double, ExpectedLoweringAttribute.Lowered.Float, ExpectedLoweringAttribute.Lowered.Int32, ExpectedLoweringAttribute.Lowered.Int32)]
+[StructLayout(LayoutKind.Sequential, Size = 20)]
+struct F352_S0
+{
+    public double F0;
+    public float F1;
+    public uint F2;
+    public int F3;
+}
+
+[ExpectedLowering(ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int64, ExpectedLoweringAttribute.Lowered.Int64)]
+[InlineArray(4)]
+public struct InlineArray4Longs
+{
+    private long l;
 }

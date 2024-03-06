@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.TypeSystem;
-
-namespace ILCompiler
+namespace Internal.TypeSystem
 {
     public sealed class ImpliedRepeatedFieldDesc : FieldDesc
     {
@@ -36,13 +34,13 @@ namespace ILCompiler
 
         public int FieldIndex { get; }
 
-        protected override int ClassCode => 31666958;
+        protected internal override int ClassCode => 31666958;
 
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => _underlyingFieldDesc.GetEmbeddedSignatureData();
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => _underlyingFieldDesc.HasCustomAttribute(attributeNamespace, attributeName);
 
-        protected override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
+        protected internal override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
         {
             var impliedRepeatedFieldDesc = (ImpliedRepeatedFieldDesc)other;
 
