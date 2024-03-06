@@ -1,6 +1,6 @@
 <Project>
     <ItemGroup>
-            <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+        <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
     </ItemGroup>
 
     <!-- set a default include path, if there wasn't one already in the project -->
@@ -10,21 +10,26 @@
 
 
     <PropertyGroup>
+        <!-- template for the cmake config file, used by the find_package(...) cmake function -->
+        <NativeLibraryCmakeFindPackageConfigTemplateFile>$(MSBuildThisFileDirectory)Templates/native-lib.find_package-config.cmake.in</NativeLibraryCmakeFindPackageConfigTemplateFile>
+
+        <!-- put the generated cmake config files where the runtime expects to find them -->
         <NativeLibraryCMakeFindPackageConfigOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)\cmake\find_package\'))</NativeLibraryCMakeFindPackageConfigOutputPath>
+
     </PropertyGroup>
 
 
     <!-- Write a ProjectName.cmake fragment into the publish artifact folder with that helps with consuming the NativeAOT produced library -->
 
-    <Target Name="WriteNativeLibraryCMakeFragment" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentCommon;WriteNativeLibraryCMakeFragmentShared" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'"
+    <Target Name="WriteNativeLibraryCMakeFragment"
+            DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentSetup"
+            AfterTargets="Publish"
+            Condition="'$(PublishAot)' == 'true'"
             Outputs="$(NativeLibraryCMakeFindPackageConfigPath)">
         <!-- Note: GenerateFileFromTemplate uses ${replacementVar} syntax for things that it will replace.
              Use a backtick to write a normal cmake variable reference: `${nonReplacedVar}
              Wish: GenerateFileFromTemplate should provide a way to specify the replacement sigil.
         -->
-        <PropertyGroup>
-            <NativeLibraryCmakeFindPackageConfigTemplateFile>$(MSBuildThisFileDirectory)Templates/native-lib.find_package-config.cmake.in</NativeLibraryCmakeFindPackageConfigTemplateFile>
-        </PropertyGroup>
 
         <Error Text="Generating a cmake fragment is only supported for a shared library" Condition="'$(NativeLib)' != 'shared'" />
 
@@ -34,7 +39,11 @@
             Properties="@(NativeLibraryCmakeFragmentProperties->'%(Identity)=%(Value)')" />
     </Target>
 
-    <Target Name="WriteNativeLibraryCMakeFragmentCommon" DependsOnTargets="SetupProperties" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'">
+    <!-- setup properties for writing the config template -->
+    <Target Name="WriteNativeLibraryCMakeFragmentSetup"
+            DependsOnTargets="SetupProperties"
+            AfterTargets="Publish"
+            Condition="'$(PublishAot)' == 'true'">
         <PropertyGroup>
             <NativeLibraryArtifactName>$(TargetName)</NativeLibraryArtifactName>
             <NativeLibraryCMakeFindPackageConfigPath>$(NativeLibraryCMakeFindPackageConfigOutputPath)$(NativeLibraryArtifactName)-config.cmake</NativeLibraryCMakeFindPackageConfigPath>
@@ -46,24 +55,22 @@
             <NativeLibraryArtifactIncludePath>@(NativeLibraryCmakeFragmentIncludePath, ';')</NativeLibraryArtifactIncludePath>
             <NativeLibraryArtifactIncludePath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactIncludePath.Replace('\', '/'))</NativeLibraryArtifactIncludePath>
         </PropertyGroup>
+
         <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libArtifactName" Value="$(NativeLibraryArtifactName)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibBasePath" Value="$(NativeLibraryArtifactLibBasePath.TrimEnd('\/'))" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="$(NativeLibraryArtifactIncludePath.TrimEnd('\/'))" />
         </ItemGroup>
-    </Target>
 
-    <Target Name="WriteNativeLibraryCMakeFragmentShared" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentCommon" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'shared'">
-        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+        <!-- make the import lib template arg for the shared library -->
+        <PropertyGroup Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'shared'">
             <!-- the import lib is in the native sub-directory, not publish-->
             <NativeLibraryArtifactImpLibFullPath>$([System.IO.Path]::GetFullPath('$(NativeOutputPath)$(TargetName)$(StaticLibSuffix)'))</NativeLibraryArtifactImpLibFullPath>
-        </PropertyGroup>
-        <!-- change backslashes to unix-style paths to make cmake happy -->
-        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+            <!-- change backslashes to unix-style paths to make cmake happy -->
             <NativeLibraryArtifactImpLibFullPath>$(NativeLibraryArtifactImpLibFullPath.Replace('\', '/'))</NativeLibraryArtifactImpLibFullPath>
         </PropertyGroup>
-        <ItemGroup>
+        <ItemGroup Condition="'$(NativeLib)' == 'shared'">
             <NativeLibraryCmakeFragmentProperties Include="libArtifactImpLibFullPath" Value="$(NativeLibraryArtifactImpLibFullPath.TrimEnd('\/'))" Condition="'$(TargetOS)' == 'windows'" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactImpLibFullPath" Value="" Condition="'$(TargetOS)' != 'windows'" />
         </ItemGroup>
@@ -92,7 +99,7 @@
             Outputs="$(StripSourceFile);$(StripDestinationFile)">
         <Error Text="Do not set StripSymbols to true - runtime components stripping is controlled by native-library.targets" Condition="'$(StripSymbols)' == 'true'" />
 
-        <Message Importance="High" Text="Stripping $(PublishDir)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
+        <Message Importance="Normal" Text="Stripping $(PublishDir)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
 
         <!-- copy from the published/ subfolder to the stripped/ subfolder -->
         <Copy SourceFiles="$(PublishDir)$(TargetName)$(NativeBinaryExt)"
@@ -138,8 +145,8 @@
             <CopyFinalFilesPDB Include="$(PublishDir)$(TargetName).pdb" />
         </ItemGroup>
 
-        <Message Importance="High" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
-        <Message Importance="High" Text="Installing @(CopyFinalFilesPDB) into %(_NormalizedInstallRuntimeComponentDest.Identity)PDB\" Condition="'$(TargetsWindows)' == 'true'"/>
+        <Message Importance="Normal" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
+        <Message Importance="Normal" Text="Installing @(CopyFinalFilesPDB) into %(_NormalizedInstallRuntimeComponentDest.Identity)PDB\" Condition="'$(TargetsWindows)' == 'true'"/>
 
         <Copy SourceFiles="@(CopyFinalFiles)"
               DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)"
