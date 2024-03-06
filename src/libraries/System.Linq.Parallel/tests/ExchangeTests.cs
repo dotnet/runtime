@@ -113,7 +113,7 @@ namespace System.Linq.Parallel.Tests
             Partitioning_Default(labeled, count, partitions);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
@@ -129,7 +129,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [OuterLoop]
         [MemberData(nameof(PartitioningData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Partitioning_Striped_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
@@ -230,7 +230,7 @@ namespace System.Linq.Parallel.Tests
         // disposes the enumerator when it is finished.  If an exception occurs, the calling
         // enumerator disposes the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void ManualChunkPartitioner_DontEnumerateAfterException(
             Labeled<ParallelQuery<int>> left, int leftCount,
