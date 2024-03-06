@@ -280,15 +280,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (this)
             {
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
+
                 if (JSVHandleFreeList.Count > 0)
                 {
                     var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count - 1];
                     JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
                     return jsvHandle;
-                }
-                if (NextJSVHandle == IntPtr.Zero)
-                {
-                    NextJSVHandle = -2;
                 }
                 return NextJSVHandle--;
             }

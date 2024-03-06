@@ -525,7 +525,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 data.Reverse();
             }
-            data.CopyTo(new Span<byte>(Unsafe.AsPointer(ref ret), data.Length));
+#pragma warning disable CS8500 // takes address of managed type
+            data.CopyTo(new Span<byte>(&ret, data.Length));
+#pragma warning restore CS8500
             return ret;
         }
     }
@@ -546,7 +548,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private unsafe void WriteBigEndian<T>(T val) where T : struct
         {
             Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
-            new Span<byte>(Unsafe.AsPointer(ref val), data.Length).CopyTo(data);
+#pragma warning disable CS8500 // takes address of managed type
+            new Span<byte>(&val, data.Length).CopyTo(data);
+#pragma warning restore CS8500
             if (BitConverter.IsLittleEndian)
             {
                 data.Reverse();
