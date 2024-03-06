@@ -351,6 +351,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
     DllImportEntry(IsEventSourceLoggingEnabled)
     DllImportEntry(LogEventSource)
+    DllImportEntry(EventSource_GetClrConfig)
 #endif
 #if defined(FEATURE_PERFTRACING)
     DllImportEntry(LogThreadPoolWorkerThreadStart)

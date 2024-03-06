@@ -34,6 +34,22 @@ extern "C" BOOL QCALLTYPE IsEventSourceLoggingEnabled()
     return retVal;
 }
 
+extern "C" LPWSTR QCALLTYPE EventSource_GetClrConfig(LPCWSTR configName)
+{
+    QCALL_CONTRACT;
+
+    LPWSTR ret = NULL;
+
+    BEGIN_QCALL;
+    CLRConfig::ConfigStringInfo info;
+    info.name = configName;
+    info.options = CLRConfig::LookupOptions::Default;
+    ret = CLRConfig::GetConfigValue(info);
+    END_QCALL;
+
+    return ret;
+}
+
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #ifdef FEATURE_PERFTRACING

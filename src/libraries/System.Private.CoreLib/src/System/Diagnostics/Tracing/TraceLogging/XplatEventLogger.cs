@@ -18,14 +18,13 @@ namespace System.Diagnostics.Tracing
     {
         public XplatEventLogger() { }
 
-        private static readonly Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => GetConfigFromEnvironmentVariable("EventSourceFilter"));
-        private static readonly Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => GetConfigFromEnvironmentVariable("EventNameFilter"));
+        private static readonly Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => GetClrConfig("EventSourceFilter"));
+        private static readonly Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => GetClrConfig("EventNameFilter"));
 
-        private static string? GetConfigFromEnvironmentVariable(string configName)
-        {
-            return Environment.GetEnvironmentVariable("DOTNET_" + configName)
-                ?? Environment.GetEnvironmentVariable("COMPlus_" + configName);
-        }
+        private static unsafe string? GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
+
+        [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
+        private static unsafe partial char* EventSource_GetClrConfig(string configName);
 
         private static bool initializedPersistentListener;
 
