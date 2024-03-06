@@ -6,10 +6,20 @@
     <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
+  <!-- set the shared library name.  this helps the native linker correctly reference this shared
+       library in dependents -->
   <PropertyGroup>
-    <!-- in net9.0 we can do this -->
+    <!-- in net9.0 we can do this, but only on mobile apple platforms, not OSX -->
     <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+      <LinkerArg Include="-Wl,-install_name,@rpath/$(MSBuildProjectName).dylib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and ! ('$(TargetsAppleMobile)' == 'true' or '$(TargetsOSX)' == 'true')">
+      <!-- If there is no soname, ld on Linux and some other Unixes will embed the full (build-time!)
+           path to this shared library into any binary that links against it. We don't want that. -->
+      <LinkerArg Include="-Wl,-soname=$(MSBuildProjectName).so" />
+  </ItemGroup>
 
   <PropertyGroup>
       <!-- if IsRuntimeComponent is true, we will put the native library into the specified locations under `artifacts/bin/$(RuntimeFlavor)/os.arch.config/` -->
