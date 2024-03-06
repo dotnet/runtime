@@ -1676,6 +1676,9 @@ mono_jiterp_tlqueue_clear (int queue) {
 
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
+#else
+int
+mono_jiterp_is_enabled (void);
 #endif // HOST_BROWSER
 
 int
