@@ -388,10 +388,8 @@ namespace System.Linq
 
         public IEnumerator<TElement> GetEnumerator()
         {
-            for (int i = 0; i < _count; i++)
-            {
-                yield return _elements[i];
-            }
+            Debug.Assert(_count > 0, "A grouping should only have been created if an element was being added to it.");
+            return new PartialArrayEnumerator<TElement>(_elements, _count);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -411,11 +409,7 @@ namespace System.Linq
         void ICollection<TElement>.CopyTo(TElement[] array, int arrayIndex) =>
             Array.Copy(_elements, 0, array, arrayIndex, _count);
 
-        bool ICollection<TElement>.Remove(TElement item)
-        {
-            ThrowHelper.ThrowNotSupportedException();
-            return false;
-        }
+        bool ICollection<TElement>.Remove(TElement item) => ThrowHelper.ThrowNotSupportedException_Boolean();
 
         int IList<TElement>.IndexOf(TElement item) => Array.IndexOf(_elements, item, 0, _count);
 
@@ -427,7 +421,7 @@ namespace System.Linq
         {
             get
             {
-                if (index < 0 || index >= _count)
+                if ((uint)index >= (uint)_count)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
@@ -435,10 +429,7 @@ namespace System.Linq
                 return _elements[index];
             }
 
-            set
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
+            set => ThrowHelper.ThrowNotSupportedException();
         }
     }
 }
