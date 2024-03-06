@@ -4688,10 +4688,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 else
                 {
                     FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
-                    step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
+                    step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested
+                                                  // catch
                                                   // exit) returns to this block
                 }
-
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);

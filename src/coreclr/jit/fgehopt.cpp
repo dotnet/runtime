@@ -2127,7 +2127,6 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 {
     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
 
-
     if (predBlock->KindIs(BBJ_ALWAYS))
     {
         // Update flow to new target

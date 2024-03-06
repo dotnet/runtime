@@ -117,7 +117,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a DupCount
     // count of duplication. This also necessitates walking the flow list for every edge we add.
     //
-    FlowEdge*  flow  = nullptr;
+    FlowEdge*  flow = nullptr;
     FlowEdge** listp;
 
     if (initializingPreds)
@@ -126,7 +126,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         // increasing blockPred->bbNum order. The only possible
         // dup list entry is the last one.
         //
-        listp = &block->bbPreds;
+        listp              = &block->bbPreds;
         FlowEdge* flowLast = block->bbLastPred;
         if (flowLast != nullptr)
         {
@@ -395,7 +395,7 @@ FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* new
     assert(blockPred != nullptr);
     assert(newTarget != nullptr);
     assert(fgPredsComputed);
-    
+
     FlowEdge** listp = &newTarget->bbPreds;
 
     // Search pred list for insertion point
@@ -424,14 +424,14 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
 
     FlowEdge* edge = block->GetTargetEdge();
     assert(edge->getDupCount() == 1);
-    
+
     // Update oldTarget's pred list.
     // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
     // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
     //
     BasicBlock* oldTarget = edge->getDestinationBlock();
     fgRemoveAllRefPreds(oldTarget, block);
-    
+
     // Splice edge into new target block's pred list
     //
     FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
