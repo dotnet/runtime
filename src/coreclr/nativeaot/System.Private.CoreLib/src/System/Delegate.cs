@@ -662,6 +662,14 @@ namespace System
                 return true;
             }
 
+            if (_firstParameter is NativeFunctionPointerWrapper nativeFunctionPointerWrapper)
+            {
+                if (d._firstParameter is not NativeFunctionPointerWrapper dnativeFunctionPointerWrapper)
+                    return false;
+
+                return nativeFunctionPointerWrapper.NativeFunctionPointer == dnativeFunctionPointerWrapper.NativeFunctionPointer;
+            }
+
             if (!object.ReferenceEquals(_helperObject, d._helperObject) ||
                 (!FunctionPointerOps.Compare(_extraFunctionPointerOrData, d._extraFunctionPointerOrData)) ||
                 (!FunctionPointerOps.Compare(_functionPointer, d._functionPointer)))
@@ -683,15 +691,29 @@ namespace System
         {
             if (_helperObject is Wrapper[] invocationList)
             {
-                int hash = 0;
+                int multiCastHash = 0;
                 for (int i = 0; i < (int)_extraFunctionPointerOrData; i++)
                 {
-                    hash = hash * 33 + invocationList[i].Value.GetHashCode();
+                    multiCastHash = multiCastHash * 33 + invocationList[i].Value.GetHashCode();
                 }
-                return hash;
+                return multiCastHash;
             }
 
-            return base.GetHashCode();
+            if (_firstParameter is NativeFunctionPointerWrapper nativeFunctionPointerWrapper)
+            {
+                return nativeFunctionPointerWrapper.NativeFunctionPointer.GetHashCode();
+            }
+
+            int hash = RuntimeHelpers.GetHashCode(_helperObject) +
+                7 * FunctionPointerOps.GetHashCode(_extraFunctionPointerOrData) +
+                13 * FunctionPointerOps.GetHashCode(_functionPointer);
+
+            if (!object.ReferenceEquals(_firstParameter, this))
+            {
+                hash += 17 * RuntimeHelpers.GetHashCode(_firstParameter);
+            }
+
+            return hash;
         }
 
         public bool HasSingleTarget => _helperObject is not Wrapper[];
