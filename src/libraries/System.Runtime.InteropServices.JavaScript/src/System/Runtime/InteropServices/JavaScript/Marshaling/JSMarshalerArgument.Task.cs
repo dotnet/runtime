@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
