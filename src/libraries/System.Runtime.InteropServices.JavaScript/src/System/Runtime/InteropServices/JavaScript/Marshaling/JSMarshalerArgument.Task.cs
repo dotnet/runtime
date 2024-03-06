@@ -141,13 +141,11 @@ namespace System.Runtime.InteropServices.JavaScript
             Task? task = value;
 
             var ctx = ToJSContext;
-
-            // current thread or non-return parameter of JSImport
-            var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
+            var canMarshalTaskResultOnSameCall = CanMarshalTaskResultOnSameCall(ctx);
 
             if (task == null)
             {
-                if (!isCurrentThreadOrParameter)
+                if (!canMarshalTaskResultOnSameCall)
                 {
                     Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
                 }
@@ -155,7 +153,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            if (task.IsCompleted && isCurrentThreadOrParameter)
+            if (canMarshalTaskResultOnSameCall && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -239,18 +237,18 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task? task = value;
             var ctx = ToJSContext;
-            var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
+            var canMarshalTaskResultOnSameCall = CanMarshalTaskResultOnSameCall(ctx);
 
             if (task == null)
             {
-                if (!isCurrentThreadOrParameter)
+                if (!canMarshalTaskResultOnSameCall)
                 {
                     Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
                 }
                 slot.Type = MarshalerType.None;
                 return;
             }
-            if (isCurrentThreadOrParameter && task.IsCompleted)
+            if (canMarshalTaskResultOnSameCall && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -315,11 +313,11 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task<T>? task = value;
             var ctx = ToJSContext;
-            var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
+            var canMarshalTaskResultOnSameCall = CanMarshalTaskResultOnSameCall(ctx);
 
             if (task == null)
             {
-                if (!isCurrentThreadOrParameter)
+                if (!canMarshalTaskResultOnSameCall)
                 {
                     Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
                 }
@@ -327,7 +325,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            if (isCurrentThreadOrParameter && task.IsCompleted)
+            if (canMarshalTaskResultOnSameCall && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -383,6 +381,39 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+
+#if FEATURE_WASM_MANAGED_THREADS
+        // We can't marshal resolved/rejected/null Task.Result directly into current argument when this is marshaling return of JSExport across threads
+        private bool CanMarshalTaskResultOnSameCall(JSProxyContext ctx)
+        {
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this means that we are not in the return value of JSExport
+                // we are marshaling parameter of JSImport
+                return true;
+            }
+
+            if (ctx.IsCurrentThread())
+            {
+                // If the JS and Managed is running on the same thread we can use the args buffer,
+                // because the call is synchronous and the buffer will be processed.
+                // In that case the pre-allocated Promise would be discarded as necessary
+                // and the result will be marshaled by `try_marshal_sync_task_to_js`
+                return true;
+            }
+
+            // Otherwise this is JSExport return value and we can't use the args buffer, because the args buffer arrived in async message and nobody is reading after this.
+            // In such case the JS side already pre-created the Promise and we have to use it, to resolve it in separate call via `mono_wasm_resolve_or_reject_promise_post`
+            // there is JSVHandle in this arg
+            return false;
+        }
+#else
+        private bool CanMarshalTaskResultOnSameCall(JSProxyContext _)
+        {
+            // in ST build this is always synchronous and we can marshal the result directly
+            return true;
+        }
+#endif
 
         private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 

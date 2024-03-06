@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public int ManagedTID; // current managed thread id
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
-        public TaskScheduler? AsyncTaskScheduler;
+        public JSAsyncTaskScheduler? AsyncTaskScheduler;
 
         public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
         public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
