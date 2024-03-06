@@ -1624,6 +1624,9 @@ namespace System
 
         private static ulong DoubleToULong(double val)
         {
+            if (double.IsNaN(val))
+                return 0;
+
             const double two63 = 2147483648.0 * 4294967296.0;
             ulong ret;
             if (val < two63)
