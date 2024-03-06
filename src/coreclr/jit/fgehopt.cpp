@@ -1757,10 +1757,10 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     JITDUMP("Redirecting branch in " FMT_BB " from " FMT_BB " to " FMT_BB ".\n", block->bbNum, callFinally->bbNum,
             canonicalCallFinally->bbNum);
 
+    assert(callFinally->bbRefs > 0);
+    fgRemoveRefPred(block->GetTargetEdge());
     FlowEdge* const newEdge = fgAddRefPred(canonicalCallFinally, block);
     block->SetTargetEdge(newEdge);
-    assert(callFinally->bbRefs > 0);
-    fgRemoveRefPred(callFinally, block);
 
     // Update profile counts
     //
@@ -2103,28 +2103,14 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
     assert(predBlock->KindIs(BBJ_COND));
     assert(predBlock->FalseTargetIs(nonCanonicalBlock));
 
-    BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true);
-
-    JITDUMP("*** " FMT_BB " now falling through to empty " FMT_BB " and then to " FMT_BB "\n", predBlock->bbNum,
-            newBlock->bbNum, canonicalBlock->bbNum);
+    JITDUMP("*** " FMT_BB " false target is now " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
 
     // Remove the old flow
     fgRemoveRefPred(predEdge);
 
     // Wire up the new flow
-    FlowEdge* const falseEdge = fgAddRefPred(newBlock, predBlock, predEdge);
+    FlowEdge* const falseEdge = fgAddRefPred(canonicalBlock, predBlock, predEdge);
     predBlock->SetFalseEdge(falseEdge);
-
-    FlowEdge* const newEdge = fgAddRefPred(canonicalBlock, newBlock, predEdge);
-    newBlock->SetTargetEdge(newEdge);
-
-    // If nonCanonicalBlock has only one pred, all its flow transfers.
-    // If it has multiple preds, then we need edge counts or likelihoods
-    // to figure things out.
-    //
-    // For now just do a minimal update.
-    //
-    newBlock->inheritWeight(nonCanonicalBlock);
 }
 
 //------------------------------------------------------------------------
@@ -2146,21 +2132,25 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 {
     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
 
-    // Remove the old flow
-    fgRemoveRefPred(nonCanonicalBlock, predBlock);
-
-    // Wire up the new flow
     FlowEdge* const newEdge = fgAddRefPred(canonicalBlock, predBlock, predEdge);
 
     if (predBlock->KindIs(BBJ_ALWAYS))
     {
+        // Remove the old flow
         assert(predBlock->TargetIs(nonCanonicalBlock));
+        fgRemoveRefPred(predBlock->GetTargetEdge());
+
+        // Wire up the new flow
         predBlock->SetTargetEdge(newEdge);
     }
     else
     {
+        // Remove the old flow
         assert(predBlock->KindIs(BBJ_COND));
         assert(predBlock->TrueTargetIs(nonCanonicalBlock));
+        fgRemoveRefPred(predBlock->GetTrueEdge());
+
+        // Wire up the new flow
         predBlock->SetTrueEdge(newEdge);
     }
 }

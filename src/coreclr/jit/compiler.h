@@ -1584,9 +1584,10 @@ enum class ProfileChecks : unsigned int
     CHECK_NONE          = 0,
     CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
     CHECK_HASLIKELIHOOD = 1 << 1, // check all FlowEdges for hasLikelihood
-    CHECK_LIKELY        = 1 << 2, // fully check likelihood based weights
-    RAISE_ASSERT        = 1 << 3, // assert on check failure
-    CHECK_ALL_BLOCKS    = 1 << 4, // check blocks even if bbHasProfileWeight is false
+    CHECK_LIKELIHOODSUM = 1 << 2, // check block succesor likelihoods sum to 1                              
+    CHECK_LIKELY        = 1 << 3, // fully check likelihood based weights
+    RAISE_ASSERT        = 1 << 4, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 5, // check blocks even if bbHasProfileWeight is false
 };
 
 inline constexpr ProfileChecks operator ~(ProfileChecks a)
@@ -2322,6 +2323,11 @@ class FlowGraphDominatorTree
 
     static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
@@ -2356,23 +2362,28 @@ public:
 // exceptional flow, then CanReach returns false.
 class BlockReachabilitySets
 {
-    FlowGraphDfsTree* m_dfsTree;
+    const FlowGraphDfsTree* m_dfsTree;
     BitVec* m_reachabilitySets;
 
-    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+    BlockReachabilitySets(const FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
         : m_dfsTree(dfsTree)
         , m_reachabilitySets(reachabilitySets)
     {
     }
 
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     bool CanReach(BasicBlock* from, BasicBlock* to);
 
 #ifdef DEBUG
     void Dump();
 #endif
 
-    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
+    static BlockReachabilitySets* Build(const FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -4366,7 +4377,7 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg);
 
 #ifdef SWIFT_SUPPORT
     void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
@@ -5826,15 +5837,15 @@ public:
 public:
     // For many purposes, it is desirable to be able to enumerate the *distinct* targets of a switch statement,
     // skipping duplicate targets.  (E.g., in flow analyses that are only interested in the set of possible targets.)
-    // SwitchUniqueSuccSet contains the non-duplicated switch targets.
+    // SwitchUniqueSuccSet contains the non-duplicated switch successor edges.
     // Code that modifies the flowgraph (such as by renumbering blocks) must call Compiler::InvalidateUniqueSwitchSuccMap,
     // and code that modifies the targets of a switch block must call Compiler::fgInvalidateSwitchDescMapEntry.
     // If the unique targets of a switch block are needed later, they will be recomputed, ensuring they're up-to-date.
     struct SwitchUniqueSuccSet
     {
-        unsigned     numDistinctSuccs; // Number of distinct targets of the switch.
-        BasicBlock** nonDuplicates;    // Array of "numDistinctSuccs", containing all the distinct switch target
-                                       // successors.
+        unsigned   numDistinctSuccs; // Number of distinct targets of the switch.
+        FlowEdge** nonDuplicates;    // Array of "numDistinctSuccs", containing all the distinct switch target
+                                     // successor edges.
     };
 
     typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet> BlockToSwitchDescMap;
@@ -5877,8 +5888,6 @@ public:
 
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred);
 
-    FlowEdge* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
-
     void fgRemoveRefPred(FlowEdge* edge);
 
     FlowEdge* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
@@ -5896,8 +5905,6 @@ public:
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
-
-    void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
     void fgReplacePred(FlowEdge* edge, BasicBlock* const newPred);
 
@@ -6098,7 +6105,7 @@ public:
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
-    void fgDebugCheckDfsTree();
+    void fgDebugCheckFlowGraphAnnotations();
 
 #endif // DEBUG
 
@@ -6677,6 +6684,8 @@ private:
 
 public:
     bool fgIsBigOffset(size_t offset);
+
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset);
 
 private:
     bool fgNeedReturnSpillTemp();
@@ -9222,6 +9231,7 @@ public:
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
+        // | riscv64     |    64  |    32  | no SIMD support
         //
         // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //

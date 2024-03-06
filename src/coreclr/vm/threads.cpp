@@ -7035,12 +7035,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 }
 
 
-void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
+void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    ::FillRegDisplay(pRD, pctx);
+    ::FillRegDisplay(pRD, pctx, NULL, fLightUnwind);
 
 #if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);
@@ -8248,12 +8248,7 @@ void Thread::InitializeSpecialUserModeApc()
         return;
     }
 
-    // In the future, once code paths using the special user-mode APC get some bake time, it should be used regardless of
-    // whether CET shadow stacks are enabled
-    if (AreCetShadowStacksEnabled())
-    {
-        s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
-    }
+    s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC

@@ -2786,6 +2786,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             assert(blockPred->TargetIs(block));
+            assert(blockPred->GetTargetEdge()->getLikelihood() == 1.0);
             return true;
 
         case BBJ_EHFINALLYRET:
@@ -3003,7 +3004,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 {
                     for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
                     {
-                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i];
+                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i]->getDestinationBlock();
                         assert(nonDuplicateSucc != nullptr);
                         assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
                     }
@@ -3981,7 +3982,8 @@ void Compiler::fgDebugCheckBlockLinks()
                 assert(uniqueSuccSet.numDistinctSuccs == count);
                 for (unsigned i = 0; i < uniqueSuccSet.numDistinctSuccs; i++)
                 {
-                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks, uniqueSuccSet.nonDuplicates[i]->bbNum));
+                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks,
+                                               uniqueSuccSet.nonDuplicates[i]->getDestinationBlock()->bbNum));
                 }
             }
         }
@@ -4742,10 +4744,17 @@ void Compiler::fgDebugCheckLoops()
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckDfsTree: Checks that the DFS tree matches the current flow graph.
+// fgDebugCheckFlowGraphAnnotations: Checks that all flow graph annotations
+// that are currently non-null are valid.
 //
-void Compiler::fgDebugCheckDfsTree()
+void Compiler::fgDebugCheckFlowGraphAnnotations()
 {
+    if (m_dfsTree == nullptr)
+    {
+        assert((m_loops == nullptr) && (m_domTree == nullptr) && (m_reachabilitySets == nullptr));
+        return;
+    }
+
     unsigned count =
         fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
                  [=](BasicBlock* block, unsigned postorderNum) {
@@ -4755,6 +4764,10 @@ void Compiler::fgDebugCheckDfsTree()
                  [](BasicBlock* block, BasicBlock* succ) {});
 
     assert(m_dfsTree->GetPostOrderCount() == count);
+
+    assert((m_loops == nullptr) || (m_loops->GetDfsTree() == m_dfsTree));
+    assert((m_domTree == nullptr) || (m_domTree->GetDfsTree() == m_dfsTree));
+    assert((m_reachabilitySets == nullptr) || (m_reachabilitySets->GetDfsTree() == m_dfsTree));
 }
 
 /*****************************************************************************/

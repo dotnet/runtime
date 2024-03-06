@@ -120,7 +120,6 @@ namespace System
             _length = 1;
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateReadOnlySpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan(ref T reference, int length)
@@ -130,7 +129,6 @@ namespace System
             _reference = ref reference;
             _length = length;
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Returns the specified element of the read-only span.
