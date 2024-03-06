@@ -293,6 +293,8 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     *pIndex = TLSIndex(tlsRawIndex);
 }
 
+static void* GetTlsIndexObjectAddress();
+
 bool CanJITOptimizeTLSAccess()
 {
     bool optimizeThreadStaticAccess = false;

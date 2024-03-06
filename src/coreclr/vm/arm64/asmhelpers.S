@@ -655,7 +655,7 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Object
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    ; If class is not initialized, bail to C++ helper
+    // If class is not initialized, bail to C++ helper
     ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
     tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
     mov x0, x1
