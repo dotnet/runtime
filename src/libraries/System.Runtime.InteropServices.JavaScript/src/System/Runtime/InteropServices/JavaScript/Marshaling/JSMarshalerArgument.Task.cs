@@ -140,13 +140,21 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task? task = value;
 
+            var ctx = ToJSContext;
+
+            var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
+
             if (task == null)
             {
+                if (!isCurrentThreadOrParameter)
+                {
+                    Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
+                }
                 slot.Type = MarshalerType.None;
                 return;
             }
 
-            if (task.IsCompleted)
+            if (task.IsCompleted && isCurrentThreadOrParameter)
             {
                 if (task.Exception != null)
                 {
@@ -172,7 +180,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            var ctx = ToJSContext;
 
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
