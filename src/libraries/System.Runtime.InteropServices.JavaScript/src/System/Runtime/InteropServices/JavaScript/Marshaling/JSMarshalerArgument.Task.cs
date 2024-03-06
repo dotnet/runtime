@@ -142,6 +142,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var ctx = ToJSContext;
 
+            // current thread or non-return parameter of JSImport
             var isCurrentThreadOrParameter = ctx.IsCurrentThread() || slot.Type != MarshalerType.TaskPreCreated;
 
             if (task == null)
