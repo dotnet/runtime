@@ -2709,14 +2709,16 @@ public:
 
     #define POPFRAMES                       0x0004
 
-    /* use the following  flag only if you REALLY know what you are doing !!! */
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
     #define HANDLESKIPPEDFRAMES             0x0010 // temporary to handle skipped frames for appdomain unload
                                                    // stack crawl. Eventually need to always do this but it
                                                    // breaks the debugger right now.
 
-    #define LIGHTUNWIND                     0x0020 // allow using cache schema (see StackwalkCache class)
+    #define LIGHTUNWIND                     0x0020 // Unwind PC+SP+FP only.
+                                                   // - Implemented on x64 only.
+                                                   // - Expects the initial context to be outside prolog/epilog.
+                                                   // - Cannot unwind through methods with stackalloc
 
     #define NOTIFY_ON_U2M_TRANSITIONS       0x0040 // Provide a callback for native transitions.
                                                    // This is only useful to a debugger trying to find native code
@@ -2794,7 +2796,7 @@ public:
                         PTR_Frame pStartFrame = PTR_NULL);
 
     bool InitRegDisplay(const PREGDISPLAY, const PT_CONTEXT, bool validContext);
-    void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx);
+    void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind = false);
 
 #ifdef FEATURE_EH_FUNCLETS
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
