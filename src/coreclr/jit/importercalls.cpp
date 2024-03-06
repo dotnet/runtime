@@ -2030,7 +2030,12 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             // TODO-Bug: SIMD types are not handled correctly by this.
             CORINFO_SWIFT_LOWERING lowering;
             info.compCompHnd->getSwiftLowering(argClass, &lowering);
-            if (!lowering.byReference)
+            if (lowering.byReference)
+            {
+                JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
+                        typGetObjLayout(argClass)->GetClassName());
+            }
+            else
             {
                 lowerings[argIndex] = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING(lowering);
                 JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
@@ -2054,7 +2059,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
     }
 
-    // If using SwiftError*, check entire stack for side effects
+    // If using SwiftError*, spill entire stack as we will need to reuse the
+    // error argument after the call.
     if (checkEntireStack)
     {
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift call"));
@@ -2089,6 +2095,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         GenTreeLclVarCommon* structVal = arg->GetNode()->AsLclVarCommon();
 
         CallArg* insertAfter = arg;
+        // For the self arg, change it from the SwiftSelf struct to a
+        // TYP_I_IMPL primitive directly. It must also be marked as a well
+        // known arg because it has non-standard calling convention.
         if (argIndex == swiftSelfIndex)
         {
             assert(arg->GetNode()->OperIsLocalRead());
