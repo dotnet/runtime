@@ -8398,6 +8398,14 @@ interp_compute_native_offset_estimates (TransformData *td)
 		if (!td->optimized && bb->patchpoint_bb)
 			noe += 2;
 
+#if HOST_BROWSER
+		// We don't know in advance whether a bb will have a trace entry point,
+		//  but we know that it will only ever have one trace entry point, so
+		//  reserve space for it so we can correctly insert one later
+		if (mono_jiterp_is_enabled ())
+			noe += 4;
+#endif
+
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
 			// Skip dummy opcodes for more precise offset computation
