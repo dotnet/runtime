@@ -196,7 +196,9 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_MANAGED_THREADS
-            task.ContinueWith(Complete, taskHolder, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.FromCurrentSynchronizationContext());
+            // AsyncTaskScheduler will make sure that the resolve message is always sent after this call is completed
+            // that is: synchronous marshaling and eventually message to the target thread, which need to arrive before the resolve message
+            task.ContinueWith(Complete, taskHolder, ctx.AsyncTaskScheduler!);
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
@@ -280,7 +282,9 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_MANAGED_THREADS
-            task.ContinueWith(Complete, taskHolder, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.FromCurrentSynchronizationContext());
+            // AsyncTaskScheduler will make sure that the resolve message is always sent after this call is completed
+            // that is: synchronous marshaling and eventually message to the target thread, which need to arrive before the resolve message
+            task.ContinueWith(Complete, taskHolder, ctx.AsyncTaskScheduler!);
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
@@ -357,7 +361,9 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_MANAGED_THREADS
-            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.FromCurrentSynchronizationContext());
+            // AsyncTaskScheduler will make sure that the resolve message is always sent after this call is completed
+            // that is: synchronous marshaling and eventually message to the target thread, which need to arrive before the resolve message
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), ctx.AsyncTaskScheduler!);
 #else
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
 #endif
