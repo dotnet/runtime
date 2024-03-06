@@ -51,12 +51,12 @@ void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_ha
 extern void mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data1);
 extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
 #else
 extern void mono_wasm_bind_js_import (void *signature, int *is_exception, MonoObject **result);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
-#endif /* DISABLE_THREADS */
 
-// HybridGlobalization
+// HybridGlobalization is supported only in single-threaded runtime
 extern void mono_wasm_change_case_invariant (const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
 extern void mono_wasm_change_case (MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_compare_string (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
@@ -67,6 +67,9 @@ extern int mono_wasm_get_calendar_info (MonoString **culture, int32_t calendarId
 extern int mono_wasm_get_culture_info (MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_first_day_of_week (MonoString **culture, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_first_week_of_year (MonoString **culture, int *is_exception, MonoObject** ex_result);
+
+#endif /* DISABLE_THREADS */
+
 
 void bindings_initialize_internals (void)
 {
@@ -98,6 +101,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", mono_wasm_bind_assembly_exports);
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
 
+#ifdef DISABLE_THREADS
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
@@ -109,6 +113,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
 	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
+#endif /* DISABLE_THREADS */
 }
 
 static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)

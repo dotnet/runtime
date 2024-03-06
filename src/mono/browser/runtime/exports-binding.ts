@@ -59,6 +59,18 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_invoke_jsimport,
 ];
 
+export const mono_wasm_imports_hybrid_globalization = WasmEnableThreads ? [] : [
+    mono_wasm_get_first_day_of_week,
+    mono_wasm_get_first_week_of_year,
+    mono_wasm_change_case_invariant,
+    mono_wasm_change_case,
+    mono_wasm_compare_string,
+    mono_wasm_starts_with,
+    mono_wasm_ends_with,
+    mono_wasm_index_of,
+    mono_wasm_get_calendar_info,
+]
+
 export const mono_wasm_imports = [
     // mini-wasm.c
     mono_wasm_schedule_timer,
@@ -100,13 +112,6 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
-    mono_wasm_change_case_invariant,
-    mono_wasm_change_case,
-    mono_wasm_compare_string,
-    mono_wasm_starts_with,
-    mono_wasm_ends_with,
-    mono_wasm_index_of,
-    mono_wasm_get_calendar_info,
     mono_wasm_get_culture_info,
     mono_wasm_get_first_day_of_week,
     mono_wasm_get_first_week_of_year,
@@ -116,6 +121,8 @@ const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
+    // hg exports, if threading is disabled
+    ...mono_wasm_imports_hybrid_globalization.
 ];
 
 export function replace_linker_placeholders(imports: WebAssembly.Imports) {
