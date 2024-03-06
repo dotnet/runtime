@@ -5887,7 +5887,7 @@ void CodeGen::genFnProlog()
 #if !defined(TARGET_AMD64) && !defined(TARGET_ARM)
         tempMask = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_TRASH & ~excludeMask & ~regSet.rsMaskResvd;
 #else
-        tempMask = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
+        tempMask            = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
 #endif
         if (tempMask != RBM_NONE)
         {
