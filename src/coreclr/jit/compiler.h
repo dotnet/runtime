@@ -5902,8 +5902,10 @@ public:
     template <bool initializingPreds = false>
     FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
-    void fgUpdateEdgeTarget(FlowEdge* edge, BasicBlock* newTarget);
+private:
+    FlowEdge** fgGetPredInsertPoint(FlowEdge* edge, BasicBlock* newTarget);
 
+public:
     void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();

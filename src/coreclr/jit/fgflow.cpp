@@ -380,17 +380,15 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
     }
 }
 
-void Compiler::fgUpdateEdgeTarget(FlowEdge* edge, BasicBlock* newTarget)
+FlowEdge** Compiler::fgGetPredInsertPoint(FlowEdge* edge, BasicBlock* newTarget)
 {
     assert(edge != nullptr);
     assert(newTarget != nullptr);
     assert(fgPredsComputed);
     
-    newTarget->bbRefs++;
-
     FlowEdge** listp = &newTarget->bbPreds;
 
-    // References are added randomly, so we have to search.
+    // Search pred list for insertion point
     //
     BasicBlock* const blockPred = edge->getSourceBlock();
     while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
@@ -398,15 +396,7 @@ void Compiler::fgUpdateEdgeTarget(FlowEdge* edge, BasicBlock* newTarget)
         listp = (*listp)->getNextPredEdgeRef();
     }
 
-    // Splice new edge into the list in the correct ordered location.
-    //
-    edge->setNextPredEdge(*listp);
-    edge->setDestinationBlock(newTarget);
-    *listp = edge;
-    
-    // Pred list should (still) be ordered.
-    //
-    assert(newTarget->checkPredListOrder());
+    return listp;
 }
 
 void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
@@ -414,15 +404,24 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
     assert(block != nullptr);
     assert(newTarget != nullptr);
 
-    const bool fgModifiedOld = fgModified;
-    FlowEdge* targetEdge = block->GetTargetEdge();
-    BasicBlock* oldTarget = targetEdge->getDestinationBlock();
-
+    FlowEdge* edge = block->GetTargetEdge();
+    assert(edge->getDupCount() == 1);
+    
+    BasicBlock* oldTarget = edge->getDestinationBlock();
     fgRemoveAllRefPreds(oldTarget, block);
-    fgUpdateEdgeTarget(targetEdge, newTarget);
-    assert(targetEdge->getLikelihood() == 1.0);
+    
+    // Splice edge into new target block's pred list
+    //
+    FlowEdge** predListPtr = fgGetPredInsertPoint(edge, newTarget);
+    edge->setNextPredEdge(*predListPtr);
+    edge->setDestinationBlock(newTarget);
+    *predListPtr = edge;
 
-    fgModified = fgModifiedOld || (newTarget != oldTarget);
+    // Pred list of target should (stilL) be ordered
+    //
+    assert(newTarget->checkPredListOrder());
+
+    newTarget->bbRefs += edge->getDupCount();
 }
 
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
