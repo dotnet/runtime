@@ -36,7 +36,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -804,20 +803,25 @@ namespace Mono.Linker.Steps
 			if (typeToExamine == interfaceType)
 				return true;
 
-			//if (typeToExamine.HasInterfaces) {
-			//foreach (var iface in typeToExamine.Interfaces) {
-			//var resolved = Context.TryResolve (iface.InterfaceType);
-			//if (resolved == null)
-			//continue;
+			if (typeToExamine.HasInterfaces) {
+				foreach (var iface in typeToExamine.Interfaces) {
+					var resolved = Context.TryResolve (iface.InterfaceType);
+					if (resolved == null)
+						continue;
 
-			//if (RequiresInterfaceRecursively (resolved, interfaceType))
-			//return true;
-			//}
-			//}
-
-			foreach (var iface in Annotations.GetRecursiveInterfaces (interfaceType)) {
-				if (iface.InterfaceType == interfaceType) {
-					return true;
+					if (RequiresInterfaceRecursively (resolved, interfaceType)) {
+						var check = () => {
+							if (resolved == interfaceType) return true;
+							foreach (var iface in Annotations.GetRecursiveInterfaces (resolved)) {
+								if (iface.InterfaceType == interfaceType) {
+									return true;
+								}
+							}
+							return false;
+						};
+						Debug.Assert (check ());
+						return true;
+					}
 				}
 			}
 
@@ -831,7 +835,7 @@ namespace Mono.Linker.Steps
 				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor.Implementor))
 				return;
 
-			foreach (var ifaceImpl in ov.InterfaceImplementor.InterfaceImplementationNode) {
+			foreach (var ifaceImpl in ov.InterfaceImplementor.ShortestInterfaceImplementationChain ()) {
 				MarkInterfaceImplementation (ifaceImpl);
 			}
 		}
@@ -2460,7 +2464,7 @@ namespace Mono.Linker.Steps
 		{
 			foreach (var iface in Annotations.GetRecursiveInterfaces (type)) {
 				if (ShouldMarkInterfaceImplementation (iface)) {
-					foreach (InterfaceImplementation interfaceImpl in iface.InterfaceImplementationNode) {
+					foreach (InterfaceImplementation interfaceImpl in iface.ShortestInterfaceImplementationChain ()) {
 						MarkInterfaceImplementation (interfaceImpl, new MessageOrigin (type));
 					}
 				}
@@ -2469,14 +2473,7 @@ namespace Mono.Linker.Steps
 
 		protected virtual bool ShouldMarkInterfaceImplementation (InterfaceImplementor interfaceImplementor)
 		{
-			//bool allMarked = true;
-			//foreach (var iface in interfaceImplementor.InterfaceImplementationNode) {
-			//if (!Annotations.IsMarked (iface)) {
-			//allMarked = false;
-			//break;
-			//}
-			//}
-			//if (allMarked)
+			//if (interfaceImplementor.IsMarked (Annotations))
 			//return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, interfaceImplementor.Implementor))
@@ -2575,14 +2572,17 @@ namespace Mono.Linker.Steps
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
-			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
-			if (!((iface is not null && Annotations.IsMarked (iface))
-					|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
-				return false;
-			//foreach (var iface in overrideInformation.InterfaceImplementor.InterfaceImplementationNode) {
-			//if (!Annotations.IsMarked (iface))
+			//InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
+			//if (!((iface is not null && Annotations.IsMarked (iface))
+			//|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType))) {
+			//Debug.Assert (!overrideInformation.InterfaceImplementor.IsMarked (Annotations));
 			//return false;
 			//}
+			if (!overrideInformation.InterfaceImplementor.IsMarked(Annotations)) {
+				//Debug.Assert (!IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType));
+				return false;
+			}
+			//Debug.Assert (overrideInformation.InterfaceImplementor.IsMarked (Annotations));
 
 			// If the interface method is not marked and the interface doesn't come from a preserved scope, do not mark the implementation method
 			// Unmarked interface methods from link assemblies will be removed so the implementing method does not need to be kept.

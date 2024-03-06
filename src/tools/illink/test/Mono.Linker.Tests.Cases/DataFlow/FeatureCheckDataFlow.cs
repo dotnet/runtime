@@ -1155,7 +1155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				GuardInIterator ();
+				foreach (var _ in GuardInIterator ()) ;
 				StateFlowsAcrossYield ();
 				GuardInAsync ();
 				StateFlowsAcrossAwait ();

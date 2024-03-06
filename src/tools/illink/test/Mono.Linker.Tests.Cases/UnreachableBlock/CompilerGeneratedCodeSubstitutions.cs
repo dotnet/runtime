@@ -174,7 +174,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 			public static void Test ()
 			{
-				TestBranchWithNormalCall ();
+				foreach (var _ in TestBranchWithNormalCall ()) ;
 				TestBranchWithYieldAfter ();
 				TestBranchWithYieldBefore ();
 			}

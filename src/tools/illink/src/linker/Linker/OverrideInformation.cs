@@ -40,7 +40,7 @@ namespace Mono.Linker
 		}
 
 		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> InterfaceImplementor?.InterfaceImplementationNode.GetLast();
+			=> InterfaceImplementor?.ShortestInterfaceImplementationChain().Last();
 
 		public TypeDefinition? InterfaceType
 			=> InterfaceImplementor?.InterfaceType;

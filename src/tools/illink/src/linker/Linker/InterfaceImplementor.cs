@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Transactions;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -23,70 +24,100 @@ namespace Mono.Linker
 		/// </summary>
 		public TypeDefinition? InterfaceType { get; }
 
-		public ImplNode InterfaceImplementationNode { get; }
+		public ImplNode[] InterfaceImplementationNode { get; }
 
 		public TypeReference InflatedInterface { get; }
 
-		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImplNode implNode, LinkContext context)
+		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImplNode[] implNode, LinkContext context)
 		{
 			Implementor = implementor;
 			InterfaceType = interfaceType;
 			InterfaceImplementationNode = implNode;
 			InflatedInterface = inflatedInterface;
-			Debug.Assert (interfaceType == context.Resolve (implNode.GetLast ().InterfaceType));
+			Debug.Assert (context.Resolve (inflatedInterface) == interfaceType);
+			Debug.Assert (implNode.Length != 0);
+			Debug.Assert (implNode.All (i => interfaceType == context.Resolve (i.GetLast ().InterfaceType)));
+			// Ensure the ImplNode is sorted by Length
+			Debug.Assert (
+				implNode.Aggregate(
+					(true, 0),
+					(acc, next) => {
+						if (!acc.Item1) return acc;
+						if (acc.Item2 <= next.Length)
+							return (true, next.Length);
+						return (false, next.Length);
+					})
+					.Item1);
+		}
+
+		public IEnumerable<InterfaceImplementation> ShortestInterfaceImplementationChain()
+		{
+			var curr = InterfaceImplementationNode[0];
+			yield return curr.InterfaceImplementation;
+			while (curr.Next.Length != 0) {
+				curr = curr.Next[0];
+				yield return curr.InterfaceImplementation;
+			}
+		}
+		public void MarkShortestImplementation(AnnotationStore annotations, in DependencyInfo reason, in MessageOrigin origin)
+		{
+			InterfaceImplementationNode[0].MarkShortestImplementation (annotations, reason, origin);
+		}
+		public bool IsMarked(AnnotationStore annotations)
+		{
+			foreach(var i in InterfaceImplementationNode) {
+				if (i.IsMarked(annotations))
+					return true;
+			}
+			return false;
 		}
 	}
 
-	public sealed record ImplNode (InterfaceImplementation InterfaceImplementation, TypeDefinition InterfaceImplementationProvider, ImplNode? Next) : IEnumerable<InterfaceImplementation>
+	public sealed record ImplNode (InterfaceImplementation InterfaceImplementation, TypeDefinition InterfaceImplementationProvider, ImmutableArray<ImplNode> Next)
 	{
-		public struct Enumerator : IEnumerator<InterfaceImplementation>
-		{
-			ImplNode _current;
-			ImplNode _original;
-			bool _hasBeenMovedOnce;
-
-			public Enumerator (ImplNode original)
-			{
-				_current = original;
-				_original = original;
-				_hasBeenMovedOnce = false;
+		int _length = -1;
+		public int Length {
+			get {
+				if (_length != -1)
+					return _length;
+				if (Next.Length == 0)
+					return _length = 0;
+				return _length = Next[0].Length + 1;
 			}
-
-			public InterfaceImplementation Current => _current.Value;
-
-			object IEnumerator.Current => _current.Value;
-
-			public void Dispose () { }
-
-			public bool MoveNext ()
-			{
-				if (!_hasBeenMovedOnce) {
-					_hasBeenMovedOnce = true;
-					return true;
-				}
-				if (_current is null)
-					throw new InvalidOperationException ();
-				if (_current.Next is null)
-					return false;
-				_current = _current.Next;
-				return true;
-			}
-
-			public void Reset () => _current = _original;
 		}
 
-		public Enumerator GetEnumerator () => new Enumerator (this);
-		IEnumerator<InterfaceImplementation> IEnumerable<InterfaceImplementation>.GetEnumerator () => new Enumerator (this);
+		public void MarkShortestImplementation (AnnotationStore annotations, in DependencyInfo reason, in MessageOrigin origin)
+		{
+			ImplNode curr = this;
+			annotations.Mark (curr.InterfaceImplementation, reason, origin);
+			while (curr.Next.Length > 0) {
+				curr = curr.Next[0];
+				annotations.Mark (curr.InterfaceImplementation, reason, origin);
+			}
+		}
+
+		public bool IsMarked (AnnotationStore annotations)
+		{
+			if (!annotations.IsMarked (InterfaceImplementation))
+				return false;
+
+			if (Next.Length == 0)
+				return true;
+
+			foreach(var impl in Next) {
+				if (impl.IsMarked (annotations))
+					return true;
+			}
+			return false;
+		}
 
 		public InterfaceImplementation GetLast ()
 		{
 			var curr = this;
-			while (curr.Next is not null) {
-				curr = curr.Next;
+			while (curr.Next.Length > 0) {
+				curr = curr.Next[0];
 			}
-			return curr.Value;
+			return curr.InterfaceImplementation;
 		}
-
-		IEnumerator IEnumerable.GetEnumerator () => new Enumerator (this);
 	}
 }
