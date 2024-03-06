@@ -839,12 +839,12 @@ namespace System
                         // if the input is less than a vector128 length, pad with trailing zero.
                         uint[] arrWithPad = new uint[4];
 
-                        for(int i = 0; i < length / 2; i++)
+                        for(int i = 0; i <= length / 2; i++)
                         {
                             arrWithPad[i] = ptr[i];
                         }
 
-                        for(int i = length; length < 4; length++)
+                        for(int i = length / 2 + 1; length < 4; length++)
                         {
                             arrWithPad[i] = 0;
                         }
@@ -946,12 +946,12 @@ namespace System
                         // if the input is less than a vector128 length, pad with trailing zero.
                         uint[] arrWithPad = new uint[4];
 
-                        for(int i = 0; i < length / 2; i++)
+                        for(int i = 0; i <= length / 2; i++)
                         {
                             arrWithPad[i] = ptr[i];
                         }
 
-                        for(int i = length; length < 4; length++)
+                        for(int i = length / 2 + 1; length < 4; length++)
                         {
                             arrWithPad[i] = 0;
                         }
