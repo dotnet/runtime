@@ -617,16 +617,17 @@ jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 		initialize_opcode_value_table ();
 
 	guint16 opcode = ins->opcode;
-	g_assert(opcode < MINT_LASTOP);
+	g_assert (opcode < MINT_LASTOP);
 	int table_value = opcode_value_table[opcode];
 
-	if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
-		return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
-	} else if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
-		return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
-	} else if (table_value == VALUE_BEGIN_BRANCH_BLOCK) {
-		*inside_branch_block = TRUE;
-		return VALUE_NORMAL;
+	switch (table_value) {
+		case VALUE_ABORT_OUTSIDE_BRANCH_BLOCK:
+			return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
+		case VALUE_ABORT_OUTSIDE_BRANCH_BLOCK_NONE:
+			return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
+		case VALUE_BEGIN_BRANCH_BLOCK:
+			*inside_branch_block = TRUE;
+			return VALUE_NORMAL;
 	}
 
 	switch (opcode) {
