@@ -65,14 +65,6 @@
 
 #include "tailcallhelp.h"
 
-#ifdef TARGET_WINDOWS
-EXTERN_C uint32_t _tls_index;
-#endif
-
-#ifndef _MSC_VER
-extern "C" void* __tls_get_addr(void* ti);
-#endif // !_MSC_VER
-
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
