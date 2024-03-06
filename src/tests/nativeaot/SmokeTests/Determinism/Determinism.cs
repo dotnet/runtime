@@ -38,7 +38,7 @@ public class Program
         {
             Delegates.Run();
             Devirtualization.Run();
-            // Generics.Run();
+            Generics.Run();
             Interfaces.Run();
         }
 
