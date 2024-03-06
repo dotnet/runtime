@@ -1,8 +1,7 @@
 # Required for StaticICULinking
 cmake_minimum_required(VERSION 3.10..3.20)
 
-project(System.Globalization.Native C CXX)
-
+project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     if (ANDROID_FORCE_ICU_DATA_DIR)
