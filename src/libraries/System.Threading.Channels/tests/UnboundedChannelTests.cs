@@ -207,7 +207,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await t2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Stress_TryWrite_TryRead()
         {
             const int NumItems = 3000000;

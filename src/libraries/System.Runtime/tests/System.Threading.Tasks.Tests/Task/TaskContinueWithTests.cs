@@ -256,7 +256,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(false)]
         [InlineData(true)]
         public static void RunContinuationCancelTest(bool useTimeSpan)
@@ -306,7 +306,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithExceptionTestsNoState()
         {
             //
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Tests
                () => { f1.ContinueWith(_ => 5, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithAllParamsTestsNoState()
         {
             for (int i = 0; i < 2; i++)
@@ -784,7 +784,7 @@ namespace System.Threading.Tasks.Tests
             //catch (Exception e) {  }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunUnwrapTests_ExceptionTests()
         {
             Task taskRoot = null;
@@ -1035,7 +1035,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinuationCancelTest_State()
         {
             bool t1Ran = false;
@@ -1075,7 +1075,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TestNoDeadlockOnContinueWith()
         {
             Debug.WriteLine("TestNoDeadlockOnContinueWith:  shouldn't deadlock if it passes.");
@@ -1092,7 +1092,7 @@ namespace System.Threading.Tasks.Tests
             Debug.WriteLine("Success!");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunLazyCancellationTests()
         {
             for (int i = 0; i < 2; i++)

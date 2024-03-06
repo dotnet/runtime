@@ -24,7 +24,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Make sure that range Partitioner.Create can be called from multiple threads
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void IntPartitionerThreadSafety()
         {
             ConcurrentBag<OrderablePartitioner<Tuple<int, int>>> bag = new ConcurrentBag<OrderablePartitioner<Tuple<int, int>>>();
@@ -60,7 +60,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Make sure that range Partitioner.Create(long overload) can be called from multiple threads
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void LongPartitionerThreadSafety()
         {
             ConcurrentBag<OrderablePartitioner<Tuple<long, long>>> bag = new ConcurrentBag<OrderablePartitioner<Tuple<long, long>>>();

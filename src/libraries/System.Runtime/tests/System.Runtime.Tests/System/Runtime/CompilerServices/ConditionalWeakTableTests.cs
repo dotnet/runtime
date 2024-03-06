@@ -166,7 +166,7 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Concurrent_Add_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();

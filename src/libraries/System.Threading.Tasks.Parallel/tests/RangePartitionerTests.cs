@@ -9,7 +9,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class RangePartitionerTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunPartitionerStaticTest_SingleChunking()
         {
             CountdownEvent cde = new CountdownEvent(2);
@@ -40,7 +40,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test proper range coverage
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RangePartitionerCoverageTest()
         {
             RangePartitionerCoverageTest_HelperInt(0, 1, -1);
@@ -82,7 +82,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that chunk sizes are being honored
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RangePartitionerChunkTest()
         {
             RangePartitionerChunkTest_HelperInt(0, 10, 1);

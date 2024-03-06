@@ -1283,7 +1283,7 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Exception_LockWaitAsyncCancellationDoesntPropagate()
         {
             static async IAsyncEnumerable<int> Iterate(Task signal)

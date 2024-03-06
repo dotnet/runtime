@@ -93,21 +93,21 @@ namespace System.Threading.Tasks.Tests
 
         public static class TestMethods
         {
-            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
             public static void RespectParentCancellation1()
             {
                 RespectParentCancellationTest test = new RespectParentCancellationTest(API.For);
                 test.RealRun();
             }
 
-            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
             public static void RespectParentCancellation2()
             {
                 RespectParentCancellationTest test = new RespectParentCancellationTest(API.For64);
                 test.RealRun();
             }
 
-            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
             public static void RespectParentCancellation3()
             {
                 RespectParentCancellationTest test = new RespectParentCancellationTest(API.Foreach);
