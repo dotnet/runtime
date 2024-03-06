@@ -4401,7 +4401,7 @@ enum class CFGCallKind
 
 class CallArgs;
 
-enum class WellKnownArg
+enum class WellKnownArg : unsigned
 {
     None,
     ThisPointer,
@@ -4419,6 +4419,7 @@ enum class WellKnownArg
     R2RIndirectionCell,
     ValidateIndirectCallTarget,
     DispatchIndirectCallTarget,
+    SwiftSelf,
 };
 
 #ifdef DEBUG
@@ -4728,6 +4729,7 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
+    void SetWellKnownArg(const WellKnownArg argType) { m_wellKnownArg = argType; }
     bool IsTemp() { return m_isTmp; }
     // clang-format on
 

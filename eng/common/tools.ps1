@@ -68,6 +68,8 @@ $ErrorActionPreference = 'Stop'
 # True if the build is a product build
 [bool]$productBuild = if (Test-Path variable:productBuild) { $productBuild } else { $false }
 
+[String[]]$properties = if (Test-Path variable:properties) { $properties } else { @() }
+
 function Create-Directory ([string[]] $path) {
     New-Item -Path $path -Force -ItemType 'Directory' | Out-Null
 }

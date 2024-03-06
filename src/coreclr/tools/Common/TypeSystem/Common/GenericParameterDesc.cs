@@ -61,7 +61,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// A type is permitted to be ByRefLike.
         /// </summary>
-        AcceptByRefLike = 0x20,
+        AllowByRefLike = 0x20,
     }
 
     public abstract partial class GenericParameterDesc : TypeDesc
@@ -159,13 +159,13 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Does this generic parameter have the AcceptByRefLike flag
+        /// Does this generic parameter have the AllowByRefLike flag
         /// </summary>
-        public bool HasAcceptByRefLikeConstraint
+        public bool HasAllowByRefLikeConstraint
         {
             get
             {
-                return (Constraints & GenericConstraints.AcceptByRefLike) != 0;
+                return (Constraints & GenericConstraints.AllowByRefLike) != 0;
             }
         }
 
