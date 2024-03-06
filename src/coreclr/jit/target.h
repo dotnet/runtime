@@ -261,6 +261,8 @@ typedef unsigned       regMaskTP;
 
 unsigned genCountBits(uint64_t bits);
 
+//struct AllRegsMask;
+
 typedef struct _regMaskAll
 {
     regMaskGpr   gprRegs;
@@ -268,47 +270,45 @@ typedef struct _regMaskAll
 #ifdef HAS_PREDICATE_REGS
     regMaskPredicate predicateRegs;
 #endif // HAS_PREDICATE_REGS
-//
-//    _regMaskAll(regMaskGpr _gprRegMask)
-//        : gprRegs(_gprRegMask)
-//        , floatRegs(RBM_NONE)
-//#ifdef HAS_PREDICATE_REGS
-//        , predicateRegs(RBM_NONE)
-//#endif
-//    {
-//    }
-//
-//    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask) : gprRegs(_gprRegMask), floatRegs(_floatRegMask)
-//#ifdef HAS_PREDICATE_REGS
-//        , predicateRegs(RBM_NONE)
-//#endif
-//    {
-//
-//    }
+       //
+       //    _regMaskAll(regMaskGpr _gprRegMask)
+       //        : gprRegs(_gprRegMask)
+       //        , floatRegs(RBM_NONE)
+       // #ifdef HAS_PREDICATE_REGS
+    //        , predicateRegs(RBM_NONE)
+    // #endif
+    //    {
+    //    }
+    //
+    //    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask) : gprRegs(_gprRegMask),
+    //    floatRegs(_floatRegMask)
+    // #ifdef HAS_PREDICATE_REGS
+    //        , predicateRegs(RBM_NONE)
+    // #endif
+    //    {
+    //
+    //    }
 
-    _regMaskAll(regMaskGpr       _gprRegMask,
-                regMaskFloat     _floatRegMask,
-                regMaskPredicate _predicateRegMask = RBM_NONE)
+    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask, regMaskPredicate _predicateRegMask = RBM_NONE)
     {
-        gprRegs       = _gprRegMask;
-        floatRegs     = _floatRegMask;
+        gprRegs   = _gprRegMask;
+        floatRegs = _floatRegMask;
 #ifdef HAS_PREDICATE_REGS
         predicateRegs = _predicateRegMask;
 #endif // HAS_PREDICATE_REGS
-
     }
 
-//    // Useful to create an entity from `mask` when the caller
-//    // doesn't know what is the type of mask but knows that it
-//    // is of "onlyone" type.
-//    _regMaskAll(regMaskOnlyOne mask)
-//    {
-//        gprRegs = mask;
-//        floatRegs = mask;
-//#ifdef HAS_PREDICATE_REGS
-//        predicateRegs = mask;
-//#endif
-//    }
+    //    // Useful to create an entity from `mask` when the caller
+    //    // doesn't know what is the type of mask but knows that it
+    //    // is of "onlyone" type.
+    //    _regMaskAll(regMaskOnlyOne mask)
+    //    {
+    //        gprRegs = mask;
+    //        floatRegs = mask;
+    // #ifdef HAS_PREDICATE_REGS
+    //        predicateRegs = mask;
+    // #endif
+    //    }
 
     _regMaskAll()
     {
@@ -323,7 +323,7 @@ typedef struct _regMaskAll
     {
         return (gprRegs == RBM_NONE) && (floatRegs == RBM_NONE)
 #ifdef HAS_PREDICATE_REGS
-            && (predicateRegs == RBM_NONE)
+               && (predicateRegs == RBM_NONE)
 #endif // HAS_PREDICATE_REGS
             ;
     }
@@ -332,12 +332,12 @@ typedef struct _regMaskAll
     {
         return genCountBits(gprRegs) + genCountBits(floatRegs)
 #ifdef HAS_PREDICATE_REGS
-            + genCountBits(predicateRegs)
+               + genCountBits(predicateRegs)
 #endif // HAS_PREDICATE_REGS
-        ;
+            ;
     }
 
-    void           AddRegTypeMask(var_types type, regMaskOnlyOne maskToAdd)
+    void AddRegTypeMask(var_types type, regMaskOnlyOne maskToAdd)
     {
         if (varTypeRegister[type] == VTR_INT)
         {
@@ -373,16 +373,15 @@ typedef struct _regMaskAll
             return floatRegs;
         }
     }
+    //void AllRegsMask& operator|=(const AllRegsMask& second);
+    //{
+    //    gprRegs
+    //    return *this;
+    //}
 } AllRegsMask;
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
 #define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs)
-
-bool operator==(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator~(const AllRegsMask& first);
-
 
 #if REGMASK_BITS == 32
 typedef unsigned regMaskSmall;
@@ -396,6 +395,16 @@ typedef unsigned __int64 regMaskSmall;
 
 typedef _regNumber_enum regNumber;
 typedef unsigned char   regNumberSmall;
+
+bool                    operator==(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask             operator&(const AllRegsMask& first, const AllRegsMask& second);
+regMaskOnlyOne          operator&(const AllRegsMask& first, const regNumber reg);
+AllRegsMask             operator|(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask             operator|=(AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask             operator|=(AllRegsMask& first, const regNumber reg);
+// AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
+AllRegsMask operator~(const AllRegsMask& first);
+// inline AllRegsMask createRegMask(regNumber reg)
 
 /*****************************************************************************/
 

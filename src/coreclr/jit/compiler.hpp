@@ -990,6 +990,28 @@ inline regNumber genFirstRegNumFromMask(regMaskMixed mask)
     return regNum;
 }
 
+inline AllRegsMask createRegMask(regNumber reg)
+{
+    AllRegsMask result;
+    if (emitter::isGeneralRegister(reg))
+    {
+        result.gprRegs = genRegMask(reg);
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        result.floatRegs |= genRegMask(reg);
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        result.predicateRegs |= genRegMask(reg);
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
+    return result;
+}
+
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.

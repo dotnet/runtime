@@ -13864,6 +13864,26 @@ AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second)
     return result;
 }
 
+regMaskOnlyOne operator&(const AllRegsMask& first, const regNumber reg)
+{
+    if (emitter::isGeneralRegister(reg))
+    {
+        return first.gprRegs & genRegMask(reg);
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        return first.floatRegs & genRegMask(reg);
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        return first.predicateRegs & genRegMask(reg);
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
+}
+
 AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second)
 {
     AllRegsMask result(first.gprRegs | second.gprRegs, first.floatRegs | second.floatRegs
@@ -13873,6 +13893,38 @@ AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second)
 #endif
     );
     return result;
+}
+
+AllRegsMask operator|=(AllRegsMask& first, const regNumber reg)
+{
+    if (emitter::isGeneralRegister(reg))
+    {
+        first.gprRegs |= genRegMask(reg);
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        first.floatRegs |= genRegMask(reg);
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        first.predicateRegs |= genRegMask(reg);
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
+    return first;
+}
+
+AllRegsMask operator|=(AllRegsMask& first, const AllRegsMask& second)
+{
+    first.gprRegs |= second.gprRegs;
+    first.floatRegs |= second.floatRegs;
+
+#ifdef HAS_PREDICATE_REGS
+    first.predicateRegs |= second.predicateRegs;
+#endif
+    return first;
 }
 
 AllRegsMask operator~(const AllRegsMask& first)

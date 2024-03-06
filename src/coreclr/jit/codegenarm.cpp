@@ -1832,7 +1832,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
-    gcInfo.gcMarkRegSetNpt(RBM_R0);
+    gcInfo.gcMarkGprRegNpt(REG_R0);
     regSet.verifyGprRegUsed(REG_R0);
 
     genEmitHelperCall(helper,

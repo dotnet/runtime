@@ -957,8 +957,8 @@ public:
 
     int GetRegisterDstCount(Compiler* compiler) const;
 
-    regMaskMixed gtGetRegMask() const;
-    regMaskMixed gtGetContainedRegMask();
+    AllRegsMask gtGetRegMask() const;
+    AllRegsMask gtGetContainedRegMask();
 
     GenTreeFlags gtFlags;
 
@@ -5139,7 +5139,7 @@ struct GenTreeCall final : public GenTree
 #endif // TARGET_XARCH
 
     // Get reg mask of all the valid registers of gtOtherRegs array
-    regMaskMixed GetOtherRegMask() const;
+    AllRegsMask GetOtherRegMask() const;
 
     GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
     {

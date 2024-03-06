@@ -182,15 +182,46 @@ void GCInfo::gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput))
     gcRegGCrefSetCur = gcRegGCrefSetNew;
 }
 
+
+/*****************************************************************************
+ *
+ *  Mark the gpr register as holding non-pointer values.
+ *
+ */
+
+void GCInfo::gcMarkGprRegNpt(regNumber reg DEBUGARG(bool forceOutput))
+{
+    assert(emitter::isGeneralRegister(reg));
+    gcMarkRegSetNpt(genRegMask(reg) DEBUGARG(forceOutput));
+}
+
+/*****************************************************************************
+ *
+ *  Mark the register as holding non-pointer values.
+ * 
+ */
+
+void GCInfo::gcMarkRegNpt(regNumber reg DEBUGARG(bool forceOutput))
+{
+    if (!emitter::isGeneralRegister(reg))
+    {
+        return;
+    }
+
+    gcMarkRegSetNpt(genRegMask(reg) DEBUGARG(forceOutput));
+}
+
 /*****************************************************************************
  *
  *  Mark the set of registers given by the specified mask as holding
  *  non-pointer values.
  */
 
-void GCInfo::gcMarkRegSetNpt(regMaskOnlyOne regMask DEBUGARG(bool forceOutput))
+void GCInfo::gcMarkRegSetNpt(regMaskGpr regMask DEBUGARG(bool forceOutput))
 {
-    assert(compiler->IsOnlyOneRegMask(regMask));
+    // We only care about gpr registers because those are the ones that hold
+    // gc pointers.
+    assert(compiler->IsGprRegMask(regMask));
 
     /* NOTE: don't unmark any live register variables */
 
@@ -211,8 +242,12 @@ void GCInfo::gcMarkRegSetNpt(regMaskOnlyOne regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
-    singleRegMask regMask = genRegMask(reg);
+    if (!emitter::isGeneralRegister(reg))
+    {
+        return;
+    }
 
+    singleRegMask regMask = genRegMask(reg);
     switch (type)
     {
         case TYP_REF:

@@ -1748,7 +1748,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
                                 node->gtElemOffset);
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
+    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask().gprRegs);
 
     genProduceReg(node);
 }
@@ -3305,7 +3305,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 #endif
         inst_JMP(EJ_ne, loop);
 
-        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+        gcInfo.gcMarkGprRegNpt(dstReg);
     }
 }
 
@@ -3517,7 +3517,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // However, for minopts or debuggable code, we keep it live to support managed return value debugging.
     if ((call->gtNext == nullptr) && !compiler->opts.MinOpts() && !compiler->opts.compDbgCode)
     {
-        gcInfo.gcMarkRegSetNpt(RBM_INTRET);
+        gcInfo.gcMarkGprRegNpt(REG_INTRET);
     }
 }
 
@@ -3847,6 +3847,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         varDsc = compiler->lvaGetDesc(varNum);
+        regNumber varReg = varDsc->GetRegNum();
 
         if (varDsc->lvPromoted)
         {
@@ -3857,17 +3858,17 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         }
         noway_assert(varDsc->lvIsParam);
 
-        if (varDsc->lvIsRegArg && (varDsc->GetRegNum() != REG_STK))
+        if (varDsc->lvIsRegArg && (varReg != REG_STK))
         {
             // Skip reg args which are already in its right register for jmp call.
             // If not, we will spill such args to their stack locations.
             //
             // If we need to generate a tail call profiler hook, then spill all
             // arg regs to free them up for the callback.
-            if (!compiler->compIsProfilerHookNeeded() && (varDsc->GetRegNum() == varDsc->GetArgReg()))
+            if (!compiler->compIsProfilerHookNeeded() && (varReg == varDsc->GetArgReg()))
                 continue;
         }
-        else if (varDsc->GetRegNum() == REG_STK)
+        else if (varReg == REG_STK)
         {
             // Skip args which are currently living in stack.
             continue;
@@ -3876,7 +3877,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // If we came here it means either a reg argument not in the right register or
         // a stack argument currently living in a register.  In either case the following
         // assert should hold.
-        assert(varDsc->GetRegNum() != REG_STK);
+        assert(varReg != REG_STK);
         assert(varDsc->IsEnregisterableLcl());
         var_types storeType = varDsc->GetStackSlotHomeType();
         emitAttr  storeSize = emitActualTypeSize(storeType);
@@ -3901,9 +3902,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
-        singleRegMask tempMask = genRegMask(varDsc->GetRegNum());
-        regSet.RemoveMaskVars(varDsc->TypeGet(), tempMask);
-        gcInfo.gcMarkRegSetNpt(tempMask);
+        regSet.RemoveMaskVars(varDsc->TypeGet(), genRegMask(varReg));
+        gcInfo.gcMarkRegNpt(varReg);
         if (compiler->lvaIsGCTracked(varDsc))
         {
             VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);

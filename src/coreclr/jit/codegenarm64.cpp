@@ -3962,7 +3962,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         instGen_MemoryBarrier();
 
-        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask().gprRegs);
     }
 
     if (targetReg != REG_NA)
@@ -4112,7 +4112,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         instGen_MemoryBarrier();
 
-        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask().gprRegs);
     }
 
     if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))

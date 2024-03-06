@@ -2706,6 +2706,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     }
                 }
 
+                //if ((structIntRegs > 0) && (structFloatRegs > 0))
+                //{
+                //    assert(!"Different numbers");
+                //}
+
                 isRegArg = ((nextFltArgRegNum + structFloatRegs) <= MAX_FLOAT_REG_ARG) &&
                            ((intArgRegNum + structIntRegs) <= MAX_REG_ARG);
             }
@@ -2817,6 +2822,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         ++structFloatRegs;
                     }
                 }
+                //if ((structIntRegs > 0) && (structFloatRegs > 0))
+                //{
+                //    assert(!"Different numbers");
+                //}
             }
 #endif // defined(UNIX_AMD64_ABI)
             else

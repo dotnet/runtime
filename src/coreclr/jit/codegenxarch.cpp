@@ -974,7 +974,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     {
         emit->emitIns(INS_cdq, size);
         // the cdq instruction writes RDX, So clear the gcInfo for RDX
-        gcInfo.gcMarkRegSetNpt(RBM_RDX);
+        gcInfo.gcMarkGprRegNpt(REG_RDX);
     }
 
     // Perform the 'targetType' (64-bit or 32-bit) divide instruction
@@ -1583,7 +1583,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 
     // If there is a conflict then swap the condition anyway. LSRA should have
     // ensured the other way around has no conflict.
-    if ((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
+    if ((trueVal->gtGetContainedRegMask() & dstReg) != 0)
     {
         std::swap(trueVal, falseVal);
         cc = GenCondition::Reverse(cc);
@@ -1594,7 +1594,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     // There may also be a conflict with the falseVal in case this is an AND
     // condition. Once again, after swapping there should be no conflict as
     // ensured by LSRA.
-    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
+    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask() & dstReg) != 0)
     {
         std::swap(trueVal, falseVal);
         cc   = GenCondition::Reverse(cc);
@@ -1604,13 +1604,13 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
     assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
-    assert((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
+    assert((trueVal->gtGetContainedRegMask() & dstReg) == 0);
     inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
 
     if (desc.oper == GT_AND)
     {
         assert(falseVal->isUsedFromReg());
-        assert((falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
+        assert((falseVal->gtGetContainedRegMask() & dstReg) == 0);
         inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
                    falseVal);
     }
@@ -3402,7 +3402,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
         inst_JMP(EJ_jne, loop);
 
-        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+        gcInfo.gcMarkGprRegNpt(dstReg);
     }
 }
 
@@ -4310,8 +4310,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     // Clear the gcInfo for RSI and RDI.
     // While we normally update GC info prior to the last instruction that uses them,
     // these actually live into the helper call.
-    gcInfo.gcMarkRegSetNpt(RBM_RSI);
-    gcInfo.gcMarkRegSetNpt(RBM_RDI);
+    gcInfo.gcMarkGprRegNpt(REG_RSI);
+    gcInfo.gcMarkGprRegNpt(REG_RDI);
 }
 
 #ifdef TARGET_AMD64
@@ -4504,7 +4504,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, tmpReg, addr->GetRegNum(), 0);
             inst_JMP(EJ_jne, loop);
 
-            gcInfo.gcMarkRegSetNpt(genRegMask(addr->GetRegNum()));
+            gcInfo.gcMarkGprRegNpt(addr->GetRegNum());
             genProduceReg(node);
         }
         return;
@@ -5435,7 +5435,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GetEmitter()->emitIns_R_ARX(INS_lea, emitTypeSize(node->TypeGet()), dstReg, baseReg, tmpReg, scale,
                                 static_cast<int>(node->gtElemOffset));
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
+    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask().gprRegs);
 
     genProduceReg(node);
 }
@@ -6191,7 +6191,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // However, for minopts or debuggable code, we keep it live to support managed return value debugging.
     if ((call->gtNext == nullptr) && compiler->opts.OptimizationEnabled())
     {
-        gcInfo.gcMarkRegSetNpt(RBM_INTRET);
+        gcInfo.gcMarkGprRegNpt(REG_INTRET);
     }
 
 #if defined(DEBUG) && defined(TARGET_X86)
@@ -6621,7 +6621,10 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Therefore manually update life of varDsc->GetRegNum().
         regMaskOnlyOne tempMask = varDsc->lvRegMask();
         regSet.RemoveMaskVars(varDsc->TypeGet(), tempMask);
-        gcInfo.gcMarkRegSetNpt(tempMask);
+        if (varTypeUsesIntReg(varDsc))
+        {
+            gcInfo.gcMarkRegSetNpt(tempMask);
+        }
         if (compiler->lvaIsGCTracked(varDsc))
         {
 #ifdef DEBUG
@@ -6921,8 +6924,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
         !varTypeIsByte(targetType))
     {
-        regMaskFloat targetRegMask = genRegMask(targetReg);
-        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
+        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetReg) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
             targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
@@ -7092,8 +7094,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
             !varTypeIsByte(targetType))
         {
-            regMaskGpr targetRegMask = genRegMask(targetReg);
-            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
+            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetReg) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
                 targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed

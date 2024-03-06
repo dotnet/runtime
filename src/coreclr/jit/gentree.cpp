@@ -1059,14 +1059,14 @@ bool GenTree::NeedsConsecutiveRegisters() const
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskMixed GenTree::gtGetContainedRegMask()
+AllRegsMask GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
-        return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
+        return isUsedFromReg() ? gtGetRegMask() : AllRegsMask();
     }
 
-    regMaskMixed mask = 0;
+    AllRegsMask mask;
     for (GenTree* operand : Operands())
     {
         mask |= operand->gtGetContainedRegMask();
@@ -1083,13 +1083,13 @@ regMaskMixed GenTree::gtGetContainedRegMask()
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskMixed GenTree::gtGetRegMask() const
+AllRegsMask GenTree::gtGetRegMask() const
 {
-    regMaskMixed resultMask;
+    AllRegsMask resultMask;
 
     if (IsMultiRegCall())
     {
-        resultMask = genRegMask(GetRegNum());
+        resultMask = createRegMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
@@ -1102,13 +1102,12 @@ regMaskMixed GenTree::gtGetRegMask() const
         const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
         const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
-        resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
         {
             regNumber reg = copyOrReload->GetRegNumByIdx(i);
             if (reg != REG_NA)
             {
-                resultMask |= genRegMask(reg);
+                resultMask |= reg;
             }
         }
     }
@@ -1118,18 +1117,17 @@ regMaskMixed GenTree::gtGetRegMask() const
         const GenTreePutArgSplit* splitArg = AsPutArgSplit();
         const unsigned            regCount = splitArg->gtNumRegs;
 
-        resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
         {
             regNumber reg = splitArg->GetRegNumByIdx(i);
             assert(reg != REG_NA);
-            resultMask |= genRegMask(reg);
+            resultMask |= reg;
         }
     }
 #endif // FEATURE_ARG_SPLIT
     else
     {
-        resultMask = genRegMask(GetRegNum());
+        resultMask = createRegMask(GetRegNum());
     }
 
     return resultMask;
@@ -2154,16 +2152,17 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
 // Return Value:
 //    Reg mask of gtOtherRegs of call node.
 //
-regMaskMixed GenTreeCall::GetOtherRegMask() const
+AllRegsMask GenTreeCall::GetOtherRegMask() const
 {
-    regMaskMixed resultMask = RBM_NONE;
+    AllRegsMask resultMask;
 
 #if FEATURE_MULTIREG_RET
     for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
     {
-        if (gtOtherRegs[i] != REG_NA)
+        regNumber otherReg = (regNumber)gtOtherRegs[i];
+        if (otherReg != REG_NA)
         {
-            resultMask |= genRegMask((regNumber)gtOtherRegs[i]);
+            resultMask |= otherReg;
             continue;
         }
         break;

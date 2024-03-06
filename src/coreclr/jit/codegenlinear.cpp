@@ -938,7 +938,14 @@ void CodeGen::genSpillVar(GenTree* tree)
 
         // Remove the live var from the register.
         genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(tree));
-        gcInfo.gcMarkRegSetNpt(varDsc->lvRegMask());
+        if (varTypeUsesIntReg(varDsc))
+        {
+            // TYP_STRUCT are also VTR_INT and can return vector registers.
+            // Make sure that we pass the register, so Npt will be called
+            // only if the `reg` is Gpr.
+            regNumber reg = varDsc->GetRegNum();
+            gcInfo.gcMarkRegNpt(reg);
+        }
 
         if (VarSetOps::IsMember(compiler, gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
         {
@@ -1455,11 +1462,11 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         if (fldVarDsc->GetRegNum() == REG_STK)
         {
             // We have loaded this into a register only temporarily
-            gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+            gcInfo.gcMarkRegNpt(reg);
         }
         else if (lcl->IsLastUse(multiRegIndex))
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(fldVarDsc->GetRegNum()));
+            gcInfo.gcMarkRegNpt(fldVarDsc->GetRegNum());
         }
     }
     else
@@ -1467,7 +1474,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         regNumber regAtIndex = tree->GetRegByIndex(multiRegIndex);
         if (regAtIndex != REG_NA)
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(regAtIndex));
+            gcInfo.gcMarkRegNpt(regAtIndex);
         }
     }
     return reg;
@@ -1534,11 +1541,11 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         if (varDsc->GetRegNum() == REG_STK)
         {
             // We have loaded this into a register only temporarily
-            gcInfo.gcMarkRegSetNpt(genRegMask(tree->GetRegNum()));
+            gcInfo.gcMarkRegNpt(tree->GetRegNum());
         }
         else if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(varDsc->GetRegNum()));
+            gcInfo.gcMarkRegNpt(varDsc->GetRegNum());
         }
     }
     else if (tree->gtSkipReloadOrCopy()->IsMultiRegLclVar())
@@ -1564,17 +1571,17 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             if (fldVarDsc->GetRegNum() == REG_STK)
             {
                 // We have loaded this into a register only temporarily
-                gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                gcInfo.gcMarkRegNpt(reg);
             }
             else if (lcl->IsLastUse(i))
             {
-                gcInfo.gcMarkRegSetNpt(genRegMask(fldVarDsc->GetRegNum()));
+                gcInfo.gcMarkRegNpt(fldVarDsc->GetRegNum());
             }
         }
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask().gprRegs);
     }
 
     genCheckConsumeNode(tree);
@@ -1858,7 +1865,7 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 
     genUnspillRegIfNeeded(putArgNode);
 
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
+    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask().gprRegs);
 
     genCheckConsumeNode(putArgNode);
 }
@@ -2171,14 +2178,14 @@ void CodeGen::genProduceReg(GenTree* tree)
                     {
                         regNumber reg = tree->GetRegByIndex(i);
                         regSet.rsSpillTree(reg, tree, i);
-                        gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                        gcInfo.gcMarkRegNpt(reg);
                     }
                 }
             }
             else
             {
                 regSet.rsSpillTree(tree->GetRegNum(), tree);
-                gcInfo.gcMarkRegSetNpt(genRegMask(tree->GetRegNum()));
+                gcInfo.gcMarkRegNpt(tree->GetRegNum());
             }
 
             tree->gtFlags |= GTF_SPILLED;
@@ -2285,7 +2292,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(dstMask);
+        gcInfo.gcMarkRegNpt(dst);
     }
 }
 

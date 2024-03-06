@@ -7710,7 +7710,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 
         if (compiler->compMethodReturnsRetBufAddr())
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
+            gcInfo.gcMarkGprRegNpt(REG_INTRET);
         }
         else
         {
@@ -7718,7 +7718,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                    gcInfo.gcMarkRegNpt(retTypeDesc.GetABIReturnReg(i));
                 }
             }
         }
@@ -8208,7 +8208,7 @@ busyRegs.regType |= genRegMask(targetReg);
                 // The old location is dying
                 genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
 
-                gcInfo.gcMarkRegSetNpt(genRegMask(op1->GetRegNum()));
+                gcInfo.gcMarkRegNpt(op1->GetRegNum());
 
                 genUpdateVarReg(varDsc, treeNode);
 
@@ -8275,7 +8275,7 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
             {
                 // The old location is dying
                 genUpdateRegLife(fieldVarDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
-                gcInfo.gcMarkRegSetNpt(genRegMask(sourceReg));
+                gcInfo.gcMarkRegNpt(sourceReg);
                 genUpdateVarReg(fieldVarDsc, treeNode);
 
                 // Report the home change for this variable
