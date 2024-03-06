@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// not as a separate substitution file, for it to work with NativeAot.
 	// Related: https://github.com/dotnet/runtime/issues/88647
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
-		resources: new object[] { new [] { "FeatureGuardkDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
+		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
 	// FeatureGuardAttribute is currently only supported by the analyzer.
 	// The same guard behavior is achieved for ILLink/ILCompiler using substitutions.
 	[SetupCompileResource ("FeatureGuardAttributeDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
