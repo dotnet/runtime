@@ -177,6 +177,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=110000" />
 
       <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
+      <MonoAOTCompilerDefaultAotArguments Include="compile-in-child" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
     </ItemGroup>
 
     <PropertyGroup>
