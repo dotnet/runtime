@@ -20,6 +20,17 @@ trigger:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
+resources:
+  repositories:
+  - repository: PerformanceGithubRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/performance
+  - repository: InternalPerformanceRepo
+    type: git
+    name: dotnet-performance
+    ref: caaavik/python-pipeline-for-runtime 
+
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
 # And the rest are build jobs - wasm, mono, coreclr, and libraries.

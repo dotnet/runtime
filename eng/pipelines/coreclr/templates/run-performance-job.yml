@@ -29,17 +29,6 @@ parameters:
   helixTypeSuffix: ''             # optional -- appends to HelixType
   additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
-resources:
-  repositories:
-  - repository: PerformanceGithubRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/performance
-  - repository: InternalPerformanceRepo
-    type: git
-    name: dotnet-performance
-    ref: caaavik/python-pipeline-for-runtime 
-
 jobs:
 - template: xplat-pipeline-job.yml
   parameters:
