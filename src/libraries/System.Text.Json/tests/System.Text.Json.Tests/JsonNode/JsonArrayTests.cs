@@ -475,7 +475,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal("value", ((JsonValue)jArrayEnumerator.Current).GetValue<string>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void LazyInitializationIsThreadSafe()
         {
             string arrayText = "[\"elem0\",\"elem1\"]";

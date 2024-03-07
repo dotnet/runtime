@@ -958,7 +958,7 @@ namespace System.Text.Json.Nodes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void LazyInitializationIsThreadSafe()
         {
             string arrayText = "{\"prop0\":0,\"prop1\":1}";
