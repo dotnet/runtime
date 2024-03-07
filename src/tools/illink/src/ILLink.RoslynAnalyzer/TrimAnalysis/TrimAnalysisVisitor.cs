@@ -436,21 +436,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
 
-			// FeatureCheck validation needs to happen only for properties.
-			// Include setter properties here because they will get validated later.
-			// TODO: PropertySet is never encountered here.
-			if (method.MethodKind != MethodKind.PropertyGet && method.MethodKind != MethodKind.PropertySet)
+			// FeatureGuard validation needs to happen only for property getters.
+			// Include properties with setters here because they will get validated later.
+			if (method.MethodKind != MethodKind.PropertyGet)
 				return;
 
 			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
-			var featureCheckAnnotations = propertySymbol.GetFeatureCheckAnnotations (_dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			var featureCheckAnnotations = propertySymbol.GetFeatureGuardAnnotations ();
 
 			// If there are no feature checks, there is nothing to validate.
 			if (featureCheckAnnotations.IsEmpty())
 				return;
 
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisReturnValuePattern (returnConditionValue, featureCheckAnnotations, operation, propertySymbol));
+				new FeatureCheckReturnValuePattern (returnConditionValue, featureCheckAnnotations, operation, propertySymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, in FeatureContext featureContext)

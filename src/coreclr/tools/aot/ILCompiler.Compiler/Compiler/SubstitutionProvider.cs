@@ -35,54 +35,47 @@ namespace ILCompiler
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
 
-                // If there are no substitutions for the method, look for FeatureCheckAttribute on the property,
-                // and substitute 'false' for guards for features that are known to be disabled.
-                if (IsGuardForDisabledFeature (ecmaMethod))
-                    return BodySubstitution.Create (0);
+                if (TryGetFeatureCheckValue(ecmaMethod, out bool value))
+                    return BodySubstitution.Create(value ? 1 : 0);
             }
 
             return null;
         }
 
-        private bool IsGuardForDisabledFeature (EcmaMethod ecmaMethod)
+        private bool TryGetFeatureCheckValue(EcmaMethod method, out bool value)
         {
-            if (!ecmaMethod.Signature.IsStatic)
+            value = false;
+
+            if (!method.Signature.IsStatic)
                 return false;
 
-            if ((ecmaMethod.Attributes & MethodAttributes.SpecialName) == 0)
+            if (!method.Signature.ReturnType.IsWellKnownType(WellKnownType.Boolean))
                 return false;
 
-            if (ecmaMethod.OwningType is not EcmaType declaringType)
+            if (FindProperty(method) is not PropertyPseudoDesc property)
                 return false;
 
-            MetadataReader reader = declaringType.MetadataReader;
+            if (property.SetMethod != null)
+                return false;
 
-            // Look for a property with a getter that matches the method.
-            foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
+            foreach (var featureSwitchDefinitionAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
             {
-                PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
-                var accessors = property.GetAccessors();
-                var getter = accessors.Getter;
-                if (getter.IsNil)
+                if (featureSwitchDefinitionAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: string switchName }])
                     continue;
 
-                if (getter != ecmaMethod.Handle)
+                // If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
+                // We don't want to infer feature switch settings from FeatureGuard.
+                return _hashtable._switchValues.TryGetValue(switchName, out value);
+            }
+
+            foreach (var featureGuardAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute"))
+            {
+                if (featureGuardAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
                     continue;
 
-                // Found the matching property. Look for FeatureCheckAttribute on the property.
-                PropertyPseudoDesc propertyDesc = new PropertyPseudoDesc(declaringType, propertyHandle);
-                foreach (var attr in propertyDesc.GetDecodedCustomAttributes ("System.Diagnostics.CodeAnalysis", "FeatureCheckAttribute")) {
-                    if (attr.FixedArguments.Length != 1)
-                        continue; 
-
-                    if (attr.FixedArguments[0].Value is not MetadataType featureType)
-                        continue;
-
-
-                    if (featureType.Namespace is not "System.Diagnostics.CodeAnalysis")
-                        continue;
-
+                if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
                     switch (featureType.Name) {
+                    case "RequiresAssemblyFilesAttribute":
                     case "RequiresUnreferencedCodeAttribute":
                         return true;
                     case "RequiresDynamicCodeAttribute":
@@ -92,14 +85,31 @@ namespace ILCompiler
                             && !isDynamicCodeSupported)
                             return true;
                         break;
-                    case "RequiresAssemblyFilesAttribute":
-                        return true;
                     }
                 }
-                return false;
             }
 
             return false;
+
+            static PropertyPseudoDesc FindProperty(EcmaMethod method)
+            {
+                if ((method.Attributes & MethodAttributes.SpecialName) == 0)
+                    return null;
+
+                if (method.OwningType is not EcmaType declaringType)
+                    return null;
+
+                var reader = declaringType.MetadataReader;
+                foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
+                {
+                    PropertyDefinition propertyDef = reader.GetPropertyDefinition(propertyHandle);
+                    var property = new PropertyPseudoDesc(declaringType, propertyHandle);
+                    if (property.GetMethod == method)
+                        return property;
+                }
+
+                return null;
+            }
         }
 
         public object GetSubstitution(FieldDesc field)

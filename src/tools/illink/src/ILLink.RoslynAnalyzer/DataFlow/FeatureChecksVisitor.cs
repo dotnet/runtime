@@ -50,7 +50,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// A single property may serve as a feature check for multiple features.
 			FeatureChecksValue featureChecks = FeatureChecksValue.None;
 			foreach (var analyzer in _dataFlowAnalyzerContext.EnabledRequiresAnalyzers) {
-				if (analyzer.IsFeatureCheck (operation.Property, _dataFlowAnalyzerContext)) {
+				if (analyzer.IsFeatureGuard (operation.Property, _dataFlowAnalyzerContext.Compilation)) {
 					var featureCheck = new FeatureChecksValue (analyzer.RequiresAttributeFullyQualifiedName);
 					featureChecks = featureChecks.And (featureCheck);
 				}
@@ -66,6 +66,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			FeatureChecksValue context = Visit (operation.Operand, state);
 			return context.Negate ();
+		}
+
+		public override FeatureChecksValue VisitLiteral (ILiteralOperation operation, StateValue state)
+		{
+			// 'false' can guard any feature
+			if (GetConstantBool (operation.ConstantValue) is false)
+				return FeatureChecksValue.All;
+
+			return FeatureChecksValue.None;
 		}
 
 		public bool? GetLiteralBool (IOperation operation)

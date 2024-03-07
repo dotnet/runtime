@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -45,7 +46,7 @@ namespace Mono.Linker
 			}
 
 			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
-				&& IsGuardForDisabledFeature (method))
+				&& TryGetFeatureCheckValue (method, out _))
 				return MethodAction.ConvertToStub;
 
 			return MethodAction.Nothing;
@@ -56,41 +57,67 @@ namespace Mono.Linker
 			if (PrimarySubstitutionInfo.MethodStubValues.TryGetValue (method, out value))
 				return true;
 
-			if (TryGetSubstitutionInfo (method, out var embeddedXml)) {
-				return embeddedXml.MethodStubValues.TryGetValue (method, out value);
-			}
+			if (TryGetSubstitutionInfo (method, out var embeddedXml)
+				&& embeddedXml.MethodStubValues.TryGetValue (method, out value))
+				return true;
 
-			// If there are no substitutions for the method, look for FeatureCheckAttribute on the property,
-			// and substitute 'false' for guards for features that are known to be disabled.
 			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
-				&& IsGuardForDisabledFeature (method)) {
-				value = false;
+				&& TryGetFeatureCheckValue (method, out bool bValue)) {
+				value = bValue ? 1 : 0;
 				return true;
 			}
 
 			return false;
 		}
 
-		internal bool IsGuardForDisabledFeature (MethodDefinition method)
+		internal bool TryGetFeatureCheckValue (MethodDefinition method, out bool value)
 		{
-			if (!method.IsGetter && !method.IsSetter)
+			value = false;
+
+			if (!method.IsStatic)
 				return false;
 
-			// Look for a property with a getter that matches the method.
-			foreach (var property in method.DeclaringType.Properties) {
-				if (property.GetMethod != method && property.SetMethod != method)
+			if (method.ReturnType.MetadataType != MetadataType.Boolean)
+				return false;
+
+			if (FindProperty (method) is not PropertyDefinition property)
+				return false;
+
+			if (property.SetMethod != null)
+				return false;
+
+			foreach (var featureSwitchDefinitionAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute")) {
+				if (featureSwitchDefinitionAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: string switchName }])
 					continue;
 
-				// Include non-static, non-bool properties with setters as those will get validated inside GetLinkerAttributes.
-				foreach (var featureCheckAttribute in _context.Annotations.GetLinkerAttributes<FeatureCheckAttribute> (property)) {
-					// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
-					var requiresAttributeType = featureCheckAttribute.FeatureType;
-					if (requiresAttributeType.Name == "RequiresUnreferencedCodeAttribute" && requiresAttributeType.Namespace == "System.Diagnostics.CodeAnalysis")
-						return true;
+				// If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
+				// We don't want to infer feature switch settings from FeatureGuard.
+				return _context.FeatureSettings.TryGetValue (switchName, out value);
+			}
+
+			foreach (var featureGuardAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
+				if (featureGuardAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
+					continue;
+
+				if (featureType.FullName == "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute") {
+					value = false;
+					return true;
 				}
 			}
 
 			return false;
+
+			static PropertyDefinition? FindProperty (MethodDefinition method) {
+				if (!method.IsGetter)
+					return null;
+
+				foreach (var property in method.DeclaringType.Properties) {
+					if (property.GetMethod == method)
+						return property;
+				}
+
+				return null;
+			}
 		}
 
 		public bool TryGetFieldUserValue (FieldDefinition field, out object? value)

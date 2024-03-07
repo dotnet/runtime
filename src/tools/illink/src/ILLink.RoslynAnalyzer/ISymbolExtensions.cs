@@ -71,57 +71,14 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static ValueSet<string> GetFeatureCheckAnnotations (
-			this IPropertySymbol propertySymbol,
-			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
+		internal static ValueSet<string> GetFeatureGuardAnnotations (this IPropertySymbol propertySymbol)
 		{
-			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
-			foreach (var attributeData in propertySymbol.GetAttributes ()) {
-				if (IsFeatureCheckAttribute (attributeData, out INamedTypeSymbol? featureType))
-					AddFeatures (featureType);
+			HashSet<string> featureSet = new ();
+			foreach (var featureGuardAttribute in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
+				if (featureGuardAttribute.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
+					featureSet.Add (featureType.GetDisplayName ());
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
-
-			void AddFeatures (INamedTypeSymbol featureType) {
-				foreach (var analyzer in enabledRequiresAnalyzers) {
-					if (featureType.HasName (analyzer.RequiresAttributeFullyQualifiedName)) {
-						featureSet.Add (analyzer.RequiresAttributeFullyQualifiedName);
-						// Don't need to continue looking for dependencies because the
-						// analyzer attributes don't have dependencies.
-						return;
-					}
-				}
-
-				// Look at FeatureDependsOn attributes on the feature type.
-				foreach (var featureTypeAttributeData in featureType.GetAttributes ()) {
-					if (IsFeatureDependsOnAttribute (featureTypeAttributeData, out INamedTypeSymbol? featureDependsOnType))
-						AddFeatures (featureDependsOnType);
-				}
-
-				static bool IsFeatureDependsOnAttribute (AttributeData attributeData, [NotNullWhen (true)] out INamedTypeSymbol? featureType) {
-					featureType = null;
-					if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureDependsOnAttribute))
-						return false;
-
-					if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
-						return false;
-
-					featureType = featureTypeSymbol;
-					return true;
-				}
-			}
-
-			static bool IsFeatureCheckAttribute (AttributeData attributeData, [NotNullWhen (true)] out INamedTypeSymbol? featureType) {
-				featureType = null;
-				if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute))
-					return false;
-
-				if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
-					return false;
-
-				featureType = featureTypeSymbol;
-				return true;
-			}
 		}
 
 		internal static bool TryGetReturnAttribute (this IMethodSymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)

@@ -1147,9 +1147,8 @@ namespace Mono.Linker
 		OptimizeTypeHierarchyAnnotations = 1 << 24,
 
 		/// <summary>
-		/// Substitute "featuredefault" settings for substitution XMLs, and
-		/// FeatureCheck(typeof(RequiresUnreferencedCodeAttribute)) properties for features not
-		/// explicitly given values on the command-line.
+		/// Option to substitute properties annotated as FeatureCheck(typeof(SomeDisabledFeature))
+		/// with false when the feature is disabled on the command-line (via --feature SomeDisabledFeature false)
 		/// </summary>
 		SubstituteFeatureChecks = 1 << 25,
 	}
