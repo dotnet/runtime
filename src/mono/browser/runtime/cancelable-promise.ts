@@ -151,7 +151,7 @@ export class PromiseHolder extends ManagedObject {
                 settleUnsettledPromise();
             }
 
-            mono_log_warn("complete_task " + this.gc_handle);
+            mono_log_warn("complete_task " + this.gc_handle + " \n" + new Error().stack);
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(this, this.gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
