@@ -14,6 +14,8 @@ namespace System.Net.Quic;
 
 internal static partial class MsQuicConfiguration
 {
+    private const int CheckExpiredModulo = 32;
+
     private static readonly ConcurrentDictionary<CacheKey, MsQuicSafeHandle> s_configurationCache = new();
 
     private readonly struct CacheKey : IEquatable<CacheKey>
@@ -104,6 +106,7 @@ internal static partial class MsQuicConfiguration
                 //
                 bool ignore = false;
                 handle.DangerousAddRef(ref ignore);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Using cached MsQuicConfiguration {key}");
                 return handle;
             }
             catch (ObjectDisposedException)
@@ -124,6 +127,7 @@ internal static partial class MsQuicConfiguration
                 // add-ref the handle to signify that it is statically cached
                 bool ignore = false;
                 h.DangerousAddRef(ref ignore);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching MsQuicConfiguration {key}");
                 return h;
             },
             (k, existing, h) =>
@@ -134,12 +138,12 @@ internal static partial class MsQuicConfiguration
             },
             handle);
 
-        if (s_configurationCache.Count % 32 == 0)
+        if (s_configurationCache.Count % CheckExpiredModulo == 0)
         {
             // let only one thread perform cleanup at a time
             lock (s_configurationCache)
             {
-                if (s_configurationCache.Count % 32 == 0)
+                if (s_configurationCache.Count % CheckExpiredModulo == 0)
                 {
                     CleanupCachedCredentials();
                 }
@@ -158,7 +162,7 @@ internal static partial class MsQuicConfiguration
             var handle = kvp.Value;
 
             //
-            // Unfortunately, we can't get the current refcount of the handle,
+            // Unfortunately, we can't directly get the current refcount of the handle,
             // so we try to release and see if the handle closes.
             //
             handle.DangerousRelease();
@@ -179,7 +183,11 @@ internal static partial class MsQuicConfiguration
 
             if (!inUse)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}");
                 s_configurationCache.TryRemove(kvp.Key, out _);
+                // The handle is closed, but we did not call Dispose on it. Doing so would throw ODE,
+                // suppress finalization to prevent Dispose from being called in Finalizer threads.
+                GC.SuppressFinalize(handle);
             }
         }
 

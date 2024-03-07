@@ -119,14 +119,6 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
     {
-        QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
-
-        if (cipherSuitesPolicy != null)
-        {
-            flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
-            allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
-        }
-
         // Validate options and SSL parameters.
         if (alpnProtocols is null || alpnProtocols.Count <= 0)
         {
@@ -184,12 +176,20 @@ internal static partial class MsQuicConfiguration
                     : 0; // 0 disables the timeout
         }
 
+        QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
+
+        if (cipherSuitesPolicy != null)
+        {
+            flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
+            allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
+        }
+
         CacheKey cacheKey = new CacheKey(
             certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() },
             flags,
             settings,
-            alpnProtocols,
-            allowedCipherSuites); // TODO: defensive copy
+            new List<SslApplicationProtocol>(alpnProtocols), // make defensive copy to prevent modification
+            allowedCipherSuites);
 
         if (intermediates != null)
         {
@@ -208,11 +208,11 @@ internal static partial class MsQuicConfiguration
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
-        msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
+        msquicBuffers.Initialize(cacheKey.ApplicationProtocols, alpnProtocol => alpnProtocol.Protocol);
         ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConfigurationOpen(
             MsQuicApi.Api.Registration,
             msquicBuffers.Buffers,
-            (uint)alpnProtocols.Count,
+            (uint)msquicBuffers.Count,
             &settings,
             (uint)sizeof(QUIC_SETTINGS),
             (void*)IntPtr.Zero,
