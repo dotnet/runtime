@@ -8037,17 +8037,72 @@ void emitter::emitIns_R_I(instruction     ins,
         case INS_sve_and:
         case INS_sve_orr:
         case INS_sve_eor:
-        case INS_sve_bic:
-        case INS_sve_orn:
-        case INS_sve_eon:
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg)); // ddddd
 
             bmi.immNRS = 0;
             canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm = bmi.immNRS;
+            imm = bmi.immNRS; // iiiiiiiiiiiii
             assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             fmt = IF_SVE_BS_1A;
+            break;
+
+        case INS_sve_bic:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg)); // ddddd
+
+            // AND is an alias for BIC, and is always the preferred disassembly.
+            ins = INS_sve_and;
+            imm = -imm - 1;
+
+            bmi.immNRS = 0;
+            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm = bmi.immNRS; // iiiiiiiiiiiii
+            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
+            fmt = IF_SVE_BS_1A;
+            break;
+        
+        case INS_sve_eon:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg)); // ddddd
+
+            // EOR is an alias for EON, and is always the preferred disassembly.
+            ins = INS_sve_eor;
+            imm = -imm - 1;
+
+            bmi.immNRS = 0;
+            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm = bmi.immNRS; // iiiiiiiiiiiii
+            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
+            fmt = IF_SVE_BS_1A;
+            break;
+
+        case INS_sve_orn:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg)); // ddddd
+
+            // ORR is an alias for ORN, and is always the preferred disassembly.
+            ins = INS_sve_orr;
+            imm = -imm - 1;
+
+            bmi.immNRS = 0;
+            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm = bmi.immNRS; // iiiiiiiiiiiii
+            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
+            fmt = IF_SVE_BS_1A;
+            break;
+
+        case INS_sve_dupm:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg)); // ddddd
+
+            bmi.immNRS = 0;
+            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm = bmi.immNRS; // iiiiiiiiiiiii
+            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
+            fmt = IF_SVE_BT_1A;
+
+            // MOV is an alias for DUPM, and is always the preferred disassembly.
             break;
 
         default:

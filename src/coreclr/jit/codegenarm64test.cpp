@@ -5432,17 +5432,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED); // ZIP2 <Zd>.Q, <Zn>.Q, <Zm>.Q
 
     // IF_SVE_BS_1A
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0b1, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0b11, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0b10, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0b100, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0b101, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0b111, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V0, 0x7070, INS_OPTS_SCALABLE_H); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_eor, EA_SCALABLE, REG_V0, 0x03FFC000, INS_OPTS_SCALABLE_S); // EOR <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_orr, EA_SCALABLE, REG_V0, 0x00FFFFF000000000, INS_OPTS_SCALABLE_D); // ORR <Zdn>.<T>, <Zdn>.<T>, #<const>
-    // theEmitter->emitIns_R_I(INS_sve_eon, EA_SCALABLE, REG_V0, 7, INS_OPTS_SCALABLE_B); // EON <Zdn>.<T>, <Zdn>.<T>, #<const>
-    // theEmitter->emitIns_R_I(INS_sve_orn, EA_SCALABLE, REG_V0, 9, INS_OPTS_SCALABLE_H); // ORN <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0x00000000000000AA, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V1, 0xFFFFFFFFFFFFFF55, INS_OPTS_SCALABLE_B); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V2, 0x000000000000FF00, INS_OPTS_SCALABLE_H); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V3, 0xFFFFFFFFFFFF00FF, INS_OPTS_SCALABLE_H); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_eor, EA_SCALABLE, REG_V4, 0x0000000003FFC000, INS_OPTS_SCALABLE_S); // EOR <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_eon, EA_SCALABLE, REG_V5, 0xFFFFFFFFFC003FFF, INS_OPTS_SCALABLE_S); // EON <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_orr, EA_SCALABLE, REG_V6, 0x00FFFFF000000000, INS_OPTS_SCALABLE_D); // ORR <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_orn, EA_SCALABLE, REG_V7, 0xFF00000FFFFFFFFF, INS_OPTS_SCALABLE_D); // ORN <Zdn>.<T>, <Zdn>.<T>, #<const>
+
+    // IF_SVE_BT_1A
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V1, 0x0000000000000070, INS_OPTS_SCALABLE_B); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V2, 0x0000000000003FFC, INS_OPTS_SCALABLE_H); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V3, 0x00000000E003E003, INS_OPTS_SCALABLE_S); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0x5555555555555555, INS_OPTS_SCALABLE_D; // MOV <Zd>.<T>, #<const>
 
     theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0x00FFFFF000000000);
     theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0x6666666666666666);
