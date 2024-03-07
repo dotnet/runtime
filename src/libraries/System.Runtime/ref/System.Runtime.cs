@@ -8426,12 +8426,6 @@ namespace System.Diagnostics.CodeAnalysis
         public ExperimentalAttribute(string diagnosticId) { }
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get; set; }
-    }    
-    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
-    public sealed class FeatureCheckAttribute : Attribute
-    {
-        public FeatureCheckAttribute(Type featureType) { }
-        public Type FeatureType { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     public sealed class FeatureGuardAttribute : System.Attribute
@@ -13138,9 +13132,9 @@ namespace System.Runtime.CompilerServices
         public const string PortablePdb = "PortablePdb";
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
-        [System.Diagnostics.CodeAnalysis.FeatureCheck(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
+        [System.Diagnostics.CodeAnalysis.FeatureGuard(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.FeatureCheck(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
+        [System.Diagnostics.CodeAnalysis.FeatureGuard(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
