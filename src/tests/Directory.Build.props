@@ -163,11 +163,6 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
   </PropertyGroup>
 
-  <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
-  <PropertyGroup>
-    <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
-  </PropertyGroup>
-
   <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID
        and including the RID breaks some of our glob expressions in issues.targets -->
   <PropertyGroup>

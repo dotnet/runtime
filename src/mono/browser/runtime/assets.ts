@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import type { AssetEntryInternal } from "./types/internal";
+
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
-import { AssetEntryInternal } from "./types/internal";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
 import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";

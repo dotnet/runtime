@@ -197,7 +197,9 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.interopCleanupOnExit;
     delete inputs.dumpThreadsOnNonZeroExit;
     delete inputs.logExitCode;
-    delete inputs.pthreadPoolSize;
+    delete inputs.pthreadPoolInitialSize;
+    delete inputs.pthreadPoolUnusedSize;
+    delete inputs.finalizerThreadStartDelayMs;
     delete inputs.asyncFlushOnExit;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;
@@ -205,6 +207,9 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.extensions;
     delete inputs.runtimeId;
+    delete inputs.mainThreadingMode;
+    delete inputs.jsThreadBlockingMode;
+    delete inputs.jsThreadInteropMode;
 
     inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;

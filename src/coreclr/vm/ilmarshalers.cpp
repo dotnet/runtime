@@ -3482,7 +3482,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
 #else
         LocalDesc   locDesc(pargs->mm.m_pMT);
-        locDesc.MakeCopyConstructedPointer();
+        locDesc.MakePointer();
 
         pslIL->SetStubTargetArgType(&locDesc);
         pslILDispatch->EmitLDARG(argidx);

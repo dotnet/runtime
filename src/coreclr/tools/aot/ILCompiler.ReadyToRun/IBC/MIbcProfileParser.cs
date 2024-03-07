@@ -353,7 +353,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        private static IEnumerable<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
+        private static List<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);
@@ -369,6 +369,7 @@ namespace ILCompiler.IBC
             Dictionary<MethodDesc, int> weights = null;
             List<long> instrumentationDataLongs = null;
             PgoSchemaElem[] pgoSchemaData = null;
+            var methodProfileData = new List<MethodProfileData>();
 
             while (ilReader.HasNext)
             {
@@ -552,8 +553,7 @@ namespace ILCompiler.IBC
                             if (methodInProgress != null)
                             {
                                 // If the method being loaded didn't have meaningful input, skip
-                                MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
-                                yield return mibcData;
+                                methodProfileData.Add(new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData));
                             }
                             state = MibcGroupParseState.LookingForNextMethod;
                             exclusiveWeight = 0;
@@ -608,6 +608,8 @@ namespace ILCompiler.IBC
                     }
                 }
             }
+
+            return methodProfileData;
         }
 
         /// <summary>

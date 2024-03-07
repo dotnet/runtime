@@ -98,7 +98,7 @@ namespace System.ComponentModel
         /// The GetEditor method returns an editor of the given type that is
         /// to be associated with the class this type descriptor is representing.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed)]
         public virtual object? GetEditor(Type editorBaseType) => _parent?.GetEditor(editorBaseType);
 
         /// <summary>

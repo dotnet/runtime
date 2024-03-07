@@ -16,7 +16,7 @@ parameters:
   archiveExtension: ''
   archiveType: ''
   tarCompression: ''
-  framework: 'net8.0' # Framework version to get versions for and build for
+  framework: 'net9.0' # Framework version to get versions for and build for
   perfRepo: 'main' # Perf repo to pull for the PerfLabExporter
 
 
@@ -61,13 +61,13 @@ steps:
       echo '{ }' > ./global.json
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
-      curl -Lo maui-supported-sdk-version.json 'https://aka.ms/dotnet/sdk/maui/${{parameters.framework}}.json'
+      curl -Lo maui-supported-sdk-version.json 'https://maui.blob.core.windows.net/metadata/sdks/${{parameters.framework}}.json'
       version=$(sed -nr 's/\s*"version": "(.*)"/\1/p' ./maui-supported-sdk-version.json)
       chmod -R a+rx .
       ./dotnet-install.sh --version $version --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/${{parameters.framework}}.json --configfile NuGet.config
-      ./dotnet workload install android --from-rollback-file https://aka.ms/dotnet/maui/${{parameters.framework}}.json --configfile NuGet.config
+      ./dotnet workload install maui --from-rollback-file https://maui.blob.core.windows.net/metadata/rollbacks/${{parameters.framework}}.json --configfile NuGet.config
+      ./dotnet workload install android --from-rollback-file https://maui.blob.core.windows.net/metadata/rollbacks/${{parameters.framework}}.json --configfile NuGet.config
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
@@ -147,7 +147,7 @@ steps:
 
 # Remove the embed assemblies from source
   - script: |
-      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False
+      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False /p:ForceNet8Current=true
       mv ./src/Core/tests/Benchmarks.Droid/bin/Release/${{parameters.framework}}-android/android-arm64/com.microsoft.maui.benchmarks-Signed.apk ./MonoBenchmarksDroid.apk
     displayName:  Build BDN Android App
     workingDirectory: $(Build.SourcesDirectory)/maui

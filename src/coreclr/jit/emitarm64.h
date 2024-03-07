@@ -43,6 +43,7 @@ void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddr
 void emitDispElementIndex(const ssize_t imm, const bool addComma);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
+void emitDispSmallFloatImm(ssize_t imm, instruction ins);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
 void emitDispCond(insCond cond);
 void emitDispFlags(insCflags flags);
@@ -50,12 +51,16 @@ void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
-void emitDispSveExtendOptsModN(insOpts opt, int n);
+void emitDispSveExtendOptsModN(insOpts opt, ssize_t imm);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
+void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
+void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
+void emitDispSveReg(regNumber reg, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
+void emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
@@ -73,6 +78,7 @@ void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
 void emitDispSvePattern(insSvePattern pattern, bool addComma);
+void emitDispSvePrfop(insSvePrfop prfop, bool addComma);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -294,6 +300,24 @@ static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
 
 static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
+static ssize_t emitEncodeRotationImm90_or_270(ssize_t imm);
+
+static ssize_t emitDecodeRotationImm90_or_270(ssize_t imm);
+
+static bool emitIsValidEncodedRotationImm90_or_270(ssize_t imm);
+
+static ssize_t emitEncodeRotationImm0_to_270(ssize_t imm);
+
+static ssize_t emitDecodeRotationImm0_to_270(ssize_t imm);
+
+static bool emitIsValidEncodedRotationImm0_to_270(ssize_t imm);
+
+static ssize_t emitEncodeSmallFloatImm(double immDbl, instruction ins);
+
+static double emitDecodeSmallFloatImm(ssize_t imm, instruction ins);
+
+static bool emitIsValidEncodedSmallFloatImm(size_t imm);
+
 /************************************************************************
 *
 *  This union is used to encode/decode the cond, nzcv and imm5 values for
@@ -502,13 +526,47 @@ static code_t insEncodeSveElemsize(emitAttr size);
 // This specifically encodes the size at bit locations '22-21'.
 static code_t insEncodeSveElemsize_22_to_21(emitAttr size);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the size at bit locations '18-17'.
+static code_t insEncodeSveElemsize_18_to_17(emitAttr size);
+
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the field 'sz' at bit location '20'.
+static code_t insEncodeSveElemsize_sz_20(emitAttr size);
+
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the field 'sz' at bit location '21'.
 static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
-// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
-static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:20-19'.
+static code_t insEncodeSveElemsize_tszh_23_tszl_20_to_19(emitAttr size);
+
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30' or
+// '21'.
+// This only works on select formats.
+static code_t insEncodeSveElemsize_30_or_21(insFormat fmt, emitAttr size);
+
+// Returns the encoding for the field 'i1:tszh:tszl' at bit locations '23-22:20-18'.
+static code_t insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ssize_t imm);
+
+// Returns the encoding for the field 'tszh:tszl:imm3' at bit locations '23-22:20-19:18-16'.
+static code_t insEncodeSveElemsizeWithShift_tszh_tszl_imm3(const insOpts opt, ssize_t imm, bool isRightShift);
+
+// Returns the encoding for the field 'i1:tsz' at bit locations '20:19-16'.
+static code_t insEncodeSveElemsizeWithImmediate_i1_tsz(const insOpts opt, ssize_t imm);
+
+// Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
+// This specifically encode the field 'rot' at bit location '16'.
+static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
+
+// Returns the encoding to select the constant values 0, 90, 180 or 270 for an Arm64 SVE vector instruction
+// This specifically encode the field 'rot' at bit locations '14-13'.
+static code_t insEncodeSveImm0_to_270_rot(ssize_t imm);
+
+// Returns the encoding to select the constant float values 0, 0.5, 1.0 or 2.0 for an Arm64 SVE vector instruction
+// This specifically encode the field 'i1' at bit location '5'.
+static code_t insEncodeSveSmallFloatImm(ssize_t imm);
 
 // Returns the first register list size for the given SVE instruction.
 static int insGetSveReg1ListSize(instruction ins);
@@ -541,6 +599,53 @@ static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t 
 // for the 'dtype' field.
 static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+// for the 'dtypeh' and 'dtypel' fields.
+static code_t insEncodeSveElemsize_dtypeh_dtypel(instruction ins, insFormat fmt, emitAttr size, code_t code);
+
+// Encodes an immediate value in consecutive bits from most significant position 'hi' to least significant
+// position 'lo'.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeUimm(size_t imm)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+
+    const size_t imm_bits = hi - lo + 1;
+    static_assert(imm_bits < sizeof(code_t) * BITS_PER_BYTE);
+
+    const size_t imm_max = 1 << imm_bits;
+    assert(imm < imm_max);
+
+    code_t result = static_cast<code_t>(imm << lo);
+    assert((result >> lo) == imm);
+    return result;
+}
+
+// Encodes an immediate value across two ranges of consecutive bits, splitting the bits of the immediate
+// value between them. The bit ranges are from hi1-lo1, and hi2-lo2 where the second range is at a less
+// significant position relative to the first.
+template <const size_t hi1, const size_t lo1, const size_t hi2, const size_t lo2>
+static code_t insEncodeSplitUimm(size_t imm)
+{
+    static_assert((hi1 >= lo1) && (lo1 > hi2) && (hi2 >= lo2));
+    static_assert(hi1 < sizeof(code_t) * BITS_PER_BYTE);
+
+    const size_t hi_bits = hi1 - lo1 + 1;
+    const size_t lo_bits = hi2 - lo2 + 1;
+
+    const size_t imm_max = 1 << (hi_bits + lo_bits);
+    assert(imm < imm_max);
+
+    const size_t hi_max = 1 << hi_bits;
+    const size_t lo_max = 1 << lo_bits;
+
+    size_t immhi = (imm >> lo_bits) & (hi_max - 1);
+    size_t immlo = imm & (lo_max - 1);
+
+    return insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
+}
+
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
@@ -562,6 +667,33 @@ static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 6-bits at bit locations '10-5'.
+static code_t insEncodeSimm6_10_to_5(ssize_t imm);
+
+// Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
+static code_t insEncodeSimm6_21_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 5-bits at bit locations '9-5'.
+static code_t insEncodeSimm5_9_to_5(ssize_t imm);
+
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
@@ -574,6 +706,18 @@ static code_t insEncodeUimm2_11_to_10(ssize_t imm);
 // Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
 static code_t insEncodeUimm2_20_to_19(ssize_t imm);
 
+// Returns the encoding for the immediate value as 2-bits at bit locations '23-22'.
+static code_t insEncodeUimm2_23_to_22(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1-bit at bit locations '23'.
+static code_t insEncodeUimm1_23(ssize_t imm);
+
+// Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
+static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1 bit at bit location '10'.
+static code_t insEncodeImm1_10(ssize_t imm);
+
 // Returns the encoding for the immediate value as 1 bit at bit location '11'.
 static code_t insEncodeImm1_11(ssize_t imm);
 
@@ -583,11 +727,26 @@ static code_t insEncodeImm1_22(ssize_t imm);
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
+// Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
+static code_t insEncodeUimm4_19_to_16(ssize_t imm);
+
 // Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
 static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_21_to_16(ssize_t imm);
+
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
+
+// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+static code_t insEncodeUimm3_12_to_10(ssize_t imm);
+
+// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
+static code_t insEncodeUimm3_18_to_16(ssize_t imm);
 
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
@@ -596,6 +755,15 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // Returns the encoding to select the 4/8-byte width specifier <R> at bit location 22
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
+
+// Returns the immediate value for instructions that encode it as a difference from tszh:tszl:imm3.
+static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
+
+// Returns the two 5-bit signed immediates encoded as one ssize_t.
+static ssize_t insEncodeTwoSimm5(ssize_t imm1, ssize_t imm2);
+
+// Decodes imm into two 5-bit signed immediates, using the encoding format from insEncodeTwoSimm5.
+static void insDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2);
 
 // Returns the encoding to select an insSvePattern
 static code_t insEncodeSvePattern(insSvePattern pattern);
@@ -621,7 +789,7 @@ static bool isValidSimm4(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
 static bool isValidSimm9(ssize_t value)
 {
-    return (-256 <= value) && (value <= 255);
+    return (-0x100 <= value) && (value <= 0xFF);
 };
 
 // Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
@@ -654,6 +822,49 @@ static bool isValidSimm4_MultipleOf32(ssize_t value)
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
 };
 
+// Returns true if 'value' is a legal unsigned multiple of 2 immediate 5 bit encoding (such as for LD1H).
+static bool isValidUimm5_MultipleOf2(ssize_t value)
+{
+    return (0 <= value) && (value <= 62) && (value % 2 == 0);
+};
+
+// Returns true if 'value' is a legal unsigned multiple of 4 immediate 5 bit encoding (such as for LD1W).
+static bool isValidUimm5_MultipleOf4(ssize_t value)
+{
+    return (0 <= value) && (value <= 124) && (value % 4 == 0);
+};
+
+// Returns true if 'value' is a legal unsigned multiple of 8 immediate 5 bit encoding (such as for LD1D).
+static bool isValidUimm5_MultipleOf8(ssize_t value)
+{
+    return (0 <= value) && (value <= 248) && (value % 8 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 2 immediate 6 bit encoding (such as for LD1RH).
+static bool isValidUimm6_MultipleOf2(ssize_t value)
+{
+    return (0 <= value) && (value <= 126) && (value % 2 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 4 immediate 6 bit encoding (such as for LD1RSW).
+static bool isValidUimm6_MultipleOf4(ssize_t value)
+{
+    return (0 <= value) && (value <= 252) && (value % 4 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 8 immediate 6 bit encoding (such as for LD1RD).
+static bool isValidUimm6_MultipleOf8(ssize_t value)
+{
+    return (0 <= value) && (value <= 504) && (value % 8 == 0);
+};
+
+template <const size_t bits>
+static bool isValidUimm(ssize_t value)
+{
+    constexpr size_t max = 1 << bits;
+    return (0 <= value) && (value < max);
+}
+
 // Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
 static bool isValidImm1(ssize_t value)
 {
@@ -672,22 +883,46 @@ static bool isValidUimm3(ssize_t value)
     return (0 <= value) && (value <= 7);
 };
 
+// Returns true if 'value' is a legal unsigned immediate 3 bit encoding, starting from 1 (such as for SHRNB).
+static bool isValidUimm3From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 8);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
 static bool isValidUimm4(ssize_t value)
 {
-    return (0 <= value) && (value <= 15);
+    return (0 <= value) && (value <= 0xF);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
 static bool isValidUimm4From1(ssize_t value)
 {
-    return (1 <= value) && (value <= 16);
+    return (1 <= value) && (value <= 0x10);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
 static bool isValidUimm5(ssize_t value)
 {
     return (0 <= value) && (value <= 0x1FLL);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 6 bit encoding (such as for LD1RD).
+static bool isValidUimm6(ssize_t value)
+{
+    return (0 <= value) && (value <= 63);
+}
+
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding, starting from 1 (such as for SHRNB).
+static bool isValidUimm5From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 0x20);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 6 bit encoding, starting from 1 (such as for XAR).
+static bool isValidUimm6From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 0x40);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).
@@ -705,7 +940,13 @@ static bool isValidUimm8(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
 static bool isValidSimm8(ssize_t value)
 {
-    return (-128 <= value) && (value <= 127);
+    return (-0x80 <= value) && (value <= 0x7F);
+};
+
+// Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
+static bool isValidSimm8_MultipleOf256(ssize_t value)
+{
+    return (-0x8000 <= value) && (value <= 0x7f00) && (value % 256 == 0);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
@@ -743,6 +984,18 @@ static bool isValidSimm5(ssize_t value)
 {
     return (-0x10LL <= value) && (value <= 0xFLL);
 };
+
+// Returns true if 'value' is a legal signed immediate 6 bit encoding (such as for PRFB).
+static bool isValidSimm6(ssize_t value)
+{
+    return (-32 <= value) && (value <= 31);
+};
+
+// Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
+static bool isValidRot(ssize_t value)
+{
+    return (value == 0) || (value == 90) || (value == 180) || (value == 270);
+}
 
 // Returns true if 'value' represents a valid 'bitmask immediate' encoding.
 static bool isValidImmNRS(size_t value, emitAttr size)
@@ -782,6 +1035,10 @@ static insOpts optMakeArrangement(emitAttr datasize, emitAttr elemsize);
 
 //    For the given 'datasize' and 'opt' returns true if it specifies a valid vector register arrangement
 static bool isValidArrangement(emitAttr datasize, insOpts opt);
+
+// Expands an option that has different size operands (INS_OPTS_*_TO_*) into a pair of scalable options where
+// the first describes the size of the destination operand and the second describes the size of the source operand.
+static void optExpandConversionPair(insOpts opt, insOpts& dst, insOpts& src);
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 static emitAttr optGetDatasize(insOpts arrangement);
@@ -985,6 +1242,11 @@ inline static bool isVectorRegister(regNumber reg)
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
+inline static bool isLowVectorRegister(regNumber reg)
+{
+    return (reg >= FIRST_FP_ARGREG) && (reg <= LAST_FP_ARGREG);
+}
+
 inline static bool isFloatReg(regNumber reg)
 {
     return isVectorRegister(reg);
@@ -1084,6 +1346,11 @@ inline static bool insOpts64BitExtend(insOpts opt)
 inline static bool insOptsAnyArrangement(insOpts opt)
 {
     return ((opt >= INS_OPTS_8B) && (opt <= INS_OPTS_2D));
+}
+
+inline static bool insOptsConvertFloatStepwise(insOpts opt)
+{
+    return (opt == INS_OPTS_H_TO_S || opt == INS_OPTS_S_TO_H || opt == INS_OPTS_D_TO_S || opt == INS_OPTS_S_TO_D);
 }
 
 inline static bool insOptsConvertFloatToFloat(insOpts opt)
@@ -1258,6 +1525,9 @@ void emitIns_R_R_I(instruction     ins,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
+void emitIns_R_R_F(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt = INS_OPTS_NONE);
+
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
 
@@ -1269,14 +1539,24 @@ void emitIns_R_R_R(instruction     ins,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
-void emitIns_R_R_R_I(instruction ins,
-                     emitAttr    attr,
-                     regNumber   reg1,
-                     regNumber   reg2,
-                     regNumber   reg3,
-                     ssize_t     imm,
-                     insOpts     opt      = INS_OPTS_NONE,
-                     emitAttr    attrReg2 = EA_UNKNOWN);
+void emitIns_R_R_R_I(instruction     ins,
+                     emitAttr        attr,
+                     regNumber       reg1,
+                     regNumber       reg2,
+                     regNumber       reg3,
+                     ssize_t         imm,
+                     insOpts         opt      = INS_OPTS_NONE,
+                     emitAttr        attrReg2 = EA_UNKNOWN,
+                     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE);
+
+void emitInsSve_R_R_R_I(instruction     ins,
+                        emitAttr        attr,
+                        regNumber       reg1,
+                        regNumber       reg2,
+                        regNumber       reg3,
+                        ssize_t         imm,
+                        insOpts         opt  = INS_OPTS_NONE,
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I_I(instruction ins,
                        emitAttr    attr,
@@ -1316,6 +1596,15 @@ void emitInsSve_R_R_R_R(instruction     ins,
                         insOpts         opt  = INS_OPTS_NONE,
                         insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
+void emitIns_R_R_R_R_I(instruction ins,
+                       emitAttr    attr,
+                       regNumber   reg1,
+                       regNumber   reg2,
+                       regNumber   reg3,
+                       regNumber   reg4,
+                       ssize_t     imm,
+                       insOpts     opt = INS_OPTS_NONE);
+
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
 void emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCond cond);
@@ -1325,12 +1614,30 @@ void emitIns_R_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumbe
 void emitIns_R_R_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCflags flags, insCond cond);
 
-void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, int imm, insCflags flags, insCond cond);
+void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, ssize_t imm, insCflags flags, insCond cond);
 
 void emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
 
-void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
+void emitIns_R_PATTERN_I(
+    instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_PRFOP_R_R_R(instruction     ins,
+                         emitAttr        attr,
+                         insSvePrfop     prfop,
+                         regNumber       reg1,
+                         regNumber       reg2,
+                         regNumber       reg3,
+                         insOpts         opt  = INS_OPTS_NONE,
+                         insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitIns_PRFOP_R_R_I(instruction ins,
+                         emitAttr    attr,
+                         insSvePrfop prfop,
+                         regNumber   reg1,
+                         regNumber   reg2,
+                         int         imm,
+                         insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_BARR(instruction ins, insBarrier barrier);
 
@@ -1381,6 +1688,11 @@ void emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber re
 void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
+
+void emitIns_Adrp_Ldr_Add(emitAttr  attr,
+                          regNumber reg1,
+                          regNumber reg2,
+                          ssize_t addr DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,

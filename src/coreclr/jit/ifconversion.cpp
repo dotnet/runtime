@@ -739,7 +739,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    m_startBlock->SetKindAndTarget(BBJ_ALWAYS, m_startBlock->GetTrueTarget());
+    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, m_startBlock->GetTrueEdge());
 
 #ifdef DEBUG
     if (m_comp->verbose)

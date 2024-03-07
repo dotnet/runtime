@@ -134,7 +134,7 @@ PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref 
 PTFF_SAVE_ALL_SCRATCH   equ 00000700h
 PTFF_RAX_IS_GCREF       equ 00010000h   ;; iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
-PTFF_THREAD_ABORT       equ 00040000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
+PTFF_THREAD_ABORT       equ 00100000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
@@ -163,6 +163,8 @@ G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
 RhpWaitForGC2                               equ @RhpWaitForGC2@4
 RhpTrapThreads                              equ _RhpTrapThreads
+RhpStressGc                                 equ @RhpStressGc@0
+RhpGcPoll2                                  equ @RhpGcPoll2@4
 
 ifdef FEATURE_GC_STRESS
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
@@ -178,6 +180,7 @@ EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
+EXTERN RhpGcPoll2                               : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC

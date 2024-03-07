@@ -542,8 +542,14 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_MEMZERO:
+                    id = ReadyToRunHelper.MemZero;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_MEMCPY:
                     id = ReadyToRunHelper.MemCpy;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NATIVE_MEMSET:
+                    id = ReadyToRunHelper.NativeMemSet;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
@@ -2177,7 +2183,10 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        if ((MethodBeingCompiled.Context.Target.IsWindows || MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Linux) && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        var target = MethodBeingCompiled.Context.Target;
+                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64) ||
+                            ((target.OperatingSystem == TargetOS.Linux) &&
+                            (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {
                             ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)

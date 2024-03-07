@@ -461,7 +461,7 @@ namespace System.Collections.Frozen
 
                 if (Unsafe.IsNullRef(ref Unsafe.AsRef(in valueRef)))
                 {
-                    ThrowHelper.ThrowKeyNotFoundException();
+                    ThrowHelper.ThrowKeyNotFoundException(key);
                 }
 
                 return ref valueRef;

@@ -37,12 +37,9 @@ let diagnosticsServerEnabled = false;
 let diagnosticsInitialized = false;
 
 export async function mono_wasm_init_diagnostics(): Promise<void> {
-    if (diagnosticsInitialized)
-        return;
-    if (!WasmEnableThreads) {
-        mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
-        return;
-    }
+    if (!WasmEnableThreads) return;
+    if (diagnosticsInitialized) return;
+
     const options = diagnostic_options_from_environment();
     if (!options)
         return;
