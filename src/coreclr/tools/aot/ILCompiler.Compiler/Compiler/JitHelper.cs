@@ -165,44 +165,44 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LMulOfv:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "LongMultiplyOverflow");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("LongMultiplyOverflow", null);
                     break;
                 case ReadyToRunHelper.ULMulOvf:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "ULongMultiplyOverflow");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ULongMultiplyOverflow", null);
                     break;
 
                 case ReadyToRunHelper.ULng2Dbl:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "ULongToDouble");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ULongToDouble", null);
                     break;
                 case ReadyToRunHelper.Dbl2ULng:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToULong");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToULong", null);
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToIntOverflow");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToIntOverflow", null);
                     break;
                 case ReadyToRunHelper.Dbl2UIntOvf:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToUIntOverflow");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToUIntOverflow", null);
                     break;
                 case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToLongOverflow");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToLongOverflow", null);
                     break;
                 case ReadyToRunHelper.Dbl2ULngOvf:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToULongOverflow");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToULongOverflow", null);
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleReminder");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleReminder", null);
                     break;
                 case ReadyToRunHelper.FltRem:
-                    methodDesc = context.GetHelperEntryPoint("System", "MathF", "FloatReminder");
+                    methodDesc = context.SystemModule.GetKnownType("System", "MathF").GetKnownMethod("FloatReminder", null);
                     break;
 
                 case ReadyToRunHelper.Dbl2Int:
-                    methodDesc = context.GetHelperEntryPoint("System", "Math", "DoubleToInt");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToInt", null);
                     break;
                 case ReadyToRunHelper.Dbl2UInt:
-                    methodDesc = context.GetHelperEntryPoint("System", "MathF", "DoubleToUInt");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToUInt", null);
                     break;
                 case ReadyToRunHelper.DblRound:
                     DefType doubleType = context.GetWellKnownType(WellKnownType.Double);

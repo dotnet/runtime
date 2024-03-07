@@ -40,13 +40,6 @@ namespace Internal.IL
             return helperMethod;
         }
 
-        public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeNamespace, string typeName, string methodName)
-        {
-            MetadataType helperType = context.SystemModule.GetKnownType(typeNamespace, typeName);
-            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
-            return helperMethod;
-        }
-
         /// <summary>
         /// Emits a call to a throw helper. Use this to emit calls to static parameterless methods that don't return.
         /// The advantage of using this extension method is that you don't have to deal with what code to emit after
