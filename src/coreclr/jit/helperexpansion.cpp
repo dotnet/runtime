@@ -728,6 +728,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, tlsRootNullCondBB);
     tlsRootNullCondBB->SetTrueEdge(trueEdge);
     tlsRootNullCondBB->SetFalseEdge(falseEdge);
+    trueEdge->setLikelihood(1.0);
+    falseEdge->setLikelihood(0.0);
 
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
@@ -1106,6 +1108,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         FlowEdge* const falseEdge = fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
         maxThreadStaticBlocksCondBB->SetTrueEdge(trueEdge);
         maxThreadStaticBlocksCondBB->SetFalseEdge(falseEdge);
+        trueEdge->setLikelihood(0.0);
+        falseEdge->setLikelihood(1.0);
     }
 
     {
@@ -1113,6 +1117,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
         threadStaticBlockNullCondBB->SetTrueEdge(trueEdge);
         threadStaticBlockNullCondBB->SetFalseEdge(falseEdge);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
     }
 
     {

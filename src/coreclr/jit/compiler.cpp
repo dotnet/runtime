@@ -5062,13 +5062,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Partially inline static initializations
     DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
 
+    // Expand thread local access
+    DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+
     // Disable profile checks now.
     // Over time we will move this further and further back in the phase list, as we fix issues.
     //
     activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
-    // Expand thread local access
-    DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
