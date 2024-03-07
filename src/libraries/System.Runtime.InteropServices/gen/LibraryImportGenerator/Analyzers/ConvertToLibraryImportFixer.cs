@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -483,6 +484,7 @@ namespace Microsoft.Interop.Analyzers
                 {
                     if (TryCreateUnmanagedCallConvAttributeToEmit(
                         editor,
+                        dllImportSyntax.SyntaxTree,
                         generator,
                         dllImportData.CallingConvention,
                         out unmanagedCallConvAttributeMaybe))
@@ -562,6 +564,7 @@ namespace Microsoft.Interop.Analyzers
 
         private static bool TryCreateUnmanagedCallConvAttributeToEmit(
             DocumentEditor editor,
+            SyntaxTree documentSyntaxTree,
             SyntaxGenerator generator,
             CallingConvention callingConvention,
             out SyntaxNode? unmanagedCallConvAttribute)
@@ -602,12 +605,49 @@ namespace Microsoft.Interop.Analyzers
                 return false;
             }
 
-            unmanagedCallConvAttribute = generator.Attribute(TypeNames.UnmanagedCallConvAttribute,
-                generator.AttributeArgument("CallConvs",
-                    generator.ArrayCreationExpression(
-                        generator.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.System_Type)),
-                        new[] { generator.TypeOfExpression(generator.TypeExpression(callingConventionType)) })));
+            ExpressionSyntax typeOfExpression = (ExpressionSyntax)generator.TypeOfExpression(generator.TypeExpression(callingConventionType));
 
+            SyntaxNode argumentValue = ShouldUseCollectionExpression(editor.OriginalDocument, documentSyntaxTree)
+                ? SyntaxFactory.CollectionExpression(
+                    SyntaxFactory.SingletonSeparatedList<CollectionElementSyntax>(
+                        SyntaxFactory.ExpressionElement(typeOfExpression)))
+                : generator.ArrayCreationExpression(
+                    generator.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.System_Type)),
+                    [typeOfExpression]);
+
+            unmanagedCallConvAttribute = generator.Attribute(TypeNames.UnmanagedCallConvAttribute,
+                generator.AttributeArgument("CallConvs", argumentValue));
+
+            return true;
+        }
+
+        private static bool ShouldUseCollectionExpression(Document document, SyntaxTree syntaxTree)
+        {
+            if (((CSharpParseOptions)syntaxTree.Options).LanguageVersion < LanguageVersion.CSharp12)
+            {
+                // Collection expressions are available only in C# 12 and above
+                return false;
+            }
+
+            AnalyzerConfigOptions options = document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(syntaxTree);
+
+            if (options.TryGetValue("dotnet_style_prefer_collection_expression", out string? preferCollectionExpressionsRule))
+            {
+                // Option may be declared with `value:severity` syntax. We don't need severity, so just extract the `value` from the whole string if needed
+                int indexOfColon = preferCollectionExpressionsRule.IndexOf(':');
+                if (indexOfColon > -1)
+                {
+                    preferCollectionExpressionsRule = preferCollectionExpressionsRule.Substring(0, indexOfColon);
+                }
+
+                if (preferCollectionExpressionsRule is "false" or "never")
+                {
+                    // User explicitly specified they don't prefer collection expressions
+                    return false;
+                }
+            }
+
+            // By default we prefer collection expressions
             return true;
         }
 

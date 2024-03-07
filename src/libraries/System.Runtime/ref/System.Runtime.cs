@@ -2155,6 +2155,7 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected Delegate(object target, string method) { }
         protected Delegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) { }
+        public bool HasSingleTarget { get { throw null; } }
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public object? Target { get { throw null; } }
         public virtual object Clone() { throw null; }
@@ -2178,6 +2179,7 @@ namespace System
         public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object? DynamicInvoke(params object?[]? args) { throw null; }
         protected virtual object? DynamicInvokeImpl(object?[]? args) { throw null; }
+        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Delegate[] GetInvocationList() { throw null; }
@@ -2190,6 +2192,13 @@ namespace System
         public static System.Delegate? Remove(System.Delegate? source, System.Delegate? value) { throw null; }
         public static System.Delegate? RemoveAll(System.Delegate? source, System.Delegate? value) { throw null; }
         protected virtual System.Delegate? RemoveImpl(System.Delegate d) { throw null; }
+        public partial struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
+        {
+            public TDelegate Current { get { throw null; } }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
     }
     public partial class DivideByZeroException : System.ArithmeticException
     {
@@ -4701,6 +4710,7 @@ namespace System
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
+        public static System.ReadOnlySpan<T> CastUp<TDerived>(System.ReadOnlySpan<TDerived> items) where TDerived : class?, T { throw null; }
         public void CopyTo(System.Span<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use the equality operator instead.")]
@@ -5604,6 +5614,16 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public bool Equals(System.TimeSpan obj) { throw null; }
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
+        public static System.TimeSpan FromDays(int days) { throw null; }
+        public static System.TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromHours(int hours) { throw null; }
+        public static System.TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
@@ -8407,6 +8427,18 @@ namespace System.Diagnostics.CodeAnalysis
         public ExperimentalAttribute(string diagnosticId) { }
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    public sealed class FeatureGuardAttribute : System.Attribute
+    {
+        public FeatureGuardAttribute(System.Type featureType) { }
+        public System.Type FeatureType { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property, Inherited = false)]
+    public sealed class FeatureSwitchDefinitionAttribute : Attribute
+    {
+        public FeatureSwitchDefinitionAttribute(string switchName) { }
+        public string SwitchName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
@@ -11579,6 +11611,7 @@ namespace System.Reflection
         NotNullableValueTypeConstraint = 8,
         DefaultConstructorConstraint = 16,
         SpecialConstraintMask = 28,
+        AllowByRefLike = 32,
     }
     public partial interface ICustomAttributeProvider
     {
@@ -13026,6 +13059,11 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    public sealed partial class ParamCollectionAttribute : System.Attribute
+    {
+        public ParamCollectionAttribute() { }
+    }
     public partial struct PoolingAsyncValueTaskMethodBuilder
     {
         private object _dummy;
@@ -13093,6 +13131,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeFeature
     {
         public const string ByRefFields = "ByRefFields";
+        public const string ByRefLikeGenerics = "ByRefLikeGenerics";
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
         public const string NumericIntPtr = "NumericIntPtr";
@@ -15827,6 +15866,8 @@ namespace System
         [System.ObsoleteAttribute("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { throw null; }
+        public static string EscapeDataString(System.ReadOnlySpan<char> charsToEscape) { throw null; }
+        public static bool TryEscapeDataString(System.ReadOnlySpan<char> charsToEscape, System.Span<char> destination, out int charsWritten) { throw null; }
         [System.ObsoleteAttribute("Uri.EscapeString has been deprecated. Use GetComponents() or Uri.EscapeDataString to escape a Uri component or a string.")]
         protected static string EscapeString(string? str) { throw null; }
         [System.ObsoleteAttribute("Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.", DiagnosticId="SYSLIB0013", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -15868,6 +15909,8 @@ namespace System
         [System.ObsoleteAttribute("Uri.Unescape has been deprecated. Use GetComponents() or Uri.UnescapeDataString() to unescape a Uri component or a string.")]
         protected virtual string Unescape(string path) { throw null; }
         public static string UnescapeDataString(string stringToUnescape) { throw null; }
+        public static string UnescapeDataString(System.ReadOnlySpan<char> charsToUnescape) { throw null; }
+        public static bool TryUnescapeDataString(System.ReadOnlySpan<char> charsToUnescape, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public partial class UriBuilder
     {

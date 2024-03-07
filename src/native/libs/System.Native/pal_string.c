@@ -23,3 +23,13 @@ int32_t SystemNative_SNPrintF(char* string, int32_t size, const char* format, ..
     va_end(arguments);
     return result;
 }
+
+int32_t SystemNative_SNPrintF_1S(char* string, int32_t size, const char* format, char* str)
+{
+    return SystemNative_SNPrintF(string, size, format, str);
+}
+
+int32_t SystemNative_SNPrintF_1I(char* string, int32_t size, const char* format, int arg)
+{
+    return SystemNative_SNPrintF(string, size, format, arg);
+}

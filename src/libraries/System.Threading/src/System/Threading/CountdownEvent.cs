@@ -403,7 +403,7 @@ namespace System.Threading
         /// </remarks>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public void Wait()
@@ -429,7 +429,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public void Wait(CancellationToken cancellationToken)
@@ -451,7 +451,7 @@ namespace System.Threading
         /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(TimeSpan timeout)
@@ -482,7 +482,7 @@ namespace System.Threading
         /// disposed.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> has
         /// been canceled.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
@@ -506,7 +506,7 @@ namespace System.Threading
         /// negative number other than -1, which represents an infinite time-out.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(int millisecondsTimeout)
@@ -531,7 +531,7 @@ namespace System.Threading
         /// disposed.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> has
         /// been canceled.</exception>
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)

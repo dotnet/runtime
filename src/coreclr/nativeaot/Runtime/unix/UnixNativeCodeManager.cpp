@@ -32,8 +32,8 @@
 struct UnixNativeMethodInfo
 {
     PTR_VOID pMethodStartAddress;
-    PTR_UInt8 pMainLSDA;
-    PTR_UInt8 pLSDA;
+    PTR_uint8_t pMainLSDA;
+    PTR_uint8_t pLSDA;
 
     // Subset of unw_proc_info_t required for unwinding
     unw_word_t start_ip;
@@ -100,7 +100,7 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     uintptr_t lsda = procInfo.lsda;
 
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(lsda);
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(lsda);
 
     pMethodInfo->pLSDA = p;
 
@@ -109,14 +109,14 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
     {
         // Funclets just refer to the main function's blob
-        pMethodInfo->pMainLSDA = p + *dac_cast<PTR_Int32>(p);
+        pMethodInfo->pMainLSDA = p + *dac_cast<PTR_int32_t>(p);
         p += sizeof(int32_t);
 
-        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip - *dac_cast<PTR_Int32>(p));
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip - *dac_cast<PTR_int32_t>(p));
     }
     else
     {
-        pMethodInfo->pMainLSDA = dac_cast<PTR_UInt8>(lsda);
+        pMethodInfo->pMainLSDA = dac_cast<PTR_uint8_t>(lsda);
         pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip);
     }
 
@@ -156,11 +156,11 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     return NULL;
 }
 
-uint32_t UnixNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_UInt8* gcInfo)
+uint32_t UnixNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_uint8_t* gcInfo)
 {
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_uint8_t p = pNativeMethodInfo->pMainLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -184,7 +184,7 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         return false;
     }
 
-    PTR_UInt8 gcInfo;
+    PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
     GcInfoDecoder decoder(
@@ -202,7 +202,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        GCEnumContext * hCallback,
                                        bool            isActiveStackFrame)
 {
-    PTR_UInt8 gcInfo;
+    PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
 #ifdef TARGET_ARM
@@ -258,7 +258,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
+    PTR_uint8_t p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -320,7 +320,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
+    PTR_uint8_t p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -378,7 +378,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     ASSERT(((uintptr_t)pvAddress & 1) == 0);
 #endif
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
     MethodInfo methodInfo;
     FindMethodInfo(pvAddress, &methodInfo);
     pMethodInfo = &methodInfo;
@@ -392,6 +392,117 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return TrailingEpilogueInstructionsCount(pMethodInfo, pvAddress) == 0;
 #endif
 }
+
+#if defined(TARGET_ARM)
+
+// SUB<c> SP, SP, #<imm>
+// 1011 0000 1xxx xxxx
+#define SUB_SP_IMM_BITS 0xB080
+#define SUB_SP_IMM_MASK 0xFF80
+
+// SUB{S}<c>.W SP, SP, #<const>
+// 1111 0x01 101x 1101 0xxx 1101 xxxx xxxx
+#define SUB_W_SP_IMM_BITS 0xF1AD0D00
+#define SUB_W_SP_IMM_MASK 0xFBEF8F00
+
+// SUBW<c> SP, SP, #<imm12>
+// 1111 0x10 1010 1101 0xxx 1101 xxxx xxxx
+#define SUBW_SP_IMM_BITS 0xF2AD0D00
+#define SUBW_SP_IMM_MASK 0xFBFF8F00
+
+// SUB<c> SP, <Rm>
+// 0100 0100 1xxx x101
+#define SUB_SP_REG_BITS 0x4485
+#define SUB_SP_REG_MASK 0xFF87
+
+// SUB{S}<c>.W SP, SP, <Rm>{, <shift>}
+// 1110 1011 101x 1101 0xxx 1101 xxxx xxxx
+#define SUB_W_SP_REG_BITS 0xEBAD0D00
+#define SUB_W_SP_REG_MASK 0xFFEF8F00
+
+// ADD{S}<c>.W FP, SP, #<const>
+// 1111 0x01 000x 1101 0xxx 1011 xxxx xxxx
+#define ADD_W_FP_SP_BITS 0xF10D0B00 
+#define ADD_W_FP_SP_MASK 0xFBEF8F00
+
+// PUSH<c> <registers>
+// 1011 010x xxxx xxxx
+#define PUSH_BITS 0xB400
+#define PUSH_MASK 0xFE00
+
+// PUSH<c>.W <registers>
+// 1110 1001 0010 1101 0x0x xxxx xxxx xxxx
+#define PUSH_W_BITS_T2 0xE92D0000
+#define PUSH_W_MASK_T2 0xFFFFA000
+
+// PUSH<c>.W <registers>
+// 1111 1000 0100 1101 xxxx 1101 0000 0100
+#define PUSH_W_BITS_T3 0xF84D0D04
+#define PUSH_W_MASK_T3 0xFFFF0FFF
+
+// VPUSH<c> <list>
+// 1110 1101 0x10 1101 xxxx 1011 xxxx xxxx
+#define VPUSH_BITS_T1 0xED2D0B00
+#define VPUSH_MASK_T1 0xFFBF0F00
+
+// VPUSH<c> <list>
+// 1110 1101 0x10 1101 xxxx 1010 xxxx xxxx
+#define VPUSH_BITS_T2 0xED2D0A00
+#define VPUSH_MASK_T2 0xFFBF0F00
+
+// POP<c> <registers>
+// 1011 110x xxxx xxxx
+#define POP_BITS 0xBC00
+#define POP_MASK 0xFE00
+
+// POP<c>.W <registers>
+// 1110 1000 1011 1101
+#define POP_W_T2 0xE8BD
+
+// POP<c>.W <registers>
+// 1111 1000 0101 1101
+#define POP_W_T3 0xF85D
+
+// BX LR
+#define BX_LR_BITS 0x4770
+#define BX_LR_MASK 0xFFFF
+
+// MOV SP, R4
+#define MOV_SP_R4 0x46A5
+
+// MOV R9, SP
+#define MOV_R9_SP 0x46E9
+
+static bool IsArmPrologInstruction(uint16_t* pInstr)
+{
+    uint32_t instr = *pInstr;
+
+    if ((instr & SUB_SP_IMM_MASK) == SUB_SP_IMM_BITS ||
+        (instr & PUSH_MASK) == PUSH_BITS ||
+        instr == MOV_R9_SP)
+    {
+        return 1;
+    }
+
+    instr <<= 16;
+    instr |= *(pInstr + 1);
+
+    if ((instr & SUB_W_SP_IMM_MASK) == SUB_W_SP_IMM_BITS ||
+        (instr & SUBW_SP_IMM_MASK) == SUBW_SP_IMM_BITS ||
+        (instr & SUB_W_SP_REG_MASK) == SUB_W_SP_REG_BITS ||
+        (instr & ADD_W_FP_SP_MASK) == ADD_W_FP_SP_BITS ||
+        (instr & PUSH_W_MASK_T2) == PUSH_W_BITS_T2 ||
+        (instr & PUSH_W_MASK_T3) == PUSH_W_BITS_T3 ||
+        (instr & VPUSH_MASK_T1) == VPUSH_BITS_T1 ||
+        (instr & VPUSH_MASK_T2) == VPUSH_BITS_T2)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+#endif
 
 // checks for known prolog instructions generated by ILC and returns
 //  1 - in prolog
@@ -462,96 +573,37 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 
 #elif defined(TARGET_ARM)
 
-// SUB<c> SP, SP, #<imm>
-// 1011 0000 1xxx xxxx
-#define SUB_SP_IMM_BITS 0xB080
-#define SUB_SP_IMM_MASK 0xFF80
-
-// SUB{S}<c>.W SP, SP, #<const>
-// 1111 0x01 101x 1101 0xxx 1101 xxxx xxxx
-#define SUB_W_SP_IMM_BITS 0xF1AD0D00
-#define SUB_W_SP_IMM_MASK 0xFBEF8F00
-
-// SUBW<c> SP, SP, #<imm12>
-// 1111 0x10 1010 1101 0xxx 1101 xxxx xxxx
-#define SUBW_SP_IMM_BITS 0xF2AD0D00
-#define SUBW_SP_IMM_MASK 0xFBFF8F00
-
-// SUB<c> SP, <Rm>
-// 0100 0100 1xxx x101
-#define SUB_SP_REG_BITS 0x4485
-#define SUB_SP_REG_MASK 0xFF87
-
-// SUB{S}<c>.W SP, SP, <Rm>{, <shift>}
-// 1110 1011 101x 1101 0xxx 1101 xxxx xxxx
-#define SUB_W_SP_REG_BITS 0xEBAD0D00
-#define SUB_W_SP_REG_MASK 0xFFEF8F00
-
-// PUSH<c> <registers>
-// 1011 010x xxxx xxxx
-#define PUSH_BITS 0xB400
-#define PUSH_MASK 0xFE00
-
-// PUSH<c>.W <registers>
-// 1110 1001 0010 1101 0x0x xxxx xxxx xxxx
-#define PUSH_W_BITS_T2 0xE92D0000
-#define PUSH_W_MASK_T2 0xFFFFA000
-
-// PUSH<c>.W <registers>
-// 1111 1000 0100 1101 xxxx 1101 0000 0100
-#define PUSH_W_BITS_T3 0xF84D0D04
-#define PUSH_W_MASK_T3 0xFFFF0FFF
-
-// VPUSH<c> <list>
-// 1110 1101 0x10 1101 xxxx 1011 xxxx xxxx
-#define VPUSH_BITS_T1 0xED2D0B00
-#define VPUSH_MASK_T1 0xFFBF0F00
-
-// VPUSH<c> <list>
-// 1110 1101 0x10 1101 xxxx 1010 xxxx xxxx
-#define VPUSH_BITS_T2 0xED2D0A00
-#define VPUSH_MASK_T2 0xFFBF0F00
-
-// POP<c> <registers>
-// 1011 110x xxxx xxxx
-#define POP_BITS 0xBC00
-#define POP_MASK 0xFE00
-
-// POP<c>.W <registers>
-// 1110 1000 1011 1101
-#define POP_W_T2 0xE8BD
-
-// POP<c>.W <registers>
-// 1111 1000 0101 1101
-#define POP_W_T3 0xF85D
-
-// BX LR
-#define BX_LR_BITS 0x4770
-#define BX_LR_MASK 0xFFFF
-
-// MOV SP, R4
-#define MOV_SP_R4 0x46A5
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    ASSERT(pNativeMethodInfo != NULL);
 
     uint16_t* pInstr = (uint16_t*)pvAddress;
-    uint32_t instr = *pInstr;
 
-    if ((instr & SUB_SP_IMM_MASK) == SUB_SP_IMM_BITS ||
-        (instr & PUSH_MASK) == PUSH_BITS)
+    // First check if the current instruction is any of the recognized prolog
+    // instructions. That may be a false positive but it's not going to be a
+    // false negative (with the exception of localloc pattern below).
+    if (IsArmPrologInstruction(pInstr))
     {
-        return 1;
-    }
+        // Verify that everything in front of the instruction was also a prolog.
+        pInstr = (uint16_t*)pNativeMethodInfo->pMethodStartAddress;
+        while (pInstr < pvAddress)
+        {
+            if (!IsArmPrologInstruction(pInstr))
+            {
+                return 0;
+            }
 
-    instr <<= 16;
-    instr |= *(pInstr + 1);
+            uint16_t instr = *pInstr;
+            if (instr == MOV_R9_SP)
+            {
+                // The frame has been established, so anything that follows is
+                // not considered a prolog (ie. unwinding works).
+                return 0;
+            }
 
-    if ((instr & SUB_W_SP_IMM_MASK) == SUB_W_SP_IMM_BITS ||
-        (instr & SUBW_SP_IMM_MASK) == SUBW_SP_IMM_BITS ||
-        (instr & SUB_W_SP_REG_MASK) == SUB_W_SP_REG_BITS ||
-        (instr & PUSH_W_MASK_T2) == PUSH_W_BITS_T2 ||
-        (instr & PUSH_W_MASK_T3) == PUSH_W_BITS_T3 ||
-        (instr & VPUSH_MASK_T1) == VPUSH_BITS_T1 ||
-        (instr & VPUSH_MASK_T2) == VPUSH_BITS_T2)
-    {
+            // Skip over to next instruction
+            pInstr += (instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000 ? 2 : 1;
+        }
+
         return 1;
     }
 
@@ -573,7 +625,7 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
     // We can look ahead by couple of instructions and look for "mov sp, rXX".
     for (int c = 5; c >= 0; --c)
     {
-        instr = *pInstr;
+        uint16_t instr = *pInstr;
         if (instr == MOV_SP_R4)
         {
             return 1;
@@ -589,15 +641,7 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
         }
 
         // Skip over to next instruction
-        if ((instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000)
-        {
-            // 32-but Thumb instruction
-            pInstr += 2;
-        }
-        else
-        {
-            pInstr++;
-        }
+        pInstr += (instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000 ? 2 : 1;
     }
 
     return 0;
@@ -933,28 +977,49 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 #define VPOP_BITS_T2 0xECBD0A00
 #define VPOP_MASK_T2 0xFFBF0F00
 
-    uint32_t instr = *(uint16_t*)pvAddress;
+    uint16_t *pInstr = (uint16_t *)pvAddress;
+    uint32_t instr;
 
-    if ((instr & ADD_SP_IMM_MASK) == ADD_SP_IMM_BITS ||
-        (instr & ADD_SP_REG_MASK) == ADD_SP_REG_BITS ||
-        (instr & POP_MASK) == POP_BITS ||
-        (instr & BX_LR_MASK) == BX_LR_BITS)
+    while (1)
     {
-        return -1;
-    }
+        instr = *pInstr;
 
-    instr <<= 16;
-    instr |= *((uint16_t*)pvAddress + 1);
+        if ((instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000)
+        {
+            // 32-bit instruction
+            instr <<= 16;
+            instr |= *(pInstr + 1);
+            pInstr += 2;
+        }
+        else
+        {
+            pInstr++;
+        }
 
-    if ((instr & ADD_W_SP_IMM_MASK) == ADD_W_SP_IMM_BITS ||
-        (instr & ADDW_SP_IMM_MASK) == ADDW_SP_IMM_BITS ||
-        (instr & ADD_W_SP_REG_MASK) == ADD_W_SP_REG_BITS ||
-        (instr & POP_W_MASK_T2) == POP_W_BITS_T2 ||
-        (instr & POP_W_MASK_T3) == POP_W_BITS_T3 ||
-        (instr & VPOP_MASK_T1) == VPOP_BITS_T1 ||
-        (instr & VPOP_MASK_T2) == VPOP_BITS_T2)
-    {
-        return -1;
+        // POP, VPOP and BX LR are definitely epilog
+        if ((instr & POP_MASK) == POP_BITS ||
+            (instr & BX_LR_MASK) == BX_LR_BITS ||
+            (instr & POP_W_MASK_T2) == POP_W_BITS_T2 ||
+            (instr & POP_W_MASK_T3) == POP_W_BITS_T3 ||
+            (instr & VPOP_MASK_T1) == VPOP_BITS_T1 ||
+            (instr & VPOP_MASK_T2) == VPOP_BITS_T2)
+        {
+            return -1;
+        }
+
+        // ADD SP, xxx may be part of epilog but in methods with frame
+        // pointer it can also appear in the body. Skip to the next
+        // instruction and check if it's still epilog.
+        if ((instr & ADD_SP_IMM_MASK) == ADD_SP_IMM_BITS ||
+            (instr & ADD_SP_REG_MASK) == ADD_SP_REG_BITS ||
+            (instr & ADD_W_SP_IMM_MASK) == ADD_W_SP_IMM_BITS ||
+            (instr & ADDW_SP_IMM_MASK) == ADDW_SP_IMM_BITS ||
+            (instr & ADD_W_SP_REG_MASK) == ADD_W_SP_REG_BITS)
+        {
+            continue;
+        }
+
+        return 0;
     }
 
 #endif
@@ -978,7 +1043,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 {
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
+    PTR_uint8_t p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -1068,7 +1133,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    PTR_UIntNative pLR = pRegisterSet->pLR;
+    PTR_uintptr_t pLR = pRegisterSet->pLR;
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
@@ -1109,8 +1174,8 @@ PTR_VOID UnixNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMe
 
 struct UnixEHEnumState
 {
-    PTR_UInt8 pMethodStartAddress;
-    PTR_UInt8 pEHInfo;
+    PTR_uint8_t pMethodStartAddress;
+    PTR_uint8_t pEHInfo;
     uint32_t uClause;
     uint32_t nClauses;
 };
@@ -1126,7 +1191,7 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_uint8_t p = pNativeMethodInfo->pMainLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -1143,8 +1208,8 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     *pMethodStartAddress = pNativeMethodInfo->pMethodStartAddress;
 
-    pEnumState->pMethodStartAddress = dac_cast<PTR_UInt8>(pNativeMethodInfo->pMethodStartAddress);
-    pEnumState->pEHInfo = dac_cast<PTR_UInt8>(p + *dac_cast<PTR_Int32>(p));
+    pEnumState->pMethodStartAddress = dac_cast<PTR_uint8_t>(pNativeMethodInfo->pMethodStartAddress);
+    pEnumState->pEHInfo = dac_cast<PTR_uint8_t>(p + *dac_cast<PTR_int32_t>(p));
     pEnumState->uClause = 0;
     pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
 
@@ -1188,7 +1253,7 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
         {
             // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
-            int32_t typeRelAddr = *((PTR_Int32&)pEnumState->pEHInfo);
+            int32_t typeRelAddr = *((PTR_int32_t&)pEnumState->pEHInfo);
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pEnumState->pEHInfo + typeRelAddr);
             pEnumState->pEHInfo += 4;
         }
@@ -1236,7 +1301,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if (!FindMethodInfo(ControlPC, (MethodInfo*)&methodInfo))
         return NULL;
 
-    PTR_UInt8 p = methodInfo.pLSDA;
+    PTR_uint8_t p = methodInfo.pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -1246,7 +1311,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
         return NULL;
 
-    return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
+    return dac_cast<PTR_VOID>(p + *dac_cast<PTR_int32_t>(p));
 }
 
 extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);

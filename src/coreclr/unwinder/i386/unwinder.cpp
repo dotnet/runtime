@@ -21,15 +21,23 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
         rd.pCurrentContextPointers = pContextPointers;
     }
 
-    CodeManState codeManState;
-    codeManState.dwIsSet = 0;
-
     DWORD ControlPc = pContextRecord->Eip;
 
     EECodeInfo codeInfo;
     codeInfo.Init((PCODE) ControlPc);
 
-    if (!UnwindStackFrame(&rd, &codeInfo, UpdateAllRegs, &codeManState, NULL))
+    GCInfoToken gcInfoToken = codeInfo.GetGCInfoToken();
+    hdrInfo hdrInfoBody;
+    DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, codeInfo.GetRelOffset(), &hdrInfoBody);
+
+    if (!UnwindStackFrameX86(&rd,
+                             PTR_CBYTE(codeInfo.GetSavedMethodCode()),
+                             codeInfo.GetRelOffset(),
+                             &hdrInfoBody,
+                             dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                             PTR_CBYTE(codeInfo.GetJitManager()->GetFuncletStartAddress(&codeInfo)),
+                             codeInfo.IsFunclet(),
+                             UpdateAllRegs))
     {
         return FALSE;
     }

@@ -293,7 +293,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool silent { get; set; }
         public bool returnByValue { get; set; } = true;
 
-        public MonoCommands(string expression) => this.expression = expression;
+        public MonoCommands(string expression)
+        {
+            this.expression = $"{expression} //# sourceURL=cdp://debug/eval.cdp";
+        }
 
         public static MonoCommands GetDebuggerAgentBufferReceived(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_dbg_command_info()");
 

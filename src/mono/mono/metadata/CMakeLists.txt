@@ -61,8 +61,6 @@ set(metadata_common_sources
     class-private-definition.h
     class-accessors.c
     class-setup-vtable.c
-    cominterop.c
-    cominterop.h
     components.h
     components.c
     debug-helpers.c

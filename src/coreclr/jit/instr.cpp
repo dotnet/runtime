@@ -916,18 +916,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #endif // FEATURE_HW_INTRINSICS
         }
 
-        switch (addr->OperGet())
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
         {
-            case GT_LCL_ADDR:
-            {
-                assert(addr->isContained());
-                varNum = addr->AsLclFld()->GetLclNum();
-                offset = addr->AsLclFld()->GetLclOffs();
-                break;
-            }
-
-            default:
-                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+            varNum = addr->AsLclFld()->GetLclNum();
+            offset = addr->AsLclFld()->GetLclOffs();
+        }
+        else
+        {
+            return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
         }
     }
     else
@@ -1223,7 +1219,7 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //
 static insOpts AddEmbBroadcastMode(insOpts instOptions)
 {
-    assert((instOptions & INS_OPTS_b_MASK) == 0);
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     unsigned result = static_cast<unsigned>(instOptions);
     return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
 }

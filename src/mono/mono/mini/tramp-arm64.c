@@ -694,6 +694,11 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	/* allocate frame */
 	framesize += 2 * sizeof (host_mgreg_t);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	int off_ctxregs = framesize;
+	framesize += CTX_REGS * sizeof (host_mgreg_t);
+#endif
+
 	off_methodargs = framesize;
 	framesize += sizeof (host_mgreg_t);
 
@@ -748,6 +753,14 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_ldrfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/* store the values of context registers onto the stack and set the context registers from CallContext */
+	for (i = 0; i < CTX_REGS; i++) {
+		arm_strx (code, i + CTX_REGS_OFFSET, ARMREG_FP, off_ctxregs + i * sizeof (host_mgreg_t));
+		arm_ldrx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
+	}
+#endif
+
 	/* load target addr */
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_targetaddr);
 
@@ -764,6 +777,14 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	/* set all floating registers to CallContext  */
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_strfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/* set context registers to CallContext and load context registers from the stack */	
+	for (i = 0; i < CTX_REGS; i++) {
+		arm_strx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
+		arm_ldrx (code, i + CTX_REGS_OFFSET, ARMREG_FP, off_ctxregs + i * sizeof (host_mgreg_t));
+	}
+#endif
 
 	arm_movspx (code, ARMREG_SP, ARMREG_FP);
 	arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);

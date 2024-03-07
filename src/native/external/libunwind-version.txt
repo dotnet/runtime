@@ -6,3 +6,5 @@ Apply https://github.com/libunwind/libunwind/pull/701
 Apply https://github.com/libunwind/libunwind/pull/703
 Apply https://github.com/libunwind/libunwind/pull/704
 Revert https://github.com/libunwind/libunwind/pull/503 # issue: https://github.com/libunwind/libunwind/issues/702
+Apply https://github.com/libunwind/libunwind/pull/714
+Revert https://github.com/libunwind/libunwind/commit/ec03043244082b8f552881ba9fb790aa49c85468 and follow up changes in the same file # issue: https://github.com/libunwind/libunwind/issues/715

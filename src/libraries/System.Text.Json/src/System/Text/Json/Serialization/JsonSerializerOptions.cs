@@ -83,6 +83,7 @@ namespace System.Text.Json
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
+        private bool _allowOutOfOrderMetadataProperties;
         private bool _allowTrailingCommas;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
@@ -134,6 +135,7 @@ namespace System.Text.Json
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
+            _allowOutOfOrderMetadataProperties = options._allowOutOfOrderMetadataProperties;
             _allowTrailingCommas = options._allowTrailingCommas;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
@@ -247,6 +249,32 @@ namespace System.Text.Json
         /// </remarks>
         public IList<IJsonTypeInfoResolver> TypeInfoResolverChain => _typeInfoResolverChain ??= new(this);
         private OptionsBoundJsonTypeInfoResolverChain? _typeInfoResolverChain;
+
+        /// <summary>
+        /// Allows JSON metadata properties to be specified after regular properties in a deserialized JSON object.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// When set to <see langword="true" />, removes the requirement that JSON metadata properties
+        /// such as $id and $type should be specified at the very start of the deserialized JSON object.
+        ///
+        /// It should be noted that enabling this setting can result in over-buffering
+        /// when deserializing large JSON payloads in the context of streaming deserialization.
+        /// </remarks>
+        public bool AllowOutOfOrderMetadataProperties
+        {
+            get
+            {
+                return _allowOutOfOrderMetadataProperties;
+            }
+            set
+            {
+                VerifyMutable();
+                _allowOutOfOrderMetadataProperties = value;
+            }
+        }
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array

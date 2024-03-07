@@ -337,26 +337,6 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(const TypeKey* pKey)
              pSearch != NULL;
              pSearch = BaseFindNextEntryByHash(&sContext))
         {
-            if (!pSearch->GetTypeHandle().IsRestored())
-            {
-                // workaround: If we encounter an unrestored MethodTable, then it
-                // isn't the type for which we are looking (plus, it will crash
-                // in GetSignatureCorElementType).  However TypeDescs can be
-                // accessed when unrestored.  Also they are accessed in that
-                // manner at startup when we're loading the global types
-                // (i.e. System.Object).
-
-                if (!pSearch->GetTypeHandle().IsTypeDesc())
-                {
-                    // Not a match
-                   continue;
-                }
-                else
-                {
-                    // We have an unrestored TypeDesc
-                }
-            }
-
             if (pSearch->GetTypeHandle().GetSignatureCorElementType() != kind)
                 continue;
 

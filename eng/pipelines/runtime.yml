@@ -254,7 +254,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -293,7 +293,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -338,7 +338,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -375,7 +375,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libraries
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
             postBuildSteps:
@@ -521,6 +521,20 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
+      # Library tests with full threading
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            #- browser_wasm_win
+          nameSuffix: _Threading
+          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
+          scenarios:
+            - WasmTestOnBrowser
+            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
+
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -565,7 +579,7 @@ extends:
             - browser_wasm_win
           condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
           nameSuffix: MultiThreaded
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: false
 
@@ -594,18 +608,6 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Build and Smoke Tests only - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading_Smoke
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnBrowser
 
       # WASI/WASM
 

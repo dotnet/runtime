@@ -1183,16 +1183,12 @@ namespace System.Numerics
                     return _sign < other._sign ? -1 : _sign > other._sign ? +1 : 0;
                 return -other._sign;
             }
-            int cuThis, cuOther;
-            if (other._bits == null || (cuThis = _bits.Length) > (cuOther = other._bits.Length))
-                return _sign;
-            if (cuThis < cuOther)
-                return -_sign;
 
-            int cuDiff = GetDiffLength(_bits, other._bits, cuThis);
-            if (cuDiff == 0)
-                return 0;
-            return _bits[cuDiff - 1] < other._bits[cuDiff - 1] ? -_sign : _sign;
+            if (other._bits == null)
+                return _sign;
+
+            int bitsResult = BigIntegerCalculator.Compare(_bits, other._bits);
+            return _sign < 0 ? -bitsResult : bitsResult;
         }
 
         public int CompareTo(object? obj)
@@ -3115,16 +3111,6 @@ namespace System.Numerics
                 _bits.CopyTo(xd);
             }
             return _sign < 0;
-        }
-
-        internal static int GetDiffLength(uint[] rgu1, uint[] rgu2, int cu)
-        {
-            for (int iv = cu; --iv >= 0;)
-            {
-                if (rgu1[iv] != rgu2[iv])
-                    return iv + 1;
-            }
-            return 0;
         }
 
         [Conditional("DEBUG")]

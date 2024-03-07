@@ -218,11 +218,11 @@ private:
                 if (!isSubsystemMatch)
                 {
                     char* context = nullptr;
-                    char* strTok = strtok_s(options, ",", &context);
+                    char* strTok = strtok_r(options, ",", &context);
                     while (!isSubsystemMatch && strTok != nullptr)
                     {
                         isSubsystemMatch = is_subsystem(strTok);
-                        strTok = strtok_s(nullptr, ",", &context);
+                        strTok = strtok_r(nullptr, ",", &context);
                     }
                 }
                 if (isSubsystemMatch)
@@ -302,7 +302,7 @@ private:
                 }
 
                 char* context = nullptr;
-                char* strTok = strtok_s(subsystem_list, ",", &context);
+                char* strTok = strtok_r(subsystem_list, ",", &context);
                 while (strTok != nullptr)
                 {
                     if (is_subsystem(strTok))
@@ -310,7 +310,7 @@ private:
                         result = true;
                         break;
                     }
-                    strTok = strtok_s(nullptr, ",", &context);
+                    strTok = strtok_r(nullptr, ",", &context);
                 }
             }
             else if (s_cgroup_version == 2)
@@ -395,13 +395,13 @@ private:
         //     $MAX $PERIOD
         // Where "$MAX" may be the string literal "max"
 
-        max_quota_string = strtok_s(line, " ", &context);
+        max_quota_string = strtok_r(line, " ", &context);
         if (max_quota_string == nullptr)
         {
             _ASSERTE(!"Unable to parse " CGROUP2_CPU_MAX_FILENAME " file contents.");
             goto done;
         }
-        period_string = strtok_s(nullptr, " ", &context);
+        period_string = strtok_r(nullptr, " ", &context);
         if (period_string == nullptr)
         {
             _ASSERTE(!"Unable to parse " CGROUP2_CPU_MAX_FILENAME " file contents.");

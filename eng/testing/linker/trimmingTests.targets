@@ -119,7 +119,8 @@
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
                                                  .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
                                                  .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
-                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)'))"
+                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)')
+                                                 .Replace('{SanitizerRuntimeFolder}', '$(DotNetHostBinDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile);
                        @(_additionalProjectSourceFiles)"

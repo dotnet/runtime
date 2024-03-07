@@ -257,6 +257,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Parameter modifiers
             yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "ref readonly") };
         }
 
         public static IEnumerable<object[]> CustomCollections()

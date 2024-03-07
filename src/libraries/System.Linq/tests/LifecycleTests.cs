@@ -162,9 +162,9 @@ namespace System.Linq.Tests
             yield return new Sink(nameof(Enumerable.First), e => e.First(i => false));
             yield return new Sink(nameof(Enumerable.FirstOrDefault), e => e.FirstOrDefault(), shortCircuits: true);
             yield return new Sink(nameof(Enumerable.FirstOrDefault), e => e.FirstOrDefault(i => false));
-            yield return new Sink(nameof(Enumerable.Last), e => e.Last());
+            yield return new Sink(nameof(Enumerable.Last), e => e.Last(), shortCircuits: true);
             yield return new Sink(nameof(Enumerable.Last), e => e.Last(i => true));
-            yield return new Sink(nameof(Enumerable.LastOrDefault), e => e.LastOrDefault());
+            yield return new Sink(nameof(Enumerable.LastOrDefault), e => e.LastOrDefault(), shortCircuits: true);
             yield return new Sink(nameof(Enumerable.LastOrDefault), e => e.LastOrDefault(i => true));
             yield return new Sink(nameof(Enumerable.LongCount), e => e.LongCount());
             yield return new Sink(nameof(Enumerable.LongCount), e => e.LongCount(i => true));

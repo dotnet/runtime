@@ -160,7 +160,7 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
     controller.responsePromise = wrap_as_cancelable_promise(() => {
         return loaderHelpers.fetch_like(url, options);
     });
-    // avoid processing headers if the fetch is cancelled
+    // avoid processing headers if the fetch is canceled
     controller.responsePromise.then((res: Response) => {
         controller.response = res;
         controller.responseHeaderNames = [];

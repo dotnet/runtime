@@ -298,7 +298,6 @@ namespace Microsoft.Interop
                             var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
                             {
                                 RefKind = RefKind.Out,
-                                RefKindSyntax = SyntaxKind.OutKeyword,
                                 ManagedIndex = TypePositionInfo.ReturnIndex,
                                 NativeIndex = symbol.Parameters.Length
                             };

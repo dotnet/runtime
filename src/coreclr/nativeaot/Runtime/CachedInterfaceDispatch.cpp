@@ -445,7 +445,7 @@ bool InitializeInterfaceDispatch()
     return true;
 }
 
-COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PTR_Code pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo))
+COOP_PINVOKE_HELPER(PCODE, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo))
 {
     // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
     // is none).
@@ -458,8 +458,8 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
         {
             if (pCacheEntry->m_pInstanceType == NULL)
             {
-                if (UpdateCacheEntryAtomically(pCacheEntry, pInstanceType, pTargetCode))
-                    return (PTR_Code)pTargetCode;
+                if (UpdateCacheEntryAtomically(pCacheEntry, pInstanceType, dac_cast<PTR_VOID>(pTargetCode)))
+                    return (PCODE)pTargetCode;
             }
         }
 
@@ -479,7 +479,7 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
         // but it's not clear whether we should do this or re-tune the cache max size, we need to measure
         // this.
         CID_COUNTER_INC(CacheSizeOverflows);
-        return (PTR_Code)pTargetCode;
+        return (PCODE)pTargetCode;
     }
 
     uint32_t cNewCacheEntries = cOldCacheEntries ? cOldCacheEntries * 2 : 1;
@@ -488,7 +488,7 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
     if (newCacheValue == 0)
     {
         CID_COUNTER_INC(CacheOutOfMemory);
-        return (PTR_Code)pTargetCode;
+        return (PCODE)pTargetCode;
     }
 
     if (InterfaceDispatchCell::IsCache(newCacheValue))
@@ -513,10 +513,10 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
     if (pDiscardedCache)
         DiscardCache(pDiscardedCache);
 
-    return (PTR_Code)pTargetCode;
+    return (PCODE)pTargetCode;
 }
 
-COOP_PINVOKE_HELPER(PTR_Code, RhpSearchDispatchCellCache, (InterfaceDispatchCell * pCell, MethodTable* pInstanceType))
+COOP_PINVOKE_HELPER(PCODE, RhpSearchDispatchCellCache, (InterfaceDispatchCell * pCell, MethodTable* pInstanceType))
 {
     // This function must be implemented in native code so that we do not take a GC while walking the cache
     InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
@@ -525,10 +525,10 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpSearchDispatchCellCache, (InterfaceDispatchCell
         InterfaceDispatchCacheEntry * pCacheEntry = pCache->m_rgEntries;
         for (uint32_t i = 0; i < pCache->m_cEntries; i++, pCacheEntry++)
             if (pCacheEntry->m_pInstanceType == pInstanceType)
-                return (PTR_Code)pCacheEntry->m_pTargetCode;
+                return pCacheEntry->m_pTargetCode;
     }
 
-    return nullptr;
+    return (PCODE)nullptr;
 }
 
 // Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented

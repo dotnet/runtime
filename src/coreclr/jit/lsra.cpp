@@ -5109,6 +5109,13 @@ void LinearScan::allocateRegistersMinimal()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
+
+#ifdef SWIFT_SUPPORT
+                if (currentRefPosition.delayRegFree)
+                {
+                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                }
+#endif // SWIFT_SUPPORT
             }
             else
             {
@@ -5818,6 +5825,13 @@ void LinearScan::allocateRegisters()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
+
+#ifdef SWIFT_SUPPORT
+                if (currentRefPosition.delayRegFree)
+                {
+                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                }
+#endif // SWIFT_SUPPORT
             }
             else
             {
@@ -5922,9 +5936,62 @@ void LinearScan::allocateRegisters()
             assert(lclVarInterval->isLocalVar);
             if (refType == RefTypeUpperVectorSave)
             {
-                if ((lclVarInterval->physReg == REG_NA) ||
+                assert(currentInterval->recentRefPosition == &currentRefPosition);
+
+                // For a given RefTypeUpperVectorSave, there should be a matching RefTypeUpperVectorRestore
+                // If not, probably, this was an extra one we added conservatively and should not need a register.
+                RefPosition* nextRefPosition        = currentRefPosition.nextRefPosition;
+                bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
+
+                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
+                    if (!currentRefPosition.liveVarUpperSave)
+                    {
+                        if (isExtraUpperVectorSave)
+                        {
+                            // If this was just an extra upperVectorSave that do not have corresponding
+                            // upperVectorRestore, we do not need to mark this as isPartiallySpilled
+                            // or need to insert the save/restore.
+                            currentRefPosition.skipSaveRestore = true;
+                        }
+
+                        if (assignedRegister != REG_NA)
+                        {
+                            // If we ever assigned register to this interval, it was because in the past
+                            // there were valid save/restore RefPositions associated. For non-live vars,
+                            // we want to reduce the affect of their presence and hence, we will
+                            // unassign register from this interval without spilling and free it.
+
+                            // We do not take similar action on upperVectorRestore below because here, we
+                            // have already removed the register association with the interval.
+                            // The "allocate = false" route, will do a no-op.
+                            if (currentInterval->isActive)
+                            {
+                                RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
+                                unassignPhysRegNoSpill(physRegRecord);
+                            }
+                            else
+                            {
+                                updateNextIntervalRef(assignedRegister, currentInterval);
+                                updateSpillCost(assignedRegister, currentInterval);
+                            }
+
+                            regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
+                        }
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
+                        currentRefPosition.registerAssignment = RBM_NONE;
+                        lastAllocatedRefPosition              = &currentRefPosition;
+
+                        continue;
+                    }
+                    else
+                    {
+                        // We should never have an extra upperVectorSave for non-live var because there will
+                        // always be a valid use for which we will add the restore.
+                        assert(!isExtraUpperVectorSave);
+                    }
+
                     allocate = false;
                 }
 #if defined(TARGET_XARCH)
@@ -7969,7 +8036,15 @@ void           LinearScan::resolveRegisters()
                             insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(),
                                                   block);
                         }
-                        localVarInterval->isPartiallySpilled = true;
+
+                        if (!currentRefPosition->IsExtraUpperVectorSave())
+                        {
+                            localVarInterval->isPartiallySpilled = true;
+                        }
+                        else
+                        {
+                            assert(!currentRefPosition->liveVarUpperSave);
+                        }
                     }
                 }
                 else
@@ -8870,6 +8945,21 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             GenTree* srcOp1 = op1->gtGetOp1();
             consumedRegs |= genRegMask(srcOp1->GetRegNum());
         }
+        else if (op1->IsLocal())
+        {
+            GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
+            terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+        }
+        if (op2->OperIs(GT_COPY))
+        {
+            GenTree* srcOp2 = op2->gtGetOp1();
+            consumedRegs |= genRegMask(srcOp2->GetRegNum());
+        }
+        else if (op2->IsLocal())
+        {
+            GenTreeLclVarCommon* lcl = op2->AsLclVarCommon();
+            terminatorNodeLclVarDsc2 = &compiler->lvaTable[lcl->GetLclNum()];
+        }
     }
     // Next, if this blocks ends with a JCMP/JTEST/JTRUE, we have to make sure:
     // 1. Not to copy into the register that JCMP/JTEST/JTRUE uses
@@ -8997,7 +9087,6 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 sameToReg = REG_NA;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if ((terminatorNodeLclVarDsc != nullptr) &&
                 (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
             {
@@ -9008,7 +9097,6 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             {
                 sameToReg = REG_NA;
             }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
             // If the var is live only at those blocks connected by a split edge and not live-in at some of the
             // target blocks, we will resolve it the same way as if it were in diffResolutionSet and resolution
@@ -10083,7 +10171,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
     {
         fprintf(file, ",%u", sumStats[statIndex]);
     }
-    fprintf(file, ",%.2f\n", compiler->info.compPerfScore);
+    fprintf(file, ",%.2f\n", compiler->Metrics.PerfScore);
 }
 
 // -----------------------------------------------------------
@@ -11732,8 +11820,7 @@ void LinearScan::verifyFinalAllocation()
             }
         }
 
-        LsraLocation newLocation = currentRefPosition.nodeLocation;
-        currentLocation          = newLocation;
+        currentLocation = currentRefPosition.nodeLocation;
 
         switch (currentRefPosition.refType)
         {
@@ -12075,7 +12162,8 @@ void LinearScan::verifyFinalAllocation()
                             (currentRefPosition.refType == RefTypeUpperVectorRestore))
                         {
                             Interval* lclVarInterval = interval->relatedInterval;
-                            assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled);
+                            assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled ||
+                                   currentRefPosition.IsExtraUpperVectorSave());
                         }
                     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -12297,7 +12385,11 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     {
         ordering = W("ABCDEFGHIJKLMNOPQ");
 
-        if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled())
+        if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled()
+#ifdef TARGET_ARM64
+            && !linearScan->compiler->info.compNeedsConsecutiveRegisters
+#endif
+            )
         {
             ordering = W("MQQQQQQQQQQQQQQQQ");
         }

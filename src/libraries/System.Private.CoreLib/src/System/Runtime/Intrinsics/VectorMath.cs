@@ -333,7 +333,7 @@ namespace System.Runtime.Intrinsics
                 // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
                 TVectorDouble temp = zeroMask
                                    | lessThanZeroMask
-                                   | Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThanOrEqual(xBits, TVectorInt64.Create(double.PositiveInfinityBits)));
+                                   | Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThanOrEqual(xBits, TVectorInt64.Create((long)double.PositiveInfinityBits)));
 
                 // subnormal
                 TVectorDouble subnormalMask = TVectorDouble.AndNot(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask), temp);
@@ -613,7 +613,7 @@ namespace System.Runtime.Intrinsics
                 // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
                 TVectorDouble temp = zeroMask
                                    | lessThanZeroMask
-                                   | Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThanOrEqual(xBits, TVectorInt64.Create(double.PositiveInfinityBits)));
+                                   | Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThanOrEqual(xBits, TVectorInt64.Create((long)double.PositiveInfinityBits)));
 
                 // subnormal
                 TVectorDouble subnormalMask = TVectorDouble.AndNot(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask), temp);
@@ -762,7 +762,7 @@ namespace System.Runtime.Intrinsics
                 // (x < 0) | float.IsZero(x) | float.IsNaN(x) | float.IsPositiveInfinity(x)
                 TVectorSingle temp = zeroMask
                                    | lessThanZeroMask
-                                   | Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThanOrEqual(xBits, TVectorInt32.Create(float.PositiveInfinityBits)));
+                                   | Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThanOrEqual(xBits, TVectorInt32.Create((int)float.PositiveInfinityBits)));
 
                 // subnormal
                 TVectorSingle subnormalMask = TVectorSingle.AndNot(Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask), temp);

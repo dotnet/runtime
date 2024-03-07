@@ -83,7 +83,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericType => false;
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
-        public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
+        public override bool ContainsGenericParameters => false;
         public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
@@ -137,5 +137,19 @@ namespace System.Reflection.Emit
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException();
+
+        public override Type MakePointerType() =>
+            SymbolType.FormCompoundType("*", this, 0)!;
+
+        public override Type MakeByRefType() =>
+            SymbolType.FormCompoundType("&", this, 0)!;
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType() =>
+            SymbolType.FormCompoundType("[]", this, 0)!;
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType(int rank) =>
+            SymbolType.FormCompoundType(SymbolType.FormatRank(rank), this, 0)!;
     }
 }

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -12,7 +12,7 @@ import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
 import {
     JiterpNumberMode, BailoutReason, JiterpreterTable,
-    JiterpCounter, JiterpMember
+    JiterpCounter, JiterpMember, OpcodeInfoType
 } from "./jiterpreter-enums";
 
 export const maxFailures = 2,
@@ -104,6 +104,7 @@ export class WasmBuilder {
     backBranchOffsets: Array<MintOpcodePtr> = [];
     callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
+    backBranchTraceLevel = 0;
 
     compressImportNames = false;
     lockImports = false;
@@ -513,7 +514,7 @@ export class WasmBuilder {
         // import the native heap
         this.appendName("m");
         this.appendName("h");
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             // memtype (limits = 0x03 n:u32 m:u32    => {min n, max m, shared})
             this.appendU8(0x02);
             this.appendU8(0x03);
@@ -1139,8 +1140,11 @@ class Cfg {
     backBranchTargets: Uint16Array | null = null;
     base!: MintOpcodePtr;
     ip!: MintOpcodePtr;
+    // The address of the prepare point
     entryIp!: MintOpcodePtr;
     exitIp!: MintOpcodePtr;
+    // The address of the first actual opcode in the trace
+    firstOpcodeIp!: MintOpcodePtr;
     lastSegmentStartIp!: MintOpcodePtr;
     lastSegmentEnd = 0;
     overheadBytes = 0;
@@ -1148,7 +1152,7 @@ class Cfg {
     blockStack: Array<MintOpcodePtr> = [];
     backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
-    observedBranchTargets = new Set<MintOpcodePtr>();
+    observedBackBranchTargets = new Set<MintOpcodePtr>();
     trace = 0;
 
     constructor(builder: WasmBuilder) {
@@ -1161,11 +1165,11 @@ class Cfg {
         this.startOfBody = startOfBody;
         this.backBranchTargets = backBranchTargets;
         this.base = this.builder.base;
-        this.ip = this.lastSegmentStartIp = this.builder.base;
+        this.ip = this.lastSegmentStartIp = this.firstOpcodeIp = this.builder.base;
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
-        this.observedBranchTargets.clear();
+        this.observedBackBranchTargets.clear();
         this.trace = trace;
         this.backDispatchOffsets.length = 0;
     }
@@ -1173,6 +1177,9 @@ class Cfg {
     // We have a header containing the table of locals and we need to preserve it
     entry(ip: MintOpcodePtr) {
         this.entryIp = ip;
+        // Skip over the enter opcode
+        const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
+        this.firstOpcodeIp = ip + <any>(enterSizeU16 * 2);
         this.appendBlob();
         mono_assert(this.segments.length === 1, "expected 1 segment");
         mono_assert(this.segments[0].type === "blob", "expected blob");
@@ -1183,6 +1190,7 @@ class Cfg {
             this.overheadBytes += 20; // some extra padding for the dispatch br_table
             this.overheadBytes += this.backBranchTargets.length; // one byte for each target in the table
         }
+        return this.firstOpcodeIp;
     }
 
     appendBlob() {
@@ -1212,7 +1220,9 @@ class Cfg {
     }
 
     branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
-        this.observedBranchTargets.add(target);
+        if (isBackward)
+            this.observedBackBranchTargets.add(target);
+
         this.appendBlob();
         this.segments.push({
             type: "branch",
@@ -1224,7 +1234,10 @@ class Cfg {
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
         this.overheadBytes += 4; // forward branches are a constant br + depth (optimally 2 bytes)
+
         if (isBackward) {
+            // TODO: Make this smaller by setting the flag inside the dispatcher when disp != 0,
+            //  this will save space for any trace with more than one back-branch
             // get_local <cinfo>
             // i32_const 1
             // i32_store 0 0
@@ -1298,7 +1311,7 @@ class Cfg {
                 const breakDepth = this.blockStack.indexOf(offset);
                 if (breakDepth < 0)
                     continue;
-                if (!this.observedBranchTargets.has(offset))
+                if (!this.observedBackBranchTargets.has(offset))
                     continue;
 
                 this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
@@ -1321,6 +1334,9 @@ class Cfg {
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
@@ -1557,7 +1573,6 @@ export function getWasmFunctionTable() {
 
 export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
     mono_assert(f, "Attempting to set null function into table");
-    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
     const index = cwraps.mono_jiterp_allocate_table_entry(table);
     if (index > 0) {
@@ -1821,7 +1836,7 @@ let observedTaintedZeroPage: boolean | undefined;
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
-    if (MonoWasmThreads)
+    if (WasmEnableThreads)
         return false;
 
     if (!cwraps.mono_wasm_is_zero_page_reserved())
@@ -1991,7 +2006,7 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
     // In threaded builds we need to populate all the reserved slots with safe placeholder functions
     // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
     //  be safe, since it was previously not necessary)
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
         //  so that additional work doesn't have to be done by the runtime for the following table sets
         const preparedValue = wasmTable.get(firstIndex);
@@ -2017,8 +2032,8 @@ export function jiterpreter_allocate_tables() {
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
     const traceTableSize = options.tableSize,
-        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
-        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
+        jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable();

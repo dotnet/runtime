@@ -368,6 +368,7 @@ namespace System.Text.Json
         public JsonSerializerOptions() { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults defaults) { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
+        public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
         public static System.Text.Json.JsonSerializerOptions Default { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")] get { throw null; } }
@@ -1060,6 +1061,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonSourceGenerationOptionsAttribute() { }
         public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Type[]? Converters { get { throw null; } set { } }
         public int DefaultBufferSize { get { throw null; } set { } }

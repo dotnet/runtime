@@ -607,7 +607,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     PCODE pCode = NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
-        JitListLock::LockHolder pJitLock(GetDomain()->GetJitLock());
+        JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
 
         // It is possible that another thread stepped in before we entered the global lock for the first time.
         if ((pCode = pConfig->IsJitCancellationRequested()))

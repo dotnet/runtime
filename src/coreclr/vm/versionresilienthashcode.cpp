@@ -127,7 +127,7 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
         IfFailThrow(pMT->GetMDImport()->GetNameOfTypeDef(pMT->GetCl(), &szName, &szNamespace));
         int hashcode = ComputeNameHashCode(szNamespace, szName);
 
-        MethodTable *pMTEnclosing = pMT->LoadEnclosingMethodTable(CLASS_LOAD_UNRESTOREDTYPEKEY);
+        MethodTable *pMTEnclosing = pMT->LoadEnclosingMethodTable(CLASS_LOAD_APPROXPARENTS);
         if (pMTEnclosing != NULL)
         {
             hashcode = ComputeNestedTypeHashCode(GetVersionResilientTypeHashCode(TypeHandle(pMTEnclosing)), hashcode);

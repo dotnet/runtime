@@ -1373,7 +1373,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
         debugName.GetUTF8(),
         pModule->GetDebugName(),
-        pModule->GetDomain(),
+        AppDomain::GetCurrentDomain(),
         (pModule->IsSystem()) ? "System Domain" : ""
     ));
 #endif // _DEBUG
@@ -5988,16 +5988,16 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
         }
     }
 
+    if (pDeclType == NULL)
+    {   // Method's type is not a parent.
+        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
+    }
+
     // Instead of using the Substitution chain that reaches back to the type being loaded, instead
     // use a substitution chain that points back to the open type associated with the memberref of the declsig.
     Substitution emptySubstitution;
     Substitution* pDeclTypeSubstitution = &emptySubstitution;
     DWORD lengthOfSubstitutionChainHandled = pDeclType->GetSubstitution().GetLength();
-
-    if (pDeclType == NULL)
-    {   // Method's type is not a parent.
-        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
-    }
 
     // 3. Find the matching method.
     bmtRTType *pCurDeclType = pDeclType;
@@ -9365,6 +9365,10 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
     // and we make this case distinguishable by simply disallowing the optimization in those cases.
     bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
+    if (retryWithExactInterfaces)
+    {
+        pMT->GetAuxiliaryDataForWrite()->SetMayHaveOpenInterfacesInInterfaceMap();
+    }
 
     DWORD nAssigned = 0;
     do
@@ -9431,6 +9435,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
         if (retry)
         {
+            pMT->GetAuxiliaryDataForWrite()->SetMayHaveOpenInterfacesInInterfaceMap();
             retryWithExactInterfaces = true;
         }
     } while (retry);
@@ -10235,7 +10240,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 // Helper to create a new method table. This is the only
 // way to allocate a new MT. Don't try calling new / ctor.
 // Called from SetupMethodTable
-// This needs to be kept consistent with MethodTable::GetSavedExtent()
 MethodTable * MethodTableBuilder::AllocateNewMT(
     Module *pLoaderModule,
     DWORD dwVtableSlots,
@@ -10805,10 +10809,6 @@ MethodTableBuilder::SetupMethodTable2(
     }
 
     pMT->SetCl(GetCl());
-
-    // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid avoid asserts.
-    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG
     // Store status if we tried to inject duplicate interfaces

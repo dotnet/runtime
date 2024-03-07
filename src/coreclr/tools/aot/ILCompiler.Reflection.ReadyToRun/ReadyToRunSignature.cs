@@ -1685,8 +1685,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("MEM_SET");
                     break;
 
+                case ReadyToRunHelper.MemZero:
+                    builder.Append("MEM_ZERO");
+                    break;
+
                 case ReadyToRunHelper.MemCpy:
                     builder.Append("MEM_CPY");
+                    break;
+
+                case ReadyToRunHelper.NativeMemSet:
+                    builder.Append("NATIVE_MEM_SET");
                     break;
 
                 // PInvoke helpers

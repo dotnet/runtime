@@ -15,7 +15,7 @@ const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
-function setup(linkerSetup) {
+function setup(emscriptenBuildOptions) {
     // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
     #if USE_PTHREADS
     const modulePThread = PThread;
@@ -43,8 +43,7 @@ function setup(linkerSetup) {
         updateMemoryViews,
         getMemory: () => { return wasmMemory; },
         getWasmIndirectFunctionTable: () => { return wasmTable; },
-        ...linkerSetup
-    });
+    }, emscriptenBuildOptions);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
@@ -83,11 +82,12 @@ function injectDependencies() {
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
-        `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
-        `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
-        `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
-        `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
-        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `wasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
+        `wasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
+        `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+        `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 
@@ -96,4 +96,4 @@ function injectDependencies() {
 }
 
 
-// var methodIndexByName wil be appended below by the MSBuild in browser.proj
+// var methodIndexByName wil be appended below by the MSBuild in browser.proj via exports-linker.ts

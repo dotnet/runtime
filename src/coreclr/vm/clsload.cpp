@@ -824,7 +824,7 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 
     if (typeHnd.GetLoadLevel() < level)
     {
-        if (level > CLASS_LOAD_UNRESTORED)
+        if (level >= CLASS_LOAD_APPROXPARENTS)
         {
             TypeKey typeKey = typeHnd.GetTypeKey();
 
@@ -1328,7 +1328,6 @@ ClassLoader::LoadTypeHandleThrowing(
 #ifndef DACCESS_COMPILE
     // Replace AvailableClasses Module entry with found TypeHandle
     if (!typeHnd.IsNull() &&
-        typeHnd.IsRestored() &&
         foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
         (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
         (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
@@ -2045,7 +2044,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
         POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(level <= CLASS_LOAD_UNRESTORED || RETVAL.IsNull() || RETVAL.IsRestored());
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -2616,8 +2614,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
 
     switch (currentLevel)
     {
-        // Attain at least level CLASS_LOAD_UNRESTORED (if just locating type in ngen image)
-        // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
+        // Attain at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
                 AllocMemTracker amTracker;
@@ -2628,13 +2625,6 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
                     amTracker.SuppressRelease();
                 typeHnd = published;
             }
-            break;
-
-        case CLASS_LOAD_UNRESTOREDTYPEKEY :
-            break;
-
-        // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
-        case CLASS_LOAD_UNRESTORED :
             break;
 
         // Attain level CLASS_LOAD_EXACTPARENTS
@@ -2761,7 +2751,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
             // no parameterized type allowed on a reference
             if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
             {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
+                ThrowTypeLoadException(pKey, (kind == ELEMENT_TYPE_BYREF) ? IDS_CLASSLOAD_BYREF_OF_BYREF : IDS_CLASSLOAD_POINTER_OF_BYREF);
             }
 
             // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,

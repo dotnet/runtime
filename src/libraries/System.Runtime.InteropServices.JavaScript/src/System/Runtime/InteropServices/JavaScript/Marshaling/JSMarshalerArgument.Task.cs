@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -64,17 +65,17 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (arg_2.slot.Type != MarshalerType.None)
                     {
                         arg_2.ToManaged(out Exception? fail);
-                        tcs.SetException(fail!);
+                        tcs.TrySetException(fail!);
                     }
                     else
                     {
-                        tcs.SetResult();
+                        tcs.TrySetResult();
                     }
                     // eventual exception is handled by caller
                 };
                 holder.Callback = callback;
                 value = tcs.Task;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // if the other thread created it, signal that it's ready
                 holder.CallbackReady?.Set();
 #endif
@@ -117,18 +118,18 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         arg_2.ToManaged(out Exception? fail);
                         if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
-                        tcs.SetException(fail);
+                        tcs.TrySetException(fail);
                     }
                     else
                     {
                         marshaler(ref arg_3, out T result);
-                        tcs.SetResult(result);
+                        tcs.TrySetResult(result);
                     }
                     // eventual exception is handled by caller
                 };
                 holder.Callback = callback;
                 value = tcs.Task;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // if the other thread created it, signal that it's ready
                 holder.CallbackReady?.Set();
 #endif
@@ -140,13 +141,20 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task? task = value;
 
+            var ctx = ToJSContext;
+            var canMarshalTaskResultOnSameCall = CanMarshalTaskResultOnSameCall(ctx);
+
             if (task == null)
             {
+                if (!canMarshalTaskResultOnSameCall)
+                {
+                    Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
+                }
                 slot.Type = MarshalerType.None;
                 return;
             }
 
-            if (task.IsCompleted)
+            if (canMarshalTaskResultOnSameCall && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -172,7 +180,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            var ctx = ToJSContext;
 
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
@@ -188,8 +195,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
+#if FEATURE_WASM_MANAGED_THREADS
+            // AsyncTaskScheduler will make sure that the resolve message is always sent after this call is completed
+            // that is: synchronous marshaling and eventually message to the target thread, which need to arrive before the resolve message
+            task.ContinueWith(Complete, taskHolder, ctx.AsyncTaskScheduler!);
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
@@ -228,13 +237,19 @@ namespace System.Runtime.InteropServices.JavaScript
         public void ToJS(Task? value)
         {
             Task? task = value;
+            var ctx = ToJSContext;
+            var canMarshalTaskResultOnSameCall = CanMarshalTaskResultOnSameCall(ctx);
 
             if (task == null)
             {
+                if (!canMarshalTaskResultOnSameCall)
+                {
+                    Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
+                }
                 slot.Type = MarshalerType.None;
                 return;
             }
-            if (task.IsCompleted)
+            if (canMarshalTaskResultOnSameCall && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -252,8 +267,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            var ctx = ToJSContext;
-
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
@@ -268,8 +281,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
+#if FEATURE_WASM_MANAGED_THREADS
+            // AsyncTaskScheduler will make sure that the resolve message is always sent after this call is completed
+            // that is: synchronous marshaling and eventually message to the target thread, which need to arrive before the resolve message
+            task.ContinueWith(Complete, taskHolder, ctx.AsyncTaskScheduler!);
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
@@ -298,14 +313,20 @@ namespace System.Runtime.InteropServices.JavaScript
         public void ToJS<T>(Task<T>? value, ArgumentToJSCallback<T> marshaler)
         {
             Task<T>? task = value;
+            var ctx = ToJSContext;
+            var canMarshalTaskResultOnSameCall = CanMarshalTaskResultOnSameCall(ctx);
 
             if (task == null)
             {
+                if (!canMarshalTaskResultOnSameCall)
+                {
+                    Environment.FailFast("Marshalling null return Task to JS is not supported in MT");
+                }
                 slot.Type = MarshalerType.None;
                 return;
             }
 
-            if (task.IsCompleted)
+            if (canMarshalTaskResultOnSameCall && task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
@@ -325,7 +346,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            var ctx = ToJSContext;
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
@@ -340,8 +360,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
+#if FEATURE_WASM_MANAGED_THREADS
+            // AsyncTaskScheduler will make sure that the resolve message is always sent after this call is completed
+            // that is: synchronous marshaling and eventually message to the target thread, which need to arrive before the resolve message
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), ctx.AsyncTaskScheduler!);
 #else
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
 #endif
@@ -361,6 +383,44 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+#if FEATURE_WASM_MANAGED_THREADS
+        // We can't marshal resolved/rejected/null Task.Result directly into current argument when this is marshaling return of JSExport across threads
+        private bool CanMarshalTaskResultOnSameCall(JSProxyContext ctx)
+        {
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this means that we are not in the return value of JSExport
+                // we are marshaling parameter of JSImport
+                return true;
+            }
+
+            if (ctx.IsCurrentThread())
+            {
+                // If the JS and Managed is running on the same thread we can use the args buffer,
+                // because the call is synchronous and the buffer will be processed.
+                // In that case the pre-allocated Promise would be discarded as necessary
+                // and the result will be marshaled by `try_marshal_sync_task_to_js`
+                return true;
+            }
+
+            // Otherwise this is JSExport return value and we can't use the args buffer, because the args buffer arrived in async message and nobody is reading after this.
+            // In such case the JS side already pre-created the Promise and we have to use it, to resolve it in separate call via `mono_wasm_resolve_or_reject_promise_post`
+            // there is JSVHandle in this arg
+            return false;
+        }
+#else
+#pragma warning disable CA1822 // Mark members as static
+        private bool CanMarshalTaskResultOnSameCall(JSProxyContext _)
+        {
+            // in ST build this is always synchronous and we can marshal the result directly
+            return true;
+        }
+#pragma warning restore CA1822 // Mark members as static
+#endif
+
         private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 
         private static void RejectPromise(JSObject holder, Exception ex)
@@ -373,7 +433,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             exc.InitializeWithContext(holder.ProxyContext);
             res.InitializeWithContext(holder.ProxyContext);
             arg_value.InitializeWithContext(holder.ProxyContext);
@@ -394,13 +454,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_THREADS
-            // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
-#else
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
-#endif
         }
 
         private static void ResolveVoidPromise(JSObject holder)
@@ -413,7 +468,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             exc.InitializeWithContext(holder.ProxyContext);
             res.InitializeWithContext(holder.ProxyContext);
             arg_value.InitializeWithContext(holder.ProxyContext);
@@ -433,13 +488,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_THREADS
-            // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
-#else
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
-#endif
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
@@ -452,7 +502,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             exc.InitializeWithContext(holder.ProxyContext);
             res.InitializeWithContext(holder.ProxyContext);
             arg_value.InitializeWithContext(holder.ProxyContext);
@@ -473,13 +523,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_THREADS
-            // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
-#else
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
-#endif
         }
     }
 }

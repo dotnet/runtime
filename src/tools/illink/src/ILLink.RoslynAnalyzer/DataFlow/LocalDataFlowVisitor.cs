@@ -88,12 +88,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return null;
 
 			var branchValue = Visit (branchValueOperation, state);
-
+			TConditionValue conditionValue = GetConditionValue (branchValueOperation, state);
 			if (block.Block.ConditionKind != ControlFlowConditionKind.None) {
 				// BranchValue may represent a value used in a conditional branch to the ConditionalSuccessor.
 				// If so, give the analysis an opportunity to model the checked condition, and return the model
 				// of the condition back to the generic analysis. It will be applied to the state of each outgoing branch.
-				return GetConditionValue (branchValueOperation, state);
+				return conditionValue;
 			}
 
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
@@ -118,10 +118,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// We don't want the return operation because this might have multiple possible return values in general.
 			var current = state.Current;
 			HandleReturnValue (branchValue, branchValueOperation, in current.Context);
+			// Must be called for every return value even if it did not return an understood condition,
+			// because the non-understood conditions will produce warnings for FeatureCheck properties.
+			HandleReturnConditionValue (conditionValue, branchValueOperation);
 			return null;
 		}
 
-		public abstract TConditionValue? GetConditionValue (
+		public abstract TConditionValue GetConditionValue (
 			IOperation branchValueOperation,
 			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
 
@@ -145,6 +148,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			TValue returnValue,
 			IOperation operation,
 			in TContext context);
+
+		public abstract void HandleReturnConditionValue (
+			TConditionValue returnConditionValue,
+			IOperation branchValueOperation);
 
 		// This is called for any method call, which includes:
 		// - Normal invocation operation
@@ -776,9 +783,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 				// Get the condition value that is being asserted. If the attribute is DoesNotReturnIf(true),
 				// the condition value needs to be negated so that we can assert the false condition.
-				if (GetConditionValue (argumentOperation, state) is not TConditionValue conditionValue)
-					continue;
-
+				TConditionValue conditionValue = GetConditionValue (argumentOperation, state);
 				var current = state.Current;
 				ApplyCondition (
 					doesNotReturnIfConditionValue == false

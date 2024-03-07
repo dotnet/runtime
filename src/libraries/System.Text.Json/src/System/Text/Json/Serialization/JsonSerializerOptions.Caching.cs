@@ -504,6 +504,7 @@ namespace System.Text.Json
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
+                    left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._ignoreNullValues == right._ignoreNullValues &&
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
@@ -560,6 +561,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._ignoreNullValues);
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
