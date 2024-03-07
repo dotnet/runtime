@@ -13,14 +13,12 @@ namespace Mono.Linker
 	{
 		public SubstitutionInfo PrimarySubstitutionInfo { get; }
 		private readonly Dictionary<AssemblyDefinition, SubstitutionInfo?> _embeddedXmlInfos;
-		private readonly Dictionary<PropertyDefinition, bool> _constantFeatureChecks;
 		readonly LinkContext _context;
 
 		public MemberActionStore (LinkContext context)
 		{
 			PrimarySubstitutionInfo = new SubstitutionInfo ();
 			_embeddedXmlInfos = new Dictionary<AssemblyDefinition, SubstitutionInfo?> ();
-			_constantFeatureChecks = new Dictionary<PropertyDefinition, bool> ();
 			_context = context;
 		}
 

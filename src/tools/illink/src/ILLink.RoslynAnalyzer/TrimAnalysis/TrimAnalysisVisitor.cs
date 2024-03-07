@@ -43,8 +43,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		FeatureChecksVisitor _featureChecksVisitor;
 
-		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
-
 		public TrimAnalysisVisitor (
 			Compilation compilation,
 			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -59,7 +57,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
 			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
-			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
 		public override FeatureChecksValue GetConditionValue (IOperation branchValueOperation, StateValue state)

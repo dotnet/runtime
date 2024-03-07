@@ -7,8 +7,7 @@
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <AnalysisLevel>Latest</AnalysisLevel>
-    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524;CS1579</NoWarn>
-    <NoWarn>$(NoWarn);SA1212</NoWarn>
+    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <!-- The analyzer needs to process deeply nested expressions in corelib.
          This can blow up the stack if using unoptimized code (due to large
