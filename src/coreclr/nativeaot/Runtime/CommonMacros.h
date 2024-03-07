@@ -17,7 +17,6 @@
 #define STDCALL
 #endif
 
-#define NATIVEAOT_API
 #define REDHAWK_CALLCONV FASTCALL
 #define QCALLTYPE
 
@@ -233,7 +232,7 @@ typedef uint8_t CODE_LOCATION;
 
 #define FCDECL_(_rettype, ...) \
     FCDECL_RENAME(_rettype, __VA_ARGS__) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
+    EXTERN_C _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
 #define FCDECL0(_rettype, _method) FCDECL_(_rettype, _method)
 #define FCDECL1(_rettype, _method, a) FCDECL_(_rettype, _method, a)
 #define FCDECL2(_rettype, _method, a, b) FCDECL_(_rettype, _method, a, b)
@@ -243,7 +242,7 @@ typedef uint8_t CODE_LOCATION;
 
 #define FCIMPL_(_rettype, ...) \
     FCIMPL_RENAME(_rettype, __VA_ARGS__) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
+    EXTERN_C _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
     {
 #define FCIMPL0(_rettype, _method) FCIMPL_(_rettype, _method)
 #define FCIMPL1(_rettype, _method, a) FCIMPL_(_rettype, _method, a)
