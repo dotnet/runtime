@@ -92,6 +92,28 @@
         </PropertyGroup>
     </Target>
 
+    <!--
+	Hack: temporarily turn on StripSymbols whlie SetupOSSpecificProps runs, then turn it off
+	again before LinkNative runs.  The problem is that SetupOSSpecificProps only probes for
+	$(ObjCopyName) and $(ObjCopyNameAlternative) if symbol stripping is turned on.  But we don't
+	want LinkNative to actually do any stripping since we have our own way that we'd like it to
+	work.
+    -->
+    <Target Name="TempStripSymbolsOn"
+	    BeforeTargets="SetupOSSpecificProps">
+	<PropertyGroup>
+	    <StripSymbols>true</StripSymbols>
+	</PropertyGroup>
+    </Target>
+
+    <Target Name="TempStripSymbolsOff"
+	    AfterTargets="SetupOSSpecificProps"
+	    BeforeTargets="LinkNative">
+	<PropertyGroup>
+	    <StripSymbols>false</StripSymbols>
+	</PropertyGroup>
+    </Target>
+
     <Target Name="StripLibraryLikeCoreCLRBuild"
             DependsOnTargets="SetupOSSpecificProps;CopyNativeBinary;StripLibraryLikeCoreCLRSetupPaths"
             Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
