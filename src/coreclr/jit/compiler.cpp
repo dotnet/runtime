@@ -5250,7 +5250,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #elif FEATURE_SIMD
         fprintf(compJitFuncInfoFile, " %s\n", eeGetMethodFullName(info.compMethodHnd));
 #endif
-        fprintf(compJitFuncInfoFile, ""); // in our logic this causes a flush
+        fflush(compJitFuncInfoFile);
     }
 #endif // FUNC_INFO_LOGGING
 }
