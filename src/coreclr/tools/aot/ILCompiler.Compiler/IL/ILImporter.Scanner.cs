@@ -1269,6 +1269,8 @@ namespace Internal.IL
         {
             switch (wellKnownType)
             {
+                case WellKnownType.Byte:
+                case WellKnownType.UInt16:
                 case WellKnownType.SByte:
                 case WellKnownType.Int16:
                 case WellKnownType.Int32:
@@ -1283,8 +1285,6 @@ namespace Internal.IL
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2LngOvf), "conv_i8_ovf");
                     }
                     break;
-                case WellKnownType.Byte:
-                case WellKnownType.UInt16:
                 case WellKnownType.UInt32:
                     if (checkOverflow)
                     {
