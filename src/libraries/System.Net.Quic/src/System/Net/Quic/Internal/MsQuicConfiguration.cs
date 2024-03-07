@@ -119,9 +119,12 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
     {
+        QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
+
         if (cipherSuitesPolicy != null)
         {
             flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
+            allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
         }
 
         // Validate options and SSL parameters.
@@ -185,7 +188,8 @@ internal static partial class MsQuicConfiguration
             certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() },
             flags,
             settings,
-            alpnProtocols); // TODO: defensive copy
+            alpnProtocols,
+            allowedCipherSuites); // TODO: defensive copy
 
         if (intermediates != null)
         {
@@ -223,7 +227,7 @@ internal static partial class MsQuicConfiguration
 
             if (cipherSuitesPolicy != null)
             {
-                config.AllowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
+                config.AllowedCipherSuites = allowedCipherSuites;
             }
 
             int status;

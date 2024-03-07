@@ -22,13 +22,15 @@ internal static partial class MsQuicConfiguration
         public readonly QUIC_CREDENTIAL_FLAGS Flags;
         public readonly QUIC_SETTINGS Settings;
         public readonly List<SslApplicationProtocol> ApplicationProtocols;
+        public readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
-        public CacheKey(List<byte[]> certificateThumbprints, QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, List<SslApplicationProtocol> applicationProtocols)
+        public CacheKey(List<byte[]> certificateThumbprints, QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, List<SslApplicationProtocol> applicationProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
             CertificateThumbprints = certificateThumbprints;
             Flags = flags;
             Settings = settings;
             ApplicationProtocols = applicationProtocols;
+            AllowedCipherSuites = allowedCipherSuites;
         }
 
         public override bool Equals(object? obj) => obj is CacheKey key && Equals(key);
@@ -63,7 +65,8 @@ internal static partial class MsQuicConfiguration
 
             return
                 Flags == other.Flags &&
-                Settings.Equals(other.Settings);
+                Settings.Equals(other.Settings) &&
+                AllowedCipherSuites == other.AllowedCipherSuites;
         }
 
         public override int GetHashCode()
@@ -82,6 +85,8 @@ internal static partial class MsQuicConfiguration
             {
                 hash.Add(protocol);
             }
+
+            hash.Add(AllowedCipherSuites);
 
             return hash.ToHashCode();
         }
@@ -123,7 +128,8 @@ internal static partial class MsQuicConfiguration
             },
             (k, existing, h) =>
             {
-                // there already is an existing handle for this key, make this a no-op
+                // there already is an existing handle for this key, perhaps we lost a race,
+                // make this a no-op
                 return existing;
             },
             handle);
