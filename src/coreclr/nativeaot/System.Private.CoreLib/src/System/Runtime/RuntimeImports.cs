@@ -643,7 +643,6 @@ namespace System.Runtime
         // EventPipeInternal helpers.
         //
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial ulong RhEventPipeInternal_Enable(
             char* outputFile,
             int format,
@@ -652,15 +651,12 @@ namespace System.Runtime
             uint numProviders);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhEventPipeInternal_Disable(ulong sessionID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhEventPipeInternal_CreateProvider(char* providerName, IntPtr callbackFunc, IntPtr callbackContext);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhEventPipeInternal_DefineEvent(
             IntPtr provHandle,
             uint eventID,
@@ -671,19 +667,15 @@ namespace System.Runtime
             uint metadataLength);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhEventPipeInternal_GetProvider(char* providerName);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhEventPipeInternal_DeleteProvider(IntPtr provHandle);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial int RhEventPipeInternal_EventActivityIdControl(uint controlCode, Guid* activityId);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhEventPipeInternal_WriteEventData(
             IntPtr eventHandle,
             void* pEventData,
@@ -692,59 +684,45 @@ namespace System.Runtime
             Guid* relatedActivityId);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial uint RhEventPipeInternal_GetSessionInfo(ulong sessionID, void* pSessionInfo);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial uint RhEventPipeInternal_GetNextEvent(ulong sessionID, void* pInstance);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial uint RhEventPipeInternal_SignalSession(ulong sessionID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial uint RhEventPipeInternal_WaitForSessionSignal(ulong sessionID, int timeoutMs);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogContentionStart(byte ContentionFlags, ushort ClrInstanceID, nint LockID, nint AssociatedObjectID, ulong LockOwnerThreadID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogContentionStop(byte ContentionFlags, ushort ClrInstanceID, double DurationNs);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, uint Reason, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats(
             double Duration,
             double Throughput,
@@ -759,7 +737,6 @@ namespace System.Runtime
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
@@ -767,39 +744,33 @@ namespace System.Runtime
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount(
             uint Count,
             ushort ClrInstanceID
         );
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStart(
             byte WaitSource,
             IntPtr AssociatedObjectID,
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStop(ushort ClrInstanceID);
 #endif // FEATURE_PERFTRACING
 
