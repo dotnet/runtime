@@ -161,7 +161,6 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING
 
-class ThreadStaticHandleTable;
 class Module;
 
 // TailCallArgBuffer states

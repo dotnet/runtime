@@ -205,60 +205,6 @@ FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockH
     pHolder->FreeData();
 };
 
-
-
-
-
-// The large heap handle bucket class is used to contain handles allocated
-// from an array contained in the large heap.
-class ThreadStaticHandleBucket
-{
-public:
-    // Constructor and desctructor.
-    ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
-    ~ThreadStaticHandleBucket();
-
-    // This returns the next bucket.
-    ThreadStaticHandleBucket *GetNext()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pNext;
-    }
-
-    // Allocate handles from the bucket.
-    OBJECTHANDLE GetHandles();
-
-private:
-    ThreadStaticHandleBucket *m_pNext;
-    int m_ArraySize;
-    OBJECTHANDLE m_hndHandleArray;
-};
-
-
-// The large heap handle table is used to allocate handles that are pointers
-// to objects stored in an array in the large object heap.
-class ThreadStaticHandleTable
-{
-public:
-    // Constructor and desctructor.
-    ThreadStaticHandleTable(BaseDomain *pDomain);
-    ~ThreadStaticHandleTable();
-
-    // Allocate handles from the large heap handle table.
-    OBJECTHANDLE AllocateHandles(DWORD nRequested);
-
-private:
-    // The buckets of object handles.
-    ThreadStaticHandleBucket *m_pHead;
-
-    // We need to know the containing domain so we know where to allocate handles
-    BaseDomain *m_pDomain;
-};
-
-
-
-
 //--------------------------------------------------------------------------------------
 // Base class for domains. It provides an abstract way of finding the first assembly and
 // for creating assemblies in the domain. The system domain only has one assembly, it
