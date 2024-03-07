@@ -12,7 +12,7 @@ namespace System.Threading.Tests
     /// </summary>
     public class SpinLockTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void EnterExit()
         {
             var sl = new SpinLock();
@@ -69,7 +69,7 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]
@@ -139,7 +139,7 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]

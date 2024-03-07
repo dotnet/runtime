@@ -593,7 +593,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void ConfigureAwaitOptions_SuppressThrowing_NoExceptionsAreThrown()
         {
             Task t;
@@ -611,7 +611,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Throws<FormatException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.ForceYielding).GetAwaiter().GetResult());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(false, ConfigureAwaitOptions.None)]
         [InlineData(false, ConfigureAwaitOptions.ContinueOnCapturedContext)]
         [InlineData(true, ConfigureAwaitOptions.None)]

@@ -991,7 +991,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancellationTokenSourceWithTimer()
         {
             TimeSpan bigTimeSpan = new TimeSpan(2000, 0, 0, 0, 0);
@@ -1358,7 +1358,7 @@ namespace System.Threading.Tasks.Tests
             SetSynchronizationContext(prevailingSyncCtx);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancellationTokenRegistration_DisposeDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
         {
             var ctr0running = new ManualResetEventSlim();
@@ -1438,7 +1438,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(invoked);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancellationTokenRegistration_UnregisterWhileCallbackRunning_UnregisterDoesntWaitForCallbackToComplete()
         {
             using (var barrier = new Barrier(2))
@@ -1460,7 +1460,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancellationTokenRegistration_UnregisterDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
         {
             var ctr0running = new ManualResetEventSlim();
@@ -1682,7 +1682,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static async Task CancellationTokenRegistration_DisposeAsyncDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
         {
             var ctr0running = new ManualResetEventSlim();

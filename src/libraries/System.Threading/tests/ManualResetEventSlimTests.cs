@@ -50,7 +50,7 @@ namespace System.Threading.Tests
         }
 
         // Tests timeout on an event that is never set.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunManualResetEventSlimTest2_TimeoutWait()
         {
             for (int i = 0; i < 2; i++)
