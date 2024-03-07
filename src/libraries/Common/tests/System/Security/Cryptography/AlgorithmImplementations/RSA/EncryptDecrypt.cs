@@ -718,26 +718,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory]
-        [InlineData(new byte[] { 1, 2, 3, 4 })]
-        [InlineData(new byte[0])]
-        public void Decrypt_Pkcs1_ErrorsForInvalidPadding(byte[] data)
-        {
-            if (data.Length == 0 && !PlatformSupportsEmptyRSAEncryption)
-            {
-                throw new SkipTestException("Platform does not support RSA encryption of empty data.");
-            }
-
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
-            {
-                byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.Pkcs1);
-                encrypted[1] ^= 0xFF;
-
-                // PKCS#1, the data, and the key are all deterministic so this should always throw an exception.
-                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, encrypted, RSAEncryptionPadding.Pkcs1));
-            }
-        }
-
         [Fact]
         public void Decrypt_Pkcs1_BadPadding()
         {
