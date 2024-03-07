@@ -7417,7 +7417,6 @@ void Debugger::SendExceptionEventsWorker(
         //
         // Send the first chance exception if we have not already and if it is not suppressed
         //
-        printf("Should I add something here? \n");
         if (m_sendExceptionsOutsideOfJMC && !pExState->GetFlags()->SentDebugFirstChance()) //maybe do || in first condition with force
         {
             // Blocking here is especially important so that the debugger can mark any code as JMC.
