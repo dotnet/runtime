@@ -2712,6 +2712,12 @@ namespace System.Text.RegularExpressions.Generator
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 writer.WriteLine();
+                if (hasCaptures && isInLoop)
+                {
+                    // Pop the crawl position from the stack.
+                    writer.WriteLine("stackpos--;");
+                    EmitStackCookieValidate(stackCookie);
+                }
                 Goto(originalDoneLabel);
                 writer.WriteLine();
 
