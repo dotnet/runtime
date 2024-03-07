@@ -5,208 +5,212 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-; JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
-;
-; Entry:
-;   RDI - address of ref-field (assigned to)
-;   RSI - address of the data  (source)
-;   RCX is trashed
-;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
-;   R10 and R11 are trashed
-;
-;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
-;         if you add more trashed registers.
-;
-; Exit:
-;   RDI, RSI are incremented by SIZEOF(LPVOID)
+// JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
+//
+// Entry:
+//   RDI - address of ref-field (assigned to)
+//   RSI - address of the data  (source)
+//   RCX is trashed
+//   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
+//
+//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//         if you add more trashed registers.
+//
+// Exit:
+//   RDI, RSI are incremented by SIZEOF(LPVOID)
+//
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rcx, [rsi]
 
-; If !WRITE_BARRIER_CHECK do the write first, otherwise we might have to do some ShadowGC stuff
-ifndef WRITE_BARRIER_CHECK
-        ; rcx is [rsi]
+// If !WRITE_BARRIER_CHECK do the write first, otherwise we might have to do some ShadowGC stuff
+#ifndef WRITE_BARRIER_CHECK
+        // rcx is [rsi]
         mov     [rdi], rcx
-endif
+#endif
 
-        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
-        ; but if it isn't then it will just return.
-        ;
-        ; See if this is in GCHeap
+        // When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        // but if it isn't then it will just return.
+        //
+        // See if this is in GCHeap
         cmp     rdi, [C_VAR(g_lowest_address)]
-        jb      LOCAL_LABEL(NotInHeap)
+        jb      LOCAL_LABEL(NotInHeap_ByRefWriteBarrier)
         cmp     rdi, [C_VAR(g_highest_address)]
-        jnb     LOCAL_LABEL(NotInHeap)
+        jnb     LOCAL_LABEL(NotInHeap_ByRefWriteBarrier)
 
-ifdef WRITE_BARRIER_CHECK
-        ; we can only trash rcx in this function so in _DEBUG we need to save
-        ; some scratch registers.
+#ifdef WRITE_BARRIER_CHECK
+        // we can only trash rcx in this function so in _DEBUG we need to save
+        // some scratch registers.
+        push    r10
+        push    r11
         push    rax
 
-        ; **ALSO update the shadow GC heap if that is enabled**
-        ; Do not perform the work if g_GCShadow is 0
-        cmp     C_VAR(g_GCShadow), 0
-        je      LOCAL_LABEL(NoShadow)
+        // **ALSO update the shadow GC heap if that is enabled**
+        // Do not perform the work if g_GCShadow is 0
+        cmp     qword ptr [C_VAR(g_GCShadow)], 0
+        je      LOCAL_LABEL(NoShadow_ByRefWriteBarrier)
 
-        ; If we end up outside of the heap don't corrupt random memory
+        // If we end up outside of the heap don't corrupt random memory
         mov     r10, rdi
         sub     r10, [C_VAR(g_lowest_address)]
-        jb      LOCAL_LABEL(NoShadow)
+        jb      LOCAL_LABEL(NoShadow_ByRefWriteBarrier)
 
-        ; Check that our adjusted destination is somewhere in the shadow gc
+        // Check that our adjusted destination is somewhere in the shadow gc
         add     r10, [C_VAR(g_GCShadow)]
-        cmp     r10, [C_VAR(g_GCShadowEnd]
-        jnb     LOCAL_LABEL(NoShadow)
+        cmp     r10, [C_VAR(g_GCShadowEnd)]
+        jnb     LOCAL_LABEL(NoShadow_ByRefWriteBarrier)
 
-        ; Write ref into real GC
+        // Write ref into real GC
         mov     [rdi], rcx
-        ; Write ref into shadow GC
+        // Write ref into shadow GC
         mov     [r10], rcx
 
-        ; Ensure that the write to the shadow heap occurs before the read from
-        ; the GC heap so that race conditions are caught by INVALIDGCVALUE
+        // Ensure that the write to the shadow heap occurs before the read from
+        // the GC heap so that race conditions are caught by INVALIDGCVALUE
         mfence
 
-        ; Check that GC/ShadowGC values match
+        // Check that GC/ShadowGC values match
         mov     r11, [rdi]
         mov     rax, [r10]
         cmp     rax, r11
-        je      LOCAL_LABEL(DoneShadow)
-        mov     r11, INVALIDGCVALUE
+        je      LOCAL_LABEL(DoneShadow_ByRefWriteBarrier)
+        movabs  r11, INVALIDGCVALUE
         mov     [r10], r11
 
-        jmp     LOCAL_LABEL(DoneShadow)
+        jmp     LOCAL_LABEL(DoneShadow_ByRefWriteBarrier)
 
-    ; If we don't have a shadow GC we won't have done the write yet
-    LOCAL_LABEL(NoShadow):
+    // If we don't have a shadow GC we won't have done the write yet
+    LOCAL_LABEL(NoShadow_ByRefWriteBarrier):
         mov     [rdi], rcx
 
-    ; If we had a shadow GC then we already wrote to the real GC at the same time
-    ; as the shadow GC so we want to jump over the real write immediately above.
-    ; Additionally we know for sure that we are inside the heap and therefore don't
-    ; need to replicate the above checks.
-    LOCAL_LABEL(DoneShadow):
+    // If we had a shadow GC then we already wrote to the real GC at the same time
+    // as the shadow GC so we want to jump over the real write immediately above.
+    // Additionally we know for sure that we are inside the heap and therefore don't
+    // need to replicate the above checks.
+    LOCAL_LABEL(DoneShadow_ByRefWriteBarrier):
         pop     rax
-endif
+        pop     r11
+        pop     r10
+#endif
 
-ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        ; Update the write watch table if necessary
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        // Update the write watch table if necessary
         cmp     byte ptr [C_VAR(g_sw_ww_enabled_for_gc_heap)], 0x0
-        je      LOCAL_LABEL(CheckCardTable)
+        je      LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     rax, rdi
-        shr     rax, 0xC ; SoftwareWriteWatch::AddressToTableByteIndexShift
+        shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
         add     rax, qword ptr [C_VAR(g_sw_ww_table)]
         cmp     byte ptr [rax], 0x0
-        jne     LOCAL_LABEL(CheckCardTable)
+        jne     LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     byte ptr [rax], 0xFF
-endif
+#endif
 
-        ; See if we can just quick out
-    LOCAL_LABEL(CheckCardTable):
+        // See if we can just quick out
+    LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier):
         cmp     rcx, [C_VAR(g_ephemeral_low)]
-        jb      LOCAL_LABEL(Exit)
+        jb      LOCAL_LABEL(Exit_ByRefWriteBarrier)
         cmp     rcx, [C_VAR(g_ephemeral_high)]
-        jnb     LOCAL_LABEL(Exit)
+        jnb     LOCAL_LABEL(Exit_ByRefWriteBarrier)
 
-        ; do the following checks only if we are allowed to trash rax
-        ; otherwise we don't have enough registers
-ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        // do the following checks only if we are allowed to trash rax
+        // otherwise we don't have enough registers
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         mov     rax, rcx
 
         mov     cl, [C_VAR(g_region_shr)]
         test    cl, cl
-        je      LOCAL_LABEL(SkipCheck)
+        je      LOCAL_LABEL(SkipCheck_ByRefWriteBarrier)
 
-        ; check if the source is in gen 2 - then it's not an ephemeral pointer
+        // check if the source is in gen 2 - then it's not an ephemeral pointer
         shr     rax, cl
         add     rax, [C_VAR(g_region_to_generation_table)]
         cmp     byte ptr [rax], 0x82
-        je      LOCAL_LABEL(Exit)
+        je      LOCAL_LABEL(Exit_ByRefWriteBarrier)
 
-        ; check if the destination happens to be in gen 0
+        // check if the destination happens to be in gen 0
         mov     rax, rdi
         shr     rax, cl
         add     rax, [C_VAR(g_region_to_generation_table)]
         cmp     byte ptr [rax], 0
-        je      LOCAL_LABEL(Exit)
-    LOCAL_LABEL(SkipCheck):
+        je      LOCAL_LABEL(Exit_ByRefWriteBarrier)
+    LOCAL_LABEL(SkipCheck_ByRefWriteBarrier):
 
-        cmp     [C_VAR(g_region_use_bitwise_write_barrier)], 0
-        je      LOCAL_LABEL(CheckCardTableByte)
+        cmp     byte ptr [C_VAR(g_region_use_bitwise_write_barrier)], 0
+        je      LOCAL_LABEL(CheckCardTableByte_ByRefWriteBarrier)
 
-        ; compute card table bit
+        // compute card table bit
         mov     rcx, rdi
         mov     al, 1
         shr     rcx, 8
         and     cl, 7
         shl     al, cl
 
-        ; move current rdi value into rcx and then increment the pointers
+        // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 0x8
         add     rdi, 0x8
 
-        ; Check if we need to update the card table
-        ; Calc pCardByte
+        // Check if we need to update the card table
+        // Calc pCardByte
         shr     rcx, 0xB
         add     rcx, [C_VAR(g_card_table)]
 
-        ; Check if this card table bit is already set
+        // Check if this card table bit is already set
         test    byte ptr [rcx], al
-        je      LOCAL_LABEL(SetCardTableBit)
+        je      LOCAL_LABEL(SetCardTableBit_ByRefWriteBarrier)
         REPRET
 
-    LOCAL_LABEL(SetCardTableBit):
+    LOCAL_LABEL(SetCardTableBit_ByRefWriteBarrier):
         lock or byte ptr [rcx], al
-        jmp     LOCAL_LABEL(CheckCardBundle)
-endif
-LOCAL_LABEL(CheckCardTableByte):
+        jmp     LOCAL_LABEL(CheckCardBundle_ByRefWriteBarrier)
+#endif
+LOCAL_LABEL(CheckCardTableByte_ByRefWriteBarrier):
 
-        ; move current rdi value into rcx and then increment the pointers
+        // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 0x8
         add     rdi, 0x8
 
-        ; Check if we need to update the card table
-        ; Calc pCardByte
+        // Check if we need to update the card table
+        // Calc pCardByte
         shr     rcx, 0xB
         add     rcx, [C_VAR(g_card_table)]
 
-        ; Check if this card is dirty
+        // Check if this card is dirty
         cmp     byte ptr [rcx], 0xFF
-        jne     LOCAL_LABEL(UpdateCardTable)
+        jne     LOCAL_LABEL(UpdateCardTable_ByRefWriteBarrier)
         REPRET
 
-    LOCAL_LABEL(UpdateCardTable):
+    LOCAL_LABEL(UpdateCardTable_ByRefWriteBarrier):
         mov     byte ptr [rcx], 0xFF
 
-    LOCAL_LABEL(CheckCardBundle):
+    LOCAL_LABEL(CheckCardBundle_ByRefWriteBarrier):
 
-ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        ; check if we need to update the card bundle table
-        ; restore destination address from rdi - rdi has been incremented by 8 already
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        // check if we need to update the card bundle table
+        // restore destination address from rdi - rdi has been incremented by 8 already
         lea     rcx, [rdi-8]
         shr     rcx, 0x15
         add     rcx, [C_VAR(g_card_bundle_table)]
         cmp     byte ptr [rcx], 0xFF
-        jne     LOCAL_LABEL(UpdateCardBundleTable)
+        jne     LOCAL_LABEL(UpdateCardBundleTable_ByRefWriteBarrier)
         REPRET
 
-    LOCAL_LABEL(UpdateCardBundleTable):
+    LOCAL_LABEL(UpdateCardBundleTable_ByRefWriteBarrier):
         mov     byte ptr [rcx], 0xFF
-endif
+#endif
         ret
 
     .balign 16
-    LOCAL_LABEL(NotInHeap):
-; If WRITE_BARRIER_CHECK then we won't have already done the mov and should do it here
-; If !WRITE_BARRIER_CHECK we want _NotInHeap and _Leave to be the same and have both
-; 16 byte aligned.
-ifdef WRITE_BARRIER_CHECK
-        ; rcx is [rsi]
+    LOCAL_LABEL(NotInHeap_ByRefWriteBarrier):
+// If WRITE_BARRIER_CHECK then we won't have already done the mov and should do it here
+// If !WRITE_BARRIER_CHECK we want _NotInHeap and _Leave to be the same and have both
+// 16 byte aligned.
+#ifdef WRITE_BARRIER_CHECK
+        // rcx is [rsi]
         mov     [rdi], rcx
-endif
-    LOCAL_LABEL(Exit):
-        ; Increment the pointers before leaving
+#endif
+    LOCAL_LABEL(Exit_ByRefWriteBarrier):
+        // Increment the pointers before leaving
         add     rdi, 0x8
         add     rsi, 0x8
         ret

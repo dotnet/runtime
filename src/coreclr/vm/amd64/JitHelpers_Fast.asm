@@ -57,13 +57,13 @@ extern JIT_InternalThrow:proc
 ;   RSI - address of the data  (source)
 ;   RCX is trashed
 ;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
-;   R10 and R11 are trashed
 ;
 ;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
 ;         if you add more trashed registers.
 ;
 ; Exit:
 ;   RDI, RSI are incremented by SIZEOF(LPVOID)
+;
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rcx, [rsi]
 
@@ -85,6 +85,8 @@ endif
 ifdef WRITE_BARRIER_CHECK
         ; we can only trash rcx in this function so in _DEBUG we need to save
         ; some scratch registers.
+        push    r10
+        push    r11
         push    rax
 
         ; **ALSO update the shadow GC heap if that is enabled**
@@ -131,6 +133,8 @@ ifdef WRITE_BARRIER_CHECK
     ; need to replicate the above checks.
     DoneShadow:
         pop     rax
+        pop     r11
+        pop     r10
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

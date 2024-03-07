@@ -10423,6 +10423,12 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
         case CORINFO_HELP_ASSIGN_BYREF:
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+#ifdef TARGET_AMD64
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_NAOT;
+            }
+#endif
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

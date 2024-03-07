@@ -207,12 +207,16 @@
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  // NOTE: CoreCLR-Windows-AMD64 doesn't need R10 and R11, but since Unix and NativeAOT (both nix and Windows) need them,
-  // we conservatively include them here as well (they're callee-trashed on both Windows and Unix anyway).
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX | RBM_R10 | RBM_R11)
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
 
   // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF on NativeAOT:
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_NAOT (RBM_RAX | RBM_RCX | RBM_R10 | RBM_R11)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF on NativeAOT:
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF_NAOT   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_NAOT)
 
   // We have two register classifications
   // * callee trash: aka     volatile or caller saved

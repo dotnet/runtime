@@ -276,7 +276,7 @@ LEAF_END RhpCheckedXchg, _TEXT
 ;;      rdi, rsi are incremented by 8,
 ;;      rcx, r10, r11: trashed
 ;;
-;; NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;; NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF_NAOT and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_NAOT
 ;;       if you add more trashed registers.
 ;;
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
