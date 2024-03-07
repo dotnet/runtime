@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509StackHandle untrusted,
             SafeX509StackHandle systemTrust)
         {
-            if (trustMode == X509ChainTrustMode.CustomRootTrust)
+            if (trustMode is X509ChainTrustMode.CustomRootTrust or X509ChainTrustMode.CustomAnchorTrust)
             {
                 using (SafeX509StackHandle customTrust = Interop.Crypto.NewX509Stack())
                 {
@@ -158,9 +158,9 @@ namespace System.Security.Cryptography.X509Certificates
                         foreach (X509Certificate2 cert in customTrustStore)
                         {
                             SafeX509StackHandle toAdd =
+                                trustMode == X509ChainTrustMode.CustomAnchorTrust ||
                                 cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData) ?
-                                    customTrust :
-                                    untrusted;
+                                    customTrust : untrusted;
 
                             AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal!).SafeHandle, toAdd);
                         }

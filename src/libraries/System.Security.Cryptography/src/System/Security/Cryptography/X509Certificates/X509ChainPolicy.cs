@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             set
             {
-                if (value < X509ChainTrustMode.System || value > X509ChainTrustMode.CustomRootTrust)
+                if (value is < X509ChainTrustMode.System or > X509ChainTrustMode.CustomAnchorTrust)
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(value)));
                 _trustMode = value;
             }

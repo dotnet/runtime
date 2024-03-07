@@ -96,6 +96,25 @@ namespace System.Security.Cryptography.X509Certificates
                     chainEngineHandle = Interop.crypt32.CertCreateCertificateChainEngine(ref customChainEngine);
                 }
             }
+            else if (trustMode == X509ChainTrustMode.CustomAnchorTrust)
+            {
+                if (!OperatingSystem.IsWindowsVersionAtLeast(6, 2)) // Windows 8
+                {
+                    throw new PlatformNotSupportedException("Platform does not support CustomAnchorTrust.");
+                }
+
+                using (SafeCertStoreHandle customTrustStoreHandle = ConvertStoreToSafeHandle(customTrustStore, true))
+                {
+                    // Windows 7 will be entirely unhappy with the struct bigger than it understands, so only use
+                    // the struct with the dwExclusiveFlags if we really need to set it. Windows 7 won't like the flag,
+                    // but it will only not like it if something is actually set.
+                    Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG_WIN8 customChainEngine = default;
+                    customChainEngine.cbSize = Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG_WIN8>();
+                    customChainEngine.hExclusiveRoot = customTrustStoreHandle.DangerousGetHandle();
+                    customChainEngine.dwExclusiveFlags = Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG_FLAGS.CERT_CHAIN_EXCLUSIVE_ENABLE_CA_FLAG;
+                    chainEngineHandle = Interop.crypt32.CertCreateCertificateChainEngine(ref customChainEngine);
+                }
+            }
             else
             {
                 chainEngineHandle = useMachineContext ? SafeChainEngineHandle.MachineChainEngine : SafeChainEngineHandle.UserChainEngine;

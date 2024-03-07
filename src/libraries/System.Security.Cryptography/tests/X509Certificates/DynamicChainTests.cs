@@ -524,6 +524,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void CustomTrustMode_Anchors()
+        {
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomAnchorTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
+
+                if (PlatformDetection.IsNotWindows7)
+                {
+                    Assert.True(chain.Build(endEntityCert), "chain.Build");
+                }
+                else
+                {
+                    Assert.ThrowsAny<PlatformNotSupportedException>(() => chain.Build(endEntityCert));
+                }
+            }
+        }
+
+        [Fact]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();

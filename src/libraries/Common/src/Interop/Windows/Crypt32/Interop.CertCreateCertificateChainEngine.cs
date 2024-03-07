@@ -11,5 +11,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG pConfig, out SafeChainEngineHandle hChainEngineHandle);
+
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG_WIN8 pConfig, out SafeChainEngineHandle hChainEngineHandle);
     }
 }

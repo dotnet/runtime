@@ -107,20 +107,25 @@ namespace System.Security.Cryptography.X509Certificates
                     "Unsupported trust mode. Only System and CustomRootTrust are currently handled");
 
                 List<SafeHandle> customTrustCertHandles = new List<SafeHandle>();
-                bool useCustomRootTrust = trustMode == X509ChainTrustMode.CustomRootTrust;
-                if (useCustomRootTrust && customTrustStore != null)
+                bool useCustomRootTrust = trustMode is X509ChainTrustMode.CustomRootTrust or X509ChainTrustMode.CustomAnchorTrust;
+
+                if (useCustomRootTrust && customTrustStore is not null)
                 {
                     foreach (X509Certificate2 custom in customTrustStore)
                     {
                         SafeHandle certHandle = ((AndroidCertificatePal)custom.Pal).SafeHandle;
-                        if (custom.SubjectName.RawData.ContentsEqual(custom.IssuerName.RawData))
+
+                        if (trustMode == X509ChainTrustMode.CustomAnchorTrust ||
+                            custom.SubjectName.RawData.ContentsEqual(custom.IssuerName.RawData))
                         {
                             // Add self-issued certs to custom root trust cert
                             customTrustCertHandles.Add(certHandle);
                         }
                         else
                         {
-                            // Add non-self-issued certs to extra certs
+                            // Add non-self-issued certs to extra certs.
+                            // We don't do this for custom trust anchor because there is no point, the first cert
+                            // that is an anchor will be trusted so sny "extras" won't be needed for chain building.
                             extraCertHandles.Add(certHandle);
                         }
                     }

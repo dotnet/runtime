@@ -24,5 +24,29 @@ internal static partial class Interop
             public IntPtr hExclusiveRoot;
             public IntPtr hExclusiveTrustedPeople;
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CERT_CHAIN_ENGINE_CONFIG_WIN8
+        {
+            public int cbSize;
+            public IntPtr hRestrictedRoot;
+            public IntPtr hRestrictedTrust;
+            public IntPtr hRestrictedOther;
+            public int cAdditionalStore;
+            public IntPtr rghAdditionalStore;
+            public ChainEngineConfigFlags dwFlags;
+            public int dwUrlRetrievalTimeout;
+            public int MaximumCachedCertificates;
+            public int CycleDetectionModulus;
+            public IntPtr hExclusiveRoot;
+            public IntPtr hExclusiveTrustedPeople;
+            public CERT_CHAIN_ENGINE_CONFIG_FLAGS dwExclusiveFlags;
+        }
+
+        internal enum CERT_CHAIN_ENGINE_CONFIG_FLAGS : uint
+        {
+            NONE = 0,
+            CERT_CHAIN_EXCLUSIVE_ENABLE_CA_FLAG = 0x00000001,
+        }
     }
 }

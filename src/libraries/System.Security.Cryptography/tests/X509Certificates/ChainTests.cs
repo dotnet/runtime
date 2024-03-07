@@ -405,7 +405,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData(2)]
+        [InlineData(3)]
         public static void Invalidx509ChainTrustMode(int trustMode)
         {
             using (var chainHolder = new ChainHolder())

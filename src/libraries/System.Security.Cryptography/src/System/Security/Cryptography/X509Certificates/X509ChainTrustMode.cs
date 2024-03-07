@@ -10,5 +10,6 @@ namespace System.Security.Cryptography.X509Certificates
     {
         System = 0,
         CustomRootTrust = 1,
+        CustomAnchorTrust = 2,
     }
 }

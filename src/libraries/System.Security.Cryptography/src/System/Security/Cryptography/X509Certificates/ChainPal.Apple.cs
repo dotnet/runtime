@@ -53,12 +53,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (ret == 1)
             {
-                if (trustMode == X509ChainTrustMode.CustomRootTrust)
+                if (trustMode is X509ChainTrustMode.CustomRootTrust or X509ChainTrustMode.CustomAnchorTrust)
                 {
                     SafeCreateHandle customCertsArray = s_emptyArray;
                     if (customTrustStore != null && customTrustStore.Count > 0)
                     {
-                        customCertsArray = PrepareCustomCertsArray(customTrustStore);
+                        customCertsArray = PrepareCustomCertsArray(customTrustStore, trustMode);
                     }
 
                     try
@@ -160,6 +160,8 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            // Don't add non-self-signed for custom anchors since they won't matter, they will immediately be trusted
+            // and are not needed as intermediates in the path.
             if (trustMode == X509ChainTrustMode.CustomRootTrust && customTrustStore != null)
             {
                 for (int i = 0; i < customTrustStore.Count; i++)
@@ -176,12 +178,12 @@ namespace System.Security.Cryptography.X509Certificates
             return GetCertsArray(safeHandles);
         }
 
-        private SafeCreateHandle PrepareCustomCertsArray(X509Certificate2Collection customTrustStore)
+        private SafeCreateHandle PrepareCustomCertsArray(X509Certificate2Collection customTrustStore, X509ChainTrustMode trustMode)
         {
             List<SafeHandle> rootCertificates = new List<SafeHandle>();
             foreach (X509Certificate2 cert in customTrustStore)
             {
-                if (cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData))
+                if (trustMode is X509ChainTrustMode.CustomAnchorTrust || cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData))
                 {
                     rootCertificates.Add(((AppleCertificatePal)cert.Pal).CertificateHandle);
                 }

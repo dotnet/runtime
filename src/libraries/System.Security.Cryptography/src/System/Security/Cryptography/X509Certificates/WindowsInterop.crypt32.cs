@@ -139,6 +139,18 @@ internal static partial class Interop
             return chainEngineHandle;
         }
 
+        internal static SafeChainEngineHandle CertCreateCertificateChainEngine(ref Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG_WIN8 config)
+        {
+            if (!Interop.Crypt32.CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
+            {
+                Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
+                chainEngineHandle.Dispose();
+                throw e;
+            }
+
+            return chainEngineHandle;
+        }
+
         /// <summary>
         /// A less error-prone wrapper for CertEnumCertificatesInStore().
         ///
