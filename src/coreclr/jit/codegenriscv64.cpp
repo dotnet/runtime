@@ -2499,7 +2499,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 // Generate code for InitBlk by performing a loop unroll
 // Preconditions:
 //   a) Both the size and fill byte value are integer constants.
-//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
+//   b) The size of the struct to initialize is smaller than getUnrollThreshold() bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
@@ -6138,7 +6138,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 //    None
 //
 // Assumption:
-//  The size argument of the CpBlk node is a constant and <= CPBLK_UNROLL_LIMIT bytes.
+//  The size argument of the CpBlk node is a constant and <= getUnrollThreshold() bytes.
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
@@ -7782,6 +7782,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 {
     assert(compiler->compGeneratingProlog);
 
+    // The 'initReg' could have been calculated as one of the callee-saved registers (let's say T0, T1 and T2 are in
+    // use, so the next possible register is S1, which should be callee-save register). This is fine, as long as we
+    // save callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH
+    // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
+    //
     // Unlike on x86/x64, we can also push float registers to stack
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
@@ -7894,11 +7899,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
             offset            = calleeSaveSPDelta - offset;
 
-            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
         else
         {
-            genStackPointerAdjustment(-totalFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
     }
 
@@ -7906,6 +7911,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     genSaveCalleeSavedRegistersHelp(rsPushRegs, offset, 0);
     offset += (int)(genCountBits(rsPushRegs) << 3); // each reg has 8 bytes
+
+    // From now on, we can safely use initReg.
 
     emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, offset);
     compiler->unwindSaveReg(REG_RA, offset);
@@ -7976,7 +7983,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
                 dspBool(compiler->compLocallocUsed));
 
-        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) >= 2040)
+        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) > 2047)
         {
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize & 0xfffffff0;
 
@@ -7988,8 +7995,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             {
                 genStackPointerAdjustment(calleeSaveSPOffset, REG_RA, nullptr, /* reportUnwindData */ true);
             }
+            remainingSPSize    = totalFrameSize - calleeSaveSPOffset;
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize - calleeSaveSPOffset;
-            remainingSPSize    = remainingSPSize - calleeSaveSPOffset;
         }
         else
         {

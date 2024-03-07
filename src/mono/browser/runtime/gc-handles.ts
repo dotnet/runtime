@@ -9,7 +9,7 @@ import { assert_js_interop, js_import_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
-import { _use_weak_ref, create_weak_ref } from "./weak-ref";
+import { _use_weak_ref, create_strong_ref, create_weak_ref } from "./weak-ref";
 import { exportsByAssembly } from "./invoke-cs";
 import { release_js_owned_object_by_gc_handle } from "./managed-exports";
 
@@ -135,6 +135,11 @@ export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
     // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
     const wr = create_weak_ref(owner);
     _js_owned_object_table.set(gc_handle, wr);
+}
+
+export function upgrade_managed_proxy_to_strong_ref(owner: any, gc_handle: GCHandle): void {
+    const sr = create_strong_ref(owner);
+    _js_owned_object_table.set(gc_handle, sr);
 }
 
 export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
