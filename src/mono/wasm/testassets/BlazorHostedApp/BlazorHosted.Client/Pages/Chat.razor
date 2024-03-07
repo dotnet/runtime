@@ -78,19 +78,23 @@
     private async Task SignalRPassMessages() =>
         await Task.Run(async () =>
             {
+                Helper.TestOutputWriteLine($"SignalRPassMessages on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
                 await _hubConnection.SendAsync( "SendMessage", message, Environment.CurrentManagedThreadId);
                 Helper.TestOutputWriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
             });
 
     private async Task SendExitSignal()
     {
+        Helper.TestOutputWriteLine($"SendExitSignal on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         await DisposeHubConnection();
         // exit the client
         await JSRuntime.InvokeVoidAsync("eval", "import('./dotnet.js').then(module => { module.dotnet; module.exit(0); });");
+        Helper.TestOutputWriteLine($"SendExitSignal done on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
     }
 
     private async Task DisposeHubConnection()
     {
+        Helper.TestOutputWriteLine($"DisposeHubConnection on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         if (_hubConnection != null)
         {
             _hubConnection.Remove("ReceiveMessage");
