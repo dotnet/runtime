@@ -1689,7 +1689,8 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // promoted.
     // TODO-CQ: Combine integer and float register homing to handle these kinds
     // of conflicts.
-    if (varTypeUsesIntReg(varDsc->GetRegisterType()) && varDsc->lvIsRegArg && !varDsc->lvPromoted && genIsValidFloatReg(varDsc->GetArgReg()))
+    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvIsRegArg && !varDsc->lvPromoted &&
+        varTypeUsesIntReg(varDsc->GetRegisterType()) && genIsValidFloatReg(varDsc->GetArgReg()))
     {
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
         return false;
