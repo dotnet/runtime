@@ -30,7 +30,7 @@ endm
 ;; Macro that generates a stub consuming a cache with the given number of entries.
 DEFINE_INTERFACE_DISPATCH_STUB macro entries
 
-StubName textequ @CatStr( _RhpInterfaceDispatch, entries )
+StubName textequ @CatStr( _RhpInterfaceDispatch, entries, <@0> )
 
     StubName proc public
 
@@ -104,7 +104,7 @@ RhpInterfaceDispatchNullReference proc public
 RhpInterfaceDispatchNullReference endp
 
 ;; Stub dispatch routine for dispatch to a vtable slot
-_RhpVTableOffsetDispatch proc public
+_RhpVTableOffsetDispatch@0 proc public
         ;; eax currently contains the indirection cell address. We need to update it to point to the vtable offset (which is in the m_pCache field)
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
@@ -116,7 +116,7 @@ _RhpVTableOffsetDispatch proc public
 
         ;; tail-jump to the target
         jmp     eax
-_RhpVTableOffsetDispatch endp
+_RhpVTableOffsetDispatch@0 endp
 
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
