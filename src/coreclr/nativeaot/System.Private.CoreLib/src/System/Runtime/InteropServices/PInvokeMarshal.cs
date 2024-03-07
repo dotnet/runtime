@@ -128,12 +128,12 @@ namespace System.Runtime.InteropServices
                 //
                 unsafe
                 {
-                    ContextData = (IntPtr)NativeMemory.Alloc((nuint)(2 * IntPtr.Size));
+                    ContextData = (IntPtr)NativeMemory.AllocZeroed((nuint)(2 * IntPtr.Size));
 
                     ThunkContextData* thunkData = (ThunkContextData*)ContextData;
 
                     // allocate a weak GChandle for the delegate
-                    thunkData->Handle = GCHandle.Alloc(del, GCHandleType.Weak);
+                    thunkData->Handle = GCHandle.Alloc(del, GCHandleType.WeakTrackResurrection);
                     thunkData->FunctionPtr = openStaticFunctionPointer;
                 }
 
@@ -145,23 +145,30 @@ namespace System.Runtime.InteropServices
 
             ~PInvokeDelegateThunk()
             {
-                // Free the thunk
-                if (Thunk != IntPtr.Zero)
-                {
-                    RuntimeAugments.FreeThunk(s_thunkPoolHeap, Thunk);
-                }
-
                 if (ContextData != IntPtr.Zero)
                 {
                     // free the GCHandle
                     GCHandle handle = ((ThunkContextData*)ContextData)->Handle;
                     if (handle.IsAllocated)
                     {
+                        // If the delegate is still alive, defer finalization.
+                        if (handle.Target != null)
+                        {
+                            GC.ReRegisterForFinalize(this);
+                            return;
+                        }
+
                         handle.Free();
                     }
 
                     // Free the allocated context data memory
                     NativeMemory.Free((void*)ContextData);
+                }
+
+                // Free the thunk
+                if (Thunk != IntPtr.Zero)
+                {
+                    RuntimeAugments.FreeThunk(s_thunkPoolHeap, Thunk);
                 }
             }
         }
