@@ -177,6 +177,12 @@ EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
 EXTERN RhpGcPoll2                               : PROC
 
+;; The following two imports are not used in the assembly helpers. Due to the
+;; way the FCall mangling is handled in the C sources through linker directives
+;; (see FCIMPL macro definitions in CommonMacros.h), we need to add dummy
+;; references to some methods in two object files (HandleTableHelpers and
+;; GCMemoryHelpers) to get the linker to see the #pragma comment(linker, ...)
+;; directives embedded in those files.
 EXTERN RhHandleGet                              : PROC
 EXTERN RhpGcSafeZeroMemory                      : PROC
 
