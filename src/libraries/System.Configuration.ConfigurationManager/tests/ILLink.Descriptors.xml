@@ -12,9 +12,9 @@
     <type fullname="System.Diagnostics.FilterElement" />
     <type fullname="System.Configuration.ConnectionStringSettingsCollection" />
     <type fullname="System.Configuration.NameValueSectionHandler" />
+    <type fullname="System.Configuration.IConfigurationSectionHandler" />
     <type fullname="System.Configuration.UriSection" />
+    <type fullname="System.Configuration.ConfigurationElement" />
     <type fullname="System.ConfigurationTests.TypeUtilTests" />
-    <type fullname="System.Configuration.NameValueSectionHandler" />
-    <type fullname="System.Configuration.UriSection" />
   </assembly>
 </linker>
