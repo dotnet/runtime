@@ -4419,6 +4419,7 @@ enum class WellKnownArg : unsigned
     R2RIndirectionCell,
     ValidateIndirectCallTarget,
     DispatchIndirectCallTarget,
+    SwiftError,
     SwiftSelf,
 };
 
