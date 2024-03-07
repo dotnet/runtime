@@ -71,7 +71,7 @@ namespace System.Net.Http
 
         /// <summary>Queue of currently available HTTP/1.1 connections stored in the pool.</summary>
         private readonly ConcurrentQueue<HttpConnection> _http11Connections = new();
-        /// <summary>Controls whether we can use a fast path when returning connections to the pool.</summary>
+        /// <summary>Controls whether we can use a fast path when returning connections to the pool and skip calling into <see cref="ProcessHttp11RequestQueue(HttpConnection?)"/>.</summary>
         private bool _http11RequestQueueIsEmptyAndNotDisposed;
         /// <summary>The maximum number of HTTP/1.1 connections allowed to be associated with the pool.</summary>
         private readonly int _maxHttp11Connections;
@@ -556,19 +556,34 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// This method is called:
+        /// <br/>- When returning a connection and observing that the request queue is not empty (<see cref="_http11RequestQueueIsEmptyAndNotDisposed"/> is <see langword="false"/>).
+        /// <br/>- After adding a request to the queue if we fail to obtain a connection from the queue.
+        /// <br/>- After scavenging or disposing the pool to ensure that any pending requests are handled or connections disposed.
+        /// <para>The method will attempt to match one request from the <see cref="_http11RequestQueue"/> to an available connection.
+        /// The <paramref name="connection"/> can either be provided as an argument (when returning a connection to the pool), or one will be rented from <see cref="_http11Connections"/>.
+        /// As we'll only process a single request, we are expecting the method to be called every time a request is enqueued, and every time a connection is returned while the request queue is not empty.</para>
+        /// <para>If the <see cref="_http11RequestQueue"/> becomes empty, this method will reset the <see cref="_http11RequestQueueIsEmptyAndNotDisposed"/> flag back to <see langword="true"/>,
+        /// such that returning connections will use the fast path again and skip calling into this method.</para>
+        /// <para>Notably, this method will not be called on the fast path as long as we have enough connections to handle all new requests.</para>
+        /// </summary>
+        /// <param name="connection">The connection to use for a pending request, or return to the pool.</param>
         private void ProcessHttp11RequestQueue(HttpConnection? connection)
         {
-            // Try to signal a single request that is waiting for a connection.
-            // We're expecting this method to be called enough times to handle all requests.
+            // Loop in case the request we try to signal was already cancelled or handled by a different connection.
             while (true)
             {
                 HttpConnectionWaiter<HttpConnection>? waiter = null;
 
                 lock (SyncObj)
                 {
-                    // This assert message may be misleading due to a race condition (we're reading Count twice).
-                    Debug.Assert(_associatedHttp11ConnectionCount >= _http11Connections.Count + _pendingHttp11ConnectionCount,
-                        $"Expected {_associatedHttp11ConnectionCount} >= {_http11Connections.Count} + {_pendingHttp11ConnectionCount}");
+#if DEBUG
+                    // Other threads may still interact with the connections queue. Read the count once to keep the assert message accurate.
+                    int connectionCount = _http11Connections.Count;
+                    Debug.Assert(_associatedHttp11ConnectionCount >= connectionCount + _pendingHttp11ConnectionCount,
+                        $"Expected {_associatedHttp11ConnectionCount} >= {connectionCount} + {_pendingHttp11ConnectionCount}");
+#endif
                     Debug.Assert(_associatedHttp11ConnectionCount <= _maxHttp11Connections,
                         $"Expected {_associatedHttp11ConnectionCount} <= {_maxHttp11Connections}");
                     Debug.Assert(_associatedHttp11ConnectionCount >= _pendingHttp11ConnectionCount,
@@ -578,12 +593,15 @@ namespace System.Net.Http
                     {
                         if (connection is not null || _http11Connections.TryDequeue(out connection))
                         {
+                            // TryDequeueWaiter will prune completed requests from the head of the queue,
+                            // so it's possible for it to return false even though we checked that Count != 0.
                             bool success = _http11RequestQueue.TryDequeueWaiter(this, out waiter);
                             Debug.Assert(success == waiter is not null);
                         }
                     }
 
                     // Update the empty queue flag now.
+                    // If the request queue is now empty, returning connections will use the fast path and skip calling into this method.
                     _http11RequestQueueIsEmptyAndNotDisposed = _http11RequestQueue.Count == 0 && !_disposed;
 
                     if (waiter is null)
@@ -601,7 +619,10 @@ namespace System.Net.Http
                             // - thread A returns the connection to the pool
                             // We'd have both a connection and a request waiting in the pool, but nothing to pair the two.
 
-                            // This should be a rare case, so the added contention should be minimal.
+                            // The main scenario where we'll reach this branch is when we enqueue a request to the queue
+                            // and set the _http11RequestQueueIsEmptyAndNotDisposed flag to false, followed by multiple
+                            // returning connections observing the flag and calling into this method before we clear the flag.
+                            // This should be a relatively rare case, so the added contention should be minimal.
                             _http11Connections.Enqueue(connection);
                         }
 
@@ -2046,6 +2067,11 @@ namespace System.Net.Http
             }
             else
             {
+                // ProcessHttp11RequestQueue is responsible for handing the connection to a pending request,
+                // or to return it back to the pool if there aren't any.
+
+                // We hand over the connection directly instead of enqueuing it first to ensure
+                // that pending requests are processed in a fair (FIFO) order.
                 ProcessHttp11RequestQueue(connection);
             }
         }
@@ -2372,6 +2398,8 @@ namespace System.Net.Http
 
             static void ScavengeConnectionQueue(ConcurrentQueue<HttpConnection> connections, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
             {
+                // We can't simply enumerate the connections queue as other threads may still be adding and removing entries.
+                // If we want to check the state of a connection, we must dequeue it first to ensure we own it.
                 int initialCount = connections.Count;
 
                 while (--initialCount >= 0 && connections.TryDequeue(out HttpConnection? connection))
