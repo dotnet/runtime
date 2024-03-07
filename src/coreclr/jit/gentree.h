@@ -4785,6 +4785,10 @@ class CallArgs
     // Updateable flag, set to 'true' after we've done any required alignment.
     bool m_alignmentDone : 1;
 #endif
+#ifdef SWIFT_SUPPORT
+    // True if we are calling a Swift method that may throw.
+    bool m_hasSwiftErrorHandling : 1;
+#endif // SWIFT_SUPPORT
 
     void AddedWellKnownArg(WellKnownArg arg);
     void RemovedWellKnownArg(WellKnownArg arg);
@@ -4854,6 +4858,11 @@ public:
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
+
+#ifdef SWIFT_SUPPORT
+    bool HasSwiftErrorHandling() const { return m_hasSwiftErrorHandling; }
+    void SetHasSwiftErrorHandling() { m_hasSwiftErrorHandling = true; }
+#endif // SWIFT_SUPPORT
 
 #ifdef UNIX_X86_ABI
     void ComputeStackAlignment(unsigned curStackLevelInBytes)
@@ -5217,15 +5226,6 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
-
-#ifdef SWIFT_SUPPORT
-    bool HasSwiftErrorHandling()
-    {
-        // Most calls aren't Swift calls, so short-circuit this check by checking the calling convention first.
-        return (unmgdCallConv == CorInfoCallConvExtension::Swift) &&
-               (gtArgs.FindWellKnownArg(WellKnownArg::SwiftError) != nullptr);
-    }
-#endif // SWIFT_SUPPORT
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {

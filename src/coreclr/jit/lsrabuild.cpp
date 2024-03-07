@@ -885,9 +885,9 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef SWIFT_SUPPORT
     // Swift calls that throw may trash the callee-saved error register,
     // so don't use the register post-call until it is consumed by SwiftError.
-    if (call->HasSwiftErrorHandling())
+    if (call->gtArgs.HasSwiftErrorHandling())
     {
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        assert(call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift);
         killMask |= RBM_SWIFT_ERROR;
     }
 #endif // SWIFT_SUPPORT

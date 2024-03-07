@@ -2045,7 +2045,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
 void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
 {
     assert(call != nullptr);
-    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+    assert(call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift);
     assert(swiftErrorArg != nullptr);
 
     GenTree* const argNode = swiftErrorArg->GetNode();
@@ -2066,6 +2066,7 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     GenTree* errorSentinelValueNode = gtNewIconNode(0);
     call->gtArgs.InsertAfter(this, swiftErrorArg,
                              NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
+    call->gtArgs.SetHasSwiftErrorHandling();
 
     // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
     call->gtArgs.Remove(swiftErrorArg);

@@ -1488,6 +1488,9 @@ CallArgs::CallArgs()
 #ifdef UNIX_X86_ABI
     , m_alignmentDone(false)
 #endif
+#ifdef SWIFT_SUPPORT
+    , m_hasSwiftErrorHandling(false)
+#endif // SWIFT_SUPPORT
 {
 }
 
