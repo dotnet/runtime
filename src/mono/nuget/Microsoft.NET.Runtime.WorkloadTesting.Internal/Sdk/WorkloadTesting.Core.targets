@@ -162,6 +162,9 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
+  <UsingTask TaskName="Microsoft.Workload.Build.Tasks.PatchNuGetConfig"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="$(InstallWorkloadUsingArtifactsAfterThisTarget)"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"

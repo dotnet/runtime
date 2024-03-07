@@ -22,7 +22,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.Workload.Build.Tasks
 {
-    public partial class InstallWorkloadFromArtifacts : Task
+    public partial class InstallWorkloadFromArtifacts : PatchNuGetConfig
     {
         [Required, NotNull]
         public ITaskItem[]    WorkloadIds        { get; set; } = Array.Empty<ITaskItem>();
@@ -37,29 +37,10 @@ namespace Microsoft.Workload.Build.Tasks
         public string?        VersionBandForManifestPackages       { get; set; }
 
         [Required, NotNull]
-        public string?        LocalNuGetsPath    { get; set; }
-
-        [Required, NotNull]
-        public string?        TemplateNuGetConfigPath { get; set; }
-
-        [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
-        /*
-         * Value: ["*Aspire*", "Foo*"]
-         * This will be translated to:
-         * <packageSourceMapping>
-         *  <packageSource key="nuget-local">
-         *    <package pattern="*Aspire*" />
-         *    <package pattern="Foo*" />
-         *  </packageSource>
-         *
-         * This is useful when using Central Package Management (https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management)
-        */
-        public string[]       NuGetConfigPackageSourceMappings { get; set; } = Array.Empty<string>();
         public string         ExtraWorkloadInstallCommandArguments { get; set; } = string.Empty;
         public string?        IntermediateOutputPath { get; set; }
-        public string         PackageSourceNameForBuiltPackages { get; set; } = "nuget-local";
         public bool           OnlyUpdateManifests { get; set; }
         public bool           SkipTempDirectoryCleanup { get; set; }
 
@@ -283,56 +264,8 @@ namespace Microsoft.Workload.Build.Tasks
 
         private string GetNuGetConfig()
         {
-            XDocument doc = XDocument.Load(TemplateNuGetConfigPath);
-            string xpath = "/configuration/packageSources";
-            XElement? packageSources = doc.XPathSelectElement(xpath);
-            if (packageSources is null)
-                throw new LogAsErrorException($"Could not find {xpath} in {TemplateNuGetConfigPath}");
-
-            var newPackageSourceElement = new XElement("add",
-                                            new XAttribute("key", PackageSourceNameForBuiltPackages),
-                                            new XAttribute("value", $"file://{LocalNuGetsPath}"));
-            if (packageSources.LastNode is not null)
-            {
-                packageSources.LastNode.AddAfterSelf(newPackageSourceElement);
-            }
-            else
-            {
-                packageSources.Add(newPackageSourceElement);
-            }
-
-            if (NuGetConfigPackageSourceMappings.Length > 0)
-            {
-                string mappingXpath = "/configuration/packageSourceMapping";
-                XElement? packageSourceMapping = doc.XPathSelectElement(mappingXpath);
-                if (packageSourceMapping is null)
-                {
-                    if (doc.Root is null)
-                        throw new LogAsErrorException($"Could not find root element in {TemplateNuGetConfigPath}");
-
-                    packageSourceMapping = new XElement("packageSourceMapping");
-                    doc.Root.Add(packageSourceMapping);
-                }
-
-                var newPackageSourceMappingElement = new XElement("packageSource",
-                                                        new XAttribute("key", PackageSourceNameForBuiltPackages),
-                                                        NuGetConfigPackageSourceMappings.Select
-                                                            (pattern => new XElement("package", new XAttribute("pattern", pattern))));
-                if (packageSourceMapping.FirstNode is not null)
-                {
-                    packageSourceMapping.FirstNode?.AddBeforeSelf(newPackageSourceMappingElement);
-                }
-                else
-                {
-                    packageSourceMapping.Add(newPackageSourceMappingElement);
-                }
-            }
-
             var nugetConfigPath = Path.GetTempFileName();
-            using var xw = XmlWriter.Create(nugetConfigPath, new XmlWriterSettings { Indent = true, NewLineHandling = NewLineHandling.None, Encoding = Encoding.UTF8 });
-            doc.WriteTo(xw);
-            xw.Close();
-
+            PatchNuGetConfig.GetNuGetConfig(TemplateNuGetConfigPath, LocalNuGetsPath, PackageSourceNameForBuiltPackages, NuGetConfigPackageSourceMappings, nugetConfigPath);
             string contents = File.ReadAllText(nugetConfigPath);
             File.Delete(nugetConfigPath);
             return contents;
