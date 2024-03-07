@@ -94,90 +94,39 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            public static TVector Invoke<TVector>(TVector x, TVector y) where TVector : struct, ISimdVector<TVector, T>
             {
-                if (AdvSimd.IsSupported)
+                if (sizeof(TVector) == sizeof(Vector128<T>))
                 {
-                    if (typeof(T) == typeof(byte)) return AdvSimd.Max(x.AsByte(), y.AsByte()).As<byte, T>();
-                    if (typeof(T) == typeof(sbyte)) return AdvSimd.Max(x.AsSByte(), y.AsSByte()).As<sbyte, T>();
-                    if (typeof(T) == typeof(short)) return AdvSimd.Max(x.AsInt16(), y.AsInt16()).As<short, T>();
-                    if (typeof(T) == typeof(ushort)) return AdvSimd.Max(x.AsUInt16(), y.AsUInt16()).As<ushort, T>();
-                    if (typeof(T) == typeof(int)) return AdvSimd.Max(x.AsInt32(), y.AsInt32()).As<int, T>();
-                    if (typeof(T) == typeof(uint)) return AdvSimd.Max(x.AsUInt32(), y.AsUInt32()).As<uint, T>();
-                    if (typeof(T) == typeof(float)) return AdvSimd.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    if (AdvSimd.IsSupported)
+                    {
+                        if (typeof(T) == typeof(byte)) return (TVector)(object)AdvSimd.Max((Vector128<byte>)(object)x, (Vector128<byte>)(object)y);
+                        if (typeof(T) == typeof(sbyte)) return (TVector)(object)AdvSimd.Max((Vector128<sbyte>)(object)x, (Vector128<sbyte>)(object)y);
+                        if (typeof(T) == typeof(ushort)) return (TVector)(object)AdvSimd.Max((Vector128<ushort>)(object)x, (Vector128<ushort>)(object)y);
+                        if (typeof(T) == typeof(short)) return (TVector)(object)AdvSimd.Max((Vector128<short>)(object)x, (Vector128<short>)(object)y);
+                        if (typeof(T) == typeof(uint)) return (TVector)(object)AdvSimd.Max((Vector128<uint>)(object)x, (Vector128<uint>)(object)y);
+                        if (typeof(T) == typeof(int)) return (TVector)(object)AdvSimd.Max((Vector128<int>)(object)x, (Vector128<int>)(object)y);
+                        if (typeof(T) == typeof(float)) return (TVector)(object)AdvSimd.Max((Vector128<float>)(object)x, (Vector128<float>)(object)y);
+                    }
+
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        if (typeof(T) == typeof(double)) return (TVector)(object)AdvSimd.Arm64.Max((Vector128<double>)(object)x, (Vector128<double>)(object)y);
+                    }
                 }
 
-                if (AdvSimd.Arm64.IsSupported)
-                {
-                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
-                }
-
-                if (typeof(T) == typeof(float))
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     return
-                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                            Vector128.ConditionalSelect(IsNegative(x.AsSingle()).As<float, T>(), y, x),
-                            Vector128.Max(x, y));
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return
-                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                            Vector128.ConditionalSelect(IsNegative(x.AsDouble()).As<double, T>(), y, x),
-                            Vector128.Max(x, y));
+                        Vector128.ConditionalSelect(TVector.Equals(x, y),
+                            TVector.ConditionalSelect(IsNegative(x), y, x),
+                            TVector.Max(x, y));
                 }
 
                 return Vector128.Max(x, y);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return
-                        Vector256.ConditionalSelect(Vector256.Equals(x, y),
-                            Vector256.ConditionalSelect(IsNegative(x.AsSingle()).As<float, T>(), y, x),
-                            Vector256.Max(x, y));
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return
-                        Vector256.ConditionalSelect(Vector256.Equals(x, y),
-                            Vector256.ConditionalSelect(IsNegative(x.AsDouble()).As<double, T>(), y, x),
-                            Vector256.Max(x, y));
-                }
-
-                return Vector256.Max(x, y);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return
-                        Vector512.ConditionalSelect(Vector512.Equals(x, y),
-                            Vector512.ConditionalSelect(IsNegative(x.AsSingle()).As<float, T>(), y, x),
-                            Vector512.Max(x, y));
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return
-                        Vector512.ConditionalSelect(Vector512.Equals(x, y),
-                            Vector512.ConditionalSelect(IsNegative(x.AsDouble()).As<double, T>(), y, x),
-                            Vector512.Max(x, y));
-                }
-
-                return Vector512.Max(x, y);
-            }
-
-            public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
-            public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
-            public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
+            public static T Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T> => HorizontalAggregate<T, TVector, MaxOperator<T>>(x);
         }
 
         /// <summary>Max(x, y)</summary>
@@ -190,125 +139,64 @@ namespace System.Numerics.Tensors
             public static T Invoke(T x, T y) => T.Max(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            public static TVector Invoke<TVector>(TVector x, TVector y) where TVector : struct, ISimdVector<TVector, T>
             {
-                if (AdvSimd.IsSupported)
+                if (sizeof(TVector) == sizeof(Vector128<T>))
                 {
-                    if (typeof(T) == typeof(byte)) return AdvSimd.Max(x.AsByte(), y.AsByte()).As<byte, T>();
-                    if (typeof(T) == typeof(sbyte)) return AdvSimd.Max(x.AsSByte(), y.AsSByte()).As<sbyte, T>();
-                    if (typeof(T) == typeof(ushort)) return AdvSimd.Max(x.AsUInt16(), y.AsUInt16()).As<ushort, T>();
-                    if (typeof(T) == typeof(short)) return AdvSimd.Max(x.AsInt16(), y.AsInt16()).As<short, T>();
-                    if (typeof(T) == typeof(uint)) return AdvSimd.Max(x.AsUInt32(), y.AsUInt32()).As<uint, T>();
-                    if (typeof(T) == typeof(int)) return AdvSimd.Max(x.AsInt32(), y.AsInt32()).As<int, T>();
-                    if (typeof(T) == typeof(float)) return AdvSimd.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
-                }
+                    if (AdvSimd.IsSupported)
+                    {
+                        if (typeof(T) == typeof(byte)) return (TVector)(object)AdvSimd.Max((Vector128<byte>)(object)x, (Vector128<byte>)(object)y);
+                        if (typeof(T) == typeof(sbyte)) return (TVector)(object)AdvSimd.Max((Vector128<sbyte>)(object)x, (Vector128<sbyte>)(object)y);
+                        if (typeof(T) == typeof(ushort)) return (TVector)(object)AdvSimd.Max((Vector128<ushort>)(object)x, (Vector128<ushort>)(object)y);
+                        if (typeof(T) == typeof(short)) return (TVector)(object)AdvSimd.Max((Vector128<short>)(object)x, (Vector128<short>)(object)y);
+                        if (typeof(T) == typeof(uint)) return (TVector)(object)AdvSimd.Max((Vector128<uint>)(object)x, (Vector128<uint>)(object)y);
+                        if (typeof(T) == typeof(int)) return (TVector)(object)AdvSimd.Max((Vector128<int>)(object)x, (Vector128<int>)(object)y);
+                        if (typeof(T) == typeof(float)) return (TVector)(object)AdvSimd.Max((Vector128<float>)(object)x, (Vector128<float>)(object)y);
+                    }
 
-                if (AdvSimd.Arm64.IsSupported)
-                {
-                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        if (typeof(T) == typeof(double)) return (TVector)(object)AdvSimd.Arm64.Max((Vector128<double>)(object)x, (Vector128<double>)(object)y);
+                    }
                 }
 
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     return
-                        Vector128.ConditionalSelect(Vector128.Equals(x, x),
-                            Vector128.ConditionalSelect(Vector128.Equals(y, y),
-                                Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                                    Vector128.ConditionalSelect(IsNegative(x), y, x),
-                                    Vector128.Max(x, y)),
+                        TVector.ConditionalSelect(TVector.Equals(x, x),
+                            TVector.ConditionalSelect(TVector.Equals(y, y),
+                                TVector.ConditionalSelect(TVector.Equals(x, y),
+                                    TVector.ConditionalSelect(IsNegative(x), y, x),
+                                    TVector.Max(x, y)),
                                 y),
                             x);
                 }
 
-                return Vector128.Max(x, y);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    return
-                        Vector256.ConditionalSelect(Vector256.Equals(x, x),
-                            Vector256.ConditionalSelect(Vector256.Equals(y, y),
-                                Vector256.ConditionalSelect(Vector256.Equals(x, y),
-                                    Vector256.ConditionalSelect(IsNegative(x), y, x),
-                                    Vector256.Max(x, y)),
-                                y),
-                            x);
-                }
-
-                return Vector256.Max(x, y);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    return
-                        Vector512.ConditionalSelect(Vector512.Equals(x, x),
-                            Vector512.ConditionalSelect(Vector512.Equals(y, y),
-                                Vector512.ConditionalSelect(Vector512.Equals(x, y),
-                                    Vector512.ConditionalSelect(IsNegative(x), y, x),
-                                    Vector512.Max(x, y)),
-                                y),
-                            x);
-                }
-
-                return Vector512.Max(x, y);
+                return TVector.Max(x, y);
             }
         }
 
         /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> IsNegative<T>(Vector128<T> vector)
+        private static TVector IsNegative<T, TVector>(TVector vector) where TVector : struct, ISimdVector<TVector, T>
         {
             if (typeof(T) == typeof(float))
             {
-                return Vector128.LessThan(vector.AsInt32(), Vector128<int>.Zero).As<int, T>();
+                if (sizeof(TVector) == sizeof(Vector128<T>)) return (TVector)(object)Vector128.LessThan(((Vector128<T>)(object)vector).AsInt32(), Vector128<int>.Zero).As<int, T>();
+                if (sizeof(TVector) == sizeof(Vector256<T>)) return (TVector)(object)Vector256.LessThan(((Vector256<T>)(object)vector).AsInt32(), Vector256<int>.Zero).As<int, T>();
+                if (sizeof(TVector) == sizeof(Vector512<T>)) return (TVector)(object)Vector512.LessThan(((Vector512<T>)(object)vector).AsInt32(), Vector512<int>.Zero).As<int, T>();
+                Debug.Fail("Vector size unsupported.");
             }
 
             if (typeof(T) == typeof(double))
             {
-                return Vector128.LessThan(vector.AsInt64(), Vector128<long>.Zero).As<long, T>();
+                if (sizeof(TVector) == sizeof(Vector128<T>)) return (TVector)(object)Vector128.LessThan(((Vector128<T>)(object)vector).AsInt64(), Vector128<long>.Zero).As<long, T>();
+                if (sizeof(TVector) == sizeof(Vector256<T>)) return (TVector)(object)Vector256.LessThan(((Vector256<T>)(object)vector).AsInt64(), Vector256<long>.Zero).As<long, T>();
+                if (sizeof(TVector) == sizeof(Vector512<T>)) return (TVector)(object)Vector512.LessThan(((Vector512<T>)(object)vector).AsInt64(), Vector512<long>.Zero).As<long, T>();
+                Debug.Fail("Vector size unsupported.");
             }
 
-            return Vector128.LessThan(vector, Vector128<T>.Zero);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> IsNegative<T>(Vector256<T> vector)
-        {
-            if (typeof(T) == typeof(float))
-            {
-                return Vector256.LessThan(vector.AsInt32(), Vector256<int>.Zero).As<int, T>();
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                return Vector256.LessThan(vector.AsInt64(), Vector256<long>.Zero).As<long, T>();
-            }
-
-            return Vector256.LessThan(vector, Vector256<T>.Zero);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> IsNegative<T>(Vector512<T> vector)
-        {
-            if (typeof(T) == typeof(float))
-            {
-                return Vector512.LessThan(vector.AsInt32(), Vector512<int>.Zero).As<int, T>();
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                return Vector512.LessThan(vector.AsInt64(), Vector512<long>.Zero).As<long, T>();
-            }
-
-            return Vector512.LessThan(vector, Vector512<T>.Zero);
+            return TVector.LessThan(vector, TVector.Zero);
         }
 
         /// <remarks>

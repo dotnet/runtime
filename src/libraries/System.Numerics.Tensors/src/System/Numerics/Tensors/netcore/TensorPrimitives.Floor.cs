@@ -28,44 +28,7 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x) => T.Floor(x);
 
-            public static Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector128.Floor(x.AsSingle()).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return Vector128.Floor(x.AsDouble()).As<double, T>();
-                }
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector256.Floor(x.AsSingle()).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return Vector256.Floor(x.AsDouble()).As<double, T>();
-                }
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector512.Floor(x.AsSingle()).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return Vector512.Floor(x.AsDouble()).As<double, T>();
-                }
-            }
+            public static TVector Invoke(TVector x) where TVector : struct, ISimdVector<TVector, T> => TVector.Floor(x);
         }
     }
 }

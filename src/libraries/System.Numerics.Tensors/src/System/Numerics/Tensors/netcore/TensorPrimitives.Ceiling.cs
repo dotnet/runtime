@@ -22,50 +22,13 @@ namespace System.Numerics.Tensors
             where T : IFloatingPoint<T> =>
             InvokeSpanIntoSpan<T, CeilingOperator<T>>(x, destination);
 
-        private readonly struct CeilingOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
+        private readonly struct CeilingOperator<T> : IUnaryOperator<T> where T : IFloatingPoint<T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Ceiling(x);
 
-            public static Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector128.Ceiling(x.AsSingle()).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return Vector128.Ceiling(x.AsDouble()).As<double, T>();
-                }
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector256.Ceiling(x.AsSingle()).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return Vector256.Ceiling(x.AsDouble()).As<double, T>();
-                }
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector512.Ceiling(x.AsSingle()).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return Vector512.Ceiling(x.AsDouble()).As<double, T>();
-                }
-            }
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T> => TVector.Ceiling(x);
         }
     }
 }

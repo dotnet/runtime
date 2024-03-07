@@ -16,9 +16,27 @@ namespace System.Numerics.Tensors
         private interface ITernaryOperator<T>
         {
             static abstract T Invoke(T x, T y, T z);
-            static abstract Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z);
-            static abstract Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z);
-            static abstract Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z);
+            static abstract TVector Invoke<TVector>(TVector x, TVector y, TVector z) where TVector : struct, ISimdVector<TVector, T>;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVector TernaryOperatorAutoImpl<T, TTernaryOperator, TVector>(TVector x, TVector y, TVector z) where TTernaryOperator : struct, ITernaryOperator<T> where TVector : struct, ISimdVector<TVector, T>
+        {
+            if (sizeof(TVector) == sizeof(Vector128<T>))
+            {
+                Debug.Fail("TernaryOperatorAutoImpl not supported for Vector128");
+            }
+            if (sizeof(TVector) == sizeof(Vector256<T>))
+            {
+                return (TVector)(object)Vector256.Create(TTernaryOperator.Invoke(((Vector256<T>)(object)x).GetLower(), ((Vector256<T>)(object)y).GetLower()((Vector256<T>)(object)z).GetLower(), ), TTernaryOperator.Invoke(((Vector256<T>)(object)x).GetUpper(), ((Vector256<T>)(object)y).GetUpper(), ((Vector256<T>)(object)z).GetUpper()));
+            }
+            if (sizeof(TVector) == sizeof(Vector512<T>))
+            {
+                return (TVector)(object)Vector512.Create(TTernaryOperator.Invoke(((Vector512<T>)(object)x).GetLower(), ((Vector512<T>)(object)y).GetLower(), ((Vector512<T>)(object)z).GetLower()), TTernaryOperator.Invoke(((Vector512<T>)(object)x).GetUpper(), ((Vector512<T>)(object)y).GetUpper(), ((Vector512<T>)(object)z).GetUpper()));
+            }
+
+            Debug.Fail("Unsupported vector type.");
+            retuen default;
         }
 
         /// <summary>

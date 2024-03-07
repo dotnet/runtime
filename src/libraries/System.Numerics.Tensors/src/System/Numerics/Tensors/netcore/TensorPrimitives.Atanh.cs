@@ -26,14 +26,12 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, AtanhOperator<T>>(x, destination);
 
         /// <summary>T.Atanh(x)</summary>
-        internal readonly struct AtanhOperator<T> : IUnaryOperator<T, T>
+        internal readonly struct AtanhOperator<T> : IUnaryOperator<T>
             where T : IHyperbolicFunctions<T>
         {
             public static bool Vectorizable => false; // TODO: Vectorize
             public static T Invoke(T x) => T.Atanh(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T> => throw new NotSupportedException();
         }
     }
 }

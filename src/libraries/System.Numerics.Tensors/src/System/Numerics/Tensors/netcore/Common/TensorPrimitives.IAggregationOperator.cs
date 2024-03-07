@@ -15,9 +15,7 @@ namespace System.Numerics.Tensors
         /// <summary><see cref="IBinaryOperator{T}"/> that specializes horizontal aggregation of all elements in a vector.</summary>
         private interface IAggregationOperator<T> : IBinaryOperator<T>
         {
-            static abstract T Invoke(Vector128<T> x);
-            static abstract T Invoke(Vector256<T> x);
-            static abstract T Invoke(Vector512<T> x);
+            static abstract T Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T>;
 
             static virtual T IdentityValue => throw new NotSupportedException();
         }
@@ -31,7 +29,7 @@ namespace System.Numerics.Tensors
         /// </typeparam>
         private static T Aggregate<T, TTransformOperator, TAggregationOperator>(
             ReadOnlySpan<T> x)
-            where TTransformOperator : struct, IUnaryOperator<T, T>
+            where TTransformOperator : struct, IUnaryOperator<T>
             where TAggregationOperator : struct, IAggregationOperator<T>
         {
             // Since every branch has a cost and since that cost is

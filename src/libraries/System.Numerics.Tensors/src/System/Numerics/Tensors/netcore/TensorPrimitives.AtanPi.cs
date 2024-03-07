@@ -26,14 +26,12 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, AtanPiOperator<T>>(x, destination);
 
         /// <summary>T.AtanPi(x)</summary>
-        internal readonly struct AtanPiOperator<T> : IUnaryOperator<T, T>
+        internal readonly struct AtanPiOperator<T> : IUnaryOperator<T>
             where T : ITrigonometricFunctions<T>
         {
             public static bool Vectorizable => AtanOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.AtanPi(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => AtanOperator<T>.Invoke(x) / Vector128.Create(T.Pi);
-            public static Vector256<T> Invoke(Vector256<T> x) => AtanOperator<T>.Invoke(x) / Vector256.Create(T.Pi);
-            public static Vector512<T> Invoke(Vector512<T> x) => AtanOperator<T>.Invoke(x) / Vector512.Create(T.Pi);
+            public static TVector Invoke(TVector x) where TVector : struct, ISimdVector<TVector, T> => AtanOperator<T>.Invoke(x) / TVector.Create(T.Pi);
         }
     }
 }

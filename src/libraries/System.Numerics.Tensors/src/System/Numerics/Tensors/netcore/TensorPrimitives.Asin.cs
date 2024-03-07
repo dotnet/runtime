@@ -26,14 +26,12 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, AsinOperator<T>>(x, destination);
 
         /// <summary>T.Asin(x)</summary>
-        private readonly struct AsinOperator<T> : IUnaryOperator<T, T>
+        private readonly struct AsinOperator<T> : IUnaryOperator<T>
             where T : ITrigonometricFunctions<T>
         {
             public static bool Vectorizable => false; // TODO: Vectorize
             public static T Invoke(T x) => T.Asin(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T> => throw new NotSupportedException();
         }
     }
 }

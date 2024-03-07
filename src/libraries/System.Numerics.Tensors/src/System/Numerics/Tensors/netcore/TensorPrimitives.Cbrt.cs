@@ -23,49 +23,23 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, CbrtOperator<T>>(x, destination);
 
         /// <summary>T.Cbrt(x)</summary>
-        private readonly struct CbrtOperator<T> : IUnaryOperator<T, T>
+        private readonly struct CbrtOperator<T> : IUnaryOperator<T>
             where T : IRootFunctions<T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Cbrt(x);
 
-            public static Vector128<T> Invoke(Vector128<T> x)
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T>
             {
                 if (typeof(T) == typeof(float))
                 {
-                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector128.Create(3f)).As<float, T>();
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / TVector.Create(3f)).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector128.Create(3d)).As<double, T>();
-                }
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector256.Create(3f)).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector256.Create(3d)).As<double, T>();
-                }
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector512.Create(3f)).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector512.Create(3d)).As<double, T>();
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / TVector.Create(3d)).As<double, T>();
                 }
             }
         }

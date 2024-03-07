@@ -39,14 +39,42 @@ namespace System.Numerics.Tensors
             static abstract Vector512<TOutput> Invoke(Vector512<TInput> x);
         }
 
+        /// <summary>Operator that takes one input value and returns a single value.</summary>
+        /// <remarks>ISimdVector version with input type and output type being the same.</remarks>
+        internal interface IUnaryOperator<T> : IUnaryOperator<T, T>
+        {
+            static abstract TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T>;
+            static Vector128<T> IUnaryOperator<T, T>.Invoke(Vector128<T> x) => Invoke(x);
+            static Vector256<T> IUnaryOperator<T, T>.Invoke(Vector256<T> x) => Invoke(x);
+            static Vector512<T> IUnaryOperator<T, T>.Invoke(Vector512<T> x) => Invoke(x);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVector UnaryOperatorAutoImpl<T, TUnaryOperator, TVector>(TVector x) where TUnaryOperator : struct, IUnaryOperator<T> where TVector : struct, ISimdVector<TVector, T>
+        {
+            if (sizeof(TVector) == sizeof(Vector128<T>))
+            {
+                Debug.Fail("UnaryOperatorAutoImpl not supported for Vector128");
+            }
+            if (sizeof(TVector) == sizeof(Vector256<T>))
+            {
+                return (TVector)(object)Vector256.Create(TUnaryOperator.Invoke(((Vector256<T>)(object)x).GetLower()), TUnaryOperator.Invoke(((Vector256<T>)(object)x).GetUpper()));
+            }
+            if (sizeof(TVector) == sizeof(Vector512<T>))
+            {
+                return (TVector)(object)Vector512.Create(TUnaryOperator.Invoke(((Vector512<T>)(object)x).GetLower()), TUnaryOperator.Invoke(((Vector512<T>)(object)x).GetUpper()));
+            }
+
+            Debug.Fail("Unsupported vector type.");
+            retuen default;
+        }
+
         /// <summary>x</summary>
-        internal readonly struct IdentityOperator<T> : IUnaryOperator<T, T>
+        internal readonly struct IdentityOperator<T> : IUnaryOperator<T>
         {
             public static bool Vectorizable => true;
             public static T Invoke(T x) => x;
-            public static Vector128<T> Invoke(Vector128<T> x) => x;
-            public static Vector256<T> Invoke(Vector256<T> x) => x;
-            public static Vector512<T> Invoke(Vector512<T> x) => x;
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T> => x;
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>

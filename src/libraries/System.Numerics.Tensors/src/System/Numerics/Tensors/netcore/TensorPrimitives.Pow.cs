@@ -56,7 +56,7 @@ namespace System.Numerics.Tensors
             InvokeScalarSpanIntoSpan<T, PowOperator<T>>(x, y, destination);
 
         /// <summary>T.Pow(x, y)</summary>
-        private readonly struct PowOperator<T> : IBinaryOperator<T>
+        private readonly struct PowOperator<T> : IManualBinaryOperator<T>
             where T : IPowerFunctions<T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);

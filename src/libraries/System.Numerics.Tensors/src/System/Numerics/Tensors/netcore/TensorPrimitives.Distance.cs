@@ -53,21 +53,9 @@ namespace System.Numerics.Tensors
                 return tmp * tmp;
             }
 
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            public static TVector Invoke<TVector>(TVector x, TVector y) where TVector : struct, ISimdVector<TVector, T>
             {
-                Vector128<T> tmp = x - y;
-                return tmp * tmp;
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-                Vector256<T> tmp = x - y;
-                return tmp * tmp;
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-                Vector512<T> tmp = x - y;
+                TVector tmp = x - y;
                 return tmp * tmp;
             }
         }

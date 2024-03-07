@@ -98,71 +98,73 @@ namespace System.Numerics.Tensors
         {
             public static T Invoke(T x, T y, T z) => T.FusedMultiplyAdd(x, y, z);
 
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
+            public static TVector Invoke<TVector>(TVector x, TVector y, TVector z) where TVector : struct, ISimdVector<TVector, T>
             {
-                if (Fma.IsSupported)
+                if (sizeof(TVector) == sizeof(Vector128<T>))
                 {
-                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
-                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                    if (Fma.IsSupported)
+                    {
+                        if (typeof(T) == typeof(float)) return (TVector)(object)Fma.MultiplyAdd((Vector128<float>)(object)x, (Vector128<float>)(object)y, (Vector128<float>)(object)z);
+                        if (typeof(T) == typeof(double)) return (TVector)(object)Fma.MultiplyAdd((Vector128<double>)(object)x, (Vector128<double>)(object)y, (Vector128<double>)(object)z);
+                    }
+
+                    if (AdvSimd.IsSupported)
+                    {
+                        if (typeof(T) == typeof(float)) return (TVector)(object)AdvSimd.FusedMultiplyAdd((Vector128<float>)(object)z, (Vector128<float>)(object)x, (Vector128<float>)(object)y);
+                    }
+
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        if (typeof(T) == typeof(double)) return (TVector)(object)AdvSimd.Arm64.FusedMultiplyAdd((Vector128<double>)(object)z, (Vector128<double>)(object)x, (Vector128<double>)(object)y);
+                    }
                 }
 
-                if (AdvSimd.IsSupported)
+                if (sizeof(TVector) == sizeof(Vector256<T>))
                 {
-                    if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(z.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
+                    if (Fma.IsSupported)
+                    {
+                        if (typeof(T) == typeof(float)) return (TVector)(object)Fma.MultiplyAdd((Vector256<float>)(object)x, (Vector256<float>)(object)y, (Vector256<float>)(object)z);
+                        if (typeof(T) == typeof(double)) return (TVector)(object)Fma.MultiplyAdd((Vector256<double>)(object)x, (Vector256<double>)(object)y, (Vector256<double>)(object)z);
+                    }
                 }
 
-                if (AdvSimd.Arm64.IsSupported)
+                if (sizeof(TVector) == sizeof(Vector512<T>))
                 {
-                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
+                    if (Avx512F.IsSupported)
+                    {
+                        if (typeof(T) == typeof(float)) return (TVector)(object)Avx512F.FusedMultiplyAdd(((Vector512<T>)(object)x).AsSingle(), ((Vector512<T>)(object)y).AsSingle(), ((Vector512<T>)(object)z).AsSingle());
+                        if (typeof(T) == typeof(double)) return (TVector)(object)Avx512F.FusedMultiplyAdd(((Vector512<T>)(object)x).AsDouble(), ((Vector512<T>)(object)y).AsDouble(), ((Vector512<T>)(object)z).AsDouble());
+                    }
                 }
 
-                if (typeof(T) == typeof(float))
+                if (sizeof(T) == sizeof(Vector128<T>))
                 {
-                    Vector128<float> xFloats = x.AsSingle();
-                    Vector128<float> yFloats = y.AsSingle();
-                    Vector128<float> zFloats = z.AsSingle();
-                    return Vector128.Create(
-                        float.FusedMultiplyAdd(xFloats[0], yFloats[0], zFloats[0]),
-                        float.FusedMultiplyAdd(xFloats[1], yFloats[1], zFloats[1]),
-                        float.FusedMultiplyAdd(xFloats[2], yFloats[2], zFloats[2]),
-                        float.FusedMultiplyAdd(xFloats[3], yFloats[3], zFloats[3])).As<float, T>();
+                    if (typeof(T) == typeof(float))
+                    {
+                        Vector128<float> xFloats = (Vector128<float>)(object)x;
+                        Vector128<float> yFloats = (Vector128<float>)(object)y;
+                        Vector128<float> zFloats = (Vector128<float>)(object)z;
+                        return Vector128.Create(
+                            float.FusedMultiplyAdd(xFloats[0], yFloats[0], zFloats[0]),
+                            float.FusedMultiplyAdd(xFloats[1], yFloats[1], zFloats[1]),
+                            float.FusedMultiplyAdd(xFloats[2], yFloats[2], zFloats[2]),
+                            float.FusedMultiplyAdd(xFloats[3], yFloats[3], zFloats[3])).As<float, T>();
+                    }
+                    else
+                    {
+                        Debug.Assert(typeof(T) == typeof(double));
+                        Vector128<double> xDoubles = (Vector128<double>)(object)x;
+                        Vector128<double> yDoubles = (Vector128<double>)(object)y;
+                        Vector128<double> zDoubles = (Vector128<double>)(object)z;
+                        return Vector128.Create(
+                            double.FusedMultiplyAdd(xDoubles[0], yDoubles[0], zDoubles[0]),
+                            double.FusedMultiplyAdd(xDoubles[1], yDoubles[1], zDoubles[1])).As<double, T>();
+                    }
                 }
                 else
                 {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    Vector128<double> xDoubles = x.AsDouble();
-                    Vector128<double> yDoubles = y.AsDouble();
-                    Vector128<double> zDoubles = z.AsDouble();
-                    return Vector128.Create(
-                        double.FusedMultiplyAdd(xDoubles[0], yDoubles[0], zDoubles[0]),
-                        double.FusedMultiplyAdd(xDoubles[1], yDoubles[1], zDoubles[1])).As<double, T>();
+                    return TernaryOperatorAutoImpl<T, FusedMultiplyAddOperator<T>, TVector>(x, y, z);
                 }
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
-            {
-                if (Fma.IsSupported)
-                {
-                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
-                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
-                }
-
-                return Vector256.Create(
-                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
-                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
-            {
-                if (Avx512F.IsSupported)
-                {
-                    if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
-                    if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
-                }
-
-                return Vector512.Create(
-                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
-                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
             }
         }
     }

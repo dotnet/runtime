@@ -17,6 +17,20 @@ namespace System.Numerics.Tensors
         {
             static abstract bool Vectorizable { get; }
             static abstract T Invoke(T x, T y);
+            static abstract TVector Invoke<TVector>(TVector x, TVector y) where TVector : struct, ISimdVector<TVector, T>;
+        }
+
+        private interface IManualBinaryOperator<T> : IBinaryOperator<T>
+        {
+            static TVector IBinaryOperator<T>.Invoke<TVector>(TVector x, TVector y) where TVector : struct, ISimdVector<TVector, T>
+            {
+                if (sizeof(TVector) == sizeof(Vector128<T>)) return (TVector)(object)Invoke((Vector128<T>)(object)x, (Vector128<T>)(object)y);
+                if (sizeof(TVector) == sizeof(Vector256<T>)) return (TVector)(object)Invoke((Vector256<T>)(object)x, (Vector256<T>)(object)y);
+                if (sizeof(TVector) == sizeof(Vector512<T>)) return (TVector)(object)Invoke((Vector512<T>)(object)x, (Vector512<T>)(object)y);
+                Debug.Fail("Vector type not implemented");
+                return default;
+            }
+
             static abstract Vector128<T> Invoke(Vector128<T> x, Vector128<T> y);
             static abstract Vector256<T> Invoke(Vector256<T> x, Vector256<T> y);
             static abstract Vector512<T> Invoke(Vector512<T> x, Vector512<T> y);
@@ -2716,6 +2730,18 @@ namespace System.Numerics.Tensors
                         }
                 }
             }
+        }
+
+        /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T HorizontalAggregate<T, TVector, TAggregate>(TVector x) where TAggregate : struct, IBinaryOperator<T> where TVector : struct, ISimdVector<TVector, T>
+        {
+            if (sizeof(TVector) == sizeof(Vector128<T>)) return HorizontalAggregate<T, TAggregate>((Vector128<T>)(object)x);
+            if (sizeof(TVector) == sizeof(Vector256<T>)) return HorizontalAggregate<T, TAggregate>((Vector256<T>)(object)x);
+            if (sizeof(TVector) == sizeof(Vector512<T>)) return HorizontalAggregate<T, TAggregate>((Vector512<T>)(object)x);
+            Debug.Fail("Invalid vector type.");
         }
 
         /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>

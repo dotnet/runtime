@@ -26,14 +26,12 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, AcosPiOperator<T>>(x, destination);
 
         /// <summary>T.AcosPi(x)</summary>
-        private readonly struct AcosPiOperator<T> : IUnaryOperator<T, T>
+        private readonly struct AcosPiOperator<T> : IUnaryOperator<T>
             where T : ITrigonometricFunctions<T>
         {
             public static bool Vectorizable => AcosOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.AcosPi(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => AcosOperator<T>.Invoke(x) / Vector128.Create(T.Pi);
-            public static Vector256<T> Invoke(Vector256<T> x) => AcosOperator<T>.Invoke(x) / Vector256.Create(T.Pi);
-            public static Vector512<T> Invoke(Vector512<T> x) => AcosOperator<T>.Invoke(x) / Vector512.Create(T.Pi);
+            public static TVector Invoke(TVector x) where TVector : struct, ISimdVector<TVector, T> => AcosOperator<T>.Invoke(x) / TVector.Create(T.Pi);
         }
     }
 }

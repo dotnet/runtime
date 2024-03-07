@@ -45,85 +45,29 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x, T y) => T.CopySign(x, y);
 
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            public static TVector Invoke<TVector>(TVector x, TVector y) where TVector : struct, ISimdVector<TVector, T>
             {
                 if (typeof(T) == typeof(float))
                 {
-                    return Vector128.ConditionalSelect(Vector128.Create(-0.0f).As<float, T>(), y, x);
+                    return TVector.ConditionalSelect(TVector.Create((T)(object)(-0.0f)), y, x);
                 }
 
                 if (typeof(T) == typeof(double))
                 {
-                    return Vector128.ConditionalSelect(Vector128.Create(-0.0d).As<double, T>(), y, x);
+                    return TVector.ConditionalSelect(TVector.Create((T)(object)(-0.0d)), y, x);
                 }
 
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
                 {
-                    Vector128<T> absValue = Vector128.Abs(x);
-                    Vector128<T> sign = Vector128.GreaterThanOrEqual(y, Vector128<T>.Zero);
-                    Vector128<T> error = sign & Vector128.LessThan(absValue, Vector128<T>.Zero);
-                    if (error != Vector128<T>.Zero)
+                    TVector absValue = TVector.Abs(x);
+                    TVector sign = TVector.GreaterThanOrEqual(y, TVector.Zero);
+                    TVector error = sign & TVector.LessThan(absValue, TVector.Zero);
+                    if (error != TVector.Zero)
                     {
                         Math.Abs(int.MinValue); // throw OverflowException
                     }
 
-                    return Vector128.ConditionalSelect(sign, absValue, -absValue);
-                }
-
-                return x;
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector256.ConditionalSelect(Vector256.Create(-0.0f).As<float, T>(), y, x);
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return Vector256.ConditionalSelect(Vector256.Create(-0.0d).As<double, T>(), y, x);
-                }
-
-                if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
-                {
-                    Vector256<T> absValue = Vector256.Abs(x);
-                    Vector256<T> sign = Vector256.GreaterThanOrEqual(y, Vector256<T>.Zero);
-                    Vector256<T> error = sign & Vector256.LessThan(absValue, Vector256<T>.Zero);
-                    if (error != Vector256<T>.Zero)
-                    {
-                        Math.Abs(int.MinValue); // throw OverflowException
-                    }
-
-                    return Vector256.ConditionalSelect(sign, absValue, -absValue);
-                }
-
-                return x;
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector512.ConditionalSelect(Vector512.Create(-0.0f).As<float, T>(), y, x);
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return Vector512.ConditionalSelect(Vector512.Create(-0.0d).As<double, T>(), y, x);
-                }
-
-                if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
-                {
-                    Vector512<T> absValue = Vector512.Abs(x);
-                    Vector512<T> sign = Vector512.GreaterThanOrEqual(y, Vector512<T>.Zero);
-                    Vector512<T> error = sign & Vector512.LessThan(absValue, Vector512<T>.Zero);
-                    if (error != Vector512<T>.Zero)
-                    {
-                        Math.Abs(int.MinValue); // throw OverflowException
-                    }
-
-                    return Vector512.ConditionalSelect(sign, absValue, -absValue);
+                    return TVector.ConditionalSelect(sign, absValue, -absValue);
                 }
 
                 return x;

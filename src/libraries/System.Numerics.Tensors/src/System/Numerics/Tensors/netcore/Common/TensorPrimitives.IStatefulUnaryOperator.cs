@@ -17,9 +17,7 @@ namespace System.Numerics.Tensors
         {
             static abstract bool Vectorizable { get; }
             T Invoke(T x);
-            Vector128<T> Invoke(Vector128<T> x);
-            Vector256<T> Invoke(Vector256<T> x);
-            Vector512<T> Invoke(Vector512<T> x);
+            TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T>;
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>

@@ -75,9 +75,7 @@ namespace System.Numerics.Tensors
         internal readonly struct AddMultiplyOperator<T> : ITernaryOperator<T> where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
         {
             public static T Invoke(T x, T y, T z) => (x + y) * z;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => (x + y) * z;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => (x + y) * z;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z) => (x + y) * z;
+            public static TVector Invoke<TVector>(TVector x, TVector y, TVector z) where TVector : struct, ISimdVector<TVector, T> => (x + y) * z;
         }
     }
 }

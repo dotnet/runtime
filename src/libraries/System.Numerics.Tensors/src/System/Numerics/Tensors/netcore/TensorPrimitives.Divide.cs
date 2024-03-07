@@ -71,9 +71,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => x / y;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x / y;
+            public static TVector Invoke<TVector>(TVector x, TVector y) where TVector : ISimdVector<TVector, T> => x / y;
         }
     }
 }

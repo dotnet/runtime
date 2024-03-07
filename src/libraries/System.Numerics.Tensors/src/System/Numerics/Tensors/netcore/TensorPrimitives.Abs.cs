@@ -31,14 +31,14 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, AbsoluteOperator<T>>(x, destination);
 
         /// <summary>T.Abs(x)</summary>
-        internal readonly struct AbsoluteOperator<T> : IUnaryOperator<T, T> where T : INumberBase<T>
+        internal readonly struct AbsoluteOperator<T> : IUnaryOperator<T> where T : INumberBase<T>
         {
             public static bool Vectorizable => true;
 
             public static T Invoke(T x) => T.Abs(x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x)
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T>
             {
                 if (typeof(T) == typeof(sbyte) ||
                     typeof(T) == typeof(short) ||
@@ -49,58 +49,14 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector128<T> abs = Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), -x, x);
-                    if (Vector128.LessThan(abs, Vector128<T>.Zero) != Vector128<T>.Zero)
+                    TVector abs = TVector.ConditionalSelect(TVector.LessThan(x, TVector.Zero), -x, x);
+                    if (TVector.LessThan(abs, TVector.Zero) != TVector.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
                 }
 
-                return Vector128.Abs(x);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(sbyte) ||
-                    typeof(T) == typeof(short) ||
-                    typeof(T) == typeof(int) ||
-                    typeof(T) == typeof(long) ||
-                    typeof(T) == typeof(nint))
-                {
-                    // Handle signed integers specially, in order to throw if any attempt is made to
-                    // take the absolute value of the minimum value of the type, which doesn't have
-                    // a positive absolute value representation.
-                    Vector256<T> abs = Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), -x, x);
-                    if (Vector256.LessThan(abs, Vector256<T>.Zero) != Vector256<T>.Zero)
-                    {
-                        ThrowNegateTwosCompOverflow();
-                    }
-                }
-
-                return Vector256.Abs(x);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(sbyte) ||
-                    typeof(T) == typeof(short) ||
-                    typeof(T) == typeof(int) ||
-                    typeof(T) == typeof(long) ||
-                    typeof(T) == typeof(nint))
-                {
-                    // Handle signed integers specially, in order to throw if any attempt is made to
-                    // take the absolute value of the minimum value of the type, which doesn't have
-                    // a positive absolute value representation.
-                    Vector512<T> abs = Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), -x, x);
-                    if (Vector512.LessThan(abs, Vector512<T>.Zero) != Vector512<T>.Zero)
-                    {
-                        ThrowNegateTwosCompOverflow();
-                    }
-                }
-
-                return Vector512.Abs(x);
+                return TVector.Abs(x);
             }
         }
     }

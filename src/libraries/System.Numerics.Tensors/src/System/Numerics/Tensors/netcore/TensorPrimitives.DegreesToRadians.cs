@@ -22,13 +22,11 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, DegreesToRadiansOperator<T>>(x, destination);
 
         /// <summary>T.DegreesToRadians(x)</summary>
-        private readonly struct DegreesToRadiansOperator<T> : IUnaryOperator<T, T> where T : ITrigonometricFunctions<T>
+        private readonly struct DegreesToRadiansOperator<T> : IUnaryOperator<T> where T : ITrigonometricFunctions<T>
         {
             public static bool Vectorizable => true;
             public static T Invoke(T x) => T.DegreesToRadians(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => (x * T.Pi) / T.CreateChecked(180);
-            public static Vector256<T> Invoke(Vector256<T> x) => (x * T.Pi) / T.CreateChecked(180);
-            public static Vector512<T> Invoke(Vector512<T> x) => (x * T.Pi) / T.CreateChecked(180);
+            public static TVector Invoke<TVector>(TVector x) where TVector : struct, ISimdVector<TVector, T> => (x * T.Pi) / T.CreateChecked(180);
         }
     }
 }

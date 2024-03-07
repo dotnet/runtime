@@ -72,9 +72,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => false; // TODO: Vectorize
             public static T Invoke(T y, T x) => T.Atan2(y, x);
-            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => throw new NotSupportedException();
+            public static TVector Invoke<TVector>(TVector y, TVector x) where TVector : struct, ISimdVector<TVector, T> => throw new NotSupportedException();
         }
     }
 }
