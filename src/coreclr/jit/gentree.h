@@ -5222,7 +5222,8 @@ struct GenTreeCall final : public GenTree
     bool HasSwiftErrorHandling()
     {
         // Most calls aren't Swift calls, so short-circuit this check by checking the calling convention first.
-        return (unmgdCallConv == CorInfoCallConvExtension::Swift) && (gtArgs.FindWellKnownArg(WellKnownArg::SwiftError) != nullptr);
+        return (unmgdCallConv == CorInfoCallConvExtension::Swift) &&
+               (gtArgs.FindWellKnownArg(WellKnownArg::SwiftError) != nullptr);
     }
 #endif // SWIFT_SUPPORT
 
