@@ -439,7 +439,7 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
     edge->setDestinationBlock(newTarget);
     *predListPtr = edge;
 
-    // Pred list of target should (stilL) be ordered
+    // Pred list of target should (still) be ordered
     //
     assert(newTarget->checkPredListOrder());
 
