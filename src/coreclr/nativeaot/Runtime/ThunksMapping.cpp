@@ -55,14 +55,14 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 }
 #endif
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
     return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
 }
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ())
+COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock)
 {
     return min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
@@ -70,27 +70,27 @@ COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ())
     );
 }
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ())
+COOP_PINVOKE_HELPER(int, RhpGetThunkSize)
 {
     return THUNK_SIZE;
 }
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* pThunkStubAddress))
+COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
 {
     return (void*)(((uintptr_t)pThunkStubAddress & ~(OS_PAGE_SIZE - 1)) + THUNKS_MAP_SIZE);
 }
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddress))
+COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
 {
     return (void*)(((uintptr_t)pThunkDataAddress & ~(OS_PAGE_SIZE - 1)) - THUNKS_MAP_SIZE);
 }
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize)
 {
     return OS_PAGE_SIZE;
 }
 
-PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
+PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
 {
 #ifdef WIN32
 
@@ -260,13 +260,13 @@ PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
 extern "C" uintptr_t g_pThunkStubData;
 uintptr_t g_pThunkStubData = NULL;
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockCount, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* addr));
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* addr));
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockCount);
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping);
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize);
+COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, void* addr);
+COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
+PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
 {
     static int nextThunkDataMapping = 0;
 
@@ -313,13 +313,13 @@ PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
 
 #else // FEATURE_FIXED_POOL_THUNKS
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
+COOP_PINVOKE_HELPER(void*, RhpGetThunksBase);
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping);
+COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock);
+COOP_PINVOKE_HELPER(int, RhpGetThunkSize);
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize);
 
-PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
+PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
 {
     static void* pThunksTemplateAddress = NULL;
 

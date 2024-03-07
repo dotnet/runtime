@@ -173,6 +173,12 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 // Type for external code location references inside the assembly code.
 typedef uint8_t CODE_LOCATION;
 
+#define METHOD_NAME(name, ...) name
+#define METHOD_NAME_(tuple) METHOD_NAME tuple
+
+#define METHOD_ARGS(dummy, ...) (__VA_ARGS__)
+#define METHOD_ARGS_(tuple) METHOD_ARGS tuple
+
 //
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
@@ -192,44 +198,47 @@ typedef uint8_t CODE_LOCATION;
 // - A linker comment is used to pass the "/alternatename:foo=@foo@4" switch to allow the
 //   symbols to be resolved to the fastcall decorated name.
 
-#define COOP_ARGHELPER_NAME(_1, _2, _3, _4, _5, _6, NAME, ...) NAME
+#define COOP_ARGHELPER_NAME(_0, _1, _2, _3, _4, _5, NAME, ...) NAME
 #define COOP_ARGHELPER_NAME_(tuple) COOP_ARGHELPER_NAME tuple
 
-#define COOP_ARGHELPER0() ()
-#define COOP_ARGHELPER1(a) (a)
-#define COOP_ARGHELPER2(a, b) (a, b)
-#define COOP_ARGHELPER3(a, b, c) (a, b, c)
-#define COOP_ARGHELPER4(a, b, c, d) (a, b, d, c)
-#define COOP_ARGHELPER5(a, b, c, d, e) (a, b, e, d, c)
-#define COOP_ARGHELPER6(a, b, c, d, e, f) (a, b, f, e, d, c)
-#define COOP_ARGHELPER_REORDER(...) COOP_ARGHELPER_NAME_((__VA_ARGS__ __VA_OPT__(,) COOP_ARGHELPER6, COOP_ARGHELPER5, COOP_ARGHELPER4, COOP_ARGHELPER3, COOP_ARGHELPER2, COOP_ARGHELPER1, COOP_ARGHELPER0)) (__VA_ARGS__)
+#define COOP_ARGHELPER0(dummy) ()
+#define COOP_ARGHELPER1(dummy, a) (a)
+#define COOP_ARGHELPER2(dummy, a, b) (a, b)
+#define COOP_ARGHELPER3(dummy, a, b, c) (a, b, c)
+#define COOP_ARGHELPER4(dummy, a, b, c, d) (a, b, d, c)
+#define COOP_ARGHELPER5(dummy, a, b, c, d, e) (a, b, e, d, c)
 
 #define COOP_STRINGIFY(s) #s
 #define COOP_XSTRINGIFY(s) COOP_STRINGIFY(s)
-#define COOP_ARGHELPER_STACKSIZE(...) COOP_ARGHELPER_NAME_((__VA_ARGS__ __VA_OPT__(,) 24, 20, 16, 12, 8, 4, 0))
+#define COOP_ARGHELPER_STACKSIZE(...) COOP_ARGHELPER_NAME_((__VA_ARGS__, 20, 16, 12, 8, 4, 0))
 
 #define COOP_FASTCALL_ALTNAME(_method, _argSize) COOP_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
 #define COOP_FASTCALL_ALTNAME_IMPORT(_method, _argSize) COOP_XSTRINGIFY(/alternatename:@_method@_argSize=_method)
 
-#define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) \
-    NATIVEAOT_API _rettype REDHAWK_CALLCONV _method COOP_ARGHELPER_REORDER _args
-#define COOP_PINVOKE_HELPER(_rettype, _method, _args) \
-    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
-    EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
-#define COOP_PINVOKE_HELPER_IMPORT(_rettype, _method, _args) \
-    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME_IMPORT(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
-    EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
+#define COOP_METHOD_NAME(name, ...) name
+#define COOP_METHOD_NAME_(tuple) COOP_METHOD_NAME tuple
+#define COOP_METHOD_ARGS(...) COOP_ARGHELPER_NAME_((__VA_ARGS__, COOP_ARGHELPER5, COOP_ARGHELPER4, COOP_ARGHELPER3, COOP_ARGHELPER2, COOP_ARGHELPER1, COOP_ARGHELPER0)) (__VA_ARGS__)
+#define COOP_METHOD_ARGS_(tuple) COOP_METHOD_ARGS tuple
+
+#define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, ...) \
+    NATIVEAOT_API _rettype REDHAWK_CALLCONV COOP_METHOD_NAME_((__VA_ARGS__)) COOP_METHOD_ARGS_((__VA_ARGS__))
+#define COOP_PINVOKE_HELPER(_rettype, ...) \
+    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME(COOP_METHOD_NAME_((__VA_ARGS__)), COOP_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV COOP_METHOD_NAME_((__VA_ARGS__)) COOP_METHOD_ARGS_((__VA_ARGS__))
+#define COOP_PINVOKE_HELPER_IMPORT(_rettype, ...) \
+    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME_IMPORT(COOP_METHOD_NAME_((__VA_ARGS__)), COOP_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV COOP_METHOD_NAME_((__VA_ARGS__)) COOP_METHOD_ARGS_((__VA_ARGS__))
 
 #else
 
-#define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
-#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
+#define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, ...) NATIVEAOT_API _rettype REDHAWK_CALLCONV METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
+#define COOP_PINVOKE_HELPER(_rettype, ...) EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, __VA_ARGS__)
 #define COOP_PINVOKE_HELPER_IMPORT COOP_PINVOKE_HELPER
 
 #endif
 
-#define PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype _method _args
-#define PREEMPT_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype _method _args
+#define PINVOKE_HELPER(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
+#define PREEMPT_PINVOKE_HELPER(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
 
 typedef bool CLR_BOOL;
 

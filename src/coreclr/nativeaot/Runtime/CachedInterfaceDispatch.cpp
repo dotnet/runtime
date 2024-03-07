@@ -445,7 +445,7 @@ bool InitializeInterfaceDispatch()
     return true;
 }
 
-COOP_PINVOKE_HELPER(PCODE, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo))
+COOP_PINVOKE_HELPER(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
 {
     // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
     // is none).
@@ -516,7 +516,7 @@ COOP_PINVOKE_HELPER(PCODE, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * 
     return (PCODE)pTargetCode;
 }
 
-COOP_PINVOKE_HELPER(PCODE, RhpSearchDispatchCellCache, (InterfaceDispatchCell * pCell, MethodTable* pInstanceType))
+COOP_PINVOKE_HELPER(PCODE, RhpSearchDispatchCellCache, InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
 {
     // This function must be implemented in native code so that we do not take a GC while walking the cache
     InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
@@ -534,7 +534,7 @@ COOP_PINVOKE_HELPER(PCODE, RhpSearchDispatchCellCache, (InterfaceDispatchCell * 
 // Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented
 // in cooperative native code, as the m_pCache field on the cell is unsafe to access from managed
 // code due to its use of the GC state as a lock, and as lifetime control
-COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo))
+COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo)
 {
     *pDispatchCellInfo = pCell->GetDispatchCellInfo();
 }

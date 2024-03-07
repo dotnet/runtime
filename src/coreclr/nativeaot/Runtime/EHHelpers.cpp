@@ -37,8 +37,8 @@ struct MethodRegionInfo
     size_t coldSize;
 };
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator, (
-    StackFrameIterator* pFrameIter, MethodRegionInfo* pMethodRegionInfoOut, EHEnum* pEHEnum))
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator,
+    StackFrameIterator* pFrameIter, MethodRegionInfo* pMethodRegionInfoOut, EHEnum* pEHEnum)
 {
     ICodeManager * pCodeManager = pFrameIter->GetCodeManager();
     pEHEnum->m_pCodeManager = pCodeManager;
@@ -50,7 +50,7 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator, (
     FC_RETURN_BOOL(pCodeManager->EHEnumInit(pFrameIter->GetMethodInfo(), &pMethodRegionInfoOut->hotStartAddress, &pEHEnum->m_state));
 }
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClause))
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumNext, EHEnum* pEHEnum, EHClause* pEHClause)
 {
     FC_RETURN_BOOL(pEHEnum->m_pCodeManager->EHEnumNext(&pEHEnum->m_state, pEHClause));
 }
@@ -58,7 +58,7 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHC
 // Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to
 // implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
 // found via the provided address does not have the necessary exports.
-COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, (void * address, ClasslibFunctionId functionId))
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, void * address, ClasslibFunctionId functionId)
 {
     return GetRuntimeInstance()->GetClasslibFunctionFromCodeAddress(address, functionId);
 }
@@ -66,18 +66,18 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, (void * addre
 // Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to
 // implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
 // found via the provided address does not have the necessary exports.
-COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEType, (MethodTable * pEEType, ClasslibFunctionId functionId))
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEType, MethodTable * pEEType, ClasslibFunctionId functionId)
 {
     return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
 }
 
-COOP_PINVOKE_HELPER(void, RhpValidateExInfoStack, ())
+COOP_PINVOKE_HELPER(void, RhpValidateExInfoStack)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
     pThisThread->ValidateExInfoStack();
 }
 
-COOP_PINVOKE_HELPER(void, RhpClearThreadDoNotTriggerGC, ())
+COOP_PINVOKE_HELPER(void, RhpClearThreadDoNotTriggerGC)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
 
@@ -87,7 +87,7 @@ COOP_PINVOKE_HELPER(void, RhpClearThreadDoNotTriggerGC, ())
     pThisThread->ClearDoNotTriggerGc();
 }
 
-COOP_PINVOKE_HELPER(void, RhpSetThreadDoNotTriggerGC, ())
+COOP_PINVOKE_HELPER(void, RhpSetThreadDoNotTriggerGC)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
 
@@ -97,12 +97,12 @@ COOP_PINVOKE_HELPER(void, RhpSetThreadDoNotTriggerGC, ())
     pThisThread->SetDoNotTriggerGc();
 }
 
-COOP_PINVOKE_HELPER(int32_t, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ const TCHAR** pModuleNameOut))
+COOP_PINVOKE_HELPER(int32_t, RhGetModuleFileName, HANDLE moduleHandle, _Out_ const TCHAR** pModuleNameOut)
 {
     return PalGetModuleFileName(pModuleNameOut, moduleHandle);
 }
 
-COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
+COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, PAL_LIMITED_CONTEXT * pPalContext)
 {
     ASSERT((size_t)cbOSContext >= sizeof(CONTEXT));
     CONTEXT* pContext = (CONTEXT *)pOSContext;
@@ -201,10 +201,10 @@ struct EXCEPTION_REGISTRATION_RECORD
 };
 #endif // HOST_X86
 
-PREEMPT_PINVOKE_HELPER(void, RhpFailFastForPInvokeExceptionPreemp, (intptr_t PInvokeCallsiteReturnAddr,
-                                                                    void* pExceptionRecord, void* pContextRecord));
-COOP_PINVOKE_HELPER_IMPORT(void, RhpFailFastForPInvokeExceptionCoop, (intptr_t PInvokeCallsiteReturnAddr,
-                                                                      void* pExceptionRecord, void* pContextRecord));
+PREEMPT_PINVOKE_HELPER(void, RhpFailFastForPInvokeExceptionPreemp, intptr_t PInvokeCallsiteReturnAddr,
+                                                                   void* pExceptionRecord, void* pContextRecord);
+COOP_PINVOKE_HELPER_IMPORT(void, RhpFailFastForPInvokeExceptionCoop, intptr_t PInvokeCallsiteReturnAddr,
+                                                                     void* pExceptionRecord, void* pContextRecord);
 int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
 EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
@@ -258,29 +258,29 @@ EXTERN_C int32_t RhpPInvokeExceptionGuard()
 #endif
 
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
-COOP_PINVOKE_HELPER(void, RhpThrowHwEx, (int exceptionCode, TADDR faultingIP));
+COOP_PINVOKE_HELPER(void, RhpThrowHwEx, int exceptionCode, TADDR faultingIP);
 #else
-COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
+COOP_PINVOKE_HELPER(void, RhpThrowHwEx)
 {
     ASSERT_UNCONDITIONALLY("RhpThrowHwEx NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpThrowEx, ())
+COOP_PINVOKE_HELPER(void, RhpThrowEx)
 {
     ASSERT_UNCONDITIONALLY("RhpThrowEx NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpCallCatchFunclet, ())
+COOP_PINVOKE_HELPER(void, RhpCallCatchFunclet)
 {
     ASSERT_UNCONDITIONALLY("RhpCallCatchFunclet NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpCallFinallyFunclet, ())
+COOP_PINVOKE_HELPER(void, RhpCallFinallyFunclet)
 {
     ASSERT_UNCONDITIONALLY("RhpCallFinallyFunclet NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpCallFilterFunclet, ())
+COOP_PINVOKE_HELPER(void, RhpCallFilterFunclet)
 {
     ASSERT_UNCONDITIONALLY("RhpCallFilterFunclet NYI for this architecture!");
 }
-COOP_PINVOKE_HELPER(void, RhpRethrow, ())
+COOP_PINVOKE_HELPER(void, RhpRethrow)
 {
     ASSERT_UNCONDITIONALLY("RhpRethrow NYI for this architecture!");
 }
@@ -607,7 +607,7 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
 #endif // TARGET_UNIX
 
-COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
+COOP_PINVOKE_HELPER(void, RhpFallbackFailFast)
 {
     RhFailFast();
 }
