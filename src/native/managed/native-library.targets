@@ -3,12 +3,6 @@
         <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
     </ItemGroup>
 
-    <!-- set a default include path, if there wasn't one already in the project -->
-    <ItemGroup>
-        <NativeLibraryCmakeFragmentIncludePath Condition="'@(NativeLibraryCmakeFragmentIncludePath->Count())' == '0' and Exists($([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)\..\inc')))" Include="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)\..\inc'))" />
-    </ItemGroup>
-
-
     <PropertyGroup>
         <!-- template for the cmake config file, used by the find_package(...) cmake function -->
         <NativeLibraryCmakeFindPackageConfigTemplateFile>$(MSBuildThisFileDirectory)Templates/native-lib.find_package-config.cmake.in</NativeLibraryCmakeFindPackageConfigTemplateFile>
@@ -51,16 +45,12 @@
             <NativeLibraryArtifactLibBasePath>$(PublishDir)/</NativeLibraryArtifactLibBasePath>
             <!-- cmake prefers unix-style paths even on windows -->
             <NativeLibraryArtifactLibBasePath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactLibBasePath.Replace('\', '/'))</NativeLibraryArtifactLibBasePath>
-            <!-- make a semicolon-separted list from the item group, then fixup the backslashes -->
-            <NativeLibraryArtifactIncludePath>@(NativeLibraryCmakeFragmentIncludePath, ';')</NativeLibraryArtifactIncludePath>
-            <NativeLibraryArtifactIncludePath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactIncludePath.Replace('\', '/'))</NativeLibraryArtifactIncludePath>
         </PropertyGroup>
 
         <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libArtifactName" Value="$(NativeLibraryArtifactName)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibBasePath" Value="$(NativeLibraryArtifactLibBasePath.TrimEnd('\/'))" />
-            <NativeLibraryCmakeFragmentProperties Include="libArtifactIncludePath" Value="$(NativeLibraryArtifactIncludePath.TrimEnd('\/'))" />
         </ItemGroup>
 
         <!-- make the import lib template arg for the shared library -->

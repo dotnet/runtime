@@ -5,7 +5,6 @@ set(NAME "${libArtifactName}")
 set(EXT "${libArtifactExt}")
 set(LIBBASEPATH "${libArtifactLibBasePath}")
 set(IMPLIBPATH "${libArtifactImpLibFullPath}")
-set(INCLUDE_DIRS "${libArtifactIncludePath}")
 
 add_library("${libArtifactName}::libs" "`${MODE}" IMPORTED GLOBAL)
 set_property(TARGET "${libArtifactName}::libs" PROPERTY IMPORTED_LOCATION "`${LIBBASEPATH}/`${NAME}`${EXT}")
@@ -13,5 +12,3 @@ if("`${CLR_CMAKE_HOST_WIN32}" AND "`${MODE}" STREQUAL "SHARED")
   set_property(TARGET "${libArtifactName}::libs" PROPERTY IMPORTED_IMPLIB "`${IMPLIBPATH}")
 endif()
 
-add_library("${libArtifactName}::headers" INTERFACE IMPORTED GLOBAL)
-target_include_directories("${libArtifactName}::headers" INTERFACE "`${INCLUDE_DIRS}")
