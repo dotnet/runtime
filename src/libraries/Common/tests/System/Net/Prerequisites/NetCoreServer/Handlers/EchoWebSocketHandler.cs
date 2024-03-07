@@ -144,6 +144,22 @@ namespace NetCoreServer
                     {
                         await Task.Delay(5000);
                     }
+                    else if (receivedMessage == ".receiveMessageAfterClose")
+                    {
+                        byte[] buffer = new byte[1024];
+                        string message1 = $"{receivedMessage} 1 {DateTime.Now.ToString("HH:mm:ss")}";
+                        buffer = System.Text.Encoding.UTF8.GetBytes(message1);
+                        var stamp = DateTime.Now.ToString("HH:mm:ss");
+                        Console.WriteLine($"[{stamp}]: Sending message: {message1}");
+                        await socket.SendAsync(
+                            new ArraySegment<byte>(buffer, 0, message1.Length),
+                            WebSocketMessageType.Text,
+                            true,
+                            CancellationToken.None);
+                        stamp = DateTime.Now.ToString("HH:mm:ss");
+                        Console.WriteLine($"[{stamp}] Closing the socket");
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                    }
                     else if (socket.State == WebSocketState.Open)
                     {
                         sendMessage = true;

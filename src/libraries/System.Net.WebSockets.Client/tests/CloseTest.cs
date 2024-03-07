@@ -367,6 +367,35 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server)
+        {
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                await cws.SendAsync(
+                    WebSocketData.GetBufferFromText(".receiveMessageAfterClose"),
+                    WebSocketMessageType.Text,
+                    true,
+                    cts.Token);
+
+                var recvBuffer = new ArraySegment<byte>(new byte[1024]);
+                await Task.Delay(2000); // even if we decrease to 100, it still fails with
+                // System.Net.WebSockets.WebSocketException : The WebSocket is in an invalid state ('Closed') for this operation. Valid states are: 'Open, CloseSent'
+                // in the manual demo we can wait even 6 sec and the message arrives just fine
+                var stamp = DateTime.Now.ToString("HH:mm:ss");
+                Console.WriteLine($"[{stamp}] Attempting to receive data... cws.State={cws.State}");
+                WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
+                var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
+                stamp = DateTime.Now.ToString("HH:mm:ss");
+                Console.WriteLine($"[{stamp}] Received message={message}");
+                Assert.Contains(".shutdownAfterTwoMessages 1", message);
+                Console.WriteLine($"cws.State={cws.State}");
+            }
+        }
+
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
