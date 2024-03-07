@@ -388,10 +388,13 @@ HCIMPLEND
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int64_min = (double)INT64_MIN;
     const double int64_max = (double)INT64_MAX;
-    return (val!= val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (INT64)val;
-    //return (INT64)val;
+    return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (INT64)val;
+#else // TARGET_ARM
+    return (INT64)val;
+#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 

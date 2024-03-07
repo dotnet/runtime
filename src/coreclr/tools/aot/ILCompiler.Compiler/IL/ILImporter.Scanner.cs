@@ -1273,10 +1273,18 @@ namespace Internal.IL
             {
                 case WellKnownType.SByte:
                 case WellKnownType.Int16:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "conv_i4_ovf");
+                    }
+                    break;
                 case WellKnownType.Int32:
                     if (checkOverflow)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "conv_i4_ovf");
+                    }
+                    else{
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2Int), "conv_i4");
                     }
                     break;
                 case WellKnownType.Int64:
@@ -1287,10 +1295,19 @@ namespace Internal.IL
                     break;
                 case WellKnownType.Byte:
                 case WellKnownType.UInt16:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u8_ovf");
+                    }
+                    break;
                 case WellKnownType.UInt32:
                     if (checkOverflow)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u8_ovf");
+                    }
+                    else
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UInt), "conv_u4");
                     }
                     break;
                 case WellKnownType.UInt64:
