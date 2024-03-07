@@ -56,5 +56,3 @@ variables:
               or(
                 ne(variables['isExtraPlatformsBuild'], true),
                 eq(variables['isRollingBuild'], true))) ]
-
-- template: /eng/pipelines/common/perf-variables.yml
