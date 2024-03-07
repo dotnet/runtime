@@ -468,6 +468,9 @@ static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
 // Returns the encoding to select 'index2' for an Arm64 'ins' elem instruction
 static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 
+// Returns the encoding for an immediate in the SVE variant of dup (indexed)
+static code_t insEncodeSveBroadcastIndex(emitAttr elemsize, ssize_t index);
+
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
