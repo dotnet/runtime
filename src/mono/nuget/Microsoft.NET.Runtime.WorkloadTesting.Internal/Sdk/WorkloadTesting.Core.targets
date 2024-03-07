@@ -203,6 +203,7 @@
                      ExtraWorkloadInstallCommandArguments="$(ExtraWorkloadInstallCommandArguments)"
                      TemplateNuGetConfigPath="$(TemplateNuGetConfigPathForWorkloadTesting)"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     WorkloadInstallCommandOutputImportance="$(WorkloadInstallCommandOutputImportance)"
                      IntermediateOutputPath="$(ArtifactsObjDir)"
                      SkipTempDirectoryCleanup="$(SkipTempDirectoryCleanup)"
       />

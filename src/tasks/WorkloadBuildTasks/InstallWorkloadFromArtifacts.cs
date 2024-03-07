@@ -47,6 +47,9 @@ namespace Microsoft.Workload.Build.Tasks
         public bool           OnlyUpdateManifests { get; set; }
         public bool           SkipTempDirectoryCleanup { get; set; }
 
+        // Should match enum values for MessageImportance - Low, Normal (default), High
+        public string?        WorkloadInstallCommandOutputImportance { get; set; }
+
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
@@ -217,6 +220,12 @@ namespace Microsoft.Workload.Build.Tasks
             string nugetConfigPath = Path.Combine(_tempDir, $"NuGet.{Path.GetRandomFileName()}.config");
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
+            if (string.IsNullOrEmpty(WorkloadInstallCommandOutputImportance) ||
+                !Enum.TryParse<MessageImportance>(WorkloadInstallCommandOutputImportance, out var outputImportance))
+            {
+                outputImportance = MessageImportance.Normal;
+            }
+
             // Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** dotnet workload install {req.WorkloadId} **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
@@ -228,7 +237,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
                                                     silent: false,
-                                                    debugMessageImportance: MessageImportance.Normal);
+                                                    debugMessageImportance: outputImportance);
             if (exitCode != 0)
             {
                 if (req.IgnoreErrors)

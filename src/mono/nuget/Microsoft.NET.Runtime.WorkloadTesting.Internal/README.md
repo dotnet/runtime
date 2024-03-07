@@ -9,6 +9,8 @@ Tasks, and targets to support workload testing in `dotnet` repositories.
 - `$(SkipTempDirectoryCleanup)` - optional
 - `$(VersionBandForManifestPackages)` - optional
 - `$(ExtraWorkloadInstallCommandArguments)` - optional
+- `$(WorkloadInstallCommandOutputImportance)` - optional
+- `$(TemplateNuGetConfigPathForWorkloadTesting)` - optional
 
 ## items
 
