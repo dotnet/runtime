@@ -834,9 +834,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgRemoveRefPred(fgFirstBB->GetTargetEdge());
-                    FlowEdge* const newEdge = fgAddRefPred(entryJumpTarget, fgFirstBB, fgFirstBB->GetTargetEdge());
-                    fgFirstBB->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(fgFirstBB, entryJumpTarget);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1570,9 +1568,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             {
-                fgRemoveRefPred(block->GetTargetEdge());
-                FlowEdge* const newEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetTargetEdge());
-                block->SetTargetEdge(newEdge);
+                fgRedirectTargetEdge(block, bDest->GetTarget());
                 break;
             }
 
@@ -1890,6 +1886,27 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgRemoveRefPred(oldEdge);
             FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, oldEdge);
             *jmpTab                 = newEdge;
+
+            // Update edge likelihoods
+            // Note old edge may still be "in use" so we decrease its likelihood.
+            //
+            if (oldEdge->hasLikelihood())
+            {
+                // We want to move this much likelihood from old->new
+                //
+                const weight_t likelihoodFraction = oldEdge->getLikelihood() / (oldEdge->getDupCount() + 1);
+
+                if (newEdge->getDupCount() == 1)
+                {
+                    newEdge->setLikelihood(likelihoodFraction);
+                }
+                else
+                {
+                    newEdge->addLikelihood(likelihoodFraction);
+                }
+
+                oldEdge->addLikelihood(-likelihoodFraction);
+            }
 
             // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
             modified = true;
@@ -2903,11 +2920,24 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
-    /* Update bbRefs and bbPreds */
+    // Update bbRefs and bbPreds
+    //
+    // For now we set the likelihood of the new branch to match
+    // the likelihood of the old branch.
+    //
+    // This may or may not match the block weight adjustments we're
+    // making. All this becomes easier to reconcile once we rely on
+    // edge likelihoods more and have synthesis running.
+    //
+    // Until then we won't worry that edges and blocks are potentially
+    // out of sync.
+    //
+    FlowEdge* const destFalseEdge = bDest->GetFalseEdge();
+    FlowEdge* const destTrueEdge  = bDest->GetTrueEdge();
 
     // bJump now falls through into the next block
     //
-    FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump);
+    FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump, destFalseEdge);
 
     // bJump no longer jumps to bDest
     //
@@ -2915,7 +2945,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     // bJump now jumps to bDest's normal jump target
     //
-    FlowEdge* const trueEdge = fgAddRefPred(bDestNormalTarget, bJump);
+    FlowEdge* const trueEdge = fgAddRefPred(bDestNormalTarget, bJump, destTrueEdge);
 
     bJump->SetCond(trueEdge, falseEdge);
 
@@ -3076,7 +3106,9 @@ bool Compiler::fgOptimizeSwitchJumps()
         newBlock->setBBProfileWeight(blockToNewBlockWeight);
 
         blockToTargetEdge->setEdgeWeights(blockToTargetWeight, blockToTargetWeight, dominantTarget);
+        blockToTargetEdge->setLikelihood(fraction);
         blockToNewBlockEdge->setEdgeWeights(blockToNewBlockWeight, blockToNewBlockWeight, block);
+        blockToNewBlockEdge->setLikelihood(max(0, 1.0 - fraction));
 
         // There may be other switch cases that lead to this same block, but there's just
         // one edge in the flowgraph. So we need to subtract off the profile data that now flows
@@ -5020,11 +5052,20 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         }
 
                         // Optimize the Conditional JUMP to go to the new target
-                        fgRemoveRefPred(block->GetFalseEdge());
-                        fgRemoveRefPred(bNext->GetTargetEdge());
-                        block->SetFalseEdge(block->GetTrueEdge());
-                        FlowEdge* const newEdge = fgAddRefPred(bNext->GetTarget(), block, bNext->GetTargetEdge());
-                        block->SetTrueEdge(newEdge);
+                        //
+                        FlowEdge* const oldFalseEdge = block->GetFalseEdge();
+                        FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
+                        FlowEdge* const oldNextEdge  = bNext->GetTargetEdge();
+
+                        // bNext no longer flows to target
+                        //
+                        fgRemoveRefPred(oldNextEdge);
+
+                        // Rewire flow from block
+                        //
+                        block->SetFalseEdge(oldTrueEdge);
+                        FlowEdge* const newTrueEdge = fgAddRefPred(bNext->GetTarget(), block, oldFalseEdge);
+                        block->SetTrueEdge(newTrueEdge);
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
