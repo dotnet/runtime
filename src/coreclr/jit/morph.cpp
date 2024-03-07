@@ -14679,15 +14679,20 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
             thenBlock->SetFlags(BBF_IMPORTED);
         }
 
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
+
         FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
         thenBlock->SetTargetEdge(newEdge);
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
-        condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);
-
-        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
-        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
+        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
+        thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
+        elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasTrueExpr)
     {
@@ -14699,15 +14704,21 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //
         gtReverseCond(condExpr);
 
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
+
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
-        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
 
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
 
-        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
+        thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasFalseExpr)
     {
@@ -14717,11 +14728,17 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
-        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
-        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
+
+        elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
 
     assert(condBlock->KindIs(BBJ_COND));

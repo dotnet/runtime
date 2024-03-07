@@ -13058,6 +13058,11 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    public sealed partial class ParamCollectionAttribute : System.Attribute
+    {
+        public ParamCollectionAttribute() { }
+    }
     public partial struct PoolingAsyncValueTaskMethodBuilder
     {
         private object _dummy;

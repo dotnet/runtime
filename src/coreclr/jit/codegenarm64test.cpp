@@ -6760,20 +6760,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_EB_1A
     theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V0, -128,
                             INS_OPTS_SCALABLE_B); // DUP <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V1, 0, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // DUP <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V1, 0,
+                            INS_OPTS_SCALABLE_H); // DUP <Zd>.<T>, #<imm>{, <shift>}
     theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V2, 5,
                             INS_OPTS_SCALABLE_S); // DUP <Zd>.<T>, #<imm>{, <shift>}
     theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V3, 127,
                             INS_OPTS_SCALABLE_D); // DUP <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0,
-                            INS_OPTS_SCALABLE_B); // MOV <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, -128, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 5, INS_OPTS_SCALABLE_S,
-                            INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 127, INS_OPTS_SCALABLE_D,
-                            INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 256,
+                            INS_OPTS_SCALABLE_D); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, -32768,
+                            INS_OPTS_SCALABLE_H); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 1280,
+                            INS_OPTS_SCALABLE_S); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 32512,
+                            INS_OPTS_SCALABLE_D); // MOV <Zd>.<T>, #<imm>{, <shift>}
 
     // IF_SVE_EB_1B
     theEmitter->emitIns_R(INS_sve_fmov, EA_SCALABLE, REG_V0, INS_OPTS_SCALABLE_B); // FMOV <Zd>.<T>, #0.0
@@ -6784,18 +6784,18 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_EC_1A
     theEmitter->emitIns_R_I(INS_sve_add, EA_SCALABLE, REG_V0, 0,
                             INS_OPTS_SCALABLE_B); // ADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_sqadd, EA_SCALABLE, REG_V1, 0, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // SQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_sqsub, EA_SCALABLE, REG_V2, 1,
+    theEmitter->emitIns_R_I(INS_sve_sqadd, EA_SCALABLE, REG_V1, 5,
+                            INS_OPTS_SCALABLE_H); // SQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_sqsub, EA_SCALABLE, REG_V2, 128,
                             INS_OPTS_SCALABLE_S); // SQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_sub, EA_SCALABLE, REG_V3, 128,
+    theEmitter->emitIns_R_I(INS_sve_sub, EA_SCALABLE, REG_V3, 255,
                             INS_OPTS_SCALABLE_D); // SUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_subr, EA_SCALABLE, REG_V4, 255,
-                            INS_OPTS_SCALABLE_B); // SUBR <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_uqadd, EA_SCALABLE, REG_V5, 5, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // UQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_uqsub, EA_SCALABLE, REG_V6, 255, INS_OPTS_SCALABLE_S,
-                            INS_SCALABLE_OPTS_SHIFT); // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_subr, EA_SCALABLE, REG_V4, 256,
+                            INS_OPTS_SCALABLE_D); // SUBR <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_uqadd, EA_SCALABLE, REG_V5, 1280,
+                            INS_OPTS_SCALABLE_H); // UQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_uqsub, EA_SCALABLE, REG_V6, 65280,
+                            INS_OPTS_SCALABLE_S); // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
 
     // IF_SVE_EG_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_sdot, EA_SCALABLE, REG_V1, REG_V2, REG_V0, 0,
