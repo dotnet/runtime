@@ -4850,11 +4850,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
 
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
@@ -4882,6 +4877,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // nodes properly linked.
     //
     DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     fgNodeThreading = NodeThreading::AllTrees;
 
