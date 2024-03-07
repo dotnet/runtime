@@ -177,6 +177,7 @@ function _js_owned_object_finalized(gc_handle: GCHandle): void {
         // We're shutting down, so don't bother doing anything else.
         return;
     }
+    mono_log_warn("_js_owned_object_finalized " + gc_handle);
     teardown_managed_proxy(null, gc_handle);
 }
 

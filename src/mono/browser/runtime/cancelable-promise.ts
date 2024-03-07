@@ -8,7 +8,7 @@ import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
 import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
-import { mono_log_debug } from "./logging";
+import { mono_log_debug, mono_log_warn } from "./logging";
 import { settleUnsettledPromise } from "./pthreads";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
@@ -151,6 +151,7 @@ export class PromiseHolder extends ManagedObject {
                 settleUnsettledPromise();
             }
 
+            mono_log_warn("complete_task " + this.gc_handle);
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(this, this.gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters

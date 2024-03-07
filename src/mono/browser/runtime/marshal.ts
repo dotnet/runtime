@@ -11,6 +11,7 @@ import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerAr
 import { TypedArray, VoidPtr } from "./types/emscripten";
 import { utf16ToString } from "./strings";
 import { get_managed_stack_trace } from "./managed-exports";
+import { mono_log_warn } from "./logging";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -373,6 +374,7 @@ export interface IDisposable {
 
 export class ManagedObject implements IDisposable {
     dispose(): void {
+        mono_log_warn("ManagedObject.dispose " + (<any>this)[js_owned_gc_handle_symbol]);
         teardown_managed_proxy(this, GCHandleNull);
     }
 
@@ -428,6 +430,7 @@ export class ManagedError extends Error implements IDisposable {
     }
 
     dispose(): void {
+        mono_log_warn("ManagedError.dispose " + (<any>this)[js_owned_gc_handle_symbol]);
         teardown_managed_proxy(this, GCHandleNull);
     }
 
@@ -556,6 +559,7 @@ export class ArraySegment extends MemoryView {
     }
 
     dispose(): void {
+        mono_log_warn("ArraySegment.dispose " + (<any>this)[js_owned_gc_handle_symbol]);
         teardown_managed_proxy(this, GCHandleNull);
     }
 

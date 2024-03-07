@@ -23,6 +23,7 @@ import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } fr
 import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
 import { gc_locked } from "./gc-lock";
+import { mono_log_warn } from "./logging";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -207,6 +208,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
         result.dispose = () => {
             if (!result.isDisposed) {
                 result.isDisposed = true;
+                mono_log_warn("_marshal_delegate_to_js " + gc_handle);
                 teardown_managed_proxy(result, gc_handle);
             }
         };
