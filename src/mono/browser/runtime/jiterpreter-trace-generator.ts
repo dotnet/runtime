@@ -37,7 +37,7 @@ import {
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
-    nullCheckCaching, traceBackBranches,
+    nullCheckCaching, defaultTraceBackBranches,
     maxCallHandlerReturnAddresses,
 
     mostRecentOptions,
@@ -219,14 +219,17 @@ export function generateWasmBody(
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
+
     eraseInferredState();
 
-    // Skip over the enter opcode
-    const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
-    ip += <any>(enterSizeU16 * 2);
-    let rip = ip;
+    // If a trace is instrumented, also activate back branch tracing
+    builder.backBranchTraceLevel = instrumentedTraceId
+        ? 2
+        : defaultTraceBackBranches;
 
-    builder.cfg.entry(ip);
+    // Record the address of our prepare_jiterpreter opcode as the entry point, not the opcode after it.
+    // Some back-branches will target prepare_jiterpreter directly, and we need them to work.
+    let rip = builder.cfg.entry(ip);
 
     while (ip) {
         // This means some code went 'ip = abort; continue'
@@ -301,7 +304,7 @@ export function generateWasmBody(
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
         if (isBackBranchTarget) {
-            if (traceBackBranches > 1)
+            if (builder.backBranchTraceLevel > 1)
                 mono_log_info(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
             builder.backBranchOffsets.push(ip);
         }
@@ -378,7 +381,20 @@ export function generateWasmBody(
                 builder.callImport("localloc");
                 break;
             }
-            case MintOpcode.MINT_INITOBJ: {
+            case MintOpcode.MINT_ZEROBLK: {
+                // dest
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                // value
+                builder.i32_const(0);
+                // count
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                // memset
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(11);
+                builder.appendU8(0);
+                break;
+            }
+            case MintOpcode.MINT_ZEROBLK_IMM: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
                 break;
@@ -1512,7 +1528,7 @@ export function generateWasmBody(
                     } else
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDC_I4_M1) &&
+                    (opcode >= MintOpcode.MINT_LDC_I4_0) &&
                     (opcode <= MintOpcode.MINT_LDC_R8)
                 ) {
                     if (!emit_ldc(builder, ip, opcode))
@@ -2597,6 +2613,8 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
 
         case MintOpcode.MINT_ADD_I4_IMM:
         case MintOpcode.MINT_MUL_I4_IMM:
+        case MintOpcode.MINT_AND_I4_IMM:
+        case MintOpcode.MINT_OR_I4_IMM:
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
@@ -2604,6 +2622,14 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I4_IMM2:
+        case MintOpcode.MINT_MUL_I4_IMM2:
+        case MintOpcode.MINT_AND_I4_IMM2:
+        case MintOpcode.MINT_OR_I4_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i32_const(getArgI32(ip, 3));
             break;
 
         case MintOpcode.MINT_ADD_I8_IMM:
@@ -2615,6 +2641,12 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I8_IMM2:
+        case MintOpcode.MINT_MUL_I8_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i52_const(getArgI32(ip, 3));
             break;
 
         default:
@@ -2710,8 +2742,8 @@ function emit_branch(
                     // We found a backward branch target we can branch to, so we branch out
                     //  to the top of the loop body
                     // append_safepoint(builder, ip);
-                    if (traceBackBranches > 1)
-                        mono_log_info(`performing backward branch to 0x${destination.toString(16)}`);
+                    if (builder.backBranchTraceLevel > 1)
+                        mono_log_info(`0x${(<any>ip).toString(16)} performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
                         append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
@@ -2719,9 +2751,9 @@ function emit_branch(
                     return true;
                 } else {
                     if (destination < builder.cfg.entryIp) {
-                        if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                            mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-                    } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                            mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+                    } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                         mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
@@ -2791,15 +2823,15 @@ function emit_branch(
         if (builder.backBranchOffsets.indexOf(destination) >= 0) {
             // We found a backwards branch target we can reach via our outer trace loop, so
             //  we update eip and branch out to the top of the loop block
-            if (traceBackBranches > 1)
-                mono_log_info(`performing conditional backward branch to 0x${destination.toString(16)}`);
+            if (builder.backBranchTraceLevel > 1)
+                mono_log_info(`0x${(<any>ip).toString(16)} performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.cfg.branch(destination, true, isSafepoint ? CfgBranchType.SafepointConditional : CfgBranchType.Conditional);
             modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
         } else {
             if (destination < builder.cfg.entryIp) {
-                if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                    mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-            } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                    mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+            } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                 mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );

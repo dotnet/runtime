@@ -148,14 +148,14 @@ private:
         block->SetFlags(BBF_INTERNAL);
         helperBlock->SetFlags(BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
+        assert(block->TargetIs(remainderBlock));
         FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
-        FlowEdge* const trueEdge  = compiler->fgGetPredForBlock(remainderBlock, block);
+        FlowEdge* const trueEdge  = block->GetTargetEdge();
         trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
         falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
         block->SetCond(trueEdge, falseEdge);
 
         FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
-        newEdge->setLikelihood(1.0);
         helperBlock->SetTargetEdge(newEdge);
 
         // Update weights

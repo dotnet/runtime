@@ -2323,6 +2323,11 @@ class FlowGraphDominatorTree
 
     static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
@@ -2357,23 +2362,28 @@ public:
 // exceptional flow, then CanReach returns false.
 class BlockReachabilitySets
 {
-    FlowGraphDfsTree* m_dfsTree;
+    const FlowGraphDfsTree* m_dfsTree;
     BitVec* m_reachabilitySets;
 
-    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+    BlockReachabilitySets(const FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
         : m_dfsTree(dfsTree)
         , m_reachabilitySets(reachabilitySets)
     {
     }
 
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     bool CanReach(BasicBlock* from, BasicBlock* to);
 
 #ifdef DEBUG
     void Dump();
 #endif
 
-    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
+    static BlockReachabilitySets* Build(const FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -4367,7 +4377,7 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg);
 
 #ifdef SWIFT_SUPPORT
     void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
@@ -5878,8 +5888,6 @@ public:
 
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred);
 
-    FlowEdge* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
-
     void fgRemoveRefPred(FlowEdge* edge);
 
     FlowEdge* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
@@ -6097,7 +6105,7 @@ public:
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
-    void fgDebugCheckDfsTree();
+    void fgDebugCheckFlowGraphAnnotations();
 
 #endif // DEBUG
 
@@ -6676,6 +6684,8 @@ private:
 
 public:
     bool fgIsBigOffset(size_t offset);
+
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset);
 
 private:
     bool fgNeedReturnSpillTemp();
@@ -9221,6 +9231,7 @@ public:
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
+        // | riscv64     |    64  |    32  | no SIMD support
         //
         // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //

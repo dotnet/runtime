@@ -531,12 +531,16 @@ static code_t insEncodeSveElemsize_22_to_21(emitAttr size);
 static code_t insEncodeSveElemsize_18_to_17(emitAttr size);
 
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the field 'sz' at bit location '20'.
+static code_t insEncodeSveElemsize_sz_20(emitAttr size);
+
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the field 'sz' at bit location '21'.
 static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
-// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
-static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:20-19'.
+static code_t insEncodeSveElemsize_tszh_23_tszl_20_to_19(emitAttr size);
 
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30' or
 // '21'.
@@ -548,6 +552,9 @@ static code_t insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ss
 
 // Returns the encoding for the field 'tszh:tszl:imm3' at bit locations '23-22:20-19:18-16'.
 static code_t insEncodeSveElemsizeWithShift_tszh_tszl_imm3(const insOpts opt, ssize_t imm, bool isRightShift);
+
+// Returns the encoding for the field 'i1:tsz' at bit locations '20:19-16'.
+static code_t insEncodeSveElemsizeWithImmediate_i1_tsz(const insOpts opt, ssize_t imm);
 
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
@@ -684,6 +691,9 @@ static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
 static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 5-bits at bit locations '9-5'.
+static code_t insEncodeSimm5_9_to_5(ssize_t imm);
+
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
@@ -717,6 +727,9 @@ static code_t insEncodeImm1_22(ssize_t imm);
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
+// Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
+static code_t insEncodeUimm4_19_to_16(ssize_t imm);
+
 // Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
 static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
@@ -728,6 +741,9 @@ static code_t insEncodeUimm6_21_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
+
+// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+static code_t insEncodeUimm3_12_to_10(ssize_t imm);
 
 // Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
 static code_t insEncodeUimm3_18_to_16(ssize_t imm);
@@ -742,6 +758,12 @@ static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
 // Returns the immediate value for instructions that encode it as a difference from tszh:tszl:imm3.
 static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
+
+// Returns the two 5-bit signed immediates encoded as one ssize_t.
+static ssize_t insEncodeTwoSimm5(ssize_t imm1, ssize_t imm2);
+
+// Decodes imm into two 5-bit signed immediates, using the encoding format from insEncodeTwoSimm5.
+static void insDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2);
 
 // Returns the encoding to select an insSvePattern
 static code_t insEncodeSvePattern(insSvePattern pattern);
@@ -897,6 +919,12 @@ static bool isValidUimm5From1(ssize_t value)
     return (1 <= value) && (value <= 0x20);
 };
 
+// Returns true if 'value' is a legal unsigned immediate 6 bit encoding, starting from 1 (such as for XAR).
+static bool isValidUimm6From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 0x40);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).
 static bool isValidUimm7(ssize_t value)
 {
@@ -913,6 +941,12 @@ static bool isValidUimm8(ssize_t value)
 static bool isValidSimm8(ssize_t value)
 {
     return (-0x80 <= value) && (value <= 0x7F);
+};
+
+// Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
+static bool isValidSimm8_MultipleOf256(ssize_t value)
+{
+    return (-0x8000 <= value) && (value <= 0x7f00) && (value % 256 == 0);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
@@ -1580,12 +1614,13 @@ void emitIns_R_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumbe
 void emitIns_R_R_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCflags flags, insCond cond);
 
-void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, int imm, insCflags flags, insCond cond);
+void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, ssize_t imm, insCflags flags, insCond cond);
 
 void emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
 
-void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
+void emitIns_R_PATTERN_I(
+    instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_PRFOP_R_R_R(instruction     ins,
                          emitAttr        attr,
