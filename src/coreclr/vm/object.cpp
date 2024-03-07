@@ -22,8 +22,7 @@
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 
 // follow the necessary rules to get a new valid hashcode for an object
-//If you call this version of ComputeHashCode that takes the thread parameter, you must ensure no other call runs concurrently.
-DWORD Object::ComputeHashCode(Thread *pThread)
+DWORD Object::ComputeHashCode()
 {
     DWORD hashCode;
     // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
@@ -32,6 +31,7 @@ DWORD Object::ComputeHashCode(Thread *pThread)
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
+    Thread *pThread = GetThreadNULLOk();
     do
     {
         if (pThread == NULL)
@@ -53,14 +53,8 @@ DWORD Object::ComputeHashCode(Thread *pThread)
     return hashCode;
 }
 
-DWORD Object::ComputeHashCode()
-{
-    return ComputeHashCode(GetThread());
-}
-
 #ifndef DACCESS_COMPILE
-//If you call this version of GetHashCodeEx that takes the thread parameter, you must ensure no other call runs concurrently.
-INT32 Object::GetHashCodeEx(Thread *pThread)
+INT32 Object::GetHashCodeEx()
 {
     CONTRACTL
     {
@@ -96,7 +90,7 @@ INT32 Object::GetHashCodeEx(Thread *pThread)
                 if (hashCode != 0)
                     return  hashCode;
 
-                hashCode = ComputeHashCode(pThread);
+                hashCode = ComputeHashCode();
 
                 return psb->SetHashCode(hashCode);
             }
@@ -128,7 +122,7 @@ INT32 Object::GetHashCodeEx(Thread *pThread)
                     continue;
                 }
 
-                DWORD hashCode = ComputeHashCode(pThread);
+                DWORD hashCode = ComputeHashCode();
 
                 DWORD newBits = bits | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | hashCode;
 
@@ -138,11 +132,6 @@ INT32 Object::GetHashCodeEx(Thread *pThread)
             }
         }
     }
-}
-
-INT32 Object::GetHashCodeEx()
-{
-    return GetHashCodeEx(GetThread());
 }
 #endif // #ifndef DACCESS_COMPILE
 

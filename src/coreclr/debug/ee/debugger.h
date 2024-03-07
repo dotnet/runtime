@@ -539,56 +539,47 @@ typedef DPTR(struct DebuggerPendingFuncEval) PTR_DebuggerPendingFuncEval;
  * SHash to hold weak object handles of exceptions with ForceCatchHandlerFound equal to true
  * ------------------------------------------------------------------------ */
 #ifndef DACCESS_COMPILE
-struct ObjectHandle_Hash
-{
-    OBJECTHANDLE m_handle;
-    INT32 m_hashCode;
-};
-class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<ObjectHandle_Hash>
+class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
 {
     public:
-        typedef ObjectHandle_Hash element_t;
-        typedef ObjectHandle_Hash key_t;
+        typedef OBJECTHANDLE element_t;
+        typedef OBJECTHANDLE key_t;
         static const bool s_supports_autoremove = true;
         static const bool s_NoThrow = false;
 
-        static BOOL Equals(const ObjectHandle_Hash &e, const ObjectHandle_Hash &f)
+        static BOOL Equals(const OBJECTHANDLE &e, const OBJECTHANDLE &f)
         {
-            return ObjectFromHandle(e.m_handle) == ObjectFromHandle(f.m_handle);
+            return ObjectFromHandle(e) == ObjectFromHandle(f);
         }
-        static ObjectHandle_Hash GetKey(const ObjectHandle_Hash &e)
+        static OBJECTHANDLE GetKey(const OBJECTHANDLE &e)
         {
             return e;
         }
-        static INT32 Hash(const ObjectHandle_Hash &e)
+        static INT32 Hash(const OBJECTHANDLE &e)
         {
-            return e.m_hashCode;
+            return ObjectFromHandle(e)->GetHashCodeEx();
         }
-        static bool ShouldDelete(const ObjectHandle_Hash &e)
+        static bool ShouldDelete(const OBJECTHANDLE &e)
         {
-            return ObjectHandleIsNull(e.m_handle);
+            return ObjectHandleIsNull(e);
         }
-        static ObjectHandle_Hash Null()
+        static OBJECTHANDLE Null()
         {
-            ObjectHandle_Hash e;
-            e.m_handle = (OBJECTHANDLE)(TADDR)0;
-            e.m_hashCode = 0;
+            OBJECTHANDLE e = (OBJECTHANDLE)(TADDR)0;
             return e;
         }
-        static bool IsNull(const ObjectHandle_Hash &e)
+        static bool IsNull(const OBJECTHANDLE &e)
         {
-            return e.m_handle == (OBJECTHANDLE)(TADDR)0;
+            return e == (OBJECTHANDLE)(TADDR)0;
         }
-        static ObjectHandle_Hash Deleted()
+        static OBJECTHANDLE Deleted()
         {
-            ObjectHandle_Hash e;
-            e.m_handle = (OBJECTHANDLE)(TADDR)-1;
-            e.m_hashCode = -1;
+            OBJECTHANDLE e = (OBJECTHANDLE)(TADDR)-1;
             return e;
         }
-        static bool IsDeleted(const ObjectHandle_Hash &e)
+        static bool IsDeleted(const OBJECTHANDLE &e)
         {
-            return e.m_handle == (OBJECTHANDLE)(TADDR)-1;
+            return e == (OBJECTHANDLE)(TADDR)-1;
         }
         //implement a delete function to free the object handle, object handles take space outside of the dictionary
 };
@@ -2278,7 +2269,7 @@ public:
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
-    HRESULT InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain, Thread *pThread);
+    HRESULT InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
 
     //
     // The debugger mutex is used to protect any "global" Left Side

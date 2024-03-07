@@ -2259,14 +2259,6 @@ public:
     DWORD       GetThreadId()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        if (m_ThreadId == UNINITIALIZED_THREADID)
-        {
-            volatile bool loop = true;
-            while (loop)
-            {
-                printf("Attach to %u...\n", GetCurrentProcessId());
-            }
-        }
         _ASSERTE(m_ThreadId != UNINITIALIZED_THREADID);
         return m_ThreadId;
     }

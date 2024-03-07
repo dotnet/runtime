@@ -7283,7 +7283,6 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
         PRECONDITION(CheckPointer(pThread));
     }
     CONTRACTL_END;
-    printf("Inside the sendExceptionHelperAndBlock\n");
     HRESULT     hr = S_OK;
 
     // This is a normal event to send from LS to RS
@@ -7360,7 +7359,6 @@ void Debugger::SendExceptionEventsWorker(
     FramePointer framePointer,
     bool atSafePlace)
 {
-    printf("Inside the sendExceptionEventsWorker\n");
     HRESULT hr = S_OK;
 
     ThreadExceptionState* pExState = pThread->GetExceptionState();
@@ -7406,7 +7404,7 @@ void Debugger::SendExceptionEventsWorker(
     }
 
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-    printf("Right before fFirstChance its value is %s\n", fFirstChance ? "true" : "false");
+
     if (fFirstChance)
     {
         // We can call into this method when there is no exception in progress to alert
@@ -7454,7 +7452,6 @@ void Debugger::SendExceptionEventsWorker(
                 }
             } // end of GCX_CCOP_EEINTERFACE();
         } //end if (m_sendExceptionsOutsideOfJMC && !SentDebugFirstChance())
-        printf("After the if statement where I could do something\n");
         //
         // If this is a JMC function, then we send a USER's first chance as well.
         //
@@ -7462,7 +7459,6 @@ void Debugger::SendExceptionEventsWorker(
             pDebugMethodInfo->IsJMCFunction() &&
             !pExState->GetFlags()->SentDebugUserFirstChance())
         {
-            printf("This is inside the JMC function if statement.\n");
             SENDIPCEVENT_BEGIN(this, pThread);
 
             InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, pThread->GetDomain());
@@ -7490,7 +7486,6 @@ void Debugger::SendExceptionEventsWorker(
             SENDIPCEVENT_END;
 
         } // end if (!SentDebugUserFirstChance)
-        printf("End if !SentDebugUserFirstChance\n");
 
     } // end if (firstChance)
     else
@@ -7527,7 +7522,6 @@ void Debugger::SendExceptionEventsWorker(
         }
 
     } // end if (!firstChance)
-    printf("End of SendExceptionEventsWorker\n");
 }
 
 //
@@ -7582,7 +7576,6 @@ HRESULT Debugger::SendException(Thread *pThread,
         PRECONDITION((pThread->GetFilterContext() == NULL) || !fFirstChance);
     }
     CONTRACTL_END;
-    printf("We are in the SendException function.\n");
     LOG((LF_CORDB, LL_INFO10000, "D::SendException\n"));
 
     if (CORDBUnrecoverableError(this))
@@ -7633,7 +7626,6 @@ HRESULT Debugger::SendException(Thread *pThread,
             // Send the exception events. Even in jit-attach case, we should now be fully attached.
             if (CORDebuggerAttached())
             {
-                printf("Cordebuggerattached\n");
                 // Initialize frame-pointer associated with exception notification.
                 LPVOID stackPointer;
                 if ((currentSP == 0) && (pExState->GetContextRecord() != NULL))
@@ -7645,7 +7637,6 @@ HRESULT Debugger::SendException(Thread *pThread,
                     stackPointer = (LPVOID)currentSP;
                 }
                 FramePointer framePointer = FramePointer::MakeFramePointer(stackPointer);
-                printf("After the frame pointer has been made.\n");
 
                 // Do the real work of sending the events
                 SendExceptionEventsWorker(
@@ -7659,7 +7650,6 @@ HRESULT Debugger::SendException(Thread *pThread,
             }
             else
             {
-                printf("Skipping SendIPCEvent because not supposed to send anything, or RS detached.\n");
                 LOG((LF_CORDB,LL_INFO100, "D:SE: Skipping SendIPCEvent because not supposed to send anything, or RS detached.\n"));
             }
         }
@@ -7672,7 +7662,6 @@ HRESULT Debugger::SendException(Thread *pThread,
             ProcessAnyPendingEvals(pThread);
         }
     }
-    printf("If managedevent needed\n");
     if (CORDebuggerAttached())
     {
         return S_FALSE;
@@ -7781,7 +7770,6 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
         PRECONDITION(CORDebuggerAttached());
     }
     CONTRACTL_END;
-    printf("We are in the FirstChanceManagedException function.\n");
     LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
 
     _ASSERTE(GetThreadNULLOk() != NULL);
@@ -7824,7 +7812,6 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
         MODE_ANY;
     }
     CONTRACTL_END;
-    printf("We are in the FirstChanceManagedExceptionCatcherFound function.\n");
     // @@@
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
@@ -7861,10 +7848,8 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
         OBJECTREF exRef = pExState->GetThrowable();
         AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
         OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
-        INT32 objHash = ObjectFromHandle(objHandle)->GetHashCodeEx(pThread);
-        ObjectHandle_Hash objHandleHash = {objHandle, objHash};
-        ObjectHandle_Hash retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandleHash); //destroy handle
-        if (retrievedHandle.m_handle != NULL)
+        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+        if (retrievedHandle != NULL)
         {
             forceSendCatchHandlerFound = TRUE;
         }
@@ -7931,14 +7916,12 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // @@@
     // Implements DebugInterface
     // Can only be called from EE
-    printf("We are in the NotifyOfCHFFilter function.\n");
     // If no debugger is attached, then don't bother sending the events.
     // This can't kick off a jit-attach.
     if (!CORDebuggerAttached())
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
-    printf("Before the GetThreadNULLOk function.\n");
     //
     // If this exception has never bubbled thru to managed code, then there is no
     // useful information for the debugger and, in fact, it may be a completely
@@ -7989,7 +7972,6 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // If we have not sent a first-chance notification, do so now.
     //
     ThreadExceptionState* pExState = pThread->GetExceptionState();
-    printf("We are in the NotifyOfCHFFilter function.\n");
     if (!pExState->GetFlags()->SentDebugFirstChance())
     {
         SendException(pThread,
@@ -8007,11 +7989,8 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     OBJECTREF exRef = pExState->GetThrowable();
     AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
     OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
-    INT32 objHash = ObjectFromHandle(objHandle)->GetHashCodeEx(pThread);
-    ObjectHandle_Hash objHandleHash = {objHandle, objHash};
-    ObjectHandle_Hash retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandleHash); //destroy handle
-    printf("retrievedHandle.m_handle = %p\n", retrievedHandle.m_handle);
-    if (retrievedHandle.m_handle != NULL)
+    OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+    if (retrievedHandle != NULL)
     {
         forceSendCatchHandlerFound = TRUE;
     }
@@ -8066,7 +8045,6 @@ void Debugger::SendCatchHandlerFound(
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_INFO10000, "D::FirstChanceManagedExceptionCatcherFound\n"));
-    printf("Inside the SendCatchHandlerFound method.\n");
 
     if (pThread == NULL)
     {
@@ -8492,7 +8470,6 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
     // Can be run only on managed thread.
 
     LOG((LF_CORDB, LL_INFO10000, "D::LastChanceManagedException\n"));
-    printf("We are in the LastChanceManagedException function.\n");
 
     // Don't stop for native debugging anywhere inside our inproc-Filters.
     CantStopHolder hHolder;
@@ -8578,7 +8555,6 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
             _ASSERTE(thread->GetFilterContext() == NULL);
             thread->SetFilterContext(pExceptionInfo->ContextRecord);
         }
-        printf("We are in the LastChanceManagedException function.\n");
         EX_TRY
         {
             // We pass the attaching status to SendException so that it knows
@@ -10472,14 +10448,11 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             BOOL enableEvents = pEvent->ForceCatchHandlerFoundData.enableEvents;
             Object *obj = pEvent->ForceCatchHandlerFoundData.vmObj.GetRawPtr();
             AppDomain *pAppDomain = pEvent->vmAppDomain.GetRawPtr();
-            Thread *pThread = pEvent->vmThread.GetRawPtr();
             OBJECTREF exObj = ObjectToOBJECTREF(obj);
             HRESULT hr = E_INVALIDARG;
-            //EX_TRY
-            //{
-            hr = InsertToHashTableToForceCatchHandlerFound(enableEvents, exObj, pAppDomain, pThread);
-            //}
-            //EX_CATCH_HRESULT(hr);
+
+            hr = InsertToHashTableToForceCatchHandlerFound(enableEvents, exObj, pAppDomain);
+
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
             InitIPCEvent(pIPCResult,
                          DB_IPCE_CATCH_HANDLER_FOUND_RESULT,
@@ -12406,7 +12379,7 @@ HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BO
     return S_OK;
 }
 
-HRESULT Debugger::InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain, Thread *pThread)
+HRESULT Debugger::InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain)
 {
     CONTRACTL
     {
@@ -12417,42 +12390,26 @@ HRESULT Debugger::InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, O
     CONTRACTL_END;
 
     OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exObj);
-    printf("D::ITHTFCHF: objHan\n");
-    INT32 objHash = ObjectFromHandle(objHandle)->GetHashCodeEx(pThread);
-    printf("D::ITHTFCHF: objHash\n");
-    ObjectHandle_Hash ObjHandleHash = {objHandle, objHash};
     if (objHandle == NULL)
     {
-        printf("D::ITHTFCHF: objHandle is NULL\n");
         return E_INVALIDARG;
     }
     if (enableEvents)
     {
-        //BOOL success = FALSE;
-        printf("D::ITHTFCHF: enableEvents is true\n");
         //Want to check if it is exception type?
-        ObjectHandle_Hash objHandleFound = m_pForceCatchHandlerFoundEventsTable->Lookup(ObjHandleHash);
-        printf("D::ITHTFCHF: objHandleFound\n");
-        if (objHandleFound.m_handle == NULL)
+        OBJECTHANDLE objHandleFound = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle);
+        if (objHandleFound == NULL)
         {
-            printf("D::ITHTFCHF: objHandleFound is NULL\n");
-            m_pForceCatchHandlerFoundEventsTable->Add(ObjHandleHash);
+            m_pForceCatchHandlerFoundEventsTable->Add(objHandle);
         }
-
-        //do we want to choose a no throw option for this?
     }
     else
     {
-        if (m_pForceCatchHandlerFoundEventsTable->Lookup(ObjHandleHash).m_handle != NULL)
+        if (m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle) != NULL)
         {
-            printf("D::ITHTFCHF: removing from table\n");
-            m_pForceCatchHandlerFoundEventsTable->Remove(ObjHandleHash);
-            printf("D::ITHTFCHF: removed from table\n");
+            m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
         }
-        printf("Done with removing from table\n");
     }
-    printf("D::ITHTFCHF: done\n");
-
     return S_OK;
 }
 
