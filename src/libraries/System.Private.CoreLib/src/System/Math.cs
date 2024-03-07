@@ -1744,10 +1744,13 @@ namespace System
             return FMod(dividend, divisor);
         }
 
+        [StackTraceHidden]
         private static int DoubleToInt(double val)
         {
-            return double.IsNaN(val) || ((long)val < int.MinValue) ? int.MinValue : ((long)val > int.MaxValue) ? int.MaxValue : (int)(long)val;
+            return double.IsNaN(val) ? 0 : (val < -2147483648.0) ? int.MinValue : (val >= 2147483648.0) ? int.MaxValue : (int)(long)val;
         }
+
+        [StackTraceHidden]
         private static uint DoubleToUInt(double val)
         {
             return double.IsNaN(val) || (val < 0) ? 0 : ((ulong)val > uint.MaxValue) ? uint.MaxValue : (uint)(ulong)val;
