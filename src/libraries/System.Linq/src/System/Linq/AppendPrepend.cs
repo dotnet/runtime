@@ -98,7 +98,7 @@ namespace System.Linq
                 _appending = appending;
             }
 
-            public override Iterator<TSource> Clone() => new AppendPrepend1Iterator<TSource>(_source, _item, _appending);
+            private protected override Iterator<TSource> Clone() => new AppendPrepend1Iterator<TSource>(_source, _item, _appending);
 
             public override bool MoveNext()
             {
@@ -188,7 +188,7 @@ namespace System.Linq
                 _appendCount = appendCount;
             }
 
-            public override Iterator<TSource> Clone() => new AppendPrependN<TSource>(_source, _prepended, _appended, _prependCount, _appendCount);
+            private protected override Iterator<TSource> Clone() => new AppendPrependN<TSource>(_source, _prepended, _appended, _prependCount, _appendCount);
 
             public override bool MoveNext()
             {

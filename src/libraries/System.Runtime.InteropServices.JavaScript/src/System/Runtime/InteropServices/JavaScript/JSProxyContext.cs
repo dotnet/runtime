@@ -40,6 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public int ManagedTID; // current managed thread id
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
+        public JSAsyncTaskScheduler? AsyncTaskScheduler;
 
         public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
         public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
@@ -384,6 +385,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     holder.IsDisposed = true;
                     handle.Free();
                 }
+#if FEATURE_WASM_MANAGED_THREADS
+                Marshal.FreeHGlobal((IntPtr)holder.State);
+                holder.State = null;
+#endif
             }
         }
 
@@ -421,6 +426,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     holderCallback = holder.Callback;
                     holder.IsDisposed = true;
+#if FEATURE_WASM_MANAGED_THREADS
+                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    holder.State = null;
+#endif
                 }
             }
             holderCallback?.Invoke(null);
@@ -475,7 +484,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         if (IsJSVHandle(jsHandle))
                         {
-                            Environment.FailFast("TODO implement blocking ReleaseCSOwnedObjectSend to make sure the order of FreeJSVHandle is correct.");
+                            Environment.FailFast($"TODO implement blocking ReleaseCSOwnedObjectSend to make sure the order of FreeJSVHandle is correct, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                         }
 
                         // this is async message, we need to call this as the last thing
@@ -493,7 +502,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#endregion
+        #endregion
 
         #region Dispose
 
