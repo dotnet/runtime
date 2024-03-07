@@ -1844,7 +1844,6 @@ HRESULT CordbProcess::Init()
 
             if (m_pShim != NULL)
             {
-                //printf("CP::I: g_pDebugger->m_pRCThread != NULL: %d\n", GetDAC()->g_pDebugger->m_pRCThread != NULL);
                 FinishInitializeIPCChannelWorker(); // throws
 
                 // At this point, the control block is complete and all four
@@ -7486,39 +7485,27 @@ void CordbProcess::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size)
 //-----------------------------------------------------------------------------
 void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
 {
-    LOG((LF_CORDB, LL_INFO1000, "Just inside of GetEventBlock: the value of pfBlockExists: %d\n", *pfBlockExists));
     if (GetDCB() == NULL) // we only need to do this once
     {
-        LOG((LF_CORDB, LL_INFO1000, "GetDCB was null, so we did not have the value of the block.\n"));
-        printf("GetDCB was null, so we did not have the value of the block.\n");
         _ASSERTE(m_pShim != NULL);
         _ASSERTE(ThreadHoldsProcessLock());
 
         // This will Initialize the DAC/DBI interface.
         BOOL fDacReady = TryInitializeDac();
-        LOG((LF_CORDB, LL_INFO1000, "After we tried to initialize the dac, value of fDacready is %d.\n", fDacReady));
         if (fDacReady)
         {
-            LOG((LF_CORDB, LL_INFO1000, "fDacReady was true, so we are in there.\n"));
             // Ensure that we have a DAC interface.
             _ASSERTE(m_pDacPrimitives != NULL);
 
             // This is not technically necessary for Mac debugging.  The event channel doesn't rely on
             // knowing the target address of the DCB on the LS.
             CORDB_ADDRESS pLeftSideDCB = NULL;
-            LOG((LF_CORDB, LL_INFO1000, "Right before the GetDebuggerControlBlockAddress.\n"));
-            printf("Right before the GetDebuggerControlBlockAddress.\n");
-            //printf("CP:GEB: g_pDebugger->m_pRCThread != NULL: %d\n", GetDAC()->g_pDebugger->m_pRCThread != NULL);
             pLeftSideDCB = (GetDAC()->GetDebuggerControlBlockAddress());
-            LOG((LF_CORDB, LL_INFO1000, "After GetDebuggerControlBlockAddress.\n"));
-            printf("After GetDebuggerControlBlockAddress.\n");
             if (pLeftSideDCB == NULL)
             {
-                LOG((LF_CORDB, LL_INFO1000, "The address was null, so we make the block exists false and throw an error.\n"));
                 *pfBlockExists = false;
                 ThrowHR(CORDBG_E_DEBUGGING_NOT_POSSIBLE);
             }
-            LOG((LF_CORDB, LL_INFO1000, "We made it out the end.\n"));
             IfFailThrow(NewEventChannelForThisPlatform(pLeftSideDCB,
                                                        m_pMutableDataTarget,
                                                        GetProcessDescriptor(),
@@ -9466,7 +9453,6 @@ void CordbProcess::FinishInitializeIPCChannel()
 {
     // This is called directly from a shim callback.
     PUBLIC_API_ENTRY_FOR_SHIM(this);
-    //printf("CP::FIIC: g_pDebugger->m_pRCThread != NULL: %d\n", GetDAC()->g_pDebugger->m_pRCThread != NULL);
     FinishInitializeIPCChannelWorker();
 }
 
@@ -9508,7 +9494,6 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HFRCE: first event..., process %p\n", GetCurrentThreadId(), this));
 
         BOOL fBlockExists;
-        //printf("CP::FIPCW: g_pDebugger->m_pRCThread != NULL: %d\n", GetDAC()->g_pDebugger->m_pRCThread != NULL);
         GetEventBlock(&fBlockExists); // throws on error
 
         LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %d\n", sizeof(CordbProcess)));

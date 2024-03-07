@@ -461,9 +461,6 @@ class Object
 
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
-    static DWORD ComputeHashCode(Thread *pThread);
-public:
-    INT32 GetHashCodeEx(Thread *pThread);
 };
 
 /*
