@@ -398,6 +398,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
             FlowEdge* const falseEdge = fgAddRefPred(nullcheckBb, sizeCheckBb);
             sizeCheckBb->SetTrueEdge(trueEdge);
             sizeCheckBb->SetFalseEdge(falseEdge);
+            trueEdge->setLikelihood(0.2);
+            falseEdge->setLikelihood(0.8);
         }
 
         // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
@@ -417,10 +419,13 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     FlowEdge* const falseEdge = fgAddRefPred(fastPathBb, nullcheckBb);
     nullcheckBb->SetTrueEdge(trueEdge);
     nullcheckBb->SetFalseEdge(falseEdge);
+    trueEdge->setLikelihood(0.2);
+    falseEdge->setLikelihood(0.8);
 
     //
     // Re-distribute weights (see '[weight: X]' on the diagrams above)
     // TODO: consider marking fallbackBb as rarely-taken
+    // TODO: derive block weights from edge likelihoods.
     //
     block->inheritWeight(prevBb);
     if (needsSizeCheck)
