@@ -22,14 +22,10 @@ variables:
 
 resources:
   repositories:
-  - repository: PerformanceGithubRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/performance
   - repository: InternalPerformanceRepo
     type: git
     name: dotnet-performance
-    ref: caaavik/python-pipeline-for-runtime 
+    ref: caaavik/python-pipeline-for-runtime # Use this to set a custom dotnet-performance branch
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.

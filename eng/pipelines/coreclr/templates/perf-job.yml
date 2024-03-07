@@ -145,6 +145,15 @@ jobs:
     frameworks:
       - ${{ parameters.framework }}
     steps:
+    # Copy dotnet-runtime directory to Build.SourcesDirectory (TODO: Update yaml to just use the dotnet-runtime directory)
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
+        TargetFolder: $(Build.SourcesDirectory)
+    # And remove the original
+    - task: DeleteFiles@1
+      inputs:
+        SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
     - script: |
         $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables
