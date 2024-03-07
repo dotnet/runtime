@@ -5347,3 +5347,113 @@ HRESULT ClrDataAccess::LockedFlush()
     SOSDacLeave();
     return hr;
 }
+
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+{
+    if (!address)
+        return E_POINTER;
+    
+    if (!methodTable)
+        return E_INVALIDARG;
+    
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
+
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        if (!mTable->IsDynamicStatics())
+        {
+            *address = 0;
+        }
+        if (isGCStaticBase)
+        {
+            *address = PTR_CDADDR(mTable->GetGCStaticsBasePointer());
+        }
+        else
+        {
+            *address = PTR_CDADDR(mTable->GetNonGCStaticsBasePointer());
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS threadPtr, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+{
+    if (!address)
+        return E_POINTER;
+    
+    if (!methodTable)
+        return E_INVALIDARG;
+
+    if (!threadPtr)
+        return E_INVALIDARG;
+    
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
+    PTR_Thread thread = PTR_Thread(TO_TADDR(threadPtr));
+
+
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        if (mTable->GetClass()->GetNumThreadStaticFields() == 0)
+        {
+            *address = 0;
+        }
+        if (isGCStaticBase)
+        {
+            *address = PTR_CDADDR(mTable->GetGCThreadStaticsBasePointer(thread));
+        }
+        else
+        {
+            *address = PTR_CDADDR(mTable->GetNonGCThreadStaticsBasePointer(thread));
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus)
+{
+    if (!methodTable)
+        return E_INVALIDARG;
+
+    if (!initializationStatus)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    *initializationStatus = (MethodTableInitializationFlags)0;
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        *initializationStatus = mTable->IsClassInited() ? MethodTableInitialized : (MethodTableInitializationFlags)0;
+        if (mTable->GetAuxiliaryData()->IsInitError())
+        {
+            *initializationStatus = (MethodTableInitializationFlags)(*initializationStatus | MethodTableInitializationFailed);
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
