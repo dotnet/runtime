@@ -3843,15 +3843,18 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
 
     if (targetType == TYP_STRUCT)
     {
+        ClassLayout* layout;
         if (tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD))
         {
-            targetType = tree->AsLclFld()->GetLayout()->GetRegisterType();
+            layout = tree->AsLclFld()->GetLayout();
         }
         else
         {
             assert((TypeGet() == TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
-            targetType = GetRegisterType();
+            layout = GetLayout();
         }
+
+        targetType = layout->GetRegisterType();
     }
 
 #ifdef DEBUG
@@ -3885,12 +3888,7 @@ var_types LclVarDsc::GetRegisterType() const
         return TypeGet();
     }
     assert(m_layout != nullptr);
-    var_types result = m_layout->GetRegisterType();
-    if ((result != TYP_UNDEF) && varTypeUsesIntReg(result) && lvIsRegArg && !lvPromoted && genIsValidFloatReg(GetArgReg()))
-    {
-        result = TYP_UNDEF;
-    }
-    return result;
+    return m_layout->GetRegisterType();
 }
 
 //------------------------------------------------------------------------
