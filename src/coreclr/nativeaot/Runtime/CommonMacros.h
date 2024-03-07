@@ -19,6 +19,7 @@
 
 #define NATIVEAOT_API
 #define REDHAWK_CALLCONV FASTCALL
+#define QCALLTYPE
 
 #ifdef _MSC_VER
 
@@ -241,9 +242,6 @@ typedef uint8_t CODE_LOCATION;
     }
 
 #endif
-
-#define QCDECL(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
-#define QCIMPL(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
 
 typedef bool CLR_BOOL;
 

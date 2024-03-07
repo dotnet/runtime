@@ -210,8 +210,8 @@ struct EXCEPTION_REGISTRATION_RECORD
 };
 #endif // HOST_X86
 
-QCDECL(void, RhpFailFastForPInvokeExceptionPreemp, intptr_t PInvokeCallsiteReturnAddr,
-                                                   void* pExceptionRecord, void* pContextRecord);
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhpFailFastForPInvokeExceptionPreemp(intptr_t PInvokeCallsiteReturnAddr,
+                                                                           void* pExceptionRecord, void* pContextRecord);
 FCDECL(void, RhpFailFastForPInvokeExceptionCoop, intptr_t PInvokeCallsiteReturnAddr,
                                                  void* pExceptionRecord, void* pContextRecord);
 int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);

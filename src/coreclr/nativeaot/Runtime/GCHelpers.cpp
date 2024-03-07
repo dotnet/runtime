@@ -95,7 +95,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-QCIMPL(void, RhpCollect, uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -110,7 +110,7 @@ QCIMPL(void, RhpCollect, uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMe
     pCurThread->EnablePreemptiveMode();
 }
 
-QCIMPL(int64_t, RhpGetGcTotalMemory)
+EXTERN_C NATIVEAOT_API int64_t QCALLTYPE RhpGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -126,7 +126,7 @@ QCIMPL(int64_t, RhpGetGcTotalMemory)
     return ret;
 }
 
-QCIMPL(int32_t, RhpStartNoGCRegion, int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -141,7 +141,7 @@ QCIMPL(int32_t, RhpStartNoGCRegion, int64_t totalSize, UInt32_BOOL hasLohSize, i
     return result;
 }
 
-QCIMPL(int32_t, RhpEndNoGCRegion)
+EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpEndNoGCRegion()
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -437,19 +437,19 @@ FCIMPL(void, RhRefreshMemoryLimit, GCHeapHardLimitInfo heapHardLimitInfo)
 }
 FCIMPLEND
 
-QCIMPL(uint64_t, RhGetGenerationBudget, int generation)
+EXTERN_C NATIVEAOT_API uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     return pHeap->GetGenerationBudget(generation);
 }
 
-QCIMPL(void, RhEnableNoGCRegionCallback, NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
-QCIMPL(int64_t, RhGetTotalAllocatedBytesPrecise)
+EXTERN_C NATIVEAOT_API int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
 {
     int64_t allocated;
 
@@ -598,7 +598,7 @@ EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable* pEEType, u
     return GcAllocInternal(pEEType, uFlags, numElements, pThread);
 }
 
-QCIMPL(void, RhAllocateNewArray, MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhAllocateNewArray(MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -612,7 +612,7 @@ QCIMPL(void, RhAllocateNewArray, MethodTable* pArrayEEType, uint32_t numElements
     pThread->EnablePreemptiveMode();
 }
 
-QCIMPL(void, RhAllocateNewObject, MethodTable* pEEType, uint32_t flags, Object** pResult)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhAllocateNewObject(MethodTable* pEEType, uint32_t flags, Object** pResult)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -654,7 +654,7 @@ FCIMPL(void, RhUnregisterForGCReporting, GCFrameRegistration* pRegistration)
 }
 FCIMPLEND
 
-QCIMPL(void*, RhRegisterFrozenSegment, void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
+EXTERN_C NATIVEAOT_API void* QCALLTYPE RhRegisterFrozenSegment(void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
 {
     ASSERT(allocSize <= commitSize);
     ASSERT(commitSize <= reservedSize);
@@ -674,14 +674,14 @@ QCIMPL(void*, RhRegisterFrozenSegment, void* pSection, size_t allocSize, size_t 
 #endif // FEATURE_BASICFREEZE
 }
 
-QCIMPL(void, RhUpdateFrozenSegment, void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
 {
     ASSERT(allocated <= committed);
 
     GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment((segment_handle)pSegmentHandle, allocated, committed);
 }
 
-QCIMPL(void, RhUnregisterFrozenSegment, void* pSegmentHandle)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhUnregisterFrozenSegment(void* pSegmentHandle)
 {
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)pSegmentHandle);
 }

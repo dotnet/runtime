@@ -1129,7 +1129,7 @@ void Thread::ValidateExInfoStack()
 #ifndef DACCESS_COMPILE
 
 #ifndef TARGET_UNIX
-QCIMPL(uint32_t, RhCompatibleReentrantWaitAny, UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
+EXTERN_C NATIVEAOT_API uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }

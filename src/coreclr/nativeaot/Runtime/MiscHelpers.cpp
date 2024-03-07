@@ -44,7 +44,7 @@ FCIMPL(void, RhDebugBreak)
 FCIMPLEND
 
 // Busy spin for the given number of iterations.
-QCIMPL(void, RhSpinWait, int32_t iterations)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhSpinWait(int32_t iterations)
 {
     ASSERT(iterations > 0);
 
@@ -57,7 +57,7 @@ QCIMPL(void, RhSpinWait, int32_t iterations)
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-QCIMPL(UInt32_BOOL, RhYield)
+EXTERN_C NATIVEAOT_API UInt32_BOOL QCALLTYPE RhYield()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -66,7 +66,7 @@ QCIMPL(UInt32_BOOL, RhYield)
     return PalSwitchToThread();
 }
 
-QCIMPL(void, RhFlushProcessWriteBuffers)
+EXTERN_C NATIVEAOT_API void QCALLTYPE RhFlushProcessWriteBuffers()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -343,14 +343,14 @@ FCIMPL(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 }
 FCIMPLEND
 
-QCIMPL(uint64_t, RhpGetTickCount64)
+EXTERN_C NATIVEAOT_API uint64_t QCALLTYPE RhpGetTickCount64()
 {
     return PalGetTickCount64();
 }
 
-QCDECL(int32_t, RhpCalculateStackTraceWorker, void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
+EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-QCIMPL(int32_t, RhpGetCurrentThreadStackTrace, void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
