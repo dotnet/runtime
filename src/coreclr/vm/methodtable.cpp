@@ -4228,7 +4228,6 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     CQuickArray<SwiftPhysicalLoweringTag> loweredBytes;
     loweredBytes.AllocThrows(GetNumInstanceFieldBytes());
     memset(loweredBytes.Ptr(), (uint8_t)SwiftPhysicalLoweringTag::Empty, loweredBytes.Size());
-    uint32_t numIntervals = 0;
 
     if (useNativeLayout && !IsBlittable())
     {
@@ -4319,9 +4318,9 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     uint32_t offsets[4];
     uint32_t numLoweredTypes = 0;
 
-    for (uint32_t i = 0; i < numIntervals; i++, numLoweredTypes++)
+    for (uint32_t i = 0; i < mergedIntervals.Size(); i++, numLoweredTypes++)
     {
-        SwiftLoweringInterval& interval = intervals[i];
+        SwiftLoweringInterval& interval = mergedIntervals[i];
 
         if (numLoweredTypes == 4)
         {
