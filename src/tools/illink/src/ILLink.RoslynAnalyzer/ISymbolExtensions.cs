@@ -71,26 +71,14 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static ValueSet<string> GetFeatureCheckAnnotations (this IPropertySymbol propertySymbol)
+		internal static ValueSet<string> GetFeatureGuardAnnotations (this IPropertySymbol propertySymbol)
 		{
 			HashSet<string> featureSet = new ();
-			foreach (var attributeData in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute)) {
+			foreach (var attributeData in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
 				if (attributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
-					AddFeatures (featureType);
+					featureSet.Add (featureType.GetDisplayName ());
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
-
-			void AddFeatures (INamedTypeSymbol featureType) {
-				var featureName = featureType.GetDisplayName ();
-				if (!featureSet.Add (featureName))
-					return;
-
-				// Look at FeatureDependsOn attributes on the feature type.
-				foreach (var featureTypeAttributeData in featureType.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureDependsOnAttribute)) {
-					if (featureTypeAttributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
-						AddFeatures (featureTypeSymbol);
-				}
-			}
 		}
 
 		internal static bool TryGetReturnAttribute (this IMethodSymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)

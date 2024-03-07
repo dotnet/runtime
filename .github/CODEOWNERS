@@ -112,4 +112,4 @@
 # Area ownership and repo automation
 /docs/area-owners.*                                 @jeffhandley
 /docs/issue*.md                                     @jeffhandley
-/.github/fabricbot.json                             @jeffhandley
+/.github/policies/                                  @jeffhandley @mkArtakMSFT

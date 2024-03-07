@@ -9,16 +9,8 @@ import {
 } from "./mintops";
 
 export const ldcTable: { [opcode: number]: [WasmOpcode, number] } = {
-    [MintOpcode.MINT_LDC_I4_M1]: [WasmOpcode.i32_const, -1],
     [MintOpcode.MINT_LDC_I4_0]:  [WasmOpcode.i32_const,  0],
     [MintOpcode.MINT_LDC_I4_1]:  [WasmOpcode.i32_const,  1],
-    [MintOpcode.MINT_LDC_I4_2]:  [WasmOpcode.i32_const,  2],
-    [MintOpcode.MINT_LDC_I4_3]:  [WasmOpcode.i32_const,  3],
-    [MintOpcode.MINT_LDC_I4_4]:  [WasmOpcode.i32_const,  4],
-    [MintOpcode.MINT_LDC_I4_5]:  [WasmOpcode.i32_const,  5],
-    [MintOpcode.MINT_LDC_I4_6]:  [WasmOpcode.i32_const,  6],
-    [MintOpcode.MINT_LDC_I4_7]:  [WasmOpcode.i32_const,  7],
-    [MintOpcode.MINT_LDC_I4_8]:  [WasmOpcode.i32_const,  8],
 };
 
 // operator, loadOperator, storeOperator
@@ -93,6 +85,16 @@ export const unopTable: { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CLZ_I8]:        [WasmOpcode.i64_clz,    WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_CTZ_I8]:        [WasmOpcode.i64_ctz,    WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_POPCNT_I8]:     [WasmOpcode.i64_popcnt, WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_ADD_I4_IMM2]:   [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_MUL_I4_IMM2]:   [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ADD_I8_IMM2]:   [WasmOpcode.i64_add, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_MUL_I8_IMM2]:   [WasmOpcode.i64_mul, WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_AND_I4_IMM]:    [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_AND_I4_IMM2]:   [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4_IMM]:     [WasmOpcode.i32_or,  WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4_IMM2]:    [WasmOpcode.i32_or,  WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.

@@ -646,6 +646,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
         {
+            // TODO: Use fgRedirectTargetEdge once pred edge iterators are resilient to bbPreds being modified.
             assert(block->TargetIs(oldTarget));
             fgRemoveRefPred(block->GetTargetEdge());
             FlowEdge* const newEdge = fgAddRefPred(newTarget, block, block->GetTargetEdge());
@@ -4192,9 +4193,7 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS) && fgFirstBB->JumpsToNext());
-    fgRemoveRefPred(fgFirstBB->GetTargetEdge());
-    FlowEdge* const newEdge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
-    fgFirstBB->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
 
     // We don't know the right weight for this block, since
     // execution of the method was interrupted within the

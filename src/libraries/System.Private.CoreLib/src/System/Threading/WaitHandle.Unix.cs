@@ -7,8 +7,8 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static int WaitOneCore(IntPtr handle, int millisecondsTimeout) =>
-            WaitSubsystem.Wait(handle, millisecondsTimeout, true);
+        private static int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits) =>
+            WaitSubsystem.Wait(handle, millisecondsTimeout, interruptible: !useTrivialWaits);
 
         private static int WaitMultipleIgnoringSyncContextCore(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout) =>
             WaitSubsystem.Wait(handles, waitAll, millisecondsTimeout);

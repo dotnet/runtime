@@ -4342,9 +4342,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif // DEBUG
                 // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->GetTargetEdge());
-                FlowEdge* const newEdge = fgAddRefPred(bPrev, bFilterLast);
-                bFilterLast->SetTargetEdge(newEdge);
+                fgRedirectTargetEdge(bFilterLast, bPrev);
             }
         }
 

@@ -39,7 +39,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean) {
 				// Warn about invalid feature checks (non-static or non-bool properties)
 				diagnosticContext.AddDiagnostic (
-					DiagnosticId.InvalidFeatureCheck);
+					DiagnosticId.InvalidFeatureGuard);
 				return diagnosticContext.Diagnostics;
 			}
 
@@ -57,7 +57,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 					if (!returnValueFeatures.Contains (feature)) {
 						diagnosticContext.AddDiagnostic (
-							DiagnosticId.ReturnValueDoesNotMatchFeatureChecks,
+							DiagnosticId.ReturnValueDoesNotMatchFeatureGuards,
 							OwningSymbol.GetDisplayName (),
 							feature);
 					}

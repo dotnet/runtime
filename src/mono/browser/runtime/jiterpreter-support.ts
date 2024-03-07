@@ -12,7 +12,7 @@ import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
 import {
     JiterpNumberMode, BailoutReason, JiterpreterTable,
-    JiterpCounter, JiterpMember
+    JiterpCounter, JiterpMember, OpcodeInfoType
 } from "./jiterpreter-enums";
 
 export const maxFailures = 2,
@@ -104,6 +104,7 @@ export class WasmBuilder {
     backBranchOffsets: Array<MintOpcodePtr> = [];
     callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
+    backBranchTraceLevel = 0;
 
     compressImportNames = false;
     lockImports = false;
@@ -1139,8 +1140,11 @@ class Cfg {
     backBranchTargets: Uint16Array | null = null;
     base!: MintOpcodePtr;
     ip!: MintOpcodePtr;
+    // The address of the prepare point
     entryIp!: MintOpcodePtr;
     exitIp!: MintOpcodePtr;
+    // The address of the first actual opcode in the trace
+    firstOpcodeIp!: MintOpcodePtr;
     lastSegmentStartIp!: MintOpcodePtr;
     lastSegmentEnd = 0;
     overheadBytes = 0;
@@ -1161,7 +1165,7 @@ class Cfg {
         this.startOfBody = startOfBody;
         this.backBranchTargets = backBranchTargets;
         this.base = this.builder.base;
-        this.ip = this.lastSegmentStartIp = this.builder.base;
+        this.ip = this.lastSegmentStartIp = this.firstOpcodeIp = this.builder.base;
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
@@ -1173,6 +1177,9 @@ class Cfg {
     // We have a header containing the table of locals and we need to preserve it
     entry(ip: MintOpcodePtr) {
         this.entryIp = ip;
+        // Skip over the enter opcode
+        const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
+        this.firstOpcodeIp = ip + <any>(enterSizeU16 * 2);
         this.appendBlob();
         mono_assert(this.segments.length === 1, "expected 1 segment");
         mono_assert(this.segments[0].type === "blob", "expected blob");
@@ -1183,6 +1190,7 @@ class Cfg {
             this.overheadBytes += 20; // some extra padding for the dispatch br_table
             this.overheadBytes += this.backBranchTargets.length; // one byte for each target in the table
         }
+        return this.firstOpcodeIp;
     }
 
     appendBlob() {

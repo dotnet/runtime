@@ -875,7 +875,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string str = Enum.GetName(typeof(MethodSemanticsAttributes), Attributes);
+            string str = Enum.GetName(Attributes);
             return str + " : " + Method.ToString();
         }
     }
@@ -903,7 +903,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return string.Join(" ", Enum.GetName(typeof(CallingConventions), CallingConvention),
+            return string.Join(" ", Enum.GetName(CallingConvention),
                 Type.ToString()) + "(" + ToString(Parameters) + ")";
         }
     }

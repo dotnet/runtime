@@ -21,11 +21,14 @@ public class Validate
         Console.WriteLine($" -- Instantiate: {Exec.GenericInterface()}");
         Console.WriteLine($" -- Instantiate: {Exec.GenericValueType()}");
         Console.WriteLine($" -- Instantiate: {Exec.GenericByRefLike()}");
+        Console.WriteLine($" -- Instantiate: {Exec.GenericByRefLike_ConstraintsAreIndependent_Int32_Int32()}");
 
         Assert.Throws<TypeLoadException>(() => { Exec.GenericClass_Invalid(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericInterface_Invalid(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericValueType_Invalid(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericByRefLike_Invalid(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.GenericByRefLike_ConstraintsAreIndependent_Interface_ByRefLike_Invalid(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.GenericByRefLike_ConstraintsAreIndependent_ByRefLike_ByRefLike_Invalid(); });
     }
 
     [Fact]

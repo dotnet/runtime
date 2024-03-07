@@ -671,6 +671,7 @@ public:
     }
 
     void setLikelihood(weight_t likelihood);
+    void addLikelihood(weight_t addedLikelihod);
 
     void clearLikelihood()
     {
