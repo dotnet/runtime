@@ -79,7 +79,7 @@ namespace Mono.Linker.Steps
 					CodeOptimizations.RemoveSubstitutions |
 					CodeOptimizations.RemoveDynamicDependencyAttribute |
 					CodeOptimizations.OptimizeTypeHierarchyAnnotations |
-					CodeOptimizations.SubstituteFeatureChecks, assembly.Name.Name);
+					CodeOptimizations.SubstituteFeatureGuards, assembly.Name.Name);
 
 				// Enable EventSource special handling
 				Context.DisableEventSourceSpecialHandling = false;
