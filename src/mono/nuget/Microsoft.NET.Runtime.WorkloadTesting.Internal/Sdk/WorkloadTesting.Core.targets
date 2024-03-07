@@ -162,7 +162,8 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
-  <UsingTask TaskName="Microsoft.Workload.Build.Tasks.PatchNuGetConfig"
+  <UsingTask Condition="'$(WorkloadBuildTasksAssemblyPath)' != ''"
+             TaskName="Microsoft.Workload.Build.Tasks.PatchNuGetConfig"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
   <Target Name="InstallWorkloadUsingArtifacts"
