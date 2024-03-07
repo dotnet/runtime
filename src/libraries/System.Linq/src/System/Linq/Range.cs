@@ -42,7 +42,7 @@ namespace System.Linq
 
             private int CountForDebugger => _end - _start;
 
-            public override Iterator<int> Clone() => new RangeIterator(_start, _end - _start);
+            private protected override Iterator<int> Clone() => new RangeIterator(_start, _end - _start);
 
             public override bool MoveNext()
             {

@@ -78,15 +78,15 @@ namespace System.Net.Http
                     last = encoding;
                 }
 
-                if (GZipEnabled && last == Gzip)
+                if (GZipEnabled && string.Equals(last, Gzip, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new GZipDecompressedContent(response.Content);
                 }
-                else if (DeflateEnabled && last == Deflate)
+                else if (DeflateEnabled && string.Equals(last, Deflate, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new DeflateDecompressedContent(response.Content);
                 }
-                else if (BrotliEnabled && last == Brotli)
+                else if (BrotliEnabled && string.Equals(last, Brotli, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new BrotliDecompressedContent(response.Content);
                 }

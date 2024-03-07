@@ -7548,6 +7548,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->compile_aot)
 						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
 
+					if (fsig->has_type_parameters)
+						GENERIC_SHARING_FAILURE (CEE_CALLI);
+
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
 
@@ -8930,6 +8933,11 @@ calli_end:
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
+
+			if (((sp [0]->type == STACK_R4 && sp [1]->type == STACK_R8) ||
+			     (sp [0]->type == STACK_R8 && sp [1]->type == STACK_R4)))
+				add_widen_op (cfg, ins, &sp [0], &sp [1]);
+
 			ins->dreg = alloc_dreg ((cfg), (MonoStackType)(ins)->type);
 
 			/* Use the immediate opcodes if possible */

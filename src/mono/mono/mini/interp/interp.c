@@ -1340,7 +1340,10 @@ typedef enum {
 	PINVOKE_ARG_R8 = 3,
 	PINVOKE_ARG_R4 = 4,
 	PINVOKE_ARG_VTYPE = 5,
-	PINVOKE_ARG_SCALAR_VTYPE = 6
+	PINVOKE_ARG_SCALAR_VTYPE = 6,
+	// This isn't ifdefed so it's easier to write code that handles it without sprinkling
+	//  800 ifdefs in this file
+	PINVOKE_ARG_WASM_VALUETYPE_RESULT = 7,
 } PInvokeArgType;
 
 typedef struct {
@@ -1436,6 +1439,7 @@ retry:
 			ilen++;
 			break;
 		case MONO_TYPE_GENERICINST: {
+			// FIXME: Should mini_wasm_is_scalar_vtype stuff go in here?
 			MonoClass *container_class = type->data.generic_class->container_class;
 			type = m_class_get_byval_arg (container_class);
 			goto retry;
@@ -1473,11 +1477,32 @@ retry:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#if SIZEOF_VOID_P == 8
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
+#endif
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#endif
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+#ifdef HOST_WASM
+			// This ISSTRUCT check is important, because the type could be an enum
+			if (MONO_TYPE_ISSTRUCT (info->ret_mono_type)) {
+				// The return type was already filtered previously, so if we get here
+				//  we're returning a struct byref instead of as a scalar
+				info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
+				info->ilen++;
+			}
+#endif
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
@@ -1503,6 +1528,15 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	margs->ilen = info->ilen;
 	margs->flen = info->flen;
 
+	size_t int_i = 0;
+	size_t int_f = 0;
+
+	if (info->ret_pinvoke_type == PINVOKE_ARG_WASM_VALUETYPE_RESULT) {
+		// Allocate an empty arg0 for the address of the return value
+		// info->ilen was already increased earlier
+		int_i++;
+	}
+
 	if (margs->ilen > 0) {
 		if (margs->ilen <= 8)
 			margs->iargs = margs->iargs_buf;
@@ -1516,9 +1550,6 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		else
 			margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
 	}
-
-	size_t int_i = 0;
-	size_t int_f = 0;
 
 	for (int i = 0; i < sig->param_count; i++) {
 		guint32 offset = get_arg_offset (frame->imethod, sig, i);
@@ -1578,6 +1609,15 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	}
 
 	switch (info->ret_pinvoke_type) {
+	case PINVOKE_ARG_WASM_VALUETYPE_RESULT:
+		// We pass the return value address in arg0 so fill it in, we already
+		//  reserved space for it earlier.
+		g_assert (frame->retval);
+		margs->iargs[0] = (gpointer*)frame->retval;
+		// The return type is void so retval should be NULL
+		margs->retval = NULL;
+		margs->is_float_ret = 0;
+		break;
 	case PINVOKE_ARG_INT:
 		margs->retval = (gpointer*)frame->retval;
 		margs->is_float_ret = 0;
@@ -1795,8 +1835,10 @@ ves_pinvoke_method (
 	g_free (ccontext.stack);
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
-	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type))
-		stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type)) {
+		if (call_info->ret_pinvoke_type != PINVOKE_ARG_WASM_VALUETYPE_RESULT)
+			stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	}
 
 	if (margs.iargs != margs.iargs_buf)
 		g_free (margs.iargs);
@@ -3955,36 +3997,13 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 
-#define LDC(n) do { LOCAL_VAR (ip [1], gint32) = (n); ip += 2; } while (0)
-		MINT_IN_CASE(MINT_LDC_I4_M1)
-			LDC(-1);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_0)
-			LDC(0);
+			LOCAL_VAR (ip [1], gint32) = 0;
+			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_1)
-			LDC(1);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_2)
-			LDC(2);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_3)
-			LDC(3);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_4)
-			LDC(4);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_5)
-			LDC(5);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_6)
-			LDC(6);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_7)
-			LDC(7);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_8)
-			LDC(8);
+			LOCAL_VAR (ip [1], gint32) = 1;
+			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_S)
 			LOCAL_VAR (ip [1], gint32) = (short)ip [2];
@@ -5266,6 +5285,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + (gint16)ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + (gint32)READ32 (ip + 3);
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD1_I8)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + 1;
 			ip += 3;
@@ -5273,6 +5296,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_I8_IMM)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + (gint16)ip [3];
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_I8_IMM2)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + (gint32)READ32 (ip + 3);
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_I4)
 			BINOP(gint32, -);
@@ -5304,9 +5331,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * (gint16)ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MUL_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * (gint32)READ32 (ip + 3);
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_I8_IMM)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint16)ip [3];
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MUL_I8_IMM2)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint32)READ32 (ip + 3);
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_MUL_I4_IMM)
 			LOCAL_VAR (ip [1], gint32) = (LOCAL_VAR (ip [2], gint32) + (gint16)ip [3]) * (gint16)ip [4];
@@ -5415,11 +5450,27 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_AND_I4)
 			BINOP(gint32, &);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_AND_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) & (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_AND_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) & READ32 (ip + 3);
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_AND_I8)
 			BINOP(gint64, &);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_OR_I4)
 			BINOP(gint32, |);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_OR_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) | (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_OR_I4_IMM2)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) | READ32 (ip + 3);
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_OR_I8)
 			BINOP(gint64, |);
@@ -7576,7 +7627,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			/* top of stack is result of filter */
 			frame->retval->data.i = LOCAL_VAR (ip [1], gint32);
 			goto exit_clause;
-		MINT_IN_CASE(MINT_INITOBJ)
+		MINT_IN_CASE(MINT_ZEROBLK)
+			memset (LOCAL_VAR (ip [1], gpointer), 0, LOCAL_VAR (ip [2], gsize));
+			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ZEROBLK_IMM)
 			memset (LOCAL_VAR (ip [1], gpointer), 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;

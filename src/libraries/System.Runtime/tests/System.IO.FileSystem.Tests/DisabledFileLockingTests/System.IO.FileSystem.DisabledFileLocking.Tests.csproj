@@ -7,6 +7,9 @@
 
     <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" TargetDir="test-dir" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="DisabledFileLockingSwitchTests.cs" />
     <Compile Include="..\FSAssert.cs" />

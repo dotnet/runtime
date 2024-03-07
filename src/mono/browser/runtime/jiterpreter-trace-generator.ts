@@ -9,7 +9,7 @@ import {
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode, WasmValtype,
-    getOpcodeName,
+    getOpcodeName, MintOpArgType
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -33,11 +33,11 @@ import {
 
     disabledOpcodes, countCallTargets,
     callTargetCounts,
-    trace, traceOnError, traceOnRuntimeError,
+    trace, traceOnError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
-    nullCheckCaching, traceBackBranches,
+    nullCheckCaching, defaultTraceBackBranches,
     maxCallHandlerReturnAddresses,
 
     mostRecentOptions,
@@ -109,6 +109,7 @@ function is_backward_branch_target(
     if (!backwardBranchTable)
         return false;
 
+    // TODO: sort the table and exploit that for faster scan. Not important yet
     for (let i = 0; i < backwardBranchTable.length; i++) {
         const actualOffset = (backwardBranchTable[i] * 2) + <any>startOfBody;
         if (actualOffset === ip)
@@ -128,6 +129,83 @@ function get_known_constant_value(builder: WasmBuilder, localOffset: number): Kn
     return knownConstantValues.get(localOffset);
 }
 
+// Perform a quick scan through the opcodes potentially in this trace to build a table of
+//  backwards branch targets, compatible with the layout of the old one that was generated in C.
+// We do this here to match the exact way that the jiterp calculates branch targets, since
+//  there were previously corner cases where jiterp and interp disagreed.
+export function generateBackwardBranchTable(
+    ip: MintOpcodePtr, startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
+): Uint16Array | null {
+    const endOfBody = <any>startOfBody + <any>sizeOfBody;
+    // TODO: Cache this table object instance and reuse it to reduce gc pressure?
+    const table : number[] = [];
+    // IP of the start of the trace in U16s, relative to startOfBody.
+    const rbase16 = (<any>ip - <any>startOfBody) / 2;
+
+    // FIXME: This will potentially scan the entire method and record branches that won't
+    //  ever run since the trace compilation will end before we reach them.
+    while (ip < endOfBody) {
+        // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
+        const rip16 = (<any>ip - <any>startOfBody) / 2;
+        const opcode = <MintOpcode>getU16(ip);
+        // HACK
+        if (opcode === MintOpcode.MINT_SWITCH)
+            break;
+
+        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+        // Any opcode with a branch argtype will have a decoded displacement, even if we don't
+        //  implement the opcode. Everything else will return undefined here and be skipped
+        const displacement = getBranchDisplacement(ip, opcode);
+        if (typeof (displacement) !== "number") {
+            ip += <any>(opLengthU16 * 2);
+            continue;
+        }
+
+        // These checks shouldn't fail unless memory is corrupted or something is wrong with the decoder.
+        // We don't want to cause decoder bugs to make the application exit, though - graceful degradation.
+        if (displacement === 0) {
+            mono_log_info(`opcode @${ip} branch target is self. aborting backbranch table generation`);
+            break;
+        }
+
+        // Only record *backward* branches
+        // We will filter this down further in the Cfg because it takes note of which branches it sees,
+        //  but it is also beneficial to have a null table (further down) due to seeing no potential
+        //  back branch targets at all, as it allows the Cfg to skip additional code generation entirely
+        //  if it knows there will never be any backwards branches in a given trace
+        if (displacement < 0) {
+            const rtarget16 = rip16 + (displacement);
+            if (rtarget16 < 0) {
+                mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
+                break;
+            }
+
+            // If the relative target is before the start of the trace, don't record it.
+            // The trace will be unable to successfully branch to it so it would just make the table bigger.
+            if (rtarget16 >= rbase16)
+                table.push(rtarget16);
+        }
+
+        switch (opcode) {
+            case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
+                // While this formally isn't a backward branch target, we want to record
+                //  the offset of its following instruction so that the jiterpreter knows
+                //  to generate the necessary dispatch code to enable branching back to it.
+                table.push(rip16 + opLengthU16);
+                break;
+        }
+
+        ip += <any>(opLengthU16 * 2);
+    }
+
+    if (table.length <= 0)
+        return null;
+    // Not important yet, so not doing it
+    // table.sort((a, b) => a - b);
+    return new Uint16Array(table);
+}
+
 export function generateWasmBody(
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
@@ -141,14 +219,17 @@ export function generateWasmBody(
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
+
     eraseInferredState();
 
-    // Skip over the enter opcode
-    const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
-    ip += <any>(enterSizeU16 * 2);
-    let rip = ip;
+    // If a trace is instrumented, also activate back branch tracing
+    builder.backBranchTraceLevel = instrumentedTraceId
+        ? 2
+        : defaultTraceBackBranches;
 
-    builder.cfg.entry(ip);
+    // Record the address of our prepare_jiterpreter opcode as the entry point, not the opcode after it.
+    // Some back-branches will target prepare_jiterpreter directly, and we need them to work.
+    let rip = builder.cfg.entry(ip);
 
     while (ip) {
         // This means some code went 'ip = abort; continue'
@@ -223,7 +304,7 @@ export function generateWasmBody(
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
         if (isBackBranchTarget) {
-            if (traceBackBranches > 1)
+            if (builder.backBranchTraceLevel > 1)
                 mono_log_info(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
             builder.backBranchOffsets.push(ip);
         }
@@ -300,7 +381,20 @@ export function generateWasmBody(
                 builder.callImport("localloc");
                 break;
             }
-            case MintOpcode.MINT_INITOBJ: {
+            case MintOpcode.MINT_ZEROBLK: {
+                // dest
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                // value
+                builder.i32_const(0);
+                // count
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                // memset
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(11);
+                builder.appendU8(0);
+                break;
+            }
+            case MintOpcode.MINT_ZEROBLK_IMM: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
                 break;
@@ -1434,7 +1528,7 @@ export function generateWasmBody(
                     } else
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDC_I4_M1) &&
+                    (opcode >= MintOpcode.MINT_LDC_I4_0) &&
                     (opcode <= MintOpcode.MINT_LDC_R8)
                 ) {
                     if (!emit_ldc(builder, ip, opcode))
@@ -1546,7 +1640,7 @@ export function generateWasmBody(
                 }
             }
 
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
+            if ((trace > 1) || traceOnError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
                 let stmtText = `${(<any>ip).toString(16)} ${opname} `;
                 const firstDreg = <any>ip + 2;
                 const firstSreg = firstDreg + (numDregs * 2);
@@ -2519,6 +2613,8 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
 
         case MintOpcode.MINT_ADD_I4_IMM:
         case MintOpcode.MINT_MUL_I4_IMM:
+        case MintOpcode.MINT_AND_I4_IMM:
+        case MintOpcode.MINT_OR_I4_IMM:
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
@@ -2526,6 +2622,14 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I4_IMM2:
+        case MintOpcode.MINT_MUL_I4_IMM2:
+        case MintOpcode.MINT_AND_I4_IMM2:
+        case MintOpcode.MINT_OR_I4_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i32_const(getArgI32(ip, 3));
             break;
 
         case MintOpcode.MINT_ADD_I8_IMM:
@@ -2537,6 +2641,12 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I8_IMM2:
+        case MintOpcode.MINT_MUL_I8_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i52_const(getArgI32(ip, 3));
             break;
 
         default:
@@ -2572,12 +2682,44 @@ function append_call_handler_store_ret_ip(
     builder.callHandlerReturnAddresses.push(retIp);
 }
 
+function getBranchDisplacement(
+    ip: MintOpcodePtr, opcode: MintOpcode
+) : number | undefined {
+    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
+        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
+        payloadAddress = <any>ip + 2 + (payloadOffset * 2);
+
+    let result : number;
+    switch (opArgType) {
+        case MintOpArgType.MintOpBranch:
+            result = getI32_unaligned(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortBranch:
+            result = getI16(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortAndShortBranch:
+            result = getI16(payloadAddress + 2);
+            break;
+        default:
+            return undefined;
+    }
+
+    if (traceBranchDisplacements)
+        mono_log_info(`${getOpcodeName(opcode)} @${ip} displacement=${result}`);
+
+    return result;
+}
+
 function emit_branch(
     builder: WasmBuilder, ip: MintOpcodePtr,
-    frame: NativePointer, opcode: MintOpcode, displacement?: number
+    frame: NativePointer, opcode: MintOpcode
 ): boolean {
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
+
+    const displacement = getBranchDisplacement(ip, opcode);
+    if (typeof (displacement) !== "number")
+        return false;
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -2592,15 +2734,7 @@ function emit_branch(
         case MintOpcode.MINT_BR_S: {
             const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER_S);
-            displacement = (
-                (opcode === MintOpcode.MINT_BR) ||
-                (opcode === MintOpcode.MINT_CALL_HANDLER)
-            )
-                ? getArgI32(ip, 1)
-                : getArgI16(ip, 1);
 
-            if (traceBranchDisplacements)
-                mono_log_info(`br.s @${ip} displacement=${displacement}`);
             const destination = <any>ip + (displacement * 2);
 
             if (displacement <= 0) {
@@ -2608,8 +2742,8 @@ function emit_branch(
                     // We found a backward branch target we can branch to, so we branch out
                     //  to the top of the loop body
                     // append_safepoint(builder, ip);
-                    if (traceBackBranches > 1)
-                        mono_log_info(`performing backward branch to 0x${destination.toString(16)}`);
+                    if (builder.backBranchTraceLevel > 1)
+                        mono_log_info(`0x${(<any>ip).toString(16)} performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
                         append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
@@ -2617,9 +2751,9 @@ function emit_branch(
                     return true;
                 } else {
                     if (destination < builder.cfg.entryIp) {
-                        if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                            mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-                    } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                            mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+                    } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                         mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
@@ -2653,7 +2787,6 @@ function emit_branch(
 
             // Load the condition
 
-            displacement = getArgI16(ip, 2);
             append_ldloc(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
             if (
                 (opcode === MintOpcode.MINT_BRFALSE_I4_S) ||
@@ -2684,26 +2817,21 @@ function emit_branch(
         }
     }
 
-    if (!displacement)
-        throw new Error("Branch had no displacement");
-    else if (traceBranchDisplacements)
-        mono_log_info(`${getOpcodeName(opcode)} @${ip} displacement=${displacement}`);
-
     const destination = <any>ip + (displacement * 2);
 
     if (displacement < 0) {
         if (builder.backBranchOffsets.indexOf(destination) >= 0) {
             // We found a backwards branch target we can reach via our outer trace loop, so
             //  we update eip and branch out to the top of the loop block
-            if (traceBackBranches > 1)
-                mono_log_info(`performing conditional backward branch to 0x${destination.toString(16)}`);
+            if (builder.backBranchTraceLevel > 1)
+                mono_log_info(`0x${(<any>ip).toString(16)} performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.cfg.branch(destination, true, isSafepoint ? CfgBranchType.SafepointConditional : CfgBranchType.Conditional);
             modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
         } else {
             if (destination < builder.cfg.entryIp) {
-                if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                    mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-            } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                    mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+            } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                 mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );
@@ -2741,10 +2869,6 @@ function emit_relop_branch(
     if (!relopInfo && !intrinsicFpBinop)
         return false;
 
-    const displacement = getArgI16(ip, 3);
-    if (traceBranchDisplacements)
-        mono_log_info(`relop @${ip} displacement=${displacement}`);
-
     const operandLoadOp = relopInfo
         ? relopInfo[1]
         : (
@@ -2779,7 +2903,7 @@ function emit_relop_branch(
         builder.callImport("relop_fp");
     }
 
-    return emit_branch(builder, ip, frame, opcode, displacement);
+    return emit_branch(builder, ip, frame, opcode);
 }
 
 function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {

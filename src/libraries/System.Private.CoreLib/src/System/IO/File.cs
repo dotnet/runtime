@@ -911,11 +911,6 @@ namespace System.IO
                 new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan),
                 encoding, detectEncodingFromByteOrderMarks: true);
 
-        private static StreamWriter AsyncStreamWriter(string path, Encoding encoding, bool append)
-            => new StreamWriter(
-                new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
-                encoding);
-
         public static Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
             => ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
 
@@ -1116,13 +1111,31 @@ namespace System.IO
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
             => WriteAllLinesAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken)) =>
+            WriteAllLinesAsync(path, contents, encoding, append: false, cancellationToken);
+
+        private static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, bool append, CancellationToken cancellationToken)
         {
             Validate(path, encoding);
             ArgumentNullException.ThrowIfNull(contents);
-            return cancellationToken.IsCancellationRequested
-                ? Task.FromCanceled(cancellationToken)
-                : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            StreamWriter writer;
+            try
+            {
+                writer = new StreamWriter(
+                    new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
+                    encoding);
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+
+            return InternalWriteAllLinesAsync(writer, contents, cancellationToken);
         }
 
         private static async Task InternalWriteAllLinesAsync(StreamWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
@@ -1159,14 +1172,8 @@ namespace System.IO
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
             => AppendAllLinesAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Validate(path, encoding);
-            ArgumentNullException.ThrowIfNull(contents);
-            return cancellationToken.IsCancellationRequested
-                ? Task.FromCanceled(cancellationToken)
-                : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
-        }
+        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken)) =>
+            WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
 
         /// <summary>
         /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.

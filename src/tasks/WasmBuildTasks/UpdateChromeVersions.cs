@@ -44,6 +44,9 @@ public partial class UpdateChromeVersions : MBU.Task
     [Required, NotNull]
     public string ChromeVersionsPath { get; set; } = string.Empty;
 
+    [Required, NotNull]
+    public string EnvVarsForPRPath { get; set; } = string.Empty;
+
     public int MaxMajorVersionsToCheck { get; set; } = 2;
 
     // start at the branch position found in all.json, and try to
@@ -70,14 +73,20 @@ public partial class UpdateChromeVersions : MBU.Task
             XmlDocument chromeVersionsXmlDoc = new XmlDocument();
             chromeVersionsXmlDoc.Load(ChromeVersionsPath);
             var osInfo = OSIdentifiers.Zip(OSPrefixes, (num, str) => new { Identifier = num, Prefix = str });
+            List<ChromeVersionSpec> versions = new();
             foreach (var info in osInfo)
             {
                 (ChromeVersionSpec version, string baseUrl) = await FindVersionFromChromiumDash(info.Prefix, info.Identifier).ConfigureAwait(false);
+                versions.Add(version);
                 bool hasMajorChanges = AreVersionsChanged(chromeVersionsXmlDoc, version, baseUrl);
                 if (hasMajorChanges)
                 {
                     VersionsChanged = UpdateChromeVersionsFile(chromeVersionsXmlDoc, version, baseUrl);
                 }
+            }
+            if (VersionsChanged)
+            {
+                UpdateEnvVarsForPRFile(versions);
             }
             return !Log.HasLoggedErrors;
         }
@@ -135,6 +144,26 @@ public partial class UpdateChromeVersions : MBU.Task
         }
         xmlDoc.Save(ChromeVersionsPath);
         return true;
+    }
+
+    private void UpdateEnvVarsForPRFile(List<ChromeVersionSpec> versions)
+    {
+        using StreamWriter writer = new StreamWriter(EnvVarsForPRPath);
+        foreach (var version in versions)
+        {
+            if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
+            {
+                writer.WriteLine($"CHROME_LINUX_VER={version.version}");
+            }
+            else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
+            {
+                writer.WriteLine($"CHROME_WIN_VER={version.version}");
+            }
+            else
+            {
+                throw new Exception($"UpdateEnvVarsForPRFile task was used with unknown OS: {version.os}");
+            }
+        }
     }
 
     private static void UpdateNodeValue(XmlDocument xmlDoc, string nodeName, string newValue)

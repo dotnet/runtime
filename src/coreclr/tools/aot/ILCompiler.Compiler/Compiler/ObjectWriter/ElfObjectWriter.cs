@@ -465,6 +465,7 @@ namespace ILCompiler.ObjectWriter
                 attributesBuilder.WriteAttribute(Tag_ABI_FP_number_model, 3); // IEEE 754
                 attributesBuilder.WriteAttribute(Tag_ABI_align_needed, 1); // 8-byte
                 attributesBuilder.WriteAttribute(Tag_ABI_align_preserved, 1); // 8-byte
+                attributesBuilder.WriteAttribute(Tag_ABI_VFP_args, 1); // FP parameters passes in VFP registers
                 attributesBuilder.WriteAttribute(Tag_CPU_unaligned_access, 0); // None
                 attributesBuilder.EndSection();
             }

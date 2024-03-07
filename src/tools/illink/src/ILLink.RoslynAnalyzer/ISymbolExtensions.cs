@@ -1,9 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -34,6 +39,14 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
+		internal static IEnumerable<AttributeData> GetAttributes (this ISymbol member, string attributeName)
+		{
+			foreach (var attr in member.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName (attributeName))
+					yield return attr;
+			}
+		}
+
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
@@ -56,6 +69,28 @@ namespace ILLink.RoslynAnalyzer
 				return DynamicallyAccessedMemberTypes.None;
 
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
+		}
+
+		internal static ValueSet<string> GetFeatureCheckAnnotations (this IPropertySymbol propertySymbol)
+		{
+			HashSet<string> featureSet = new ();
+			foreach (var attributeData in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute)) {
+				if (attributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
+					AddFeatures (featureType);
+			}
+			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
+
+			void AddFeatures (INamedTypeSymbol featureType) {
+				var featureName = featureType.GetDisplayName ();
+				if (!featureSet.Add (featureName))
+					return;
+
+				// Look at FeatureDependsOn attributes on the feature type.
+				foreach (var featureTypeAttributeData in featureType.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureDependsOnAttribute)) {
+					if (featureTypeAttributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
+						AddFeatures (featureTypeSymbol);
+				}
+			}
 		}
 
 		internal static bool TryGetReturnAttribute (this IMethodSymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)

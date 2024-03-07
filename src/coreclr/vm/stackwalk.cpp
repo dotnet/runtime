@@ -30,7 +30,6 @@ CrawlFrame::CrawlFrame()
     LIMITED_METHOD_DAC_CONTRACT;
     pCurGSCookie = NULL;
     pFirstGSCookie = NULL;
-    isCachedMethod = FALSE;
 }
 
 Assembly* CrawlFrame::GetAssembly()
@@ -995,11 +994,8 @@ StackWalkAction Thread::StackWalkFrames(PSTACKWALKFRAMESCALLBACK pCallback,
     {
         // Initialize the context
         memset(&ctx, 0x00, sizeof(T_CONTEXT));
-        SetIP(&ctx, 0);
-        SetSP(&ctx, 0);
-        SetFP(&ctx, 0);
         LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    starting with partial context\n"));
-        FillRegDisplay(&rd, &ctx);
+        FillRegDisplay(&rd, &ctx, !!(flags & LIGHTUNWIND));
     }
 
 #ifdef STACKWALKER_MAY_POP_FRAMES
@@ -1008,18 +1004,6 @@ StackWalkAction Thread::StackWalkFrames(PSTACKWALKFRAMESCALLBACK pCallback,
 #endif
 
     return StackWalkFramesEx(&rd, pCallback, pData, flags, pStartFrame);
-}
-
-StackWalkAction StackWalkFunctions(Thread * thread,
-                                   PSTACKWALKFRAMESCALLBACK pCallback,
-                                   VOID * pData)
-{
-    // Note: there are cases (i.e., exception handling) where we may never return from this function. This means
-    // that any C++ destructors pushed in this function will never execute, and it means that this function can
-    // never have a dynamic contract.
-    STATIC_CONTRACT_WRAPPER;
-
-    return thread->StackWalkFrames(pCallback, pData, FUNCTIONSONLY);
 }
 
 // ----------------------------------------------------------------------------
@@ -1203,7 +1187,8 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     m_crawl.pRD = pRegDisp;
 
-    m_codeManFlags = (ICodeManagerFlags)((flags & QUICKUNWIND) ? 0 : UpdateAllRegs);
+    m_codeManFlags = (ICodeManagerFlags)
+        (((flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) | ((flags & LIGHTUNWIND) ? LightUnwind : 0));
     m_scanFlag = ExecutionManager::GetScanFlags();
 
 #if defined(ELIMINATE_FEF)
@@ -1308,7 +1293,8 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 
     m_crawl.pRD = pRegDisp;
 
-    m_codeManFlags = (ICodeManagerFlags)((m_flags & QUICKUNWIND) ? 0 : UpdateAllRegs);
+    m_codeManFlags = (ICodeManagerFlags)
+        (((m_flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) | ((m_flags & LIGHTUNWIND) ? LightUnwind : 0));
 
     // make sure the REGDISPLAY is synchronized with the CONTEXT
     UpdateRegDisp();
@@ -1327,7 +1313,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         {
             // On 64-bit and ARM, we stop at the explicit frames contained in a managed stack frame
             // before the managed stack frame itself.
-            EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL);
+            EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
             curSP = GetSP(m_crawl.pRD->pCallerContext);
         }
 #endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
@@ -1477,9 +1463,6 @@ void StackFrameIterator::ResetCrawlFrame()
 #endif // FEATURE_EH_FUNCLETS
 
     m_crawl.pThread = this->m_pThread;
-
-    m_crawl.isCachedMethod  = false;
-    m_crawl.stackWalkCache.ClearEntry();
 
     m_crawl.pCurGSCookie   = NULL;
     m_crawl.pFirstGSCookie = NULL;
@@ -2562,76 +2545,17 @@ StackWalkAction StackFrameIterator::NextRaw(void)
              DBG_ADDR(GetRegdisplaySP(m_crawl.pRD)),
              DBG_ADDR(GetControlPC(m_crawl.pRD))));
 
-#if !defined(DACCESS_COMPILE) && defined(HAS_QUICKUNWIND)
-        StackwalkCacheEntry *pCacheEntry = m_crawl.GetStackwalkCacheEntry();
-        if (pCacheEntry != NULL)
+        if (!m_crawl.GetCodeManager()->UnwindStackFrame(
+                            m_crawl.pRD,
+                            &m_cachedCodeInfo,
+                            m_codeManFlags
+                                | m_crawl.GetCodeManagerFlags()
+                                | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0),
+                                                    &m_crawl.codeManState))
         {
-            _ASSERTE(m_crawl.stackWalkCache.Enabled() && (m_flags & LIGHTUNWIND));
-
-            // lightened schema: take stack unwind info from stackwalk cache
-            EECodeManager::QuickUnwindStackFrame(m_crawl.pRD, pCacheEntry, EECodeManager::UnwindCurrentStackFrame);
-        }
-        else
-#endif // !DACCESS_COMPILE && HAS_QUICKUNWIND
-        {
-#if !defined(DACCESS_COMPILE)
-            // non-optimized stack unwind schema, doesn't use StackwalkCache
-            UINT_PTR curSP = (UINT_PTR)GetRegdisplaySP(m_crawl.pRD);
-            UINT_PTR curIP = (UINT_PTR)GetControlPC(m_crawl.pRD);
-#endif // !DACCESS_COMPILE
-
-            bool fInsertCacheEntry = m_crawl.stackWalkCache.Enabled() &&
-                                     (m_flags & LIGHTUNWIND) &&
-                                     (m_pCachedGSCookie == NULL);
-
-            // Is this a dynamic method. Dynamic methods can be GC collected and so IP to method mapping
-            // is not persistent. Therefore do not cache information for this frame.
-            BOOL isCollectableMethod = ExecutionManager::IsCollectibleMethod(m_crawl.GetMethodToken());
-            if(isCollectableMethod)
-                fInsertCacheEntry = FALSE;
-
-            StackwalkCacheUnwindInfo unwindInfo;
-
-            if (!m_crawl.GetCodeManager()->UnwindStackFrame(
-                                m_crawl.pRD,
-                                &m_cachedCodeInfo,
-                                m_codeManFlags
-                                    | m_crawl.GetCodeManagerFlags()
-                                    | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0),
-                                                      &m_crawl.codeManState,
-                                (fInsertCacheEntry ? &unwindInfo : NULL)))
-            {
-                LOG((LF_CORPROF, LL_INFO100, "**PROF: m_crawl.GetCodeManager()->UnwindStackFrame failure leads to SWA_FAILED.\n"));
-                retVal = SWA_FAILED;
-                goto Cleanup;
-            }
-
-#if !defined(DACCESS_COMPILE)
-            // store into hashtable if fits, otherwise just use old schema
-            if (fInsertCacheEntry)
-            {
-                //
-                //  information we add to cache, consists of two parts:
-                //  1. SPOffset - locals, etc. of current method, adding which to current ESP we get to retAddr ptr
-                //  2. argSize - size of pushed function arguments, the rest we need to add to get new ESP
-                //  we have to store two parts of ESP delta, since we need to update pPC also, and so require retAddr ptr
-                //
-                //  newSP = oldSP + SPOffset + sizeof(PTR) + argSize
-                //
-                UINT_PTR SPOffset = (UINT_PTR)GetRegdisplayStackMark(m_crawl.pRD) - curSP;
-                UINT_PTR argSize  = (UINT_PTR)GetRegdisplaySP(m_crawl.pRD) - curSP - SPOffset - sizeof(void*);
-
-                StackwalkCacheEntry cacheEntry = {0};
-                if (cacheEntry.Init(
-                            curIP,
-                            SPOffset,
-                            &unwindInfo,
-                            argSize))
-                {
-                    m_crawl.stackWalkCache.Insert(&cacheEntry);
-                }
-            }
-#endif // !DACCESS_COMPILE
+            LOG((LF_CORPROF, LL_INFO100, "**PROF: m_crawl.GetCodeManager()->UnwindStackFrame failure leads to SWA_FAILED.\n"));
+            retVal = SWA_FAILED;
+            goto Cleanup;
         }
 
 #define FAIL_IF_SPECULATIVE_WALK(condition)             \
@@ -2746,14 +2670,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                     // better not be suspended.
                     CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
 
-#if !defined(DACCESS_COMPILE)
-                    if (m_crawl.stackWalkCache.Enabled() && (m_flags & LIGHTUNWIND))
-                    {
-                        m_crawl.isCachedMethod = m_crawl.stackWalkCache.Lookup((UINT_PTR)adr);
-                    }
-#endif // DACCESS_COMPILE
-
-                    EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry());
+                    EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
                     m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                 }
 #endif // RECORD_RESUMABLE_FRAME_SP
@@ -3024,16 +2941,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             // This must be a JITed/managed native method. There is no explicit frame.
             //------------------------------------------------------------------------
 
-#if !defined(DACCESS_COMPILE)
-            m_crawl.isCachedMethod = FALSE;
-            if (m_crawl.stackWalkCache.Enabled() && (m_flags & LIGHTUNWIND))
-            {
-                m_crawl.isCachedMethod = m_crawl.stackWalkCache.Lookup((UINT_PTR)GetControlPC(m_crawl.pRD));
-                _ASSERTE (m_crawl.isCachedMethod != m_crawl.stackWalkCache.IsEmpty());
-            }
-#endif // DACCESS_COMPILE
-
-
 #if defined(FEATURE_EH_FUNCLETS)
             m_crawl.isFilterFuncletCached = false;
 #endif // FEATURE_EH_FUNCLETS
@@ -3106,7 +3013,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // frame will be reported before its containing method.
 
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
-    EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry(), &m_cachedCodeInfo);
+    EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, &m_cachedCodeInfo, m_codeManFlags);
     pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
 #endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
@@ -3375,180 +3282,6 @@ void StackFrameIterator::ResetNextExInfoForSP(TADDR SP)
     }
 }
 #endif // FEATURE_EH_FUNCLETS
-
-#if defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
-static CrstStatic g_StackwalkCacheLock;                // Global StackwalkCache lock; only used on AMD64
-EXTERN_C void moveOWord(LPVOID src, LPVOID target);
-#endif // TARGET_AMD64
-
-/*
-    copies 64-bit *src to *target, atomically accessing the data
-    requires 64-bit alignment for atomic load/store
-*/
-inline static void atomicMoveCacheEntry(UINT64* src, UINT64* target)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef TARGET_X86
-    // the most negative value is used a sort of integer infinity
-    // value, so it have to be avoided
-    _ASSERTE(*src != 0x8000000000000000);
-    __asm
-    {
-        mov eax, src
-        fild qword ptr [eax]
-        mov eax, target
-        fistp qword ptr [eax]
-    }
-#elif defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
-    // On AMD64 there's no way to move 16 bytes atomically, so we need to take a lock before calling moveOWord().
-    CrstHolder ch(&g_StackwalkCacheLock);
-    moveOWord(src, target);
-#endif
-}
-
-/*
-============================================================
-Here is an implementation of StackwalkCache class, used to optimize performance
-of stack walking. Currently each CrawlFrame has a StackwalkCache member, which implements
-functionality for caching already walked methods (see Thread::StackWalkFramesEx).
-See class and corresponding types declaration at stackwalktypes.h
-We do use global cache g_StackwalkCache[] with InterlockCompareExchange, fitting
-each cache entry into 8 bytes.
-============================================================
-*/
-
-#ifndef DACCESS_COMPILE
-#define LOG_NUM_OF_CACHE_ENTRIES 10
-#else
-// Stack walk cache is disabled in DAC - save space
-#define LOG_NUM_OF_CACHE_ENTRIES 0
-#endif
-#define NUM_OF_CACHE_ENTRIES (1 << LOG_NUM_OF_CACHE_ENTRIES)
-
-static StackwalkCacheEntry g_StackwalkCache[NUM_OF_CACHE_ENTRIES] = {}; // Global StackwalkCache
-
-#ifdef DACCESS_COMPILE
-const BOOL StackwalkCache::s_Enabled = FALSE;
-#else
-BOOL StackwalkCache::s_Enabled = FALSE;
-
-/*
-    StackwalkCache class constructor.
-    Set "enable/disable optimization" flag according to registry key.
-*/
-StackwalkCache::StackwalkCache()
-{
-    CONTRACTL {
-       NOTHROW;
-       GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    ClearEntry();
-
-    static BOOL stackwalkCacheEnableChecked = FALSE;
-    if (!stackwalkCacheEnableChecked)
-    {
-        // We can enter this block on multiple threads because of racing.
-        // However, that is OK since this operation is idempotent
-
-        s_Enabled = ((g_pConfig->DisableStackwalkCache() == 0) &&
-                    // disable cache if for some reason it is not aligned
-                    IS_ALIGNED((void*)&g_StackwalkCache[0], STACKWALK_CACHE_ENTRY_ALIGN_BOUNDARY));
-        stackwalkCacheEnableChecked = TRUE;
-    }
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-// static
-void StackwalkCache::Init()
-{
-#if defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
-    g_StackwalkCacheLock.Init(CrstSecurityStackwalkCache, CRST_UNSAFE_ANYMODE);
-#endif // TARGET_AMD64
-}
-
-/*
-    Returns efficient hash table key based on provided IP.
-    CPU architecture dependent.
-*/
-inline unsigned StackwalkCache::GetKey(UINT_PTR IP)
-{
-    LIMITED_METHOD_CONTRACT;
-    return (unsigned)(((IP >> LOG_NUM_OF_CACHE_ENTRIES) ^ IP) & (NUM_OF_CACHE_ENTRIES-1));
-}
-
-/*
-    Looks into cache and returns StackwalkCache entry, if current IP is cached.
-    JIT team guarantees the same ESP offset for the same IPs for different call chains.
-*/
-BOOL StackwalkCache::Lookup(UINT_PTR IP)
-{
-    CONTRACTL {
-       NOTHROW;
-       GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    _ASSERTE(Enabled());
-    _ASSERTE(IP);
-
-    unsigned hkey = GetKey(IP);
-    _ASSERTE(IS_ALIGNED((void*)&g_StackwalkCache[hkey], STACKWALK_CACHE_ENTRY_ALIGN_BOUNDARY));
-    // Don't care about m_CacheEntry access atomicity, since it's private to this
-    // stackwalk/thread
-    atomicMoveCacheEntry((UINT64*)&g_StackwalkCache[hkey], (UINT64*)&m_CacheEntry);
-
-#ifdef _DEBUG
-    if (IP != m_CacheEntry.IP)
-    {
-        ClearEntry();
-    }
-#endif
-
-    return (IP == m_CacheEntry.IP);
-#else // TARGET_X86
-    return FALSE;
-#endif // TARGET_X86
-}
-
-/*
-    Caches data provided for current IP.
-*/
-void StackwalkCache::Insert(StackwalkCacheEntry *pCacheEntry)
-{
-    CONTRACTL {
-       NOTHROW;
-       GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    _ASSERTE(Enabled());
-    _ASSERTE(pCacheEntry);
-
-    unsigned hkey = GetKey(pCacheEntry->IP);
-    _ASSERTE(IS_ALIGNED((void*)&g_StackwalkCache[hkey], STACKWALK_CACHE_ENTRY_ALIGN_BOUNDARY));
-    atomicMoveCacheEntry((UINT64*)pCacheEntry, (UINT64*)&g_StackwalkCache[hkey]);
-}
-
-// static
-void StackwalkCache::Invalidate(LoaderAllocator * pLoaderAllocator)
-{
-    CONTRACTL {
-       NOTHROW;
-       GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (!s_Enabled)
-        return;
-
-    /* Note that we could just flush the entries corresponding to
-    pDomain if we wanted to get fancy. To keep things simple for now,
-    we just invalidate everything
-    */
-
-    ZeroMemory(PVOID(&g_StackwalkCache), sizeof(g_StackwalkCache));
-}
 
 //----------------------------------------------------------------------------
 //
