@@ -7,15 +7,14 @@ namespace Mono.Linker
 {
 	public static class DictionaryExtensions
 	{
-		public static void AddToList<TKey, TList, TValueElement> (this Dictionary<TKey, TList> me, TKey key, TValueElement value)
+		public static void AddToList<TKey, TElement> (this Dictionary<TKey, List<TElement>> me, TKey key, TElement value)
 			where TKey : notnull
-			where TList : ICollection<TValueElement>, new()
 		{
-			if (!me.TryGetValue (key, out TList? methods)) {
-				methods = new TList ();
-				me[key] = methods;
+			if (!me.TryGetValue (key, out List<TElement>? valueList)) {
+				valueList = new ();
+				me[key] = valueList;
 			}
-			methods.Add (value);
+			valueList.Add (value);
 		}
 	}
 }
