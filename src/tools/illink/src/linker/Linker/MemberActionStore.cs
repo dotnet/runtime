@@ -44,7 +44,7 @@ namespace Mono.Linker
 			}
 
 			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
-				&& IsCheckForDisabledFeature (method))
+				&& TryGetFeatureCheckValue (method, out _))
 				return MethodAction.ConvertToStub;
 
 			return MethodAction.Nothing;
@@ -55,21 +55,23 @@ namespace Mono.Linker
 			if (PrimarySubstitutionInfo.MethodStubValues.TryGetValue (method, out value))
 				return true;
 
-			if (TryGetSubstitutionInfo (method, out var embeddedXml)) {
-				return embeddedXml.MethodStubValues.TryGetValue (method, out value);
-			}
+			if (TryGetSubstitutionInfo (method, out var embeddedXml)
+				&& embeddedXml.MethodStubValues.TryGetValue (method, out value))
+				return true;
 
 			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
-				&& IsCheckForDisabledFeature (method)) {
-				value = false;
+				&& TryGetFeatureCheckValue (method, out bool bValue)) {
+				value = bValue ? 1 : 0;
 				return true;
 			}
 
 			return false;
 		}
 
-		internal bool IsCheckForDisabledFeature (MethodDefinition method)
+		internal bool TryGetFeatureCheckValue (MethodDefinition method, out bool value)
 		{
+			value = false;
+
 			if (!method.IsStatic)
 				return false;
 
@@ -82,39 +84,26 @@ namespace Mono.Linker
 			if (property.SetMethod != null)
 				return false;
 
-			HashSet<TypeDefinition> featureSet = new ();
-			foreach (var featureCheckAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureCheckAttribute")) {
-				if (featureCheckAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
+			foreach (var featureSwitchDefinitionAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute")) {
+				if (featureSwitchDefinitionAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: string switchName }])
 					continue;
 
-				if (_context.TryResolve (featureType) is not TypeDefinition featureTypeDef)
+				// If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
+				// We don't want to infer feature switch settings from FeatureGuard.
+				return _context.FeatureSettings.TryGetValue (switchName, out value);
+			}
+
+			foreach (var featureGuardAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
+				if (featureGuardAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
 					continue;
 
-				if (IsFeatureDisabled (featureTypeDef))
+				if (featureType.FullName == "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute") {
+					value = false;
 					return true;
+				}
 			}
 
 			return false;
-
-			bool IsFeatureDisabled (TypeDefinition featureType) {
-				if (!featureSet.Add (featureType))
-					return false;
-
-				if (featureType.FullName == "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute")
-					return true;
-
-				foreach (var featureSwitchDefinitionAttribute in _context.CustomAttributes.GetCustomAttributes (featureType, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute")) {
-					if (featureSwitchDefinitionAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: string switchName }])
-						continue;
-
-					if (_context.FeatureSettings.TryGetValue (switchName, out bool featureSetting) && !featureSetting)
-						return true;
-
-					return false;
-				}
-
-				return false;
-			}
 
 			static PropertyDefinition? FindProperty (MethodDefinition method) {
 				if (!method.IsGetter)

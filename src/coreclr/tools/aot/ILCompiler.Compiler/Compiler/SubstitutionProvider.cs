@@ -35,15 +35,17 @@ namespace ILCompiler
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
 
-                if (IsCheckForDisabledFeature(ecmaMethod))
-                    return BodySubstitution.Create(0);
+                if (TryGetFeatureCheckValue(ecmaMethod, out bool value))
+                    return BodySubstitution.Create(value ? 1 : 0);
             }
 
             return null;
         }
 
-        private bool IsCheckForDisabledFeature(EcmaMethod method)
+        private bool TryGetFeatureCheckValue(EcmaMethod method, out bool value)
         {
+            value = false;
+
             if (!method.Signature.IsStatic)
                 return false;
 
@@ -56,21 +58,20 @@ namespace ILCompiler
             if (property.SetMethod != null)
                 return false;
 
-            HashSet<EcmaType> featureSet = new();
-            foreach (var featureCheckAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureCheckAttribute"))
+            foreach (var featureSwitchDefinitionAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
             {
-                if (featureCheckAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
+                if (featureSwitchDefinitionAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: string switchName }])
                     continue;
 
-                if (IsFeatureDisabled(featureType))
-                    return true;
+                // If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
+                // We don't want to infer feature switch settings from FeatureGuard.
+                return _hashtable._switchValues.TryGetValue(switchName, out value);
             }
 
-            return false;
-
-            bool IsFeatureDisabled(EcmaType featureType) {
-                if (!featureSet.Add(featureType))
-                    return false;
+            foreach (var featureGuardAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute"))
+            {
+                if (featureGuardAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
+                    continue;
 
                 if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
                     switch (featureType.Name) {
@@ -86,20 +87,9 @@ namespace ILCompiler
                         break;
                     }
                 }
-
-                foreach (var featureSwitchDefinitionAttribute in featureType.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
-                {
-                    if (featureSwitchDefinitionAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: string switchName }])
-                        continue;
-
-                    if (_hashtable._switchValues.TryGetValue(switchName, out bool value) && !value)
-                        return true;
-
-                    return false;
-                }
-
-                return false;
             }
+
+            return false;
 
             static PropertyPseudoDesc FindProperty(EcmaMethod method)
             {
