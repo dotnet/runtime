@@ -111,7 +111,6 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         cmp     rcx, [C_VAR(g_ephemeral_high)]
         jnb     LOCAL_LABEL(Exit_ByRefWriteBarrier)
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         mov     rax, rcx
 
         mov     cl, [C_VAR(g_region_shr)]
@@ -160,7 +159,6 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
     LOCAL_LABEL(SetCardTableBit_ByRefWriteBarrier):
         lock or byte ptr [rcx], al
         jmp     LOCAL_LABEL(CheckCardBundle_ByRefWriteBarrier)
-#endif
 LOCAL_LABEL(CheckCardTableByte_ByRefWriteBarrier):
 
         // move current rdi value into rcx and then increment the pointers
