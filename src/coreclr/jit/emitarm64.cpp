@@ -3446,36 +3446,6 @@ const char* emitter::emitVectorRegName(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// emitSimdScalarRegName: Returns a SIMD scalar register name.
-//
-// Arguments:
-//    reg - A SIMD and floating-point register.
-//
-// Return value:
-//    A string  that represents a SIMD scalar register name.
-//
-const char* emitter::emitSimdScalarRegName(regNumber reg, emitAttr attr)
-{
-    assert(isVectorRegister(reg));
-    int index = (int)reg - (int)REG_V0;
-
-    switch (attr)
-    {
-        case EA_1BYTE:
-            return bRegNames[index];
-        case EA_2BYTE:
-            return hRegNames[index];
-        case EA_4BYTE:
-            return sRegNames[index];
-        case EA_8BYTE:
-            return dRegNames[index];
-        default:
-            unreached();
-            break;
-    }
-}
-
-//------------------------------------------------------------------------
 // emitPredicateRegName: Returns a predicate register name.
 //
 // Arguments:
@@ -26752,18 +26722,6 @@ void emitter::emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma)
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispElementIndex(index, addComma);
-}
-
-//------------------------------------------------------------------------
-// emitDispScalarReg: Display a the name of a scalar mode of a vector register
-//
-void emitter::emitDispScalarReg(regNumber reg, insOpts opt, bool addComma)
-{
-    assert(isVectorRegister(reg));
-    printf(emitSimdScalarRegName(reg, optGetSveElemsize(opt)));
-
-    if (addComma)
-        emitDispComma();
 }
 
 //------------------------------------------------------------------------
