@@ -23,13 +23,12 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
-        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void IsInterned(StringHandleOnStack src);
 
         public static string? IsInterned(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-            Intern(new StringHandleOnStack(ref str!));
+            IsInterned(new StringHandleOnStack(ref str!));
             return str;
         }
 
