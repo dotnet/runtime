@@ -16,7 +16,6 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public abstract int ArgumentCount { get; }
 
-        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         private static bool CanCreateArbitraryDelegates => RuntimeFeature.IsDynamicCodeSupported;
 
         #region Construction
