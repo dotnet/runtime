@@ -103,7 +103,7 @@ EXTERN_C ds_validate_t dnds_validate(uint32_t m)
     }
 }
 
-EXTERN_C bool dnds_is_big_endian(data_stream_context_t* cxt)
+EXTERN_C DATA_STREAM_EXPORT bool dnds_is_big_endian(data_stream_context_t* cxt)
 {
     assert(cxt != NULL && dnds_validate(cxt->magic) != dsv_invalid);
     return memcmp(&cxt->magic, big_endian, sizeof(big_endian)) == 0
@@ -136,7 +136,7 @@ static uint8_t* initial_allocation(
     return (uint8_t*)malloc(*allocated_size);
 }
 
-EXTERN_C bool dnds_init(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_init(
     data_stream_context_t* cxt,
     uint32_t stream_count,
     size_t const* stream_byte_lengths)
@@ -206,7 +206,7 @@ EXTERN_C bool dnds_init(
     return true;
 }
 
-EXTERN_C void dnds_destroy(data_stream_context_t* cxt)
+EXTERN_C DATA_STREAM_EXPORT void dnds_destroy(data_stream_context_t* cxt)
 {
     assert(dnds_validate(cxt->magic) != dsv_invalid);
     if (cxt->streams != NULL)
@@ -309,7 +309,7 @@ static stream_entry_t* alloc_stream_entry(data_stream_t* s, size_t needed)
     return e;
 }
 
-EXTERN_C bool dnds_define_type(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_define_type(
     data_stream_context_t* cxt,
     type_details_t const* details,
     size_t total_size,
@@ -345,7 +345,7 @@ EXTERN_C bool dnds_define_type(
     return true;
 }
 
-EXTERN_C data_stream_t* dnds_get_stream(
+EXTERN_C DATA_STREAM_EXPORT data_stream_t* dnds_get_stream(
     data_stream_context_t* cxt,
     size_t id)
 {
@@ -358,7 +358,7 @@ EXTERN_C data_stream_t* dnds_get_stream(
     return &cxt->streams[id];
 }
 
-EXTERN_C bool dnds_record_instance(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_record_instance(
     data_stream_t* str,
     uint16_t type,
     void* inst)
@@ -379,7 +379,7 @@ EXTERN_C bool dnds_record_instance(
     return true;
 }
 
-EXTERN_C bool dnds_record_blob(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_record_blob(
     data_stream_t* str,
     uint16_t type,
     uint16_t size,
@@ -516,7 +516,7 @@ static bool enum_type(
     return true;
 }
 
-EXTERN_C bool dnds_enum_type(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_enum_type(
     data_stream_context_t* cxt,
     on_next_type on_next,
     void* user_defined,
@@ -605,7 +605,7 @@ static bool enum_blobs(
     return true;
 }
 
-EXTERN_C bool dnds_enum_blobs(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_enum_blobs(
     data_stream_context_t* cxt,
     on_next_blob on_next,
     void* user_defined,
@@ -692,7 +692,7 @@ static bool enum_instances(
     return true;
 }
 
-EXTERN_C bool dnds_enum_instances(
+EXTERN_C DATA_STREAM_EXPORT bool dnds_enum_instances(
     data_stream_context_t* cxt,
     on_next_instance on_next,
     void* user_defined,

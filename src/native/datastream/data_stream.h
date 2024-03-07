@@ -9,6 +9,16 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#ifdef BUILD_SHARED_LIBRARY
+#ifdef _MSC_VER
+#define DATA_STREAM_EXPORT __declspec(dllexport)
+#else
+#define DATA_STREAM_EXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+#else
+#define DATA_STREAM_EXPORT
+#endif // BUILD_SHARED_LIBRARY
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -40,7 +50,7 @@ typedef enum
 ds_validate_t dnds_validate(uint32_t magic);
 
 // Determine if the data stream is big or little endian.
-bool dnds_is_big_endian(data_stream_context_t*);
+DATA_STREAM_EXPORT bool dnds_is_big_endian(data_stream_context_t*);
 
 //
 // Target APIs
@@ -48,13 +58,13 @@ bool dnds_is_big_endian(data_stream_context_t*);
 
 // Initialize the data stream.
 // Statically allocates streams with a default block size.
-bool dnds_init(
+DATA_STREAM_EXPORT bool dnds_init(
     data_stream_context_t*,
     uint32_t stream_count,
     size_t const* stream_byte_lengths);
 
 // Deallocate all memory associated with the data stream.
-void dnds_destroy(data_stream_context_t*);
+DATA_STREAM_EXPORT void dnds_destroy(data_stream_context_t*);
 
 // Define a maximum value for the type datatype.
 #define MAX_TYPE_SIZE UINT16_MAX
@@ -77,7 +87,7 @@ typedef struct field_offset__
 static_assert(sizeof(field_offset_t) == sizeof(uint32_t), "Field offset structures should be 4 bytes");
 
 // Define a type in the data stream
-bool dnds_define_type(
+DATA_STREAM_EXPORT bool dnds_define_type(
     data_stream_context_t*,
     type_details_t const* details,
     size_t total_size,
@@ -85,18 +95,18 @@ bool dnds_define_type(
     field_offset_t const* offsets);
 
 // Get an available stream to write to
-data_stream_t* dnds_get_stream(
+DATA_STREAM_EXPORT data_stream_t* dnds_get_stream(
     data_stream_context_t*,
     size_t id);
 
 // Record an instance in the stream
-bool dnds_record_instance(
+DATA_STREAM_EXPORT bool dnds_record_instance(
     data_stream_t*,
     uint16_t type,
     void* inst);
 
 // Record a data blob in the stream
-bool dnds_record_blob(
+DATA_STREAM_EXPORT bool dnds_record_blob(
     data_stream_t*,
     uint16_t type,
     uint16_t size,
@@ -121,7 +131,7 @@ typedef bool(*on_next_type)(
     void* user_defined);
 
 // Enumerate the types in the data stream
-bool dnds_enum_type(
+DATA_STREAM_EXPORT bool dnds_enum_type(
     data_stream_context_t*,
     on_next_type on_next,
     void* user_defined,
@@ -135,7 +145,7 @@ typedef bool(*on_next_blob)(
     void* user_defined);
 
 // Enumerate all blobs in the data stream
-bool dnds_enum_blobs(
+DATA_STREAM_EXPORT bool dnds_enum_blobs(
     data_stream_context_t*,
     on_next_blob on_next,
     void* user_defined,
@@ -148,7 +158,7 @@ typedef bool(*on_next_instance)(
     void* user_defined);
 
 // Enumerate all instances in the data stream
-bool dnds_enum_instances(
+DATA_STREAM_EXPORT bool dnds_enum_instances(
     data_stream_context_t*,
     on_next_instance on_next,
     void* user_defined,
