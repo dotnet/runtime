@@ -113,9 +113,9 @@ namespace ILCompiler
 
             return callConv switch
             {
-                UnmanagedCallingConventions.Stdcall => string.Concat("_", unmangledName, "@", signatureBytes.ToString()),
-                UnmanagedCallingConventions.Fastcall => string.Concat("@", unmangledName, "@", signatureBytes.ToString()),
-                UnmanagedCallingConventions.Cdecl => string.Concat("_", unmangledName),
+                UnmanagedCallingConventions.Stdcall => $"_{unmangledName}@{signatureBytes}",
+                UnmanagedCallingConventions.Fastcall => $"@{unmangledName}@{signatureBytes}",
+                UnmanagedCallingConventions.Cdecl => $"_{unmangledName}",
                 _ => throw new System.NotImplementedException()
             };
         }
