@@ -3296,6 +3296,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int need_null_check = is_virtual;
 	int fp_sreg = -1, first_sreg = -1, dreg = -1;
 	gboolean is_delegate_invoke = FALSE;
+	InterpInst *null_check = NULL;
 
 	guint32 token = read32 (td->ip + 1);
 
@@ -3548,6 +3549,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_ins_set_sreg (td->last_ins, sp->var);
 		set_type_and_var (td, sp, sp->type, sp->klass);
 		interp_ins_set_dreg (td->last_ins, sp->var);
+		// If the call instruction will do a null check, then this instruction
+		// will be transformed into a simple MOV, so it can be optimized out
+		null_check = td->last_ins;
 	}
 
 	/* Offset the function pointer when emitting convert instructions */
@@ -3813,6 +3817,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT_FAST);
 				td->last_ins->data [1] = get_virt_method_slot (target_method);
+				null_check->opcode = MINT_MOV_P;
 			} else {
 				interp_add_ins (td, MINT_CALL);
 			}
