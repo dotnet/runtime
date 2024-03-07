@@ -59,6 +59,7 @@ namespace Microsoft.Workload.Build.Tasks
         public string[]       NuGetConfigPackageSourceMappings { get; set; } = Array.Empty<string>();
         public string         ExtraWorkloadInstallCommandArguments { get; set; } = string.Empty;
         public string?        IntermediateOutputPath { get; set; }
+        public string         PackageSourceNameForBuiltPackages { get; set; } = "nuget-local";
         public bool           OnlyUpdateManifests { get; set; }
         public bool           SkipTempDirectoryCleanup { get; set; }
 
@@ -289,7 +290,7 @@ namespace Microsoft.Workload.Build.Tasks
                 throw new LogAsErrorException($"Could not find {xpath} in {TemplateNuGetConfigPath}");
 
             var newPackageSourceElement = new XElement("add",
-                                            new XAttribute("key", "nuget-local"),
+                                            new XAttribute("key", PackageSourceNameForBuiltPackages),
                                             new XAttribute("value", $"file://{LocalNuGetsPath}"));
             if (packageSources.LastNode is not null)
             {
@@ -314,7 +315,7 @@ namespace Microsoft.Workload.Build.Tasks
                 }
 
                 var newPackageSourceMappingElement = new XElement("packageSource",
-                                                        new XAttribute("key", "nuget-local"),
+                                                        new XAttribute("key", PackageSourceNameForBuiltPackages),
                                                         NuGetConfigPackageSourceMappings.Select
                                                             (pattern => new XElement("package", new XAttribute("pattern", pattern))));
                 if (packageSourceMapping.FirstNode is not null)
