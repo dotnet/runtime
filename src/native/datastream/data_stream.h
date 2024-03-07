@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <assert.h>
 
 #ifdef BUILD_SHARED_LIBRARY
@@ -39,18 +38,22 @@ typedef struct data_stream_context__
 } data_stream_context_t;
 
 // Validation results for a data stream.
-typedef enum
+enum
 {
     dsv_invalid,
     dsv_little_endian,
     dsv_big_endian,
-} ds_validate_t;
+};
+typedef int32_t ds_validate_t;
 
 // Validate the magic number is valid
 ds_validate_t dnds_validate(uint32_t magic);
 
+// Boolean return type for data stream functions.
+typedef unsigned char ds_bool;
+
 // Determine if the data stream is big or little endian.
-DATA_STREAM_EXPORT bool dnds_is_big_endian(data_stream_context_t*);
+DATA_STREAM_EXPORT ds_bool dnds_is_big_endian(data_stream_context_t*);
 
 //
 // Target APIs
@@ -58,7 +61,7 @@ DATA_STREAM_EXPORT bool dnds_is_big_endian(data_stream_context_t*);
 
 // Initialize the data stream.
 // Statically allocates streams with a default block size.
-DATA_STREAM_EXPORT bool dnds_init(
+DATA_STREAM_EXPORT ds_bool dnds_init(
     data_stream_context_t*,
     uint32_t stream_count,
     size_t const* stream_byte_lengths);
@@ -87,7 +90,7 @@ typedef struct field_offset__
 static_assert(sizeof(field_offset_t) == sizeof(uint32_t), "Field offset structures should be 4 bytes");
 
 // Define a type in the data stream
-DATA_STREAM_EXPORT bool dnds_define_type(
+DATA_STREAM_EXPORT ds_bool dnds_define_type(
     data_stream_context_t*,
     type_details_t const* details,
     size_t total_size,
@@ -100,13 +103,13 @@ DATA_STREAM_EXPORT data_stream_t* dnds_get_stream(
     size_t id);
 
 // Record an instance in the stream
-DATA_STREAM_EXPORT bool dnds_record_instance(
+DATA_STREAM_EXPORT ds_bool dnds_record_instance(
     data_stream_t*,
     uint16_t type,
     void* inst);
 
 // Record a data blob in the stream
-DATA_STREAM_EXPORT bool dnds_record_blob(
+DATA_STREAM_EXPORT ds_bool dnds_record_blob(
     data_stream_t*,
     uint16_t type,
     uint16_t size,
@@ -118,12 +121,12 @@ DATA_STREAM_EXPORT bool dnds_record_blob(
 
 typedef struct memory_reader__
 {
-    bool(*read_ptr)(struct memory_reader__*,intptr_t,size_t*,void**);
+    ds_bool(*read_ptr)(struct memory_reader__*,intptr_t,size_t*,void**);
     void(*free_ptr)(struct memory_reader__*,size_t,void*);
 } memory_reader_t;
 
 // Return false to stop enumeration
-typedef bool(*on_next_type)(
+typedef ds_bool(*on_next_type)(
     type_details_t const* details,
     size_t total_size,
     size_t offsets_length,
@@ -131,34 +134,34 @@ typedef bool(*on_next_type)(
     void* user_defined);
 
 // Enumerate the types in the data stream
-DATA_STREAM_EXPORT bool dnds_enum_type(
+DATA_STREAM_EXPORT ds_bool dnds_enum_type(
     data_stream_context_t*,
     on_next_type on_next,
     void* user_defined,
     memory_reader_t* reader);
 
 // Return false to stop enumeration
-typedef bool(*on_next_blob)(
+typedef ds_bool(*on_next_blob)(
     uint16_t type,
     uint16_t data_size_bytes,
     void* data,
     void* user_defined);
 
 // Enumerate all blobs in the data stream
-DATA_STREAM_EXPORT bool dnds_enum_blobs(
+DATA_STREAM_EXPORT ds_bool dnds_enum_blobs(
     data_stream_context_t*,
     on_next_blob on_next,
     void* user_defined,
     memory_reader_t* reader);
 
 // Return false to stop enumeration
-typedef bool(*on_next_instance)(
+typedef ds_bool(*on_next_instance)(
     uint16_t type,
     intptr_t instance,
     void* user_defined);
 
 // Enumerate all instances in the data stream
-DATA_STREAM_EXPORT bool dnds_enum_instances(
+DATA_STREAM_EXPORT ds_bool dnds_enum_instances(
     data_stream_context_t*,
     on_next_instance on_next,
     void* user_defined,
