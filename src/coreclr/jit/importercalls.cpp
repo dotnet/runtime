@@ -2059,11 +2059,8 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
     impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
 
-    // Indicate the error register will be checked after this call returns
-    call->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
-
-    GenTree* errorInitValueNode = gtNewIconNode(0);
-    call->gtArgs.InsertAfter(this, swiftErrorArg, NewCallArg::Primitive(errorInitValueNode).WellKnown(WellKnownArg::SwiftError));
+    GenTree* errorSentinelValueNode = gtNewIconNode(0);
+    call->gtArgs.InsertAfter(this, swiftErrorArg, NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
 
     // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
     call->gtArgs.Remove(swiftErrorArg);
