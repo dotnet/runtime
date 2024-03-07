@@ -2844,8 +2844,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            assert(imm >= 0);
-            assert(imm < (ssize_t)(1 << (6 - genLog2(optGetSveElemsize(id->idInsOpt())))));
+            assert(isValidBroadcastImm(imm, optGetSveElemsize(id->idInsOpt())));
             break;
 
         case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
@@ -10143,20 +10142,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             {
                 return emitIns_R_R_I(INS_sve_dup, attr, reg1, reg2, imm, opt, sopt);
             }
-            return emitIns_R_R_I(INS_sve_cpy, attr, reg1, reg2, imm, opt, sopt);
-
-        case INS_sve_dup:
-            assert(insOptsScalable(opt));
-            assert(isVectorRegister(reg1)); // DDDDD
-            assert(isVectorRegister(reg2)); // GGGG
-            // imm fits within 0 <= imm < (7 - (log2(bits_in_lane) + 1))
-            // e.g. for B => imm < 2**6, H => imm < 2**5, ...
-            assert(imm >= 0);
-            assert(imm < (ssize_t)(1 << (6 - genLog2(optGetSveElemsize(opt)))));
-            fmt = IF_SVE_BW_2A;
-            ins = INS_sve_mov; // Set preferred alias for disassembly
-            break;
-
+            FALLTHROUGH;
         case INS_sve_cpy:
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));    // DDDDD
@@ -10183,6 +10169,15 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
             // MOV is an alias for CPY, and is always the preferred disassembly.
             ins = INS_sve_mov;
+            break;
+
+        case INS_sve_dup:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1)); // DDDDD
+            assert(isVectorRegister(reg2)); // GGGG
+            assert(isValidBroadcastImm(imm, optGetSveElemsize(opt)));
+            fmt = IF_SVE_BW_2A;
+            ins = INS_sve_mov; // Set preferred alias for disassembly
             break;
 
         case INS_sve_pmov:
@@ -19110,11 +19105,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
  */
 /*static*/ emitter::code_t emitter::insEncodeSveBroadcastIndex(emitAttr elemsize, ssize_t index)
 {
-    code_t   bits       = (code_t)index;
     unsigned lane_bytes = genLog2(elemsize) + 1;
-    bits <<= lane_bytes;
-    bits |= (1 << (lane_bytes - 1));
-    return insEncodeSplitUimm<23, 22, 20, 16>(bits);
+    code_t   tsz        = (1 << (lane_bytes - 1));
+    code_t   imm        = (code_t)index << lane_bytes | tsz;
+    return insEncodeSplitUimm<23, 22, 20, 16>(imm);
 }
 
 /*****************************************************************************
@@ -30436,13 +30430,10 @@ void emitter::emitDispInsHelp(
                 emitDispSveReg(id->idReg2(), id->idInsOpt(), false); // nnnnn
                 emitDispElementIndex(imm, false);
             }
-            else if (imm == 0)
-            {
-                emitDispReg(id->idReg2(), optGetSveElemsize(id->idInsOpt()), false);
-            }
             else
             {
-                unreached();
+                assert(imm == 0);
+                emitDispReg(id->idReg2(), optGetSveElemsize(id->idInsOpt()), false);
             }
             break;
 
