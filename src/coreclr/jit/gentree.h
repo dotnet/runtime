@@ -4861,7 +4861,6 @@ public:
 
 #ifdef SWIFT_SUPPORT
     bool HasSwiftErrorHandling() const { return m_hasSwiftErrorHandling; }
-    void SetHasSwiftErrorHandling() { m_hasSwiftErrorHandling = true; }
 #endif // SWIFT_SUPPORT
 
 #ifdef UNIX_X86_ABI

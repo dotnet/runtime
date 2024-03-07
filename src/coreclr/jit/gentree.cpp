@@ -1733,6 +1733,11 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             m_hasRetBuffer = true;
             break;
+#ifdef SWIFT_SUPPORT
+        case WellKnownArg::SwiftError:
+            m_hasSwiftErrorHandling = true;
+            break;
+#endif // SWIFT_SUPPORT
         default:
             break;
     }

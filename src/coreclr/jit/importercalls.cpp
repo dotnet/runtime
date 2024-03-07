@@ -2066,7 +2066,6 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     GenTree* errorSentinelValueNode = gtNewIconNode(0);
     call->gtArgs.InsertAfter(this, swiftErrorArg,
                              NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
-    call->gtArgs.SetHasSwiftErrorHandling();
 
     // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
     call->gtArgs.Remove(swiftErrorArg);
