@@ -410,7 +410,7 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
-EXTERN_C NATIVEAOT_API void* QCALLTYPE RhpGetCurrentThread()
+EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
 {
     return ThreadStore::GetCurrentThread();
 }

@@ -44,7 +44,7 @@ FCIMPL0(void, RhDebugBreak)
 FCIMPLEND
 
 // Busy spin for the given number of iterations.
-EXTERN_C NATIVEAOT_API void QCALLTYPE RhSpinWait(int32_t iterations)
+EXTERN_C void QCALLTYPE RhSpinWait(int32_t iterations)
 {
     ASSERT(iterations > 0);
 
@@ -57,7 +57,7 @@ EXTERN_C NATIVEAOT_API void QCALLTYPE RhSpinWait(int32_t iterations)
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C NATIVEAOT_API UInt32_BOOL QCALLTYPE RhYield()
+EXTERN_C UInt32_BOOL QCALLTYPE RhYield()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -66,7 +66,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL QCALLTYPE RhYield()
     return PalSwitchToThread();
 }
 
-EXTERN_C NATIVEAOT_API void QCALLTYPE RhFlushProcessWriteBuffers()
+EXTERN_C void QCALLTYPE RhFlushProcessWriteBuffers()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -343,14 +343,14 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 }
 FCIMPLEND
 
-EXTERN_C NATIVEAOT_API uint64_t QCALLTYPE RhpGetTickCount64()
+EXTERN_C uint64_t QCALLTYPE RhpGetTickCount64()
 {
     return PalGetTickCount64();
 }
 
-EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
+EXTERN_C int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+EXTERN_C int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 

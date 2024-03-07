@@ -96,7 +96,7 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
 #ifdef WIN32
 
@@ -272,7 +272,7 @@ FCDECL0(int, RhpGetThunkBlockSize);
 FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
 FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
     static int nextThunkDataMapping = 0;
 
@@ -325,7 +325,7 @@ FCDECL0(int, RhpGetNumThunksPerBlock);
 FCDECL0(int, RhpGetThunkSize);
 FCDECL0(int, RhpGetThunkBlockSize);
 
-EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
     static void* pThunksTemplateAddress = NULL;
 
