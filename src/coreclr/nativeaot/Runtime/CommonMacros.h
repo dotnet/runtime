@@ -194,48 +194,56 @@ typedef uint8_t CODE_LOCATION;
 // Additionally, for the sake of simplicity we don't decorate the symbol names.
 //
 // In order to bridge the managed calling convention we use two tricks:
-// - The COOP_PINVOKE_HELPER macro reorders parameters for any method with 4 or more arguments.
+// - The FCIMPL and FCDECL macros reorder parameters for any method with 4 or more arguments.
 // - A linker comment is used to pass the "/alternatename:foo=@foo@4" switch to allow the
 //   symbols to be resolved to the fastcall decorated name.
 
-#define COOP_ARGHELPER_NAME(_0, _1, _2, _3, _4, _5, NAME, ...) NAME
-#define COOP_ARGHELPER_NAME_(tuple) COOP_ARGHELPER_NAME tuple
+#define FCALL_ARGHELPER_NAME(_0, _1, _2, _3, _4, _5, NAME, ...) NAME
+#define FCALL_ARGHELPER_NAME_(tuple) FCALL_ARGHELPER_NAME tuple
 
-#define COOP_ARGHELPER0(dummy) ()
-#define COOP_ARGHELPER1(dummy, a) (a)
-#define COOP_ARGHELPER2(dummy, a, b) (a, b)
-#define COOP_ARGHELPER3(dummy, a, b, c) (a, b, c)
-#define COOP_ARGHELPER4(dummy, a, b, c, d) (a, b, d, c)
-#define COOP_ARGHELPER5(dummy, a, b, c, d, e) (a, b, e, d, c)
+#define FCALL_ARGHELPER0(dummy) ()
+#define FCALL_ARGHELPER1(dummy, a) (a)
+#define FCALL_ARGHELPER2(dummy, a, b) (a, b)
+#define FCALL_ARGHELPER3(dummy, a, b, c) (a, b, c)
+#define FCALL_ARGHELPER4(dummy, a, b, c, d) (a, b, d, c)
+#define FCALL_ARGHELPER5(dummy, a, b, c, d, e) (a, b, e, d, c)
 
-#define COOP_STRINGIFY(s) #s
-#define COOP_XSTRINGIFY(s) COOP_STRINGIFY(s)
-#define COOP_ARGHELPER_STACKSIZE(...) COOP_ARGHELPER_NAME_((__VA_ARGS__, 20, 16, 12, 8, 4, 0))
+#define FCALL_STRINGIFY(s) #s
+#define FCALL_XSTRINGIFY(s) FCALL_STRINGIFY(s)
+#define FCALL_ARGHELPER_STACKSIZE(...) FCALL_ARGHELPER_NAME_((__VA_ARGS__, 20, 16, 12, 8, 4, 0))
 
-#define COOP_FASTCALL_ALTNAME(_method, _argSize) COOP_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
-#define COOP_FASTCALL_ALTNAME_IMPORT(_method, _argSize) COOP_XSTRINGIFY(/alternatename:@_method@_argSize=_method)
+#define FCALL_FASTCALL_ALTNAME(_method, _argSize) FCALL_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
+#define FCALL_FASTCALL_ALTNAME_IMPORT(_method, _argSize) FCALL_XSTRINGIFY(/alternatename:@_method@_argSize=_method)
 
-#define COOP_METHOD_NAME(name, ...) name
-#define COOP_METHOD_NAME_(tuple) COOP_METHOD_NAME tuple
-#define COOP_METHOD_ARGS(...) COOP_ARGHELPER_NAME_((__VA_ARGS__, COOP_ARGHELPER5, COOP_ARGHELPER4, COOP_ARGHELPER3, COOP_ARGHELPER2, COOP_ARGHELPER1, COOP_ARGHELPER0)) (__VA_ARGS__)
-#define COOP_METHOD_ARGS_(tuple) COOP_METHOD_ARGS tuple
+#define FCALL_METHOD_NAME(name, ...) name
+#define FCALL_METHOD_NAME_(tuple) FCALL_METHOD_NAME tuple
+#define FCALL_METHOD_ARGS(...) FCALL_ARGHELPER_NAME_((__VA_ARGS__, FCALL_ARGHELPER5, FCALL_ARGHELPER4, FCALL_ARGHELPER3, FCALL_ARGHELPER2, FCALL_ARGHELPER1, FCALL_ARGHELPER0)) (__VA_ARGS__)
+#define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
-#define COOP_PINVOKE_HELPER(_rettype, ...) \
-    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME(COOP_METHOD_NAME_((__VA_ARGS__)), COOP_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV COOP_METHOD_NAME_((__VA_ARGS__)) COOP_METHOD_ARGS_((__VA_ARGS__))
-#define COOP_PINVOKE_HELPER_IMPORT(_rettype, ...) \
-    _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME_IMPORT(COOP_METHOD_NAME_((__VA_ARGS__)), COOP_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV COOP_METHOD_NAME_((__VA_ARGS__)) COOP_METHOD_ARGS_((__VA_ARGS__))
+#define FCDECL(_rettype, ...) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_FASTCALL_ALTNAME_IMPORT(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
+#define FCIMPL(_rettype, ...) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_FASTCALL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
+    {
+#define FCIMPLEND \
+    }
 
 #else
 
-#define COOP_PINVOKE_HELPER(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
-#define COOP_PINVOKE_HELPER_IMPORT COOP_PINVOKE_HELPER
+#define FCDECL(_rettype, ...) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
+#define FCIMPL(_rettype, ...) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__)) \
+    {
+#define FCIMPLEND \
+    }
 
 #endif
 
-#define PINVOKE_HELPER(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
-#define PREEMPT_PINVOKE_HELPER(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
+#define QCDECL(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
+#define QCIMPL(_rettype, ...) EXTERN_C NATIVEAOT_API _rettype METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
 
 typedef bool CLR_BOOL;
 

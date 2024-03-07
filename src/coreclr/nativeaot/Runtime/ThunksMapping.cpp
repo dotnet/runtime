@@ -55,42 +55,48 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 }
 #endif
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping)
+FCIMPL(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
     return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock)
+FCIMPL(int, RhpGetNumThunksPerBlock)
 {
     return min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
         (OS_PAGE_SIZE - POINTER_SIZE) / (POINTER_SIZE * 2)      // Number of pointer pairs, minus the jump stub cell, that can fit in a page
     );
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize)
+FCIMPL(int, RhpGetThunkSize)
 {
     return THUNK_SIZE;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
+FCIMPL(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
 {
     return (void*)(((uintptr_t)pThunkStubAddress & ~(OS_PAGE_SIZE - 1)) + THUNKS_MAP_SIZE);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
+FCIMPL(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
 {
     return (void*)(((uintptr_t)pThunkDataAddress & ~(OS_PAGE_SIZE - 1)) - THUNKS_MAP_SIZE);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize)
+FCIMPL(int, RhpGetThunkBlockSize)
 {
     return OS_PAGE_SIZE;
 }
+FCIMPLEND
 
-PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
+QCIMPL(void*, RhAllocateThunksMapping)
 {
 #ifdef WIN32
 
@@ -260,13 +266,13 @@ PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
 extern "C" uintptr_t g_pThunkStubData;
 uintptr_t g_pThunkStubData = NULL;
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockCount);
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping);
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize);
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, void* addr);
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, void* addr);
+FCDECL(int, RhpGetThunkBlockCount);
+FCDECL(int, RhpGetNumThunkBlocksPerMapping);
+FCDECL(int, RhpGetThunkBlockSize);
+FCDECL(void*, RhpGetThunkDataBlockAddress, void* addr);
+FCDECL(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
+QCIMPL(void*, RhAllocateThunksMapping)
 {
     static int nextThunkDataMapping = 0;
 
@@ -313,13 +319,13 @@ PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
 
 #else // FEATURE_FIXED_POOL_THUNKS
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunksBase);
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping);
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock);
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize);
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize);
+FCDECL(void*, RhpGetThunksBase);
+FCDECL(int, RhpGetNumThunkBlocksPerMapping);
+FCDECL(int, RhpGetNumThunksPerBlock);
+FCDECL(int, RhpGetThunkSize);
+FCDECL(int, RhpGetThunkBlockSize);
 
-PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping)
+QCIMPL(void*, RhAllocateThunksMapping)
 {
     static void* pThunksTemplateAddress = NULL;
 

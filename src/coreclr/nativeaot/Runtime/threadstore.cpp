@@ -410,20 +410,22 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
-PREEMPT_PINVOKE_HELPER(void *, RhpGetCurrentThread)
+QCIMPL(void *, RhpGetCurrentThread)
 {
     return ThreadStore::GetCurrentThread();
 }
 
-COOP_PINVOKE_HELPER(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
+FCIMPL(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
 {
     GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, void* thread)
+FCIMPL(void, RhpCancelThreadAbort, void* thread)
 {
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }
+FCIMPLEND
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 

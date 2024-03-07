@@ -37,13 +37,14 @@
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
 
-COOP_PINVOKE_HELPER(void, RhDebugBreak)
+FCIMPL(void, RhDebugBreak)
 {
     PalDebugBreak();
 }
+FCIMPLEND
 
 // Busy spin for the given number of iterations.
-PINVOKE_HELPER(void, RhSpinWait, int32_t iterations)
+QCIMPL(void, RhSpinWait, int32_t iterations)
 {
     ASSERT(iterations > 0);
 
@@ -56,7 +57,7 @@ PINVOKE_HELPER(void, RhSpinWait, int32_t iterations)
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-PREEMPT_PINVOKE_HELPER(UInt32_BOOL, RhYield)
+QCIMPL(UInt32_BOOL, RhYield)
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -65,7 +66,7 @@ PREEMPT_PINVOKE_HELPER(UInt32_BOOL, RhYield)
     return PalSwitchToThread();
 }
 
-PREEMPT_PINVOKE_HELPER(void, RhFlushProcessWriteBuffers)
+QCIMPL(void, RhFlushProcessWriteBuffers)
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -81,7 +82,7 @@ PREEMPT_PINVOKE_HELPER(void, RhFlushProcessWriteBuffers)
 // modules are available based on the return count. It is also possible to call this method without an array,
 // in which case just the module count is returned (note that it's still possible for the module count to
 // increase between calls to this method).
-COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, Array * pResultArray)
+FCIMPL(uint32_t, RhGetLoadedOSModules, Array * pResultArray)
 {
     // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
 
@@ -107,8 +108,9 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, Array * pResultArray)
 
     return cModules;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, PTR_VOID pPointerVal)
+FCIMPL(HANDLE, RhGetOSModuleFromPointer, PTR_VOID pPointerVal)
 {
     ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress(pPointerVal);
 
@@ -117,8 +119,9 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, PTR_VOID pPointerVal)
 
     return NULL;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhFindBlob, TypeManagerHandle *pTypeManagerHandle, uint32_t blobId, uint8_t ** ppbBlob, uint32_t * pcbBlob)
+FCIMPL(FC_BOOL_RET, RhFindBlob, TypeManagerHandle *pTypeManagerHandle, uint32_t blobId, uint8_t ** ppbBlob, uint32_t * pcbBlob)
 {
     TypeManagerHandle typeManagerHandle = *pTypeManagerHandle;
 
@@ -137,11 +140,13 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhFindBlob, TypeManagerHandle *pTypeManagerHand
 
     FC_RETURN_BOOL(pBlob != NULL);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void *, RhGetTargetOfUnboxingAndInstantiatingStub, void * pUnboxStub)
+FCIMPL(void *, RhGetTargetOfUnboxingAndInstantiatingStub, void * pUnboxStub)
 {
     return GetRuntimeInstance()->GetTargetOfUnboxingAndInstantiatingStub(pUnboxStub);
 }
+FCIMPLEND
 
 #if TARGET_ARM
 //*****************************************************************************
@@ -193,7 +198,7 @@ inline int32_t GetThumb2BlRel24(uint16_t * p)
 
 // Given a pointer to code, find out if this points to an import stub
 // or unboxing stub, and if so, return the address that stub jumps to
-COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
+FCIMPL(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 {
     bool unboxingStub = false;
 
@@ -336,15 +341,16 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 
     return pCodeOrg;
 }
+FCIMPLEND
 
-PINVOKE_HELPER(uint64_t, RhpGetTickCount64)
+QCIMPL(uint64_t, RhpGetTickCount64)
 {
     return PalGetTickCount64();
 }
 
-PREEMPT_PINVOKE_HELPER(int32_t, RhpCalculateStackTraceWorker, void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
+QCDECL(int32_t, RhpCalculateStackTraceWorker, void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-PREEMPT_PINVOKE_HELPER(int32_t, RhpGetCurrentThreadStackTrace, void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+QCIMPL(int32_t, RhpGetCurrentThreadStackTrace, void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -353,7 +359,7 @@ PREEMPT_PINVOKE_HELPER(int32_t, RhpGetCurrentThreadStackTrace, void* pOutputBuff
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, Object* pObj1, Object* pObj2)
+FCIMPL(FC_BOOL_RET, RhCompareObjectContentsAndPadding, Object* pObj1, Object* pObj2)
 {
     ASSERT(pObj1->GetMethodTable() == pObj2->GetMethodTable());
     ASSERT(pObj1->GetMethodTable()->IsValueType());
@@ -367,40 +373,47 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, Object* pObj
     // memcmp is ok in this COOP method as we are comparing structs which are typically small.
     FC_RETURN_BOOL(memcmp(pbFields1, pbFields2, cbFields) == 0);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, TypeManagerHandle *pModule, int32_t headerId, int32_t* length)
+FCIMPL(void*, RhpGetModuleSection, TypeManagerHandle *pModule, int32_t headerId, int32_t* length)
 {
     return pModule->AsTypeManager()->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh)
+FCIMPL(void, RhGetCurrentThreadStackBounds, PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh)
 {
     ThreadStore::GetCurrentThread()->GetStackBounds(ppStackLow, ppStackHigh);
 }
+FCIMPLEND
 
 // Function to call when a thread is detached from the runtime
 ThreadExitCallback g_threadExitCallback;
 
-COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, void * pCallback)
+FCIMPL(void, RhSetThreadExitCallback, void * pCallback)
 {
     g_threadExitCallback = (ThreadExitCallback)pCallback;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount)
+FCIMPL(int32_t, RhGetProcessCpuCount)
 {
     return PalGetProcessCpuCount();
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
+FCIMPL(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
 {
     *pResultKeys = g_pRhConfig->GetKnobNames();
     *pResultValues = g_pRhConfig->GetKnobValues();
     return g_pRhConfig->GetKnobCount();
 }
+FCIMPLEND
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-PREEMPT_PINVOKE_HELPER(void, RhCpuIdEx, int* cpuInfo, int functionId, int subFunctionId)
+FCIMPL(void, RhCpuIdEx, int* cpuInfo, int functionId, int subFunctionId)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }
+FCIMPLEND
 #endif

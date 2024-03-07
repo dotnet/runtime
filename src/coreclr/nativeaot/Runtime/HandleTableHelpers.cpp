@@ -15,49 +15,58 @@
 #include "gchandleutilities.h"
 
 
-COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
+FCIMPL(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
+FCIMPL(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhHandleFree, OBJECTHANDLE handle)
+FCIMPL(void, RhHandleFree, OBJECTHANDLE handle)
 {
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(Object *, RhHandleGet, OBJECTHANDLE handle)
+FCIMPL(Object *, RhHandleGet, OBJECTHANDLE handle)
 {
     return ObjectFromHandle(handle);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
+FCIMPL(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
 {
     Object *pPrimary = ObjectFromHandle(handle);
     *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
     return pPrimary;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
+FCIMPL(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
 {
     SetDependentHandleSecondary(handle, pSecondary);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhHandleSet, OBJECTHANDLE handle, Object *pObject)
+FCIMPL(void, RhHandleSet, OBJECTHANDLE handle, Object *pObject)
 {
     GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, pObject);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhRegisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
+FCIMPL(FC_BOOL_RET, RhRegisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     FC_RETURN_BOOL(RestrictedCallouts::RegisterRefCountedHandleCallback(pCallout, pTypeFilter));
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
+FCIMPL(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     RestrictedCallouts::UnregisterRefCountedHandleCallback(pCallout, pTypeFilter);
 }
+FCIMPLEND
