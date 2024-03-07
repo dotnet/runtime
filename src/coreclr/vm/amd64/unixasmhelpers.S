@@ -106,17 +106,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     TAILJMP_RAX
 NESTED_END NDirectImportThunk, _TEXT
 
-// EXTERN_C void moveOWord(LPVOID* src, LPVOID* target);
-// <NOTE>
-// MOVDQA is not an atomic operation.  You need to call this function in a crst.
-// </NOTE>
-LEAF_ENTRY moveOWord, _TEXT
-        movdqu          xmm0, xmmword ptr [rdi]
-        movdqu          xmmword ptr [rsi], xmm0
-
-        ret
-LEAF_END moveOWord, _TEXT
-
 //------------------------------------------------
 // JIT_RareDisableHelper
 //

@@ -31,7 +31,17 @@
 
 #ifdef FEATURE_NATIVEAOT
 
+#include "gcinfo.h"
+
 typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
+#ifdef TARGET_X86
+// Bridge few additional pointer types used in x86 unwinding code
+typedef DPTR(DWORD) PTR_DWORD;
+typedef DPTR(WORD) PTR_WORD;
+typedef DPTR(BYTE) PTR_BYTE;
+typedef DPTR(signed char) PTR_SBYTE;
+typedef DPTR(INT32) PTR_INT32;
+#endif
 
 #define LIMITED_METHOD_CONTRACT
 #define SUPPORTS_DAC
@@ -50,21 +60,11 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 #define SSIZE_T intptr_t
 #define LPVOID void*
 
+#define CHECK_APP_DOMAIN    0
+
 typedef void * OBJECTREF;
 
 #define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)
-
-struct GCInfoToken
-{
-    PTR_VOID Info;
-    UINT32 Version;
-
-    GCInfoToken(PTR_VOID info)
-    {
-        Info = info;
-        Version = 2;
-    }
-};
 
 #else // FEATURE_NATIVEAOT
 
@@ -179,6 +179,7 @@ enum ICodeManagerFlags
     ExecutionAborted  =  0x0002, // execution of this function has been aborted
                                  // (i.e. it will not continue execution at the
                                  // current location)
+    AbortingCall      =  0x0004, // The current call will never return
     ParentOfFuncletStackFrame
                       =  0x0040, // A funclet for this frame was previously reported
 
