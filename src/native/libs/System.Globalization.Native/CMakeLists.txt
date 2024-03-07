@@ -131,9 +131,8 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
 endif()
 
-if (MSVC AND MSVC_VERSION LESS 1939)
-    # on VS < 17.9 we need to force compile sources as C++ since msvc doesn't support __typeof__ there
-    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES COMPILE_FLAGS "/TP")
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
 endif()
 
 include_directories("../Common")
