@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetFrameworkMinimum)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <CustomResourceTypesSupport Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</CustomResourceTypesSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MyResourceType.cs" />
@@ -15,7 +16,7 @@
     <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" LogicalName="$(RootNamespace).%(FileName)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />    
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <ProjectReference Include="..\src\System.Resources.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -45,6 +46,7 @@
       <ExecuteMethod>
         <Command>$(NetCoreAppCurrentTestHostPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
       </ExecuteMethod>
+      <TrimmerRootAssembly Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="System.Drawing" />
     </ItemGroup>
     <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
   </Target>

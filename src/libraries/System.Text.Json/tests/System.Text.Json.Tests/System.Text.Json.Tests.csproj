@@ -16,6 +16,7 @@
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetsAppleMobile)' == 'true')">true</MetadataUpdaterSupport>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <XunitShowProgress>true</XunitShowProgress>

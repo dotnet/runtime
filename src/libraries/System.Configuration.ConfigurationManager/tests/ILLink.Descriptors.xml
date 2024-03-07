@@ -1,20 +1,20 @@
 <linker>
+  <assembly fullname="System.Private.CoreLib" />
+  <assembly fullname="System.Configuration">
+    <type fullname="System.Configuration.UriSection" />
+    <type fullname="System.Configuration.NameValueSectionHandler" />
+  </assembly>
   <assembly fullname="System.Configuration.ConfigurationManager">
     <type fullname="System.Configuration.ClientConfigurationHost">
       <method signature="System.Void .ctor()" />
     </type>
     <type fullname="System.Configuration.AppSettingsSection" />
-    <type fullname="System.Configuration.ProtectedConfigurationSection" />
     <type fullname="System.Configuration.ConnectionStringsSection" />
-    <type fullname="System.Diagnostics.SystemDiagnosticsSection" />
+    <type fullname="System.Configuration.ConnectionStringSettingsCollection" />
+    <type fullname="System.Configuration.ProtectedConfigurationSection" />
     <type fullname="System.Configuration.Internal.InternalConfigConfigurationFactory" />
     <type fullname="System.Configuration.ProviderSettingsCollection" />
     <type fullname="System.Diagnostics.FilterElement" />
-    <type fullname="System.Configuration.ConnectionStringSettingsCollection" />
-    <type fullname="System.Configuration.NameValueSectionHandler" />
-    <type fullname="System.Configuration.IConfigurationSectionHandler" />
-    <type fullname="System.Configuration.UriSection" />
-    <type fullname="System.Configuration.ConfigurationElement" />
-    <type fullname="System.ConfigurationTests.TypeUtilTests" />
+    <type fullname="System.Diagnostics.SystemDiagnosticsSection" />
   </assembly>
 </linker>

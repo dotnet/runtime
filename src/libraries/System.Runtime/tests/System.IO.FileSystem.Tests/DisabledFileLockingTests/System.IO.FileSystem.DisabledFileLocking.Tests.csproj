@@ -38,4 +38,7 @@
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="true" />
   </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="StreamConformanceTests" />
+  </ItemGroup>
 </Project>

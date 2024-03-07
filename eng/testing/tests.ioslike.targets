@@ -46,11 +46,11 @@
 
   <PropertyGroup>
     <AppleBuildDependsOn>PrepareForAppleBuildApp;$(AppleBuildDependsOn);_CopyTestArchive</AppleBuildDependsOn>
-  
+
     <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOn)' == 'local'">AppleBuild</BundleTestAppleAppDependsOn>
     <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOnHelix)' == 'true'">$(BundleTestAppleAppDependsOn);_BundleAOTTestAppleAppForHelix;_CopyTestArchive</BundleTestAppleAppDependsOn>
   </PropertyGroup>
-  
+
   <Target Name="BundleTestAppleApp" DependsOnTargets="$(BundleTestAppleAppDependsOn)" />
 
   <UsingTask Condition="'$(BuildTestsOnHelix)' == 'true'"
@@ -61,7 +61,7 @@
     <PropertyGroup>
       <AppBundlePath>$(BundleDir)publish</AppBundlePath>
     </PropertyGroup>
-    
+
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(AppleAssembliesToBundle.FileName)' == $(AssemblyName) and '%(AppleAssembliesToBundle.Extension)' == '.dll'">%(AppleAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
@@ -106,10 +106,10 @@
 
       <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)**\*.*" />
       <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*" />
-      
+
       <_UnusedRuntimePackFiles Include="@(_PublishBundleFiles)" Exclude="@(_RuntimePackFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
       <_UsedRuntimePackFiles Include="@(_PublishBundleFiles)" Exclude="@(_UnusedRuntimePackFiles)" />
-      
+
       <_RuntimePackFilesToDelete Include="@(_RuntimePackFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
       <AppleReferenceSharedPathFiles Include="%(ReferencePath.Identity)" Condition="Exists('@(ReferencePath->'$(LibrariesSharedFrameworkBinArtifactsPath)%(FileName)%(Extension)')')" />
       <ReferenceExtraPathFiles Include="%(ReferencePath.Identity)" Condition="!Exists('@(ReferencePath->'$(LibrariesSharedFrameworkBinArtifactsPath)%(FileName)%(Extension)')')" />
@@ -147,10 +147,10 @@
         Name="%(_ApplePropertyNames.Identity)"
         ConditionToUse__="%(_ApplePropertyNames.ConditionToUse__)" />
 
-      <_AppleUsedRuntimePackFiles 
-        Include="@(_UsedRuntimePackFiles->'%(FileName)%(Extension)')" 
+      <_AppleUsedRuntimePackFiles
+        Include="@(_UsedRuntimePackFiles->'%(FileName)%(Extension)')"
         RemoveMetadata="_IsNative;TargetDir" />
-      
+
       <_AppleItemsToPass Include="@(_AppleUsedRuntimePackFiles)"
                          OriginalItemName__="_AppleUsedRuntimePackFiles" />
 
@@ -191,7 +191,7 @@
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
-    
+
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>
     </PropertyGroup>
@@ -208,7 +208,7 @@
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AppleAssembliesToBundle>
-      
+
       <_PublishAssemblies Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\**\*.resources.dll" />
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 

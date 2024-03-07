@@ -86,10 +86,13 @@
     <Compile Include="$(CommonTestPath)System\ModifiedTypeTests.cs" Link="Common\System\ModifiedTypeTests.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <WasmFilesToIncludeFromPublishDir Include="System.Private.CoreLib.dll" />
     <WasmFilesToIncludeFromPublishDir Include="System.Reflection.MetadataLoadContext.Tests.dll" />
     <WasmFilesToIncludeFromPublishDir Include="mscorlib.dll" />
+
+    <TrimmerRootAssembly Include="System.Private.CoreLib" />
+    <TrimmerRootAssembly Include="mscorlib" />
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>

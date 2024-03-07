@@ -74,4 +74,8 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
+  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <TrimmerRootAssembly Include="System.Security.Cryptography.Xml" />
+    <TrimmerRootAssembly Include="System.Private.CoreLib" />
+  </ItemGroup>
 </Project>
