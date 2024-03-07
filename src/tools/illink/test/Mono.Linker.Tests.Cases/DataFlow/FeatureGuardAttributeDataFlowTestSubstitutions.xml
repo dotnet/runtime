@@ -1,17 +1,17 @@
 <linker>
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/DefineFeatureCheck" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureGuardAttributeDataFlow/DefineFeatureGuard" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false">
       <method signature="System.Boolean get_GuardDynamicCode()" body="stub" value="false" />
       <method signature="System.Boolean get_GuardDynamicCodeIndirect()" body="stub" value="false" />
       <method signature="System.Boolean get_GuardDynamicCodeCycle()" body="stub" value="false" />
       <method signature="System.Boolean get_GuardDynamicCodeCycle2()" body="stub" value="false" />
     </type>
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/DefineFeatureCheck">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureGuardAttributeDataFlow/DefineFeatureGuard">
       <method signature="System.Boolean get_GuardUnreferencedCode()" body="stub" value="false" />
       <method signature="System.Boolean get_GuardDynamicCodeAndUnreferencedCode()" body="stub" value="false" />
       <method signature="System.Boolean get_GuardAssemblyFiles()" body="stub" value="false" />
     </type>
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/ValidGuardBodies">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureGuardAttributeDataFlow/ValidGuardBodies">
       <method signature="System.Boolean get_DirectGuard()" body="stub" value="false" />
       <method signature="System.Boolean get_IndirectGuard()" body="stub" value="false" />
       <method signature="System.Boolean get_ReturnFalseGuard()" body="stub" value="false" />
@@ -32,7 +32,7 @@
       <method signature="System.Boolean get_TernaryIfGuard()" body="stub" value="false" />
       <method signature="System.Boolean get_TernaryElseGuard()" body="stub" value="false" />      
     </type>
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureCheckAttributeDataFlow/InvalidGuardBodies">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.FeatureGuardAttributeDataFlow/InvalidGuardBodies">
       <method signature="System.Boolean get_OtherConditionGuard()" body="stub" value="false" />
       <method signature="System.Boolean get_ReturnTrueGuard()" body="stub" value="false" />
       <method signature="System.Boolean get_OrGuard()" body="stub" value="false" />
