@@ -141,7 +141,7 @@ namespace System.Linq
                 _resultSelector = resultSelector;
             }
 
-            public override Iterator<TResult> Clone() => new GroupByResultIterator<TSource, TKey, TElement, TResult>(_source, _keySelector, _elementSelector, _resultSelector, _comparer);
+            private protected override Iterator<TResult> Clone() => new GroupByResultIterator<TSource, TKey, TElement, TResult>(_source, _keySelector, _elementSelector, _resultSelector, _comparer);
 
             public override bool MoveNext()
             {
@@ -197,7 +197,7 @@ namespace System.Linq
                 _comparer = comparer;
             }
 
-            public override Iterator<TResult> Clone() => new GroupByResultIterator<TSource, TKey, TResult>(_source, _keySelector, _resultSelector, _comparer);
+            private protected override Iterator<TResult> Clone() => new GroupByResultIterator<TSource, TKey, TResult>(_source, _keySelector, _resultSelector, _comparer);
 
             public override bool MoveNext()
             {
@@ -253,7 +253,7 @@ namespace System.Linq
                 _comparer = comparer;
             }
 
-            public override Iterator<IGrouping<TKey, TElement>> Clone() => new GroupByIterator<TSource, TKey, TElement>(_source, _keySelector, _elementSelector, _comparer);
+            private protected override Iterator<IGrouping<TKey, TElement>> Clone() => new GroupByIterator<TSource, TKey, TElement>(_source, _keySelector, _elementSelector, _comparer);
 
             public override bool MoveNext()
             {
@@ -306,7 +306,7 @@ namespace System.Linq
                 _comparer = comparer;
             }
 
-            public override Iterator<IGrouping<TKey, TSource>> Clone() => new GroupByIterator<TSource, TKey>(_source, _keySelector, _comparer);
+            private protected override Iterator<IGrouping<TKey, TSource>> Clone() => new GroupByIterator<TSource, TKey>(_source, _keySelector, _comparer);
 
             public override bool MoveNext()
             {

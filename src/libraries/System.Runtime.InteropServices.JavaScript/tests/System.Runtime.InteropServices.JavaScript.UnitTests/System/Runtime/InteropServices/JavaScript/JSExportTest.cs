@@ -14,6 +14,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedNotBrowserBackgroundExec))]
+        public void SyncJsImportJsExportThrows()
+        {
+            var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
+            Assert.Contains("Cannot call synchronous C# method", ex.Message);
+        }
+
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public async Task JsExportBooleanAsync(bool value)
@@ -150,6 +157,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalIntPtrCases))]
         public unsafe void JsExportVoidPtr(IntPtr xvalue)
         {
+            JavaScriptTestHelper.AssertWasmBackgroundExec();
             void* value = (void*)xvalue;
             void* res = JavaScriptTestHelper.invoke1_VoidPtr(value, nameof(JavaScriptTestHelper.EchoVoidPtr));
             Assert.True(value == res);
@@ -180,6 +188,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalNullableBooleanCases))]
         public void JsExportNullableBoolean(bool? value)
         {
+            JavaScriptTestHelper.AssertWasmBackgroundExec();
             JsExportTest(value,
                 JavaScriptTestHelper.invoke1_NullableBoolean,
                 nameof(JavaScriptTestHelper.EchoNullableBoolean),
