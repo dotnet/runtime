@@ -94,9 +94,8 @@ namespace ILCompiler
             }
             else if (method.IsUnmanagedCallersOnly)
             {
-                // HACK: Work around GetUnmanagedCallersOnlyMethodCallingConventions crashing on non-Ecma methoddesc
                 if (method is not Internal.TypeSystem.Ecma.EcmaMethod)
-                    callConv = UnmanagedCallingConventions.Cdecl;
+                    callConv = method.Signature.GetStandaloneMethodSignatureCallingConventions();
                 else
                     callConv = method.GetUnmanagedCallersOnlyMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask;
             }

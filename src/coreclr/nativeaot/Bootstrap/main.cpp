@@ -163,18 +163,18 @@ static const pfn c_classlibFunctions[] = {
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 #endif
 
-extern "C" void CDECL InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
+extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
 #ifndef NATIVEAOT_DLL
 #define NATIVEAOT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
-extern "C" int CDECL __managed__Main(int argc, wchar_t* argv[]);
+extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 #else
-extern "C" int CDECL __managed__Main(int argc, char* argv[]);
+extern "C" int __managed__Main(int argc, char* argv[]);
 #endif
 #else
 #define NATIVEAOT_ENTRYPOINT __managed__Startup
-extern "C" void CDECL __managed__Startup();
+extern "C" void __managed__Startup();
 #endif // !NATIVEAOT_DLL
 
 static int InitializeRuntime()
