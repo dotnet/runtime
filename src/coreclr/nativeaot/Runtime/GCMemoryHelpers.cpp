@@ -18,7 +18,7 @@
 // in a read on another thread getting incorrect data.
 // Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
 // USAGE:  The caller is responsible for null-checking the reference.
-FCIMPL(void *, RhpGcSafeZeroMemory, void * mem, size_t size)
+FCIMPL2(void *, RhpGcSafeZeroMemory, void * mem, size_t size)
 {
     // The caller must do the null-check because we cannot take an AV in the runtime and translate it to managed.
     ASSERT(mem != nullptr);
@@ -42,7 +42,7 @@ FCIMPLEND
 // Move memory, in a way that is compatible with a move onto the heap, but
 // does not require the destination pointer to be on the heap.
 
-FCIMPL(void, RhBulkMoveWithWriteBarrier, uint8_t* pDest, uint8_t* pSrc, size_t cbDest)
+FCIMPL3(void, RhBulkMoveWithWriteBarrier, uint8_t* pDest, uint8_t* pSrc, size_t cbDest)
 {
     // It is possible that the bulk write is publishing object references accessible so far only
     // by the current thread to shared memory.

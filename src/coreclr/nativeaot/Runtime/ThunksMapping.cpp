@@ -55,7 +55,7 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 }
 #endif
 
-FCIMPL(int, RhpGetNumThunkBlocksPerMapping)
+FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
@@ -63,7 +63,7 @@ FCIMPL(int, RhpGetNumThunkBlocksPerMapping)
 }
 FCIMPLEND
 
-FCIMPL(int, RhpGetNumThunksPerBlock)
+FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
     return min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
@@ -72,25 +72,25 @@ FCIMPL(int, RhpGetNumThunksPerBlock)
 }
 FCIMPLEND
 
-FCIMPL(int, RhpGetThunkSize)
+FCIMPL0(int, RhpGetThunkSize)
 {
     return THUNK_SIZE;
 }
 FCIMPLEND
 
-FCIMPL(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
+FCIMPL1(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
 {
     return (void*)(((uintptr_t)pThunkStubAddress & ~(OS_PAGE_SIZE - 1)) + THUNKS_MAP_SIZE);
 }
 FCIMPLEND
 
-FCIMPL(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
+FCIMPL1(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
 {
     return (void*)(((uintptr_t)pThunkDataAddress & ~(OS_PAGE_SIZE - 1)) - THUNKS_MAP_SIZE);
 }
 FCIMPLEND
 
-FCIMPL(int, RhpGetThunkBlockSize)
+FCIMPL0(int, RhpGetThunkBlockSize)
 {
     return OS_PAGE_SIZE;
 }
@@ -266,11 +266,11 @@ EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
 extern "C" uintptr_t g_pThunkStubData;
 uintptr_t g_pThunkStubData = NULL;
 
-FCDECL(int, RhpGetThunkBlockCount);
-FCDECL(int, RhpGetNumThunkBlocksPerMapping);
-FCDECL(int, RhpGetThunkBlockSize);
-FCDECL(void*, RhpGetThunkDataBlockAddress, void* addr);
-FCDECL(void*, RhpGetThunkStubsBlockAddress, void* addr);
+FCDECL0(int, RhpGetThunkBlockCount);
+FCDECL0(int, RhpGetNumThunkBlocksPerMapping);
+FCDECL0(int, RhpGetThunkBlockSize);
+FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
+FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
 EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
 {
@@ -319,11 +319,11 @@ EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
 
 #else // FEATURE_FIXED_POOL_THUNKS
 
-FCDECL(void*, RhpGetThunksBase);
-FCDECL(int, RhpGetNumThunkBlocksPerMapping);
-FCDECL(int, RhpGetNumThunksPerBlock);
-FCDECL(int, RhpGetThunkSize);
-FCDECL(int, RhpGetThunkBlockSize);
+FCDECL0(void*, RhpGetThunksBase);
+FCDECL0(int, RhpGetNumThunkBlocksPerMapping);
+FCDECL0(int, RhpGetNumThunksPerBlock);
+FCDECL0(int, RhpGetThunkSize);
+FCDECL0(int, RhpGetThunkBlockSize);
 
 EXTERN_C NATIVEAOT_API void* QCALLTYPE RhAllocateThunksMapping()
 {

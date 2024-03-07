@@ -1061,7 +1061,7 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 #endif // _DEBUG
 }
 
-FCIMPL(void, RhpValidateExInfoPop, Thread * pThread, ExInfo * pExInfo, void * limitSP)
+FCIMPL3(void, RhpValidateExInfoPop, Thread * pThread, ExInfo * pExInfo, void * limitSP)
 {
     pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
@@ -1203,7 +1203,7 @@ void Thread::SetThreadAbortException(Object *exception)
     m_threadAbortException = exception;
 }
 
-FCIMPL(Object *, RhpGetThreadAbortException)
+FCIMPL0(Object *, RhpGetThreadAbortException)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     return pCurThread->GetThreadAbortException();
@@ -1215,7 +1215,7 @@ Object** Thread::GetThreadStaticStorage()
     return &m_pThreadLocalStatics;
 }
 
-FCIMPL(Object**, RhGetThreadStaticStorage)
+FCIMPL0(Object**, RhGetThreadStaticStorage)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
@@ -1236,7 +1236,7 @@ void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, T
     newRoot->m_typeManager = typeManager;
 }
 
-FCIMPL(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typeManager)
+FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typeManager)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root, typeManager);
@@ -1244,7 +1244,7 @@ FCIMPL(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* type
 FCIMPLEND
 
 // This is function is used to quickly query a value that can uniquely identify a thread
-FCIMPL(uint8_t*, RhCurrentNativeThreadId)
+FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
 {
 #ifndef TARGET_UNIX
     return PalNtCurrentTeb();
@@ -1255,7 +1255,7 @@ FCIMPL(uint8_t*, RhCurrentNativeThreadId)
 FCIMPLEND
 
 // This function is used to get the OS thread identifier for the current thread.
-FCIMPL(uint64_t, RhCurrentOSThreadId)
+FCIMPL0(uint64_t, RhCurrentOSThreadId)
 {
     return PalGetCurrentOSThreadId();
 }
@@ -1272,7 +1272,7 @@ EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInv
 // PInvoke
 //
 
-FCIMPL(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
+FCIMPL1(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pFrame->m_savedThread = pCurThread;
@@ -1283,7 +1283,7 @@ FCIMPL(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-FCIMPL(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
+FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 {
     pFrame->m_savedThread->InlineReversePInvokeReturn(pFrame);
 }
@@ -1291,14 +1291,14 @@ FCIMPLEND
 
 #ifdef USE_PORTABLE_HELPERS
 
-FCIMPL(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);

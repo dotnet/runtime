@@ -415,13 +415,13 @@ EXTERN_C NATIVEAOT_API void* QCALLTYPE RhpGetCurrentThread()
     return ThreadStore::GetCurrentThread();
 }
 
-FCIMPL(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
+FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
 {
     GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
 }
 FCIMPLEND
 
-FCIMPL(void, RhpCancelThreadAbort, void* thread)
+FCIMPL1(void, RhpCancelThreadAbort, void* thread)
 {
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }

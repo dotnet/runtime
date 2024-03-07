@@ -43,7 +43,7 @@ ThreadStore *   RuntimeInstance::GetThreadStore()
     return m_pThreadStore;
 }
 
-FCIMPL(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
+FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
 {
     *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
     return g_CrashInfoBuffer;
@@ -52,21 +52,21 @@ FCIMPLEND
 
 #if TARGET_UNIX
 #include "PalCreateDump.h"
-FCIMPL(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext)
+FCIMPL2(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext)
 {
     PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
 }
 FCIMPLEND
 #endif
 
-FCIMPL(uint8_t *, RhGetRuntimeVersion, int32_t* pcbLength)
+FCIMPL1(uint8_t *, RhGetRuntimeVersion, int32_t* pcbLength)
 {
     *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
     return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
 FCIMPLEND
 
-FCIMPL(uint8_t *, RhFindMethodStartAddress, void * codeAddr)
+FCIMPL1(uint8_t *, RhFindMethodStartAddress, void * codeAddr)
 {
     uint8_t *startAddress = dac_cast<uint8_t *>(GetRuntimeInstance()->FindMethodStartAddress(dac_cast<PTR_VOID>(codeAddr)));
 #if TARGET_ARM
@@ -273,7 +273,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     return true;
 }
 
-FCIMPL(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
+FCIMPL4(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
 {
     TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
@@ -282,7 +282,7 @@ FCIMPL(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleHe
 }
 FCIMPLEND
 
-FCIMPL(void*, RhpRegisterOsModule, HANDLE hOsModule)
+FCIMPL1(void*, RhpRegisterOsModule, HANDLE hOsModule)
 {
     RuntimeInstance::OsModuleEntry * pEntry = new (nothrow) RuntimeInstance::OsModuleEntry();
     if (NULL == pEntry)
@@ -352,7 +352,7 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 EXTERN_C void REDHAWK_CALLCONV RhpInitialDynamicInterfaceDispatch();
 
-FCIMPL(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
+FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
 {
     InterfaceDispatchCell * pCell = new (nothrow) InterfaceDispatchCell[2];
     if (pCell == NULL)

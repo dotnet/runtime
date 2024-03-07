@@ -148,7 +148,7 @@ EXTERN_C NATIVEAOT_API int32_t QCALLTYPE RhpEndNoGCRegion()
     return GCHeapUtilities::GetGCHeap()->EndNoGCRegion();
 }
 
-FCIMPL(void, RhSuppressFinalize, OBJECTREF refObj)
+FCIMPL1(void, RhSuppressFinalize, OBJECTREF refObj)
 {
     if (!refObj->GetMethodTable()->HasFinalizer())
         return;
@@ -156,7 +156,7 @@ FCIMPL(void, RhSuppressFinalize, OBJECTREF refObj)
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhReRegisterForFinalize, OBJECTREF refObj)
+FCIMPL1(FC_BOOL_RET, RhReRegisterForFinalize, OBJECTREF refObj)
 {
     if (!refObj->GetMethodTable()->HasFinalizer())
         FC_RETURN_BOOL(true);
@@ -164,117 +164,117 @@ FCIMPL(FC_BOOL_RET, RhReRegisterForFinalize, OBJECTREF refObj)
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhGetMaxGcGeneration)
+FCIMPL0(int32_t, RhGetMaxGcGeneration)
 {
     return GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhGetGcCollectionCount, int32_t generation, CLR_BOOL getSpecialGCCount)
+FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, CLR_BOOL getSpecialGCCount)
 {
     return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhGetGeneration, OBJECTREF obj)
+FCIMPL1(int32_t, RhGetGeneration, OBJECTREF obj)
 {
     return GCHeapUtilities::GetGCHeap()->WhichGeneration(obj);
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetGenerationSize, int32_t gen)
+FCIMPL1(int64_t, RhGetGenerationSize, int32_t gen)
 {
     return (int64_t)(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetLastGCPercentTimeInGC)
+FCIMPL0(int64_t, RhGetLastGCPercentTimeInGC)
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhGetGcLatencyMode)
+FCIMPL0(int32_t, RhGetGcLatencyMode)
 {
     return GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhSetGcLatencyMode, int32_t newLatencyMode)
+FCIMPL1(int32_t, RhSetGcLatencyMode, int32_t newLatencyMode)
 {
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhIsPromoted, OBJECTREF obj)
+FCIMPL1(FC_BOOL_RET, RhIsPromoted, OBJECTREF obj)
 {
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->IsPromoted(obj));
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhIsServerGc)
+FCIMPL0(FC_BOOL_RET, RhIsServerGc)
 {
     FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhRegisterGcCallout, GcRestrictedCalloutKind eKind, void * pCallout)
+FCIMPL2(FC_BOOL_RET, RhRegisterGcCallout, GcRestrictedCalloutKind eKind, void * pCallout)
 {
     FC_RETURN_BOOL(RestrictedCallouts::RegisterGcCallout(eKind, pCallout));
 }
 FCIMPLEND
 
-FCIMPL(void, RhUnregisterGcCallout, GcRestrictedCalloutKind eKind, void * pCallout)
+FCIMPL2(void, RhUnregisterGcCallout, GcRestrictedCalloutKind eKind, void * pCallout)
 {
     RestrictedCallouts::UnregisterGcCallout(eKind, pCallout);
 }
 FCIMPLEND
 
 #ifdef FEATURE_OBJCMARSHAL
-FCIMPL(FC_BOOL_RET, RhRegisterObjectiveCMarshalBeginEndCallback, void * pCallback)
+FCIMPL1(FC_BOOL_RET, RhRegisterObjectiveCMarshalBeginEndCallback, void * pCallback)
 {
     FC_RETURN_BOOL(ObjCMarshalNative::RegisterBeginEndCallback(pCallback));
 }
 FCIMPLEND
 #endif
 
-FCIMPL(int32_t, RhGetLohCompactionMode)
+FCIMPL0(int32_t, RhGetLohCompactionMode)
 {
     return GCHeapUtilities::GetGCHeap()->GetLOHCompactionMode();
 }
 FCIMPLEND
 
-FCIMPL(void, RhSetLohCompactionMode, int32_t newLohCompactionMode)
+FCIMPL1(void, RhSetLohCompactionMode, int32_t newLohCompactionMode)
 {
     GCHeapUtilities::GetGCHeap()->SetLOHCompactionMode(newLohCompactionMode);
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetCurrentObjSize)
+FCIMPL0(int64_t, RhGetCurrentObjSize)
 {
     return GCHeapUtilities::GetGCHeap()->GetCurrentObjSize();
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetGCNow)
+FCIMPL0(int64_t, RhGetGCNow)
 {
     return GCHeapUtilities::GetGCHeap()->GetNow();
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetLastGCStartTime, int32_t generation)
+FCIMPL1(int64_t, RhGetLastGCStartTime, int32_t generation)
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCStartTime(generation);
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetLastGCDuration, int32_t generation)
+FCIMPL1(int64_t, RhGetLastGCDuration, int32_t generation)
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCDuration(generation);
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhRegisterForFullGCNotification, int32_t maxGenerationThreshold, int32_t largeObjectHeapThreshold)
+FCIMPL2(FC_BOOL_RET, RhRegisterForFullGCNotification, int32_t maxGenerationThreshold, int32_t largeObjectHeapThreshold)
 {
     ASSERT(maxGenerationThreshold >= 1 && maxGenerationThreshold <= 99);
     ASSERT(largeObjectHeapThreshold >= 1 && largeObjectHeapThreshold <= 99);
@@ -282,13 +282,13 @@ FCIMPL(FC_BOOL_RET, RhRegisterForFullGCNotification, int32_t maxGenerationThresh
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhCancelFullGCNotification)
+FCIMPL0(FC_BOOL_RET, RhCancelFullGCNotification)
 {
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->CancelFullGCNotification());
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhWaitForFullGCApproach, int32_t millisecondsTimeout)
+FCIMPL1(int32_t, RhWaitForFullGCApproach, int32_t millisecondsTimeout)
 {
     ASSERT(millisecondsTimeout >= -1);
     ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
@@ -298,7 +298,7 @@ FCIMPL(int32_t, RhWaitForFullGCApproach, int32_t millisecondsTimeout)
 }
 FCIMPLEND
 
-FCIMPL(int32_t, RhWaitForFullGCComplete, int32_t millisecondsTimeout)
+FCIMPL1(int32_t, RhWaitForFullGCComplete, int32_t millisecondsTimeout)
 {
     ASSERT(millisecondsTimeout >= -1);
     ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
@@ -308,7 +308,7 @@ FCIMPL(int32_t, RhWaitForFullGCComplete, int32_t millisecondsTimeout)
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetGCSegmentSize)
+FCIMPL0(int64_t, RhGetGCSegmentSize)
 {
     size_t first = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(true);
     size_t second = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(false);
@@ -317,7 +317,7 @@ FCIMPL(int64_t, RhGetGCSegmentSize)
 }
 FCIMPLEND
 
-FCIMPL(int64_t, RhGetAllocatedBytesForCurrentThread)
+FCIMPL0(int64_t, RhGetAllocatedBytesForCurrentThread)
 {
     Thread *pThread = ThreadStore::GetCurrentThread();
     gc_alloc_context *ac = pThread->GetAllocContext();
@@ -360,7 +360,7 @@ public:
     uint64_t pauseDuration1;
 };
 
-FCIMPL(void, RhGetMemoryInfo, RH_GH_MEMORY_INFO* pData, int kind)
+FCIMPL2(void, RhGetMemoryInfo, RH_GH_MEMORY_INFO* pData, int kind)
 {
     uint64_t* genInfoRaw = (uint64_t*)&(pData->generationInfo0);
     uint64_t* pauseInfoRaw = (uint64_t*)&(pData->pauseDuration0);
@@ -397,7 +397,7 @@ MethodTable* GetLastAllocEEType()
     return tls_pLastAllocationEEType;
 }
 
-FCIMPL(int64_t, RhGetTotalAllocatedBytes)
+FCIMPL0(int64_t, RhGetTotalAllocatedBytes)
 {
     uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - Thread::GetDeadThreadsNonAllocBytes();
 
@@ -418,7 +418,7 @@ FCIMPL(int64_t, RhGetTotalAllocatedBytes)
 }
 FCIMPLEND
 
-FCIMPL(void, RhEnumerateConfigurationValues, void* configurationContext, ConfigurationValueFunc callback)
+FCIMPL2(void, RhEnumerateConfigurationValues, void* configurationContext, ConfigurationValueFunc callback)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
@@ -428,7 +428,7 @@ FCIMPLEND
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-FCIMPL(void, RhRefreshMemoryLimit, GCHeapHardLimitInfo heapHardLimitInfo)
+FCIMPL1(void, RhRefreshMemoryLimit, GCHeapHardLimitInfo heapHardLimitInfo)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
@@ -626,13 +626,13 @@ EXTERN_C NATIVEAOT_API void QCALLTYPE RhAllocateNewObject(MethodTable* pEEType, 
     pThread->EnablePreemptiveMode();
 }
 
-FCIMPL(int64_t, RhGetTotalPauseDuration)
+FCIMPL0(int64_t, RhGetTotalPauseDuration)
 {
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
 FCIMPLEND
 
-FCIMPL(void, RhRegisterForGCReporting, GCFrameRegistration* pRegistration)
+FCIMPL1(void, RhRegisterForGCReporting, GCFrameRegistration* pRegistration)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -643,7 +643,7 @@ FCIMPL(void, RhRegisterForGCReporting, GCFrameRegistration* pRegistration)
 }
 FCIMPLEND
 
-FCIMPL(void, RhUnregisterForGCReporting, GCFrameRegistration* pRegistration)
+FCIMPL1(void, RhUnregisterForGCReporting, GCFrameRegistration* pRegistration)
 {
     Thread* pThread = pRegistration->m_pThread;
     if (pThread == NULL)
@@ -686,7 +686,7 @@ EXTERN_C NATIVEAOT_API void QCALLTYPE RhUnregisterFrozenSegment(void* pSegmentHa
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)pSegmentHandle);
 }
 
-FCIMPL(uint32_t, RhGetGCDescSize, MethodTable* pMT)
+FCIMPL1(uint32_t, RhGetGCDescSize, MethodTable* pMT)
 {
     if (!pMT->ContainsPointersOrCollectible())
         return 0;
@@ -717,7 +717,7 @@ EXTERN_C void REDHAWK_CALLCONV RhpStressGc()
     PalSetLastError(lastErrorOnEntry);
 }
 
-FCIMPL(void, RhpInitializeGcStress)
+FCIMPL0(void, RhpInitializeGcStress)
 {
     g_fGcStressStarted = UInt32_TRUE;
 }

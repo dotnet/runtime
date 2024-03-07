@@ -15,31 +15,31 @@
 #include "gchandleutilities.h"
 
 
-FCIMPL(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
+FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);
 }
 FCIMPLEND
 
-FCIMPL(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
+FCIMPL2(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
 }
 FCIMPLEND
 
-FCIMPL(void, RhHandleFree, OBJECTHANDLE handle)
+FCIMPL1(void, RhHandleFree, OBJECTHANDLE handle)
 {
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
 FCIMPLEND
 
-FCIMPL(Object *, RhHandleGet, OBJECTHANDLE handle)
+FCIMPL1(Object *, RhHandleGet, OBJECTHANDLE handle)
 {
     return ObjectFromHandle(handle);
 }
 FCIMPLEND
 
-FCIMPL(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
+FCIMPL2(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
 {
     Object *pPrimary = ObjectFromHandle(handle);
     *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
@@ -47,25 +47,25 @@ FCIMPL(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary
 }
 FCIMPLEND
 
-FCIMPL(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
+FCIMPL2(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
 {
     SetDependentHandleSecondary(handle, pSecondary);
 }
 FCIMPLEND
 
-FCIMPL(void, RhHandleSet, OBJECTHANDLE handle, Object *pObject)
+FCIMPL2(void, RhHandleSet, OBJECTHANDLE handle, Object *pObject)
 {
     GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, pObject);
 }
 FCIMPLEND
 
-FCIMPL(FC_BOOL_RET, RhRegisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
+FCIMPL2(FC_BOOL_RET, RhRegisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     FC_RETURN_BOOL(RestrictedCallouts::RegisterRefCountedHandleCallback(pCallout, pTypeFilter));
 }
 FCIMPLEND
 
-FCIMPL(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
+FCIMPL2(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     RestrictedCallouts::UnregisterRefCountedHandleCallback(pCallout, pTypeFilter);
 }

@@ -194,7 +194,7 @@ EXTERN_C NATIVEAOT_API void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fco
 //
 
 // Fetch next object which needs finalization or return null if we've reached the end of the list.
-FCIMPL(OBJECTREF, RhpGetNextFinalizableObject)
+FCIMPL0(OBJECTREF, RhpGetNextFinalizableObject)
 {
     while (true)
     {

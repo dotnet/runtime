@@ -174,16 +174,14 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 // Type for external code location references inside the assembly code.
 typedef uint8_t CODE_LOCATION;
 
-#define METHOD_NAME(name, ...) name
-#define METHOD_NAME_(tuple) METHOD_NAME tuple
-
-#define METHOD_ARGS(dummy, ...) (__VA_ARGS__)
-#define METHOD_ARGS_(tuple) METHOD_ARGS tuple
-
 //
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
 //
+
+#define FCALL_METHOD_NAME(name, ...) name
+#define FCALL_METHOD_NAME_(tuple) FCALL_METHOD_NAME tuple
+
 #if defined(HOST_X86) && defined(HOST_WINDOWS)
 
 // x86 is special case. It supports multiple calling conventions (fastcall, stdcall, cdecl)
@@ -211,37 +209,51 @@ typedef uint8_t CODE_LOCATION;
 
 #define FCALL_STRINGIFY(s) #s
 #define FCALL_XSTRINGIFY(s) FCALL_STRINGIFY(s)
-#define FCALL_ARGHELPER_STACKSIZE(...) FCALL_ARGHELPER_NAME_((__VA_ARGS__, 20, 16, 12, 8, 4, 0))
 
-#define FCALL_FASTCALL_ALTNAME(_method, _argSize) FCALL_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
-#define FCALL_FASTCALL_ALTNAME_IMPORT(_method, _argSize) FCALL_XSTRINGIFY(/alternatename:@_method@_argSize=_method)
-
-#define FCALL_METHOD_NAME(name, ...) name
-#define FCALL_METHOD_NAME_(tuple) FCALL_METHOD_NAME tuple
 #define FCALL_METHOD_ARGS(...) FCALL_ARGHELPER_NAME_((__VA_ARGS__, FCALL_ARGHELPER5, FCALL_ARGHELPER4, FCALL_ARGHELPER3, FCALL_ARGHELPER2, FCALL_ARGHELPER1, FCALL_ARGHELPER0)) (__VA_ARGS__)
 #define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
-#define FCDECL(_rettype, ...) \
-    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_FASTCALL_ALTNAME_IMPORT(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
-#define FCIMPL(_rettype, ...) \
-    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_FASTCALL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__))))) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
-    {
-#define FCIMPLEND \
-    }
+#define FCALL_ARGHELPER_STACKSIZE(...) FCALL_ARGHELPER_NAME_((__VA_ARGS__, 20, 16, 12, 8, 4, 0))
+#define FCALL_IMPL_ALTNAME(_method, _argSize) FCALL_XSTRINGIFY(/alternatename:_method=@_method@_argSize)
+#define FCALL_DECL_ALTNAME(_method, _argSize) FCALL_XSTRINGIFY(/alternatename:@_method@_argSize=_method)
+#define FCDECL_RENAME(_rettype, ...) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_DECL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
+#define FCIMPL_RENAME(_rettype, ...) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_IMPL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
 
 #else
 
-#define FCDECL(_rettype, ...) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__))
-#define FCIMPL(_rettype, ...) \
-    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV METHOD_NAME_((__VA_ARGS__)) METHOD_ARGS_((__VA_ARGS__)) \
-    {
-#define FCIMPLEND \
-    }
+#define FCDECL_RENAME(_rettype, ...)
+#define FCIMPL_RENAME(_rettype, ...)
+
+#define FCALL_METHOD_ARGS(dummy, ...) (__VA_ARGS__)
+#define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
 #endif
+
+#define FCDECL_(_rettype, ...) \
+    FCDECL_RENAME(_rettype, __VA_ARGS__) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
+#define FCDECL0(_rettype, _method) FCDECL_(_rettype, _method)
+#define FCDECL1(_rettype, _method, a) FCDECL_(_rettype, _method, a)
+#define FCDECL2(_rettype, _method, a, b) FCDECL_(_rettype, _method, a, b)
+#define FCDECL3(_rettype, _method, a, b, c) FCDECL_(_rettype, _method, a, b, c)
+#define FCDECL4(_rettype, _method, a, b, c, d) FCDECL_(_rettype, _method, a, b, c, d)
+#define FCDECL5(_rettype, _method, a, b, c, d, e) FCDECL_(_rettype, _method, a, b, c, d, e)
+
+#define FCIMPL_(_rettype, ...) \
+    FCIMPL_RENAME(_rettype, __VA_ARGS__) \
+    EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
+    {
+#define FCIMPL0(_rettype, _method) FCIMPL_(_rettype, _method)
+#define FCIMPL1(_rettype, _method, a) FCIMPL_(_rettype, _method, a)
+#define FCIMPL2(_rettype, _method, a, b) FCIMPL_(_rettype, _method, a, b)
+#define FCIMPL3(_rettype, _method, a, b, c) FCIMPL_(_rettype, _method, a, b, c)
+#define FCIMPL4(_rettype, _method, a, b, c, d) FCIMPL_(_rettype, _method, a, b, c, d)
+#define FCIMPL5(_rettype, _method, a, b, c, d, e) FCIMPL_(_rettype, _method, a, b, c, d, e)
+
+#define FCIMPLEND \
+    }
 
 typedef bool CLR_BOOL;
 

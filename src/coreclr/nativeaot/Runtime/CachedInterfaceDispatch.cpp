@@ -445,7 +445,7 @@ bool InitializeInterfaceDispatch()
     return true;
 }
 
-FCIMPL(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
+FCIMPL4(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
 {
     // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
     // is none).
@@ -517,7 +517,7 @@ FCIMPL(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE p
 }
 FCIMPLEND
 
-FCIMPL(PCODE, RhpSearchDispatchCellCache, InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
+FCIMPL2(PCODE, RhpSearchDispatchCellCache, InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
 {
     // This function must be implemented in native code so that we do not take a GC while walking the cache
     InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
@@ -536,7 +536,7 @@ FCIMPLEND
 // Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented
 // in cooperative native code, as the m_pCache field on the cell is unsafe to access from managed
 // code due to its use of the GC state as a lock, and as lifetime control
-FCIMPL(void, RhpGetDispatchCellInfo, InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo)
+FCIMPL2(void, RhpGetDispatchCellInfo, InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo)
 {
     *pDispatchCellInfo = pCell->GetDispatchCellInfo();
 }
