@@ -44,7 +44,7 @@ namespace System.Threading.Tasks.Tests
             PLRcheck(plr, "For-Completion", true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void ForPLR64Tests()
         {
             ParallelLoopResult plr =

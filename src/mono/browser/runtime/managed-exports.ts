@@ -80,6 +80,7 @@ export function call_entry_point(main_assembly_name: string, program_args: strin
 
 // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
 export function load_satellite_assembly(dll: Uint8Array): void {
+    loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
         const size = 3;
@@ -95,6 +96,7 @@ export function load_satellite_assembly(dll: Uint8Array): void {
 
 // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
 export function load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): void {
+    loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
         const size = 4;

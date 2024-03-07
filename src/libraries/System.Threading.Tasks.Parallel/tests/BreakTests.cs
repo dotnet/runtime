@@ -46,7 +46,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(result, "TestForBreak:  Failed: Could not detect any interruption of For-loop.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(100, 10)]
         [InlineData(100, 20)]
         [InlineData(1000, 100)]
@@ -86,7 +86,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(result, "TestFor64Break:  Failed: Could not detect any interruption of For-loop.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(500, 10)]
         [InlineData(500, 20)]
         [InlineData(1000, 100)]
