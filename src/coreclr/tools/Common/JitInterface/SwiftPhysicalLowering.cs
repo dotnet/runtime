@@ -132,9 +132,9 @@ namespace Internal.JitInterface
                 return consolidatedIntervals;
             }
 
-            public List<CorInfoType> GetLoweredTypeSequence()
+            public List<(CorInfoType, int)> GetLoweredTypeSequence()
             {
-                List<CorInfoType> loweredTypes = new();
+                List<(CorInfoType, int)> loweredTypes = new();
                 foreach (var interval in CreateConsolidatedIntervals())
                 {
                     // Empty intervals at this point don't need to be represented in the lowered type sequence.
@@ -144,17 +144,17 @@ namespace Internal.JitInterface
 
                     if (interval.Tag == LoweredType.Float)
                     {
-                        loweredTypes.Add(CorInfoType.CORINFO_TYPE_FLOAT);
+                        loweredTypes.Add((CorInfoType.CORINFO_TYPE_FLOAT, interval.Start));
                     }
 
                     if (interval.Tag == LoweredType.Double)
                     {
-                        loweredTypes.Add(CorInfoType.CORINFO_TYPE_DOUBLE);
+                        loweredTypes.Add((CorInfoType.CORINFO_TYPE_DOUBLE, interval.Start));
                     }
 
                     if (interval.Tag == LoweredType.Int64)
                     {
-                        loweredTypes.Add(CorInfoType.CORINFO_TYPE_LONG);
+                        loweredTypes.Add((CorInfoType.CORINFO_TYPE_LONG, interval.Start));
                     }
 
                     if (interval.Tag is LoweredType.Opaque)
@@ -181,27 +181,27 @@ namespace Internal.JitInterface
                         {
                             if (remainingIntervalSize > 4 && opaqueIntervalStart == opaqueIntervalStart.AlignUp(8))
                             {
-                                loweredTypes.Add(CorInfoType.CORINFO_TYPE_LONG);
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_LONG, opaqueIntervalStart));
                                 opaqueIntervalStart += 8;
                                 remainingIntervalSize -= 8;
                             }
                             else if (remainingIntervalSize > 2 && opaqueIntervalStart == opaqueIntervalStart.AlignUp(4))
                             {
-                                loweredTypes.Add(CorInfoType.CORINFO_TYPE_INT);
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_INT, opaqueIntervalStart));
                                 opaqueIntervalStart += 4;
                                 remainingIntervalSize -= 4;
                             }
                             else if (remainingIntervalSize > 1 && opaqueIntervalStart == opaqueIntervalStart.AlignUp(2))
                             {
-                                loweredTypes.Add(CorInfoType.CORINFO_TYPE_SHORT);
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_SHORT, opaqueIntervalStart));
                                 opaqueIntervalStart += 2;
                                 remainingIntervalSize -= 2;
                             }
                             else
                             {
-                                opaqueIntervalStart += 1;
+                                opaqueIntervalStart++;
                                 remainingIntervalSize--;
-                                loweredTypes.Add(CorInfoType.CORINFO_TYPE_BYTE);
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_BYTE, opaqueIntervalStart));
                             }
                         }
                     }
@@ -221,7 +221,7 @@ namespace Internal.JitInterface
             LoweringVisitor visitor = new(type.Context.Target.PointerSize);
             visitor.AddFields(type, addTrailingEmptyInterval: false);
 
-            List<CorInfoType> loweredTypes = visitor.GetLoweredTypeSequence();
+            List<(CorInfoType type, int offset)> loweredTypes = visitor.GetLoweredTypeSequence();
 
             // If a type has a primitive sequence with more than 4 elements, Swift passes it by reference.
             if (loweredTypes.Count > 4)
@@ -235,7 +235,11 @@ namespace Internal.JitInterface
                 numLoweredElements = loweredTypes.Count
             };
 
-            CollectionsMarshal.AsSpan(loweredTypes).CopyTo(lowering.LoweredElements);
+            for (int i = 0; i < loweredTypes.Count; i++)
+            {
+                lowering.LoweredElements[i] = loweredTypes[i].type;
+                lowering.Offsets[i] = (uint)loweredTypes[i].offset;
+            }
 
             return lowering;
         }
