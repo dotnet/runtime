@@ -65,7 +65,7 @@ namespace System.Threading
         /// <summary>
         /// Protects all mutable operations on s_entries, s_freeEntryList, s_unusedEntryIndex. Also protects growing the table.
         /// </summary>
-        internal static readonly Lock s_lock = new Lock();
+        internal static readonly Lock s_lock = new Lock(useTrivialWaits: true);
 
         /// <summary>
         /// The dynamically growing array of sync entries.
@@ -274,7 +274,7 @@ namespace System.Threading
             Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
-            s_entries[syncIndex].Lock.InitializeLocked(threadId, recursionLevel);
+            s_entries[syncIndex].Lock.ResetForMonitor(threadId, recursionLevel);
         }
 
         /// <summary>

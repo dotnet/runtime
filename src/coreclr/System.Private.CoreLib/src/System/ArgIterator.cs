@@ -24,7 +24,7 @@ namespace System
         private int _remainingArgs;             // # of remaining args.
 
 #if TARGET_WINDOWS // Native Varargs are not supported on Unix
-        // ArgIterator is a ref struct. It does not require pinning.
+        // ArgIterator is a ref struct. It does not require pinning, therefore Unsafe.AsPointer is safe.
         // This method null checks the this pointer as a side-effect.
         private ArgIterator* ThisPtr => (ArgIterator*)Unsafe.AsPointer(ref _argCookie);
 

@@ -7325,7 +7325,8 @@ public:
                     GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                     DWORD                 dwExactGenericArgsTokenIndex,
                     bool                  fVarArgFnx,
-                    CordbReJitILCode *    pReJitCode);
+                    CordbReJitILCode *    pReJitCode,
+                    bool                  fAdjustedIP);
     HRESULT Init();
     virtual ~CordbJITILFrame();
     virtual void Neuter();
@@ -7436,6 +7437,7 @@ public:
 
     CordbILCode* GetOriginalILCode();
     CordbReJitILCode* GetReJitILCode();
+    void AdjustIPAfterException();
 
 private:
     void    RefreshCachedVarArgSigParserIfNeeded();
@@ -7503,6 +7505,7 @@ public:
 
     // if this frame is instrumented with rejit, this will point to the instrumented IL code
     RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+    BOOL m_adjustedIP;
 };
 
 /* ------------------------------------------------------------------------- *
