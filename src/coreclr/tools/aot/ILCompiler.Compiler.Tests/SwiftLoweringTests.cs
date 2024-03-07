@@ -13,6 +13,8 @@ using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
+using System.Reflection.Metadata;
 
 namespace ILCompiler.Compiler.Tests
 {
@@ -44,33 +46,37 @@ namespace ILCompiler.Compiler.Tests
             var testModule = context.GetModuleForSimpleName("ILCompiler.Compiler.Tests.Assets");
             foreach (var type in testModule.GetAllTypes())
             {
-                if (type.Namespace == "ILCompiler.Compiler.Tests.Assets.SwiftTypes" && type.IsValueType)
+                if (type is EcmaType { Namespace: "ILCompiler.Compiler.Tests.Assets.SwiftTypes", IsValueType: true } ecmaType
+                    && ecmaType.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute") is { } expectedLoweringAttribute)
                 {
-                    yield return new object[] { type.Name, type };
+                    CORINFO_SWIFT_LOWERING expected;
+                    if (expectedLoweringAttribute.FixedArguments.Length == 0)
+                    {
+                        expected = new CORINFO_SWIFT_LOWERING { byReference = true };
+                    }
+                    else
+                    {
+                        expected = new CORINFO_SWIFT_LOWERING
+                        {
+                            numLoweredElements = expectedLoweringAttribute.FixedArguments.Length,
+                        };
+                        for (int i = 0; i < expectedLoweringAttribute.FixedArguments.Length; i++)
+                        {
+                            expected.LoweredElements[i] = GetCorType((ExpectedLowering)(int)expectedLoweringAttribute.FixedArguments[i].Value);
+                        }
+                    }
+                    yield return new object[] { type.Name, type, expected };
                 }
             }
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(DiscoverSwiftTypes))]
-        public void VerifyLowering(string typeName, EcmaType type)
+        public void VerifyLowering(string typeName, EcmaType type, CORINFO_SWIFT_LOWERING expectedLowering)
         {
             _ = typeName;
-            var expectedLoweringAttribute = type.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute");
 
-            var actualLowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(type);
-
-            if (expectedLoweringAttribute.Value.FixedArguments.Length == 0)
-            {
-                Assert.Equal(new CORINFO_SWIFT_LOWERING { byReference = true }, actualLowering, SwiftLoweringComparer.Instance);
-            }
-            else
-            {
-                CORINFO_SWIFT_LOWERING expectedLowering = default;
-                expectedLowering.numLoweredElements = expectedLoweringAttribute.Value.FixedArguments.Length;
-                expectedLoweringAttribute.Value.FixedArguments.Select(na => GetCorType((ExpectedLowering)(int)na.Value)).ToArray().AsSpan().CopyTo(expectedLowering.LoweredElements);
-                Assert.Equal(expectedLowering, actualLowering);
-            }
+            Assert.Equal(expectedLowering, SwiftPhysicalLowering.LowerTypeForSwiftSignature(type));
         }
 
         private static CorInfoType GetCorType(ExpectedLowering expectedLowering)

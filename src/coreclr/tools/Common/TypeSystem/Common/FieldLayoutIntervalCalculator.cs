@@ -256,7 +256,7 @@ namespace Internal.TypeSystem
                     break;
                 }
 
-                if ((previousInterval.EndSentinel == expandedInterval.Start) && !IntervalsHaveCompatibleTags(expandedInterval.Tag, previousInterval.Tag))
+                if ((previousInterval.EndSentinel == expandedInterval.Start) && !IntervalsHaveCompatibleTags(previousInterval.Tag, expandedInterval.Tag))
                 {
                     // Expanded interval starts just after previous interval, but does not match tag. Expansion succeeded
                     break;
