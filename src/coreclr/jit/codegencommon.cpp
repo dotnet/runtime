@@ -616,12 +616,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_CALLEE_TRASH_WRITEBARRIER;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-#ifdef TARGET_AMD64
-            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-            {
-                return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF_NAOT;
-            }
-#endif
             return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
 
         case CORINFO_HELP_PROF_FCN_ENTER:
