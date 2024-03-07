@@ -186,13 +186,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 lock (ctx)
                 {
                     callback = holder.Callback!;
-                    // if Interop.Runtime.CancelPromisePost is in flight, we can't free the GCHandle, because it's needed in JS
-                    var isOutOfOrderCancellation = holder.IsCanceling && arg_res.slot.Type != MarshalerType.Discard;
-                    // FIXME: when it happens we are leaking GCHandle + holder
-                    if (!isOutOfOrderCancellation)
-                    {
-                        ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
-                    }
+                    ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
                 }
 #else
                 callback = holder.Callback!;

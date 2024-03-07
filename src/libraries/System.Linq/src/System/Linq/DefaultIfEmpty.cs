@@ -39,7 +39,7 @@ namespace System.Linq
                 _default = defaultValue;
             }
 
-            public override Iterator<TSource> Clone() => new DefaultIfEmptyIterator<TSource>(_source, _default);
+            private protected override Iterator<TSource> Clone() => new DefaultIfEmptyIterator<TSource>(_source, _default);
 
             public override bool MoveNext()
             {

@@ -41,9 +41,6 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition_DebugStepTailCall;
 #endif
 
-#ifdef TARGET_X86
-EXTERN_C CODE_LOCATION RhpCallFunclet2;
-#endif
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
@@ -779,20 +776,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     PTR_uintptr_t SP;
 
-#ifdef TARGET_X86
-    // First, unwind RhpCallFunclet
-    SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
-    m_RegDisplay.SetIP(*SP++);
-    m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(SP));
-    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
-
-    ASSERT(
-        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ||
-        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFinallyFunclet2) ||
-        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2)
-        );
-#endif
-
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
 
 #if defined(UNIX_AMD64_ABI)
@@ -876,7 +859,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR15 = SP++;
 
 #elif defined(TARGET_X86)
-    SP = (PTR_uintptr_t)(m_RegDisplay.SP);
+    SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
 
     if (!isFilterInvoke)
     {
@@ -1809,25 +1792,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InThrowSiteThunk;
     }
 
-#ifdef TARGET_X86
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2))
-    {
-        PORTABILITY_ASSERT("CategorizeUnadjustedReturnAddress");
-#if 0
-        // See if it is a filter funclet based on the caller of RhpCallFunclet
-        PTR_uintptr_t SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
-        PTR_uintptr_t ControlPC = *SP++;
-        if (EQUALS_RETURN_ADDRESS(ControlPC, RhpCallFilterFunclet2))
-        {
-            return InFilterFuncletInvokeThunk;
-        }
-        else
-#endif
-        {
-            return InFuncletInvokeThunk;
-        }
-    }
-#else // TARGET_X86
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2))
     {
@@ -1838,7 +1802,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     {
         return InFilterFuncletInvokeThunk;
     }
-#endif // TARGET_X86
     return InManagedCode;
 #endif // defined(USE_PORTABLE_HELPERS)
 }

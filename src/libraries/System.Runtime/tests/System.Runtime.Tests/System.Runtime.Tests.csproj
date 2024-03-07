@@ -196,6 +196,8 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\ConstantExpectedAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\FeatureGuardAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />

@@ -38,7 +38,7 @@ namespace System.Linq
                 _source = source;
             }
 
-            public override Iterator<TSource> Clone() => new ReverseIterator<TSource>(_source);
+            private protected override Iterator<TSource> Clone() => new ReverseIterator<TSource>(_source);
 
             public override bool MoveNext()
             {

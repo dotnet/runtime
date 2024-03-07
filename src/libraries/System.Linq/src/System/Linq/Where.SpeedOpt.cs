@@ -147,7 +147,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed partial class ArrayWhereIterator<TSource>
+        private sealed partial class ArrayWhereIterator<TSource>
         {
             public override int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate);
 

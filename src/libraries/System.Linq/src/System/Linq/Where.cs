@@ -99,7 +99,7 @@ namespace System.Linq
                 _predicate = predicate;
             }
 
-            public override Iterator<TSource> Clone() => new IEnumerableWhereIterator<TSource>(_source, _predicate);
+            private protected override Iterator<TSource> Clone() => new IEnumerableWhereIterator<TSource>(_source, _predicate);
 
             public override void Dispose()
             {
@@ -150,7 +150,7 @@ namespace System.Linq
         /// An iterator that filters each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
-        internal sealed partial class ArrayWhereIterator<TSource> : Iterator<TSource>
+        private sealed partial class ArrayWhereIterator<TSource> : Iterator<TSource>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -163,7 +163,7 @@ namespace System.Linq
                 _predicate = predicate;
             }
 
-            public override Iterator<TSource> Clone() =>
+            private protected override Iterator<TSource> Clone() =>
                 new ArrayWhereIterator<TSource>(_source, _predicate);
 
             public override bool MoveNext()
@@ -211,7 +211,7 @@ namespace System.Linq
                 _predicate = predicate;
             }
 
-            public override Iterator<TSource> Clone() =>
+            private protected override Iterator<TSource> Clone() =>
                 new ListWhereIterator<TSource>(_source, _predicate);
 
             public override bool MoveNext()
@@ -268,7 +268,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new ArrayWhereSelectIterator<TSource, TResult>(_source, _predicate, _selector);
 
             public override bool MoveNext()
@@ -317,7 +317,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new ListWhereSelectIterator<TSource, TResult>(_source, _predicate, _selector);
 
             public override bool MoveNext()
@@ -372,7 +372,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new IEnumerableWhereSelectIterator<TSource, TResult>(_source, _predicate, _selector);
 
             public override void Dispose()

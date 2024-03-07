@@ -103,20 +103,25 @@ namespace Microsoft.Extensions.DependencyInjection
                         {
                             ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                         }
-                    }
 
-                    if (isPreferred || bestLength < length)
-                    {
+                        seenPreferred = true;
                         bestLength = length;
                         bestMatcher = matcher;
                         multipleBestLengthFound = false;
                     }
-                    else if (bestLength == length)
+                    else if (!seenPreferred)
                     {
-                        multipleBestLengthFound = true;
+                        if (bestLength < length)
+                        {
+                            bestLength = length;
+                            bestMatcher = matcher;
+                            multipleBestLengthFound = false;
+                        }
+                        else if (bestLength == length)
+                        {
+                            multipleBestLengthFound = true;
+                        }
                     }
-
-                    seenPreferred |= isPreferred;
                 }
 
                 if (bestLength != -1)

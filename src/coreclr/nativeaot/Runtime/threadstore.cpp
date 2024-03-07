@@ -477,7 +477,6 @@ GVAL_IMPL(uint32_t, SECTIONREL__tls_CurrentThread);
 //
 // This routine supports the !Thread debugger extension routine
 //
-typedef DPTR(TADDR) PTR_TADDR;
 // static
 PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
 {

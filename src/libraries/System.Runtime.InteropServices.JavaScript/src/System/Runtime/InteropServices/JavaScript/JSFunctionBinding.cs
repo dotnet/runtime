@@ -207,7 +207,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_MANAGED_THREADS
             ref JSMarshalerArgument exc = ref arguments[0];
-            exc.slot.CallerNativeTID = jsFunction.ProxyContext.NativeTID;
+            exc.slot.CallerNativeTID = JSProxyContext.GetNativeThreadId();
 
             // if we are on correct thread already, just call it
             if (jsFunction.ProxyContext.IsCurrentThread())
@@ -297,7 +297,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument res = ref arguments[1];
 #if FEATURE_WASM_MANAGED_THREADS
             var targetContext = JSProxyContext.SealJSImportCapturing();
-            exc.slot.CallerNativeTID = targetContext.NativeTID;
+            exc.slot.CallerNativeTID = JSProxyContext.GetNativeThreadId();
             exc.slot.ContextHandle = targetContext.ContextHandle;
             res.slot.ContextHandle = targetContext.ContextHandle;
 #else
@@ -310,6 +310,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 var holder = targetContext.CreatePromiseHolder();
                 res.slot.Type = MarshalerType.TaskPreCreated;
                 res.slot.GCHandle = holder.GCHandle;
+#if FEATURE_WASM_MANAGED_THREADS
+                res.slot.IntPtrValue = (IntPtr)holder.State;
+#endif
             }
 #if FEATURE_WASM_MANAGED_THREADS
             else
@@ -464,7 +467,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             ref JSMarshalerArgument exc = ref arguments[0];
 #if FEATURE_WASM_MANAGED_THREADS
-            exc.slot.CallerNativeTID = targetContext.NativeTID;
+            exc.slot.CallerNativeTID = JSProxyContext.GetNativeThreadId();
 
             if (targetContext.IsCurrentThread())
 #endif

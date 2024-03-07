@@ -32,7 +32,7 @@ namespace System.Linq
             private readonly IEnumerable _source = source;
             private IEnumerator? _enumerator;
 
-            public override Iterator<TResult> Clone() => new OfTypeIterator<TResult>(_source);
+            private protected override Iterator<TResult> Clone() => new OfTypeIterator<TResult>(_source);
 
             public override bool MoveNext()
             {

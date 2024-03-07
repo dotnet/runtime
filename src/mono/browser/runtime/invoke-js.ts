@@ -142,7 +142,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         try {
             forceThreadMemoryViewRefresh();
             const caller_tid = get_caller_native_tid(args);
-            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.currentThreadTID === caller_tid;
+            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.managedThreadTID === caller_tid;
             bound_fn(args);
         }
         finally {

@@ -44,6 +44,10 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 
+#ifndef _ASSERTE_ALL_BUILDS
+#define _ASSERTE_ALL_BUILDS(_expr) ASSERT(_expr)
+#endif
+
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
     ASSUME(0); \
