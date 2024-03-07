@@ -121,7 +121,14 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    # run performance-setup
+    - checkout: InternalPerformanceRepo
+      path: performance
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '>=3.6'
+        addToPath: true
+        architecture: 'x64'
+    # run run-performance-job.py
     - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
@@ -137,7 +144,7 @@ jobs:
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup.sh
       displayName: Run ci setup script (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    # copy wasm packs if running on wasm
+    # copy wasm packs if running on wasm (TODO: move to run-performance-job.py)
     - script: >-
         mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
         cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest $(librariesDownloadDir)/bin/wasm &&
@@ -146,46 +153,6 @@ jobs:
         find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
       displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
-    # copy scenario support files
-    - script: xcopy $(PerformanceDirectory)\scripts $(WorkItemDirectory)\scripts\/e && xcopy $(PerformanceDirectory)\src\scenarios\shared $(WorkItemDirectory)\shared\/e && xcopy $(PerformanceDirectory)\src\scenarios\staticdeps $(WorkItemDirectory)\staticdeps\/e
-      displayName: Copy scenario support files (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: cp -r $(PerformanceDirectory)/scripts $(WorkItemDirectory)/scripts/ && cp -r $(PerformanceDirectory)/src/scenarios/shared $(WorkItemDirectory)/shared/ && cp -r $(PerformanceDirectory)/src/scenarios/staticdeps/ $(WorkItemDirectory)/staticdeps/
-      displayName: Copy scenario support files (Linux/MAC)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    # build Startup
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f net7.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
-      displayName: Build Startup tool (Windows)
-      env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net7.0 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
-      displayName: Build Startup tool (Linux)
-      env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net7.0 -r osx-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
-      displayName: Build Startup tool (MAC)
-      env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
-    # build SizeOnDisk
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f net7.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
-      displayName: Build SizeOnDisk tool (Windows)
-      env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net7.0 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
-      displayName: Build SizeOnDisk tool (Linux)
-      env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net7.0 -r osx-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
-      displayName: Build SizeOnDisk tool (MAC)
-      env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
-
     # Zip the workitem directory (for xharness (mobile) based workitems)
     - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
       - task: ArchiveFiles@2
