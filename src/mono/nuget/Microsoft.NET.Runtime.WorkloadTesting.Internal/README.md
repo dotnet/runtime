@@ -14,6 +14,12 @@ Tasks, and targets to support workload testing in `dotnet` repositories.
 
 - `$(TemplateNuGetConfigPathForWorkloadTesting)` - optional
 
+## `$(PackageSourceNameForBuiltPackages)` - optional
+
+`<add key="<$sourceName>" value="file:///..." />`
+
+Defaults to `nuget-local`.
+
 ## `$(NuGetConfigPackageSourceMappingsForWorkloadTesting)` - optional
 
 For a value of `*Aspire*;Foo*`, a package source mapping will be added to the local nuget source
