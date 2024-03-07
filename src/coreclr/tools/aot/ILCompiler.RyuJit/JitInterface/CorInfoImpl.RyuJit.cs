@@ -1935,8 +1935,7 @@ namespace Internal.JitInterface
         {
             if (ppCookieVal != null)
             {
-                string securityCookieName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternVariable("__security_cookie");
-                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(securityCookieName));
+                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternVariable("__security_cookie"));
                 *pCookieVal = IntPtr.Zero;
             }
             else
@@ -2075,8 +2074,7 @@ namespace Internal.JitInterface
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
         {
             ppIndirection = null;
-            string symbolName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternVariable("RhpTrapThreads");
-            return (int*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(symbolName));
+            return (int*)ObjectToHandle(_compilation.NodeFactory.ExternVariable("RhpTrapThreads"));
         }
 
         private void getFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
