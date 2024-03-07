@@ -252,7 +252,7 @@ static void FillIgnoreWidthRules(UChar* completeRules, int32_t* fillIndex, int32
     if (isIgnoreCase && (!isIgnoreWidth))
     {
         assert((*fillIndex) + (FullWidthAlphabetRangeLength * 4) <= completeRulesLength);
-        const UChar UpperCaseToLowerCaseOffset = 0xFF41 - 0xFF21;
+        int UChar UpperCaseToLowerCaseOffset = 0xFF41 - 0xFF21;
 
         for (UChar ch = 0xFF21; ch <= 0xFF3A; ch++)
         {
