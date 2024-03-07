@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Internal;
 
 #if NETCOREAPP
@@ -65,12 +66,25 @@ namespace Microsoft.Extensions.DependencyInjection
                 constructors = GetOrAddConstructors(instanceType);
             }
 
+            // Attempt to use the stack allocated arg values if <= 4 ctor args.
+            Span<object?> values;
+            StackAllocatedObjects stackValues = default;
             int maxArgs = GetMaxArgCount();
-            object?[] values = new object?[maxArgs * 2];
-            Span<object?> parameterValues = new(values, 0, maxArgs);
+            if (maxArgs <= StackAllocatedObjects.MaxStackAllocArgCount / 2)
+            {
+                values = MemoryMarshal.CreateSpan(ref stackValues._args, maxArgs * 2);
+            }
+            else
+            {
+                values = new Span<object?>(new object?[maxArgs * 2], 0, maxArgs * 2);
+            }
+
+            Span<object?> parameterValues = values.Slice(0, maxArgs);
+            Span<object?> bestParameterValues = values.Slice(maxArgs);
 #else
             constructors = CreateConstructorInfoExs(instanceType);
             object?[]? parameterValues = null;
+            object?[]? bestParameterValues = null;
 #endif
 
             ConstructorMatcher matcher = default;
@@ -96,10 +110,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             }
                         }
 
-#if !NETCOREAPP
-                        parameterValues = new object?[constructors[i].Parameters.Length];
-#endif
-
+                        InitializeParameterValues(ref parameterValues, parameters.Length);
                         matcher = new ConstructorMatcher(constructors[i], parameterValues);
                         if (matcher.Match(parameters, serviceProviderIsService) == -1)
                         {
@@ -113,21 +124,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 int bestLength = -1;
                 ConstructorMatcher bestMatcher = default;
                 bool multipleBestLengthFound = false;
-#if NETCOREAPP
-                Span<object?> bestParameterValues = new(values, maxArgs, maxArgs);
-#endif
 
                 // Find the constructor with the most matches.
                 for (int i = 0; i < constructors.Length; i++)
                 {
                     constructor = constructors[i];
 
-#if NETCOREAPP
-                    parameterValues.Clear();
-#else
-                    parameterValues = new object?[constructor.Parameters.Length];
-#endif
-
+                    InitializeParameterValues(ref parameterValues, parameters.Length);
                     matcher = new ConstructorMatcher(constructor, parameterValues);
                     int length = matcher.Match(parameters, serviceProviderIsService);
 
@@ -139,8 +142,16 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NETCOREAPP
                         parameterValues.CopyTo(bestParameterValues);
 #else
-                        object?[]? bestParameterValues = new object?[length];
-                        parameterValues.CopyTo(bestParameterValues, index: 0);
+                        if (i == constructors.Length - 1)
+                        {
+                            // Avoid the alloc for this case.
+                            bestParameterValues = parameterValues;
+                        }
+                        else
+                        {
+                            bestParameterValues = new object?[length];
+                            parameterValues.CopyTo(bestParameterValues, 0);
+                        }
 #endif
                         bestMatcher = new ConstructorMatcher(matcher.ConstructorInfo, bestParameterValues);
                         multipleBestLengthFound = false;
@@ -179,6 +190,7 @@ namespace Microsoft.Extensions.DependencyInjection
             FindApplicableConstructor(instanceType, argumentTypes, constructors, out ConstructorInfo constructorInfo, out int?[] parameterMap);
             constructor = FindConstructorEx(constructorInfo, constructors);
 
+            InitializeParameterValues(ref parameterValues, parameters.Length);
             matcher = new ConstructorMatcher(constructor, parameterValues);
             matcher.MapParameters(parameterMap, parameters);
             return matcher.CreateInstance(provider);
@@ -193,6 +205,25 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
 
                 return max;
+            }
+#endif
+
+#if NETCOREAPP
+            static void InitializeParameterValues(ref Span<object?> parameterValues, int _)
+            {
+                parameterValues.Clear();
+            }
+#else
+            static void InitializeParameterValues(ref object[] parameterValues, int length)
+            {
+                if (parameterValues is not null && parameterValues.Length == length)
+                {
+                    Array.Clear(parameterValues, 0, length);
+                }
+                else
+                {
+                    parameterValues = new object?[length];
+                }
             }
 #endif
         }
@@ -1190,6 +1221,20 @@ namespace Microsoft.Extensions.DependencyInjection
                     s_collectibleConstructorInfos.Value.Clear();
                 }
             }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private ref struct StackAllocatedObjects
+        {
+            public const int MaxStackAllocArgCount = 8;
+            public object? _args;
+            private object? _arg2;
+            private object? _arg3;
+            private object? _arg4;
+            private object? _arg5;
+            private object? _arg6;
+            private object? _arg7;
+            private object? _arg8;
         }
 #endif
 
