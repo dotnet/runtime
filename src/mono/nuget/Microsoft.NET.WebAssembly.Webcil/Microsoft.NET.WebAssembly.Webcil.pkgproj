@@ -1,0 +1,20 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Internal package for sharing Webcil.</PackageDescription>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MonoProjectRoot)\..\tasks\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_webcilFiles Include="$(ArtifactsDir)bin\Microsoft.NET.WebAssembly.Webcil\$(Configuration)\\$(NetCoreAppCurrent)\Microsoft.NET.WebAssembly.Webcil.dll" />
+    <PackageFile Include="@(_webcilFiles)" TargetPath="lib\$(NetCoreAppCurrent)\" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>
