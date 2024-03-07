@@ -77,7 +77,7 @@ internal static partial class MsQuicConfiguration
 
             foreach (var thumbprint in CertificateThumbprints)
             {
-                hash.Add(thumbprint);
+                hash.AddBytes(thumbprint);
             }
 
             hash.Add(Flags);
@@ -85,7 +85,7 @@ internal static partial class MsQuicConfiguration
 
             foreach (var protocol in ApplicationProtocols)
             {
-                hash.Add(protocol);
+                hash.AddBytes(protocol.Protocol.Span);
             }
 
             hash.Add(AllowedCipherSuites);
@@ -101,42 +101,68 @@ internal static partial class MsQuicConfiguration
             try
             {
                 //
-                // This races with potential cache cleanup, which may close the
-                // handle before we claim ownership.
+                // This races with a potential cache cleanup, which may close the
+                // handle before we claim it.
                 //
                 bool ignore = false;
                 handle.DangerousAddRef(ref ignore);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Using cached MsQuicConfiguration {key}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Using cached MsQuicConfiguration {handle}.");
                 return handle;
             }
             catch (ObjectDisposedException)
             {
-                // we lost the race, behave as if the handle was not in the cache in the first place
+                // we lost the race, behave as if the handle was not in the cache.
             }
         }
 
         return null;
     }
 
-    private static void CacheConfigurationHandle(CacheKey key, MsQuicSafeHandle handle)
+    private static void CacheConfigurationHandle(CacheKey key, ref MsQuicSafeHandle handle)
     {
-        s_configurationCache.AddOrUpdate(
+        var cached = s_configurationCache.AddOrUpdate(
             key,
-            (k, h) =>
+            (_, newHandle) =>
             {
-                // add-ref the handle to signify that it is statically cached
+                // The cache now holds the ownership of the handle.
                 bool ignore = false;
-                h.DangerousAddRef(ref ignore);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching MsQuicConfiguration {key}");
-                return h;
+                newHandle.DangerousAddRef(ref ignore);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching MsQuicConfiguration {newHandle}.");
+                return newHandle;
             },
-            (k, existing, h) =>
+            (_, existingHandle, newHandle) =>
             {
-                // there already is an existing handle for this key, perhaps we lost a race,
-                // make this a no-op
-                return existing;
+                // another thread was faster in creating the configuration, check if we can
+                // use the cached one
+                bool ignore = false;
+                try
+                {
+                    //
+                    // This also races with the cache cleanup but should be rare since the
+                    // configuration was just added to the cache and is likely still being used.
+                    //
+                    existingHandle.DangerousAddRef(ref ignore);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Found existing MsQuicConfiguration {existingHandle} in cache.");
+                    return existingHandle;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // we lost the race with cleanup, the existing configuration handle is closed,
+                    // keep the one we created.
+                    newHandle.DangerousAddRef(ref ignore);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching MsQuicConfiguration {newHandle}.");
+                    return newHandle;
+                }
             },
             handle);
+
+        if (cached != handle)
+        {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Discarding MsQuicConfiguration {handle} (preferring cached {cached}).");
+            handle.Dispose();
+            handle = cached;
+            return;
+        }
 
         if (s_configurationCache.Count % CheckExpiredModulo == 0)
         {
@@ -155,22 +181,25 @@ internal static partial class MsQuicConfiguration
     {
         KeyValuePair<CacheKey, MsQuicSafeHandle>[] toRemoveAttempt = s_configurationCache.ToArray();
 
-        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, current size: {toRemoveAttempt.Length}");
+        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, current size: {toRemoveAttempt.Length}.");
 
         foreach (KeyValuePair<CacheKey, MsQuicSafeHandle> kvp in toRemoveAttempt)
         {
             var handle = kvp.Value;
 
             //
-            // Unfortunately, we can't directly get the current refcount of the handle,
-            // so we try to release and see if the handle closes.
+            // We can't directly get the current refcount of the handle, we know it's at least 1,
+            // so we decrement it and if it does not close, then it must be in use, so we increment
+            // it back.
             //
+
             handle.DangerousRelease();
             bool inUse = false;
             try
             {
                 if (!handle.IsClosed)
                 {
+                    // handle is in use, add the ref back.
                     // This add-ref races with QuicConnection.Dispose();
                     handle.DangerousAddRef(ref inUse);
                 }
@@ -183,14 +212,14 @@ internal static partial class MsQuicConfiguration
 
             if (!inUse)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}.");
                 s_configurationCache.TryRemove(kvp.Key, out _);
                 // The handle is closed, but we did not call Dispose on it. Doing so would throw ODE,
-                // suppress finalization to prevent Dispose from being called in Finalizer threads.
+                // suppress finalization to prevent Dispose from being called in a Finalizer thread.
                 GC.SuppressFinalize(handle);
             }
         }
 
-        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, new size: {s_configurationCache.Count}");
+        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, new size: {s_configurationCache.Count}.");
     }
 }

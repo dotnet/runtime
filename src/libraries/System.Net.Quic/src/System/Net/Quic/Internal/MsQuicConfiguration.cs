@@ -301,7 +301,7 @@ internal static partial class MsQuicConfiguration
             throw;
         }
 
-        CacheConfigurationHandle(cacheKey, configurationHandle);
+        CacheConfigurationHandle(cacheKey, ref configurationHandle);
 
         return configurationHandle;
     }
