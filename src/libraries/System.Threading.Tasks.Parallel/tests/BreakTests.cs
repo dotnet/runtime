@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class BreakTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(100, 10)]
         [InlineData(100, 20)]
         [InlineData(1000, 100)]

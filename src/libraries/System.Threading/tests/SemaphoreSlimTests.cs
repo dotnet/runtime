@@ -44,7 +44,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest0_Helper(-1, 10, typeof(ArgumentOutOfRangeException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunSemaphoreSlimTest1_Wait()
         {
             // Infinite timeout
@@ -62,7 +62,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_Wait_Helper(0, 10, 10, false, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {
             // Invalid timeout
@@ -136,7 +136,7 @@ namespace System.Threading.Tests
               (5, 10, SemaphoreSlimActions.AvailableWaitHandle, typeof(ObjectDisposedException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunSemaphoreSlimTest5_CurrentCount()
         {
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, null);
@@ -145,7 +145,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.Release);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunSemaphoreSlimTest7_AvailableWaitHandle()
         {
             RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, null, true);

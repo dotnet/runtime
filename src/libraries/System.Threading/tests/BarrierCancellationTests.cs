@@ -8,7 +8,7 @@ namespace System.Threading.Tests
 {
     public static class BarrierCancellationTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void BarrierCancellationTestsCancelBeforeWait()
         {
             Barrier barrier = new Barrier(3);

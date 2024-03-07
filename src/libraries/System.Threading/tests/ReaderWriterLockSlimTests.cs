@@ -60,7 +60,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void EnterExit()
         {
             using (ReaderWriterLockSlim rwls = new ReaderWriterLockSlim())

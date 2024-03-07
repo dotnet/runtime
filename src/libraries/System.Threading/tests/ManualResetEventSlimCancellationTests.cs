@@ -8,7 +8,7 @@ namespace System.Threading.Tests
 {
     public static class ManualResetEventCancellationTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancelBeforeWait()
         {
             ManualResetEventSlim mres = new ManualResetEventSlim();

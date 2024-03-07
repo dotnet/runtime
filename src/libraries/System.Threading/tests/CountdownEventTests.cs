@@ -59,7 +59,7 @@ namespace System.Threading.Tests
             Assert.Equal(ev.InitialCount, ev.CurrentCount);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(0)]
         [InlineData(100)]
         public static void RunCountdownEventTest1_SimpleTimeout(int ms)

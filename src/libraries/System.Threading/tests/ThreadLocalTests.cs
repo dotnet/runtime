@@ -59,7 +59,7 @@ namespace System.Threading.Tests
             Assert.True(tlocal.IsValueCreated);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunThreadLocalTest4_Value()
         {
             ThreadLocal<string> tlocal = null;

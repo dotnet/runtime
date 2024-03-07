@@ -8,7 +8,7 @@ namespace System.Threading.Tests
 {
     public static class CountdownEventCancellationTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancelBeforeWait()
         {
             CountdownEvent countdownEvent = new CountdownEvent(2);
