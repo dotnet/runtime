@@ -9,13 +9,12 @@ import { getB32, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU1
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { mono_wasm_setenv } from "./startup";
 import { loaderHelpers, runtimeHelpers } from "./globals";
-import { mono_exit } from "./loader/exit";
 
 export function export_api(): any {
     const api: APIType = {
         runMain: mono_run_main,
         runMainAndExit: mono_run_main_and_exit,
-        exit: mono_exit,
+        exit: loaderHelpers.mono_exit,
         setEnvironmentVariable: mono_wasm_setenv,
         getAssemblyExports: mono_wasm_get_assembly_exports,
         setModuleImports: mono_wasm_set_module_imports,
