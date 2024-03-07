@@ -488,7 +488,7 @@ namespace System.ComponentModel
                 return _properties;
             }
 
-            [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
+            [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
             private static bool NonQualifiedTyeNamesSupported => false;
 #pragma warning restore IL4000

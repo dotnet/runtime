@@ -7,10 +7,10 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeFeature
     {
-        [FeatureCheck(typeof(RequiresDynamicCodeAttribute))]
+        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeSupported => false;
 
-        [FeatureCheck(typeof(RequiresDynamicCodeAttribute))]
+        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled => false;
     }
 }

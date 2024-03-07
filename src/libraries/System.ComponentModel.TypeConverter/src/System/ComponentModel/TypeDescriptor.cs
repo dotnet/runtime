@@ -19,7 +19,7 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
-        [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
         public static bool SupportsInstanceTypeDescriptor => false;
 #pragma warning restore IL4000
@@ -3000,7 +3000,7 @@ namespace System.ComponentModel
             }
         }
 
-        [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
         internal static bool ReflectTypeDescriptorProviderIsSupported => false;
 #pragma warning restore IL4000
@@ -3232,7 +3232,7 @@ namespace System.ComponentModel
                     return desc.GetComponentName();
                 }
 
-                [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
+                [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
                 private static bool ExtendedTypeDescriptorIsSupported => false;
 #pragma warning restore IL4000

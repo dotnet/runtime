@@ -528,7 +528,7 @@ namespace System.Data.Common
             }
         }
 
-        [FeatureCheck(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
         private static bool SupportsFilteredGetProperties => false;
 #pragma warning restore IL4000
