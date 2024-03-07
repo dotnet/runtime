@@ -28,8 +28,6 @@ struct EHEnum
 };
 
 class StackFrameIterator;
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 struct PInvokeTransitionFrame;
 typedef DPTR(PInvokeTransitionFrame) PTR_PInvokeTransitionFrame;
@@ -38,8 +36,6 @@ typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 class StackFrameIterator
 {
     friend class AsmOffsets;
-    friend COOP_PINVOKE_HELPER_NO_EXTERN_C(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
-    friend COOP_PINVOKE_HELPER_NO_EXTERN_C(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 public:
     StackFrameIterator() {}
@@ -68,6 +64,10 @@ public:
     // refer to the GC heap as a fixed interior reference.
     bool HasStackRangeToReportConservatively();
     void GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound);
+
+    // Implementations of RhpSfiInit and RhpSfiNext called from managed code
+    bool             Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault);
+    bool             Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke);
 
 private:
     // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the

@@ -1808,7 +1808,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #ifndef DACCESS_COMPILE
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+bool StackFrameIterator::Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
@@ -1820,41 +1820,38 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMI
 
     // Passing NULL is a special-case to request a standard managed stack trace for the current thread.
     if (pStackwalkCtx == NULL)
-        pThis->InternalInitForStackTrace();
+        InternalInitForStackTrace();
     else
-        pThis->InternalInitForEH(pCurThread, pStackwalkCtx, instructionFault);
+        InternalInitForEH(pCurThread, pStackwalkCtx, instructionFault);
 
-    bool isValid = pThis->IsValid();
+    bool isValid = IsValid();
     if (isValid)
-        pThis->CalculateCurrentMethodState();
+        CalculateCurrentMethodState();
 
-    if (pfIsExceptionIntercepted)
-    {
-        *pfIsExceptionIntercepted = false;
-    }
-
-    FC_RETURN_BOOL(isValid);
+    return isValid;
 }
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
+bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke)
 {
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
+
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we
     // need to unhijack every time we callback into C++ because the thread could have been hijacked during our
     // time executing C#.
-    ThreadStore::GetCurrentThread()->Unhijack();
+    pCurThread->Unhijack();
 
     const uint32_t MaxTryRegionIdx = 0xFFFFFFFF;
 
-    ExInfo * pCurExInfo = pThis->m_pNextExInfo;
-    pThis->Next();
-    bool isValid = pThis->IsValid();
+    ExInfo * pCurExInfo = m_pNextExInfo;
+    Next();
+    bool isValid = IsValid();
     if (isValid)
-        pThis->CalculateCurrentMethodState();
+        CalculateCurrentMethodState();
 
     if (puExCollideClauseIdx != NULL)
     {
-        if (pThis->m_dwFlags & StackFrameIterator::ExCollide)
+        if (m_dwFlags & StackFrameIterator::ExCollide)
         {
             ASSERT(pCurExInfo->m_idxCurClause != MaxTryRegionIdx);
             *puExCollideClauseIdx = pCurExInfo->m_idxCurClause;
@@ -1868,8 +1865,27 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t
 
     if (pfUnwoundReversePInvoke != NULL)
     {
-        *pfUnwoundReversePInvoke = (pThis->m_dwFlags & StackFrameIterator::UnwoundReversePInvoke) != 0;
+        *pfUnwoundReversePInvoke = (m_dwFlags & StackFrameIterator::UnwoundReversePInvoke) != 0;
     }
+
+    return isValid;
+}
+
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+{
+    bool isValid = pThis->Init(pStackwalkCtx, instructionFault);
+
+    if (pfIsExceptionIntercepted)
+    {
+        *pfIsExceptionIntercepted = false;
+    }
+
+    FC_RETURN_BOOL(isValid);
+}
+
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
+{
+    bool isValid = pThis->Next(puExCollideClauseIdx, pfUnwoundReversePInvoke);
 
     if (pfIsExceptionIntercepted)
     {
