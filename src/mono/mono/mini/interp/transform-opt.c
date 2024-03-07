@@ -1625,6 +1625,14 @@ interp_merge_bblocks (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 		}
 	}
 
+#if defined(TARGET_WASM)
+	// Copy jiterpreter data
+	if (bbadd->backwards_branch_target)
+		bb->backwards_branch_target = TRUE;
+	if (bbadd->contains_call_instruction)
+		bb->contains_call_instruction = TRUE;
+#endif
+
 	mark_bb_as_dead (td, bbadd, bb);
 }
 

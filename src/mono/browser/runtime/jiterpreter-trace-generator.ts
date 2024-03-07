@@ -37,7 +37,7 @@ import {
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
-    nullCheckCaching, traceBackBranches,
+    nullCheckCaching, defaultTraceBackBranches,
     maxCallHandlerReturnAddresses,
 
     mostRecentOptions,
@@ -219,14 +219,17 @@ export function generateWasmBody(
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
+
     eraseInferredState();
 
-    // Skip over the enter opcode
-    const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
-    ip += <any>(enterSizeU16 * 2);
-    let rip = ip;
+    // If a trace is instrumented, also activate back branch tracing
+    builder.backBranchTraceLevel = instrumentedTraceId
+        ? 2
+        : defaultTraceBackBranches;
 
-    builder.cfg.entry(ip);
+    // Record the address of our prepare_jiterpreter opcode as the entry point, not the opcode after it.
+    // Some back-branches will target prepare_jiterpreter directly, and we need them to work.
+    let rip = builder.cfg.entry(ip);
 
     while (ip) {
         // This means some code went 'ip = abort; continue'
@@ -301,7 +304,7 @@ export function generateWasmBody(
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
         if (isBackBranchTarget) {
-            if (traceBackBranches > 1)
+            if (builder.backBranchTraceLevel > 1)
                 mono_log_info(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
             builder.backBranchOffsets.push(ip);
         }
@@ -2739,8 +2742,8 @@ function emit_branch(
                     // We found a backward branch target we can branch to, so we branch out
                     //  to the top of the loop body
                     // append_safepoint(builder, ip);
-                    if (traceBackBranches > 1)
-                        mono_log_info(`performing backward branch to 0x${destination.toString(16)}`);
+                    if (builder.backBranchTraceLevel > 1)
+                        mono_log_info(`0x${(<any>ip).toString(16)} performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
                         append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
@@ -2748,9 +2751,9 @@ function emit_branch(
                     return true;
                 } else {
                     if (destination < builder.cfg.entryIp) {
-                        if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                            mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-                    } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                            mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+                    } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                         mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
@@ -2820,15 +2823,15 @@ function emit_branch(
         if (builder.backBranchOffsets.indexOf(destination) >= 0) {
             // We found a backwards branch target we can reach via our outer trace loop, so
             //  we update eip and branch out to the top of the loop block
-            if (traceBackBranches > 1)
-                mono_log_info(`performing conditional backward branch to 0x${destination.toString(16)}`);
+            if (builder.backBranchTraceLevel > 1)
+                mono_log_info(`0x${(<any>ip).toString(16)} performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.cfg.branch(destination, true, isSafepoint ? CfgBranchType.SafepointConditional : CfgBranchType.Conditional);
             modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
         } else {
             if (destination < builder.cfg.entryIp) {
-                if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                    mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-            } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                    mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+            } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                 mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );

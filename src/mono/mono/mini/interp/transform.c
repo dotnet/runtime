@@ -8382,6 +8382,14 @@ interp_compute_native_offset_estimates (TransformData *td)
 		if (!td->optimized && bb->patchpoint_bb)
 			noe += 2;
 
+#if HOST_BROWSER
+		// We don't know in advance whether a bb will have a trace entry point,
+		//  but we know that it will only ever have one trace entry point, so
+		//  reserve space for it so we can correctly insert one later
+		if (mono_jiterp_is_enabled ())
+			noe += 4;
+#endif
+
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
 			// Skip dummy opcodes for more precise offset computation
@@ -8532,8 +8540,15 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			gboolean is_short = interp_is_short_offset (br_offset, target_bb_estimated_offset);
 			if (is_short)
 				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-			else
-				g_assert (!MINT_IS_SUPER_BRANCH (opcode)); // FIXME missing handling for long branch
+			else if (MINT_IS_SUPER_BRANCH (opcode)) {
+				g_printf (
+					"long superbranch detected with opcode %d (%s) in method %s.%s\n",
+					opcode, mono_interp_opname (opcode),
+					m_class_get_name (td->method->klass), td->method->name
+				);
+				// FIXME missing handling for long branch
+				g_assert (FALSE);
+			}
 
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
