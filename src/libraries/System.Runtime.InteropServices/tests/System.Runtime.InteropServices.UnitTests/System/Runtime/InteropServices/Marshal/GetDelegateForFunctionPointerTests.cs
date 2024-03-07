@@ -193,15 +193,20 @@ namespace System.Runtime.InteropServices.Tests
 
             internal FreachableObject()
             {
-                _del = new Action(() => { });
+                _del = new Action(SomeFunction);
                 _fnptr = Marshal.GetFunctionPointerForDelegate(_del);
+            }
+
+            // Note: This method cannot be replaced by a lambda for the test to trigger the delegate resurrection
+            private void SomeFunction()
+            {
             }
 
             ~FreachableObject()
             {
                 Assert.Same(Marshal.GetDelegateForFunctionPointer<Action>(_fnptr), _del);
 
-                if (_count++ < 4)
+                if (_count++ < 3)
                 {
                     GC.ReRegisterForFinalize(this);
                 }
