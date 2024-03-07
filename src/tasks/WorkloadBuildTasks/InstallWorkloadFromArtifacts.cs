@@ -8,10 +8,13 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
+using System.Xml.XPath;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -42,6 +45,18 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        /*
+         * Value: ["*Aspire*", "Foo*"]
+         * This will be translated to:
+         * <packageSourceMapping>
+         *  <packageSource key="nuget-local">
+         *    <package pattern="*Aspire*" />
+         *    <package pattern="Foo*" />
+         *  </packageSource>
+         *
+         * This is useful when using Central Package Management (https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management)
+        */
+        public string[]       NuGetConfigPackageSourceMappings { get; set; } = Array.Empty<string>();
         public string         ExtraWorkloadInstallCommandArguments { get; set; } = string.Empty;
         public string?        IntermediateOutputPath { get; set; }
         public bool           OnlyUpdateManifests { get; set; }
@@ -50,7 +65,6 @@ namespace Microsoft.Workload.Build.Tasks
         // Should match enum values for MessageImportance - Low, Normal (default), High
         public string?        WorkloadInstallCommandOutputImportance { get; set; }
 
-        private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
@@ -70,6 +84,10 @@ namespace Microsoft.Workload.Build.Tasks
                 Directory.Delete(_tempDir, recursive: true);
             Directory.CreateDirectory(_tempDir);
             _nugetCachePath = Path.Combine(_tempDir, "nuget-cache");
+            if (SkipTempDirectoryCleanup)
+            {
+                Log.LogMessage(MessageImportance.High, $"Using temporary directory {_tempDir} for installing workloads from artifacts.");
+            }
 
             try
             {
@@ -264,11 +282,59 @@ namespace Microsoft.Workload.Build.Tasks
 
         private string GetNuGetConfig()
         {
-            string contents = File.ReadAllText(TemplateNuGetConfigPath);
-            if (!contents.Contains(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase))
-                throw new LogAsErrorException($"Could not find {s_nugetInsertionTag} in {TemplateNuGetConfigPath}");
+            XDocument doc = XDocument.Load(TemplateNuGetConfigPath);
+            string xpath = "/configuration/packageSources";
+            XElement? packageSources = doc.XPathSelectElement(xpath);
+            if (packageSources is null)
+                throw new LogAsErrorException($"Could not find {xpath} in {TemplateNuGetConfigPath}");
 
-            return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""file://{LocalNuGetsPath}"" />");
+            var newPackageSourceElement = new XElement("add",
+                                            new XAttribute("key", "nuget-local"),
+                                            new XAttribute("value", $"file://{LocalNuGetsPath}"));
+            if (packageSources.LastNode is not null)
+            {
+                packageSources.LastNode.AddAfterSelf(newPackageSourceElement);
+            }
+            else
+            {
+                packageSources.Add(newPackageSourceElement);
+            }
+
+            if (NuGetConfigPackageSourceMappings.Length > 0)
+            {
+                string mappingXpath = "/configuration/packageSourceMapping";
+                XElement? packageSourceMapping = doc.XPathSelectElement(mappingXpath);
+                if (packageSourceMapping is null)
+                {
+                    if (doc.Root is null)
+                        throw new LogAsErrorException($"Could not find root element in {TemplateNuGetConfigPath}");
+
+                    packageSourceMapping = new XElement("packageSourceMapping");
+                    doc.Root.Add(packageSourceMapping);
+                }
+
+                var newPackageSourceMappingElement = new XElement("packageSource",
+                                                        new XAttribute("key", "nuget-local"),
+                                                        NuGetConfigPackageSourceMappings.Select
+                                                            (pattern => new XElement("package", new XAttribute("pattern", pattern))));
+                if (packageSourceMapping.FirstNode is not null)
+                {
+                    packageSourceMapping.FirstNode?.AddBeforeSelf(newPackageSourceMappingElement);
+                }
+                else
+                {
+                    packageSourceMapping.Add(newPackageSourceMappingElement);
+                }
+            }
+
+            var nugetConfigPath = Path.GetTempFileName();
+            using var xw = XmlWriter.Create(nugetConfigPath, new XmlWriterSettings { Indent = true, NewLineHandling = NewLineHandling.None, Encoding = Encoding.UTF8 });
+            doc.WriteTo(xw);
+            xw.Close();
+
+            string contents = File.ReadAllText(nugetConfigPath);
+            File.Delete(nugetConfigPath);
+            return contents;
         }
 
         private bool InstallWorkloadManifest(ITaskItem workloadId, string name, string version, string sdkDir, string nugetConfigContents, bool stopOnMissing)

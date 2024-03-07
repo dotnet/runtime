@@ -202,6 +202,7 @@
                      LocalNuGetsPath="$(BuiltNugetsDir)"
                      ExtraWorkloadInstallCommandArguments="$(ExtraWorkloadInstallCommandArguments)"
                      TemplateNuGetConfigPath="$(TemplateNuGetConfigPathForWorkloadTesting)"
+                     NuGetConfigPackageSourceMappings="$(NuGetConfigPackageSourceMappingsForWorkloadsTesting)"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
                      WorkloadInstallCommandOutputImportance="$(WorkloadInstallCommandOutputImportance)"
                      IntermediateOutputPath="$(ArtifactsObjDir)"

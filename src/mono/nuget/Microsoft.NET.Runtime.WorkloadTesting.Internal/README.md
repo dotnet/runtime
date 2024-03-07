@@ -5,13 +5,29 @@ Tasks, and targets to support workload testing in `dotnet` repositories.
 - `$(InstallWorkloadForTesting)` - required
 - `$(BuiltNuGetsDir)` - required
 - `$(DotNetInstallArgumentsForWorkloadsTesting)` - required
+
 - `$(TestUsingWorkloads)` - optional
 - `$(SkipTempDirectoryCleanup)` - optional
 - `$(VersionBandForManifestPackages)` - optional
 - `$(ExtraWorkloadInstallCommandArguments)` - optional
 - `$(WorkloadInstallCommandOutputImportance)` - optional
+
 - `$(TemplateNuGetConfigPathForWorkloadTesting)` - optional
 
-## items
+## `$(NuGetConfigPackageSourceMappingsForWorkloadTesting)` - optional
+
+For a value of `*Aspire*;Foo*`, a package source mapping will be added to the local nuget source
+added for built nugets:
+
+```xml
+  <packageSourceMapping>
+    <packageSource key="nuget-local">
+      <package pattern="*Aspire*" />
+      <package pattern="Foo*" />
+    </packageSource>
+    ...
+```
+
+# items
 
 - `@(DefaultPropertiesForNuGetBuild)`
