@@ -1488,6 +1488,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         FlowEdge* const falseEdge = fgAddRefPred(helperCallBb, isInitedBb);
         isInitedBb->SetTrueEdge(trueEdge);
         isInitedBb->SetFalseEdge(falseEdge);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
     }
 
     //
@@ -1717,7 +1719,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
-    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
+    BasicBlock* const lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
     lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
@@ -1810,6 +1812,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         FlowEdge* const falseEdge = fgAddRefPred(fastpathBb, lengthCheckBb);
         lengthCheckBb->SetTrueEdge(trueEdge);
         lengthCheckBb->SetFalseEdge(falseEdge);
+
+        // review: we assume length check always succeeds??
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
     }
 
     {
