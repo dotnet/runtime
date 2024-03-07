@@ -228,6 +228,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
     DllImportEntry(SystemNative_SNPrintF)
+    DllImportEntry(SystemNative_SNPrintF_1S)
+    DllImportEntry(SystemNative_SNPrintF_1I)
     DllImportEntry(SystemNative_Sysctl)
     DllImportEntry(SystemNative_MapTcpState)
     DllImportEntry(SystemNative_LowLevelMonitor_Create)

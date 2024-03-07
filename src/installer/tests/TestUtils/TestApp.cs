@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
             => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
 
-        public void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
+        private void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(

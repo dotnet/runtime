@@ -3,6 +3,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />

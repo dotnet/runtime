@@ -234,8 +234,8 @@ const int MAX_LEVEL_FILTERS = 100;
 static int s_levelFilterCount;
 struct LevelFilter
 {
-    int minLevel;
-    int maxLevel;
+    unsigned long minLevel;
+    unsigned long maxLevel;
 };
 
 static LevelFilter s_levelFilter[MAX_LEVEL_FILTERS];
@@ -249,8 +249,8 @@ struct GcStartEnd
 const int MAX_GC_INDEX = 1024 * 1024;
 static GcStartEnd s_gcStartEnd[MAX_GC_INDEX];
 
-static int s_gcFilterStart;
-static int s_gcFilterEnd;
+static unsigned long s_gcFilterStart;
+static unsigned long s_gcFilterEnd;
 
 const int MAX_VALUE_FILTERS = 100;
 static int s_valueFilterCount;
@@ -354,7 +354,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     bool fLevelFilter = false;
     if (s_levelFilterCount > 0)
     {
-        int gcLogLevel = GcLogLevel(facility);
+        unsigned long gcLogLevel = (unsigned long)GcLogLevel(facility);
         for (int i = 0; i < s_levelFilterCount; i++)
         {
             if (s_levelFilter[i].minLevel <= gcLogLevel && gcLogLevel <= s_levelFilter[i].maxLevel)
@@ -755,7 +755,7 @@ bool ParseOptions(int argc, char* argv[])
                         char* end = nullptr;
                         if (_strnicmp(arg, "gc", 2) == 0 || _strnicmp(arg, "bg", 2) == 0)
                         {
-                            int gcHeapNumber = strtoul(arg+2, &end, 10);
+                            unsigned long gcHeapNumber = strtoul(arg+2, &end, 10);
                             GcThreadKind kind = _strnicmp(arg, "gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
                             if (gcHeapNumber < MAX_NUMBER_OF_HEAPS)
                             {
@@ -1368,7 +1368,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         // find the time interval that includes the GCs in question
         double startTime = INFINITY;
         double endTime = 0.0;
-        for (int i = s_gcFilterStart; i <= s_gcFilterEnd; i++)
+        for (unsigned long i = s_gcFilterStart; i <= s_gcFilterEnd; i++)
         {
             startTime = min(startTime, s_gcStartEnd[i].startTime);
             if (s_gcStartEnd[i].endTime != 0.0)

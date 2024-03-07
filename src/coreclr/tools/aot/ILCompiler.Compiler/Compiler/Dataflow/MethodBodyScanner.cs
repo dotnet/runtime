@@ -188,8 +188,7 @@ namespace ILCompiler.Dataflow
                     _foundEndOfPrevBlock = false;
                 }
 
-                var reader = new ILReader(_methodBody.GetILBytes());
-                reader.Seek(offset);
+                var reader = new ILReader(_methodBody.GetILBytes(), offset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode.IsControlFlowInstruction())
                 {

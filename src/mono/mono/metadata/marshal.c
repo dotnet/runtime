@@ -3294,7 +3294,7 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 	return mono_component_marshal_ilgen()->emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
-} 
+}
 
 static void
 mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
@@ -3577,7 +3577,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
 		/*
-		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation. 
+		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation.
 		 * Emit a wrapper that throws a NotSupportedException.
 		 */
 		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
@@ -3711,9 +3711,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
-					} else if (!m_class_is_blittable (param_klass) && m_class_get_this_arg (param_klass)->type != MONO_TYPE_FNPTR) {
+					} else if (!m_class_is_blittable (param_klass) || m_class_is_simd_type (param_klass)) {
 						swift_error_args = swift_self_args = 0;
-						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-primitive value types to a P/Invoke with the Swift calling convention is unsupported.");
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
 					}
 				}
@@ -3757,7 +3757,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	goto leave;
-	
+
 	emit_exception_for_error:
 		mono_error_cleanup (emitted_error);
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
@@ -5231,7 +5231,7 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 
 	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
 		member_name = accessor_method->name;
-	
+
 	/*
 	 * Check cache
 	 */
@@ -5827,11 +5827,20 @@ mono_marshal_load_type_info (MonoClass* klass)
 			continue;
 		}
 
+		size = mono_marshal_type_size (field->type, info->fields [j].mspec,
+						&align, TRUE, m_class_is_unicode (klass));
+
+		// Keep in sync with class-init.c mono_class_layout_fields
+		if (m_class_is_inlinearray (klass)) {
+			// Limit the max size of array instance to 1MiB
+			const int struct_max_size = 1024 * 1024;
+			size *= m_class_inlinearray_value (klass);
+			g_assert ((size > 0) && (size <= struct_max_size));
+		}
+
 		switch (layout) {
 		case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 		case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
-			size = mono_marshal_type_size (field->type, info->fields [j].mspec,
-						       &align, TRUE, m_class_is_unicode (klass));
 			align = m_class_get_packing_size (klass) ? MIN (m_class_get_packing_size (klass), align): align;
 			min_align = MAX (align, min_align);
 			info->fields [j].offset = info->native_size;
@@ -5840,8 +5849,6 @@ mono_marshal_load_type_info (MonoClass* klass)
 			info->native_size = info->fields [j].offset + size;
 			break;
 		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
-			size = mono_marshal_type_size (field->type, info->fields [j].mspec,
-						       &align, TRUE, m_class_is_unicode (klass));
 			min_align = MAX (align, min_align);
 			info->fields [j].offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);

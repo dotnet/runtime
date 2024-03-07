@@ -1173,6 +1173,7 @@ namespace DebuggerTests
             return data;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98110")]
         [ConditionalTheory(nameof(WasmMultiThreaded))]
         [MemberData(nameof(CountToTen))]
         public async Task TestDebugUsingMultiThreadedRuntime(int _attempt)

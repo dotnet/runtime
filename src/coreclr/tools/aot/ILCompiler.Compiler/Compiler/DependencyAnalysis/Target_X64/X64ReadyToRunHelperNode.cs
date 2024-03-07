@@ -74,26 +74,7 @@ namespace ILCompiler.DependencyAnalysis
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
                         if (index is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
-                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
-                            {
-                                EmitInlineTLSAccess(factory, ref encoder);
-                            }
-                            else
-                            {
-                                // First arg: unused address of the TypeManager
-                                // encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
-
-                                // Second arg: -1 (index of inlined storage)
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, -1);
-
-                                encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                                AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
-                                encoder.EmitCMP(ref initialized, 0);
-                                encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
-
-                                EmitInlineTLSAccess(factory, ref encoder);
-                            }
+                            throw new NotImplementedException();
                         }
                         else
                         {
@@ -224,17 +205,6 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     throw new NotImplementedException();
             }
-        }
-
-        // emits code that results in ThreadStaticBase referenced in RAX.
-        // may trash volatile registers. (there are calls to the slow helper and possibly to platform's TLS support)
-        private static void EmitInlineTLSAccess(NodeFactory factory, ref X64Emitter encoder)
-        {
-            // For factory.Target.IsApplePlatform
-            // movq _\Var @TLVP(% rip), % rdi
-            // callq * (% rdi)
-
-            throw new NotImplementedException();
         }
     }
 }

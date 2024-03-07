@@ -104,8 +104,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var assemblyName = "Test" + DateTime.Now.Ticks;
             var fileName = assemblyName + ".dll";
 
+#if NETFRAMEWORK
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.RunAndSave);
             var module = assembly.DefineDynamicModule(assemblyName, fileName);
+#else
+            var assembly = AssemblyBuilder.DefinePersistedAssembly(new AssemblyName(assemblyName), typeof(object).Assembly);
+            var module = assembly.DefineDynamicModule(assemblyName);
+#endif
             var type = module.DefineType(callSite.ServiceType.Name + "Resolver");
 
             var method = type.DefineMethod(
@@ -114,7 +119,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             GenerateMethodBody(callSite, method.GetILGenerator());
             type.CreateTypeInfo();
-            // Assembly.Save is only available in .NET Framework (https://github.com/dotnet/runtime/issues/15704)
             assembly.Save(fileName);
 #endif
             DependencyInjectionEventSource.Log.DynamicMethodBuilt(_rootScope.RootProvider, callSite.ServiceType, ilGenerator.ILOffset);
@@ -179,7 +183,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             AddConstant(argument, generatedMethod.Lambda);
             // ProviderScope
             argument.Generator.Emit(OpCodes.Ldarg_1);
-            argument.Generator.Emit(OpCodes.Call, generatedMethod.Lambda.GetType().GetMethod("Invoke"));
+            argument.Generator.Emit(OpCodes.Call, generatedMethod.Lambda.GetType().GetMethod("Invoke")!);
 #else
             AddConstant(argument, generatedMethod.Context);
             // ProviderScope

@@ -13,7 +13,7 @@
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">

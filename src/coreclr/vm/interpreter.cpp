@@ -6506,7 +6506,7 @@ void Interpreter::CkFinite()
         break;
     }
 
-    if (!_finite(val))
+    if (!isfinite(val))
         ThrowSysArithException();
 }
 
@@ -6828,6 +6828,16 @@ void Interpreter::SetILInstrCategories()
 }
 #endif // INTERP_ILINSTR_PROFILE
 
+#ifndef TARGET_WINDOWS
+namespace
+{
+    bool isnan(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+    }
+}
+#endif
 
 template<int op>
 void Interpreter::CompareOp()
@@ -7135,7 +7145,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 else if (op == CO_GT_UN)
                 {
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 > val2) res = 1;
                 }
                 else if (op == CO_LT)
@@ -7146,7 +7156,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 {
                     _ASSERTE(op == CO_LT_UN);
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 < val2) res = 1;
                 }
             }
@@ -7177,7 +7187,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 else if (op == CO_GT_UN)
                 {
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 > val2) res = 1;
                 }
                 else if (op == CO_LT)
@@ -7188,7 +7198,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 {
                     _ASSERTE(op == CO_LT_UN);
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 < val2) res = 1;
                 }
             }

@@ -1076,7 +1076,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -1281,6 +1280,20 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsOp());
             break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            // Any register should do here, but the error register value should immediately
+            // be moved from GT_SWIFT_ERROR's destination register to the SwiftError struct,
+            // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
+            // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
+            // we can ensure the redundant move is elided.
+            BuildDef(tree, RBM_SWIFT_ERROR);
+            break;
+#endif // SWIFT_SUPPORT
 
     } // end switch (tree->OperGet())
 
@@ -1684,6 +1697,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);
+                buildInternalRegisterUses();
                 FALLTHROUGH;
             }
 
@@ -2024,17 +2038,30 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
         return true;
     }
 
+    bool atConsecutiveRegsLoc          = consecutiveRegistersLocation == nodeLocation;
+    bool treeNeedsConsecutiveRegisters = false;
+
+    if ((treeNode != nullptr) && treeNode->OperIsHWIntrinsic())
+    {
+        const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+        treeNeedsConsecutiveRegisters = HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+    }
+
     if (refType == RefTypeDef)
     {
-        if (treeNode->OperIsHWIntrinsic())
-        {
-            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
-            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
-        }
+        return treeNeedsConsecutiveRegisters;
     }
-    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    else if (refType == RefTypeUse)
     {
-        return consecutiveRegistersLocation == nodeLocation;
+        if (isIntervalRef() && getInterval()->isInternal)
+        {
+            return treeNeedsConsecutiveRegisters;
+        }
+        return atConsecutiveRegsLoc;
+    }
+    else if (refType == RefTypeUpperVectorRestore)
+    {
+        return atConsecutiveRegsLoc;
     }
     return false;
 }

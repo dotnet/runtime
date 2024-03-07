@@ -3973,7 +3973,8 @@ ThrowControlForThread(
         exceptionRecord.ExceptionFlags = 0;
 
         OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
-        DispatchManagedException(throwable);
+        pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+        DispatchManagedException(throwable, pfef->GetExceptionContext());
     }
     else
 #endif // FEATURE_EH_FUNCLETS

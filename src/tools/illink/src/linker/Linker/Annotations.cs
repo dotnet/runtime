@@ -447,14 +447,22 @@ namespace Mono.Linker
 		}
 
 		/// <summary>
-		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
+		/// Returns a list of all known methods that override <paramref name="method"/>.
+		/// The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
 		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			return TypeMapInfo.GetOverrides (method);
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)>? GetDefaultInterfaceImplementations (MethodDefinition method)
+		/// <summary>
+		/// Returns a list of all default interface methods that implement <paramref name="method"/> for a type.
+		/// ImplementingType is the type that implements the interface,
+		/// InterfaceImpl is the <see cref="InterfaceImplementation" /> for the interface <paramref name="method" /> is declared on, and
+		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
+		/// </summary>
+		/// <param name="method">The interface method to find default implementations for</param>
+		public IEnumerable<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method);
 		}
@@ -462,7 +470,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns all base methods that <paramref name="method"/> overrides.
 		/// This includes methods on <paramref name="method"/>'s declaring type's base type (but not methods higher up in the type hierarchy),
-		/// methods on an interface that <paramref name="method"/>'s delcaring type implements,
+		/// methods on an interface that <paramref name="method"/>'s declaring type implements,
 		/// and methods an interface implemented by a derived type of <paramref name="method"/>'s declaring type if the derived type uses <paramref name="method"/> as the implementing method.
 		/// The list may be incomplete if there are derived types in assemblies that havent been processed yet that use <paramref name="method"/> to implement an interface.
 		/// </summary>

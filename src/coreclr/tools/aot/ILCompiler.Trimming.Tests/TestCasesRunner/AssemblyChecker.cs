@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using FluentAssertions;
 using ILCompiler;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;

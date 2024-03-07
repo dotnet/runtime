@@ -66,6 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // TODO TaskCreationOptions.HideScheduler ?
                 _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
+                _thread.Name = "JSWebWorker";
                 _resultTask = null;
                 _cancellationToken = cancellationToken;
                 _cancellationRegistration = null;
