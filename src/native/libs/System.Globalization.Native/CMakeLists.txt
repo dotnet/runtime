@@ -145,10 +145,11 @@ if (GEN_SHARED_LIB)
     endif()
 
     if (CLR_CMAKE_TARGET_WIN32)
+        add_definitions(-DVER_FILEDESCRIPTION_STR="System.Globalization.Native")
         add_library(System.Globalization.Native
             SHARED
             ${NATIVEGLOBALIZATION_SOURCES}
-            ${VERSION_HEADER_PATH}
+            ${VERSION_FILE_RC_PATH}
         )
     else()
         add_library(System.Globalization.Native
