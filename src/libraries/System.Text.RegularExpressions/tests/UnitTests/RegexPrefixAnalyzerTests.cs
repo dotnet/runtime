@@ -94,6 +94,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abc[def]ghi|[jkl]", null, false)]
         [InlineData("[12][45][789]", new[] { "147", "148", "149", "157", "158", "159", "247", "248", "249", "257", "258", "259" }, false)]
         [InlineData("[12]a[45]b[789]c", new[] { "1a4b7c", "1a4b8c", "1a4b9c", "1a5b7c", "1a5b8c", "1a5b9c", "2a4b7c", "2a4b8c", "2a4b9c", "2a5b7c", "2a5b8c", "2a5b9c" }, false)]
+        [InlineData("(abc){3}|(def){3}", new[] { "abcabcabc", "defdefdef" }, false)]
+        [InlineData("(abc){4,8}|(def){2,3}", new[] { "abcabcabc", "defdef" }, false)]
+        [InlineData("(abc){4,8}|(de+f){2,3}", new[] { "abcabcabc", "de" }, false)]
+        [InlineData("(ab{2}c){4,8}|(de+f){2,3}", new[] { "abbcabbc", "de" }, false)]
         // case-insensitive
         [InlineData("[Aa][Bb][Cc]", new[] { "abc" }, true)]
         [InlineData("[Aa][Bbc][Cc]", null, true)]
@@ -113,6 +117,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abc|def", null, true)]
         [InlineData("abc|def|(ghi|jklm)", null, true)]
         [InlineData("://[Aa][Bb]|[Cc]@!", new[] { "://ab", "c@!" }, true)]
+        [InlineData("(?i)((abc){4,8}|(def){2,3})", new[] { "abcabcab", "defdef" }, true)]
+        [InlineData("(?i)((abc){4,8}|(de+f){2,3})", new[] { "abcabcab", "de" }, true)]
+        [InlineData("(?i)((ab{2}c){4,8}|(de+f){2,3})", new[] { "abbcabbc", "de" }, true)]
         public void FindPrefixes(string pattern, string[] expectedSet, bool ignoreCase)
         {
             RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, CultureInfo.InvariantCulture);
