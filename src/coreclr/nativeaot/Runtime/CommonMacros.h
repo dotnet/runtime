@@ -220,19 +220,16 @@ typedef uint8_t CODE_LOCATION;
     _Pragma(COOP_XSTRINGIFY(comment (linker, COOP_FASTCALL_ALTNAME_IMPORT(_method, COOP_ARGHELPER_STACKSIZE _args))) ) \
     EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
 
-// We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
-#define PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype __cdecl _method _args
-#define PREEMPT_PINVOKE_CDECL_HELPER PINVOKE_CDECL_HELPER
-
 #else
 
 #define COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args) NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C COOP_PINVOKE_HELPER_NO_EXTERN_C(_rettype, _method, _args)
 #define COOP_PINVOKE_HELPER_IMPORT COOP_PINVOKE_HELPER
-#define PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER
-#define PREEMPT_PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER
 
 #endif
+
+#define PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype _method _args
+#define PREEMPT_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype _method _args
 
 typedef bool CLR_BOOL;
 

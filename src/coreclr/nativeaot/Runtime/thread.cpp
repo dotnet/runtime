@@ -1128,7 +1128,7 @@ void Thread::ValidateExInfoStack()
 #ifndef DACCESS_COMPILE
 
 #ifndef TARGET_UNIX
-PREEMPT_PINVOKE_CDECL_HELPER(uint32_t, RhCompatibleReentrantWaitAny, (UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles))
+PREEMPT_PINVOKE_HELPER(uint32_t, RhCompatibleReentrantWaitAny, (UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles))
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }

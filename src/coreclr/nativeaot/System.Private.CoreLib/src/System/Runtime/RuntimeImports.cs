@@ -42,11 +42,9 @@ namespace System.Runtime
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial ulong RhpGetTickCount64();
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial IntPtr RhpGetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -84,7 +82,6 @@ namespace System.Runtime
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static partial void RhWaitForPendingFinalizers(int allowReentrantWait);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -98,7 +95,6 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.
@@ -168,15 +164,12 @@ namespace System.Runtime
         internal static extern long RhGetLastGCDuration(int generation);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -223,7 +216,6 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
 
         internal struct GCHeapHardLimitInfo
@@ -239,19 +231,15 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial int RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial long RhGetGenerationBudget(int generation);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial long RhGetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -259,11 +247,9 @@ namespace System.Runtime
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -379,7 +365,6 @@ namespace System.Runtime
         internal static extern int RhpGetThunkBlockSize();
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial IntPtr RhAllocateThunksMapping();
 
         //
@@ -431,29 +416,24 @@ namespace System.Runtime
         // Busy spin for the given number of iterations.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhSpinWait(int iterations);
 
         // Call RhSpinWait with a GC transition
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhLongSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static partial int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhFlushProcessWriteBuffers();
 
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -1412,7 +1392,6 @@ namespace System.Runtime
 
 #if TARGET_X86 || TARGET_AMD64
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
 #endif
     }

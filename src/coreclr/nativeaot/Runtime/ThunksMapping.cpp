@@ -90,7 +90,7 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
     return OS_PAGE_SIZE;
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void*, RhAllocateThunksMapping, ())
+PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
 {
 #ifdef WIN32
 
@@ -266,7 +266,7 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
 COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* addr));
 COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* addr));
 
-PREEMPT_PINVOKE_CDECL_HELPER(void*, RhAllocateThunksMapping, ())
+PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
 {
     static int nextThunkDataMapping = 0;
 
@@ -319,7 +319,7 @@ COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
 COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
 COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
 
-PREEMPT_PINVOKE_CDECL_HELPER(void*, RhAllocateThunksMapping, ())
+PREEMPT_PINVOKE_HELPER(void*, RhAllocateThunksMapping, ())
 {
     static void* pThunksTemplateAddress = NULL;
 

@@ -95,7 +95,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhpCollect, (uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP))
+PREEMPT_PINVOKE_HELPER(void, RhpCollect, (uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP))
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -110,7 +110,7 @@ PREEMPT_PINVOKE_CDECL_HELPER(void, RhpCollect, (uint32_t uGeneration, uint32_t u
     pCurThread->EnablePreemptiveMode();
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(int64_t, RhpGetGcTotalMemory, ())
+PREEMPT_PINVOKE_HELPER(int64_t, RhpGetGcTotalMemory, ())
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -126,7 +126,7 @@ PREEMPT_PINVOKE_CDECL_HELPER(int64_t, RhpGetGcTotalMemory, ())
     return ret;
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(int32_t, RhpStartNoGCRegion, (int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC))
+PREEMPT_PINVOKE_HELPER(int32_t, RhpStartNoGCRegion, (int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC))
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -141,7 +141,7 @@ PREEMPT_PINVOKE_CDECL_HELPER(int32_t, RhpStartNoGCRegion, (int64_t totalSize, UI
     return result;
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(int32_t, RhpEndNoGCRegion, ())
+PREEMPT_PINVOKE_HELPER(int32_t, RhpEndNoGCRegion, ())
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -390,7 +390,7 @@ COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
     return current_high;
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhEnumerateConfigurationValues, (void* configurationContext, ConfigurationValueFunc callback))
+PREEMPT_PINVOKE_HELPER(void, RhEnumerateConfigurationValues, (void* configurationContext, ConfigurationValueFunc callback))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
@@ -399,7 +399,7 @@ PREEMPT_PINVOKE_CDECL_HELPER(void, RhEnumerateConfigurationValues, (void* config
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhRefreshMemoryLimit, (GCHeapHardLimitInfo heapHardLimitInfo))
+PREEMPT_PINVOKE_HELPER(void, RhRefreshMemoryLimit, (GCHeapHardLimitInfo heapHardLimitInfo))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
@@ -407,19 +407,19 @@ PREEMPT_PINVOKE_CDECL_HELPER(void, RhRefreshMemoryLimit, (GCHeapHardLimitInfo he
     pHeap->RefreshMemoryLimit();
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(uint64_t, RhGetGenerationBudget, (int generation))
+PREEMPT_PINVOKE_HELPER(uint64_t, RhGetGenerationBudget, (int generation))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     return pHeap->GetGenerationBudget(generation);
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhEnableNoGCRegionCallback, (NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize))
+PREEMPT_PINVOKE_HELPER(void, RhEnableNoGCRegionCallback, (NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize))
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(int64_t, RhGetTotalAllocatedBytesPrecise, ())
+PREEMPT_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytesPrecise, ())
 {
     int64_t allocated;
 
@@ -568,7 +568,7 @@ EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable* pEEType, u
     return GcAllocInternal(pEEType, uFlags, numElements, pThread);
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhAllocateNewArray, (MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult))
+PREEMPT_PINVOKE_HELPER(void, RhAllocateNewArray, (MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -582,7 +582,7 @@ PREEMPT_PINVOKE_CDECL_HELPER(void, RhAllocateNewArray, (MethodTable* pArrayEETyp
     pThread->EnablePreemptiveMode();
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhAllocateNewObject, (MethodTable* pEEType, uint32_t flags, Object** pResult))
+PREEMPT_PINVOKE_HELPER(void, RhAllocateNewObject, (MethodTable* pEEType, uint32_t flags, Object** pResult))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -621,7 +621,7 @@ COOP_PINVOKE_HELPER(void, RhUnregisterForGCReporting, (GCFrameRegistration* pReg
     pThread->PopGCFrameRegistration(pRegistration);
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void*, RhRegisterFrozenSegment, (void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize))
+PREEMPT_PINVOKE_HELPER(void*, RhRegisterFrozenSegment, (void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize))
 {
     ASSERT(allocSize <= commitSize);
     ASSERT(commitSize <= reservedSize);
@@ -641,14 +641,14 @@ PREEMPT_PINVOKE_CDECL_HELPER(void*, RhRegisterFrozenSegment, (void* pSection, si
 #endif // FEATURE_BASICFREEZE
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhUpdateFrozenSegment, (void* pSegmentHandle, uint8_t* allocated, uint8_t* committed))
+PREEMPT_PINVOKE_HELPER(void, RhUpdateFrozenSegment, (void* pSegmentHandle, uint8_t* allocated, uint8_t* committed))
 {
     ASSERT(allocated <= committed);
 
     GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment((segment_handle)pSegmentHandle, allocated, committed);
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhUnregisterFrozenSegment, (void* pSegmentHandle))
+PREEMPT_PINVOKE_HELPER(void, RhUnregisterFrozenSegment, (void* pSegmentHandle))
 {
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)pSegmentHandle);
 }

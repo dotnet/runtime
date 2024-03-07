@@ -201,8 +201,8 @@ struct EXCEPTION_REGISTRATION_RECORD
 };
 #endif // HOST_X86
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhpFailFastForPInvokeExceptionPreemp, (intptr_t PInvokeCallsiteReturnAddr,
-                                                                          void* pExceptionRecord, void* pContextRecord));
+PREEMPT_PINVOKE_HELPER(void, RhpFailFastForPInvokeExceptionPreemp, (intptr_t PInvokeCallsiteReturnAddr,
+                                                                    void* pExceptionRecord, void* pContextRecord));
 COOP_PINVOKE_HELPER_IMPORT(void, RhpFailFastForPInvokeExceptionCoop, (intptr_t PInvokeCallsiteReturnAddr,
                                                                       void* pExceptionRecord, void* pContextRecord));
 int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);

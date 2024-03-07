@@ -43,7 +43,7 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 }
 
 // Busy spin for the given number of iterations.
-PINVOKE_CDECL_HELPER(void, RhSpinWait, (int32_t iterations))
+PINVOKE_HELPER(void, RhSpinWait, (int32_t iterations))
 {
     ASSERT(iterations > 0);
 
@@ -56,7 +56,7 @@ PINVOKE_CDECL_HELPER(void, RhSpinWait, (int32_t iterations))
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-PREEMPT_PINVOKE_CDECL_HELPER(UInt32_BOOL, RhYield, ())
+PREEMPT_PINVOKE_HELPER(UInt32_BOOL, RhYield, ())
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -65,7 +65,7 @@ PREEMPT_PINVOKE_CDECL_HELPER(UInt32_BOOL, RhYield, ())
     return PalSwitchToThread();
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhFlushProcessWriteBuffers, ())
+PREEMPT_PINVOKE_HELPER(void, RhFlushProcessWriteBuffers, ())
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -337,14 +337,14 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-PINVOKE_CDECL_HELPER(uint64_t, RhpGetTickCount64, ())
+PINVOKE_HELPER(uint64_t, RhpGetTickCount64, ())
 {
     return PalGetTickCount64();
 }
 
-PREEMPT_PINVOKE_CDECL_HELPER(int32_t, RhpCalculateStackTraceWorker, (void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame));
+PREEMPT_PINVOKE_HELPER(int32_t, RhpCalculateStackTraceWorker, (void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame));
 
-PREEMPT_PINVOKE_CDECL_HELPER(int32_t, RhpGetCurrentThreadStackTrace, (void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame))
+PREEMPT_PINVOKE_HELPER(int32_t, RhpGetCurrentThreadStackTrace, (void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame))
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -399,7 +399,7 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** p
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-PREEMPT_PINVOKE_CDECL_HELPER(void, RhCpuIdEx, (int* cpuInfo, int functionId, int subFunctionId))
+PREEMPT_PINVOKE_HELPER(void, RhCpuIdEx, (int* cpuInfo, int functionId, int subFunctionId))
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }
