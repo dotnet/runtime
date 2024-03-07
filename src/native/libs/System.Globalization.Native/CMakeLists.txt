@@ -148,6 +148,7 @@ if (GEN_SHARED_LIB)
         add_library(System.Globalization.Native
             SHARED
             ${NATIVEGLOBALIZATION_SOURCES}
+            System.Globalization.Native.def
             ${VERSION_FILE_RC_PATH}
         )
     else()
@@ -165,7 +166,8 @@ if (GEN_SHARED_LIB)
     )
 
     if(CLR_CMAKE_TARGET_WIN32)
-        GENERATE_EXPORT_HEADER( System.Globalization.Native
+        include(GenerateExportHeader)
+            GENERATE_EXPORT_HEADER( System.Globalization.Native
             BASE_NAME System.Globalization.Native
             EXPORT_MACRO_NAME System.Globalization.Native_EXPORT
             EXPORT_FILE_NAME System.Globalization.Native_Export.h
