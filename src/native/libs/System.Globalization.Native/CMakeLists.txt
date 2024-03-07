@@ -68,6 +68,13 @@ if (DEFINED CMAKE_ICU_DIR)
     include_directories(${CMAKE_ICU_DIR}/include)
     link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
     link_libraries(stdc++)
+
+    if (CLR_CMAKE_TARGET_IOS)
+        add_linker_flag(-Wl,-L${CMAKE_ICU_DIR}/lib)
+        add_linker_flag(-Wl,-hidden-licuuc)
+        add_linker_flag(-Wl,-hidden-licui18n)
+        add_linker_flag(-Wl,-hidden-licudata)
+    endif()
 endif()
 
 if (CMAKE_USE_PTHREADS)
