@@ -148,7 +148,7 @@ if (GEN_SHARED_LIB)
         add_library(System.Globalization.Native
             SHARED
             ${NATIVEGLOBALIZATION_SOURCES}
-            System.IO.Compression.Native.def
+            System.Globalization.Native.def
             ${VERSION_FILE_RC_PATH}
         )
     else()
