@@ -1600,7 +1600,8 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // If this pred is in the set that will reuse block, do nothing.
     // Else revise pred to branch directly to the appropriate successor of block.
     //
-    for (BasicBlock* const predBlock : jti.m_block->PredBlocks())
+    constexpr bool allowEdits = true;
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocks<allowEdits>())
     {
         // If this was an ambiguous pred, skip.
         //

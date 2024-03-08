@@ -1531,7 +1531,7 @@ public:
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
     //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
     //
-    template <bool allowEdits = false>
+    template <bool            allowEdits = false>
     PredBlockList<allowEdits> PredBlocks() const
     {
         return PredBlockList<allowEdits>(bbPreds);
@@ -2412,17 +2412,17 @@ inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred) : m_pred(pr
     }
 }
 
-template <bool allowEdits>
+template <bool     allowEdits>
 inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
 {
     return m_pred->getSourceBlock();
 }
 
-template <bool allowEdits>
+template <bool                                       allowEdits>
 inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
 {
-    FlowEdge* next = m_pred->getNextPredEdge();
-    bool updateNextPointer = allowEdits;
+    FlowEdge* next              = m_pred->getNextPredEdge();
+    bool      updateNextPointer = allowEdits;
 
 #ifdef DEBUG
     // If allowEdits=false, check that the next block is the one we expect to see.
@@ -2434,7 +2434,7 @@ inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::
 
     if (updateNextPointer)
     {
-        next = m_next;
+        next   = m_next;
         m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
     }
 

@@ -2247,7 +2247,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     unsigned const loopFirstNum  = bTop->bbNum;
     unsigned const loopBottomNum = bTest->bbNum;
-    for (BasicBlock* const predBlock : bTest->PredBlocks())
+    constexpr bool allowEdits    = true;
+    for (BasicBlock* const predBlock : bTest->PredBlocks<allowEdits>())
     {
         unsigned const bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
@@ -3154,7 +3155,8 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
             loop->GetIndex());
 
-    for (BasicBlock* pred : exit->PredBlocks())
+    constexpr bool allowEdits = true;
+    for (BasicBlock* pred : exit->PredBlocks<allowEdits>())
     {
         if (loop->ContainsBlock(pred))
         {
