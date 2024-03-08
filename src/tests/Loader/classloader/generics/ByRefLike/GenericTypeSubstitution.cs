@@ -32,7 +32,6 @@ public class GenericTypeSubstitution
     }
 
     [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void AllowByRefLike_Substituted_For_NonByRefLike()
     {
         Console.WriteLine($"{nameof(AllowByRefLike_Substituted_For_NonByRefLike)}...");

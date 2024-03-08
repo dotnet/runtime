@@ -84,7 +84,6 @@ public class Validate
     }
 
     // [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void Validate_MemberDiscoveryViaReflection_ForSpanReadOnlySpan()
     {
         Console.WriteLine($"{nameof(Validate_MemberDiscoveryViaReflection_ForSpanReadOnlySpan)}...");
