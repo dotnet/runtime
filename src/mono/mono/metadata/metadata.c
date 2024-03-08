@@ -3922,56 +3922,6 @@ mono_metadata_get_shared_type (MonoType *type)
 }
 
 static gboolean
-compare_type_literals (MonoImage *image, int class_type, int type_type, MonoError *error)
-{
-	error_init (error);
-
-	/* _byval_arg.type can be zero if we're decoding a type that references a class been loading.
-	 * See mcs/test/gtest-440. and #650936.
-	 * FIXME This better be moved to the metadata verifier as it can catch more cases.
-	 */
-	if (!class_type)
-		return TRUE;
-	/* NET 1.1 assemblies might encode string and object in a denormalized way.
-	 * See #675464.
-	 */
-	if (class_type == type_type)
-		return TRUE;
-
-	if (type_type == MONO_TYPE_CLASS) {
-		if (class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT)
-			return TRUE;
-		//XXX stringify this argument
-		mono_error_set_bad_image (error, image, "Expected reference type but got type kind %d", class_type);
-		return FALSE;
-	}
-
-	g_assert (type_type == MONO_TYPE_VALUETYPE);
-	switch (class_type) {
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_CLASS:
-		return TRUE;
-	default:
-		//XXX stringify this argument
-		mono_error_set_bad_image (error, image, "Expected value type but got type kind %d", class_type);
-		return FALSE;
-	}
-}
-
-static gboolean
 verify_var_type_and_container (MonoImage *image, int var_type, MonoGenericContainer *container, MonoError *error)
 {
 	error_init (error);
@@ -4049,8 +3999,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (!klass)
 			return FALSE;
 
-		if (!compare_type_literals (m, m_class_get_byval_arg (klass)->type, type->type, error))
-			return FALSE;
+		type->type = m_class_get_byval_arg (klass)->type; // if we expected a valuetype but got a class, or vice versa, that's ok.  .NET Core doesn't care for the distinction anymore
 
 		break;
 	}
