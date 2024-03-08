@@ -139,6 +139,9 @@ export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
 
 export function upgrade_managed_proxy_to_strong_ref(owner: any, gc_handle: GCHandle): void {
     const sr = create_strong_ref(owner);
+    if (_use_finalization_registry) {
+        _js_owned_object_registry.unregister(owner);
+    }
     _js_owned_object_table.set(gc_handle, sr);
 }
 
