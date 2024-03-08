@@ -411,6 +411,7 @@ namespace Internal.Runtime.CompilerHelpers
 #else
         private static unsafe IntPtr GetProcAddressWithMangling(IntPtr hModule, byte* methodName, MethodFixupCell* pCell)
         {
+            _ = pCell;
             return Interop.Kernel32.GetProcAddress(hModule, methodName);
         }
 #endif
