@@ -73,7 +73,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(EnlistmentOptions.EnlistDuringPrepareRequired, Phase1Vote.Prepared, true, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(EnlistmentOptions.None, Phase1Vote.Prepared, false, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         public void EnlistDuringPhase0(EnlistmentOptions enlistmentOption, Phase1Vote phase1Vote, bool expectPhase0EnlistSuccess, bool commit, EnlistmentOutcome expectedOutcome, TransactionStatus expectedTxStatus)
@@ -108,7 +108,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(5, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(5, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.ForceRollback, true, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
         public void EnlistVolatile(int volatileCount, EnlistmentOptions enlistmentOption, Phase1Vote volatilePhase1Vote, Phase1Vote lastPhase1Vote, bool commit, EnlistmentOutcome expectedEnlistmentOutcome, TransactionStatus expectedTxStatus)
