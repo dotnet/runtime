@@ -70,7 +70,7 @@ set DOTNET_StressLogFilename=mystresslog.log
 
 To write your own messages to the StressLog from C++, you can use the `STRESS_LOG_N(facility, level, msg, ...)` macros, i.e. `STRESS_LOG1(LF_GC, LL_ERROR, "A significant but non-fatal error occurred in the garbage collector! Here's my favorite number: %d\n", 42)` where the first argument is one or more logging facilities (you can combine them using `|` i.e. `LF_GC | LF_GCROOTS`), the second argument is a severity level, and the third argument is the log message format string. See [log facilities and levels](#log-facilities-and-levels), below, for more information.
 
-You can't write your own messages to the StressLog from C#. If for some reason you need to while testing, perhaps you could expose it via a custom icall.
+You can't write your own messages to the StressLog from C#. If for some reason you need to while testing, perhaps you could expose it via a custom qcall.
 
 Traditional .NET Runtime Logging
 --------------------------------
@@ -112,7 +112,7 @@ To send your own traditional log messages from C++, you can use the `LOG((facili
 
 Note that the `LOG` and `STRESS_LOG` macros are very similar, so for debugging purposes you can temporarily convert a `LOG((...))` statement into a `STRESS_LOG(...)` statement in order to take advantage of StressLog functionality to diagnose an issue.
 
-If you need to send messages to the traditional log from C#, similar to StressLog you could expose it via a custom icall temporarily.
+If you need to send messages to the traditional log from C#, similar to StressLog you could expose it via a custom qcall temporarily.
 
 Log Facilities and Levels
 -------------------------
