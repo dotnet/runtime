@@ -3172,7 +3172,7 @@ public:
                                  GenTree*    op3,
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
-    
+#if defined(TARGET_XARCH)
     GenTree* gtNewSimdCvtNode(var_types              type,
                               GenTree*               op1,
                               NamedIntrinsic         hwIntrinsicID,
@@ -3184,7 +3184,7 @@ public:
                                 var_types   sourceType,
                                 var_types   targetType,
                                 unsigned    simdSize);
-
+#endif //TARGET_XARCH
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 

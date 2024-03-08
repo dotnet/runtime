@@ -1183,9 +1183,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(simdBaseType == TYP_DOUBLE);
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        NamedIntrinsic intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
-                                                 : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
-                                                                    : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
 
                         return gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_LONG, simdBaseJitType, simdSize);
                     }
@@ -1198,9 +1199,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(simdBaseType == TYP_FLOAT);
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        NamedIntrinsic intrinsic = (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation
-                                                 : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation
-                                                                    : NI_AVX512F_ConvertToVector512UInt32WithTruncation;
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation
+                                                                : NI_AVX512F_ConvertToVector512UInt32WithTruncation;
 
                         return gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
                     }
@@ -1213,9 +1215,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(simdBaseType == TYP_DOUBLE);
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        NamedIntrinsic intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
-                                                 : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
-                                                                    : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
 
                         return gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_ULONG, simdBaseJitType, simdSize);
                     }
@@ -1227,9 +1230,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(simdBaseType == TYP_FLOAT);
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        NamedIntrinsic intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
-                                                 : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
-                                                                    : NI_AVX512F_ConvertToVector512Int32WithTruncation;
+                        NamedIntrinsic intrinsic =
+                            (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
+                                             : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
+                                                                : NI_AVX512F_ConvertToVector512Int32WithTruncation;
 
                         return gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
                     }

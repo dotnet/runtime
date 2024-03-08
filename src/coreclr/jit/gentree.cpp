@@ -21252,8 +21252,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
 }
 
 #if defined(TARGET_XARCH)
-GenTreeVecCon* Compiler::gtCvtCtrlTbl
-    (var_types type, var_types   sourceType, var_types   targetType, unsigned    simdSize)
+GenTreeVecCon* Compiler::gtCvtCtrlTbl(var_types type, var_types sourceType, var_types targetType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
     assert(IsBaselineVector512IsaSupportedDebugOnly());
@@ -21261,7 +21260,6 @@ GenTreeVecCon* Compiler::gtCvtCtrlTbl
     assert(varTypeIsIntegral(targetType));
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
-
 
     GenTreeVecCon* tbl = gtNewVconNode(type);
 
@@ -21277,7 +21275,7 @@ GenTreeVecCon* Compiler::gtCvtCtrlTbl
                         tbl->gtSimdVal.i64[i] = 0x08080088;
                     }
                     break;
-                
+
                 case TYP_INT:
                 case TYP_LONG:
                     for (int i = 0; i < 8; i++)
@@ -21285,12 +21283,12 @@ GenTreeVecCon* Compiler::gtCvtCtrlTbl
                         tbl->gtSimdVal.i64[i] = 0x00000088;
                     }
                     break;
-                
+
                 default:
                     unreached();
             }
             break;
-        
+
         case TYP_FLOAT:
             switch (targetType)
             {
@@ -21301,7 +21299,7 @@ GenTreeVecCon* Compiler::gtCvtCtrlTbl
                         tbl->gtSimdVal.i32[i] = 0x08080088;
                     }
                     break;
-                
+
                 case TYP_INT:
                 case TYP_LONG:
                     for (int i = 0; i < 16; i++)
@@ -21309,20 +21307,24 @@ GenTreeVecCon* Compiler::gtCvtCtrlTbl
                         tbl->gtSimdVal.i32[i] = 0x00000088;
                     }
                     break;
-                
+
                 default:
                     unreached();
             }
             break;
-        
+
         default:
             unreached();
     }
     return tbl;
 }
 
-GenTree* Compiler::gtNewSimdCvtNode
-    (var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdTargetBaseJitType, CorInfoType simdSourceBaseJitType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdCvtNode(var_types      type,
+                                    GenTree*       op1,
+                                    NamedIntrinsic hwIntrinsicID,
+                                    CorInfoType    simdTargetBaseJitType,
+                                    CorInfoType    simdSourceBaseJitType,
+                                    unsigned       simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
     assert(IsBaselineVector512IsaSupportedDebugOnly());
@@ -21343,17 +21345,29 @@ GenTree* Compiler::gtNewSimdCvtNode
     GenTree* op1Clone = fgMakeMultiUse(&op1);
 
     // run vfixupimmsd base on table and no flags reporting
-    GenTree* fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tbl, gtNewIconNode(0),
-                                                 NI_AVX512F_Fixup, simdSourceBaseJitType, simdSize);
+    GenTree* fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tbl, gtNewIconNode(0), NI_AVX512F_Fixup,
+                                                 simdSourceBaseJitType, simdSize);
 
     if (varTypeIsSigned(simdTargetBaseType))
     {
-        ssize_t actualMaxVal = (varTypeIsInt(simdTargetBaseType)) ? INT32_MAX : INT64_MAX;
-
-        GenTree* maxVal = gtNewDconNode(static_cast<double>(actualMaxVal), simdSourceBaseType);
-
-        maxVal = gtNewSimdCreateBroadcastNode(type, maxVal, simdSourceBaseJitType, simdSize);
-        GenTree* maxValDup = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(actualMaxVal, simdTargetBaseType), simdTargetBaseJitType, simdSize);
+        GenTree* maxVal;
+        GenTree* maxValDup;
+        if (varTypeIsLong(simdTargetBaseType))
+        {
+            long long actualMaxVal = INT64_MAX;
+            maxVal                 = gtNewDconNode(static_cast<double>(actualMaxVal), simdSourceBaseType);
+            maxVal                 = gtNewSimdCreateBroadcastNode(type, maxVal, simdSourceBaseJitType, simdSize);
+            maxValDup =
+                gtNewSimdCreateBroadcastNode(type, gtNewLconNode(actualMaxVal), simdTargetBaseJitType, simdSize);
+        }
+        else
+        {
+            ssize_t actualMaxVal = INT32_MAX;
+            maxVal               = gtNewDconNode(static_cast<double>(actualMaxVal), simdSourceBaseType);
+            maxVal               = gtNewSimdCreateBroadcastNode(type, maxVal, simdSourceBaseJitType, simdSize);
+            maxValDup            = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(actualMaxVal, simdTargetBaseType),
+                                                     simdTargetBaseJitType, simdSize);
+        }
 
         // we will be using the input value twice
         GenTree* fixupValDup = fgMakeMultiUse(&fixupVal);
@@ -21372,7 +21386,7 @@ GenTree* Compiler::gtNewSimdCvtNode
         return gtNewSimdHWIntrinsicNode(type, fixupVal, hwIntrinsicID, simdSourceBaseJitType, simdSize);
     }
 }
-#endif //TARGET_XARCH
+#endif // TARGET_XARCH
 
 GenTree* Compiler::gtNewSimdCmpOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
