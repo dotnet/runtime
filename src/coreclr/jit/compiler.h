@@ -5912,6 +5912,12 @@ public:
     template <bool initializingPreds = false>
     FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
+private:
+    FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
+
+public:
+    void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
+
     void fgFindBasicBlocks();
 
     bool fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionIndex, bool putInTryRegion);
