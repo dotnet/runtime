@@ -1782,7 +1782,8 @@ void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int 
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(
+    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
@@ -1800,7 +1801,8 @@ void emitIns_R_R_R_I_LdStPair(instruction ins,
                               int offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
                                               DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
-void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_R_S(
+    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_S_S(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);

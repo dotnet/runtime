@@ -778,7 +778,11 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
             {
                 arg = impSIMDPopStack();
             }
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_SIMD)
+            assert(varTypeIsSIMD(arg) || varTypeIsMask(arg));
+#else
             assert(varTypeIsSIMD(arg));
+#endif // TARGET_ARM64 && FEATURE_MASKED_SIMD
         }
         else
         {
@@ -1591,13 +1595,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(TARGET_ARM64)
+
     if (HWIntrinsicInfo::IsMaskedOperation(intrinsic))
     {
-        // Op1 input is a vector. HWInstrinsic requires a mask, so convert to a mask.
         assert(numArgs > 0);
-        GenTree* op1                    = retNode->AsHWIntrinsic()->Op(1);
-        op1                             = convertHWIntrinsicToMask(retType, op1, simdBaseJitType, simdSize);
-        retNode->AsHWIntrinsic()->Op(1) = op1;
+        GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
+        if (op1->TypeGet() != TYP_MASK)
+        {
+            // Op1 input is a vector. HWInstrinsic requires a mask.
+            retNode->AsHWIntrinsic()->Op(1) = convertHWIntrinsicToMask(retType, op1, simdBaseJitType, simdSize);
+        }
     }
 
     if (retType != nodeRetType)

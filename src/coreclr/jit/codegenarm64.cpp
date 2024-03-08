@@ -2771,7 +2771,16 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         emitAttr    attr = emitActualTypeSize(targetType);
 
         emitter* emit = GetEmitter();
-        emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
+
+        if (ins == INS_sve_ldr && !varTypeUsesMaskReg(targetType))
+        {
+            emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0, INS_SCALABLE_OPTS_UNPREDICATED);
+        }
+        else
+        {
+            emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
+        }
+
         genProduceReg(tree);
     }
 }
@@ -2956,7 +2965,15 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             instruction ins  = ins_StoreFromSrc(dataReg, targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
-            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+            // TODO-SVE: Removable once REG_V0 and REG_P0 are distinct
+            if (ins == INS_sve_str && !varTypeUsesMaskReg(targetType))
+            {
+                emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0, INS_SCALABLE_OPTS_UNPREDICATED);
+            }
+            else
+            {
+                emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+            }
         }
         else // store into register (i.e move into register)
         {

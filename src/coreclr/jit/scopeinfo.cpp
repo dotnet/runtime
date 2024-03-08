@@ -301,6 +301,9 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_LONG:
         case TYP_DOUBLE:
 #endif // TARGET_64BIT
+#if defined(TARGET_ARM64)
+        case TYP_MASK:
+#endif // TARGET_ARM64
 #if FEATURE_IMPLICIT_BYREFS
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
@@ -433,6 +436,9 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_SIMD32:
         case TYP_SIMD64:
 #endif // TARGET_XARCH
+#if defined(TARGET_ARM64)
+        case TYP_MASK:
+#endif // TARGET_ARM64
         {
             this->vlType = VLT_REG_FP;
 
