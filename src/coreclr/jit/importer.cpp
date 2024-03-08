@@ -12801,9 +12801,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 InlArgInfo* ctxInfo = getAllocator(CMK_Unknown).allocate<InlArgInfo>(1);
                 memset(ctxInfo, 0, sizeof(*ctxInfo));
                 ctxInfo->arg                     = &arg;
-                ctxInfo->argHasTmp               = true;
-                ctxInfo->argIsUsed               = true;
                 ctxInfo->argIsInvariant          = true;
+                ctxInfo->argIsLclVar             = arg.GetNode()->OperIs(GT_LCL_VAR);
                 pInlineInfo->inlInstParamArgInfo = ctxInfo;
 
                 // This one does not appear in the table of inline arg info too.

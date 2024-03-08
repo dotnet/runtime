@@ -6730,21 +6730,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     // candidate, we're done.
     if (call->IsInlineCandidate() || !call->IsGuardedDevirtualizationCandidate())
     {
-        // Runtime lookup is expected to be spilled into a temp for inline candidates.
-        CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-        if ((instParam != nullptr) && instParam->GetNode()->OperIs(GT_RUNTIMELOOKUP))
-        {
-            // NOTE: we don't try to preserve the evaluation order for the runtime lookup - we generally
-            // treat it as an invariant tree despite the fact that it may actually throw exceptions
-            // (e.g. OOM or TypeLoadException). We do not guarantee the exact position where those
-            // exceptions are going to be thrown.
-            const unsigned lookupTmp = lvaGrabTemp(true DEBUGARG("spilling runtimelookup"));
-            impStoreTemp(lookupTmp, instParam->GetNode(), CHECK_SPILL_NONE);
-            GenTreeLclVar* lcl = gtNewLclvNode(lookupTmp, TYP_I_IMPL);
-            lcl->gtFlags |= GTF_VAR_CONTEXT;
-            instParam->SetEarlyNode(lcl);
-        }
-
         return;
     }
 
