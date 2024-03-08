@@ -29,12 +29,7 @@ jobs:
     collectionName: ${{ parameters.collectionName }}
     # Test job depends on the corresponding build job
     dependsOn:
-     - ${{ format('coreclr__product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-     # Depend on coreclr x64 so we can download it and use mcs.exe from it while publishing non-x64 arch SPMI collection
-     - ${{ if ne(parameters.archType, 'x64') }}:
-       - ${{ format('coreclr__product_build_{0}{1}_x64_{2}', parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
-     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+     - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
      - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
         - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
@@ -42,7 +37,7 @@ jobs:
 
     steps:
     # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
-    
+
     # Download runtime artifacts
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
