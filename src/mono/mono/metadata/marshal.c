@@ -6583,7 +6583,7 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 typedef enum {
-	SWIFT_EMPTY,
+	SWIFT_EMPTY = 0,
 	SWIFT_OPAQUE,
 	SWIFT_INT64,
 	SWIFT_FLOAT,
@@ -6602,7 +6602,7 @@ static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
 	}
 }
 
-static void set_lowering_range(GArray* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
+static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
 	bool force_opaque = false;
 	
 	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
@@ -6615,7 +6615,7 @@ static void set_lowering_range(GArray* lowered_bytes, guint32 offset, guint32 si
         // and extend the range to the existing tag's range and mark as opaque in addition to the requested range.
 	
 	for (guint32 i = 0; i < size; ++i) {
-		SwiftPhysicalLoweringKind current = g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, offset + i);
+		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[offset + i];
 		if (current != SWIFT_EMPTY && current != kind) {
 			force_opaque = true;
 			offset = ALIGN_DOWN_TO(offset, get_swift_lowering_alignment(current));
@@ -6628,14 +6628,12 @@ static void set_lowering_range(GArray* lowered_bytes, guint32 offset, guint32 si
 		kind = SWIFT_OPAQUE;
 	}
 
-	for (guint32 i = 0; i < size; ++i) {
-		g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, offset + i) = kind;
-	}
+	memset(lowered_bytes + offset, kind, size);
 }
 
-static void record_struct_field_physical_lowering (GArray* lowered_bytes, MonoType* type, guint32 offset);
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset);
 
-static void record_inlinearray_struct_physical_lowering (GArray* lowered_bytes, MonoClass* klass, guint32 offset) {
+static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) {
 	// Get the first field and record its physical lowering N times
 	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
 	MonoType* fieldType = field->type;
@@ -6644,7 +6642,7 @@ static void record_inlinearray_struct_physical_lowering (GArray* lowered_bytes, 
 	}
 }
 
-static void record_struct_physical_lowering (GArray* lowered_bytes, MonoClass* klass, guint32 offset)
+static void record_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset)
 {
 	if (m_class_is_inlinearray(klass)) {
 		record_inlinearray_struct_physical_lowering(lowered_bytes, klass, offset);
@@ -6664,7 +6662,7 @@ static void record_struct_physical_lowering (GArray* lowered_bytes, MonoClass* k
 	}
 }
 
-static void record_struct_field_physical_lowering (GArray* lowered_bytes, MonoType* type, guint32 offset) {
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) {
 	// Normalize pointer types to IntPtr and resolve generic classes.
 	// We don't need to care about specific pointer types at this ABI level.
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
@@ -6717,7 +6715,17 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 
-	GArray* lowered_bytes = g_array_sized_new(FALSE, TRUE, sizeof(SwiftPhysicalLoweringKind), m_class_get_instance_size(klass));
+	// TODO: We currently don't support vector types, so we can say that the maximum size of a non-byreference struct
+	// is 4 * PointerSize.
+	// Strictly, this is inaccurate in the case where a struct has a fully-empty 8 bytes of padding using explicit layout,
+	// but that's not possible in the Swift layout algorithm.
+
+	if (m_class_get_instance_size(klass) > 4 * TARGET_SIZEOF_VOID_P) {
+		lowering.byReference = TRUE;
+		return lowering;
+	}
+
+	guint8 lowered_bytes[TARGET_SIZEOF_VOID_P * 4] = { 0 };
 	
 	// Loop through all fields and get the physical lowering for each field
 	record_struct_physical_lowering(lowered_bytes, klass, 0);
@@ -6733,11 +6741,11 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	// Now we'll build the intervals from the lowered_bytes array
 	for (int i = 0; i < lowered_bytes->len; ++i) {
         	// Don't create an interval for empty bytes
-		if (g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, i) == SWIFT_EMPTY) {
+		if (lowered_bytes[i] == SWIFT_EMPTY) {
 			continue;
 		}
 
-		SwiftPhysicalLoweringKind current = g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, i);
+		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[i];
 
 		bool start_new_interval =
 			// We're at the start of the type
@@ -6747,7 +6755,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 			// We're starting a new double or int64_t (as we're aligned)
 			|| (i == ALIGN_TO(i, 8) && (current == SWIFT_DOUBLE || current == SWIFT_INT64))
 			// We've changed interval types
-			|| current != g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, i - 1);
+			|| current != lowered_bytes[i - 1];
 		
 		if (start_new_interval) {
 			struct _SwiftInterval interval = { i, 1, current };
@@ -6757,9 +6765,6 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 			(g_array_index(intervals, struct _SwiftInterval, intervals->len - 1)).size++;
 		}
 	}
-
-	// We've now produced the intervals, so we can release the lowered bytes
-	g_array_free(lowered_bytes, TRUE);
 
 	// Merge opaque intervals that are in the same pointer-sized block
 	for (int i = 0; i < intervals->len - 1; ++i) {
