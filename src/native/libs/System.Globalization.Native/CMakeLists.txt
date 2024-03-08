@@ -171,11 +171,11 @@ if (GEN_SHARED_LIB)
 
     if(CLR_CMAKE_TARGET_WIN32)
         include(GenerateExportHeader)
-            GENERATE_EXPORT_HEADER( System.Globalization.Native
-            BASE_NAME System.Globalization.Native
-            EXPORT_MACRO_NAME System.Globalization.Native_EXPORT
-            EXPORT_FILE_NAME System.Globalization.Native_Export.h
-            STATIC_DEFINE System.Globalization.Native_BUILT_AS_STATIC
+        GENERATE_EXPORT_HEADER( System.Globalization.Native
+         BASE_NAME System.Globalization.Native
+         EXPORT_MACRO_NAME System.Globalization.Native_EXPORT
+         EXPORT_FILE_NAME System.Globalization.Native_Export.h
+         STATIC_DEFINE System.Globalization.Native_BUILT_AS_STATIC
         )
 
         install (TARGETS System.Globalization.Native DESTINATION .)
