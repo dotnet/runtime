@@ -548,13 +548,14 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     int dstCount = argNode->gtNumRegs;
 
     regNumber    argReg  = argNode->GetRegNum();
-    regMaskMixed argMask = RBM_NONE;
+    regMaskGpr argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
         argMask |= genRegMask(thisArgReg);
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
+    assert(compiler->IsGprRegMask(argMask));
 
     if (src->OperGet() == GT_FIELD_LIST)
     {
