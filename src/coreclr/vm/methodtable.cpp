@@ -4040,6 +4040,8 @@ namespace
 
     uint32_t GetAlignment(SwiftPhysicalLoweringTag tag)
     {
+        LIMITED_METHOD_CONTRACT;
+
         switch (tag)
         {
             case SwiftPhysicalLoweringTag::Int64:
@@ -4055,6 +4057,8 @@ namespace
 
     void SetLoweringRange(CQuickArray<SwiftPhysicalLoweringTag>& intervals, uint32_t start, uint32_t size, SwiftPhysicalLoweringTag tag)
     {
+        STANDARD_VM_CONTRACT;
+
         bool forceOpaque = false;
 
         if (!IS_ALIGNED(start, GetAlignment(tag)))
@@ -4068,15 +4072,16 @@ namespace
         // and extend the range mark the existing tag's range as opaque.
         for (uint32_t i = 0; i < size; i++)
         {
-            if (intervals[start + i] != SwiftPhysicalLoweringTag::Empty
-                && intervals[start + i] != tag)
+            SwiftPhysicalLoweringTag currentTag = intervals[start + i];
+            if (currentTag != SwiftPhysicalLoweringTag::Empty
+                && currentTag != tag)
             {
                 forceOpaque = true;
 
                 // Extend out start to the beginning of the existing tag's range
                 // and extend size to the end of the existing tag's range (if non-opaque/empty).
-                start = (uint32_t)ALIGN_DOWN(start, GetAlignment(intervals[start + i]));
-                size = (uint32_t)ALIGN_UP(size + start, GetAlignment(intervals[start + i])) - start;
+                start = (uint32_t)ALIGN_DOWN(start, GetAlignment(currentTag));
+                size = (uint32_t)ALIGN_UP(size + start, GetAlignment(currentTag)) - start;
                 break;
             }
         }
@@ -4086,10 +4091,7 @@ namespace
             tag = SwiftPhysicalLoweringTag::Opaque;
         }
 
-        for (uint32_t i = 0; i < size; i++)
-        {
-            intervals[start + i] = tag;
-        }
+        memset(&intervals[start], (uint8_t)tag, size);
     }
 
     void GetNativeSwiftPhysicalLowering(CQuickArray<SwiftPhysicalLoweringTag>& intervals, PTR_MethodTable pMT, uint32_t offset = 0);
@@ -4097,6 +4099,8 @@ namespace
 
     void GetNativeSwiftPhysicalLoweringForField(CQuickArray<SwiftPhysicalLoweringTag>& intervals, FieldDesc* pFieldDesc, uint32_t offset = 0)
     {
+        STANDARD_VM_CONTRACT;
+
         PTR_MethodTable fieldType = pFieldDesc->GetFieldTypeHandleThrowing().GetMethodTable();
         CorElementType corType = fieldType->GetVerifierCorElementType();
 
@@ -4131,6 +4135,7 @@ namespace
 
     void GetNativeSwiftPhysicalLoweringForInlineArray(CQuickArray<SwiftPhysicalLoweringTag>& intervals, PTR_MethodTable pMT, uint32_t offset)
     {
+        STANDARD_VM_CONTRACT;
         _ASSERTE(pMT->GetClass()->IsInlineArray());
         FieldDesc* pElementField = pMT->GetApproxFieldDescListRaw();
 
@@ -4156,7 +4161,6 @@ namespace
             return;
         }
 
-
         INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
 
         // Use the one FieldDesc to calculate the Swift intervals
@@ -4170,6 +4174,7 @@ namespace
 
     void GetNativeSwiftPhysicalLowering(CQuickArray<SwiftPhysicalLoweringTag>& intervals, PTR_MethodTable pMT, uint32_t offset)
     {
+        STANDARD_VM_CONTRACT;
         // Use FieldDescs to calculate the Swift intervals
         PTR_FieldDesc pFieldDescList = pMT->GetApproxFieldDescListRaw();
         for (uint32_t i = 0; i < pMT->GetNumIntroducedInstanceFields(); i++)
@@ -4181,6 +4186,7 @@ namespace
 
     void GetNativeSwiftPhysicalLowering(CQuickArray<SwiftPhysicalLoweringTag>& intervals, EEClassNativeLayoutInfo const* pNativeLayoutInfo, uint32_t offset = 0)
     {
+        STANDARD_VM_CONTRACT;
         // Use NativeLayout to calculate the Swift intervals
         NativeFieldDescriptor const* pNativeFieldDescs = pNativeLayoutInfo->GetNativeFieldDescriptors();
         for (uint32_t i = 0; i < pNativeLayoutInfo->GetNumFields(); i++)
@@ -4220,6 +4226,8 @@ namespace
 
 void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering, bool useNativeLayout)
 {
+    STANDARD_VM_CONTRACT;
+
     // We'll build the intervals by scanning the fields byte-by-byte and then calculate the lowering intervals
     // from that information.
     CQuickArray<SwiftPhysicalLoweringTag> loweredBytes;
@@ -4243,9 +4251,9 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
 
     struct SwiftLoweringInterval
     {
-        uint32_t m_offset;
-        uint32_t m_size;
-        SwiftPhysicalLoweringTag m_tag;
+        uint32_t offset;
+        uint32_t size;
+        SwiftPhysicalLoweringTag tag;
     };
 
     // Build intervals from the byte sequences
@@ -4271,14 +4279,14 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
         if (startNewInterval)
         {
             SwiftLoweringInterval interval;
-            interval.m_offset = i;
-            interval.m_size = 1;
-            interval.m_tag = loweredBytes[i];
+            interval.offset = i;
+            interval.size = 1;
+            interval.tag = loweredBytes[i];
             intervals.Push(interval);
         }
         else
         {
-            intervals[intervals.Size() - 1].m_size++;
+            intervals[intervals.Size() - 1].size++;
         }
     }
 
@@ -4289,18 +4297,18 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     {
         SwiftLoweringInterval& interval = intervals[i];
 
-        if (interval.m_tag == SwiftPhysicalLoweringTag::Opaque)
+        if (interval.tag == SwiftPhysicalLoweringTag::Opaque)
         {
             // If we're at the start of the intervals, or the previous interval is not opaque, we need to start a new interval.
-            if (i == 0 || intervals[i - 1].m_tag != SwiftPhysicalLoweringTag::Opaque)
+            if (i == 0 || intervals[i - 1].tag != SwiftPhysicalLoweringTag::Opaque)
             {
                 mergedIntervals.Push(interval);
             }
             // Otherwise, if the previous interval ends in the same pointer-sized block, we'll merge this interval into the previous one.
-            else if ((intervals[i - 1].m_offset + intervals[i - 1].m_size) / TARGET_POINTER_SIZE == interval.m_offset / TARGET_POINTER_SIZE)
+            else if ((intervals[i - 1].offset + intervals[i - 1].size) / TARGET_POINTER_SIZE == interval.offset / TARGET_POINTER_SIZE)
             {
                 SwiftLoweringInterval& lastInterval = mergedIntervals[mergedIntervals.Size() - 1];
-                lastInterval.m_size = interval.m_offset + interval.m_size - lastInterval.m_offset;
+                lastInterval.size = interval.offset + interval.size - lastInterval.offset;
             }
         }
         else
@@ -4326,9 +4334,9 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
             return;
         }
 
-        offsets[numLoweredTypes] = interval.m_offset;
+        offsets[numLoweredTypes] = interval.offset;
 
-        switch (interval.m_tag)
+        switch (interval.tag)
         {
             case SwiftPhysicalLoweringTag::Empty:
                 _ASSERTE(!"Empty intervals should have been dropped during interval construction");
@@ -4361,8 +4369,8 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 // If we have more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
                 // If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
                 // If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
-                uint32_t opaqueIntervalStart = interval.m_offset;
-                uint32_t remainingIntervalSize = interval.m_size;
+                uint32_t opaqueIntervalStart = interval.offset;
+                uint32_t remainingIntervalSize = interval.size;
                 for (;remainingIntervalSize > 0; numLoweredTypes++)
                 {
                     if (numLoweredTypes == 4)
