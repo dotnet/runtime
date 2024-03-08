@@ -4062,36 +4062,33 @@ namespace
             // If the start of the range is not aligned, we need to force the entire range to be opaque.
             forceOpaque = true;
         }
-        else
+
+        // Check if any of the range is non-empty.
+        // If so, we need to force this range to be opaque
+        // and extend the range mark the existing tag's range as opaque.
+        for (uint32_t i = 0; i < size; i++)
         {
-            // Check if any of the range is non-empty.
-            // If so, we need to force this range to be opaque
-            // and extend the range mark the existing tag's range as opaque.
-            for (uint32_t i = 0; i < size; i++)
+            if (intervals[start + i] != SwiftPhysicalLoweringTag::Empty
+                && intervals[start + i] != tag)
             {
-                if (intervals[start + i] != SwiftPhysicalLoweringTag::Empty
-                    && intervals[start + i] != tag
-                    && intervals[start + i] != SwiftPhysicalLoweringTag::Opaque)
-                {
-                    forceOpaque = true;
+                forceOpaque = true;
 
-                    // Extend out start to the beginning of the existing tag's range
-                    // and extend size to the end of the existing tag's range (if non-opaque/empty).
-                    start = (uint32_t)ALIGN_DOWN(start, GetAlignment(intervals[start + i]));
-                    size = (uint32_t)ALIGN_UP(size + start, GetAlignment(intervals[start + i])) - start;
-                    break;
-                }
+                // Extend out start to the beginning of the existing tag's range
+                // and extend size to the end of the existing tag's range (if non-opaque/empty).
+                start = (uint32_t)ALIGN_DOWN(start, GetAlignment(intervals[start + i]));
+                size = (uint32_t)ALIGN_UP(size + start, GetAlignment(intervals[start + i])) - start;
+                break;
             }
+        }
 
-            if (forceOpaque)
-            {
-                tag = SwiftPhysicalLoweringTag::Opaque;
-            }
+        if (forceOpaque)
+        {
+            tag = SwiftPhysicalLoweringTag::Opaque;
+        }
 
-            for (uint32_t i = 0; i < size; i++)
-            {
-                intervals[start + i] = tag;
-            }
+        for (uint32_t i = 0; i < size; i++)
+        {
+            intervals[start + i] = tag;
         }
     }
 
@@ -4403,7 +4400,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     }
 
     memcpy(pSwiftLowering->loweredElements, loweredTypes, numLoweredTypes * sizeof(CorElementType));
-    memcpy(pSwiftLowering->offsets, offsets, numLoweredTypes * sizeof(CorElementType));
+    memcpy(pSwiftLowering->offsets, offsets, numLoweredTypes * sizeof(uint32_t));
     pSwiftLowering->numLoweredElements = numLoweredTypes;
     pSwiftLowering->byReference = false;
 }
