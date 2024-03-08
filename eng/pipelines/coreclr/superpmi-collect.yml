@@ -62,7 +62,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
@@ -102,7 +102,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
@@ -142,7 +142,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
