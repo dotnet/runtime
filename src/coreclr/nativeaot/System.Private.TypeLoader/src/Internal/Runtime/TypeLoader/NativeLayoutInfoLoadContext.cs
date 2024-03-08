@@ -193,18 +193,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
                 Debug.Assert(typeArguments.Length > 0);
-                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, containingType, nameAndSignature, new Instantiation(typeArguments), functionPointer, (flags & MethodFlags.FunctionPointerIsUSG) != 0);
+                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, containingType, nameAndSignature, new Instantiation(typeArguments));
             }
             else
             {
-                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, containingType, nameAndSignature, functionPointer, (flags & MethodFlags.FunctionPointerIsUSG) != 0);
+                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, containingType, nameAndSignature);
             }
 
-            if ((flags & MethodFlags.FunctionPointerIsUSG) != 0)
+            if ((flags & MethodFlags.HasFunctionPointer) != 0)
             {
-                // TODO, consider a change such that if a USG function pointer is passed in, but we have
-                // a way to get a non-usg pointer, that may be preferable
-                Debug.Assert(retVal.UsgFunctionPointer != IntPtr.Zero);
+                retVal.SetFunctionPointer(functionPointer);
             }
 
             return retVal;
