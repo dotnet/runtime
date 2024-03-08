@@ -5442,24 +5442,14 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_I(INS_sve_orn, EA_SCALABLE, REG_V7, 0xFF00000FFFFFFFFF, INS_OPTS_SCALABLE_D); // ORN <Zdn>.<T>, <Zdn>.<T>, #<const>
 
     // IF_SVE_BT_1A
-    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V1, 0x0000000000000070, INS_OPTS_SCALABLE_B); // DUPM <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V2, 0x0000000000003FFC, INS_OPTS_SCALABLE_H); // DUPM <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V3, 0x00000000E003E003, INS_OPTS_SCALABLE_S); // MOV <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0x5555555555555555, INS_OPTS_SCALABLE_D; // MOV <Zd>.<T>, #<const>
-
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0x00FFFFF000000000);
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0x6666666666666666);
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_SP, 0x7FFF00007FFF0000);
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0x5555555555555555);
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0xE003E003E003E003);
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_R8, 0x0707070707070707);
-
-    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 0x00FFFFF0);
-    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 0x66666666);
-    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 0x03FFC000);
-    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 0x55555555);
-    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 0xE003E003);
-    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 0x07070707);
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V0, 0x0000000000000070, INS_OPTS_SCALABLE_B); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V1, 0x0000000000003FFC, INS_OPTS_SCALABLE_H); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V2, 0x0000000000007000, INS_OPTS_SCALABLE_S); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V3, 0xFFFFFFFFFFFF0000, INS_OPTS_SCALABLE_D); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0x000000000000003F, INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, 0x0000000000000700, INS_OPTS_SCALABLE_H, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 0x0000000000FFFFF0, INS_OPTS_SCALABLE_S, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 0xFFFFF00000FFFFFF, INS_OPTS_SCALABLE_D, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
 
     // IF_SVE_BV_2A
     theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V15, REG_P5, 0,

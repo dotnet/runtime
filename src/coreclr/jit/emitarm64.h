@@ -1009,6 +1009,73 @@ static bool isValidImmNRS(size_t value, emitAttr size)
     return (value >= 0) && (value < 0x2000);
 } // any unsigned 13-bit immediate
 
+static ssize_t getBitMaskOnes(const ssize_t imm, const unsigned width)
+{
+    assert(isValidUimm16(imm));
+    const unsigned immWidth = isValidUimm8(imm) ? 8 : 16;
+
+    const unsigned numIterations = 64 / width;
+    const ssize_t ones = ((UINT64)-1) >> (64 - width + immWidth);
+    ssize_t mask = 0;
+    
+    for (unsigned i = 0; i < numIterations; i++)
+    {
+        mask <<= width;
+        mask |= (ones << immWidth) | imm;
+    }
+
+    return mask;
+}
+
+static ssize_t getBitMaskZeroes(const ssize_t imm, const unsigned width)
+{
+    assert(isValidUimm16(imm));
+    const unsigned numIterations = 64 / width;
+    ssize_t mask = 0;
+    
+    for (unsigned i = 0; i < numIterations; i++)
+    {
+        mask <<= width;
+        mask |= imm;
+    }
+
+    return mask;
+}
+
+static bool useMovDisasmForBitMask(const ssize_t value)
+{
+    ssize_t imm = value & 0xFF;
+    unsigned minFieldSize;
+
+    if (imm == 0)
+    {
+        imm = value & 0xFF00;
+        minFieldSize = 16;
+    }
+    else
+    {
+        minFieldSize = 8;
+    }
+
+    assert(isValidUimm16(imm));
+
+    // Check for all possible bit field sizes
+    for (unsigned width = minFieldSize; width <= 64; width += BITS_PER_BYTE)
+    {
+        if (value == getBitMaskZeroes(imm, width))
+        {
+            return false;
+        }
+
+        if (value == getBitMaskOnes(imm, width))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Returns true if 'value' represents a valid 'halfword immediate' encoding.
 static bool isValidImmHWVal(size_t value, emitAttr size)
 {
@@ -1494,7 +1561,8 @@ void emitIns_R_I(instruction ins,
                  emitAttr    attr,
                  regNumber   reg,
                  ssize_t     imm,
-                 insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                 insOpts opt = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);

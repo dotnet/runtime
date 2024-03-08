@@ -7710,7 +7710,8 @@ void emitter::emitIns_R_I(instruction ins,
                           emitAttr    attr,
                           regNumber   reg,
                           ssize_t     imm,
-                          insOpts     opt /* = INS_OPTS_NONE */
+                          insOpts     opt, /* = INS_OPTS_NONE */
+                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                           DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     emitAttr  size      = EA_SIZE(attr);
@@ -7990,6 +7991,42 @@ void emitter::emitIns_R_I(instruction ins,
             break;
 
         case INS_sve_mov:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg)); // ddddd
+
+            if (sopt == INS_SCALABLE_OPTS_IMM_BITMASK)
+            {
+                bmi.immNRS = 0;
+                canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+                
+                if (!useMovDisasmForBitMask(imm))
+                {
+                    ins = INS_sve_dupm;
+                }
+                
+                imm = bmi.immNRS; // iiiiiiiiiiiii
+                assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
+                fmt = IF_SVE_BT_1A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+                if (!isValidSimm8(imm))
+                {
+                    // Size specifier must be able to fit a left-shifted immediate
+                    assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
+                    assert(insOptsScalableAtLeastHalf(opt));
+                    hasShift = true;
+                    imm >>= 8;
+                }
+
+                fmt       = IF_SVE_EB_1A;
+                canEncode = true;
+            }
+            break;
+
         case INS_sve_dup:
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg));                         // ddddd
@@ -8098,11 +8135,15 @@ void emitter::emitIns_R_I(instruction ins,
 
             bmi.immNRS = 0;
             canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm = bmi.immNRS; // iiiiiiiiiiiii
-            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             fmt = IF_SVE_BT_1A;
 
-            // MOV is an alias for DUPM, and is always the preferred disassembly.
+            if (useMovDisasmForBitMask(imm))
+            {
+                ins = INS_sve_mov;
+            }
+            
+            imm = bmi.immNRS; // iiiiiiiiiiiii
+            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             break;
 
         default:
@@ -28920,7 +28961,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             bmi.immNRS = (unsigned)emitGetInsSC(id);
             imm = emitDecodeBitMaskImm(bmi, optGetSveElemsize(id->idInsOpt()));
-            emitDispImm(emitGetInsSC(id), false); // iiiiiiiiiiiii
+            emitDispImm(imm, false); // iiiiiiiiiiiii
             break;
 
         // <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
