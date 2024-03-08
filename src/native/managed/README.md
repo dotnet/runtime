@@ -16,9 +16,7 @@ In `src/native/managed/compile-native.proj`, add
 item group.
 
 In `src/native/managed/libMyNewLibrary/src/libMyNewLibrary.csproj`:
-1. Near the top,  add `<Import Project="..\..\native-library.props" />`
-2. Near the bottom, add `<Import Project="..\..\native-library.targets" />`
-3. Define an item `@(InstallRuntimeComponentDestination)` that has directory names relative to `artifacts/bin/<runtimeFlavor>/<os.arch.config>/` where the shared library should be installed.  It's a good idea to have at least `.`:
+1. Define an item `@(InstallRuntimeComponentDestination)` that has directory names relative to `artifacts/bin/<runtimeFlavor>/<os.arch.config>/` where the shared library should be installed.  It's a good idea to have at least `.`:
     ```xml
       <ItemGroup>
           <InstallRuntimeComponentDestination Include="." />
