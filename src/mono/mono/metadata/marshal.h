@@ -742,7 +742,7 @@ mono_marshal_get_mono_callbacks_for_ilgen (void);
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self)
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
 
-//#ifdef MONO_ARCH_HAVE_SWIFTCALL
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 typedef struct {
 	gboolean byReference;
 	int numLoweredElements;
@@ -752,6 +752,6 @@ typedef struct {
 
 SwiftPhysicalLowering
 mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout);
-//#endif
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 
 #endif /* __MONO_MARSHAL_H__ */

@@ -6581,6 +6581,7 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->unsafe_accessor_cache);
 }
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 typedef enum {
 	SWIFT_EMPTY,
 	SWIFT_OPAQUE,
@@ -6846,3 +6847,4 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 
 	return lowering;
 }
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
