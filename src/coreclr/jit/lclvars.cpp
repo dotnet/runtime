@@ -4357,7 +4357,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     else if (lvaReportParamTypeArg())
     {
         // We should have a context arg.
-        assert(info.compTypeCtxtArg != (int)BAD_VAR_NUM);
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
