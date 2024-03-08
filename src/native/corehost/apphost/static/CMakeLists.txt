@@ -19,6 +19,7 @@ set(SKIP_VERSIONING 1)
 include_directories(..)
 include_directories(../../json)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 
 set(SOURCES

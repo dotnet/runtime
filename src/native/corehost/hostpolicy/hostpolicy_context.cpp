@@ -48,6 +48,7 @@ namespace
 
 #if defined(NATIVE_LIBS_EMBEDDED)
     extern "C" const void* CompressionResolveDllImport(const char* name);
+    extern "C" const void* GlobalizationResolveDllImport(const char* name);
     extern "C" const void* SecurityResolveDllImport(const char* name);
     extern "C" const void* SystemResolveDllImport(const char* name);
     extern "C" const void* CryptoResolveDllImport(const char* name);
@@ -79,6 +80,11 @@ namespace
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
             return CompressionResolveDllImport(entry_point_name);
+        }
+
+        if (strcmp(library_name, LIB_NAME("System.Globalization.Native")) == 0)
+        {
+            return GlobalizationResolveDllImport(entry_point_name);
         }
 
         // there are two PInvokes in the hostpolicy itself, redirect them here.
