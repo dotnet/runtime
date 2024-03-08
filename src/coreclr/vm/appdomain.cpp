@@ -1379,6 +1379,18 @@ void SystemDomain::LoadBaseSystemClasses()
 
         g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
 
+    #ifdef TARGET_RISCV64
+        // Used by EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing for comparison,
+        // preload now to avoid full loads during GC stack walks.
+        CoreLibBinder::GetClass(CLASS__VECTORT);
+        CoreLibBinder::GetClass(CLASS__INT128);
+        CoreLibBinder::GetClass(CLASS__UINT128);
+        CoreLibBinder::GetClass(CLASS__VECTOR64T);
+        CoreLibBinder::GetClass(CLASS__VECTOR128T);
+        CoreLibBinder::GetClass(CLASS__VECTOR256T);
+        CoreLibBinder::GetClass(CLASS__VECTOR512T);
+    #endif
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
