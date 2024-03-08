@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
@@ -29,7 +26,19 @@ namespace Internal.JitInterface
             protected override bool IntervalsHaveCompatibleTags(LoweredType existingTag, LoweredType nextTag)
             {
                 // Adjacent ranges mapped to opaque or empty can be combined.
-                return existingTag is LoweredType.Opaque or LoweredType.Empty && nextTag is LoweredType.Opaque or LoweredType.Empty;
+                if (existingTag is LoweredType.Empty
+                    && nextTag is LoweredType.Empty)
+                {
+                    return true;
+                }
+
+                if (existingTag is LoweredType.Opaque
+                    && nextTag is LoweredType.Opaque)
+                {
+                    return true;
+                }
+
+                return false;
             }
 
             protected override FieldLayoutInterval CombineIntervals(FieldLayoutInterval firstInterval, FieldLayoutInterval nextInterval)
@@ -94,13 +103,39 @@ namespace Internal.JitInterface
 
             protected override bool NeedsRecursiveLayout(int offset, TypeDesc fieldType) => fieldType.IsValueType && !fieldType.IsPrimitiveNumeric;
 
-            public List<CorInfoType> GetLoweredTypeSequence()
+            private List<FieldLayoutInterval> CreateConsolidatedIntervals()
             {
-                // We need to track the sequence size to ensure we break up the opaque ranges
-                // into correctly-sized integers that do not require padding.
-                int loweredSequenceSize = 0;
-                List<CorInfoType> loweredTypes = new();
+                // First, let's make a list of exclusively non-empty intervals.
+                List<FieldLayoutInterval> consolidatedIntervals = new(Intervals.Count);
                 foreach (var interval in Intervals)
+                {
+                    if (interval.Tag != LoweredType.Empty)
+                    {
+                        consolidatedIntervals.Add(interval);
+                    }
+                }
+
+                // Now, we'll look for adjacent opaque intervals and combine them.
+                for (int i = 0; i < consolidatedIntervals.Count - 1; i++)
+                {
+                    // Only merge sequential opaque intervals that are within the same PointerSize-sized chunk.
+                    if (consolidatedIntervals[i].Tag == LoweredType.Opaque
+                        && consolidatedIntervals[i + 1].Tag == LoweredType.Opaque
+                        && (consolidatedIntervals[i].EndSentinel - 1) / PointerSize == consolidatedIntervals[i + 1].Start / PointerSize)
+                    {
+                        consolidatedIntervals[i] = CombineIntervals(consolidatedIntervals[i], consolidatedIntervals[i + 1]);
+                        consolidatedIntervals.RemoveAt(i + 1);
+                        i--;
+                    }
+                }
+
+                return consolidatedIntervals;
+            }
+
+            public List<(CorInfoType, int)> GetLoweredTypeSequence()
+            {
+                List<(CorInfoType, int)> loweredTypes = new();
+                foreach (var interval in CreateConsolidatedIntervals())
                 {
                     // Empty intervals at this point don't need to be represented in the lowered type sequence.
                     // We want to skip over them.
@@ -109,26 +144,20 @@ namespace Internal.JitInterface
 
                     if (interval.Tag == LoweredType.Float)
                     {
-                        loweredTypes.Add(CorInfoType.CORINFO_TYPE_FLOAT);
-                        loweredSequenceSize = loweredSequenceSize.AlignUp(4);
-                        loweredSequenceSize += 4;
+                        loweredTypes.Add((CorInfoType.CORINFO_TYPE_FLOAT, interval.Start));
                     }
 
                     if (interval.Tag == LoweredType.Double)
                     {
-                        loweredTypes.Add(CorInfoType.CORINFO_TYPE_DOUBLE);
-                        loweredSequenceSize = loweredSequenceSize.AlignUp(8);
-                        loweredSequenceSize += 8;
+                        loweredTypes.Add((CorInfoType.CORINFO_TYPE_DOUBLE, interval.Start));
                     }
 
                     if (interval.Tag == LoweredType.Int64)
                     {
-                        loweredTypes.Add(CorInfoType.CORINFO_TYPE_LONG);
-                        loweredSequenceSize = loweredSequenceSize.AlignUp(8);
-                        loweredSequenceSize += 8;
+                        loweredTypes.Add((CorInfoType.CORINFO_TYPE_LONG, interval.Start));
                     }
 
-                    if (interval.Tag == LoweredType.Opaque)
+                    if (interval.Tag is LoweredType.Opaque)
                     {
                         // We need to split the opaque ranges into integer parameters.
                         // As part of this splitting, we must ensure that we don't introduce alignment padding.
@@ -138,7 +167,7 @@ namespace Internal.JitInterface
                         // The lowered range is allowed to extend past the end of the opaque range (including past the end of the struct),
                         // but not into the next non-empty interval.
                         // However, due to the properties of the lowering (the only non-8 byte elements of the lowering are 4-byte floats),
-                        // we'll never encounter a scneario where we need would need to account for a correctly-aligned
+                        // we'll never encounter a scenario where we need would need to account for a correctly-aligned
                         // opaque range of > 4 bytes that we must not pad to 8 bytes.
 
 
@@ -146,32 +175,34 @@ namespace Internal.JitInterface
                         // While we need to fill more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
                         // While we need to fill more than 1 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
                         // While we need to fill at least 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
+                        int opaqueIntervalStart = interval.Start;
                         int remainingIntervalSize = interval.Size;
-                        while (remainingIntervalSize > 4 && loweredSequenceSize == loweredSequenceSize.AlignUp(8))
-                        {
-                            loweredTypes.Add(CorInfoType.CORINFO_TYPE_LONG);
-                            loweredSequenceSize += 8;
-                            remainingIntervalSize -= 8;
-                        }
-
-                        while (remainingIntervalSize > 2 && loweredSequenceSize == loweredSequenceSize.AlignUp(4))
-                        {
-                            loweredTypes.Add(CorInfoType.CORINFO_TYPE_INT);
-                            loweredSequenceSize += 4;
-                            remainingIntervalSize -= 4;
-                        }
-
-                        while (remainingIntervalSize > 1 && loweredSequenceSize == loweredSequenceSize.AlignUp(2))
-                        {
-                            loweredTypes.Add(CorInfoType.CORINFO_TYPE_SHORT);
-                            loweredSequenceSize += 2;
-                            remainingIntervalSize -= 2;
-                        }
-
                         while (remainingIntervalSize > 0)
                         {
-                            loweredSequenceSize += 1;
-                            loweredTypes.Add(CorInfoType.CORINFO_TYPE_BYTE);
+                            if (remainingIntervalSize > 4 && opaqueIntervalStart == opaqueIntervalStart.AlignUp(8))
+                            {
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_LONG, opaqueIntervalStart));
+                                opaqueIntervalStart += 8;
+                                remainingIntervalSize -= 8;
+                            }
+                            else if (remainingIntervalSize > 2 && opaqueIntervalStart == opaqueIntervalStart.AlignUp(4))
+                            {
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_INT, opaqueIntervalStart));
+                                opaqueIntervalStart += 4;
+                                remainingIntervalSize -= 4;
+                            }
+                            else if (remainingIntervalSize > 1 && opaqueIntervalStart == opaqueIntervalStart.AlignUp(2))
+                            {
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_SHORT, opaqueIntervalStart));
+                                opaqueIntervalStart += 2;
+                                remainingIntervalSize -= 2;
+                            }
+                            else
+                            {
+                                opaqueIntervalStart++;
+                                remainingIntervalSize--;
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_BYTE, opaqueIntervalStart));
+                            }
                         }
                     }
                 }
@@ -190,7 +221,7 @@ namespace Internal.JitInterface
             LoweringVisitor visitor = new(type.Context.Target.PointerSize);
             visitor.AddFields(type, addTrailingEmptyInterval: false);
 
-            List<CorInfoType> loweredTypes = visitor.GetLoweredTypeSequence();
+            List<(CorInfoType type, int offset)> loweredTypes = visitor.GetLoweredTypeSequence();
 
             // If a type has a primitive sequence with more than 4 elements, Swift passes it by reference.
             if (loweredTypes.Count > 4)
@@ -204,7 +235,11 @@ namespace Internal.JitInterface
                 numLoweredElements = loweredTypes.Count
             };
 
-            CollectionsMarshal.AsSpan(loweredTypes).CopyTo(lowering.LoweredElements);
+            for (int i = 0; i < loweredTypes.Count; i++)
+            {
+                lowering.LoweredElements[i] = loweredTypes[i].type;
+                lowering.Offsets[i] = (uint)loweredTypes[i].offset;
+            }
 
             return lowering;
         }

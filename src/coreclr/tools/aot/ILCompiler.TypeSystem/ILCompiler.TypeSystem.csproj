@@ -179,6 +179,12 @@
     <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFields.cs">
       <Link>TypeSystem\Common\TypeWithRepeatedFields.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFields.Sorting.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFields.Diagnostic.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs</Link>
     </Compile>
@@ -244,6 +250,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ImpliedRepeatedFieldDesc.cs">
       <Link>TypeSystem\Common\ImpliedRepeatedFieldDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\ImpliedRepeatedFieldDesc.Sorting.cs">
+      <Link>TypeSystem\Common\ImpliedRepeatedFieldDesc.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>

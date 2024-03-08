@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    public sealed class ImpliedRepeatedFieldDesc : FieldDesc
+    public sealed partial class ImpliedRepeatedFieldDesc : FieldDesc
     {
         private readonly FieldDesc _underlyingFieldDesc;
 
@@ -34,25 +34,9 @@ namespace Internal.TypeSystem
 
         public int FieldIndex { get; }
 
-        protected internal override int ClassCode => 31666958;
-
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => _underlyingFieldDesc.GetEmbeddedSignatureData();
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => _underlyingFieldDesc.HasCustomAttribute(attributeNamespace, attributeName);
-
-        protected internal override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
-        {
-            var impliedRepeatedFieldDesc = (ImpliedRepeatedFieldDesc)other;
-
-            int result = comparer.Compare(_underlyingFieldDesc, impliedRepeatedFieldDesc._underlyingFieldDesc);
-
-            if (result != 0)
-            {
-                return result;
-            }
-
-            return FieldIndex.CompareTo(impliedRepeatedFieldDesc.FieldIndex);
-        }
 
         public override MarshalAsDescriptor GetMarshalAsDescriptor() => _underlyingFieldDesc.GetMarshalAsDescriptor();
 
