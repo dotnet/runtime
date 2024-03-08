@@ -5086,11 +5086,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
 
-        // Disable profile checks now.
-        // Over time we will move this further and further back in the phase list, as we fix issues.
-        //
-        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
         // Conditional to Switch conversion
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);

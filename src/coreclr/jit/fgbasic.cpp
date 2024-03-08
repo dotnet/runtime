@@ -5413,7 +5413,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
     {
         // Add a new block after bSrc which jumps to 'bDst'
-        jmpBlk            = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
+        jmpBlk                  = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
         FlowEdge* const oldEdge = bSrc->GetFalseEdge();
         // Access the likelihood of oldEdge before
         // it gets reset by SetTargetEdge below.
