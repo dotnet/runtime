@@ -2042,7 +2042,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                         typGetObjLayout(argClass)->GetClassName(), lowering.numLoweredElements);
                 for (size_t i = 0; i < lowering.numLoweredElements; i++)
                 {
-                    JITDUMP("    [%zu] %s\n", i, varTypeName(JitType2PreciseVarType(lowering.loweredElements[i])));
+                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering.offsets[i], varTypeName(JitType2PreciseVarType(lowering.loweredElements[i])));
                 }
             }
         }
@@ -2133,7 +2133,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     {
                         loweredNode =
                             gtNewLclFldNode(structVal->GetLclNum(), loweredType, structVal->GetLclOffs() + offset);
-                        offset += genTypeSize(loweredType);
                     }
                     else
                     {
