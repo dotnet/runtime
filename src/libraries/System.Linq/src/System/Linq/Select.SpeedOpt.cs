@@ -245,7 +245,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new RangeSelectIterator<TResult>(_start, _end, _selector);
 
             public override bool MoveNext()
@@ -569,7 +569,7 @@ namespace System.Linq
         {
             private readonly Iterator<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
-            private IEnumerator<TSource>? _enumerator;
+            private Iterator<TSource>? _enumerator;
 
             public IteratorSelectIterator(Iterator<TSource> source, Func<TSource, TResult> selector)
             {
@@ -579,7 +579,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new IteratorSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
@@ -781,7 +781,7 @@ namespace System.Linq
                 _maxIndexInclusive = maxIndexInclusive;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()

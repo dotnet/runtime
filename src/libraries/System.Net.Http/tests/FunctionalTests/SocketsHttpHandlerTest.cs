@@ -3531,6 +3531,76 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_ConnectCallback_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
+
+        [Fact]
+        public async Task Http2Connection_DroppedWhenDowngradingToHttp11WhenAtMaxConnections()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/99401
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    int connectionCount = 0;
+
+                    GetUnderlyingSocketsHttpHandler(handler).MaxConnectionsPerServer = 1;
+
+                    GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, token) =>
+                    {
+                        connectionCount++;
+
+                        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                        await socket.ConnectAsync(context.DnsEndPoint, token);
+                        var stream = new NetworkStream(socket, ownsSocket: true);
+
+                        // Not using ALPN, so the client will attempt to downgrade to HTTP/1.1.
+                        var options = new SslClientAuthenticationOptions();
+                        options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+                        options.TargetHost = context.DnsEndPoint.Host;
+
+                        var sslStream = new SslStream(stream);
+                        await sslStream.AuthenticateAsClientAsync(options);
+                        return sslStream;
+                    };
+
+                    // Send a request to establish the first HTTP/1.1 connection.
+                    using HttpResponseMessage response1 = await client.SendAsync(CreateRequest(HttpMethod.Get, uri, HttpVersion.Version11));
+                    Assert.Equal(1, connectionCount);
+                    Assert.Equal("1", await response1.Content.ReadAsStringAsync());
+
+                    // Send an HTTP/2 request that will be downgraded to HTTP/1.1.
+                    // The new connection should be thrown away as we're at the connection limit,
+                    // and the request should be handled using the existing HTTP/1.1 connection.
+                    using HttpResponseMessage response2 = await client.SendAsync(CreateRequest(HttpMethod.Get, uri, HttpVersion.Version20));
+                    Assert.Equal(2, connectionCount);
+                    Assert.Equal("2", await response2.Content.ReadAsStringAsync());
+
+                    // If we now block the first connection, the second request should wait without attempting to open a new connection.
+                    Task<string> firstRequestTask = client.GetStringAsync(uri);
+                    Task<string> secondRequestTask = client.GetStringAsync(uri);
+
+                    Assert.Equal("3", await firstRequestTask);
+                    Assert.Equal("4", await secondRequestTask);
+
+                    Assert.Equal(2, connectionCount);
+                },
+                async server =>
+                {
+                    await using LoopbackServer.Connection connection = await server.EstablishConnectionAsync();
+
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "1");
+
+                    // The client should throw away this connection as soon as it notices there's no ALPN for HTTP/2.
+                    await using var secondConnection = await server.EstablishConnectionAsync();
+                    await Assert.ThrowsAnyAsync<Exception>(() => secondConnection.ReadRequestDataAsync());
+
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "2");
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "3");
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "4");
+                },
+                new LoopbackServer.Options { UseSsl = true });
+        }
     }
 
     public abstract class SocketsHttpHandlerTest_PlaintextStreamFilter : HttpClientHandlerTestBase

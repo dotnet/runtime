@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { utf8ToString } from "./strings";
 
 const alloca_stack: Array<VoidPtr> = [];
@@ -322,19 +322,29 @@ export function getEnv(name: string): string | null {
     }
 }
 
-const BuiltinAtomics = globalThis.Atomics;
-
-export const Atomics = WasmEnableThreads ? {
-    storeI32(offset: MemOffset, value: number): void {
-        BuiltinAtomics.store(localHeapViewI32(), <any>offset >>> 2, value);
-    },
-    notifyI32(offset: MemOffset, count: number): void {
-        BuiltinAtomics.notify(localHeapViewI32(), <any>offset >>> 2, count);
+export function compareExchangeI32(offset: MemOffset, value: number, expected: number): number {
+    mono_assert((<any>offset & 3) === 0, () => `compareExchangeI32: offset must be 4-byte aligned, got ${offset}`);
+    if (!WasmEnableThreads) {
+        const actual = getI32(offset);
+        if (actual === expected) {
+            setI32(offset, value);
+        }
+        return actual;
     }
-} : {
-    storeI32: setI32,
-    notifyI32: () => { /*empty*/ }
-};
+    return globalThis.Atomics.compareExchange(localHeapViewI32(), <any>offset >>> 2, expected, value);
+}
+
+export function storeI32(offset: MemOffset, value: number): void {
+    mono_assert((<any>offset & 3) === 0, () => `storeI32: offset must be 4-byte aligned, got ${offset}`);
+    if (!WasmEnableThreads) return setI32(offset, value);
+    globalThis.Atomics.store(localHeapViewI32(), <any>offset >>> 2, value);
+}
+
+export function notifyI32(offset: MemOffset, count: number): void {
+    mono_assert((<any>offset & 3) === 0, () => `notifyI32: offset must be 4-byte aligned, got ${offset}`);
+    if (!WasmEnableThreads) return;
+    globalThis.Atomics.notify(localHeapViewI32(), <any>offset >>> 2, count);
+}
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewI8(): Int8Array {
