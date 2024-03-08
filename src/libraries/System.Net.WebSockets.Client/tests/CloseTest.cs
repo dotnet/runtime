@@ -374,23 +374,27 @@ namespace System.Net.WebSockets.Client.Tests
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
-
                 await cws.SendAsync(
                     WebSocketData.GetBufferFromText(".receiveMessageAfterClose"),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
 
-                var recvBuffer = new ArraySegment<byte>(new byte[1024]);
-                await Task.Delay(2000); // even if we decrease to 100, it still fails with
+                int delay = 2000;
+                var stamp = DateTime.Now.ToString("HH:mm:ss");
+                Console.WriteLine($"[{stamp}] Client -> '.receiveMessageAfterClose' was sent, waiting {delay}ms. cws.State={cws.State}");
+                await Task.Delay(delay); // even if we decrease to 100, it still fails with
                 // System.Net.WebSockets.WebSocketException : The WebSocket is in an invalid state ('Closed') for this operation. Valid states are: 'Open, CloseSent'
                 // in the manual demo we can wait even 6 sec and the message arrives just fine
-                var stamp = DateTime.Now.ToString("HH:mm:ss");
-                Console.WriteLine($"[{stamp}] Attempting to receive data... cws.State={cws.State}");
+
+                stamp = DateTime.Now.ToString("HH:mm:ss");
+                Console.WriteLine($"[{stamp}] Client -> Attempting to receive data... cws.State={cws.State}");
+                var recvBuffer = new ArraySegment<byte>(new byte[1024]);
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
                 var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
+
                 stamp = DateTime.Now.ToString("HH:mm:ss");
-                Console.WriteLine($"[{stamp}] Received message={message}");
+                Console.WriteLine($"[{stamp}] Client -> Received message={message}");
                 Assert.Contains(".shutdownAfterTwoMessages 1", message);
                 Console.WriteLine($"cws.State={cws.State}");
             }
