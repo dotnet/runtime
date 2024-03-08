@@ -1,9 +1,12 @@
-<Project Sdk="Microsoft.Build.NoTargets">
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Publish">
     <PropertyGroup>
         <!-- We always want to use release for publishing using NativeAOT -->
         <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
 	<!-- we always want to make shared libs -->
         <NativeLibKind Condition="'$(NativeLibKind)' == ''">shared</NativeLibKind>
+
+	<!-- When we publish, we want to ensure the SDK does the same thing as though we ran 'dotnet publish' -->
+	<TraversalPublishGlobalProperties>$(TraversalPublishGlobalProperties);_IsPublishing=true</TraversalPublishGlobalProperties>
     </PropertyGroup>
 
     <ItemGroup>
@@ -44,24 +47,14 @@
         <SubprojectProps Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="CustomLinkerArgToolchainArg" Value="$(CustomLinkerArgToolchainArg)" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(SupportsNativeAotComponents)">
+    <PropertyGroup>
+        <SplitSubprojectProps>@(SubprojectProps->'%(Identity)=%(Value)', ';')</SplitSubprojectProps>
+    </PropertyGroup>
+
+    <ItemGroup>
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
-                          AdditionalProperties="%(AdditionalProperties);@(SubprojectProps->'%(Identity)=%(Value)', ';')"/>
+                          AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
+			  Condition="$(SupportsNativeAotComponents)"/>
     </ItemGroup>
-
-    <Target Name="BuildNativeLibs" BeforeTargets="Build" Condition="$(SupportsNativeAotComponents)">
-        <PropertyGroup>
-            <SplitSubprojectProps>@(SubprojectProps->'%(Identity)=%(Value)', ';')</SplitSubprojectProps>
-        </PropertyGroup>
-
-        <!-- workaround https://github.com/dotnet/msbuild/issues/2811 - Restore has to be a separate exectution with a different evaluation -->
-        <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());$(SplitSubprojectProps)"
-                 Targets="Restore" />
-
-        <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="_IsPublishing=true;$(SplitSubprojectProps)"
-                 Targets="Build;Publish" />
-    </Target>
 </Project>

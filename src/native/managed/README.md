@@ -4,10 +4,10 @@ This directory contains managed libraries that will be compiled using NativeAOT 
 
 ## Adding a new managed library
 
-Add a new subdirectory to `src/native/managed` for your library with a `src` and `inc` subdirectories:
+Add a new subdirectory to `src/native/managed` for your library with a `src`, `inc` and `test` subdirectories:
 
 ``` console
-$ mkdir -p libMyNewLibrary/src libMyNewLibrary/inc
+$ mkdir -p libMyNewLibrary/src libMyNewLibrary/inc libMyNewLibrary/test
 $ dotnet new classlib -n libMyNewLibrary -o libMyNewLibrary/src
 ```
 
