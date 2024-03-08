@@ -1,0 +1,248 @@
+ // Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using ILLink.RoslynAnalyzer;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
+
+namespace Mono.Linker.Tests.Cases.Substitutions
+{
+	[SkipKeptItemsValidation]
+	[ExpectedNoWarnings]
+	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" })]
+	[SetupCompileResource ("FeatureGuardSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[IgnoreSubstitutions (false)]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", "false")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard", "false")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch", "true")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.SwitchWithXml", "false")]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchWithXml", "false")]
+	public class FeatureGuardSubstitutions
+	{
+		public static void Main ()
+		{
+			DefineFeatureGuard.Test ();
+			FeatureGuardPrecedence.Test ();
+		}
+
+		class DefineFeatureGuard {
+			[FeatureGuard (typeof(RequiresDynamicCodeAttribute))]
+			static bool GuardDynamicCode => RuntimeFeature.IsDynamicCodeSupported;
+
+			static void TestGuardDynamicCode ()
+			{
+				if (GuardDynamicCode)
+					RequiresDynamicCode ();
+			}
+
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestGuardUnreferencedCode ()
+			{
+				if (GuardUnreferencedCode)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureGuard (typeof(RequiresAssemblyFilesAttribute))]
+			static bool GuardAssemblyFiles => TestFeatures.IsAssemblyFilesSupported;
+
+			static void TestGuardAssemblyFiles ()
+			{
+				if (GuardAssemblyFiles)
+					RequiresAssemblyFiles ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestMultipleGuards ()
+			{
+				if (GuardDynamicCodeAndUnreferencedCode) {
+					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+				}
+			}
+
+			static class UnreferencedCode {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
+			}
+
+			static class UnreferencedCodeIndirect {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool GuardUnreferencedCode => UnreferencedCode.GuardUnreferencedCode;
+			}
+
+			// Currently there is no way to annotate a feature type as depending on another feature,
+			// so indirect guards are expressed the same way as direct guards, by using
+			// FeatureGuardAttribute that references the underlying feature type.
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardUnreferencedCodeIndirect => UnreferencedCodeIndirect.GuardUnreferencedCode;
+
+			static void TestIndirectGuard ()
+			{
+				if (GuardUnreferencedCodeIndirect)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch")]
+			static bool FeatureSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", out bool isEnabled) && isEnabled;
+
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)] // Analyzer doesn't respect FeatureSwitchDefinition or feature settings
+			static void TestFeatureSwitch ()
+			{
+				if (FeatureSwitch)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard")]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool FeatureSwitchAndGuard => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard", out bool isEnabled) && isEnabled;
+
+			static void TestFeatureSwitchAndGuard ()
+			{
+				if (FeatureSwitchAndGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			static class UnreferencedCodeCycle {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle.IsSupported;
+			}
+
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardUnreferencedCodeCycle => TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestFeatureDependencyCycle1 ()
+			{
+				if (GuardUnreferencedCodeCycle)
+					RequiresUnreferencedCode ();
+			}
+
+			static class UnreferencedCodeCycle2_A {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle2_A.IsSupported;
+			}
+
+			static class UnreferencedCodeCycle2_B {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle2_B.IsSupported;
+			}
+
+			static class UnreferencedCodeCycle2 {
+				[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+				public static bool IsSupported => UnreferencedCodeCycle2_A.IsSupported;
+			}
+
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardUnreferencedCodeCycle2 => TestFeatures.IsUnreferencedCodeSupported;
+
+			static void TestFeatureDependencyCycle2 ()
+			{
+				if (GuardUnreferencedCodeCycle2)
+					RequiresUnreferencedCode ();
+			}
+
+			public static void Test ()
+			{
+				TestGuardDynamicCode ();
+				TestGuardUnreferencedCode ();
+				TestGuardAssemblyFiles ();
+				TestMultipleGuards ();
+				TestIndirectGuard ();
+				TestFeatureDependencyCycle1 ();
+				TestFeatureDependencyCycle2 ();
+				TestFeatureSwitch ();
+				TestFeatureSwitchAndGuard ();
+			}
+		}
+
+		class FeatureGuardPrecedence {
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch")]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardAndSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch", out bool isEnabled) && isEnabled;
+
+			// ILLink/ILCompiler ignore FeatureGuard on properties that also have FeatureSwitchDefinition
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestSwitchWinsOverGuard ()
+			{
+				if (GuardAndSwitch)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchNotSet")]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardAndSwitchNotSet => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchNotSet", out bool isEnabled) && isEnabled;
+
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestSwitchNotSetWinsOverGuard ()
+			{
+				if (GuardAndSwitchNotSet)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardWithXml => TestFeatures.IsUnreferencedCodeSupported;
+
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestXmlWinsOverGuard ()
+			{
+				if (GuardWithXml)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.SwitchWithXml")]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool SwitchWithXml => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.SwitchWithXml", out bool isEnabled) && isEnabled;
+
+			// XML substitutions win despite FeatureSwitchDefinition and feature settings.
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestXmlWinsOverSwitch () {
+				if (SwitchWithXml)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardPrecedence.GuardAndSwitchWithXml")]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			static bool GuardAndSwitchWithXml => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchWithXml", out bool isEnabled) && isEnabled;
+
+			// XML substitutions win despite FeatureSwitchDefinition and feature settings.
+			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestXmlWinsOverGuardAndSwitch () {
+				if (GuardAndSwitchWithXml)
+					RequiresUnreferencedCode ();
+			}
+
+			public static void Test () {
+				TestSwitchWinsOverGuard ();
+				TestSwitchNotSetWinsOverGuard ();
+				TestXmlWinsOverGuard ();
+				TestXmlWinsOverSwitch ();
+				TestXmlWinsOverGuardAndSwitch ();
+			}
+		}
+
+		[RequiresDynamicCode (nameof (RequiresDynamicCode))]
+		static void RequiresDynamicCode () { }
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
+		static void RequiresUnreferencedCode () { }
+
+		[RequiresAssemblyFiles (nameof (RequiresAssemblyFiles))]
+		static void RequiresAssemblyFiles () { }
+	}
+}
