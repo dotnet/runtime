@@ -1761,6 +1761,10 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
             assert(FindWellKnownArg(arg) == nullptr);
             m_hasRetBuffer = false;
             break;
+        case WellKnownArg::SwiftError:
+            assert(FindWellKnownArg(arg) == nullptr);
+            m_hasSwiftErrorHandling = false;
+            break;
         default:
             break;
     }
