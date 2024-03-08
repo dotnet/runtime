@@ -3721,6 +3721,7 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_d/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_d/**" />
