@@ -3795,6 +3795,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
                 GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
+                assert(!genIsValidIntReg(xtraReg) || !genIsValidFloatReg(begRegNum));
 
                 regSet.verifyRegUsed(xtraReg);
 
@@ -3809,6 +3810,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType);
 
                     GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
+                    assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(srcRegNum));
 
                     regSet.verifyRegUsed(destRegNum);
 
@@ -3860,6 +3862,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
 
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(xtraReg));
 
                 regSet.verifyRegUsed(destRegNum);
                 /* mark the beginning register as processed */
@@ -3934,6 +3937,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         // todo -- suppress self move
                         GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, regNum,
                                                       regArgTab[currentArgNum].slot - 1, 0);
+                        assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
                         regArgTab[currentArgNum].processed = true;
                         regArgMaskLive &= ~genRegMask(regNum);
                     }
@@ -4107,6 +4111,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
 #endif
                 inst_Mov(destMemType, destRegNum, regNum, /* canSkip */ false, size);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
             }
 
             /* mark the argument as processed */
@@ -4132,6 +4137,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
                 // and moves the 0th element of the src reg into the 1st element of the dest reg.
                 GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varRegType), destRegNum, nextRegNum, 0);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                 // Set destRegNum to regNum so that we skip the setting of the register below,
                 // but mark argNum as processed and clear regNum from the live mask.
                 destRegNum = regNum;
@@ -4159,6 +4165,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_Mov(INS_mov, EA_8BYTE, destRegNum, nextRegNum, /* canSkip */ false);
+                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                         }
                     }
 #if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
@@ -4179,6 +4186,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);
+                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                         }
                     }
 #endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
