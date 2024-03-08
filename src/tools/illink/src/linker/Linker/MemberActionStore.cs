@@ -43,8 +43,7 @@ namespace Mono.Linker
 					return action;
 			}
 
-			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
-				&& TryGetFeatureCheckValue (method, out _))
+			if (TryGetFeatureCheckValue (method, out _))
 				return MethodAction.ConvertToStub;
 
 			return MethodAction.Nothing;
@@ -59,8 +58,7 @@ namespace Mono.Linker
 				&& embeddedXml.MethodStubValues.TryGetValue (method, out value))
 				return true;
 
-			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
-				&& TryGetFeatureCheckValue (method, out bool bValue)) {
+			if (TryGetFeatureCheckValue (method, out bool bValue)) {
 				value = bValue ? 1 : 0;
 				return true;
 			}
@@ -93,13 +91,25 @@ namespace Mono.Linker
 				return _context.FeatureSettings.TryGetValue (switchName, out value);
 			}
 
+			if (!_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureGuards, method))
+				return false;
+
 			foreach (var featureGuardAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
 				if (featureGuardAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
 					continue;
 
-				if (featureType.FullName == "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute") {
-					value = false;
-					return true;
+				if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
+					switch (featureType.Name) {
+					case "RequiresUnreferencedCodeAttribute":
+						return true;
+					case "RequiresDynamicCodeAttribute":
+						if (_context.FeatureSettings.TryGetValue (
+								"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
+								out bool isDynamicCodeSupported)
+							&& !isDynamicCodeSupported)
+							return true;
+						break;
+					}
 				}
 			}
 

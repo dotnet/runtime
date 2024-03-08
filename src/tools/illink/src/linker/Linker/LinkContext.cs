@@ -247,7 +247,7 @@ namespace Mono.Linker
 				CodeOptimizations.RemoveSubstitutions |
 				CodeOptimizations.RemoveDynamicDependencyAttribute |
 				CodeOptimizations.OptimizeTypeHierarchyAnnotations |
-				CodeOptimizations.SubstituteFeatureChecks;
+				CodeOptimizations.SubstituteFeatureGuards;
 
 			DisableEventSourceSpecialHandling = true;
 
@@ -1147,9 +1147,8 @@ namespace Mono.Linker
 		OptimizeTypeHierarchyAnnotations = 1 << 24,
 
 		/// <summary>
-		/// Option to substitute properties annotated as FeatureCheck(typeof(SomeDisabledFeature))
-		/// with false when the feature is disabled on the command-line (via --feature SomeDisabledFeature false)
+		/// Option to substitute properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) with false
 		/// </summary>
-		SubstituteFeatureChecks = 1 << 25,
+		SubstituteFeatureGuards = 1 << 25,
 	}
 }

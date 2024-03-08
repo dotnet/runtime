@@ -14613,7 +14613,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
     BasicBlockFlags propagateFlagsToAll = block->GetFlagsRaw() & BBF_COPY_PROPAGATE;
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
-    fgRemoveRefPred(block->GetTargetEdge()); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14637,10 +14636,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->bbWeight == remainderBlock->bbWeight);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    {
-        FlowEdge* const newEdge = fgAddRefPred(condBlock, block);
-        block->SetTargetEdge(newEdge);
-    }
+    fgRedirectTargetEdge(block, condBlock);
 
     {
         FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);

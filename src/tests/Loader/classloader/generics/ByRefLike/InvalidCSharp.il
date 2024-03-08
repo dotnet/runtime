@@ -347,8 +347,33 @@
     .field public static !T StaticField
 }
 
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericClass_IndependentConstraints`2<byreflike T, (!T) U>
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+}
+
 .class public sequential ansi sealed beforefieldinit ByRefLikeType
     extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class interface public auto ansi abstract InvalidCSharp.EmptyInterface
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.ByRefLikeTypeWithInterface
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.EmptyInterface
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
         01 00 00 00
@@ -514,6 +539,27 @@
         ldtoken valuetype InvalidCSharp.GenericByRefLike_Invalid`1<valuetype ByRefLikeType>
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
         callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+    .method public hidebysig static
+        class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_Int32_Int32() cil managed
+    {
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<int32, int32>::.ctor()
+        callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
+        ret
+    }
+    .method public hidebysig static
+        class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_Interface_ByRefLike_Invalid() cil managed
+    {
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.ByRefLikeTypeWithInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
+        callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
+        ret
+    }
+    .method public hidebysig static
+        class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_ByRefLike_ByRefLike_Invalid() cil managed
+    {
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<valuetype InvalidCSharp.ByRefLikeTypeWithInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
+        callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
         ret
     }
 
