@@ -114,9 +114,7 @@ namespace System.Runtime
             }
             else
             {
-                fixed (byte* pFields = &result.GetRawData())
-                fixed (byte* pData = &dataAdjustedForNullable)
-                    Unsafe.CopyBlock(pFields, pData, pEEType->ValueTypeSize);
+                Unsafe.CopyBlock(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
             }
 
             return result;
@@ -271,9 +269,7 @@ namespace System.Runtime
             else
             {
                 // Copy the boxed fields into the new location.
-                fixed (byte *pData = &data)
-                fixed (byte* pFields = &fields)
-                    Unsafe.CopyBlock(pData, pFields, pEEType->ValueTypeSize);
+                Unsafe.CopyBlock(ref data, ref fields, pEEType->ValueTypeSize);
             }
         }
 
