@@ -6612,7 +6612,7 @@ static void set_lowering_range(GArray* lowered_bytes, guint32 offset, guint32 si
 	
         // Check if any of the range is non-empty.
         // If so, we need to force this range to be opaque
-        // and extend the range mark the existing tag's range as opaque.
+        // and extend the range to the existing tag's range and mark as opaque in addition to the requested range.
 	
 	for (guint32 i = 0; i < size; ++i) {
 		SwiftPhysicalLoweringKind current = g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, offset + i);
@@ -6651,7 +6651,7 @@ static void record_struct_physical_lowering (GArray* lowered_bytes, MonoClass* k
 		return;
 	}
 
-	// Iterate through each field of klass
+	// For each field, we need to record the physical lowering of it.
 	gpointer iter = NULL;
 	MonoClassField* field;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
@@ -6660,21 +6660,26 @@ static void record_struct_physical_lowering (GArray* lowered_bytes, MonoClass* k
 		if (mono_field_is_deleted (field))
 			continue;
 
-		MonoType* fieldType = field->type;
-		if (fieldType->type == MONO_TYPE_VALUETYPE) {
-			record_struct_physical_lowering(lowered_bytes, mono_class_from_mono_type_internal(fieldType), offset + m_field_get_offset(field));
-		} else {
-			record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field));
-		}
+		record_struct_field_physical_lowering(lowered_bytes, field->type, offset + m_field_get_offset(field));
 	}
 }
 
 static void record_struct_field_physical_lowering (GArray* lowered_bytes, MonoType* type, guint32 offset) {
-	if (type->type == MONO_TYPE_VALUETYPE) {
+	// Normalize pointer types to IntPtr and resolve generic classes.
+	// We don't need to care about specific pointer types at this ABI level.
+	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		type = m_class_get_byval_arg (mono_defaults.int_class);
+	}
+	if (type->type == MONO_TYPE_VALUETYPE || (type->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (type))) {
+		// If a struct type is encountered, we need to record the physical lowering for each field of that struct recursively
 		record_struct_physical_lowering(lowered_bytes, mono_class_from_mono_type_internal(type), offset);
 	} else {
 		SwiftPhysicalLoweringKind kind = SWIFT_OPAQUE;
-		if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8 || type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		// The only types that are non-opaque are 64-bit integers, floats, doubles, and vector types.
+		// We currently don't support vector types, so we'll only handle the first three.
+		if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8) {
+			kind = SWIFT_INT64;
+		} else if (TARGET_SIZEOF_VOID_P == 8 && (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)) {
 			kind = SWIFT_INT64;
 		} else if (type->type == MONO_TYPE_R4) {
 			kind = SWIFT_FLOAT;
@@ -6689,17 +6694,24 @@ static void record_struct_field_physical_lowering (GArray* lowered_bytes, MonoTy
 SwiftPhysicalLowering
 mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout)
 {
+	// TODO: Add support for the native type layout.
 	g_assert (!native_layout);
 	SwiftPhysicalLowering lowering = { 0 };
 
-	// Normalize pointer types to IntPtr.
+	// Normalize pointer types to IntPtr and resolve generic classes.
 	// We don't need to care about specific pointer types at this ABI level.
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 		type = m_class_get_byval_arg (mono_defaults.int_class);
 	}
 
+	// Non-value types are illegal at the interop boundary.
+	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
+		lowering.byReference = TRUE;
+		return lowering;
+	}
+
 	if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
-		lowering.byReference = FALSE;
+		lowering.byReference = TRUE;
 		return lowering;
 	}
 
