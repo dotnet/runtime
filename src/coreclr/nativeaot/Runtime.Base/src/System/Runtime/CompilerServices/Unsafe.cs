@@ -119,5 +119,15 @@ namespace System.Runtime.CompilerServices
         {
             throw new PlatformNotSupportedException();
         }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlock(void* destination, void* source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

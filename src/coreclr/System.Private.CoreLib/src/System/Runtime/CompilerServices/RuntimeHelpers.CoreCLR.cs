@@ -139,8 +139,32 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int TryGetHashCode(object o);
 
+        public static new unsafe bool Equals(object? o1, object? o2)
+        {
+            // Compare by ref for normal classes, by value for value types.
+
+            if (ReferenceEquals(o1, o2))
+                return true;
+
+            if (o1 is null || o2 is null)
+                return false;
+
+            MethodTable* pMT = GetMethodTable(o1);
+
+            // If it's not a value class, don't compare by value
+            if (!pMT->IsValueType)
+                return false;
+
+            // Make sure they are the same type.
+            if (pMT != GetMethodTable(o2))
+                return false;
+
+            // Compare the contents
+            return ContentEquals(o1, o2);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern new bool Equals(object? o1, object? o2);
+        private static extern unsafe bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
@@ -194,8 +218,8 @@ namespace System.Runtime.CompilerServices
             return rt.GetUninitializedObject();
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateUninitializedClone(object obj);
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
+        internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]

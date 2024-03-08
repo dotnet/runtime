@@ -68,7 +68,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libs
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false /p:RunAnalyzers=false
             timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
             includeAllPlatforms: true
             # extra steps, run tests
@@ -94,7 +94,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false /p:RunAnalyzers=false
             timeoutInMinutes: 360
             # extra steps, run tests
             postBuildSteps:
@@ -119,7 +119,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SizeOpt
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false /p:RunAnalyzers=false
             timeoutInMinutes: 240
             # extra steps, run tests
             postBuildSteps:
@@ -144,7 +144,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SpeedOpt
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false /p:RunAnalyzers=false
             timeoutInMinutes: 240
             # extra steps, run tests
             postBuildSteps:
@@ -174,7 +174,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 240
             nameSuffix: NativeAOT_Pri0
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:

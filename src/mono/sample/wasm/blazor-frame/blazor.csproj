@@ -11,8 +11,8 @@
 
   <ItemGroup>
     <!-- TODO un-pin this when it's possible -->
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0-alpha.1.24061.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0-alpha.1.24061.8" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0-preview.1.24081.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0-preview.1.24081.5" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

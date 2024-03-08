@@ -28,6 +28,9 @@ mono_threads_wasm_ui_thread_tid (void);
 
 #ifndef DISABLE_THREADS
 
+void 
+mono_wasm_dump_threads_async (void);
+
 gboolean
 mono_threads_wasm_is_deputy_thread (void);
 

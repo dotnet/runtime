@@ -370,16 +370,19 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR, // Variants with {<Pd1>.<T>, <Pd2>.<T>} predicate pair (eg whilege)
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
-    INS_SCALABLE_OPTS_SHIFT,               // Variants with an optional shift operation (eg dup)
 
     INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
     INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
 
     INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
 
+    INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
+
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
     INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
+    INS_SCALABLE_OPTS_TO_PREDICATE,     // Variants moving to a predicate from a vector (e.g. pmov)
+    INS_SCALABLE_OPTS_TO_VECTOR         // Variants moving to a vector from a predicate (e.g. pmov)
 };
 
 // Maps directly to the pattern used in SVE instructions such as cntb.
@@ -399,8 +402,8 @@ enum insSvePattern : unsigned
     SVE_PATTERN_VL64 = 11,  // 64 elements.
     SVE_PATTERN_VL128 = 12, // 128 elements.
     SVE_PATTERN_VL256 = 13, // 256 elements.
-    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 3.
-    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 4.
+    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 4.
+    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 3.
     SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
 };
 

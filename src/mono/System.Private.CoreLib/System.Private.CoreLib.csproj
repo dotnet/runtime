@@ -246,7 +246,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
@@ -264,7 +263,6 @@
                Condition="'$(FeatureObjCMarshal)' == 'true'"/>
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.Mono.cs" />

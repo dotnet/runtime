@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -19,7 +20,9 @@ namespace System
         [Intrinsic]
         protected internal unsafe object MemberwiseClone()
         {
-            object clone = RuntimeHelpers.AllocateUninitializedClone(this);
+            object clone = this;
+            RuntimeHelpers.AllocateUninitializedClone(ObjectHandleOnStack.Create(ref clone));
+            Debug.Assert(clone != this);
 
             // copy contents of "this" to the clone
 
@@ -30,7 +33,7 @@ namespace System
             if (RuntimeHelpers.GetMethodTable(clone)->ContainsGCPointers)
                 Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
             else
-                Buffer.Memmove(ref dst, ref src, byteCount);
+                SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
             return clone;
         }
