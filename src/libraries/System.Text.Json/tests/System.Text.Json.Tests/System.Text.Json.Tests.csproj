@@ -308,7 +308,6 @@
     <TrimmerRootAssembly Include="System.Reflection" />
     <TrimmerRootAssembly Include="System.Collections" />
     <TrimmerRootAssembly Include="System.Runtime.Serialization" />
-    <TrimmerRootAssembly Include="System.Text" />
     <TrimmerRootAssembly Include="System.Text.Json" />
   </ItemGroup>
 
