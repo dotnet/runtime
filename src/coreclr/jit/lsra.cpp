@@ -472,12 +472,15 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 //     New regMask that has minRegCount registers after intersection.
 //     Otherwise returns regMaskActual.
 //
-regMaskMixed LinearScan::getConstrainedRegMask(RefPosition* refPosition,
-                                               regMaskMixed regMaskActual,
-                                               regMaskMixed regMaskConstraint,
+regMaskOnlyOne LinearScan::getConstrainedRegMask(RefPosition* refPosition,
+                                                 regMaskOnlyOne regMaskActual,
+                                                 regMaskOnlyOne regMaskConstraint,
                                                unsigned     minRegCount)
 {
-    regMaskMixed newMask = regMaskActual & regMaskConstraint;
+    assert(compiler->IsOnlyOneRegMask(regMaskActual));
+    assert(compiler->IsOnlyOneRegMask(regMaskConstraint));
+
+    regMaskOnlyOne newMask = regMaskActual & regMaskConstraint;
     if (genCountBits(newMask) < minRegCount)
     {
         // Constrained mask does not have minimum required registers needed.
@@ -486,7 +489,7 @@ regMaskMixed LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
-        regMaskMixed busyRegs = regsBusyUntilKill | regsInUseThisLocation;
+        regMaskOnlyOne busyRegs = regsBusyUntilKill | regsInUseThisLocation;
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
@@ -512,8 +515,10 @@ regMaskMixed LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 //    This is the method used to implement the stress options that limit
 //    the set of registers considered for allocation.
 //
-regMaskMixed LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskMixed mask)
+regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask)
 {
+    assert(compiler->IsOnlyOneRegMask(mask));
+
 #ifdef TARGET_ARM64
     if ((refPosition != nullptr) && refPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
     {
@@ -529,20 +534,43 @@ regMaskMixed LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskMixed 
     {
         // The refPosition could be null, for example when called
         // by getTempRegForResolution().
-        int minRegCount = (refPosition != nullptr) ? refPosition->minRegCandidateCount : 1;
+        int                 minRegCount = (refPosition != nullptr) ? refPosition->minRegCandidateCount : 1;
+        RegisterType   regType     = refPosition->isIntervalRef() ? refPosition->getInterval()->registerType
+                                                                  : refPosition->getReg()->registerType;
+        regMaskOnlyOne      calleeSaved = RBM_NONE;
+        regMaskOnlyOne      calleeTrash = RBM_NONE;
+        if (regType == IntRegisterType)
+        {
+            calleeSaved = RBM_INT_CALLEE_SAVED;
+            calleeTrash = RBM_INT_CALLEE_TRASH;
+        }
+        else if (regType == FloatRegisterType)
+        {
+            calleeSaved = RBM_FLT_CALLEE_SAVED;
+            calleeTrash = RBM_FLT_CALLEE_TRASH;
+        }
+        else
+        {
+#ifdef HAS_PREDICATE_REGS
+            calleeSaved = RBM_MSK_CALLEE_SAVED;
+            calleeTrash = RBM_MSK_CALLEE_TRASH;
+#else
+            unreached();
+#endif
+        }
 
         switch (getStressLimitRegs())
         {
             case LSRA_LIMIT_CALLEE:
                 if (!compiler->opts.compDbgEnC)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, RBM_CALLEE_SAVED, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, mask, calleeSaved, minRegCount);
                 }
                 break;
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(refPosition, mask, RBM_CALLEE_TRASH, minRegCount);
+                mask = getConstrainedRegMask(refPosition, mask, calleeTrash, minRegCount);
             }
             break;
 

@@ -830,11 +830,11 @@ private:
     }
 
     // TODO: Can have separate methods for each type
-    regMaskMixed getConstrainedRegMask(RefPosition* refPosition,
-                                       regMaskMixed regMaskActual,
-                                       regMaskMixed regMaskConstrain,
+    regMaskOnlyOne getConstrainedRegMask(RefPosition*   refPosition,
+                                         regMaskOnlyOne regMaskActual,
+                                         regMaskOnlyOne regMaskConstrain,
                                        unsigned     minRegCount);
-    regMaskMixed stressLimitRegs(RefPosition* refPosition, regMaskMixed mask);
+    regMaskOnlyOne stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask);
 
     // This controls the heuristics used to select registers
     // These can be combined.
