@@ -5082,14 +5082,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
+        // Optimize block order
+        //
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
         // Disable profile checks now.
         // Over time we will move this further and further back in the phase list, as we fix issues.
         //
         activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
-        // Optimize block order
-        //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
 
         // Conditional to Switch conversion
         //

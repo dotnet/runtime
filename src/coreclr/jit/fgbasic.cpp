@@ -5414,12 +5414,14 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     {
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk            = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
-        FlowEdge* oldEdge = bSrc->GetFalseEdge();
+        FlowEdge* const oldEdge = bSrc->GetFalseEdge();
+        // Access the likelihood of oldEdge before
+        // it gets reset by SetTargetEdge below.
+        //
+        FlowEdge* const newEdge = fgAddRefPred(jmpBlk, bSrc, oldEdge);
         fgReplacePred(oldEdge, jmpBlk);
         jmpBlk->SetTargetEdge(oldEdge);
         assert(jmpBlk->TargetIs(bDst));
-
-        FlowEdge* newEdge = fgAddRefPred(jmpBlk, bSrc, oldEdge);
         bSrc->SetFalseEdge(newEdge);
 
         // When adding a new jmpBlk we will set the bbWeight and bbFlags
