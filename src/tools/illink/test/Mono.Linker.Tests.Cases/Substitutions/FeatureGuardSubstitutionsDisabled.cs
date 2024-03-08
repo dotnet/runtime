@@ -25,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL4000", ProducedBy = Tool.Analyzer)]
 		[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 		[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 		static bool GuardUnreferencedCode {
@@ -45,6 +46,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		static bool FeatureSwitch => throw null;
 
 		[Kept]
+		[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)]
 		// Feature switches are still substituted when feature guard substitutions are disabled
 		[ExpectBodyModified]
 		static void TestFeatureSwitch ()

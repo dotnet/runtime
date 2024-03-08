@@ -16,8 +16,15 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" })]
 	[SetupCompileResource ("FeatureGuardSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)] 
+#if NATIVEAOT
+	// ILC has different constant propagation behavior than ILLink, and we don't have
+	// the test infrastructure to check for different IL sequences between ILLink/ILC.
+	// Just validate the warning behavior instead.
+	[SkipKeptItemsValidation]
+#else
 	// Tell linker to treat RequiresDynamicCodeAttribute as a disabled feature:
 	[SetupLinkerArgument ("--feature", "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false")]
+#endif
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch", "true")]
