@@ -44,11 +44,29 @@ On Linux you can use [LTTNG](https://lttng.org/), and the [perfcollect script](h
 
 StressLog
 ------------
-The StressLog is a circular buffer inside the runtime process that usually does not escape, and most StressLog messages are available in retail builds, which makes it useful for troubleshooting issues with GC or other subsystems in production scenarios. To enable it, you can set the `DOTNET_StressLog` environment variable to `1`, and you can configure it by setting the `DOTNET_LogFacility`, `DOTNET_LogFacility2` and `DOTNET_LogLevel` environment variables.
+The StressLog is a circular buffer inside the runtime process that usually does not escape, and most StressLog messages are available in retail builds, which makes it useful for troubleshooting issues with GC or other subsystems in production scenarios. To enable it, you can set the `DOTNET_StressLog` environment variable to `1`, and you can configure it using environment variables, as demonstrated below:
 
-The `DOTNET_StressLogSize` environment variable configures how large the per-thread buffer for log messages is, and `DOTNET_TotalStressLogSize` allows setting a process-wide cap to avoid exhausting memory when you have many threads. Raising the size will allow you to capture more information in scenarios where the buffer fills too quickly and you're searching for a needle in a haystack. These variables are both specified in bytes. For example to set the per-thread buffer size to 20MB, you would set `DOTNET_StressLogSize=20971520`, and then you could set a process-wide limit of 400MB with `DOTNET_TotalStressLogSize=419430400` if you know you're unlikely to have more than 20 threads.
+```bash
+echo Enable StressLog
+set DOTNET_StressLog=1
 
-If you are in a situation where you can't attach a debugger to the process or get a crash dump containing the buffer, the `DOTNET_StressLogFilename` environment variable can be used to write the StressLog's contents to a file instead.
+echo Show JIT log messages
+set DOTNET_LogFacility=0x00000008
+
+echo Only show warnings or errors
+set DOTNET_LogLevel=3
+
+echo If the buffer is filling too quickly, it can be helpful to set large buffer sizes.
+echo But if you have many threads, you may want to set a low limit to avoid exhausting memory.
+echo Set a per-thread size limit for StressLog of 20MB
+set DOTNET_StressLogSize=20971520
+
+echo Set a process-wide size limit for all StressLogs (combined) of 400MB
+set DOTNET_TotalStressLogSize=419430400
+
+echo Write the StressLog's to a file instead of memory for cases where you can't attach a debugger or get a dump file.
+set DOTNET_StressLogFilename=mystresslog.log
+```
 
 To write your own messages to the StressLog from C++, you can use the `STRESS_LOG_N(facility, level, msg, ...)` macros, i.e. `STRESS_LOG1(LF_GC, LL_ERROR, "A significant but non-fatal error occurred in the garbage collector! Here's my favorite number: %d\n", 42)` where the first argument is one or more logging facilities (you can combine them using `|` i.e. `LF_GC | LF_GCROOTS`), the second argument is a severity level, and the third argument is the log message format string. See [log facilities and levels](#log-facilities-and-levels), below, for more information.
 
@@ -56,11 +74,37 @@ You can't write your own messages to the StressLog from C#. If for some reason y
 
 Traditional .NET Runtime Logging
 --------------------------------
-"Traditional" log messages are only enabled in debug or checked builds of the runtime. To enable them, you can set the `DOTNET_LogEnable` environment variable to `1`, and configure them using the `DOTNET_LogFacility`, `DOTNET_LogFacility2` and `DOTNET_LogLevel` environment variables. To explicitly write it to the debugger or the console, use `DOTNET_LogToDebugger` or `DOTNET_LogToConsole`.
+"Traditional" log messages are only enabled in debug or checked builds of the runtime. To enable them, you can set the `DOTNET_LogEnable` environment variable to `1`, and configure them using environment variables. There are various configuration variables for traditional logging, demonstrated below:
 
-To log to a file instead, set `DOTNET_LogToFile=1`.
-`DOTNET_LogFile` allows you to specify where the log should go by specifying a path, `DOTNET_LogFileAppend` configures whether to create a new log file at start or append to an existing one (important in multi-process scenarios), and `DOTNET_LogFlushFile` lets you force the log to be flushed on every write, which is important if log messages are failing to hit disk during a crash.
-In multi-process logging scenarios, you can also set `DOTNET_LogWithPid` to append a process ID to all the log messages so it is easier to understand how processes are interacting (make sure you turned on append mode!)
+```bash
+echo Enable traditional logging
+set DOTNET_LogEnable=1
+
+echo Show JIT log messages
+set DOTNET_LogFacility=0x00000008
+
+echo Only show warnings or errors
+set DOTNET_LogLevel=3
+
+echo Log messages to the debugger
+set DOTNET_LogToDebugger=0
+
+echo Log messages to the console
+set DOTNET_LogToConsole=1
+
+echo Log messages to a specific file
+set DOTNET_LogToFile=0
+set DOTNET_LogFile=mylog.log
+
+echo Append log messages to the file instead of erasing it at start
+set DOTNET_LogFileAppend=1
+
+echo Flush the log file after every write to ensure messages are not lost after a crash
+set DOTNET_LogFlushFile=1
+
+echo Attach the process ID to every log message for multi-process scenarios
+set DOTNET_LogWithPid=1
+```
 
 This classical logging system is not frequently used, so individual log messages you encounter may be partially or completely nonfunctional - for example, 64-bit-only issues in outdated log statements - but the basics should always work.
 
