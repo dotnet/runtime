@@ -647,9 +647,16 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode)
+        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode) => TryStartConnect(socket, socketAddress, out errorCode, Span<byte>.Empty, false, out int _ );
+
+        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode, Span<byte> data, bool tfo, out int sent)
         {
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
+            sent = 0;
+
+Console.WriteLine("TryStartConnect {0}  {1}", tfo, socket.TfoEnabled);
+Console.WriteLine("TryStartConnect  called for TFO {0} {1} ", socket.TfoEnabled, socket.GetHashCode());
+
 
             if (socket.IsDisconnected)
             {
@@ -660,7 +667,16 @@ namespace System.Net.Sockets
             Interop.Error err;
             fixed (byte* rawSocketAddress = socketAddress.Span)
             {
-                err = Interop.Sys.Connect(socket, rawSocketAddress, socketAddress.Length);
+                if (data.Length> 0)
+                {
+                    int sentBytes = 0;
+                    err = Interop.Sys.Connectx(socket, rawSocketAddress, socketAddress.Length, data, data.Length, tfo ? 1 : 0, &sentBytes);
+                    sent = sentBytes;
+                }
+                else
+                {
+                    err = Interop.Sys.Connect(socket, rawSocketAddress, socketAddress.Length);
+                }
             }
 
             if (err == Interop.Error.SUCCESS)
@@ -1399,6 +1415,12 @@ namespace System.Net.Sockets
         {
             Interop.Error err;
 
+           // if (optionLevel == SocketOptionLevel.Tcp && (int)optionName == 15)
+          //  {
+          //          handle.TfoEnabled = optionValue != 0;
+         //           //return SocketError.Success;
+          //  }
+Console.WriteLine("SetSockOpt called fopr {0} {1}", optionLevel, optionName);
             if (optionLevel == SocketOptionLevel.Socket)
             {
                 if (optionName == SocketOptionName.ReceiveTimeout)
@@ -1449,6 +1471,17 @@ namespace System.Net.Sockets
                     // handle after a failed connect.
                     handle.DualMode = optionValue == 0;
                 }
+            }
+
+            if (optionLevel == SocketOptionLevel.Tcp && (int)optionName == 15)
+            {
+                handle.TfoEnabled = optionValue != 0;
+
+Console.WriteLine("SetSockOpt called for TFO {0} {1} {2}", handle.TfoEnabled, optionValue, handle.GetHashCode());
+
+                // Silently ignore errors - TFO is best effor and it may be disabled by configuration or not
+                // supported by OS.
+                err = Interop.Error.SUCCESS;
             }
 
             return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);

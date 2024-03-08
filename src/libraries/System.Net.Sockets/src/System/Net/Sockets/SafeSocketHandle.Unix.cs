@@ -23,6 +23,7 @@ namespace System.Net.Sockets
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
         internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
         internal bool IsSocket { get; set; } = true; // (ab)use Socket class for performing async I/O on non-socket fds.
+        internal bool TfoEnabled { get; set; }
 
         internal void RegisterConnectResult(SocketError error)
         {
@@ -44,6 +45,7 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
+            target.TfoEnabled = TfoEnabled;
         }
 
         internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;

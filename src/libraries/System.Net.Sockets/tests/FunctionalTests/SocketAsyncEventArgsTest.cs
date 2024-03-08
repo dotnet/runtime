@@ -425,6 +425,74 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task ConnectAsync_WithData_OK()
+        {
+            using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listen.Bind(new IPEndPoint(IPAddress.Loopback, 11000));
+                listen.Listen();
+
+                listen.SetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)15, 1);
+
+                var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                client.SetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)15, 1);
+                //client.SetSocketOption();
+                using (var connectSaea = new SocketAsyncEventArgs())
+                {
+                    var tcs = new TaskCompletionSource<SocketError>();
+                    connectSaea.Completed += (s, e) => tcs.SetResult(e.SocketError);
+                    connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
+                    connectSaea.SetBuffer(new byte[10000], 0, 1);
+
+                    bool pending = client.ConnectAsync(connectSaea);
+                    if (!pending) tcs.SetResult(connectSaea.SocketError);
+                    if (tcs.Task.IsCompleted)
+                    {
+                        Assert.NotEqual(SocketError.Success, tcs.Task.Result);
+                    }
+
+                   // Socket.CancelConnectAsync(connectSaea);
+
+                    Socket serverSocket = await listen.AcceptAsync();
+
+                    Console.WriteLine("Got server {0} {1}", serverSocket.LocalEndPoint, serverSocket.RemoteEndPoint);
+                    Console.WriteLine("connectSaea  {0}", connectSaea.BytesTransferred) ;
+                     await tcs.Task;
+                    serverSocket.Send(new byte[10]);
+                    serverSocket.Close();
+
+                    Console.WriteLine("+++++++++++++++++++++");
+
+                   var tcs2 = new TaskCompletionSource<SocketError>();
+                   client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                   client.SetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)15, 1);
+                   var connectSaea2 = new SocketAsyncEventArgs();
+                    connectSaea2.Completed += (s, e) => tcs2.SetResult(e.SocketError);
+                    connectSaea2.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
+                    connectSaea2.SetBuffer(new byte[1], 0, 1);
+
+                    pending = client.ConnectAsync(connectSaea2);
+                    //if (!pending) tcs2.SetResult(connectSaea.SocketError);
+                    if (tcs2.Task.IsCompleted)
+                    {
+                        Assert.NotEqual(SocketError.Success, tcs.Task.Result);
+                    }
+
+                   // Socket.CancelConnectAsync(connectSaea);
+
+                    serverSocket = await listen.AcceptAsync();
+                    await tcs2.Task;
+                    Console.WriteLine("connectSaea {0}", connectSaea2.BytesTransferred) ;
+
+                    Console.WriteLine("Got server {0} {1}", serverSocket.LocalEndPoint, serverSocket.RemoteEndPoint);
+                    serverSocket.Send(new byte[10]);
+                    serverSocket.Close();
+
+                }
+            }
+        }
+
+        [Fact]
         public async Task ReuseSocketAsyncEventArgs_SameInstance_MultipleSockets()
         {
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -916,7 +984,7 @@ namespace System.Net.Sockets.Tests
             ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, 0, receiveInternalBuffer.Length);
 
             using SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
-            ManualResetEventSlim mres = new ManualResetEventSlim(false); 
+            ManualResetEventSlim mres = new ManualResetEventSlim(false);
 
             saea.SetBuffer(sendBuffer);
             saea.RemoteEndPoint = receiver1.LocalEndPoint;

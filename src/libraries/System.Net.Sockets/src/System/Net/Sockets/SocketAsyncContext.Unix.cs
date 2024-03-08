@@ -362,7 +362,7 @@ namespace System.Net.Sockets
                 Callback!(BytesTransferred, SocketAddress, SocketFlags.None, ErrorCode);
         }
 
-        private sealed class BufferMemorySendOperation : SendOperation
+        private class BufferMemorySendOperation : SendOperation
         {
             public Memory<byte> Buffer;
 
@@ -648,21 +648,53 @@ namespace System.Net.Sockets
             }
         }
 
-        private sealed class ConnectOperation : WriteOperation
+        private sealed class ConnectOperation : BufferMemorySendOperation
         {
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<SocketError>? Callback { get; set; }
+            //public Action<SocketError>? Callback { get; set; }
+
+            //public Memory<byte> Buffer;
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool result = SocketPal.TryCompleteConnect(context._socket, out ErrorCode);
+                Console.WriteLine("DoTryComplete with {0} of data {1} result = {2} transfeered {3}", Buffer.Length, ErrorCode, result, BytesTransferred);
                 context._socket.RegisterConnectResult(ErrorCode);
+
+                if (result && ErrorCode == SocketError.Success &&  Buffer.Length > 0)
+                {
+                    Console.WriteLine("Connect finished!!!! with {0} remaing transferred {1}", Buffer.Length, BytesTransferred);
+                    var result2 = context.SendToAsync(Buffer, 0, Buffer.Length, SocketFlags.None, Memory<byte>.Empty, ref BytesTransferred, Callback!, default);
+                    Console.WriteLine("SendToAsync result {0} bytes sent {1}", result2, BytesTransferred);
+                }
                 return result;
             }
 
-            public override void InvokeCallback(bool allowPooling) =>
-                Callback!(ErrorCode);
+
+            public override unsafe void InvokeCallback(bool allowPooling)
+            {
+                var cb = Callback!;
+                int bt = BytesTransferred;
+                Memory<byte> sa = SocketAddress;
+                SocketError ec = ErrorCode;
+                Memory<byte> buffer = Buffer;
+
+                Console.WriteLine("ConnectOperation InvokeCallback transferred {0} buffer {1} {2}", BytesTransferred, buffer.Length, ErrorCode);
+                if (allowPooling)
+                {
+                    AssociatedContext.ReturnOperation(this);
+                }
+                if (buffer.Length == 0)
+                {
+                    // Invoke callback only when we are completly done.
+                    // In case dfata were provided for Connect we may or may not send them all.
+                    // If we did not we will need follow-up with Send operation
+                    cb(bt, sa, SocketFlags.None, ec);
+                }
+            }
+            //public override void InvokeCallback(bool allowPooling) =>
+            //    Callback!(ErrorCode);
         }
 
         private sealed class SendFileOperation : WriteOperation
@@ -1503,7 +1535,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError ConnectAsync(Memory<byte> socketAddress, Action<SocketError> callback)
+        public SocketError ConnectAsync(Memory<byte> socketAddress, Action<int, Memory<byte>, SocketFlags, SocketError> callback, Memory<byte> buffer)
         {
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             Debug.Assert(callback != null, "Expected non-null callback");
@@ -1515,17 +1547,23 @@ namespace System.Net.Sockets
             // Thus, always call TryStartConnect regardless of readiness.
             SocketError errorCode;
             int observedSequenceNumber;
+            int sentBytes;
             _sendQueue.IsReady(this, out observedSequenceNumber);
-            if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode))
+            if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, _socket.TfoEnabled, out sentBytes))
             {
+                Console.WriteLine("ConnectAsync SentBytes!! {0}", sentBytes);
                 _socket.RegisterConnectResult(errorCode);
                 return errorCode;
             }
+
+Console.WriteLine("ConnectAsync queuing SentBytes!! {0}", sentBytes);
 
             var operation = new ConnectOperation(this)
             {
                 Callback = callback,
                 SocketAddress = socketAddress,
+                Buffer = buffer.Slice(sentBytes),
+                BytesTransferred = sentBytes,
             };
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
@@ -1880,7 +1918,8 @@ namespace System.Net.Sockets
 
         public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
-            return SendToAsync(buffer, offset, count, flags, Memory<byte>.Empty, out bytesSent, callback, cancellationToken);
+            bytesSent = 0;
+            return SendToAsync(buffer, offset, count, flags, Memory<byte>.Empty, ref bytesSent, callback, cancellationToken);
         }
 
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
@@ -1947,11 +1986,17 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        //public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        //{
+        //    bytesSent = 0;
+        //    return SendToAsync(buffer, offset, count, flags, socketAddress, ref bytesSent, callback, cancellationToken);
+        //}
+
+        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, ref int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
-            bytesSent = 0;
+            //bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
