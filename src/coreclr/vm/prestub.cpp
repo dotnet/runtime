@@ -1133,7 +1133,7 @@ namespace
         FieldDesc* TargetField;
     };
 
-    TypeHandle ValidateTargetType(TypeHandle targetTypeMaybe)
+    TypeHandle ValidateTargetType(TypeHandle targetTypeMaybe, CorElementType targetFromSig)
     {
         TypeHandle targetType = targetTypeMaybe.IsByRef()
             ? targetTypeMaybe.GetTypeParam()
@@ -1143,6 +1143,12 @@ namespace
         // types that are represented as TypeDesc. For example ref or pointer.
         if (targetType.IsTypeDesc())
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+        // We do not support generic signature types as valid targets.
+        if (targetFromSig == ELEMENT_TYPE_VAR || targetFromSig == ELEMENT_TYPE_MVAR)
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+        }
 
         return targetType;
     }
@@ -1280,10 +1286,6 @@ namespace
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
 
-        // We do not support the Canon type as a valid target.
-        if (targetType.AsMethodTable() == g_pCanonMethodTableClass)
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
         MethodDesc* targetMaybe = NULL;
         Substitution* pLookupSubst = NULL;
 
@@ -1364,10 +1366,6 @@ namespace
         _ASSERTE(!targetType.IsTypeDesc());
 
         MethodTable* pMT = targetType.AsMethodTable();
-
-        // We do not support the Canon type as a valid target.
-        if (pMT == g_pCanonMethodTableClass)
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
         CorElementType elemType = fieldType.GetSignatureCorElementType();
         ApproxFieldDescIterator fdIterator(
@@ -1641,7 +1639,10 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     //  * Instance member access - examine type of first parameter
     //  * Static member access - examine type of first parameter
     TypeHandle retType;
+    CorElementType retCorType;
     TypeHandle firstArgType;
+    CorElementType firstArgCorType = ELEMENT_TYPE_END;
+    retCorType = context.DeclarationSig.GetReturnType();
     retType = context.DeclarationSig.GetRetTypeHandleThrowing();
     UINT argCount = context.DeclarationSig.NumFixedArgs();
     if (argCount > 0)
@@ -1650,6 +1651,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
         // Get the target type signature and resolve to a type handle.
         context.TargetTypeSig = context.DeclarationSig.GetArgProps();
+        (void)context.TargetTypeSig.PeekElemType(&firstArgCorType);
         firstArgType = context.DeclarationSig.GetLastTypeHandleThrowing();
     }
 
@@ -1670,7 +1672,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
         // Get the target type signature from the return type.
         context.TargetTypeSig = context.DeclarationSig.GetReturnProps();
-        context.TargetType = ValidateTargetType(retType);
+        context.TargetType = ValidateTargetType(retType, retCorType);
         if (!TrySetTargetMethod(context, ".ctor"))
             MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), ".ctor");
         break;
@@ -1690,7 +1692,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
-        context.TargetType = ValidateTargetType(firstArgType);
+        context.TargetType = ValidateTargetType(firstArgType, firstArgCorType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8()))
             MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), name.GetUTF8());
@@ -1715,7 +1717,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
-        context.TargetType = ValidateTargetType(firstArgType);
+        context.TargetType = ValidateTargetType(firstArgType, firstArgCorType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
         if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam()))
             MemberLoader::ThrowMissingFieldException(context.TargetType.AsMethodTable(), name.GetUTF8());
