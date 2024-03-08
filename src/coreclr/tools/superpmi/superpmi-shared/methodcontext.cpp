@@ -6236,6 +6236,7 @@ void MethodContext::recGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
         for (size_t i = 0; i < pLowering->numLoweredElements; i++)
         {
             value.loweredElements[i] = static_cast<DWORD>(pLowering->loweredElements[i]);
+            value.offsets[i] = pLowering->offsets[i];
         }
     }
 
@@ -6265,6 +6266,7 @@ void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     for (size_t i = 0; i < pLowering->numLoweredElements; i++)
     {
         pLowering->loweredElements[i] = static_cast<CorInfoType>(value.loweredElements[i]);
+        pLowering->offsets[i] = value.offsets[i];
     }
 }
 

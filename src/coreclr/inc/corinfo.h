@@ -800,6 +800,7 @@ struct CORINFO_SWIFT_LOWERING
 {
     bool byReference;
     CorInfoType loweredElements[4];
+    uint32_t offsets[4];
     size_t numLoweredElements;
 };
 

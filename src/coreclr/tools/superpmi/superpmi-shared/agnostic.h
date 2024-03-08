@@ -618,6 +618,7 @@ struct Agnostic_GetSwiftLowering
 {
     DWORD byReference;
     DWORD loweredElements[4];
+    DWORD offsets[4];
     DWORD numLoweredElements;
 };
 

@@ -2120,11 +2120,10 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             }
             else
             {
-                unsigned offset = 0;
                 for (size_t i = 0; i < lowering->numLoweredElements; i++)
                 {
                     var_types loweredType = JITtype2varType(lowering->loweredElements[i]);
-                    offset                = AlignUp(offset, genTypeSize(loweredType));
+                    unsigned  offset      = lowering->offsets[i];
 
                     GenTree* loweredNode = nullptr;
                     unsigned sizeToRead = min(structVal->GetLayout(this)->GetSize() - offset, genTypeSize(loweredType));
@@ -2180,7 +2179,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                         }
 
                         assert(relOffset == sizeToRead);
-                        offset += sizeToRead;
                     }
 
                     JITDUMP("    Adding expanded primitive argument [%06u]\n", dspTreeID(loweredNode));
