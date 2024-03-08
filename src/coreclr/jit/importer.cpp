@@ -1538,7 +1538,8 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 // getRuntimeContextTree: find pointer to context for runtime lookup.
 //
 // Arguments:
-//    kind - lookup kind.
+//    kind         - lookup kind.
+//    pIsInvariant - [OUT] whether the resulting tree is known to be invariant or not.
 //
 // Return Value:
 //    Return GenTree pointer to generic shared context.
@@ -1546,9 +1547,14 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 // Notes:
 //    Reports about generic context using.
 
-GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
+GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind, bool* pIsInvariant)
 {
     GenTree* ctxTree;
+
+    if (pIsInvariant != nullptr)
+    {
+        *pIsInvariant = true;
+    }
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
@@ -1574,6 +1580,10 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
             // For runtime lookups, the generic context is always spilled to a local
             assert(impInlineInfo->iciCallInstParam->OperIs(GT_LCL_VAR));
             ctxTree = gtClone(impInlineInfo->iciCallInstParam);
+            if (pIsInvariant != nullptr)
+            {
+                *pIsInvariant = false;
+            }
         }
         else
         {
@@ -1609,7 +1619,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
-    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    bool     ctxTreeIsInvariant;
+    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind, &ctxTreeIsInvariant);
 
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
@@ -1662,7 +1673,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (i != 0)
         {
-            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree,
+                                     ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY);
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -1685,7 +1697,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    slotPtrTree =
+        gtNewIndir(TYP_I_IMPL, slotPtrTree, ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY);
 
     return slotPtrTree;
 }

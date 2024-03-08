@@ -4620,7 +4620,7 @@ public:
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
-    GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
+    GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind, bool* pIsInvariant = nullptr);
 
     GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_LOOKUP*         pLookup,
@@ -10198,8 +10198,9 @@ public:
         unsigned compArgStackSize; // Incoming argument stack size in bytes
 #endif                             // FEATURE_FASTTAILCALL
 
-        unsigned compRetBuffArg; // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
-        int compTypeCtxtArg; // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)
+        unsigned compRetBuffArg;    // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
+        unsigned compTypeCtxtArg;   // position of hidden param for type context for generic code
+                                    // (CORINFO_CALLCONV_PARAMTYPE)
         unsigned       compThisArg; // position of implicit this pointer param (not to be confused with lvaArg0Var)
         unsigned       compILlocalsCount; // Number of vars : args + locals (incl. implicit but not hidden)
         unsigned       compLocalsCount;   // Number of vars : args + locals (incl. implicit and     hidden)

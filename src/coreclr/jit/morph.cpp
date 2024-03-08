@@ -7000,6 +7000,9 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                             CORINFO_CALL_INFO*      pCallInfo)
 {
+    // NOTE: Runtime lookups are tricky for inlinees and at this point we're already done with inlining.
+    // The good news is that we currently never inline methods with explicit tail calls.
+    //
     GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
     GenTree* exactMethodDesc = getTokenHandleTree(pResolvedToken, false);
 
