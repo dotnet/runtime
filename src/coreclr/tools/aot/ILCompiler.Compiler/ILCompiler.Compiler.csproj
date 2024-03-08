@@ -31,9 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\Compiler\ImpliedRepeatedFieldDesc.cs" Link="Compiler\ImpliedRepeatedFieldDesc.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFields.cs" Link="Compiler\TypeWithRepeatedFields.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" Link="Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />

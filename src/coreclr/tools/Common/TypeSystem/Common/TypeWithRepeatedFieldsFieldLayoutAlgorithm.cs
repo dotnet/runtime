@@ -3,7 +3,7 @@
 
 using Internal.TypeSystem;
 
-namespace ILCompiler
+namespace Internal.TypeSystem
 {
     /// <summary>
     /// Represents an algorithm that computes field layout for intrinsic vector types (Vector64/Vector128/Vector256).

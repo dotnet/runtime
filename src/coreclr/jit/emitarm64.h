@@ -940,6 +940,12 @@ static bool isValidUimm8(ssize_t value)
     return (0 <= value) && (value <= 0xFFLL);
 };
 
+// Returns true if 'value' is a legal unsigned multiple of 256 immediate 8 bit encoding (such as for ADD).
+static bool isValidUimm8_MultipleOf256(ssize_t value)
+{
+    return (0 <= value) && (value <= 0xFF00) && (value % 256 == 0);
+};
+
 // Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
 static bool isValidSimm8(ssize_t value)
 {
@@ -949,7 +955,7 @@ static bool isValidSimm8(ssize_t value)
 // Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
 static bool isValidSimm8_MultipleOf256(ssize_t value)
 {
-    return (-0x8000 <= value) && (value <= 0x7f00) && (value % 256 == 0);
+    return (-0x8000 <= value) && (value <= 0x7F00) && (value % 256 == 0);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
@@ -1487,12 +1493,11 @@ void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_I(instruction     ins,
-                 emitAttr        attr,
-                 regNumber       reg,
-                 ssize_t         imm,
-                 insOpts         opt  = INS_OPTS_NONE,
-                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+void emitIns_R_I(instruction ins,
+                 emitAttr    attr,
+                 regNumber   reg,
+                 ssize_t     imm,
+                 insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
