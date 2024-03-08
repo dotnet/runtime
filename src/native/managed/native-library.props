@@ -2,7 +2,9 @@
   <PropertyGroup>
     <PublishAot>true</PublishAot>
     <SelfContained>true</SelfContained>
-    <!-- the cmake build will strip and save the symbols -->
+    <!-- Don't strip symbols NativeAOT's default way. We will strip and save the symbols ourselves,
+         the same way as eng/native/functions.cmake strip_symbols
+    -->
     <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
