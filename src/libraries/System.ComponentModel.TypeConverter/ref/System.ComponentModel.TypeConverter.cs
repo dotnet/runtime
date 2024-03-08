@@ -579,7 +579,6 @@ namespace System.ComponentModel
         System.ComponentModel.TypeConverter? GetConverter();
         System.ComponentModel.EventDescriptor? GetDefaultEvent();
         System.ComponentModel.PropertyDescriptor? GetDefaultProperty();
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.")]
         object? GetEditor(System.Type editorBaseType);
         System.ComponentModel.EventDescriptorCollection GetEvents();
         System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[]? attributes);
