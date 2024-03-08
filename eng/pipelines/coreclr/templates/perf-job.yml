@@ -274,3 +274,11 @@ jobs:
         SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost/${{ parameters.framework }}-$(osGroup)-$(buildConfigUpper)-$(archType)
         TargetFolder: $(Build.SourcesDirectory)/.dotnet-mono
         condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
+
+    - task: CopyFiles@2
+      displayName: Copy corerun to .dotnet-mono
+      inputs:
+        SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+        Contents: 'corerun*'
+        TargetFolder: $(Build.SourcesDirectory)/.dotnet-mono
+        condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
