@@ -170,8 +170,11 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("ms-BN").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
             yield return new object[] { new CultureInfo("ms-MY").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
             yield return new object[] { new CultureInfo("ms-SG").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
-            yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, new string[] { "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "" } };
-            yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, new string[] { "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "" } };
+            string[] norwegianMonths = PlatformDetection.IsBrowserDomSupported ? // dotnet responds like non-browser
+                new string [] { "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "" } :
+                new string [] { "jan.", "feb.", "mars", "apr.", "mai", "juni", "juli", "aug.", "sep.", "okt.", "nov.", "des.", "" };
+            yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, norwegianMonths };
+            yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, norwegianMonths };
             string[] dutchMonths = PlatformDetection.IsNodeJS ? // NodeJs responds like dotnet
                 new string[] { "jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec.", "" } :
                 new string[] { "jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", "" };
