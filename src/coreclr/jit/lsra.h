@@ -737,7 +737,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskMixed     terminatorConsumedRegs);
+                     regMaskGpr     terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -1432,7 +1432,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskMixed     terminatorConsumedRegs);
+                                      regMaskOnlyOne     terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;

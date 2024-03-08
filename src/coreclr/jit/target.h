@@ -261,7 +261,8 @@ typedef unsigned       regMaskTP;
 
 unsigned genCountBits(uint64_t bits);
 
-//struct AllRegsMask;
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
 
 typedef struct _regMaskAll
 {
@@ -337,7 +338,10 @@ typedef struct _regMaskAll
             ;
     }
 
-    void AddRegTypeMask(var_types type, regMaskOnlyOne maskToAdd)
+    void AddRegNumInMask(regNumber reg, var_types type);
+    bool IsRegNumInMask(regNumber reg, var_types type);
+
+    void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
     {
         if (varTypeRegister[type] == VTR_INT)
         {
@@ -373,6 +377,7 @@ typedef struct _regMaskAll
             return floatRegs;
         }
     }
+
     //void AllRegsMask& operator|=(const AllRegsMask& second);
     //{
     //    gprRegs
@@ -392,9 +397,6 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
-
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
 
 bool                    operator==(const AllRegsMask& first, const AllRegsMask& second);
 AllRegsMask             operator&(const AllRegsMask& first, const AllRegsMask& second);

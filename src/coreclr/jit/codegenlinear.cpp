@@ -216,15 +216,18 @@ void CodeGen::genCodeForBBlist()
 
             if (varDsc->lvIsInReg())
             {
-                newLiveRegSet.AddRegTypeMask(varDsc->TypeGet(), varDsc->lvRegMask());
+                regMaskOnlyOne varRegMask = varDsc->lvRegMask();
+                assert(compiler->IsOnlyOneRegMask(varRegMask));
+
+                newLiveRegSet.AddRegTypeMask(varRegMask, varDsc->TypeGet());
 
                 if (varDsc->lvType == TYP_REF)
                 {
-                    newRegGCrefSet |= varDsc->lvRegMask();
+                    newRegGCrefSet |= varRegMask;
                 }
                 else if (varDsc->lvType == TYP_BYREF)
                 {
-                    newRegByrefSet |= varDsc->lvRegMask();
+                    newRegByrefSet |= varRegMask;
                 }
                 if (!varDsc->IsAlwaysAliveInMemory())
                 {

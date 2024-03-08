@@ -8563,7 +8563,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
                                               BasicBlock*      toBlock,
                                               var_types        type,
                                               VARSET_VALARG_TP sharedCriticalLiveSet,
-                                              regMaskMixed     terminatorConsumedRegs)
+                                              regMaskOnlyOne     terminatorConsumedRegs)
 {
     // TODO-Throughput: This would be much more efficient if we add RegToVarMaps instead of VarToRegMaps
     // and they would be more space-efficient as well.
@@ -8652,10 +8652,26 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
     else
     {
-        // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
-        if ((freeRegs & RBM_CALLEE_TRASH) != 0)
+        regMaskOnlyOne calleeTrashMask = RBM_NONE;
+
+        if (varTypeRegister[type] == VTR_INT)
         {
-            freeRegs &= RBM_CALLEE_TRASH;
+            calleeTrashMask = RBM_INT_CALLEE_TRASH;
+            assert(compiler->IsGprRegMask(terminatorConsumedRegs));
+        }
+        else if (varTypeRegister[type] == VTR_FLOAT)
+        {
+            calleeTrashMask = RBM_FLT_CALLEE_TRASH;
+            assert(compiler->IsFloatRegMask(terminatorConsumedRegs));
+        }
+        else
+        {
+            unreached();
+        }
+        // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
+        if ((freeRegs & calleeTrashMask) != 0)
+        {
+            freeRegs &= calleeTrashMask;
         }
 
         regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));
@@ -8849,7 +8865,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     // available to copy into.
     // Note that for this purpose we use the full live-out set, because we must ensure that
     // even the registers that remain the same across the edge are preserved correctly.
-    regMaskMixed    liveOutRegs = RBM_NONE;
+    AllRegsMask    liveOutRegs;
     VarSetOps::Iter liveOutIter(compiler, block->bbLiveOut);
     unsigned        liveOutVarIndex = 0;
     while (liveOutIter.NextElem(&liveOutVarIndex))
@@ -8857,8 +8873,9 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         regNumber fromReg = getVarReg(outVarToRegMap, liveOutVarIndex);
         if (fromReg != REG_STK)
         {
-            regMaskOnlyOne fromRegMask = genRegMask(fromReg, getIntervalForLocalVar(liveOutVarIndex)->registerType);
-            liveOutRegs |= fromRegMask;
+            var_types      varType     = getIntervalForLocalVar(liveOutVarIndex)->registerType;
+            regMaskOnlyOne fromRegMask = genRegMask(fromReg, varType);
+            liveOutRegs.AddRegTypeMask(fromRegMask, varType);
         }
     }
 
@@ -8869,7 +8886,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //
     // Note: Only switches and JCMP/JTEST (for Arm4) have input regs (and so can be fed by copies), so those
     // are the only block-ending branches that need special handling.
-    regMaskMixed consumedRegs = RBM_NONE;
+    regMaskGpr consumedRegs = RBM_NONE;
     if (block->KindIs(BBJ_SWITCH))
     {
         // At this point, Lowering has transformed any non-switch-table blocks into
@@ -8963,9 +8980,10 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
+    assert(compiler->IsGprRegMask(consumedRegs)); // If this fails, then we will have to use AllRegsMask for consumedRegs
     VarToRegMap  sameVarToRegMap = sharedCriticalVarToRegMap;
-    regMaskMixed sameWriteRegs   = RBM_NONE;
-    regMaskMixed diffReadRegs    = RBM_NONE;
+    AllRegsMask sameWriteRegs;
+    AllRegsMask diffReadRegs;
 
     // For each var that may require resolution, classify them as:
     // - in the same register at the end of this block and at each target (no resolution needed)
@@ -9017,17 +9035,20 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         // We only need to check for these cases if sameToReg is an actual register (not REG_STK).
         if (sameToReg != REG_NA && sameToReg != REG_STK)
         {
+            var_types outVarRegType = getIntervalForLocalVar(outResolutionSetVarIndex)->registerType;
+
             // If there's a path on which this var isn't live, it may use the original value in sameToReg.
             // In this case, sameToReg will be in the liveOutRegs of this block.
             // Similarly, if sameToReg is in sameWriteRegs, it has already been used (i.e. for a lclVar that's
             // live only at another target), and we can't copy another lclVar into that reg in this block.
-            regMaskOnlyOne sameToRegMask =
-                genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
-            if (maybeSameLivePaths &&
-                (((sameToRegMask & liveOutRegs) != RBM_NONE) || ((sameToRegMask & sameWriteRegs) != RBM_NONE)))
+            regMaskOnlyOne sameToRegMask = genRegMask(sameToReg, outVarRegType);
+
+            if (maybeSameLivePaths && (liveOutRegs.IsRegNumInMask(sameToReg, outVarRegType) ||
+                                       sameWriteRegs.IsRegNumInMask(sameToReg, outVarRegType) != RBM_NONE))
             {
                 sameToReg = REG_NA;
             }
+
             // If this register is busy because it is used by a switch table at the end of the block
             // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't
             // insert it after the switch (or for Arm64, can't insert and overwrite the operand/source
@@ -9066,7 +9087,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             VarSetOps::AddElemD(compiler, diffResolutionSet, outResolutionSetVarIndex);
             if (fromReg != REG_STK)
             {
-                diffReadRegs |= genRegMask(fromReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
+                diffReadRegs.AddRegNumInMask(fromReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             }
         }
         else if (sameToReg != fromReg)
@@ -9075,14 +9096,14 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             setVarReg(sameVarToRegMap, outResolutionSetVarIndex, sameToReg);
             if (sameToReg != REG_STK)
             {
-                sameWriteRegs |= genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
+                sameWriteRegs.AddRegNumInMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             }
         }
     }
 
     if (!VarSetOps::IsEmpty(compiler, sameResolutionSet))
     {
-        if ((sameWriteRegs & diffReadRegs) != RBM_NONE)
+        if (!((sameWriteRegs & diffReadRegs).IsEmpty()))
         {
             // We cannot split the "same" and "diff" regs if the "same" set writes registers
             // that must be read by the "diff" set.  (Note that when these are done as a "batch"
@@ -9397,8 +9418,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                              BasicBlock*      toBlock,
                              ResolveType      resolveType,
                              VARSET_VALARG_TP liveSet,
-                             regMaskMixed     terminatorConsumedRegs)
+                             regMaskGpr       terminatorConsumedRegs)
 {
+    assert(compiler->IsGprRegMask(terminatorConsumedRegs));
+
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap;
     if (resolveType == ResolveSharedCritical)
@@ -9453,7 +9476,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
 #ifdef TARGET_ARM
         // Try to reserve a double register for TYP_DOUBLE and use it for TYP_FLOAT too if available.
-        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, RBM_NONE);
         if (tempRegDbl != REG_NA)
         {
             tempRegFlt = tempRegDbl;
@@ -9461,7 +9484,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         else
 #endif // TARGET_ARM
         {
-            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
+            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, RBM_NONE);
         }
     }
 
@@ -13936,4 +13959,30 @@ AllRegsMask operator~(const AllRegsMask& first)
 #endif
     );
     return result;
+}
+
+void AllRegsMask::AddRegNumInMask(regNumber reg, var_types type)
+{
+    regMaskOnlyOne regMask = genRegMask(reg, type);
+    AddRegTypeMask(regMask, type);
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type)
+{
+    if (emitter::isGeneralRegister(reg))
+    {
+        return (gprRegs & genRegMask(reg)) != RBM_NONE;
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        return (floatRegs & genRegMask(reg, type)) != RBM_NONE;
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        return (predicateRegs & genRegMask(reg)) != RBM_NONE;
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
 }
