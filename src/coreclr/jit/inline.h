@@ -686,6 +686,7 @@ struct InlineInfo
 
     unsigned      argCnt;
     InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];
+    InlArgInfo*   inlInstParamArgInfo;
     int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 
@@ -702,10 +703,9 @@ struct InlineInfo
     bool hasSIMDTypeArgLocalOrReturn;
 #endif // FEATURE_SIMD
 
-    GenTreeCall* iciCall;          // The GT_CALL node to be inlined.
-    GenTree*     iciCallInstParam; // Cached InstParam arg (if exists) in iciCall
-    Statement*   iciStmt;          // The statement iciCall is in.
-    BasicBlock*  iciBlock;         // The basic block iciStmt is in.
+    GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
+    Statement*   iciStmt;  // The statement iciCall is in.
+    BasicBlock*  iciBlock; // The basic block iciStmt is in.
 };
 
 // InlineContext tracks the inline history in a method.

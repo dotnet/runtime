@@ -1539,7 +1539,6 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 //
 // Arguments:
 //    kind         - lookup kind.
-//    pIsInvariant - [OUT] whether the resulting tree is known to be invariant or not.
 //
 // Return Value:
 //    Return GenTree pointer to generic shared context.
@@ -1547,14 +1546,9 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 // Notes:
 //    Reports about generic context using.
 
-GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind, bool* pIsInvariant)
+GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 {
     GenTree* ctxTree;
-
-    if (pIsInvariant != nullptr)
-    {
-        *pIsInvariant = true;
-    }
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
@@ -1574,16 +1568,14 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind, bool*
     {
         assert((kind == CORINFO_LOOKUP_METHODPARAM) || (kind == CORINFO_LOOKUP_CLASSPARAM));
 
-        if (compIsForInlining() && (impInlineInfo->iciCallInstParam != nullptr))
+        if (compIsForInlining() && (impInlineInfo->inlInstParamArgInfo != nullptr))
         {
-            // Grab the generic context from the callsite for current inlinee.
-            // For runtime lookups, the generic context is always spilled to a local
-            assert(impInlineInfo->iciCallInstParam->OperIs(GT_LCL_VAR));
-            ctxTree = gtClone(impInlineInfo->iciCallInstParam);
-            if (pIsInvariant != nullptr)
-            {
-                *pIsInvariant = false;
-            }
+            InlLclVarInfo lclInfo = {};
+            lclInfo.lclTypeInfo   = TYP_I_IMPL;
+
+            ctxTree = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
+            assert(ctxTree != nullptr);
+            assert(ctxTree->TypeIs(TYP_I_IMPL));
         }
         else
         {
@@ -1619,8 +1611,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
-    bool     ctxTreeIsInvariant;
-    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind, &ctxTreeIsInvariant);
+    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
@@ -1661,6 +1652,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // Slot pointer
     GenTree* slotPtrTree = ctxTree;
     GenTree* indOffTree  = nullptr;
+
+    const bool ctxTreeIsInvariant = !compIsForInlining();
 
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
@@ -6294,7 +6287,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
-                    op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                    op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     noway_assert(op1->gtOper == GT_LCL_VAR);
                     lclNum = op1->AsLclVar()->GetLclNum();
 
@@ -6499,7 +6492,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // In IL, LDARGA(_S) is used to load the byref managed pointer of struct argument,
                     // followed by a ldfld to load the field.
 
-                    op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                    op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     if (op1->gtOper != GT_LCL_VAR)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
@@ -10477,7 +10470,8 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             tiRetVal = typeInfo(type);
         }
 
-        impPushOnStack(impInlineFetchArg(ilArgNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo), tiRetVal);
+        impPushOnStack(impInlineFetchArg(impInlineInfo->inlArgInfo[ilArgNum], impInlineInfo->lclVarInfo[ilArgNum]),
+                       tiRetVal);
     }
     else
     {
@@ -12788,8 +12782,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     InlLclVarInfo*       lclVarInfo   = pInlineInfo->lclVarInfo;
     InlineResult*        inlineResult = pInlineInfo->inlineResult;
 
-    pInlineInfo->iciCallInstParam = nullptr;
-
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
@@ -12805,9 +12797,18 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 // This does not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:
-                pInlineInfo->iciCallInstParam = arg.GetNode();
+            {
+                InlArgInfo* ctxInfo = getAllocator(CMK_Unknown).allocate<InlArgInfo>(1);
+                memset(ctxInfo, 0, sizeof(*ctxInfo));
+                ctxInfo->arg                     = &arg;
+                ctxInfo->argHasTmp               = true;
+                ctxInfo->argIsUsed               = true;
+                ctxInfo->argIsInvariant          = true;
+                pInlineInfo->inlInstParamArgInfo = ctxInfo;
+
                 // This one does not appear in the table of inline arg info too.
                 continue;
+            }
             default:
                 break;
         }
@@ -13178,9 +13179,8 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 // impInlineFetchArg: return tree node for argument value in an inlinee
 //
 // Arguments:
-//    lclNum -- argument number in inlinee IL
-//    inlArgInfo -- argument info for inlinee
-//    lclVarInfo -- var info for inlinee
+//    argInfo -- argument info for inlinee
+//    lclInfo -- var info for inlinee
 //
 // Returns:
 //    Tree for the argument's value. Often an inlinee-scoped temp
@@ -13207,15 +13207,13 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //    This method will side effect inlArgInfo. It should only be called
 //    for actual uses of the argument in the inlinee.
 
-GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclVarInfo)
+GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
     // Cache the relevant arg and lcl info for this argument.
     // We will modify argInfo but not lclVarInfo.
-    InlArgInfo&          argInfo          = inlArgInfo[lclNum];
-    const InlLclVarInfo& lclInfo          = lclVarInfo[lclNum];
-    const bool           argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
-    const var_types      lclTyp           = lclInfo.lclTypeInfo;
-    GenTree*             op1              = nullptr;
+    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
+    const var_types lclTyp           = lclInfo.lclTypeInfo;
+    GenTree*        op1              = nullptr;
 
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
@@ -13266,7 +13264,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         if (argInfo.argIsUsed || ((lclTyp == TYP_BYREF) && (op1->TypeGet() != TYP_BYREF)))
         {
             assert(op1->gtOper == GT_LCL_VAR);
-            assert(lclNum == op1->AsLclVar()->gtLclILoffs);
 
             // Create a new lcl var node - remember the argument lclNum
             op1 = impCreateLocalNode(argLclNum DEBUGARG(op1->AsLclVar()->gtLclILoffs));
@@ -13379,7 +13376,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                  !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
-                op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));
+                op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));
 
                 /* Record op1 as the very first use of this argument.
                 If there are no further uses of the arg, we may be

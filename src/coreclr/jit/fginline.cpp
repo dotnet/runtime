@@ -1180,6 +1180,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
+    inlineInfo.inlInstParamArgInfo    = nullptr;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -1733,7 +1734,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
-        GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
+        GenTree* thisOp = impInlineFetchArg(inlArgInfo[0], lclVarInfo[0]);
         if (fgAddrCouldBeNull(thisOp))
         {
             nullcheck = gtNewNullCheck(thisOp, block);

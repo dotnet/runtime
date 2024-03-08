@@ -4620,7 +4620,7 @@ public:
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
-    GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind, bool* pIsInvariant = nullptr);
+    GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
     GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_LOOKUP*         pLookup,
@@ -4906,7 +4906,7 @@ private:
 
     unsigned impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reason));
 
-    GenTree* impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclTypeInfo);
+    GenTree* impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo);
 
     bool impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
 
