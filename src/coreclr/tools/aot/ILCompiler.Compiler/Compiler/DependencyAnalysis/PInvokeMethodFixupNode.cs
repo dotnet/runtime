@@ -97,6 +97,11 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.EmitInt(flags);
 
+            if (factory.Target.IsWindows && factory.Target.Architecture == TargetArchitecture.X86)
+            {
+                builder.EmitInt(_pInvokeMethodData.SignatureBytes);
+            }
+
             return builder.ToObjectData();
         }
 
@@ -113,6 +118,7 @@ namespace ILCompiler.DependencyAnalysis
         public readonly PInvokeModuleData ModuleData;
         public readonly string EntryPointName;
         public readonly CharSet CharSetMangling;
+        public readonly int SignatureBytes;
 
         public PInvokeMethodData(PInvokeLazyFixupField pInvokeLazyFixupField)
         {
@@ -167,6 +173,8 @@ namespace ILCompiler.DependencyAnalysis
                 charSetMangling = isAnsi ? CharSet.Ansi : CharSet.Unicode;
             }
             CharSetMangling = charSetMangling;
+
+            SignatureBytes = pInvokeLazyFixupField.SignatureBytes;
         }
 
         public bool Equals(PInvokeMethodData other)

@@ -300,8 +300,19 @@ namespace Internal.IL.Stubs
 
             if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_targetMethod, out _))
             {
+                int signatureBytes = -1;
+                if (context.Target.IsWindows && context.Target.Architecture == TargetArchitecture.X86 &&
+                    (_targetMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask) == UnmanagedCallingConventions.Stdcall)
+                {
+                    signatureBytes = 0;
+                    foreach (var p in nativeParameterTypes)
+                    {
+                        signatureBytes += AlignmentHelper.AlignUp(p.GetElementSize().AsInt, context.Target.PointerSize);
+                    }
+                }
+
                 MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
-                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod);
+                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod, signatureBytes);
 
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType

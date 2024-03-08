@@ -16,12 +16,14 @@ namespace Internal.IL.Stubs
     {
         private readonly DefType _owningType;
         private readonly MethodDesc _targetMethod;
+        private readonly int _signatureBytes;
 
-        public PInvokeLazyFixupField(DefType owningType, MethodDesc targetMethod)
+        public PInvokeLazyFixupField(DefType owningType, MethodDesc targetMethod, int signatureBytes)
         {
             Debug.Assert(targetMethod.IsPInvoke);
             _owningType = owningType;
             _targetMethod = targetMethod;
+            _signatureBytes = signatureBytes;
         }
 
         public MethodDesc TargetMethod
@@ -31,6 +33,8 @@ namespace Internal.IL.Stubs
                 return _targetMethod;
             }
         }
+
+        public int SignatureBytes => _signatureBytes;
 
         public PInvokeMetadata PInvokeMetadata
         {

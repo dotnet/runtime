@@ -180,9 +180,10 @@ namespace Internal.TypeSystem
             return _inlineArrayHashtable.GetOrCreateValue(candidate);
         }
 
-        public FieldDesc GetPInvokeLazyFixupField(MethodDesc method)
+        public FieldDesc GetPInvokeLazyFixupField(MethodDesc method, int signatureBytes)
         {
-            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(method);
+            var methodKey = new PInvokeLazyFixupFieldKey(method, signatureBytes);
+            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(methodKey);
         }
 
         public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)
@@ -446,11 +447,13 @@ namespace Internal.TypeSystem
             }
         }
 
-        private sealed class PInvokeLazyFixupFieldHashtable : LockFreeReaderHashtable<MethodDesc, PInvokeLazyFixupField>
+        private readonly record struct PInvokeLazyFixupFieldKey(MethodDesc Method, int SignatureBytes);
+
+        private sealed class PInvokeLazyFixupFieldHashtable : LockFreeReaderHashtable<PInvokeLazyFixupFieldKey, PInvokeLazyFixupField>
         {
-            protected override int GetKeyHashCode(MethodDesc key)
+            protected override int GetKeyHashCode(PInvokeLazyFixupFieldKey key)
             {
-                return key.GetHashCode();
+                return key.Method.GetHashCode();
             }
 
             protected override int GetValueHashCode(PInvokeLazyFixupField value)
@@ -458,19 +461,19 @@ namespace Internal.TypeSystem
                 return value.TargetMethod.GetHashCode();
             }
 
-            protected override bool CompareKeyToValue(MethodDesc key, PInvokeLazyFixupField value)
+            protected override bool CompareKeyToValue(PInvokeLazyFixupFieldKey key, PInvokeLazyFixupField value)
             {
-                return key == value.TargetMethod;
+                return key.Method == value.TargetMethod && key.SignatureBytes == value.SignatureBytes;
             }
 
             protected override bool CompareValueToValue(PInvokeLazyFixupField value1, PInvokeLazyFixupField value2)
             {
-                return value1.TargetMethod == value2.TargetMethod;
+                return value1.TargetMethod == value2.TargetMethod && value1.SignatureBytes == value2.SignatureBytes;
             }
 
-            protected override PInvokeLazyFixupField CreateValueFromKey(MethodDesc key)
+            protected override PInvokeLazyFixupField CreateValueFromKey(PInvokeLazyFixupFieldKey key)
             {
-                return new PInvokeLazyFixupField(_owningType, key);
+                return new PInvokeLazyFixupField(_owningType, key.Method, key.SignatureBytes);
             }
 
             private readonly DefType _owningType;
