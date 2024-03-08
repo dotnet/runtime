@@ -7208,6 +7208,10 @@ HRESULT DacDbiInterfaceImpl::GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayo
     DD_ENTER_MAY_THROW;
 
     PTR_MethodTable mt = PTR_MethodTable(TO_TADDR(id.token1));
+
+    if (!mt->IsClassPointerValid())
+        return CORDBG_E_TARGET_INCONSISTENT;
+
     PTR_MethodTable parentMT = mt->GetParentMethodTable();
 
     COR_TYPEID parent = {parentMT.GetAddr(), 0};
