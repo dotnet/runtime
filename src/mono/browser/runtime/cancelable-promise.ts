@@ -63,17 +63,22 @@ export class PromiseHolder extends ManagedObject {
 
     // returns false if the promise is being canceled by another thread in managed code
     setIsResolving(): boolean {
+        mono_log_warn("setIsResolving A " + this.gc_handle + " at " + this.promiseHolderPtr);
         if (!WasmEnableThreads || this.promiseHolderPtr === 0) {
+            mono_log_warn("setIsResolving A " + this.gc_handle);
             return true;
         }
         forceThreadMemoryViewRefresh();
         if (compareExchangeI32(this.promiseHolderPtr + PromiseHolderState.IsResolving, 1, 0) === 0) {
+            mono_log_warn("setIsResolving B " + this.gc_handle);
             return true;
         }
+        mono_log_warn("setIsResolving C " + this.gc_handle);
         return false;
     }
 
     resolve(data: any) {
+        mono_log_warn("resolve " + this.gc_handle + " \n" + new Error().stack);
         mono_assert(!this.isResolved, "resolve could be called only once");
         if (WasmEnableThreads && !this.setIsResolving()) {
             // we know that cancelation is in flight
@@ -82,6 +87,7 @@ export class PromiseHolder extends ManagedObject {
             // we store the original data and use it later
             this.data = data;
             this.isPostponed = true;
+            mono_log_warn("resolve isPostponed" + this.gc_handle);
 
             // but after the promise is resolved, nothing holds the weak reference to the PromiseHolder anymore
             // we know that cancelation is in flight, so we upgrade the weak reference to strong for the meantime
@@ -93,6 +99,7 @@ export class PromiseHolder extends ManagedObject {
     }
 
     reject(reason: any) {
+        mono_log_warn("reject " + this.gc_handle + " \n" + new Error().stack);
         mono_assert(!this.isResolved, "reject could be called only once");
         const isCancelation = reason && reason[promise_holder_symbol] === this;
         if (WasmEnableThreads && !isCancelation && !this.setIsResolving()) {
@@ -102,6 +109,7 @@ export class PromiseHolder extends ManagedObject {
             // we store the original reason and use it later
             this.reason = reason;
             this.isPostponed = true;
+            mono_log_warn("reject isPostponed" + this.gc_handle);
 
             // but after the promise is resolved, nothing holds the weak reference to the PromiseHolder anymore
             // we know that cancelation is in flight, so we upgrade the weak reference to strong for the meantime
@@ -113,6 +121,8 @@ export class PromiseHolder extends ManagedObject {
     }
 
     cancel() {
+        mono_log_warn("cancel " + this.gc_handle + " \n" + new Error().stack);
+
         mono_assert(!this.isResolved, "cancel could be called only once");
 
         if (this.isPostponed) {

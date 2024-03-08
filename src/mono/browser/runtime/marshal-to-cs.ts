@@ -24,6 +24,7 @@ import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerTo
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise } from "./pthreads";
 import { gc_locked } from "./gc-lock";
+import { mono_log_warn } from "./logging";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -332,6 +333,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         set_arg_type(arg, MarshalerType.Task);
     }
 
+    mono_log_warn("_marshal_task_to_cs handleIsPreallocated:" + handleIsPreallocated + " " + gc_handle + " at " + promiseHolderPtr);
     const holder = new PromiseHolder(value, gc_handle, promiseHolderPtr, res_converter);
     setup_managed_proxy(holder, gc_handle);
 
