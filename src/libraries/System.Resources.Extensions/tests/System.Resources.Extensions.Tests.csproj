@@ -15,6 +15,10 @@
     <Compile Include="TypeNameComparerTests.cs" />
     <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" LogicalName="$(RootNamespace).%(FileName)%(Extension)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <TrimmerRootAssembly Include="System.Drawing" />
+    <TrimmerRootAssembly Include="System.Resources.Extensions" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <ProjectReference Include="..\src\System.Resources.Extensions.csproj" />
@@ -46,7 +50,6 @@
       <ExecuteMethod>
         <Command>$(NetCoreAppCurrentTestHostPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
       </ExecuteMethod>
-      <TrimmerRootAssembly Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="System.Drawing" />
     </ItemGroup>
     <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
   </Target>
