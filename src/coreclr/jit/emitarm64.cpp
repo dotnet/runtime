@@ -2836,7 +2836,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(imm >= 0);
-            assert(imm < (1 << (6 - genLog2(optGetSveElemsize(id->idInsOpt())))));
+            assert(imm < (ssize_t)(1 << (6 - genLog2(optGetSveElemsize(id->idInsOpt())))));
             break;
 
         case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
@@ -10124,7 +10124,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             // imm fits within 0 <= imm < (7 - (log2(bits_in_lane) + 1))
             // e.g. for B => imm < 2**6, H => imm < 2**5, ...
             assert(imm >= 0);
-            assert(imm < (1 << (6 - genLog2(optGetSveElemsize(opt)))));
+            assert(imm < (ssize_t)(1 << (6 - genLog2(optGetSveElemsize(opt)))));
             fmt = IF_SVE_BW_2A;
             ins = INS_sve_mov; // Set preferred alias for disassembly
             break;
