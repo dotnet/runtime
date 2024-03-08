@@ -69,7 +69,7 @@ export const mono_wasm_imports_hybrid_globalization = WasmEnableThreads ? [] : [
     mono_wasm_ends_with,
     mono_wasm_index_of,
     mono_wasm_get_calendar_info,
-]
+];
 
 export const mono_wasm_imports = [
     // mini-wasm.c
@@ -122,7 +122,7 @@ const wasmImports: Function[] = [
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
     // hg exports, if threading is disabled
-    ...mono_wasm_imports_hybrid_globalization.
+    ...mono_wasm_imports_hybrid_globalization,
 ];
 
 export function replace_linker_placeholders(imports: WebAssembly.Imports) {
