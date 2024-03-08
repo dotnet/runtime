@@ -2097,7 +2097,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         CallArg* insertAfter = arg;
         // For the self arg, change it from the SwiftSelf struct to a
         // TYP_I_IMPL primitive directly. It must also be marked as a well
-        // known arg because it has non-standard calling convention.
+        // known arg because it has a non-standard calling convention.
         if (argIndex == swiftSelfIndex)
         {
             assert(arg->GetNode()->OperIsLocalRead());
