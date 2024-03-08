@@ -2272,6 +2272,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				}
 
 				size = mono_type_size (field->type, &align);
+				// keep in sync with marshal.c mono_marshal_load_type_info
 				if (m_class_is_inlinearray (klass)) {
 					// Limit the max size of array instance to 1MiB
 					const guint32 struct_max_size = 1024 * 1024;

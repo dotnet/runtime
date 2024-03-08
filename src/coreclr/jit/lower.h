@@ -114,7 +114,7 @@ private:
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
-    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
+    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
@@ -140,7 +140,9 @@ private:
     GenTree* LowerCall(GenTree* call);
     bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
     bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
+    bool LowerCallMemset(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
+    void MoveCFGCallArgs(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
@@ -331,6 +333,7 @@ private:
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
+    void LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void LowerLclHeap(GenTree* node);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
@@ -488,6 +491,8 @@ public:
 
         return false;
     }
+
+    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
 
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;

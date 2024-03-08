@@ -31,14 +31,48 @@ public abstract class AppTestBase : BlazorWasmTestBase
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
 
-        // WasmBasicTestApp consists of App + Library projects
-        if (assetName == "WasmBasicTestApp")
-            _projectDir = Path.Combine(_projectDir!, "App");
+        switch(assetName)
+        {
+            case "WasmBasicTestApp":
+                // WasmBasicTestApp consists of App + Library projects
+                _projectDir = Path.Combine(_projectDir!, "App");
+                break;
+            case "BlazorHostedApp":
+                // BlazorHostedApp consists of BlazorHosted.Client and BlazorHosted.Server projects
+                _projectDir = Path.Combine(_projectDir!, "BlazorHosted.Server");
+                break;
+        }
     }
 
-    protected void BuildProject(string configuration, params string[] extraArgs)
+    protected void BlazorHostedBuild(
+        string config,
+        string assetName,
+        string clientDirRelativeToProjectDir = "",
+        string? generatedProjectNamePrefix = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration), extraArgs);
+        CopyTestAsset(assetName, generatedProjectNamePrefix);
+        string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
+            forPublish: false,
+            clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
+        BuildProject(configuration: config,
+            binFrameworkDir: frameworkDir,
+            runtimeType: runtimeType);
+    }
+
+    protected void BuildProject(
+        string configuration,
+        string? binFrameworkDir = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool assertAppBundle = true,
+        params string[] extraArgs)
+    {
+        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
+            Id: Id,
+            Config: configuration,
+            BinFrameworkDir: binFrameworkDir,
+            RuntimeType: runtimeType,
+            AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
@@ -54,37 +88,42 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
-    
+
     protected Task<RunResult> RunSdkStyleAppForPublish(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.WebServer);
 
     private async Task<RunResult> RunSdkStyleApp(RunOptions options, BlazorRunHost host = BlazorRunHost.DotnetRun)
     {
-        string queryString = "?test=" + options.TestScenario;
-        if (options.BrowserQueryString != null)
-            queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+        var query = options.BrowserQueryString ?? new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(options.TestScenario))
+            query.Add("test", options.TestScenario);
+
+        var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
 
         var tcs = new TaskCompletionSource<int>();
         List<string> testOutput = new();
         List<string> consoleOutput = new();
-        Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
+        List<string> serverOutput = new();
+        Regex exitRegex = new Regex("(WASM EXIT (?<exitCode>[0-9]+)$)|(Program terminated with exit\\((?<exitCode>[0-9]+)\\))");
 
         BlazorRunOptions blazorRunOptions = new(
                 CheckCounter: false,
                 Config: options.Configuration,
+                ServerEnvironment: options.ServerEnvironment,
+                OnPageLoaded: options.OnPageLoaded,
                 OnConsoleMessage: OnConsoleMessage,
+                OnServerMessage: OnServerMessage,
+                BrowserPath: options.BrowserPath,
                 QueryString: queryString,
                 Host: host);
 
         await BlazorRunTest(blazorRunOptions);
 
-        void OnConsoleMessage(IConsoleMessage msg)
+        void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
             consoleOutput.Add(msg.Text);
 
-            const string testOutputPrefix = "TestOutput -> ";
-            if (msg.Text.StartsWith(testOutputPrefix))
-                testOutput.Add(msg.Text.Substring(testOutputPrefix.Length));
+            OnTestOutput(msg.Text);
 
             var exitMatch = exitRegex.Match(msg.Text);
             if (exitMatch.Success)
@@ -94,7 +133,23 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 throw new Exception(msg.Text);
 
             if (options.OnConsoleMessage != null)
-                options.OnConsoleMessage(msg);
+                options.OnConsoleMessage(page, msg);
+        }
+
+        void OnServerMessage(string msg)
+        {
+            serverOutput.Add(msg);
+            OnTestOutput(msg);
+
+            if (options.OnServerMessage != null)
+                options.OnServerMessage(msg);
+        }
+
+        void OnTestOutput(string msg)
+        {
+            const string testOutputPrefix = "TestOutput -> ";
+            if (msg.StartsWith(testOutputPrefix))
+                testOutput.Add(msg.Substring(testOutputPrefix.Length));
         }
 
         //TimeSpan timeout = TimeSpan.FromMinutes(2);
@@ -106,20 +161,25 @@ public abstract class AppTestBase : BlazorWasmTestBase
         if (options.ExpectedExitCode != null && wasmExitCode != options.ExpectedExitCode)
             throw new Exception($"Expected exit code {options.ExpectedExitCode} but got {wasmExitCode}");
 
-        return new(wasmExitCode, testOutput, consoleOutput);
+        return new(wasmExitCode, testOutput, consoleOutput, serverOutput);
     }
 
     protected record RunOptions(
         string Configuration,
-        string TestScenario,
+        string BrowserPath = "",
+        string? TestScenario = null,
         Dictionary<string, string> BrowserQueryString = null,
-        Action<IConsoleMessage> OnConsoleMessage = null,
+        Dictionary<string, string> ServerEnvironment = null,
+        Action<IPage> OnPageLoaded = null,
+        Action<IPage, IConsoleMessage> OnConsoleMessage = null,
+        Action<string> OnServerMessage = null,
         int? ExpectedExitCode = 0
     );
 
     protected record RunResult(
         int ExitCode,
         IReadOnlyCollection<string> TestOutput,
-        IReadOnlyCollection<string> ConsoleOutput
+        IReadOnlyCollection<string> ConsoleOutput,
+        IReadOnlyCollection<string> ServerOutput
     );
 }

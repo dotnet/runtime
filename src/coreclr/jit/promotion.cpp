@@ -1205,6 +1205,8 @@ public:
             }
         }
 
+        m_compiler->Metrics.PhysicallyPromotedFields += totalNumPromotions;
+
         if (totalNumPromotions <= 0)
         {
             return false;

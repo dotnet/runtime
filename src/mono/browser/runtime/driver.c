@@ -258,6 +258,7 @@ mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
+// this is running on the target thread
 static void
 mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
@@ -274,11 +275,25 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
 }
 
+
+typedef void (*js_interop_event)(void* args);
+extern js_interop_event before_sync_js_import;
+extern js_interop_event after_sync_js_import;
+
+// this is running on the target thread
+static void
+mono_wasm_invoke_jsexport_sync_send_cb (MonoMethod *method, void* args)
+{
+	before_sync_js_import (args);
+	mono_wasm_invoke_jsexport (method, args);
+	after_sync_js_import (args);
+}
+
 // sync
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
-	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport, method, args);
+	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync_send_cb, method, args);
 }
 
 #endif /* DISABLE_THREADS */

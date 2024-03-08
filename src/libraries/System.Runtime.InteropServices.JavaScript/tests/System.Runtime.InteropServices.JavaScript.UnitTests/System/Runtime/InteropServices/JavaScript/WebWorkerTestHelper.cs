@@ -325,10 +325,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static Task RunOnNewThread(Func<Task> job, CancellationToken cancellationToken)
         {
-            if( Environment.CurrentManagedThreadId == 1)
-            {
-                throw new Exception("This unit test should be executed with -backgroundExec otherwise it's prone to consume all threads too quickly");
-            }
             TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var thread = new Thread(() =>
             {

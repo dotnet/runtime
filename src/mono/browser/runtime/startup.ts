@@ -3,9 +3,9 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
+import { DotnetModuleInternal, CharPtrNull, MainThreadingMode } from "./types/internal";
 import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
-import cwraps, { init_c_exports } from "./cwraps";
+import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
@@ -32,6 +32,7 @@ import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -125,6 +126,7 @@ async function instantiateWasmWorker(
     await loaderHelpers.afterConfigLoaded.promise;
 
     replace_linker_placeholders(imports);
+    replaceEmscriptenPThreadInit();
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
@@ -268,15 +270,25 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         Module.runtimeKeepalivePush();
 
-        // load runtime and apply environment settings (if necessary)
-        await start_runtime();
+        if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyThread) {
+            // this will create thread and call start_runtime() on it
+            runtimeHelpers.monoThreadInfo = monoThreadInfo;
+            runtimeHelpers.isManagedRunningOnCurrentThread = false;
+            update_thread_info();
+            runtimeHelpers.managedThreadTID = tcwraps.mono_wasm_create_deputy_thread();
+            runtimeHelpers.proxyGCHandle = await runtimeHelpers.afterMonoStarted.promise;
 
-        if (runtimeHelpers.config.interpreterPgo) {
-            await interp_pgo_load_data();
-        }
+            // TODO make UI thread not managed
+            tcwraps.mono_wasm_register_ui_thread();
+            monoThreadInfo.isAttached = true;
+            monoThreadInfo.isRegistered = true;
 
-        if (!ENVIRONMENT_IS_WORKER) {
-            Module.runtimeKeepalivePush();
+            runtimeHelpers.runtimeReady = true;
+            update_thread_info();
+            bindings_init();
+        } else {
+            // load mono runtime and apply environment settings (if necessary)
+            await start_runtime();
         }
 
         if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
@@ -515,12 +527,15 @@ export async function start_runtime() {
 
         if (WasmEnableThreads) {
             monoThreadInfo.isAttached = true;
+            monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
-            monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
-            monoThreadInfo.workerNumber = 0;
+            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
-            runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
-            runtimeHelpers.isCurrentThread = true;
+            runtimeHelpers.proxyGCHandle = install_main_synchronization_context(
+                runtimeHelpers.config.jsThreadBlockingMode!,
+                runtimeHelpers.config.jsThreadInteropMode!,
+                runtimeHelpers.config.mainThreadingMode!);
+            runtimeHelpers.isManagedRunningOnCurrentThread = true;
 
             // start finalizer thread, lazy
             init_finalizer_thread();
@@ -528,6 +543,10 @@ export async function start_runtime() {
 
         // get GCHandle of the ctx
         runtimeHelpers.afterMonoStarted.promise_control.resolve(runtimeHelpers.proxyGCHandle);
+
+        if (runtimeHelpers.config.interpreterPgo) {
+            await interp_pgo_load_data();
+        }
 
         endMeasure(mark, MeasuredBlock.startRuntime);
     } catch (err) {

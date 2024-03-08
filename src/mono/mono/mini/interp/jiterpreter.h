@@ -239,4 +239,7 @@ mono_jiterp_tlqueue_purge_all (gpointer item);
 
 #endif // HOST_BROWSER
 
+int
+mono_jiterp_is_enabled ();
+
 #endif // __MONO_MINI_JITERPRETER_H__
