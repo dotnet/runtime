@@ -12,4 +12,4 @@ steps:
     ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
       continueOnError: ${{ parameters.shouldContinueOnError }}
     ${{ if ne(parameters.container, '') }}:
-      container: ${{ parameters.container }}
+      target: ${{ parameters.container }}
