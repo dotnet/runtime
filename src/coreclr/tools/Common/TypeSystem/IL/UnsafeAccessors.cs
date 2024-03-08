@@ -29,12 +29,6 @@ namespace Internal.IL
                 return GenerateAccessorBadImageFailure(method);
             }
 
-            // Block generic support early
-            if (method.HasInstantiation || method.OwningType.HasInstantiation)
-            {
-                return GenerateAccessorBadImageFailure(method);
-            }
-
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
                 return GenerateAccessorBadImageFailure(method);
@@ -232,15 +226,22 @@ namespace Internal.IL
                 targetType = null;
             }
 
+            // We do not support signature variables as a target (for example, VAR and MVAR).
+            if (targetType is SignatureVariable)
+            {
+                targetType = null;
+            }
+
             validated = targetType;
             return validated != null;
         }
 
-        private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)
+        private static bool DoesMethodMatchUnsafeAccessorDeclaration(
+            ref GenerationContext context,
+            MethodSignature declSig,
+            MethodSignature maybeSig,
+            bool ignoreCustomModifiers)
         {
-            MethodSignature declSig = context.Declaration.Signature;
-            MethodSignature maybeSig = method.Signature;
-
             // Check if we need to also validate custom modifiers.
             // If we are, do it first.
             if (!ignoreCustomModifiers)
@@ -366,9 +367,21 @@ namespace Internal.IL
             return true;
         }
 
-        private static bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
+        private static unsafe bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
         {
             TypeDesc targetType = context.TargetType;
+
+            // Build up a substitution Instantiation to use when looking up methods involving generics.
+            Instantiation substitutionForSig = default;
+            if (targetType.Instantiation.Length > 0)
+            {
+                TypeDesc[] types = new TypeDesc[targetType.Instantiation.Length];
+                for (int i = 0; i < types.Length; ++i)
+                {
+                    types[i] = targetType.Context.GetSignatureVariable(i, true);
+                }
+                substitutionForSig = new Instantiation(types);
+            }
 
             MethodDesc targetMaybe = null;
             foreach (MethodDesc md in targetType.GetMethods())
@@ -385,8 +398,18 @@ namespace Internal.IL
                     continue;
                 }
 
+                // Create a substitution signature for the current signature if appropriate.
+                MethodSignature sigToCompare = md.Signature;
+                if (!substitutionForSig.IsNull)
+                {
+                    sigToCompare = sigToCompare.ApplySubstitution(substitutionForSig);
+                }
+
                 // Check signature
-                if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context, md, ignoreCustomModifiers))
+                if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context,
+                    context.Declaration.Signature,
+                    sigToCompare,
+                    ignoreCustomModifiers))
                 {
                     continue;
                 }
@@ -411,6 +434,18 @@ namespace Internal.IL
             }
 
             isAmbiguous = false;
+
+            if (targetMaybe != null && targetMaybe.HasInstantiation)
+            {
+                TypeDesc[] methodInstantiation = new TypeDesc[targetMaybe.Instantiation.Length];
+                for (int i = 0; i < methodInstantiation.Length; ++i)
+                {
+                    methodInstantiation[i] = targetMaybe.Context.GetSignatureVariable(i, true);
+                }
+
+                targetMaybe = targetMaybe.Context.GetInstantiatedMethod(targetMaybe, new Instantiation(methodInstantiation));
+            }
+
             context.TargetMethod = targetMaybe;
             return context.TargetMethod != null;
         }

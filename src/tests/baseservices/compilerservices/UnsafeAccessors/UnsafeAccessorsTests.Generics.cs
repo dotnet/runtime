@@ -291,6 +291,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.True(Accessors<int>.CanCastToElementType<int>(a, 1));
             Assert.False(Accessors<int>.CanCastToElementType<string>(a, string.Empty));
             Assert.False(Accessors<int>.CanCastToElementType<Struct>(a, new Struct()));
+            Assert.Equal(0, a.Count);
             Accessors<int>.Add<int>(a, 1);
             Assert.Equal(1, a.Count);
         }
@@ -299,6 +300,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<string>.CanCastToElementType<int>(a, 1));
             Assert.True(Accessors<string>.CanCastToElementType<string>(a, string.Empty));
             Assert.False(Accessors<string>.CanCastToElementType<Struct>(a, new Struct()));
+            Assert.Equal(0, a.Count);
             Accessors<string>.Add<string>(a, string.Empty);
             Assert.Equal(1, a.Count);
         }
@@ -307,6 +309,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<Struct>.CanCastToElementType<int>(a, 1));
             Assert.False(Accessors<Struct>.CanCastToElementType<string>(a, string.Empty));
             Assert.True(Accessors<Struct>.CanCastToElementType<Struct>(a, new Struct()));
+            Assert.Equal(0, a.Count);
             Accessors<Struct>.Add<Struct>(a, new Struct());
             Assert.Equal(1, a.Count);
         }
@@ -364,7 +367,11 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_InvalidUseUnsafeAccessor)}");
 
+        Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<int>(0));
+        Assert.Throws<BadImageFormatException>(() => Invalid<int>.CallToString(0));
         Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
+        Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<Struct>(new Struct()));
+        Assert.Throws<BadImageFormatException>(() => Invalid<Struct>.CallToString(new Struct()));
     }
 }
