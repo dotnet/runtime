@@ -79,12 +79,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 values = new Span<object?>(new object?[maxArgs * 2], 0, maxArgs * 2);
             }
 
-            Span<object?> parameterValues = values.Slice(0, maxArgs);
-            Span<object?> bestParameterValues = values.Slice(maxArgs);
+            Span<object?> ctorArgs = values.Slice(0, maxArgs);
+            Span<object?> bestCtorArgs = values.Slice(maxArgs);
 #else
             constructors = CreateConstructorInfoExs(instanceType);
-            object?[]? parameterValues = null;
-            object?[]? bestParameterValues = null;
+            object?[]? ctorArgs = null;
+            object?[]? bestCtorArgs = null;
 #endif
 
             ConstructorMatcher matcher = default;
@@ -100,7 +100,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 // Handle the case where the attribute is used.
                 for (int i = 0; i < constructors.Length; i++)
                 {
-                    if (constructors[i].IsPreferred)
+                    constructor = constructors[i];
+
+                    if (constructor.IsPreferred)
                     {
                         for (int j = i + 1; j < constructors.Length; j++)
                         {
@@ -110,8 +112,8 @@ namespace Microsoft.Extensions.DependencyInjection
                             }
                         }
 
-                        InitializeParameterValues(ref parameterValues, parameters.Length);
-                        matcher = new ConstructorMatcher(constructors[i], parameterValues);
+                        InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+                        matcher = new ConstructorMatcher(constructor, ctorArgs);
                         if (matcher.Match(parameters, serviceProviderIsService) == -1)
                         {
                             ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
@@ -130,8 +132,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     constructor = constructors[i];
 
-                    InitializeParameterValues(ref parameterValues, parameters.Length);
-                    matcher = new ConstructorMatcher(constructor, parameterValues);
+                    InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+                    matcher = new ConstructorMatcher(constructor, ctorArgs);
                     int length = matcher.Match(parameters, serviceProviderIsService);
 
                     Debug.Assert(!constructor.IsPreferred);
@@ -140,20 +142,20 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         bestLength = length;
 #if NETCOREAPP
-                        parameterValues.CopyTo(bestParameterValues);
+                        ctorArgs.CopyTo(bestCtorArgs);
 #else
                         if (i == constructors.Length - 1)
                         {
-                            // Avoid the alloc for this case.
-                            bestParameterValues = parameterValues;
+                            // We can prevent an alloc for the last case.
+                            bestCtorArgs = ctorArgs;
                         }
                         else
                         {
-                            bestParameterValues = new object?[length];
-                            parameterValues.CopyTo(bestParameterValues, 0);
+                            bestCtorArgs = new object?[length];
+                            ctorArgs.CopyTo(bestCtorArgs, 0);
                         }
 #endif
-                        bestMatcher = new ConstructorMatcher(matcher.ConstructorInfo, bestParameterValues);
+                        bestMatcher = new ConstructorMatcher(matcher.ConstructorInfo, bestCtorArgs);
                         multipleBestLengthFound = false;
                     }
                     else if (bestLength == length)
@@ -190,8 +192,8 @@ namespace Microsoft.Extensions.DependencyInjection
             FindApplicableConstructor(instanceType, argumentTypes, constructors, out ConstructorInfo constructorInfo, out int?[] parameterMap);
             constructor = FindConstructorEx(constructorInfo, constructors);
 
-            InitializeParameterValues(ref parameterValues, parameters.Length);
-            matcher = new ConstructorMatcher(constructor, parameterValues);
+            InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+            matcher = new ConstructorMatcher(constructor, ctorArgs);
             matcher.MapParameters(parameterMap, parameters);
             return matcher.CreateInstance(provider);
 
@@ -209,20 +211,20 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
 
 #if NETCOREAPP
-            static void InitializeParameterValues(ref Span<object?> parameterValues, int _)
+            static void InitializeCtorArgValues(ref Span<object?> ctorArgs, int _)
             {
-                parameterValues.Clear();
+                ctorArgs.Clear();
             }
 #else
-            static void InitializeParameterValues(ref object[] parameterValues, int length)
+            static void InitializeCtorArgValues(ref object[] ctorArgs, int length)
             {
-                if (parameterValues is not null && parameterValues.Length == length)
+                if (ctorArgs is not null && ctorArgs.Length == length)
                 {
-                    Array.Clear(parameterValues, 0, length);
+                    Array.Clear(ctorArgs, 0, length);
                 }
                 else
                 {
-                    parameterValues = new object?[length];
+                    ctorArgs = new object?[length];
                 }
             }
 #endif
