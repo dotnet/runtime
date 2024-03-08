@@ -147,20 +147,14 @@ namespace NetCoreServer
                     else if (receivedMessage == ".receiveMessageAfterClose")
                     {
                         byte[] buffer = new byte[1024];
-                        string message1 = $"{receivedMessage} 1 {DateTime.Now.ToString("HH:mm:ss")}";
-                        buffer = System.Text.Encoding.UTF8.GetBytes(message1);
-                        var stamp = DateTime.Now.ToString("HH:mm:ss");
-                        Console.WriteLine($"[{stamp}] Server => Sending message: {message1}");
+                        string message = $"{receivedMessage} {DateTime.Now.ToString("HH:mm:ss")}";
+                        buffer = System.Text.Encoding.UTF8.GetBytes(message);
                         await socket.SendAsync(
-                            new ArraySegment<byte>(buffer, 0, message1.Length),
+                            new ArraySegment<byte>(buffer, 0, message.Length),
                             WebSocketMessageType.Text,
                             true,
                             CancellationToken.None);
-                        stamp = DateTime.Now.ToString("HH:mm:ss");
-                        Console.WriteLine($"[{stamp}] Server => Closing the socket");
                         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
-                        stamp = DateTime.Now.ToString("HH:mm:ss");
-                        Console.WriteLine($"[{stamp}] Server => Socket got closed");
                     }
                     else if (socket.State == WebSocketState.Open)
                     {

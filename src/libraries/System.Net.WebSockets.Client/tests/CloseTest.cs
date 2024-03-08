@@ -371,6 +371,31 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server)
         {
+            await ReceiveMessageAfterClose(server, false);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task CloseOutputAsync_ServerInitiated_CannotReceiveAfterCloseAndStateSync(Uri server)
+        {
+            try
+            {
+                await ReceiveMessageAfterClose(server, true);
+            }
+            catch (WebSocketException e)
+            {
+                Assert.Equal(WebSocketError.InvalidState, e.WebSocketErrorCode);
+                return;
+            }
+            catch (Exception e)
+            {
+                Assert.True(false, $"Unexpected exception: {e}");
+            }
+            Assert.True(false, "Expected WebSocketException not thrown.");
+        }
+
+        private async Task ReceiveMessageAfterClose(Uri server, bool syncState)
+        {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
@@ -380,23 +405,20 @@ namespace System.Net.WebSockets.Client.Tests
                     true,
                     cts.Token);
 
-                int delay = 2000;
-                var stamp = DateTime.Now.ToString("HH:mm:ss");
-                Console.WriteLine($"[{stamp}] Client -> '.receiveMessageAfterClose' was sent, waiting {delay}ms. cws.State={cws.State}");
-                await Task.Delay(delay); // even if we decrease to 100, it still fails with
-                // System.Net.WebSockets.WebSocketException : The WebSocket is in an invalid state ('Closed') for this operation. Valid states are: 'Open, CloseSent'
-                // in the manual demo we can wait even 6 sec and the message arrives just fine
+                await Task.Delay(2000);
 
-                stamp = DateTime.Now.ToString("HH:mm:ss");
-                Console.WriteLine($"[{stamp}] Client -> Attempting to receive data... cws.State={cws.State}");
+                if (syncState)
+                {
+                    var state = cws.State;
+                    Assert.Equal(WebSocketState.Closed, state);
+                    // should not be able to receive after this sync
+                }
+
                 var recvBuffer = new ArraySegment<byte>(new byte[1024]);
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
                 var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
 
-                stamp = DateTime.Now.ToString("HH:mm:ss");
-                Console.WriteLine($"[{stamp}] Client -> Received message={message}");
-                Assert.Contains(".shutdownAfterTwoMessages 1", message);
-                Console.WriteLine($"cws.State={cws.State}");
+                Assert.Contains(".receiveMessageAfterClose", message);
             }
         }
 
