@@ -551,7 +551,7 @@
     .method public hidebysig static
         class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_Interface_ByRefLike_Invalid() cil managed
     {
-        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.ByRefLikeTypeWithInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.EmptyInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
         callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
         ret
     }
