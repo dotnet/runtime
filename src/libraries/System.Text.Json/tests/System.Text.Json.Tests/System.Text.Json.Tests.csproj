@@ -16,8 +16,6 @@
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetsAppleMobile)' == 'true')">true</MetadataUpdaterSupport>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <!-- Can't use reflection-based serialization if trimming is enabled -->
-    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <XunitShowProgress>true</XunitShowProgress>
@@ -302,6 +300,16 @@
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <TrimmerRootAssembly Include="System" />
+    <TrimmerRootAssembly Include="System.Private.CoreLib" />
+    <TrimmerRootAssembly Include="System.Reflection" />
+    <TrimmerRootAssembly Include="System.Collections.Generic" />
+    <TrimmerRootAssembly Include="System.Runtime.Serialization" />
+    <TrimmerRootAssembly Include="System.Text.Json" />
+    <TrimmerRootAssembly Include="System.Text.Encodings" />
   </ItemGroup>
 
 </Project>
