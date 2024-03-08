@@ -67,10 +67,10 @@
         <Exec Command="$(ObjCopyName) --add-gnu-debuglink=$(StripDestinationFile) $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
     </Target>
 
-    <Target Name="InstallRuntimeComponentToFinalDest"
+    <Target Name="InstallRuntimeComponentToFinalDestination"
             AfterTargets="CopyNativeBinary"
             DependsOnTargets="CopyNativeBinary;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
-        <Error Text="Set at least one @InstallRuntimeComponentDest item" Condition="@(InstallRuntimeComponentDest->Count()) == 0" />
+        <Error Text="Set at least one @InstallRuntimeComponentDestination item" Condition="@(InstallRuntimeComponentDestination->Count()) == 0" />
 
         <PropertyGroup>
             <!-- FIXME: this is the same as CoreCLRToolPath - but that doesn't seem like a good name -->
@@ -78,7 +78,7 @@
         </PropertyGroup>
 
         <ItemGroup>
-            <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDest.Identity)'))" />
+            <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDestination.Identity)'))" />
         </ItemGroup>
 
         <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
