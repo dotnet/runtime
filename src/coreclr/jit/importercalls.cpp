@@ -2045,7 +2045,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
 void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
 {
     assert(call != nullptr);
-    assert(call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift);
+    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
     assert(swiftErrorArg != nullptr);
 
     GenTree* const argNode = swiftErrorArg->GetNode();

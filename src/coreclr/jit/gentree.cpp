@@ -1488,9 +1488,6 @@ CallArgs::CallArgs()
 #ifdef UNIX_X86_ABI
     , m_alignmentDone(false)
 #endif
-#ifdef SWIFT_SUPPORT
-    , m_hasSwiftErrorHandling(false)
-#endif // SWIFT_SUPPORT
 {
 }
 
@@ -1733,11 +1730,6 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             m_hasRetBuffer = true;
             break;
-#ifdef SWIFT_SUPPORT
-        case WellKnownArg::SwiftError:
-            m_hasSwiftErrorHandling = true;
-            break;
-#endif // SWIFT_SUPPORT
         default:
             break;
     }
@@ -1760,10 +1752,6 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             assert(FindWellKnownArg(arg) == nullptr);
             m_hasRetBuffer = false;
-            break;
-        case WellKnownArg::SwiftError:
-            assert(FindWellKnownArg(arg) == nullptr);
-            m_hasSwiftErrorHandling = false;
             break;
         default:
             break;
