@@ -5,14 +5,13 @@ Tasks, and targets to support workload testing in `dotnet` repositories.
 - `$(InstallWorkloadForTesting)` - required
 - `$(BuiltNuGetsDir)` - required
 - `$(DotNetInstallArgumentsForWorkloadsTesting)` - required
+- `$(TemplateNuGetConfigPathForWorkloadTesting)` - required
 
 - `$(TestUsingWorkloads)` - optional
 - `$(SkipTempDirectoryCleanup)` - optional
 - `$(VersionBandForManifestPackages)` - optional
 - `$(ExtraWorkloadInstallCommandArguments)` - optional
 - `$(WorkloadInstallCommandOutputImportance)` - optional, defaults to `Normal`
-
-- `$(TemplateNuGetConfigPathForWorkloadTesting)` - optional
 
 ## `$(PackageSourceNameForBuiltPackages)` - optional
 
