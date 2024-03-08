@@ -267,3 +267,10 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
       displayName: Create Core_Root
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
+
+    - task: CopyFiles@2
+      displayName: Create .dotnet-mono folder
+      inputs:
+        SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost/${{ parameters.framework }}-$(osGroup)-$(buildConfigUpper)-$(archType)
+        TargetFolder: $(Build.SourcesDirectory)/.dotnet-mono
+        condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
