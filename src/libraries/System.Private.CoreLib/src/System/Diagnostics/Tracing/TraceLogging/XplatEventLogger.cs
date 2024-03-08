@@ -15,8 +15,8 @@ namespace System.Diagnostics.Tracing
     {
         public XplatEventLogger() { }
 
-        private static readonly string eventSourceNameFilter = GetClrConfig("EventSourceFilter");
-        private static readonly string eventSourceEventFilter = GetClrConfig("EventNameFilter");
+        private static readonly string s_eventSourceNameFilter = GetClrConfig("EventSourceFilter");
+        private static readonly string s_eventSourceEventFilter = GetClrConfig("EventNameFilter");
 
         private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
 
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tracing
 
         protected internal override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (string.IsNullOrEmpty(eventSourceNameFilter) || (eventSource.Name.Contains(eventSourceNameFilter, StringComparison.OrdinalIgnoreCase)))
+            if (string.IsNullOrEmpty(s_eventSourceNameFilter) || (eventSource.Name.Contains(s_eventSourceNameFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
             }
@@ -173,7 +173,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (string.IsNullOrEmpty(eventSourceEventFilter) || (eventData.EventName!.Contains(eventSourceEventFilter, StringComparison.OrdinalIgnoreCase)))
+            if (string.IsNullOrEmpty(s_eventSourceEventFilter) || (eventData.EventName!.Contains(s_eventSourceEventFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 LogOnEventWritten(eventData);
             }
