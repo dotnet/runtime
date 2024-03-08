@@ -4831,7 +4831,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Compute DFS tree and remove all unreachable blocks.
         //
-        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+        DoPhase(this, PHASE_DFS_BLOCKS2, &Compiler::fgDfsBlocksAndRemove);
 
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
