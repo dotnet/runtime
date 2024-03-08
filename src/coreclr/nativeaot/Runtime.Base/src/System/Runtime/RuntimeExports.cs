@@ -116,7 +116,7 @@ namespace System.Runtime
             {
                 fixed (byte* pFields = &result.GetRawData())
                 fixed (byte* pData = &dataAdjustedForNullable)
-                    InternalCalls.memmove(pFields, pData, pEEType->ValueTypeSize);
+                    Unsafe.CopyBlock(pFields, pData, pEEType->ValueTypeSize);
             }
 
             return result;
@@ -272,8 +272,8 @@ namespace System.Runtime
             {
                 // Copy the boxed fields into the new location.
                 fixed (byte *pData = &data)
-                    fixed (byte* pFields = &fields)
-                        InternalCalls.memmove(pData, pFields, pEEType->ValueTypeSize);
+                fixed (byte* pFields = &fields)
+                    Unsafe.CopyBlock(pData, pFields, pEEType->ValueTypeSize);
             }
         }
 
