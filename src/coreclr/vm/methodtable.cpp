@@ -4330,6 +4330,10 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
 
         switch (interval.m_tag)
         {
+            case SwiftPhysicalLoweringTag::Empty:
+                _ASSERTE(!"Empty intervals should have been dropped during interval construction");
+                break;
+
             case SwiftPhysicalLoweringTag::Int64:
                 loweredTypes[numLoweredTypes] = CORINFO_TYPE_LONG;
                 break;
