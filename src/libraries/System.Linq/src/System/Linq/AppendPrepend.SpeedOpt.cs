@@ -171,9 +171,7 @@ namespace System.Linq
                     }
 
                     index--;
-                    return
-                        _source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
-                        TryGetElementAtNonIterator(_source, index, out found);
+                    return _source.TryGetElementAt(index, out found);
                 }
 
                 return base.TryGetElementAt(index, out found);
