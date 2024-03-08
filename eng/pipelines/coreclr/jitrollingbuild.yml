@@ -58,7 +58,7 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) -p:NoPgoOptimize=true
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
             extraVariablesTemplates:

@@ -73,7 +73,7 @@ extends:
           - windows_x86
           - linux_x64
           jobParameters:
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) -p:NoPgoOptimize=true
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
