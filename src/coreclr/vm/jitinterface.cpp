@@ -3087,6 +3087,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     pResult->indirections = CORINFO_USEHELPER;
 
     MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+
     if (pContextMD == nullptr)
     {
         // Class context is not yet supported
@@ -3094,18 +3095,14 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         return;
     }
 
-    bool inlinedMethodParamLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
-    if (inlinedMethodParamLookup && !pContextMD->HasMethodInstantiation())
-    {
-        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
-        return;
-    }
+    BOOL fInstrument = FALSE;
+    MethodTable* pContextMT = GetTypeFromContext(pResolvedToken->tokenContext).AsMethodTable();
+    bool inlinedMethodParamLookup = pContextMD != nullptr && pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
 
-    // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
+    // There is a pathological case where invalid IL refereces __Canon type directly,
+    // but there is no dictionary available to store the lookup.
     if (!inlinedMethodParamLookup && !pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
-
-    BOOL fInstrument = FALSE;
 
     if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
     {
@@ -3118,8 +3115,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         else
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
     }
-
-    MethodTable* pContextMT = pContextMD->GetMethodTable();
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
