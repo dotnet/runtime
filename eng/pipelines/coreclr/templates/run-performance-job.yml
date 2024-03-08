@@ -78,12 +78,7 @@ jobs:
     - ${{ parameters.steps }}
     - checkout: InternalPerformanceRepo
       path: performance
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '>=3.6'
-        addToPath: true
-        architecture: 'x64'
-    - script: python $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --run-kind ${{ parameters.kind }} --architecture ${{ parameters.architecture }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --framework $(_Framework) --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) ${{ parameters.additionalSetupParameters }}
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --run-kind ${{ parameters.kind }} --architecture ${{ parameters.architecture }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --framework $(_Framework) --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) ${{ parameters.additionalSetupParameters }}
       displayName: Run performance job script
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml

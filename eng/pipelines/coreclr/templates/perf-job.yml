@@ -142,6 +142,13 @@ jobs:
     - ${{ if eq(parameters.crossBuild, true) }}:
       - _crossBuildPropertyArg: '-cross'
 
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: Python
+        value: 'py -3'
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: Python
+        value: 'python3'
+
     frameworks:
       - ${{ parameters.framework }}
     steps:

@@ -123,11 +123,6 @@ jobs:
     - ${{ parameters.steps }}
     - checkout: InternalPerformanceRepo
       path: performance
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '>=3.6'
-        addToPath: true
-        architecture: 'x64'
     # run run-performance-job.py
     - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Windows)
