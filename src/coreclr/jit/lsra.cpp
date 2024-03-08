@@ -1681,6 +1681,21 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         return false;
     }
 
+    // Avoid allocating parameters that are passed in float regs into integer
+    // registers. We currently home float registers before integer registers,
+    // so that kind of enregistration can trash integer registers containing
+    // other parameters.
+    // We assume that these cases will be homed to float registers if they are
+    // promoted.
+    // TODO-CQ: Combine integer and float register homing to handle these kinds
+    // of conflicts.
+    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvIsRegArg && !varDsc->lvPromoted &&
+        varTypeUsesIntReg(varDsc->GetRegisterType()) && genIsValidFloatReg(varDsc->GetArgReg()))
+    {
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+        return false;
+    }
+
     //  Are we not optimizing and we have exception handlers?
     //   if so mark all args and locals as volatile, so that they
     //   won't ever get enregistered.
@@ -5936,9 +5951,62 @@ void LinearScan::allocateRegisters()
             assert(lclVarInterval->isLocalVar);
             if (refType == RefTypeUpperVectorSave)
             {
-                if ((lclVarInterval->physReg == REG_NA) ||
+                assert(currentInterval->recentRefPosition == &currentRefPosition);
+
+                // For a given RefTypeUpperVectorSave, there should be a matching RefTypeUpperVectorRestore
+                // If not, probably, this was an extra one we added conservatively and should not need a register.
+                RefPosition* nextRefPosition        = currentRefPosition.nextRefPosition;
+                bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
+
+                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
+                    if (!currentRefPosition.liveVarUpperSave)
+                    {
+                        if (isExtraUpperVectorSave)
+                        {
+                            // If this was just an extra upperVectorSave that do not have corresponding
+                            // upperVectorRestore, we do not need to mark this as isPartiallySpilled
+                            // or need to insert the save/restore.
+                            currentRefPosition.skipSaveRestore = true;
+                        }
+
+                        if (assignedRegister != REG_NA)
+                        {
+                            // If we ever assigned register to this interval, it was because in the past
+                            // there were valid save/restore RefPositions associated. For non-live vars,
+                            // we want to reduce the affect of their presence and hence, we will
+                            // unassign register from this interval without spilling and free it.
+
+                            // We do not take similar action on upperVectorRestore below because here, we
+                            // have already removed the register association with the interval.
+                            // The "allocate = false" route, will do a no-op.
+                            if (currentInterval->isActive)
+                            {
+                                RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
+                                unassignPhysRegNoSpill(physRegRecord);
+                            }
+                            else
+                            {
+                                updateNextIntervalRef(assignedRegister, currentInterval);
+                                updateSpillCost(assignedRegister, currentInterval);
+                            }
+
+                            regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
+                        }
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
+                        currentRefPosition.registerAssignment = RBM_NONE;
+                        lastAllocatedRefPosition              = &currentRefPosition;
+
+                        continue;
+                    }
+                    else
+                    {
+                        // We should never have an extra upperVectorSave for non-live var because there will
+                        // always be a valid use for which we will add the restore.
+                        assert(!isExtraUpperVectorSave);
+                    }
+
                     allocate = false;
                 }
 #if defined(TARGET_XARCH)
@@ -7983,7 +8051,15 @@ void           LinearScan::resolveRegisters()
                             insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(),
                                                   block);
                         }
-                        localVarInterval->isPartiallySpilled = true;
+
+                        if (!currentRefPosition->IsExtraUpperVectorSave())
+                        {
+                            localVarInterval->isPartiallySpilled = true;
+                        }
+                        else
+                        {
+                            assert(!currentRefPosition->liveVarUpperSave);
+                        }
                     }
                 }
                 else
@@ -12101,7 +12177,8 @@ void LinearScan::verifyFinalAllocation()
                             (currentRefPosition.refType == RefTypeUpperVectorRestore))
                         {
                             Interval* lclVarInterval = interval->relatedInterval;
-                            assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled);
+                            assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled ||
+                                   currentRefPosition.IsExtraUpperVectorSave());
                         }
                     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE

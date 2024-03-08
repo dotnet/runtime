@@ -194,13 +194,13 @@ inline AssertionIndex GetAssertionIndex(unsigned index)
 
 class AssertionInfo
 {
-    // true if the assertion holds on the bbNext edge instead of the bbTarget edge (for GT_JTRUE nodes)
-    unsigned short m_isNextEdgeAssertion : 1;
+    // true if the assertion holds on the false edge instead of the true edge (for GT_JTRUE nodes)
+    unsigned short m_assertionHoldsOnFalseEdge : 1;
     // 1-based index of the assertion
     unsigned short m_assertionIndex : 15;
 
-    AssertionInfo(bool isNextEdgeAssertion, AssertionIndex assertionIndex)
-        : m_isNextEdgeAssertion(isNextEdgeAssertion), m_assertionIndex(assertionIndex)
+    AssertionInfo(bool assertionHoldsOnFalseEdge, AssertionIndex assertionIndex)
+        : m_assertionHoldsOnFalseEdge(assertionHoldsOnFalseEdge), m_assertionIndex(assertionIndex)
     {
         assert(m_assertionIndex == assertionIndex);
     }
@@ -223,8 +223,8 @@ public:
 
     void Clear()
     {
-        m_isNextEdgeAssertion = 0;
-        m_assertionIndex      = NO_ASSERTION_INDEX;
+        m_assertionHoldsOnFalseEdge = 0;
+        m_assertionIndex            = NO_ASSERTION_INDEX;
     }
 
     bool HasAssertion() const
@@ -237,9 +237,9 @@ public:
         return m_assertionIndex;
     }
 
-    bool IsNextEdgeAssertion() const
+    bool AssertionHoldsOnFalseEdge() const
     {
-        return m_isNextEdgeAssertion;
+        return m_assertionHoldsOnFalseEdge;
     }
 };
 
@@ -4112,10 +4112,6 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
-
-#ifdef SWIFT_SUPPORT
-    GTF_CALL_M_SWIFT_ERROR_HANDLING    = 0x10000000, // call uses the Swift calling convention, and error register will be checked after it returns.
-#endif // SWIFT_SUPPORT
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4401,7 +4397,7 @@ enum class CFGCallKind
 
 class CallArgs;
 
-enum class WellKnownArg
+enum class WellKnownArg : unsigned
 {
     None,
     ThisPointer,
@@ -4419,6 +4415,8 @@ enum class WellKnownArg
     R2RIndirectionCell,
     ValidateIndirectCallTarget,
     DispatchIndirectCallTarget,
+    SwiftError,
+    SwiftSelf,
 };
 
 #ifdef DEBUG
@@ -4728,6 +4726,7 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
+    void SetWellKnownArg(const WellKnownArg argType) { m_wellKnownArg = argType; }
     bool IsTemp() { return m_isTmp; }
     // clang-format on
 
@@ -5218,6 +5217,15 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
+
+#ifdef SWIFT_SUPPORT
+    bool HasSwiftErrorHandling()
+    {
+        // Most calls aren't Swift calls, so short-circuit this check by checking the calling convention first.
+        return (GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift) &&
+               (gtArgs.FindWellKnownArg(WellKnownArg::SwiftError) != nullptr);
+    }
+#endif // SWIFT_SUPPORT
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {

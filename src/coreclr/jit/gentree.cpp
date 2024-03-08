@@ -1843,6 +1843,17 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
         case WellKnownArg::DispatchIndirectCallTarget:
             return REG_DISPATCH_INDIRECT_CALL_ADDR;
 #endif
+
+#ifdef SWIFT_SUPPORT
+        case WellKnownArg::SwiftError:
+            assert(cc == CorInfoCallConvExtension::Swift);
+            return REG_SWIFT_ERROR;
+
+        case WellKnownArg::SwiftSelf:
+            assert(cc == CorInfoCallConvExtension::Swift);
+            return REG_SWIFT_SELF;
+#endif // SWIFT_SUPPORT
+
         default:
             break;
     }
@@ -2899,6 +2910,7 @@ AGAIN:
 
             case GT_NOP:
             case GT_LABEL:
+            case GT_SWIFT_ERROR:
                 return true;
 
             default:
@@ -6678,6 +6690,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+        case GT_SWIFT_ERROR:
             return false;
 
         // Standard unary operators
@@ -9413,6 +9426,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
+            case GT_SWIFT_ERROR:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -13091,6 +13105,10 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
         case WellKnownArg::ValidateIndirectCallTarget:
         case WellKnownArg::DispatchIndirectCallTarget:
             return "cfg tgt";
+        case WellKnownArg::SwiftError:
+            return "swift error";
+        case WellKnownArg::SwiftSelf:
+            return "swift self";
         default:
             return nullptr;
     }

@@ -108,9 +108,9 @@ public class TestMainJsProjectProvider : ProjectProviderBase
         AssertBundle(assertOptions);
     }
 
-    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null)
+    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        return Path.Combine(ProjectDir!, "bin", config, framework, "browser-wasm", bundleDirName ?? this.BundleDirName, "_framework");
+        return Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework, "browser-wasm", bundleDirName ?? this.BundleDirName, "_framework");
     }
 }

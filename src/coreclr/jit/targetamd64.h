@@ -566,6 +566,6 @@
   #define SWIFT_SUPPORT
   #define REG_SWIFT_ERROR REG_R12
   #define RBM_SWIFT_ERROR RBM_R12
-  #define SWIFT_SELF_REG  REG_R13
+  #define REG_SWIFT_SELF  REG_R13
 
 // clang-format on

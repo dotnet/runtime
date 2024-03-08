@@ -9,27 +9,6 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<TResult> OfType<TResult>(this IEnumerable source)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            return OfTypeIterator<TResult>(source);
-        }
-
-        private static IEnumerable<TResult> OfTypeIterator<TResult>(IEnumerable source)
-        {
-            foreach (object? obj in source)
-            {
-                if (obj is TResult result)
-                {
-                    yield return result;
-                }
-            }
-        }
-
         public static IEnumerable<
 #nullable disable // there's no way to annotate the connection of the nullability of TResult to that of the source
                 TResult
@@ -41,7 +20,7 @@ namespace System.Linq
                 return typedSource;
             }
 
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -68,7 +47,7 @@ namespace System.Linq
             private readonly ICollection _source = source;
             private IEnumerator? _enumerator;
 
-            public override Iterator<TResult> Clone() => new CastICollectionIterator<TResult>(_source);
+            private protected override Iterator<TResult> Clone() => new CastICollectionIterator<TResult>(_source);
 
             public override bool MoveNext()
             {
@@ -80,7 +59,7 @@ namespace System.Linq
                         goto case 2;
 
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = (TResult)_enumerator.Current;
