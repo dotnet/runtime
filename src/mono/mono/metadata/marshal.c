@@ -6580,3 +6580,269 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->thunk_invoke_cache);
 	free_hash (cache->unsafe_accessor_cache);
 }
+
+typedef enum {
+	SWIFT_EMPTY,
+	SWIFT_OPAQUE,
+	SWIFT_INT64,
+	SWIFT_FLOAT,
+	SWIFT_DOUBLE,
+} SwiftPhysicalLoweringKind;
+
+static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
+	switch (kind) {
+	case SWIFT_INT64:
+	case SWIFT_DOUBLE:
+		return 8;
+	case SWIFT_FLOAT:
+		return 4;
+	default:
+		return 1;
+	}
+}
+
+static void set_lowering_range(GArray* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
+	bool force_opaque = false;
+	
+	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
+		// If the start of the range is not aligned, we need to force the entire range to be opaque.
+		force_opaque = true;
+	}
+	
+        // Check if any of the range is non-empty.
+        // If so, we need to force this range to be opaque
+        // and extend the range mark the existing tag's range as opaque.
+	
+	for (guint32 i = 0; i < size; ++i) {
+		SwiftPhysicalLoweringKind current = g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, offset + i);
+		if (current != SWIFT_EMPTY && current != kind) {
+			force_opaque = true;
+			offset = ALIGN_DOWN_TO(offset, get_swift_lowering_alignment(current));
+			size = ALIGN_TO(size + offset, get_swift_lowering_alignment(current)) - offset;
+			break;
+		}
+	}
+
+	if (force_opaque) {
+		kind = SWIFT_OPAQUE;
+	}
+
+	for (guint32 i = 0; i < size; ++i) {
+		g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, offset + i) = kind;
+	}
+}
+
+static void record_struct_field_physical_lowering (GArray* lowered_bytes, MonoType* type, guint32 offset);
+
+static void record_inlinearray_struct_physical_lowering (GArray* lowered_bytes, MonoClass* klass, guint32 offset) {
+	// Get the first field and record its physical lowering N times
+	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	MonoType* fieldType = field->type;
+	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+	}
+}
+
+static void record_struct_physical_lowering (GArray* lowered_bytes, MonoClass* klass, guint32 offset)
+{
+	if (m_class_is_inlinearray(klass)) {
+		record_inlinearray_struct_physical_lowering(lowered_bytes, klass, offset);
+		return;
+	}
+
+	// Iterate through each field of klass
+	gpointer iter = NULL;
+	MonoClassField* field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+
+		MonoType* fieldType = field->type;
+		if (fieldType->type == MONO_TYPE_VALUETYPE) {
+			record_struct_physical_lowering(lowered_bytes, mono_class_from_mono_type_internal(fieldType), offset + m_field_get_offset(field));
+		} else {
+			record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field));
+		}
+	}
+}
+
+static void record_struct_field_physical_lowering (GArray* lowered_bytes, MonoType* type, guint32 offset) {
+	if (type->type == MONO_TYPE_VALUETYPE) {
+		record_struct_physical_lowering(lowered_bytes, mono_class_from_mono_type_internal(type), offset);
+	} else {
+		SwiftPhysicalLoweringKind kind = SWIFT_OPAQUE;
+		if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8 || type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+			kind = SWIFT_INT64;
+		} else if (type->type == MONO_TYPE_R4) {
+			kind = SWIFT_FLOAT;
+		} else if (type->type == MONO_TYPE_R8) {
+			kind = SWIFT_DOUBLE;
+		}
+
+		set_lowering_range(lowered_bytes, offset, mono_type_size(type, NULL), kind);
+	}
+}
+
+SwiftPhysicalLowering
+mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout)
+{
+	g_assert (!native_layout);
+	SwiftPhysicalLowering lowering = { 0 };
+
+	// Normalize pointer types to IntPtr.
+	// We don't need to care about specific pointer types at this ABI level.
+	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		type = m_class_get_byval_arg (mono_defaults.int_class);
+	}
+
+	if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
+		lowering.byReference = FALSE;
+		return lowering;
+	}
+
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	GArray* lowered_bytes = g_array_sized_new(FALSE, TRUE, sizeof(SwiftPhysicalLoweringKind), m_class_get_instance_size(klass));
+	
+	// Loop through all fields and get the physical lowering for each field
+	record_struct_physical_lowering(lowered_bytes, klass, 0);
+
+	struct _SwiftInterval {
+		guint32 start;
+		guint32 size;
+		SwiftPhysicalLoweringKind kind;
+	};
+
+	GArray* intervals = g_array_new(FALSE, TRUE, sizeof(struct _SwiftInterval));
+
+	// Now we'll build the intervals from the lowered_bytes array
+	for (int i = 0; i < lowered_bytes->len; ++i) {
+        	// Don't create an interval for empty bytes
+		if (g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, i) == SWIFT_EMPTY) {
+			continue;
+		}
+
+		SwiftPhysicalLoweringKind current = g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, i);
+
+		bool start_new_interval =
+			// We're at the start of the type
+			i == 0
+			// We're starting a new float (as we're aligned)
+			|| (i == ALIGN_TO(i, 4) && current == SWIFT_FLOAT)
+			// We're starting a new double or int64_t (as we're aligned)
+			|| (i == ALIGN_TO(i, 8) && (current == SWIFT_DOUBLE || current == SWIFT_INT64))
+			// We've changed interval types
+			|| current != g_array_index(lowered_bytes, SwiftPhysicalLoweringKind, i - 1);
+		
+		if (start_new_interval) {
+			struct _SwiftInterval interval = { i, 1, current };
+			g_array_append_val(intervals, interval);
+		} else {
+			// Extend the current interval
+			(g_array_index(intervals, struct _SwiftInterval, intervals->len - 1)).size++;
+		}
+	}
+
+	// We've now produced the intervals, so we can release the lowered bytes
+	g_array_free(lowered_bytes, TRUE);
+
+	// Merge opaque intervals that are in the same pointer-sized block
+	for (int i = 0; i < intervals->len - 1; ++i) {
+		struct _SwiftInterval current = g_array_index(intervals, struct _SwiftInterval, i);
+		struct _SwiftInterval next = g_array_index(intervals, struct _SwiftInterval, i + 1);
+
+		if (current.kind == SWIFT_OPAQUE && next.kind == SWIFT_OPAQUE && current.start / TARGET_SIZEOF_VOID_P == next.start / TARGET_SIZEOF_VOID_P) {
+			current.size = next.start + next.size - current.start;
+			g_array_remove_index(intervals, i + 1);
+			i--;
+		}
+	}
+
+	// Now that we have the intervals, we can calculate the lowering
+	MonoTypeEnum lowered_types[4];
+	guint32 offsets[4];
+	guint32 num_lowered_types = 0;
+	
+	for (int i = 0; i < intervals->len; ++i, ++num_lowered_types) {
+		if (num_lowered_types == 4) {
+			// We can't handle more than 4 fields
+			lowering.byReference = TRUE;
+			g_array_free(intervals, TRUE);
+			return lowering;
+		}
+
+		struct _SwiftInterval interval = g_array_index(intervals, struct _SwiftInterval, i);
+		
+		offsets[num_lowered_types] = interval.start;
+
+		switch (interval.kind) {
+			case SWIFT_INT64:
+				lowered_types[num_lowered_types] = MONO_TYPE_I8;
+				break;
+			case SWIFT_FLOAT:
+				lowered_types[num_lowered_types] = MONO_TYPE_R4;
+				break;
+			case SWIFT_DOUBLE:
+				lowered_types[num_lowered_types] = MONO_TYPE_R8;
+				break;
+			case SWIFT_OPAQUE:
+			{
+				// We need to split the opaque ranges into integer parameters.
+				// As part of this splitting, we must ensure that we don't introduce alignment padding.
+				// This lowering algorithm should produce a lowered type sequence that would have the same padding for
+				// a naturally-aligned struct with the lowered fields as the original type has.
+				// This algorithm intends to split the opaque range into the least number of lowered elements that covers the entire range.
+				// The lowered range is allowed to extend past the end of the opaque range (including past the end of the struct),
+				// but not into the next non-empty interval.
+				// However, due to the properties of the lowering (the only non-8 byte elements of the lowering are 4-byte floats),
+				// we'll never encounter a scneario where we need would need to account for a correctly-aligned
+				// opaque range of > 4 bytes that we must not pad to 8 bytes.
+
+
+				// As long as we need to fill more than 4 bytes and the sequence is currently 8-byte aligned, we'll split into 8-byte integers.
+				// If we have more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
+				// If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
+				// If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
+				guint32 opaque_interval_start = interval.start;
+				guint32 remaining_interval_size = interval.size;
+				for (;remaining_interval_size > 0; num_lowered_types++) {
+					if (num_lowered_types == 4) {
+						// We can't handle more than 4 fields
+						lowering.byReference = TRUE;
+						g_array_free(intervals, TRUE);
+						return lowering;
+					}
+
+					offsets[num_lowered_types] = opaque_interval_start;
+
+					if (remaining_interval_size > 8 && (opaque_interval_start % 8 == 0)) {
+						lowered_types[num_lowered_types] = MONO_TYPE_I8;
+						remaining_interval_size -= 8;
+						opaque_interval_start += 8;
+					} else if (remaining_interval_size > 4 && (opaque_interval_start % 4 == 0)) {
+						lowered_types[num_lowered_types] = MONO_TYPE_I4;
+						remaining_interval_size -= 4;
+						opaque_interval_start += 4;
+					} else if (remaining_interval_size > 2 && (opaque_interval_start % 2 == 0)) {
+						lowered_types[num_lowered_types] = MONO_TYPE_I2;
+						remaining_interval_size -= 2;
+						opaque_interval_start += 2;
+					} else {
+						lowered_types[num_lowered_types] = MONO_TYPE_U1;
+						remaining_interval_size -= 1;
+						opaque_interval_start += 1;
+					}
+				}
+			}
+		}
+	}
+
+	memcpy(lowering.loweredElements, lowered_types, num_lowered_types * sizeof(MonoTypeEnum));
+	memcpy(lowering.offsets, offsets, num_lowered_types * sizeof(guint32));
+	lowering.numLoweredElements = num_lowered_types;
+	lowering.byReference = FALSE;
+
+	return lowering;
+}
