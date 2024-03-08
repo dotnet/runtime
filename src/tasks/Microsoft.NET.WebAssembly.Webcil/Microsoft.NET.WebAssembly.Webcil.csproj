@@ -8,9 +8,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsShipping>true</IsShipping>
-    <!-- this assembly should produce a non-shipping package, because it will be used by BrowserDebugProxy -->
-    <IsShippingPackage>false</IsShippingPackage>
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -23,5 +22,4 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="..\Common\IsExternalInit.cs" />
   </ItemGroup>
-  <Target Name="GetFilesToPackage" />
 </Project>
