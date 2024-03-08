@@ -44,6 +44,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FeatureGuardSubstitutionsDisabled ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task InitField ()
 		{
 			return RunTest (allowMissingWarnings: true);
