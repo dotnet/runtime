@@ -12,11 +12,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Substitutions
 {
-	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" })]
 	[SetupCompileResource ("FeatureGuardSubstitutions.xml", "ILLink.Substitutions.xml")]
-	[IgnoreSubstitutions (false)]
+	[IgnoreSubstitutions (false)] 
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch", "true")]
@@ -30,10 +29,17 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			FeatureGuardPrecedence.Test ();
 		}
 
+		[Kept]
 		class DefineFeatureGuard {
+			[Kept]
+			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 			[FeatureGuard (typeof(RequiresDynamicCodeAttribute))]
-			static bool GuardDynamicCode => RuntimeFeature.IsDynamicCodeSupported;
+			static bool GuardDynamicCode {
+				[Kept]
+				get => RuntimeFeature.IsDynamicCodeSupported;
+			}
 
+			[Kept]
 			static void TestGuardDynamicCode ()
 			{
 				if (GuardDynamicCode)
@@ -43,15 +49,32 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
 
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
+
 			static void TestGuardUnreferencedCode ()
 			{
 				if (GuardUnreferencedCode)
 					RequiresUnreferencedCode ();
 			}
 
+			[Kept]
+			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 			[FeatureGuard (typeof(RequiresAssemblyFilesAttribute))]
-			static bool GuardAssemblyFiles => TestFeatures.IsAssemblyFilesSupported;
+			static bool GuardAssemblyFiles {
+				[Kept]
+				get => TestFeatures.IsAssemblyFilesSupported;
+			}
 
+			[Kept]
+			// Linker doesn't treat RequiresAssemblyFilesAttribute as a disabled feature, so it's not removed.
 			static void TestGuardAssemblyFiles ()
 			{
 				if (GuardAssemblyFiles)
@@ -63,6 +86,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
+
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
 
 			static void TestMultipleGuards ()
 			{
@@ -88,6 +121,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardUnreferencedCodeIndirect => UnreferencedCodeIndirect.GuardUnreferencedCode;
 
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
+
 			static void TestIndirectGuard ()
 			{
 				if (GuardUnreferencedCodeIndirect)
@@ -98,6 +141,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			static bool FeatureSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", out bool isEnabled) && isEnabled;
 
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer)] // Analyzer doesn't respect FeatureSwitchDefinition or feature settings
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
+
+			[Kept]
 			static void TestFeatureSwitch ()
 			{
 				if (FeatureSwitch)
@@ -108,6 +161,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard")]
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool FeatureSwitchAndGuard => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard", out bool isEnabled) && isEnabled;
+
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
 
 			static void TestFeatureSwitchAndGuard ()
 			{
@@ -122,6 +185,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardUnreferencedCodeCycle => TestFeatures.IsUnreferencedCodeSupported;
+
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
 
 			static void TestFeatureDependencyCycle1 ()
 			{
@@ -147,12 +220,22 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardUnreferencedCodeCycle2 => TestFeatures.IsUnreferencedCodeSupported;
 
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
 			static void TestFeatureDependencyCycle2 ()
 			{
 				if (GuardUnreferencedCodeCycle2)
 					RequiresUnreferencedCode ();
 			}
 
+			[Kept]
 			public static void Test ()
 			{
 				TestGuardDynamicCode ();
@@ -167,12 +250,24 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			}
 		}
 
+		[Kept]
 		class FeatureGuardPrecedence {
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch")]
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardAndSwitch => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch", out bool isEnabled) && isEnabled;
 
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.1",
+				"stloc.0",
+				"ldloc.0",
+				"pop",
+				"call System.Void Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions::RequiresUnreferencedCode()",
+				"nop",
+				"ret"
+			})]
 			// ILLink/ILCompiler ignore FeatureGuard on properties that also have FeatureSwitchDefinition
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestSwitchWinsOverGuard ()
@@ -181,11 +276,19 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 					RequiresUnreferencedCode ();
 			}
 
+			[Kept]
+			[KeptAttributeAttribute (typeof (FeatureSwitchDefinitionAttribute))]
+			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchNotSet")]
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
-			static bool GuardAndSwitchNotSet => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchNotSet", out bool isEnabled) && isEnabled;
+			static bool GuardAndSwitchNotSet {
+				[Kept]
+				get => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchNotSet", out bool isEnabled) && isEnabled;
+			}
 
+			[Kept]
+			// No IL modifications because feature is not set, and FeatureGuard is ignored due to FeatureSwitchDefinition.
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestSwitchNotSetWinsOverGuard ()
 			{
@@ -196,6 +299,17 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardWithXml => TestFeatures.IsUnreferencedCodeSupported;
 
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.1",
+				"stloc.0",
+				"ldloc.0",
+				"pop",
+				"call System.Void Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions::RequiresUnreferencedCode()",
+				"nop",
+				"ret"
+			})]
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestXmlWinsOverGuard ()
 			{
@@ -203,30 +317,57 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 					RequiresUnreferencedCode ();
 			}
 
+			[KeptAttributeAttribute (typeof (FeatureSwitchDefinitionAttribute))]
+			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.SwitchWithXml")]
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool SwitchWithXml => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.SwitchWithXml", out bool isEnabled) && isEnabled;
 
+			[Kept]
 			// XML substitutions win despite FeatureSwitchDefinition and feature settings.
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.1",
+				"stloc.0",
+				"ldloc.0",
+				"pop",
+				"call System.Void Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions::RequiresUnreferencedCode()",
+				"nop",
+				"ret"
+			})]
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestXmlWinsOverSwitch () {
 				if (SwitchWithXml)
 					RequiresUnreferencedCode ();
 			}
 
+			[KeptAttributeAttribute (typeof (FeatureSwitchDefinitionAttribute))]
+			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardPrecedence.GuardAndSwitchWithXml")]
 			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 			static bool GuardAndSwitchWithXml => AppContext.TryGetSwitch ("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitchWithXml", out bool isEnabled) && isEnabled;
 
+			[Kept]
 			// XML substitutions win despite FeatureSwitchDefinition and feature settings.
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.1",
+				"stloc.0",
+				"ldloc.0",
+				"pop",
+				"call System.Void Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions::RequiresUnreferencedCode()",
+				"nop",
+				"ret"
+			})]
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestXmlWinsOverGuardAndSwitch () {
 				if (GuardAndSwitchWithXml)
 					RequiresUnreferencedCode ();
 			}
 
+			[Kept]
 			public static void Test () {
 				TestSwitchWinsOverGuard ();
 				TestSwitchNotSetWinsOverGuard ();
@@ -236,12 +377,18 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			}
 		}
 
+		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
 		[RequiresDynamicCode (nameof (RequiresDynamicCode))]
 		static void RequiresDynamicCode () { }
 
+		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
 		static void RequiresUnreferencedCode () { }
 
+		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
 		[RequiresAssemblyFiles (nameof (RequiresAssemblyFiles))]
 		static void RequiresAssemblyFiles () { }
 	}
