@@ -59,13 +59,8 @@ jobs:
         - evaluate_paths
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
-      - ${{ if eq(parameters.dependsOn[0], '') }}:
-        - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
-          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
-        - ${{ else }}:
-          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-          - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-            - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+      - ${{ else }}:
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
       workspace:
         clean: all
@@ -151,7 +146,7 @@ jobs:
           SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
           SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
           SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-          
+
           ${{ if ne(parameters.scenarios[0], '') }}:
             scenarios: ${{ parameters.scenarios }}
 

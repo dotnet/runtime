@@ -345,6 +345,7 @@ extends:
             SuperPmiCollectionName: libraries_tests
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedBuildConfigOverride: checked
 
       #
       # Collection of libraries test run: no_tiered_compilation
@@ -375,3 +376,4 @@ extends:
             SuperPmiCollectionName: libraries_tests_no_tiered_compilation
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedBuildConfigOverride: checked
