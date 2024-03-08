@@ -5072,11 +5072,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
 
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
@@ -5087,6 +5082,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
+        // Disable profile checks now.
+        // Over time we will move this further and further back in the phase list, as we fix issues.
+        //
+        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
@@ -5095,6 +5095,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
     }
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Determine start of cold region if we are hot/cold splitting
     //
