@@ -92,9 +92,6 @@
     <WasmXHarnessMonoArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsWasmBackgroundExec=true</WasmXHarnessMonoArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
-    <XunitShowProgress>true</XunitShowProgress>
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_THREAD_ID=true</WasmXHarnessMonoArgs>
-
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
     <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
     <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
