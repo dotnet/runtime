@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Mono.Linker
 {
-	public static class DictionaryExtensions
+	internal static class DictionaryExtensions
 	{
 		public static void AddToList<TKey, TElement> (this Dictionary<TKey, List<TElement>> me, TKey key, TElement value)
 			where TKey : notnull
