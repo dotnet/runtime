@@ -21,7 +21,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test to ensure that the task and task scheduler IDs are unique when tasks are started
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskIDTest()
         {
             // Read Parameters

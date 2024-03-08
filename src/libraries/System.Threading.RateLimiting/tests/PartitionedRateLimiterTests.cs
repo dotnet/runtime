@@ -393,7 +393,7 @@ namespace System.Threading.RateLimiting.Tests
             Assert.True(lease.IsAcquired);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task Create_WithReplenishingLimiterReplenishesAutomatically()
         {
             using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>

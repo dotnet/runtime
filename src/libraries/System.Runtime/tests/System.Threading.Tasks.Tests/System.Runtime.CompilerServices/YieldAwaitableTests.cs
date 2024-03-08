@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Tests
     public class YieldAwaitableTests
     {
         // awaiting Task.Yield
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunAsyncYieldAwaiterTests()
         {
             // Test direct usage works even though it's not encouraged

@@ -30,7 +30,7 @@ namespace System.Threading.Tests
             barrier.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void BarrierCancellationTestsCancelAfterWait_Negative()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();

@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Tests
     {
         #region TaskFactory.ContinueWhenAny tests
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWhenAnyTests()
         {
             TaskCompletionSource<int> tcs = null;
