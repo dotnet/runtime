@@ -7706,11 +7706,11 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins,
-                          emitAttr    attr,
-                          regNumber   reg,
-                          ssize_t     imm,
-                          insOpts     opt, /* = INS_OPTS_NONE */
+void emitter::emitIns_R_I(instruction     ins,
+                          emitAttr        attr,
+                          regNumber       reg,
+                          ssize_t         imm,
+                          insOpts         opt, /* = INS_OPTS_NONE */
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                           DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
@@ -7997,13 +7997,13 @@ void emitter::emitIns_R_I(instruction ins,
             if (sopt == INS_SCALABLE_OPTS_IMM_BITMASK)
             {
                 bmi.immNRS = 0;
-                canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-                
+                canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+
                 if (!useMovDisasmForBitMask(imm))
                 {
                     ins = INS_sve_dupm;
                 }
-                
+
                 imm = bmi.immNRS; // iiiiiiiiiiiii
                 assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
                 fmt = IF_SVE_BT_1A;
@@ -8078,8 +8078,8 @@ void emitter::emitIns_R_I(instruction ins,
             assert(isVectorRegister(reg)); // ddddd
 
             bmi.immNRS = 0;
-            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm = bmi.immNRS; // iiiiiiiiiiiii
+            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm        = bmi.immNRS; // iiiiiiiiiiiii
             assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             fmt = IF_SVE_BS_1A;
             break;
@@ -8093,12 +8093,12 @@ void emitter::emitIns_R_I(instruction ins,
             imm = -imm - 1;
 
             bmi.immNRS = 0;
-            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm = bmi.immNRS; // iiiiiiiiiiiii
+            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm        = bmi.immNRS; // iiiiiiiiiiiii
             assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             fmt = IF_SVE_BS_1A;
             break;
-        
+
         case INS_sve_eon:
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg)); // ddddd
@@ -8108,8 +8108,8 @@ void emitter::emitIns_R_I(instruction ins,
             imm = -imm - 1;
 
             bmi.immNRS = 0;
-            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm = bmi.immNRS; // iiiiiiiiiiiii
+            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm        = bmi.immNRS; // iiiiiiiiiiiii
             assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             fmt = IF_SVE_BS_1A;
             break;
@@ -8123,8 +8123,8 @@ void emitter::emitIns_R_I(instruction ins,
             imm = -imm - 1;
 
             bmi.immNRS = 0;
-            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm = bmi.immNRS; // iiiiiiiiiiiii
+            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            imm        = bmi.immNRS; // iiiiiiiiiiiii
             assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             fmt = IF_SVE_BS_1A;
             break;
@@ -8134,14 +8134,14 @@ void emitter::emitIns_R_I(instruction ins,
             assert(isVectorRegister(reg)); // ddddd
 
             bmi.immNRS = 0;
-            canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            fmt = IF_SVE_BT_1A;
+            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
+            fmt        = IF_SVE_BT_1A;
 
             if (useMovDisasmForBitMask(imm))
             {
                 ins = INS_sve_mov;
             }
-            
+
             imm = bmi.immNRS; // iiiiiiiiiiiii
             assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
             break;
@@ -24713,7 +24713,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_BS_1A: // ..............ii iiiiiiiiiiiddddd -- SVE bitwise logical with immediate (unpredicated)
         case IF_SVE_BT_1A: // ..............ii iiiiiiiiiiiddddd -- SVE broadcast bitmask immediate
-            imm = emitGetInsSC(id);
+            imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
             code |= (imm << 5);
@@ -28951,7 +28951,7 @@ void emitter::emitDispInsHelp(
             }
             break;
 
-        // <Zdn>.<T>, <Zdn>.<T>, #<const> 
+        // <Zdn>.<T>, <Zdn>.<T>, #<const>
         case IF_SVE_BS_1A: // ..............ii iiiiiiiiiiiddddd -- SVE bitwise logical with immediate (unpredicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
 
@@ -28960,7 +28960,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_BT_1A: // ..............ii iiiiiiiiiiiddddd -- SVE broadcast bitmask immediate
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             bmi.immNRS = (unsigned)emitGetInsSC(id);
-            imm = emitDecodeBitMaskImm(bmi, optGetSveElemsize(id->idInsOpt()));
+            imm        = emitDecodeBitMaskImm(bmi, optGetSveElemsize(id->idInsOpt()));
             emitDispImm(imm, false); // iiiiiiiiiiiii
             break;
 

@@ -5432,24 +5432,40 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED); // ZIP2 <Zd>.Q, <Zn>.Q, <Zm>.Q
 
     // IF_SVE_BS_1A
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0x00000000000000AA, INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V1, 0xFFFFFFFFFFFFFF55, INS_OPTS_SCALABLE_B); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V2, 0x000000000000FF00, INS_OPTS_SCALABLE_H); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V3, 0xFFFFFFFFFFFF00FF, INS_OPTS_SCALABLE_H); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_eor, EA_SCALABLE, REG_V4, 0x0000000003FFC000, INS_OPTS_SCALABLE_S); // EOR <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_eon, EA_SCALABLE, REG_V5, 0xFFFFFFFFFC003FFF, INS_OPTS_SCALABLE_S); // EON <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_orr, EA_SCALABLE, REG_V6, 0x00FFFFF000000000, INS_OPTS_SCALABLE_D); // ORR <Zdn>.<T>, <Zdn>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_orn, EA_SCALABLE, REG_V7, 0xFF00000FFFFFFFFF, INS_OPTS_SCALABLE_D); // ORN <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V0, 0x00000000000000AA,
+                            INS_OPTS_SCALABLE_B); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V1, 0xFFFFFFFFFFFFFF55,
+                            INS_OPTS_SCALABLE_B); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_and, EA_SCALABLE, REG_V2, 0x000000000000FF00,
+                            INS_OPTS_SCALABLE_H); // AND <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_bic, EA_SCALABLE, REG_V3, 0xFFFFFFFFFFFF00FF,
+                            INS_OPTS_SCALABLE_H); // BIC <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_eor, EA_SCALABLE, REG_V4, 0x0000000003FFC000,
+                            INS_OPTS_SCALABLE_S); // EOR <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_eon, EA_SCALABLE, REG_V5, 0xFFFFFFFFFC003FFF,
+                            INS_OPTS_SCALABLE_S); // EON <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_orr, EA_SCALABLE, REG_V6, 0x00FFFFF000000000,
+                            INS_OPTS_SCALABLE_D); // ORR <Zdn>.<T>, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_orn, EA_SCALABLE, REG_V7, 0xFF00000FFFFFFFFF,
+                            INS_OPTS_SCALABLE_D); // ORN <Zdn>.<T>, <Zdn>.<T>, #<const>
 
     // IF_SVE_BT_1A
-    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V0, 0x0000000000000070, INS_OPTS_SCALABLE_B); // DUPM <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V1, 0x0000000000003FFC, INS_OPTS_SCALABLE_H); // DUPM <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V2, 0x0000000000007000, INS_OPTS_SCALABLE_S); // DUPM <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V3, 0xFFFFFFFFFFFF0000, INS_OPTS_SCALABLE_D); // DUPM <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0x000000000000003F, INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, 0x0000000000000700, INS_OPTS_SCALABLE_H, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 0x0000000000FFFFF0, INS_OPTS_SCALABLE_S, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 0xFFFFF00000FFFFFF, INS_OPTS_SCALABLE_D, INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V0, 0x0000000000000070,
+                            INS_OPTS_SCALABLE_B); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V1, 0x0000000000003FFC,
+                            INS_OPTS_SCALABLE_H); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V2, 0x0000000000007000,
+                            INS_OPTS_SCALABLE_S); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_dupm, EA_SCALABLE, REG_V3, 0xFFFFFFFFFFFF0000,
+                            INS_OPTS_SCALABLE_D); // DUPM <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0x000000000000003F, INS_OPTS_SCALABLE_B,
+                            INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, 0x0000000000000700, INS_OPTS_SCALABLE_H,
+                            INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 0x0000000000FFFFF0, INS_OPTS_SCALABLE_S,
+                            INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 0xFFFFF00000FFFFFF, INS_OPTS_SCALABLE_D,
+                            INS_SCALABLE_OPTS_IMM_BITMASK); // MOV <Zd>.<T>, #<const>
 
     // IF_SVE_BV_2A
     theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V15, REG_P5, 0,

@@ -1009,15 +1009,21 @@ static bool isValidImmNRS(size_t value, emitAttr size)
     return (value >= 0) && (value < 0x2000);
 } // any unsigned 13-bit immediate
 
+// Returns one of the following patterns, depending on width, where `mn` is imm:
+// 0xFFFFFFFFFFFFFFmn, 0xFFFFFFmnFFFFFFmn, 0xFFmnFFmnFFmnFFmn,
+// 0xFFFFFFFFFFFFmnFF, 0xFFFFmnFFFFFFmnFF, 0xmnFFmnFFmnFFmnFF,
+// 0xmnmnmnmnmnmnmnmn
 static ssize_t getBitMaskOnes(const ssize_t imm, const unsigned width)
 {
     assert(isValidUimm16(imm));
+    assert((width % 8) == 0);
+    assert(isValidGeneralLSDatasize((emitAttr)(width / 8)));
     const unsigned immWidth = isValidUimm8(imm) ? 8 : 16;
 
     const unsigned numIterations = 64 / width;
-    const ssize_t ones = ((UINT64)-1) >> (64 - width + immWidth);
-    ssize_t mask = 0;
-    
+    const ssize_t  ones          = ((UINT64)-1) >> (64 - width + immWidth);
+    ssize_t        mask          = 0;
+
     for (unsigned i = 0; i < numIterations; i++)
     {
         mask <<= width;
@@ -1027,12 +1033,18 @@ static ssize_t getBitMaskOnes(const ssize_t imm, const unsigned width)
     return mask;
 }
 
+// Returns one of the following patterns, depending on width, where `mn` is imm:
+// 0x00000000000000mn, 0x000000mn000000mn, 0x00mn00mn00mn00mn,
+// 0x000000000000mn00, 0x0000mn000000mn00, 0xmn00mn00mn00mn00,
+// 0xmnmnmnmnmnmnmnmn
 static ssize_t getBitMaskZeroes(const ssize_t imm, const unsigned width)
 {
     assert(isValidUimm16(imm));
+    assert((width % 8) == 0);
+    assert(isValidGeneralLSDatasize((emitAttr)(width / 8)));
     const unsigned numIterations = 64 / width;
-    ssize_t mask = 0;
-    
+    ssize_t        mask          = 0;
+
     for (unsigned i = 0; i < numIterations; i++)
     {
         mask <<= width;
@@ -1042,14 +1054,21 @@ static ssize_t getBitMaskZeroes(const ssize_t imm, const unsigned width)
     return mask;
 }
 
+// For the IF_SVE_BT_1A encoding, we prefer the DUPM disasm for the following immediate patterns,
+// where 'mn' is some nonzero value:
+// 0xFFFFFFFFFFFFFFmn, 0x00000000000000mn, 0xFFFFFFFFFFFFmn00, 0x000000000000mn00
+// 0xFFFFFFmnFFFFFFmn, 0x000000mn000000mn, 0xFFFFmn00FFFFmn00, 0x0000mn000000mn00
+// 0xFFmnFFmnFFmnFFmn, 0x00mn00mn00mn00mn, 0xmn00mn00mn00mn00
+// 0xmnmnmnmnmnmnmnmn
+// Else, we prefer the MOV disasm.
 static bool useMovDisasmForBitMask(const ssize_t value)
 {
-    ssize_t imm = value & 0xFF;
+    ssize_t  imm = value & 0xFF;
     unsigned minFieldSize;
 
     if (imm == 0)
     {
-        imm = value & 0xFF00;
+        imm          = value & 0xFF00;
         minFieldSize = 16;
     }
     else
@@ -1060,7 +1079,7 @@ static bool useMovDisasmForBitMask(const ssize_t value)
     assert(isValidUimm16(imm));
 
     // Check for all possible bit field sizes
-    for (unsigned width = minFieldSize; width <= 64; width += BITS_PER_BYTE)
+    for (unsigned width = minFieldSize; width <= 64; width <<= 1)
     {
         if (value == getBitMaskZeroes(imm, width))
         {
@@ -1557,11 +1576,11 @@ void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_I(instruction ins,
-                 emitAttr    attr,
-                 regNumber   reg,
-                 ssize_t     imm,
-                 insOpts opt = INS_OPTS_NONE,
+void emitIns_R_I(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg,
+                 ssize_t         imm,
+                 insOpts         opt  = INS_OPTS_NONE,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
