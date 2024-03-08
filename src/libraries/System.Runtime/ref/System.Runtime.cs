@@ -5614,6 +5614,16 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public bool Equals(System.TimeSpan obj) { throw null; }
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
+        public static System.TimeSpan FromDays(int days) { throw null; }
+        public static System.TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromHours(int hours) { throw null; }
+        public static System.TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
@@ -8417,6 +8427,18 @@ namespace System.Diagnostics.CodeAnalysis
         public ExperimentalAttribute(string diagnosticId) { }
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    public sealed class FeatureGuardAttribute : System.Attribute
+    {
+        public FeatureGuardAttribute(System.Type featureType) { }
+        public System.Type FeatureType { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property, Inherited = false)]
+    public sealed class FeatureSwitchDefinitionAttribute : Attribute
+    {
+        public FeatureSwitchDefinitionAttribute(string switchName) { }
+        public string SwitchName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
@@ -11589,6 +11611,7 @@ namespace System.Reflection
         NotNullableValueTypeConstraint = 8,
         DefaultConstructorConstraint = 16,
         SpecialConstraintMask = 28,
+        AllowByRefLike = 32,
     }
     public partial interface ICustomAttributeProvider
     {
@@ -13036,6 +13059,11 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    public sealed partial class ParamCollectionAttribute : System.Attribute
+    {
+        public ParamCollectionAttribute() { }
+    }
     public partial struct PoolingAsyncValueTaskMethodBuilder
     {
         private object _dummy;
@@ -13103,6 +13131,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeFeature
     {
         public const string ByRefFields = "ByRefFields";
+        public const string ByRefLikeGenerics = "ByRefLikeGenerics";
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
         public const string NumericIntPtr = "NumericIntPtr";

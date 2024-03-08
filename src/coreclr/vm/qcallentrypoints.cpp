@@ -24,7 +24,6 @@
 #include "floatdouble.h"
 #include "floatsingle.h"
 #include "comdatetime.h"
-#include "compatibilityswitch.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
@@ -94,6 +93,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_FindMethodHandle)
     DllImportEntry(Delegate_InternalEqualMethodHandles)
     DllImportEntry(Environment_Exit)
+    DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
@@ -351,6 +351,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
     DllImportEntry(IsEventSourceLoggingEnabled)
     DllImportEntry(LogEventSource)
+    DllImportEntry(EventSource_GetClrConfig)
 #endif
 #if defined(FEATURE_PERFTRACING)
     DllImportEntry(LogThreadPoolWorkerThreadStart)

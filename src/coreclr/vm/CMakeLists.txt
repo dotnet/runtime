@@ -300,7 +300,6 @@ set(VM_SOURCES_WKS
     comdependenthandle.cpp
     comdynamic.cpp
     commodule.cpp
-    compatibilityswitch.cpp
     comsynchronizable.cpp
     comthreadpool.cpp
     comutilnative.cpp
@@ -402,7 +401,6 @@ set(VM_HEADERS_WKS
     comdependenthandle.h
     comdynamic.h
     commodule.h
-    compatibilityswitch.h
     comsynchronizable.h
     comthreadpool.h
     comutilnative.h

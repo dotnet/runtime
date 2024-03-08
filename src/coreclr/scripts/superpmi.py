@@ -508,7 +508,8 @@ def create_artifacts_base_name(coreclr_args, mch_file):
 def read_csv(path):
     with open(path, encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file)
-        return list(reader)
+        for row in reader:
+            yield row
 
 def decode_clrjit_build_string(clrjit_path):
     """ Obtain information about the compiler that was used to compile the clrjit at the specified path.
@@ -1709,8 +1710,8 @@ class SuperPMIReplay:
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 (return_code, replay_output) = run_and_log_return_output(command)
 
-                details = read_csv(details_info_file)
-                print_superpmi_result(return_code, self.coreclr_args, self.aggregate_replay_metrics(details), None)
+                replay_metrics = self.aggregate_replay_metrics(details_info_file)
+                print_superpmi_result(return_code, self.coreclr_args, replay_metrics, None)
 
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
@@ -1751,8 +1752,8 @@ class SuperPMIReplay:
 
         return result
 
-    def aggregate_replay_metrics(self, details):
-        """ Given the CSV details file output by SPMI for a replay aggregate the
+    def aggregate_replay_metrics(self, details_file):
+        """ Given a path to a CSV details file output by SPMI for a replay aggregate the
         successes, misses and failures
 
         Returns:
@@ -1762,7 +1763,7 @@ class SuperPMIReplay:
         num_successes = 0
         num_misses = 0
         num_failures = 0
-        for row in details:
+        for row in read_csv(details_file):
             result = row["Result"]
             if result == "Success":
                 num_successes += 1
@@ -1781,7 +1782,7 @@ class SuperPMIReplay:
 def html_color(color, text):
     return "<span style=\"color:{}\">{}</span>".format(color, text)
 
-def calculate_improvements_regressions(base_diff_sizes):
+def calculate_size_improvements_regressions(base_diff_sizes):
     num_improvements = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size < base_size)
     num_regressions = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size > base_size)
     num_same = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size == base_size)
@@ -1790,6 +1791,36 @@ def calculate_improvements_regressions(base_diff_sizes):
     byte_regressions = sum(max(0, diff_size - base_size) for (base_size, diff_size) in base_diff_sizes)
 
     return (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions)
+
+def calculate_perfscore_improvements_regressions(base_diff_perfscores):
+    num_ps_improvements = 0
+    num_ps_regressions = 0
+    num_ps_same = 0
+    sum_log_ps_improvements = 0
+    sum_log_ps_regressions = 0
+    for (base_ps, diff_ps) in base_diff_perfscores:
+        base_ps = max(base_ps, 1.0)
+        diff_ps = max(diff_ps, 1.0)
+        log_relative_perfscore = math.log(diff_ps / base_ps)
+
+        if abs(diff_ps - base_ps) < 0.01:
+            num_ps_same += 1
+        elif diff_ps < base_ps:
+            num_ps_improvements += 1
+            sum_log_ps_improvements += log_relative_perfscore
+        elif base_ps < diff_ps:
+            num_ps_regressions += 1
+            sum_log_ps_regressions += log_relative_perfscore
+
+    ps_improvements = 0.0
+    if num_ps_improvements > 0:
+        ps_improvements = math.exp(sum_log_ps_improvements / num_ps_improvements) - 1
+
+    ps_regressions = 0.0
+    if num_ps_regressions > 0:
+        ps_regressions = math.exp(sum_log_ps_regressions / num_ps_regressions) - 1
+
+    return (num_ps_improvements, num_ps_regressions, num_ps_same, ps_improvements, ps_regressions)
 
 def format_delta(base, diff):
     plus_if_positive = "+" if diff >= base else ""
@@ -1860,8 +1891,8 @@ class DetailsSection:
     def __exit__(self, *args):
         self.write_fh.write("\n\n</div></details>\n")
 
-def aggregate_diff_metrics(details):
-    """ Given the CSV details file output by SPMI for a diff aggregate the metrics.
+def aggregate_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff aggregate the metrics.
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
@@ -1873,7 +1904,13 @@ def aggregate_diff_metrics(details):
     diff_minopts = base_minopts.copy()
     diff_fullopts = base_minopts.copy()
 
-    for row in details:
+    # Project out these fields for the saved diffs, to use for further
+    # processing. Saving everything into memory is costly on memory when there
+    # are a large number of diffs.
+    diffs_fields = ["Context", "Context size", "Base size", "Diff size", "Base PerfScore", "Diff PerfScore"]
+    diffs = []
+
+    for row in read_csv(details_file):
         base_result = row["Base result"]
 
         if row["MinOpts"] == "True":
@@ -1926,6 +1963,7 @@ def aggregate_diff_metrics(details):
             if row["Has diff"] == "True":
                 base_dict["Contexts with diffs"] += 1
                 diff_dict["Contexts with diffs"] += 1
+                diffs.append({key: row[key] for key in diffs_fields})
 
     base_overall = base_minopts.copy()
     for k in base_overall.keys():
@@ -1948,7 +1986,8 @@ def aggregate_diff_metrics(details):
             d["Relative PerfScore Geomean (Diffs)"] = 1
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
-            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
+            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts},
+            diffs)
 
 
 class SuperPMIReplayAsmDiffs:
@@ -2150,8 +2189,7 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                details = read_csv(detailed_info_file)
-                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
 
                 print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -2171,7 +2209,6 @@ class SuperPMIReplayAsmDiffs:
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
-                diffs = [r for r in details if r["Has diff"] == "True"]
                 if any(diffs):
                     files_with_asm_diffs.append(mch_file)
 
@@ -2372,16 +2409,25 @@ class SuperPMIReplayAsmDiffs:
                     # If we are not specifying custom metrics then print a summary here, otherwise leave the summarization up to jit-analyze.
                     if self.coreclr_args.metrics is None:
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                        (num_size_improvements, num_size_regressions, num_size_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
 
-                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-
-                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions, {:,d} same size)".format(
-                            len(diffs),
-                            num_improvements,
-                            num_regressions,
-                            num_same,
+                        num_diffs_str = "{:,d} contexts with diffs".format(len(diffs))
+                        logging.info("{} ({:,d} size improvements, {:,d} size regressions, {:,d} same size)".format(
+                            num_diffs_str,
+                            num_size_improvements,
+                            num_size_regressions,
+                            num_size_same,
                             byte_improvements,
                             byte_regressions))
+
+                        base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
+                        (num_ps_improvements, num_ps_regressions, num_ps_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
+
+                        logging.info("{} ({:,d} PerfScore improvements, {:,d} PerfScore regressions, {:,d} same PerfScore)".format(
+                            ' ' * len(num_diffs_str),
+                            num_ps_improvements,
+                            num_ps_regressions,
+                            num_ps_same))
 
                         if byte_improvements > 0 and byte_regressions > 0:
                             logging.info("  -{:,d}/+{:,d} bytes".format(byte_improvements, byte_regressions))
@@ -2389,6 +2435,13 @@ class SuperPMIReplayAsmDiffs:
                             logging.info("  -{:,d} bytes".format(byte_improvements))
                         elif byte_regressions > 0:
                             logging.info("  +{:,d} bytes".format(byte_regressions))
+
+                        if num_ps_improvements > 0 and num_ps_regressions > 0:
+                            logging.info("  {:.2f}%/+{:.2f}% PerfScore".format(ps_improvements * 100, ps_regressions * 100))
+                        elif num_ps_improvements > 0:
+                            logging.info("  {:.2f}% PerfScore".format(ps_improvements * 100))
+                        elif num_ps_regressions > 0:
+                            logging.info("  +{:.2f}% PerfScore".format(ps_regressions * 100))
 
                         logging.info("")
                         logging.info("")
@@ -2565,28 +2618,48 @@ class SuperPMIReplayAsmDiffs:
             # Next write a detailed section
             with DetailsSection(write_fh, "Details"):
                 if any_diffs:
-                    write_fh.write("#### Improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|PerfScore Overall (FullOpts)|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
+                    write_fh.write("#### Size improvements/regressions per collection\n\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
-                    def write_row(name, diffs, perfscore_geomean):
+                    def write_row(name, diffs):
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
-                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
+                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
                             name,
                             len(diffs),
                             html_color("green", "{:,d}".format(num_improvements)),
                             html_color("red", "{:,d}".format(num_regressions)),
                             html_color("blue", "{:,d}".format(num_same)),
                             html_color("green", "-{:,d}".format(byte_improvements)),
-                            html_color("red", "+{:,d}".format(byte_regressions)),
-                            "" if perfscore_geomean is None else format_pct(perfscore_geomean, 4)))
+                            html_color("red", "+{:,d}".format(byte_regressions))))
 
                     for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
-                        write_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] * 100 - 100)
+                        write_row(mch_file, diffs)
 
                     if len(asm_diffs) > 1:
-                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs], None)
+                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+
+                    write_fh.write("\n---\n\n")
+                    write_fh.write("#### PerfScore improvements/regressions per collection\n\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same PerfScore|Improvements (PerfScore)|Regressions (PerfScore)|PerfScore Overall in FullOpts|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
+
+                    def write_ps_row(name, diffs, perfscore_geomean):
+                        base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
+                        (num_improvements, num_regressions, num_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
+                            name,
+                            len(diffs),
+                            html_color("green", "{:,d}".format(num_improvements)),
+                            html_color("red", "{:,d}".format(num_regressions)),
+                            html_color("blue", "{:,d}".format(num_same)),
+                            format_pct(ps_improvements * 100),
+                            format_pct(ps_regressions * 100),
+                            format_pct(perfscore_geomean * 100, 4)))
+
+                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                        write_ps_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] - 1)
 
                     write_fh.write("\n---\n\n")
 
@@ -2922,8 +2995,7 @@ class SuperPMIReplayThroughputDiff:
                     command_string = " ".join(command)
                     logging.debug("'%s': Error return code: %s", command_string, return_code)
 
-                details = read_csv(detailed_info_file)
-                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
+                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = base_metrics["Overall"]["Diff executed instructions"]

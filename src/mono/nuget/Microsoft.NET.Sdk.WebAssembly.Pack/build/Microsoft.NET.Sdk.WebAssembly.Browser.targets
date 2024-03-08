@@ -223,7 +223,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
     </PropertyGroup>
-    
+
     <ItemGroup>
       <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
 
