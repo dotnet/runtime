@@ -49,6 +49,9 @@ Abstract:
 #include <sys/types.h>
 #include <unistd.h>
 #include <wctype.h>
+#if !defined(HOST_APPLE)
+#include <malloc.h>
+#endif
 
 #ifdef __cplusplus
 extern "C++"
@@ -3939,6 +3942,10 @@ inline char* _strdup(const char* a)
 {
     return strdup(a);
 }
+
+// Define the MSVC implementation of the alloca concept.
+// As this allocates on the current stack frame, use a macro instead of an inline function.
+#define _alloca(x) alloca(x)
 
 #ifdef __cplusplus
 extern "C++" {

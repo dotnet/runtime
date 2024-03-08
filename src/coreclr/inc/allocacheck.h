@@ -23,7 +23,9 @@
 
 #ifndef AllocaCheck_h
 #define AllocaCheck_h
-#include <malloc.h>			// for alloca itself
+#if !defined(HOST_APPLE)
+#include <malloc.h> // for alloca itself
+#endif
 
 #if defined(assert) && !defined(_ASSERTE)
 #define _ASSERTE assert

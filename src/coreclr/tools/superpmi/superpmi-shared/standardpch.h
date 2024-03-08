@@ -51,7 +51,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
+#if !defined(HOST_APPLE)
 #include <malloc.h>
+#endif
 #include <assert.h>
 #include <wchar.h>
 #include <specstrings.h>
