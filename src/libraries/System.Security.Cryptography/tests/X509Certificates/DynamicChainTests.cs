@@ -524,36 +524,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void CustomTrustMode_Anchors()
-        {
-            TestDataGenerator.MakeTestChain3(
-                out X509Certificate2 endEntityCert,
-                out X509Certificate2 intermediateCert,
-                out X509Certificate2 rootCert);
-
-            using (endEntityCert)
-            using (intermediateCert)
-            using (rootCert)
-            using (ChainHolder chainHolder = new ChainHolder())
-            {
-                X509Chain chain = chainHolder.Chain;
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomAnchorTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
-
-                if (PlatformDetection.IsNotWindows7)
-                {
-                    Assert.True(chain.Build(endEntityCert), "chain.Build");
-                }
-                else
-                {
-                    Assert.ThrowsAny<PlatformNotSupportedException>(() => chain.Build(endEntityCert));
-                }
-            }
-        }
-
-        [Fact]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -861,6 +831,91 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (rootCert)
             {
                 TestChain3(rootCert, intermediateCert, endEntityCert);
+            }
+        }
+
+        [Fact]
+        public static void CustomTrustMode_Anchor_Simple()
+        {
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomAnchorTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
+
+                AssertAnchorChainBuildsForPlatform(endEntityCert, chain);
+            }
+        }
+
+        [Fact]
+        public static void CustomTrustMode_Anchor_ShortestChain()
+        {
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomAnchorTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+
+                AssertAnchorChainBuildsForPlatform(endEntityCert, chain, chain =>
+                {
+                    Assert.Equal(2, chain.ChainElements.Count);
+                    Assert.Equal(endEntityCert.SubjectName.Name, chain.ChainElements[0].Certificate.SubjectName.Name);
+                    Assert.Equal(intermediateCert.SubjectName.Name, chain.ChainElements[1].Certificate.SubjectName.Name);
+                });
+            }
+        }
+
+        [Fact]
+        public static void CustomTrustMode_Anchor_WithExtraStore()
+        {
+            TestDataGenerator.MakeTestChain4(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert1,
+                out X509Certificate2 intermediateCert2,
+                out X509Certificate2 rootCert);
+
+            using (endEntityCert)
+            using (intermediateCert1)
+            using (intermediateCert2)
+            using (rootCert)
+            using (ChainHolder chainHolder = new())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomAnchorTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert2);
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+
+                AssertAnchorChainBuildsForPlatform(endEntityCert, chain, chain =>
+                {
+                    Assert.Equal(3, chain.ChainElements.Count);
+                    Assert.Equal(endEntityCert.SubjectName.Name, chain.ChainElements[0].Certificate.SubjectName.Name);
+                    Assert.Equal(intermediateCert1.SubjectName.Name, chain.ChainElements[1].Certificate.SubjectName.Name);
+                    Assert.Equal(intermediateCert2.SubjectName.Name, chain.ChainElements[2].Certificate.SubjectName.Name);
+                });
             }
         }
 
@@ -1180,6 +1235,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(
                     actualFlags.HasFlag(expectedFlags),
                     $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
+            }
+        }
+
+        private static void AssertAnchorChainBuildsForPlatform(X509Certificate2 certificate, X509Chain chain, Action<X509Chain> more = null)
+        {
+            if (PlatformDetection.IsNotWindows7)
+            {
+                Assert.True(chain.Build(certificate), "chain.Build");
+                more?.Invoke(chain);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => chain.Build(certificate));
             }
         }
     }
