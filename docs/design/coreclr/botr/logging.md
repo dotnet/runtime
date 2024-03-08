@@ -39,7 +39,9 @@ Alternative event consumers
 -----------------------
 
 For advanced scenarios, EventSource and the C++ event wrappers both support standard event tracing systems on their respective platforms (ETW on Windows, LTTNG on Linux). EventPipe itself does not integrate with these systems, but the runtime's layers on top of EventPipe will also use them if they are enabled.
-On Windows you can use standard [ETW](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/event-tracing-for-windows) tools like [WPR](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/windows-performance-recorder) with its '.NET Activity' scenario.
+
+On Windows you can use standard [ETW](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/event-tracing-for-windows) tools like [WPR](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/windows-performance-recorder) with its '.NET Activity' scenario. A convenient all-purpose tool for collecting and analyzing ETW traces on Windows is [PerfView](https://github.com/microsoft/perfview). To use PerfView you'll want to consult its [extensive documentation](http://htmlpreview.github.io/?https://github.com/Microsoft/perfview/blob/main/src/PerfView/SupportFiles/UsersGuide.htm) or go through the tutorial, but a basic starting point is to launch your application via the *Collect*->*Run* menu option, and then double-click the resulting recording in the explorer pane to the left in order to open it.
+
 On Linux you can use [LTTNG](https://lttng.org/), and the [perfcollect script](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/trace-perfcollect-lttng) is a useful tool you can use for a more ETW-like experience.
 
 StressLog
