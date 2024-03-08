@@ -98,9 +98,18 @@ namespace Mono.Linker
 				if (featureGuardAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
 					continue;
 
-				if (featureType.FullName == "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute") {
-					value = false;
-					return true;
+				if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
+					switch (featureType.Name) {
+					case "RequiresUnreferencedCodeAttribute":
+						return true;
+					case "RequiresDynamicCodeAttribute":
+						if (_context.FeatureSettings.TryGetValue (
+								"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
+								out bool isDynamicCodeSupported)
+							&& !isDynamicCodeSupported)
+							return true;
+						break;
+					}
 				}
 			}
 

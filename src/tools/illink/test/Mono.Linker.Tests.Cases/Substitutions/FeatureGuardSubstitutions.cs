@@ -16,6 +16,8 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" })]
 	[SetupCompileResource ("FeatureGuardSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)] 
+	// Tell linker to treat RequiresDynamicCodeAttribute as a disabled feature:
+	[SetupLinkerArgument ("--feature", "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitchAndGuard", "false")]
 	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.FeatureGuardPrecedence.GuardAndSwitch", "true")]
@@ -31,15 +33,18 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		class DefineFeatureGuard {
-			[Kept]
-			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
 			[FeatureGuard (typeof(RequiresDynamicCodeAttribute))]
-			static bool GuardDynamicCode {
-				[Kept]
-				get => RuntimeFeature.IsDynamicCodeSupported;
-			}
+			static bool GuardDynamicCode => RuntimeFeature.IsDynamicCodeSupported;
 
 			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"nop",
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse.s il_6",
+				"ret"
+			})]
 			static void TestGuardDynamicCode ()
 			{
 				if (GuardDynamicCode)
@@ -377,8 +382,6 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			}
 		}
 
-		[Kept]
-		[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
 		[RequiresDynamicCode (nameof (RequiresDynamicCode))]
 		static void RequiresDynamicCode () { }
 
