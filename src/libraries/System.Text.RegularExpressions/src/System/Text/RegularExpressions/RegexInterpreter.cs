@@ -53,10 +53,7 @@ namespace System.Text.RegularExpressions
         private void Goto(int newpos)
         {
             // When branching backward, ensure storage.
-            if (newpos < _codepos)
-            {
-                EnsureStorage();
-            }
+            EnsureStorage();
 
             _codepos = newpos;
             SetOperator((RegexOpcode)_code.Codes[newpos]);
@@ -74,15 +71,8 @@ namespace System.Text.RegularExpressions
             int[] localruntrack = runtrack!;
             int localruntrackpos = runtrackpos;
 
-            if (localruntrackpos > 1)
-            {
-                localruntrack[--localruntrackpos] = i1;
-                localruntrack[--localruntrackpos] = _codepos;
-            }
-            else
-            {
-                localruntrackpos = 0;
-            }
+            localruntrack[--localruntrackpos] = i1;
+            localruntrack[--localruntrackpos] = _codepos;
 
             runtrackpos = localruntrackpos;
         }
@@ -128,16 +118,9 @@ namespace System.Text.RegularExpressions
             int[] localruntrack = runtrack!;
             int localruntrackpos = runtrackpos;
 
-            if (localruntrackpos > 2)
-            {
-                localruntrack[--localruntrackpos] = i1;
-                localruntrack[--localruntrackpos] = i2;
-                localruntrack[--localruntrackpos] = -_codepos;
-            }
-            else
-            {
-                localruntrackpos = 0;
-            }
+            localruntrack[--localruntrackpos] = i1;
+            localruntrack[--localruntrackpos] = i2;
+            localruntrack[--localruntrackpos] = -_codepos;
 
             runtrackpos = localruntrackpos;
         }
@@ -158,10 +141,7 @@ namespace System.Text.RegularExpressions
             SetOperator((RegexOpcode)(_code.Codes[newpos] | back));
 
             // When branching backward, ensure storage.
-            if (newpos < _codepos)
-            {
-                EnsureStorage();
-            }
+            EnsureStorage();
 
             _codepos = newpos;
         }
