@@ -2185,7 +2185,7 @@ namespace Internal.JitInterface
                             useInstantiatingStub = true;
                         }
 
-                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, ref pResult->codePointerOrStubLookup);
+                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
                     }
                 }
                 else
@@ -2275,7 +2275,7 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, ref pResult->codePointerOrStubLookup);
+                    ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
                 }
                 else
                 {
@@ -2558,6 +2558,7 @@ namespace Internal.JitInterface
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
             MethodDesc templateMethod,
+            MethodDesc containingFtn,
             ref CORINFO_LOOKUP pResultLookup)
         {
             pResultLookup.lookupKind.needsRuntimeLookup = true;
@@ -2573,18 +2574,12 @@ namespace Internal.JitInterface
             pResult.indirections = CORINFO.USEHELPER;
             pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
-            // Runtime lookups in inlined contexts are not supported by the runtime for now
-            if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
-            {
-                pResultLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
-                return;
-            }
-
-            MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-            TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
+            bool inlinedLookup = pResolvedToken.tokenContext != contextFromMethodBeingCompiled();
+            MethodDesc contextMethod = inlinedLookup ? containingFtn : methodFromContext(pResolvedToken.tokenContext);
+            Debug.Assert(contextMethod != null);
 
             // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
-            if (!contextMethod.IsSharedByGenericInstantiations)
+            if (!inlinedLookup && !contextMethod.IsSharedByGenericInstantiations)
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
@@ -2643,7 +2638,7 @@ namespace Internal.JitInterface
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
         }
 
-        private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
@@ -2727,7 +2722,7 @@ namespace Internal.JitInterface
                         throw new NotImplementedException(pResult.handleType.ToString());
                 }
 
-                ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken: null, templateMethod, ref pResult.lookup);
+                ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken: null, templateMethod, HandleToObject(containingFtn), ref pResult.lookup);
             }
             else
             {
@@ -2754,7 +2749,7 @@ namespace Internal.JitInterface
 
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
-            ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, ref pResult);
+            ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, containingFtn, ref pResult);
 
             Debug.Assert(pResult.compileTimeHandle != null);
 

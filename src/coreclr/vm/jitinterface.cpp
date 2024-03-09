@@ -3089,18 +3089,9 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    MethodDesc* pContextMD;
-
     bool inlinedLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
-    if (inlinedLookup)
-    {
-        _ASSERT(pContainingMD != nullptr);
-        pContextMD = pContainingMD;
-    }
-    else
-    {
-        pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-    }
+    MethodDesc* pContextMD = inlinedLookup ? pContainingMD : GetMethodFromContext(pResolvedToken->tokenContext);
+    _ASSERT(pContextMD != nullptr);
 
     MethodTable* pContextMT = pContextMD->GetMethodTable();
 

@@ -246,17 +246,9 @@ namespace Internal.JitInterface
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                MethodDesc contextMethod;
                 bool inlinedLookup = pResolvedToken.tokenContext != contextFromMethodBeingCompiled();
-                if (inlinedLookup)
-                {
-                    Debug.Assert(containingFtn != null);
-                    contextMethod = containingFtn;
-                }
-                else
-                {
-                    contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                }
+                MethodDesc contextMethod = inlinedLookup ? containingFtn : methodFromContext(pResolvedToken.tokenContext);
+                Debug.Assert(contextMethod != null);
 
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
 
