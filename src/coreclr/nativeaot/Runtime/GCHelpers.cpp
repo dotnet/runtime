@@ -418,12 +418,11 @@ FCIMPL0(int64_t, RhGetTotalAllocatedBytes)
 }
 FCIMPLEND
 
-FCIMPL2(void, RhEnumerateConfigurationValues, void* configurationContext, ConfigurationValueFunc callback)
+EXTERN_C void QCALLTYPE RhEnumerateConfigurationValues(void* configurationContext, ConfigurationValueFunc callback)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
-FCIMPLEND
 
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
