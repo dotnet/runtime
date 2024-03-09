@@ -645,7 +645,7 @@ namespace Internal.Runtime.CompilerHelpers
             public CharSet CharSetMangling => (CharSet)(Flags & MethodFixupCellFlagsConstants.CharSetMask);
 #if FEATURE_OBJCMARSHAL
             public bool IsObjectiveCMessageSend => (Flags & MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask) != 0;
-            public int ObjectiveCMessageSendFunction => (Flags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) >> MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+            public int ObjectiveCMessageSendFunction => (int)((Flags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) >> MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift);
 #elif TARGET_WINDOWS && TARGET_X86
             public bool IsStdcall => (Flags & MethodFixupCellFlagsConstants.IsStdcall) != 0;
             public ushort SignatureBytes => (ushort)(Flags >> 16);
