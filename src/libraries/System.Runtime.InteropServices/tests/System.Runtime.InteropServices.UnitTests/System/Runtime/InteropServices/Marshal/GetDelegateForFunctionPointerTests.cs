@@ -155,6 +155,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99478", TestRuntimes.Mono)]
         public void GetDelegateForFunctionPointer_Resurrection()
         {
             GCHandle handle = Alloc();
