@@ -259,11 +259,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
 }
 
 void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+                                                CORINFO_METHOD_HANDLE         containingFtn,
                                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
-    mc->recExpandRawHandleIntrinsic(pResolvedToken, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?

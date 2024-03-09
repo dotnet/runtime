@@ -152,9 +152,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
 
 void interceptor_ICJI::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE containingFtn,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
 }
 
 bool interceptor_ICJI::isIntrinsicType(

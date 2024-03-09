@@ -2221,6 +2221,7 @@ public:
     // should be looked up at runtime.
     virtual void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CORINFO_METHOD_HANDLE           containingFtn,
         CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
 
     // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?

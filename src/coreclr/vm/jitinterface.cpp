@@ -3089,21 +3089,26 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    MethodDesc* pContextMD;
 
-    bool isInlining = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
-    if (isInlining)
+    bool inlinedLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
+    if (inlinedLookup)
     {
         _ASSERT(pContainingMD != nullptr);
         pContextMD = pContainingMD;
     }
+    else
+    {
+        pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    }
 
     MethodTable* pContextMT = pContextMD->GetMethodTable();
 
-    // There is a pathological case where invalid IL refereces __Canon type directly,
-    // but there is no dictionary available to store the lookup.
-    if (!isInlining && !pContextMD->IsSharedByGenericInstantiations())
+    // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
+    if (!inlinedLookup && !pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
+
+    BOOL fInstrument = FALSE;
 
     if (pContextMD->RequiresInstMethodDescArg())
     {
@@ -3116,8 +3121,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         else
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
     }
-
-    BOOL fInstrument = FALSE;
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg())
@@ -8939,6 +8942,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
 /*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_METHOD_HANDLE           containingFtn,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {
     LIMITED_METHOD_CONTRACT;
