@@ -97,8 +97,12 @@ jobs:
       displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
     # run run-performance-job.py
-    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --is-scenario --run-kind ${{ parameters.kind }} --architecture ${{ parameters.architecture }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --framework $(_Framework) --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --is-scenario --framework $(_Framework) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Run performance job script
+      env:
+        HelixAccessToken: '$(HelixApiAccessToken)'
+        PerfCommandUploadToken: '$(PerfCommandUploadToken)'
+        PerfCommandUploadTokenLinux: '$(PerfCommandUploadTokenLinux)'
     # Zip the workitem directory (for xharness (mobile) based workitems)
     - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
       - task: ArchiveFiles@2

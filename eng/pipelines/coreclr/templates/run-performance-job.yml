@@ -78,6 +78,10 @@ jobs:
     - ${{ parameters.steps }}
     - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --framework $(_Framework) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Run performance job script
+      env:
+        HelixAccessToken: '$(HelixApiAccessToken)'
+        PerfCommandUploadToken: '$(PerfCommandUploadToken)'
+        PerfCommandUploadTokenLinux: '$(PerfCommandUploadTokenLinux)'
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
