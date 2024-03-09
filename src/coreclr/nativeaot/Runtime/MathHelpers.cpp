@@ -108,71 +108,71 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
 #endif
 
 #ifdef HOST_ARM
-EXTERN_C int32_t REDHAWK_CALLCONV RhpIDiv(int32_t i, int32_t j)
+EXTERN_C int32_t F_CALL_CONV RhpIDiv(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C uint32_t REDHAWK_CALLCONV RhpUDiv(uint32_t i, uint32_t j)
+EXTERN_C uint32_t F_CALL_CONV RhpUDiv(uint32_t i, uint32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C int32_t REDHAWK_CALLCONV RhpIMod(int32_t i, int32_t j)
+EXTERN_C int32_t F_CALL_CONV RhpIMod(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C uint32_t REDHAWK_CALLCONV RhpUMod(uint32_t i, uint32_t j)
+EXTERN_C uint32_t F_CALL_CONV RhpUMod(uint32_t i, uint32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C int64_t REDHAWK_CALLCONV RhpLMul(int64_t i, int64_t j)
+EXTERN_C int64_t F_CALL_CONV RhpLMul(int64_t i, int64_t j)
 {
     return i * j;
 }
 
-EXTERN_C uint64_t REDHAWK_CALLCONV RhpLRsz(uint64_t i, int32_t j)
+EXTERN_C uint64_t F_CALL_CONV RhpLRsz(uint64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C int64_t REDHAWK_CALLCONV RhpLRsh(int64_t i, int32_t j)
+EXTERN_C int64_t F_CALL_CONV RhpLRsh(int64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C int64_t REDHAWK_CALLCONV RhpLLsh(int64_t i, int32_t j)
+EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
 {
     return i << (j & 0x3f);
 }
 
-EXTERN_C int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
+EXTERN_C int64_t F_CALL_CONV RhpDbl2Lng(double val)
 {
     return (int64_t)val;
 }
 
-EXTERN_C int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
+EXTERN_C int32_t F_CALL_CONV RhpDbl2Int(double val)
 {
     return (int32_t)val;
 }
 
-EXTERN_C uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
+EXTERN_C uint32_t F_CALL_CONV RhpDbl2UInt(double val)
 {
     return (uint32_t)val;
 }
 
-EXTERN_C double REDHAWK_CALLCONV RhpLng2Dbl(int64_t val)
+EXTERN_C double F_CALL_CONV RhpLng2Dbl(int64_t val)
 {
     return (double)val;
 }
 
-EXTERN_C double REDHAWK_CALLCONV RhpULng2Dbl(uint64_t val)
+EXTERN_C double F_CALL_CONV RhpULng2Dbl(uint64_t val)
 {
     return (double)val;
 }
