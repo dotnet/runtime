@@ -246,15 +246,17 @@ namespace Internal.JitInterface
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                // to abort the inlining attempt anyway.
-                if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                MethodDesc contextMethod;
+                bool inlinedLookup = pResolvedToken.tokenContext != contextFromMethodBeingCompiled();
+                if (inlinedLookup)
                 {
-                    lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
-                    return;
+                    Debug.Assert(containingFtn != null);
+                    contextMethod = containingFtn;
                 }
-
-                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                else
+                {
+                    contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                }
 
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
 

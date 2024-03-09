@@ -7025,7 +7025,7 @@ GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bo
 
     // NOTE: inlining is done at this point, so we don't know which method contained this token.
     // It's fine because currently this is never used for something that belongs to an inlinee.
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, nullptr, &embedInfo);
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);
