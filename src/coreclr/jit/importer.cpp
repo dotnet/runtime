@@ -1564,10 +1564,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         ctxTree = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
         assert(ctxTree != nullptr);
         assert(ctxTree->TypeIs(TYP_I_IMPL));
-        if (ctxTree->OperIs(GT_LCL_VAR))
-        {
-            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
-        }
+        // We don't need to worry about GTF_VAR_CONTEXT here, it should be set on the callsite anyway.
     }
     else if (kind == CORINFO_LOOKUP_THISOBJ)
     {
@@ -1579,10 +1576,10 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
             assert(impInlineInfo->inlArgInfo[0].argIsThis);
 
             ctxTree = impInlineFetchArg(impInlineInfo->inlArgInfo[0], impInlineInfo->lclVarInfo[0]);
-            if (ctxTree->OperIs(GT_LCL_VAR))
-            {
-                ctxTree->gtFlags |= GTF_VAR_CONTEXT;
-            }
+
+            // "this" is expected to be always a local, and we must mark it as a context
+            assert(ctxTree->OperIs(GT_LCL_VAR));
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
         }
         else
         {
