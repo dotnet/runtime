@@ -7842,25 +7842,29 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
             isInJMCFunction = pDebugMethodInfo->IsJMCFunction();
         }
     }
+    // BOOL forceSendCatchHandlerFound = FALSE;
+    // GCX_COOP_EEINTERFACE();
+    // {
+    //     ThreadExceptionState* pExState = pThread->GetExceptionState();
+    //     OBJECTREF exRef = pExState->GetThrowable();
+    //     AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
+    //     OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
+    //     OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+    //     if (retrievedHandle != NULL)
+    //     {
+    //         forceSendCatchHandlerFound = TRUE;
+    //     }
+    // }
     BOOL forceSendCatchHandlerFound = FALSE;
     GCX_COOP_EEINTERFACE();
     {
         ThreadExceptionState* pExState = pThread->GetExceptionState();
-        OBJECTREF exRef = pExState->GetThrowable();
-        AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
-        OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
-        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
-        if (retrievedHandle != NULL)
-        {
-            forceSendCatchHandlerFound = TRUE;
-        }
+        forceSendCatchHandlerFound = ForceSendCatchHandlerFound(pExState);
     }
 
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
-    if (m_sendExceptionsOutsideOfJMC ||
-        isInJMCFunction ||
-        pThread->GetExceptionState()->GetFlags()->SentDebugUserFirstChance() || forceSendCatchHandlerFound)
+    if (isInJMCFunction || forceSendCatchHandlerFound)
     {
         if (pDebugJitInfo != NULL)
         {
@@ -7986,19 +7990,9 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
                       pExceptionPointers);
     }
 
-    BOOL forceSendCatchHandlerFound = FALSE;
-    OBJECTREF exRef = pExState->GetThrowable();
-    AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
-    OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
-    OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
-    if (retrievedHandle != NULL)
-    {
-        forceSendCatchHandlerFound = TRUE;
-    }
-
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
-    if (m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance() || forceSendCatchHandlerFound)
+    if (ForceSendCatchHandlerFound(pExState))
     {
         SendCatchHandlerFound(pThread, fp, offset, dwFlags);
     }
@@ -8023,6 +8017,28 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 #endif // DEBUGGING_SUPPORTED
 
     return EXCEPTION_CONTINUE_SEARCH;
+}
+
+BOOL Debugger::ForceSendCatchHandlerFound(ThreadExceptionState* pExState)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    BOOL forceSendCatchHandlerFound = FALSE;
+    OBJECTREF exRef = pExState->GetThrowable();
+    AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
+    OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
+    OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+    if (retrievedHandle != NULL)
+    {
+        forceSendCatchHandlerFound = TRUE;
+    }
+    return m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance() || forceSendCatchHandlerFound;
 }
 
 
