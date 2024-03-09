@@ -3106,7 +3106,9 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     if (inlinedClassParamLookup)
     {
-        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
+        // TODO: how do we figure out whether we need CORINFO_LOOKUP_THISOBJ or CORINFO_LOOKUP_CLASSPARAM?
+        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
+        return;
     }
     else if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
     {

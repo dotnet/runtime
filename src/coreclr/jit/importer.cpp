@@ -1555,34 +1555,46 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // context parameter is this that we don't need the eager reporting logic.)
     lvaGenericsContextInUse = true;
 
-    if (kind == CORINFO_LOOKUP_THISOBJ)
+    // Always use generic context from the callsite if we're inlining and it's available.
+    if (compIsForInlining() && (impInlineInfo->inlInstParamArgInfo != nullptr))
     {
-        // this Object
-        ctxTree = gtNewLclvNode(impInlineRoot()->info.compThisArg, TYP_REF);
-        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        InlLclVarInfo lclInfo = {};
+        lclInfo.lclTypeInfo   = TYP_I_IMPL;
 
-        // context is the method table pointer of the this object
-        ctxTree = gtNewMethodTableLookup(ctxTree);
+        ctxTree = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
+        assert(ctxTree != nullptr);
+        assert(ctxTree->TypeIs(TYP_I_IMPL));
+    }
+    else if (kind == CORINFO_LOOKUP_THISOBJ)
+    {
+        // Use "this" from the callsite if we're inlining
+        if (compIsForInlining())
+        {
+            // "this" is always the first argument in inlArgInfo
+            assert(impInlineInfo->argCnt > 0);
+            assert(impInlineInfo->inlArgInfo[0].argIsThis);
+
+            ctxTree = impInlineFetchArg(impInlineInfo->inlArgInfo[0], impInlineInfo->lclVarInfo[0]);
+            // context is the method table pointer of the this object
+            ctxTree = gtNewMethodTableLookup(ctxTree);
+        }
+        else
+        {
+            assert(info.compThisArg != BAD_VAR_NUM);
+            ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+
+            // context is the method table pointer of the this object
+            ctxTree = gtNewMethodTableLookup(ctxTree);
+        }
     }
     else
     {
         assert((kind == CORINFO_LOOKUP_METHODPARAM) || (kind == CORINFO_LOOKUP_CLASSPARAM));
 
-        if (compIsForInlining() && (impInlineInfo->inlInstParamArgInfo != nullptr))
-        {
-            InlLclVarInfo lclInfo = {};
-            lclInfo.lclTypeInfo   = TYP_I_IMPL;
-
-            ctxTree = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
-            assert(ctxTree != nullptr);
-            assert(ctxTree->TypeIs(TYP_I_IMPL));
-        }
-        else
-        {
-            // Exact method descriptor as passed in
-            ctxTree = gtNewLclvNode(impInlineRoot()->info.compTypeCtxtArg, TYP_I_IMPL);
-            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
-        }
+        // Exact method descriptor as passed in
+        ctxTree = gtNewLclvNode(impInlineRoot()->info.compTypeCtxtArg, TYP_I_IMPL);
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
 }
