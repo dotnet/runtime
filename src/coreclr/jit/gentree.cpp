@@ -1845,6 +1845,10 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 #endif
 
 #ifdef SWIFT_SUPPORT
+        case WellKnownArg::SwiftError:
+            assert(cc == CorInfoCallConvExtension::Swift);
+            return REG_SWIFT_ERROR;
+
         case WellKnownArg::SwiftSelf:
             assert(cc == CorInfoCallConvExtension::Swift);
             return REG_SWIFT_SELF;
@@ -13102,6 +13106,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
         case WellKnownArg::ValidateIndirectCallTarget:
         case WellKnownArg::DispatchIndirectCallTarget:
             return "cfg tgt";
+        case WellKnownArg::SwiftError:
+            return "swift error";
         case WellKnownArg::SwiftSelf:
             return "swift self";
         default:

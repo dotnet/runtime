@@ -75,7 +75,17 @@ internal class BrowserRunner : IAsyncDisposable
         cmd.WithErrorDataReceived(outputHandler).WithOutputDataReceived(outputHandler);
         var runTask = cmd.ExecuteAsync(args);
 
-        await Task.WhenAny(runTask, urlAvailable.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+        var delayTask = Task.Delay(TimeSpan.FromSeconds(30));
+
+        await Task.WhenAny(runTask, urlAvailable.Task, delayTask);
+        if (delayTask.IsCompleted)
+        {
+            _testOutput.WriteLine("First 30s delay reached, scheduling next one");
+
+            delayTask = Task.Delay(TimeSpan.FromSeconds(30));
+            await Task.WhenAny(runTask, urlAvailable.Task, delayTask);
+        }
+
         if (runTask.IsCompleted)
         {
             var res = await runTask;

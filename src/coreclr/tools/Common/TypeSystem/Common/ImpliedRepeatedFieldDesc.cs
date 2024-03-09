@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.TypeSystem;
-
-namespace ILCompiler
+namespace Internal.TypeSystem
 {
-    public sealed class ImpliedRepeatedFieldDesc : FieldDesc
+    public sealed partial class ImpliedRepeatedFieldDesc : FieldDesc
     {
         private readonly FieldDesc _underlyingFieldDesc;
 
@@ -36,25 +34,9 @@ namespace ILCompiler
 
         public int FieldIndex { get; }
 
-        protected override int ClassCode => 31666958;
-
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => _underlyingFieldDesc.GetEmbeddedSignatureData();
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => _underlyingFieldDesc.HasCustomAttribute(attributeNamespace, attributeName);
-
-        protected override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
-        {
-            var impliedRepeatedFieldDesc = (ImpliedRepeatedFieldDesc)other;
-
-            int result = comparer.Compare(_underlyingFieldDesc, impliedRepeatedFieldDesc._underlyingFieldDesc);
-
-            if (result != 0)
-            {
-                return result;
-            }
-
-            return FieldIndex.CompareTo(impliedRepeatedFieldDesc.FieldIndex);
-        }
 
         public override MarshalAsDescriptor GetMarshalAsDescriptor() => _underlyingFieldDesc.GetMarshalAsDescriptor();
 

@@ -14,9 +14,12 @@
 
 #include "qcall.h"
 
-#if defined(FEATURE_PERFTRACING)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 extern "C" void QCALLTYPE LogEventSource(_In_z_ int eventID, _In_z_ LPCWSTR eventName, _In_z_ LPCWSTR eventSourceName, _In_z_ LPCWSTR payload);
 extern "C" BOOL QCALLTYPE IsEventSourceLoggingEnabled();
+extern "C" LPWSTR QCALLTYPE EventSource_GetClrConfig(LPCWSTR configName);
+#endif //defined(FEATURE_EVENTSOURCE_XPLAT)
+#if defined(FEATURE_PERFTRACING)
 extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStart(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID);
 extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStop(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID);
 extern "C" void QCALLTYPE LogThreadPoolWorkerThreadWait(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID);
