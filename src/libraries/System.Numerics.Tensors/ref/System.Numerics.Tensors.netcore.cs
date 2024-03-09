@@ -4,6 +4,44 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System
+{
+    public readonly partial struct NativeIndex : System.IEquatable<System.NativeIndex>
+    {
+        private readonly int _dummyPrimitive;
+        public NativeIndex(nint value, bool fromEnd = false) { throw null; }
+        public static System.NativeIndex End { get { throw null; } }
+        public bool IsFromEnd { get { throw null; } }
+        public static System.NativeIndex Start { get { throw null; } }
+        public nint Value { get { throw null; } }
+        public bool Equals(System.NativeIndex other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
+        public static System.NativeIndex FromEnd(nint value) { throw null; }
+        public static System.NativeIndex FromStart(nint value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public nint GetOffset(nint length) { throw null; }
+        public static implicit operator System.NativeIndex(System.Index index) { throw null; }
+        public static implicit operator System.NativeIndex(int value) { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public readonly partial struct NativeRange : System.IEquatable<System.NativeRange>
+    {
+        private readonly int _dummyPrimitive;
+        public NativeRange(System.NativeIndex start, System.NativeIndex end) { throw null; }
+        public static System.NativeRange All { get { throw null; } }
+        public System.NativeIndex End { get { throw null; } }
+        public System.NativeIndex Start { get { throw null; } }
+        public static System.NativeRange EndAt(System.NativeIndex end) { throw null; }
+        public bool Equals(System.NativeRange other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public (nint Offset, nint Length) GetOffsetAndLength(nint length) { throw null; }
+        public static implicit operator System.NativeRange(System.Range range) { throw null; }
+        public static System.NativeRange StartAt(System.NativeIndex start) { throw null; }
+        public override string ToString() { throw null; }
+    }
+}
+
 namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
