@@ -66,6 +66,7 @@ jobs:
     iosStripSymbols: ${{ parameters.iosStripSymbols }}
     hybridGlobalization: ${{ parameters.hybridGlobalization }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    extraSetupParameters: $(extraSetupParameters)
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
@@ -95,22 +96,6 @@ jobs:
       - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT')}}:
         - ${{ 'build_ios_arm64_release_iOSNativeAOT' }}
 
-    ${{ if and(ne(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT'))) }}:
-      ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --javascript-engine ${{ parameters.javascriptEngine }} --hybridglobalization ${{ parameters.hybridGlobalization }} $(extraSetupParametersSuffix)
-      ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --wasmaot --javascript-engine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
-      ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
-        extraSetupParameters: --llvm
-      ${{ if and(eq(parameters.runtimeType, 'coreclr'), eq(parameters.osSubGroup, '_musl')) }}:
-        extraSetupParameters: --alpine
-    ${{ if in(parameters.runtimeType, 'AndroidMono') }}:
-      extraSetupParameters: -AndroidMono
-    ${{ if in(parameters.runtimeType, 'iOSMono') }}:
-      extraSetupParameters: --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }} --hybridglobalization ${{ parameters.hybridGlobalization }}
-    ${{ if in(parameters.runtimeType, 'iOSNativeAOT') }}:
-      extraSetupParameters: --iosnativeaot --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }} --hybridglobalization ${{ parameters.hybridGlobalization }}
-
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
@@ -122,9 +107,30 @@ jobs:
     - name: _onlySanityCheckArg
       ${{ if eq(parameters.onlySanityCheck, 'true') }}:
         value: '--only-sanity'
+    _name: _hybridGlobalizationArg
+      ${{ if eq(parameters.hybridGlobalization, 'True') }}:
+        value: '--hybrid-globalization'
+    _name: _pgoRunTypeArg
+      ${{ if ne(parameters.pgoRunType, '') }}:
+        value: '--pgo-run-type ${{ parameters.pgoRunType }}'
+    _name: _physicalPromotionRunTypeArg
+      ${{ if ne(parameters.pgoRunType, '') }}:
+        value: '--physical-promotion-run-type ${{ parameters.physicalPromotionRunType }}'
+    _name: _r2rRunTypeArg
+      ${{ if ne(parameters.r2rRunType, '') }}:
+        value: '--r2r-run-type ${{ parameters.r2rRunType }}'
+    _name: _experimentArg
+      ${{ if ne(parameters.experimentName, '') }}:
+        value: '--experiment-name ${{ parameters.experimentName }}'
+    _name: _jsEngineArg
+      ${{ if eq(parameters.runtimeType, 'wasm') }}:
+        value: '--javascript-engine ${{ parameters.javascriptEngine }}'
+    _name: _iosArgs
+      ${{ if in(parameters.runtimeType, 'iOSMono', 'iOSNativeAOT') }}:
+        value: '-iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}'
 
-    - name: extraSetupParametersSuffix
-      value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg)"
+    - name: extraSetupParameters
+      value: "--run-kind ${{ parameters.kind }} --architecture ${{ parameters.archType }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} --runtime-type ${{ parameters.runtimeType }} $(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg) $(_hybridGlobalizationArg) $(_pgoRunTypeArg) $(_physicalPromotionRunTypeArg) $(_r2rRunTypeArg) $(_experimentArg) $(_jsEngineArg) $(_iosArgs)"
 
     - ${{ if eq(parameters.crossBuild, true) }}:
       - _crossBuildPropertyArg: '-cross'
@@ -148,6 +154,8 @@ jobs:
     - task: DeleteFiles@1
       inputs:
         SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
+    - checkout: InternalPerformanceRepo
+      path: performance
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
     - script: |
         $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables
