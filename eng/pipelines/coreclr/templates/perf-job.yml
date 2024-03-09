@@ -130,7 +130,7 @@ jobs:
         value: '-iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}'
 
     - name: extraSetupParameters
-      value: "--run-kind ${{ parameters.kind }} --architecture ${{ parameters.archType }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} --runtime-type ${{ parameters.runtimeType }} $(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg) $(_hybridGlobalizationArg) $(_pgoRunTypeArg) $(_physicalPromotionRunTypeArg) $(_r2rRunTypeArg) $(_experimentArg) $(_jsEngineArg) $(_iosArgs)"
+      value: "--run-kind ${{ parameters.runKind }} --architecture ${{ parameters.archType }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} --runtime-type ${{ parameters.runtimeType }} $(_compareArg) $(_onlySanityCheckArg) $(_hybridGlobalizationArg) $(_pgoRunTypeArg) $(_physicalPromotionRunTypeArg) $(_r2rRunTypeArg) $(_experimentArg) $(_jsEngineArg) $(_iosArgs)"
 
     - ${{ if eq(parameters.crossBuild, true) }}:
       - _crossBuildPropertyArg: '-cross'
