@@ -878,9 +878,8 @@ namespace System.Runtime
         internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
 #if TARGET_X86 || TARGET_AMD64
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCpuIdEx")]
-        internal static extern unsafe void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
+        [LibraryImport(RuntimeLibrary)]
+        internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
 #endif
     }
 }
