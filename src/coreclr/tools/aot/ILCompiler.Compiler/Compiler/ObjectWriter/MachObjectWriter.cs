@@ -347,6 +347,10 @@ namespace ILCompiler.ObjectWriter
             {
                 ".dotnet_eh_table" => S_ATTR_DEBUG,
                 ".eh_frame" => S_ATTR_LIVE_SUPPORT | S_ATTR_STRIP_STATIC_SYMS | S_ATTR_NO_TOC,
+                // workaround problem with dead_strip
+                // see https://github.com/dotnet/runtime/issues/96663
+                "hydrated" => S_ATTR_NO_DEAD_STRIP,
+                "__modules" => S_ATTR_NO_DEAD_STRIP,
                 _ => section.Type switch
                 {
                     SectionType.Executable => S_ATTR_SOME_INSTRUCTIONS | S_ATTR_PURE_INSTRUCTIONS,
