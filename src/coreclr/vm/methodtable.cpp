@@ -4295,7 +4295,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
 
     for (uint32_t i = 0; i < intervals.Size(); ++i)
     {
-        SwiftLoweringInterval& interval = intervals[i];
+        SwiftLoweringInterval interval = intervals[i];
 
         if (interval.tag == SwiftPhysicalLoweringTag::Opaque)
         {
@@ -4325,11 +4325,11 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
 
     for (uint32_t i = 0; i < mergedIntervals.Size(); i++, numLoweredTypes++)
     {
-        SwiftLoweringInterval& interval = mergedIntervals[i];
+        SwiftLoweringInterval interval = mergedIntervals[i];
 
         if (numLoweredTypes == 4)
         {
-            // If we have more than for intervals, this type is passed by-reference in Swift.
+            // If we have more than four intervals, this type is passed by-reference in Swift.
             pSwiftLowering->byReference = true;
             return;
         }
