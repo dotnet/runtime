@@ -273,6 +273,12 @@ dotnet_diagnostic.CA1512.severity = none
 # CA1513: Use ObjectDisposedException throw helper
 dotnet_diagnostic.CA1513.severity = none
 
+# CA1514: Avoid redundant length argument
+dotnet_diagnostic.CA1514.severity = none
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none
 
@@ -489,6 +495,9 @@ dotnet_diagnostic.CA1869.severity = none
 # CA1870: Use a cached 'SearchValues' instance
 dotnet_diagnostic.CA1870.severity = none
 
+# CA1871: Do not pass a nullable struct to 'ArgumentNullException.ThrowIfNull'
+dotnet_diagnostic.CA1871.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -674,6 +683,18 @@ dotnet_diagnostic.CA2260.severity = none
 
 # CA2261: Do not use ConfigureAwaitOptions.SuppressThrowing with Task<TResult>
 dotnet_diagnostic.CA2261.severity = none
+
+# CA2262: Set 'MaxResponseHeadersLength' properly
+dotnet_diagnostic.CA2262.severity = none
+
+# CA2263: Prefer generic overload when type is known
+dotnet_diagnostic.CA2263.severity = none
+
+# CA2264: Do not pass a non-nullable value to 'ArgumentNullException.ThrowIfNull'
+dotnet_diagnostic.CA2264.severity = none
+
+# CA2265: Do not compare Span<T> to 'null' or 'default'
+dotnet_diagnostic.CA2265.severity = none
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none

@@ -671,6 +671,7 @@ public:
     }
 
     void setLikelihood(weight_t likelihood);
+    void addLikelihood(weight_t addedLikelihod);
 
     void clearLikelihood()
     {
@@ -847,6 +848,9 @@ public:
         assert(HasInitializedTarget());
         assert(bbTargetEdge->getSourceBlock() == this);
         assert(bbTargetEdge->getDestinationBlock() != nullptr);
+
+        // This is the only successor edge for this block, so likelihood should be 1.0
+        bbTargetEdge->setLikelihood(1.0);
     }
 
     BasicBlock* GetTrueTarget() const
@@ -932,16 +936,23 @@ public:
         SetTrueEdge(trueEdge);
     }
 
-    // Set both the block kind and target edge. This can clear `bbTargetEdge` when setting
-    // block kinds that don't use `bbTargetEdge`.
-    void SetKindAndTargetEdge(BBKinds kind, FlowEdge* targetEdge = nullptr)
+    // Set both the block kind and target edge.
+    void SetKindAndTargetEdge(BBKinds kind, FlowEdge* targetEdge)
     {
         bbKind       = kind;
         bbTargetEdge = targetEdge;
+        assert(HasInitializedTarget());
 
-        // If bbKind indicates this block has a jump, bbTargetEdge cannot be null.
-        // You shouldn't use this to set a BBJ_COND, BBJ_SWITCH, or BBJ_EHFINALLYRET.
-        assert(HasTarget() ? HasInitializedTarget() : (bbTargetEdge == nullptr));
+        // This is the only successor edge for this block, so likelihood should be 1.0
+        bbTargetEdge->setLikelihood(1.0);
+    }
+
+    // Set the block kind, and clear bbTargetEdge.
+    void SetKindAndTargetEdge(BBKinds kind)
+    {
+        bbKind       = kind;
+        bbTargetEdge = nullptr;
+        assert(!HasTarget());
     }
 
     bool HasInitializedTarget() const

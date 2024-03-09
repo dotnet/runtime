@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { VoidPtr } from "../../types/emscripten";
-import * as Memory from "../../memory";
+import { getI32, notifyI32, setI32, storeI32 } from "../../memory";
 
 
 /// One-reader, one-writer, size 1 queue for messages from an EventPipe streaming thread to
@@ -68,22 +68,22 @@ export class StreamQueue {
     }
 
     private onWorkAvailable(this: StreamQueue /*,event: Event */): void {
-        const buf = Memory.getI32(this.buf_addr) as unknown as VoidPtr;
+        const buf = getI32(this.buf_addr) as unknown as VoidPtr;
         const intptr_buf = buf as unknown as number;
         if (intptr_buf === STREAM_CLOSE_SENTINEL) {
             // special value signaling that the streaming thread closed the queue.
             this.syncSendClose();
         } else {
-            const count = Memory.getI32(this.count_addr);
-            Memory.setI32(this.buf_addr, 0);
+            const count = getI32(this.count_addr);
+            setI32(this.buf_addr, 0);
             if (count > 0) {
                 this.syncSendBuffer(buf, count);
             }
         }
         /* buffer is now not full */
-        Memory.Atomics.storeI32(this.buf_full_addr, 0);
+        storeI32(this.buf_full_addr, 0);
         /* wake up the writer thread */
-        Memory.Atomics.notifyI32(this.buf_full_addr, 1);
+        notifyI32(this.buf_full_addr, 1);
     }
 }
 
