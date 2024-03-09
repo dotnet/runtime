@@ -77,30 +77,33 @@ namespace ILCompiler.DependencyAnalysis
             // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_pInvokeMethodData.ModuleData));
 
-            int flags = 0;
+            uint flags = 0;
 
-            int charsetFlags = (int)_pInvokeMethodData.CharSetMangling;
+            uint charsetFlags = (uint)_pInvokeMethodData.CharSetMangling;
             Debug.Assert((charsetFlags & MethodFixupCellFlagsConstants.CharSetMask) == charsetFlags);
             charsetFlags &= MethodFixupCellFlagsConstants.CharSetMask;
             flags |= charsetFlags;
 
-            int? objcFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(factory.Target, _pInvokeMethodData.ModuleData.ModuleName, _pInvokeMethodData.EntryPointName);
+            uint? objcFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(factory.Target, _pInvokeMethodData.ModuleData.ModuleName, _pInvokeMethodData.EntryPointName);
             if (objcFunction.HasValue)
             {
                 flags |= MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask;
 
-                int objcFunctionFlags = objcFunction.Value << MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+                uint objcFunctionFlags = objcFunction.Value << MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
                 Debug.Assert((objcFunctionFlags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) == objcFunctionFlags);
                 objcFunctionFlags &= MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask;
                 flags |= objcFunctionFlags;
             }
-
-            builder.EmitInt(flags);
-
-            if (factory.Target.IsWindows && factory.Target.Architecture == TargetArchitecture.X86)
+            else if (factory.Target.IsWindows && factory.Target.Architecture == TargetArchitecture.X86)
             {
-                builder.EmitInt(_pInvokeMethodData.SignatureBytes);
+                if (_pInvokeMethodData.SignatureBytes >= 0)
+                {
+                    flags |= MethodFixupCellFlagsConstants.IsStdcall;
+                    flags |= ((uint)_pInvokeMethodData.SignatureBytes << 16);
+                }
             }
+
+            builder.EmitUInt(flags);
 
             return builder.ToObjectData();
         }

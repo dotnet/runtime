@@ -390,11 +390,11 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
 #if TARGET_WINDOWS
-#if TARGET_X86
         private static unsafe IntPtr GetProcAddressWithMangling(IntPtr hModule, byte* methodName, MethodFixupCell* pCell)
         {
             IntPtr pMethod = Interop.Kernel32.GetProcAddress(hModule, methodName);
-            if (pMethod == IntPtr.Zero && pCell->SignatureBytes >= 0)
+#if TARGET_X86
+            if (pMethod == IntPtr.Zero && pCell->IsStdcall)
             {
                 int nameLength = string.strlen(methodName);
                 // We need to add an extra bytes for the prefix, null terminator and stack size suffix ('@' and up to 10 digits)
@@ -406,15 +406,11 @@ namespace Internal.Runtime.CompilerHelpers
                 probedMethodName[nameLength + 2 + bytesWritten] = 0;
                 pMethod = Interop.Kernel32.GetProcAddress(hModule, probedMethodName);
             }
+#else
+            _ = pCell;
+#endif
             return pMethod;
         }
-#else
-        private static unsafe IntPtr GetProcAddressWithMangling(IntPtr hModule, byte* methodName, MethodFixupCell* pCell)
-        {
-            _ = pCell;
-            return Interop.Kernel32.GetProcAddress(hModule, methodName);
-        }
-#endif
 
         private static unsafe IntPtr GetProcAddressWithSuffix(IntPtr hModule, byte* methodName, byte suffix, MethodFixupCell* pCell)
         {
@@ -644,14 +640,16 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
-            private int Flags;
-#if TARGET_WINDOWS && TARGET_X86
-            public int SignatureBytes;
-#endif
+            private uint Flags;
 
             public CharSet CharSetMangling => (CharSet)(Flags & MethodFixupCellFlagsConstants.CharSetMask);
+#if FEATURE_OBJCMARSHAL
             public bool IsObjectiveCMessageSend => (Flags & MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask) != 0;
             public int ObjectiveCMessageSendFunction => (Flags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) >> MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+#elif TARGET_WINDOWS && TARGET_X86
+            public bool IsStdcall => (Flags & MethodFixupCellFlagsConstants.IsStdcall) != 0;
+            public ushort SignatureBytes => (ushort)(Flags >> 16);
+#endif
         }
 
         internal unsafe struct CustomMarshallerKey : IEquatable<CustomMarshallerKey>
