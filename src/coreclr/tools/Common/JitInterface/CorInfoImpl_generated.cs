@@ -291,12 +291,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _expandRawHandleIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult)
+        private static void _expandRawHandleIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.expandRawHandleIntrinsic(ref *pResolvedToken, containingFtn, ref *pResult);
+                _this.expandRawHandleIntrinsic(ref *pResolvedToken, callerHandle, ref *pResult);
             }
             catch (Exception ex)
             {
@@ -1993,12 +1993,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _embedGenericHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult)
+        private static void _embedGenericHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.embedGenericHandle(ref *pResolvedToken, fEmbedParent != 0, containingFtn, ref *pResult);
+                _this.embedGenericHandle(ref *pResolvedToken, fEmbedParent != 0, callerHandle, ref *pResult);
             }
             catch (Exception ex)
             {

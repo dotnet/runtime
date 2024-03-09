@@ -239,18 +239,16 @@ namespace Internal.JitInterface
             }
         }
 
-        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc containingFtn, ref CORINFO_LOOKUP lookup)
+        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
         {
+            Debug.Assert(callerHandle != null);
+
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                bool inlinedLookup = pResolvedToken.tokenContext != contextFromMethodBeingCompiled();
-                MethodDesc contextMethod = inlinedLookup ? containingFtn : methodFromContext(pResolvedToken.tokenContext);
-                Debug.Assert(contextMethod != null);
-
-                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
+                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
 
                 if (genericLookup.UseHelper)
                 {
@@ -1719,7 +1717,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
@@ -1810,7 +1808,7 @@ namespace Internal.JitInterface
 
             Debug.Assert(pResult.compileTimeHandle != null);
 
-            ComputeLookup(ref pResolvedToken, target, helperId, HandleToObject(containingFtn), ref pResult.lookup);
+            ComputeLookup(ref pResolvedToken, target, helperId, HandleToObject(callerHandle), ref pResult.lookup);
         }
 
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
@@ -1855,7 +1853,7 @@ namespace Internal.JitInterface
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }
 
-        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             // Resolved token as a potentially RuntimeDetermined object.
             MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
@@ -1865,15 +1863,15 @@ namespace Internal.JitInterface
             switch (method.Name)
             {
                 case "Of":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(containingFtn), ref pResult.lookup);
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(callerHandle), ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                     break;
                 case "DefaultConstructorOf":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, HandleToObject(containingFtn), ref pResult.lookup);
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, HandleToObject(callerHandle), ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
                     break;
                 case "AllocatorOf":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, HandleToObject(containingFtn), ref pResult.lookup);
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, HandleToObject(callerHandle), ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN;
                     break;
                 default:

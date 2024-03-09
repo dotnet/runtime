@@ -2221,7 +2221,7 @@ public:
     // should be looked up at runtime.
     virtual void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-        CORINFO_METHOD_HANDLE           containingFtn,
+        CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
 
     // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -3181,7 +3181,7 @@ public:
     virtual void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle
-            CORINFO_METHOD_HANDLE           containingFtn,
+            CORINFO_METHOD_HANDLE           callerHandle,
             CORINFO_GENERICHANDLE_RESULT *  pResult
             ) = 0;
 

@@ -259,12 +259,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
 }
 
 void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
-                                                CORINFO_METHOD_HANDLE         containingFtn,
+                                                CORINFO_METHOD_HANDLE         callerHandle,
                                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
-    mc->recExpandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -1524,12 +1524,12 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(CORINFO_FIELD_HANDLE han
 void interceptor_ICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                           bool fEmbedParent, // TRUE - embeds parent type handle of the field/method
                                                              // handle
-                                          CORINFO_METHOD_HANDLE containingFtn,
+                                          CORINFO_METHOD_HANDLE callerHandle,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("embedGenericHandle");
-    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
-    mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
+    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
+    mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
 // Return information used to locate the exact enclosing type of the current method.

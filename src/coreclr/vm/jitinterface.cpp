@@ -2792,7 +2792,7 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
 void CEEInfo::embedGenericHandle(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             bool                     fEmbedParent,
-            CORINFO_METHOD_HANDLE    containingFtn,
+            CORINFO_METHOD_HANDLE    callerHandle,
             CORINFO_GENERICHANDLE_RESULT *pResult)
 {
     CONTRACTL {
@@ -2895,7 +2895,7 @@ void CEEInfo::embedGenericHandle(
                                                   pResolvedToken,
                                                   NULL,
                                                   pTemplateMD,
-                                                  (MethodDesc*)containingFtn,
+                                                  (MethodDesc*)callerHandle,
                                                   &pResult->lookup);
     }
     else
@@ -3074,6 +3074,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         PRECONDITION(CheckPointer(pResultLookup));
     } CONTRACTL_END;
 
+    _ASSERT(pContainingMD != nullptr);
+
     pResultLookup->lookupKind.needsRuntimeLookup = true;
     pResultLookup->lookupKind.runtimeLookupFlags = 0;
 
@@ -3089,14 +3091,11 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    bool inlinedLookup = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
-    MethodDesc* pContextMD = inlinedLookup ? pContainingMD : GetMethodFromContext(pResolvedToken->tokenContext);
-    _ASSERT(pContextMD != nullptr);
-
+    MethodDesc* pContextMD = pContainingMD;
     MethodTable* pContextMT = pContextMD->GetMethodTable();
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
-    if (!inlinedLookup && !pContextMD->IsSharedByGenericInstantiations())
+    if (!pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
     BOOL fInstrument = FALSE;
@@ -8933,7 +8932,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
 /*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-    CORINFO_METHOD_HANDLE           containingFtn,
+    CORINFO_METHOD_HANDLE           callerHandle,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {
     LIMITED_METHOD_CONTRACT;

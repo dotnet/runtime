@@ -272,9 +272,9 @@ public:
     void dmpIsSDArray(DWORDLONG key, DWORD value);
     bool repIsSDArray(CORINFO_CLASS_HANDLE cls);
 
-    void recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
     void dmpExpandRawHandleIntrinsic(const Agnostic_ExpandRawHandleIntrinsic& key, const Agnostic_CORINFO_GENERICHANDLE_RESULT& result);
-    void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
 
     void recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsIntrinsicType(DWORDLONG key, DWORD value);
@@ -423,13 +423,13 @@ public:
 
     void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                bool                          fEmbedParent,
-                               CORINFO_METHOD_HANDLE         containingFtn,
+                               CORINFO_METHOD_HANDLE         callerHandle,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
     void dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&           key,
                                const Agnostic_CORINFO_GENERICHANDLE_RESULT& value);
     void repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                bool                          fEmbedParent,
-                               CORINFO_METHOD_HANDLE         containingFtn,
+                               CORINFO_METHOD_HANDLE         callerHandle,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
 
     void recGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);

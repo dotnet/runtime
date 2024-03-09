@@ -1670,7 +1670,7 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
     LogException(EXCEPTIONCODE_MC, "Didn't find key %016" PRIX64 ".", methodHandle);
 }
 
-void MethodContext::recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult)
+void MethodContext::recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     if (ExpandRawHandleIntrinsic == nullptr)
         ExpandRawHandleIntrinsic = new LightWeightMap<Agnostic_ExpandRawHandleIntrinsic, Agnostic_CORINFO_GENERICHANDLE_RESULT>;
@@ -1678,7 +1678,7 @@ void MethodContext::recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolve
     Agnostic_ExpandRawHandleIntrinsic key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, ExpandRawHandleIntrinsic);
-    key.hContainingFtn = CastHandle(containingFtn);
+    key.hCallerHandle = CastHandle(callerHandle);
 
     Agnostic_CORINFO_GENERICHANDLE_RESULT value;
     value.lookup            = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->lookup);
@@ -1696,13 +1696,13 @@ void MethodContext::dmpExpandRawHandleIntrinsic(const Agnostic_ExpandRawHandleIn
         result.compileTimeHandle,
         result.handleType);
 }
-void MethodContext::repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult)
+void MethodContext::repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     Agnostic_ExpandRawHandleIntrinsic key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     key.ResolvedToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, ExpandRawHandleIntrinsic);
-    key.hContainingFtn = CastHandle(containingFtn);
+    key.hCallerHandle = CastHandle(callerHandle);
 
     Agnostic_CORINFO_GENERICHANDLE_RESULT value =
         LookupByKeyOrMiss(ExpandRawHandleIntrinsic, key, ": key %x", pResolvedToken->token);
@@ -3104,7 +3104,7 @@ CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_CLASS_HANDLE  classHandle
 
 void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                           bool                          fEmbedParent,
-                                          CORINFO_METHOD_HANDLE         containingFtn,
+                                          CORINFO_METHOD_HANDLE         callerHandle,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     if (EmbedGenericHandle == nullptr)
@@ -3114,7 +3114,7 @@ void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, EmbedGenericHandle);
     key.fEmbedParent  = (DWORD)fEmbedParent;
-    key.hContainingFtn = CastHandle(containingFtn);
+    key.hCallerHandle = CastHandle(callerHandle);
 
     Agnostic_CORINFO_GENERICHANDLE_RESULT value;
     value.lookup            = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->lookup);
@@ -3136,7 +3136,7 @@ void MethodContext::dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&    
 }
 void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                           bool                          fEmbedParent,
-                                          CORINFO_METHOD_HANDLE         containingFtn,
+                                          CORINFO_METHOD_HANDLE         callerHandle,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     AssertMapExistsNoMessage(EmbedGenericHandle);

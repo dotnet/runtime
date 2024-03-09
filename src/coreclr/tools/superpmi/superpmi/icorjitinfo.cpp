@@ -221,10 +221,10 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
     return result;
 }
 
-void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult)
+void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
-    jitInstance->mc->repExpandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
+    jitInstance->mc->repExpandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -1332,11 +1332,11 @@ CORINFO_FIELD_HANDLE MyICJI::embedFieldHandle(CORINFO_FIELD_HANDLE handle, void*
 //
 void MyICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 bool fEmbedParent, // TRUE - embeds parent type handle of the field/method handle
-                                CORINFO_METHOD_HANDLE containingFtn,
+                                CORINFO_METHOD_HANDLE callerHandle,
                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("embedGenericHandle");
-    jitInstance->mc->repEmbedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
+    jitInstance->mc->repEmbedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
 // Return information used to locate the exact enclosing type of the current method.

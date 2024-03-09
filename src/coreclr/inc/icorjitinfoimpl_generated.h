@@ -104,7 +104,7 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 bool isIntrinsicType(
@@ -557,7 +557,7 @@ CORINFO_FIELD_HANDLE embedFieldHandle(
 void embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 void getLocationOfThisType(

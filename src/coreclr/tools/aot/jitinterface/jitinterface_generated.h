@@ -30,7 +30,7 @@ struct JitInterfaceCallbacks
     CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
     CORINFO_CLASS_HANDLE (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
-    void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
     bool (* isIntrinsicType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE classHnd);
     CorInfoCallConvExtension (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
@@ -145,7 +145,7 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* embedClassHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE handle, void** ppIndirection);
     CORINFO_METHOD_HANDLE (* embedMethodHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE handle, void** ppIndirection);
     CORINFO_FIELD_HANDLE (* embedFieldHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE handle, void** ppIndirection);
-    void (* embedGenericHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE containingFtn, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void (* embedGenericHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
     void (* getLocationOfThisType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void* (* GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
@@ -389,11 +389,11 @@ public:
 
     virtual void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->expandRawHandleIntrinsic(_thisHandle, &pException, pResolvedToken, containingFtn, pResult);
+    _callbacks->expandRawHandleIntrinsic(_thisHandle, &pException, pResolvedToken, callerHandle, pResult);
     if (pException != nullptr) throw pException;
 }
 
@@ -1497,11 +1497,11 @@ public:
     virtual void embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->embedGenericHandle(_thisHandle, &pException, pResolvedToken, fEmbedParent, containingFtn, pResult);
+    _callbacks->embedGenericHandle(_thisHandle, &pException, pResolvedToken, fEmbedParent, callerHandle, pResult);
     if (pException != nullptr) throw pException;
 }
 

@@ -202,11 +202,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
 
 void WrapICorJitInfo::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(expandRawHandleIntrinsic);
-    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
     API_LEAVE(expandRawHandleIntrinsic);
 }
 
@@ -1322,11 +1322,11 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
 void WrapICorJitInfo::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(embedGenericHandle);
-    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
+    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
     API_LEAVE(embedGenericHandle);
 }
 

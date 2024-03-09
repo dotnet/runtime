@@ -171,11 +171,11 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
 
 void interceptor_ICJI::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mcs->AddCall("expandRawHandleIntrinsic");
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, containingFtn, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
 }
 
 bool interceptor_ICJI::isIntrinsicType(
@@ -1084,11 +1084,11 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(
 void interceptor_ICJI::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
-          CORINFO_METHOD_HANDLE containingFtn,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mcs->AddCall("embedGenericHandle");
-    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
+    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
 void interceptor_ICJI::getLocationOfThisType(

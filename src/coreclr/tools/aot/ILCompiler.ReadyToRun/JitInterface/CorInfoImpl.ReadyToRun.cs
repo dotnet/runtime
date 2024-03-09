@@ -2558,9 +2558,11 @@ namespace Internal.JitInterface
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
             MethodDesc templateMethod,
-            MethodDesc containingFtn,
+            MethodDesc callerHandle,
             ref CORINFO_LOOKUP pResultLookup)
         {
+            Debug.Assert(callerHandle != null);
+
             pResultLookup.lookupKind.needsRuntimeLookup = true;
             pResultLookup.lookupKind.runtimeLookupFlags = 0;
 
@@ -2574,12 +2576,10 @@ namespace Internal.JitInterface
             pResult.indirections = CORINFO.USEHELPER;
             pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
-            bool inlinedLookup = pResolvedToken.tokenContext != contextFromMethodBeingCompiled();
-            MethodDesc contextMethod = inlinedLookup ? containingFtn : methodFromContext(pResolvedToken.tokenContext);
-            Debug.Assert(contextMethod != null);
+            MethodDesc contextMethod = callerHandle;
 
             // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
-            if (!inlinedLookup && !contextMethod.IsSharedByGenericInstantiations)
+            if (!contextMethod.IsSharedByGenericInstantiations)
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
@@ -2638,7 +2638,7 @@ namespace Internal.JitInterface
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
         }
 
-        private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
@@ -2722,7 +2722,7 @@ namespace Internal.JitInterface
                         throw new NotImplementedException(pResult.handleType.ToString());
                 }
 
-                ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken: null, templateMethod, HandleToObject(containingFtn), ref pResult.lookup);
+                ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken: null, templateMethod, HandleToObject(callerHandle), ref pResult.lookup);
             }
             else
             {
@@ -2747,9 +2747,9 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
-            ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, containingFtn, ref pResult);
+            ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, callerHandle, ref pResult);
 
             Debug.Assert(pResult.compileTimeHandle != null);
 
@@ -2952,7 +2952,7 @@ namespace Internal.JitInterface
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         { throw new NotImplementedException("getMethodVTableOffset"); }
-        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
