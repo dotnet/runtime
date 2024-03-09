@@ -3089,35 +3089,23 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    MethodDesc*  pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-    MethodTable* pContextMT = GetTypeFromContext(pResolvedToken->tokenContext).AsMethodTable();
+    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
 
-    bool inlinedMethodParamLookup = pContextMD != nullptr && pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
-    bool inlinedClassParamLookup  = pContextMD == nullptr && pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
-
-    if ((inlinedMethodParamLookup && !pContextMD->HasMethodInstantiation()) ||
-        (inlinedClassParamLookup && !pContextMT->HasInstantiation()))
+    bool isInlining = pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT();
+    if (isInlining)
     {
-        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
-        return;
-    }
-
-    if (inlinedClassParamLookup)
-    {
-        if (pContainingMD == nullptr)
-        {
-            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
-            return;
-        }
+        _ASSERT(pContainingMD != nullptr);
         pContextMD = pContainingMD;
     }
 
+    MethodTable* pContextMT = pContextMD->GetMethodTable();
+
     // There is a pathological case where invalid IL refereces __Canon type directly,
     // but there is no dictionary available to store the lookup.
-    if (!inlinedClassParamLookup && !inlinedMethodParamLookup && !pContextMD->IsSharedByGenericInstantiations())
+    if (!isInlining && !pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
-    if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
+    if (pContextMD->RequiresInstMethodDescArg())
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
     }
@@ -3132,7 +3120,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     BOOL fInstrument = FALSE;
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
-    if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
+    if (pContextMD->RequiresInstMethodDescArg())
     {
         pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG : CORINFO_HELP_RUNTIMEHANDLE_METHOD;
 
@@ -3207,7 +3195,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         // If we've got an object, go through its vtable
         else
         {
-            _ASSERTE(inlinedClassParamLookup || pContextMD->AcquiresInstMethodTableFromThis());
+            _ASSERTE(pContextMD->AcquiresInstMethodTableFromThis());
             pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG : CORINFO_HELP_RUNTIMEHANDLE_CLASS;
         }
 
@@ -5438,7 +5426,7 @@ void CEEInfo::getCallInfo(
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
-                                                        nullptr,
+                                                        (MethodDesc*)callerHandle,
                                                         &pResult->codePointerLookup);
         }
         else
@@ -5490,7 +5478,7 @@ void CEEInfo::getCallInfo(
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
-                                                        nullptr,
+                                                        (MethodDesc*)callerHandle,
                                                         &pResult->stubLookup);
         }
         else
