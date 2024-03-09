@@ -1,8 +1,7 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-        .686P
-        .XMM
+        .586
         .model  flat
         option  casemap:none
         .code
@@ -180,84 +179,5 @@ RhpLMul PROC public
     pop     esi
     ret     16
 RhpLMul ENDP
-
-;; *********************************************************************/
-;; Dbl2Lng
-;;
-;; Purpose:
-;;    Converts a double to a long truncating toward zero (C semantics)
-;;    Uses stdcall calling conventions
-;;
-;; NOTE: Adapted from JIT_Dbl2LngP4x87 in CoreCLR
-;;
-RhpDbl2Lng PROC public
-ALTERNATE_ENTRY RhpDbl2UInt
-    sub     esp, 8                  ; get some local space
-
-    fld     qword ptr [esp+0Ch]     ; fetch arg
-    fnstcw  word ptr [esp+0Ch]      ; store FPCW
-    movzx   eax, word ptr [esp+0Ch] ; zero extend - wide
-    or      ah, 0Ch                 ; turn on OE and DE flags
-    mov     dword ptr [esp], eax    ; store new FPCW bits
-    fldcw   word ptr  [esp]         ; reload FPCW with new bits
-    fistp   qword ptr [esp]         ; convert
-    mov     eax, dword ptr [esp]    ; reload FP result
-    mov     edx, dword ptr [esp+4]
-    fldcw   word ptr [esp+0Ch]      ; reload original FPCW value
-
-    add     esp, 8                  ; restore stack
-
-    ret	8
-RhpDbl2Lng ENDP
-
-;; *********************************************************************/
-;; Dbl2Int
-;;
-;; Purpose:
-;;    Converts a double to a long truncating toward zero (C semantics)
-;;    Uses stdcall calling conventions
-;;
-RhpDbl2Int PROC public
-    cvttsd2si eax, qword ptr [esp+4]
-    ret       8
-RhpDbl2Int ENDP
-
-;; *********************************************************************/
-;; Lng2Dbl
-;;
-;; Purpose:
-;;    Converts a long to a double (C semantics)
-;;    Uses stdcall calling conventions
-;;
-RhpLng2Dbl PROC public
-    fild    qword ptr [esp+4]
-    ret     8
-RhpLng2Dbl ENDP
-
-;; *********************************************************************/
-;; ULng2Dbl
-;;
-;; Purpose:
-;;    Converts an unsigned long to a double (C semantics)
-;;    Uses stdcall calling conventions
-;;
-;; NOTE: Adapted from GCC generated code
-;;
-RhpULng2Dbl PROC public
-    sub     esp, 12
-    mov     eax, dword ptr [esp+20]
-    fild    qword ptr [esp+16]
-    test    eax, eax
-    jns     L2
-    fadd    TWO_TO_64
-L2:
-    fstp    qword ptr [esp]
-    fld     qword ptr [esp]
-    add     esp, 12
-    ret     8
-.data
-    TWO_TO_64 dd 5f800000h   ;; 2^64
-.code
-RhpULng2Dbl ENDP
 
 end

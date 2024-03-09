@@ -105,6 +105,37 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
+
+FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
+{
+    return (int64_t)val;
+}
+FCIMPLEND
+
+FCIMPL1_D(int32_t, RhpDbl2Int, double val)
+{
+    return (int32_t)val;
+}
+FCIMPLEND
+
+FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
+{
+    return (uint32_t)val;
+}
+FCIMPLEND
+
+FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
+{
+    return (double)val;
+}
+FCIMPLEND
+
+FCIMPL1_L(double, RhpULng2Dbl, uint64_t val)
+{
+    return (double)val;
+}
+FCIMPLEND
+
 #endif
 
 #ifdef HOST_ARM
@@ -150,31 +181,6 @@ EXTERN_C int64_t F_CALL_CONV RhpLRsh(int64_t i, int32_t j)
 EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
 {
     return i << (j & 0x3f);
-}
-
-EXTERN_C int64_t F_CALL_CONV RhpDbl2Lng(double val)
-{
-    return (int64_t)val;
-}
-
-EXTERN_C int32_t F_CALL_CONV RhpDbl2Int(double val)
-{
-    return (int32_t)val;
-}
-
-EXTERN_C uint32_t F_CALL_CONV RhpDbl2UInt(double val)
-{
-    return (uint32_t)val;
-}
-
-EXTERN_C double F_CALL_CONV RhpLng2Dbl(int64_t val)
-{
-    return (double)val;
-}
-
-EXTERN_C double F_CALL_CONV RhpULng2Dbl(uint64_t val)
-{
-    return (double)val;
 }
 
 #endif // HOST_ARM
