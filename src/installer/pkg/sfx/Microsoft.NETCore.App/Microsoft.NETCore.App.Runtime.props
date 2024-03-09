@@ -164,8 +164,12 @@
     <ItemGroup>
       <_VersionFile Include="$(IntermediateOutputPath).version" TargetPath="shared/$(SharedFrameworkName)/$(Version)/" />
     </ItemGroup>
+    <PropertyGroup>
+      <CommitHashForVersionFile Condition="'$(DotNetGitCommitHash)' != ''">$(DotNetGitCommitHash)</CommitHashForVersionFile>
+      <CommitHashForVersionFile Condition="'$(DotNetGitCommitHash)' == ''">$(SourceRevisionId)</CommitHashForVersionFile>
+    </PropertyGroup>
     <WriteLinesToFile
-      Lines="$(SourceRevisionId);$(Version)"
+      Lines="$(CommitHashForVersionFile);$(Version)"
       File="@(_VersionFile)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />

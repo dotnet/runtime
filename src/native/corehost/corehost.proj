@@ -74,9 +74,13 @@
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.sh'))</BuildScript>
 
+      <CommitHash Condition="('$(CommitHash)' == '') and ('$(DotNetGitCommitHash)' != '')">$(DotNetGitCommitHash)</CommitHash>
+      <CommitHash Condition="('$(CommitHash)' == '') and ('$(SourcerevisionId)' != '')">$(SourceRevisionId)</CommitHash>
+      <CommitHash Condition="'$(CommitHash)' == ''">N/A</CommitHash>
+
       <_CoreHostUnixTargetOS>$(TargetOS)</_CoreHostUnixTargetOS>
       <_CoreHostUnixTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_CoreHostUnixTargetOS>
-      <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$(CommitHash)" -os $(_CoreHostUnixTargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) -configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
