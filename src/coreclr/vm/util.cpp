@@ -902,7 +902,77 @@ CLRUnmapViewOfFile(
     }
 }
 
+volatile static int64_t s_totalTicks = 0;
+volatile static LONG s_actionIndex = 0;
 
+int64_t GetPreciseTickCount()
+{
+    int64_t result;
+    QueryPerformanceCounter((LARGE_INTEGER *)&result);
+    return result;
+}
+
+void ReportActionTime(const char *actionName, LPCWSTR lpFileName, int64_t before)
+{
+    int64_t duration = GetPreciseTickCount() - before;
+    long actionIndex = ::InterlockedAdd(&s_actionIndex, 1);
+    int64_t totalTime = ::InterlockedAdd64(&s_totalTicks, duration);
+    int64_t frequency;
+    QueryPerformanceFrequency((LARGE_INTEGER *)&frequency);
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(fileNameUtf8, lpFileName);
+    printf("\n[%ld]: %s '%s' - %.6f seconds, %.6f total\n",
+        actionIndex,
+        actionName,
+        fileNameUtf8,
+        duration / (double)frequency,
+        totalTime / (double)frequency);
+}
+
+void ReportPreloadTime(LPCWSTR lpFileName)
+{
+    int64_t before = GetPreciseTickCount();
+
+    HANDLE handle = CreateFileW(
+        lpFileName,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(fileNameUtf8, lpFileName);
+        printf("\nFile not found: '%s'\n", fileNameUtf8);
+        return;
+    }
+
+    DWORD high32;
+    DWORD low32 = GetFileSize(handle, &high32);
+    uint64_t reportedSize = low32 | ((uint64_t)high32 << 32);
+
+    const uint32_t chunkLimit = 1 << 24; // 16 M
+    uint32_t chunkSize = reportedSize < chunkLimit ? (uint32_t)reportedSize : chunkLimit;
+
+    void *buffer = malloc(chunkSize);
+    uint64_t loadedSize = 0;
+
+    for (DWORD numberOfBytesRead; ReadFile(handle, buffer, chunkSize, &numberOfBytesRead, NULL); loadedSize += numberOfBytesRead)
+        ;
+
+    free(buffer);
+    CloseHandle(handle);
+
+    if (loadedSize != reportedSize)
+    {
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(fileNameUtf8, lpFileName);
+        printf("\nError reading file '%s' - reported size %llu, read size %llu\n", fileNameUtf8, reportedSize, loadedSize);
+        return;
+    }
+
+    ReportActionTime("PRELOAD", lpFileName, before);
+}
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
@@ -914,9 +984,15 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
+        ReportPreloadTime(lpLibFileName);
+        
+        int64_t before = GetPreciseTickCount();
+
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
+        
+        ReportActionTime("LOAD_LIBRARY", lpLibFileName, before);
     }
     return hMod;
 }
@@ -950,9 +1026,15 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
+        ReportPreloadTime(lpLibFileName);
+        
+        int64_t before = GetPreciseTickCount();
+
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
+
+        ReportActionTime("LOAD_LIBRARY", lpLibFileName, before);
     }
     return hMod;
 }
