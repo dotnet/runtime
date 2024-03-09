@@ -2970,8 +2970,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         bool unwindSuccess = pCf->GetCodeManager()->UnwindStackFrame(pCf->GetRegisterSet(),
                                                                      pCf->GetCodeInfo(),
                                                                      pCf->GetCodeManagerFlags(),
-                                                                     pCf->GetCodeManState(),
-                                                                     NULL /* StackwalkCacheUnwindInfo* */);
+                                                                     pCf->GetCodeManState());
         _ASSERTE(unwindSuccess);
 
         if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
