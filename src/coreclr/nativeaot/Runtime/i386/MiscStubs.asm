@@ -41,13 +41,11 @@ ProbeLoop:
 RhpStackProbe ENDP
 
 ;; *********************************************************************/
-;; llshl - long shift left
+;; LLsh - long shift left
 ;;
 ;; Purpose:
 ;;    Does a Long Shift Left (signed and unsigned are identical)
 ;;    Shifts a long left any number of bits.
-;;
-;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
 ;;
 ;; Entry:
 ;;    EDX:EAX - long value to be shifted
@@ -55,6 +53,8 @@ RhpStackProbe ENDP
 ;;
 ;; Exit:
 ;;    EDX:EAX - shifted value
+;;
+;; NOTE: Adapted from JIT_LLsh in CoreCLR
 ;;
 RhpLLsh PROC public
     ;; Reduce shift amount mod 64
@@ -84,14 +84,14 @@ RhpLLsh ENDP
 ;;    Does a signed Long Shift Right
 ;;    Shifts a long right any number of bits.
 ;;
-;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
-;;
 ;; Entry:
 ;;    EDX:EAX - long value to be shifted
 ;;        ECX - number of bits to shift by
 ;;
 ;; Exit:
 ;;    EDX:EAX - shifted value
+;;
+;; NOTE: Adapted from JIT_LRsh in CoreCLR
 ;;
 RhpLRsh PROC public
     ;; Reduce shift amount mod 64
@@ -115,12 +115,11 @@ LRshMORE32:
 RhpLRsh ENDP
 
 ;; *********************************************************************/
-;;  LRsz:
+;; LRsz
+;;
 ;; Purpose:
 ;;    Does a unsigned Long Shift Right
 ;;    Shifts a long right any number of bits.
-;;
-;;        NOTE:  This routine has been adapted from the Microsoft CRTs.
 ;;
 ;; Entry:
 ;;    EDX:EAX - long value to be shifted
@@ -128,6 +127,8 @@ RhpLRsh ENDP
 ;;
 ;; Exit:
 ;;    EDX:EAX - shifted value
+;;
+;; NOTE: Adapted from JIT_LRsz in CoreCLR
 ;;
 RhpLRsz PROC public
     ;; Reduce shift amount mod 64
@@ -150,108 +151,114 @@ LRszMORE32:
     ret
 RhpLRsz ENDP
 
+;; *********************************************************************/
+;; LMul
 ;;
-;; Following helpers are unoptimized, forward to C library, and should
-;; eventually be revisited.
+;; Purpose:
+;;    Does a long multiply (same for signed/unsigned)
 ;;
+;; Entry:
+;;    Parameters are passed on the stack:
+;;    1st pushed: multiplier (QWORD)
+;;    2nd pushed: multiplicand (QWORD)
+;;
+;; Exit:
+;;    EDX:EAX - product of multiplier and multiplicand
+;;
+;; NOTE: Adapted from clang generated code
+;;
+RhpLMul PROC public
+    push    esi
+    mov     ecx, dword ptr [esp + 16]
+    mov     esi, dword ptr [esp + 8]
+    mov     eax, ecx
+    mul     esi
+    imul    ecx, dword ptr [esp + 12]
+    add     edx, ecx
+    imul    esi, dword ptr [esp + 20]
+    add     edx, esi
+    pop     esi
+    ret     16
+RhpLMul ENDP
 
-EXTERN __dtol3 : PROC
-
+;; *********************************************************************/
+;; Dbl2Lng
+;;
+;; Purpose:
+;;    Converts a double to a long truncating toward zero (C semantics)
+;;    Uses stdcall calling conventions
+;;
+;; NOTE: Adapted from JIT_Dbl2LngP4x87 in CoreCLR
+;;
 RhpDbl2Lng PROC public
-    movsd   xmm0, qword ptr [esp+4]
-    call    __dtol3
-    ret 8
+ALTERNATE_ENTRY RhpDbl2UInt
+    sub     esp, 8                  ; get some local space
+
+    fld     qword ptr [esp+0Ch]     ; fetch arg
+    fnstcw  word ptr [esp+0Ch]      ; store FPCW
+    movzx   eax, word ptr [esp+0Ch] ; zero extend - wide
+    or      ah, 0Ch                 ; turn on OE and DE flags
+    mov     dword ptr [esp], eax    ; store new FPCW bits
+    fldcw   word ptr  [esp]         ; reload FPCW with new bits
+    fistp   qword ptr [esp]         ; convert
+    mov     eax, dword ptr [esp]    ; reload FP result
+    mov     edx, dword ptr [esp+4]
+    fldcw   word ptr [esp+0Ch]      ; reload original FPCW value
+
+    add     esp, 8                  ; restore stack
+
+    ret	8
 RhpDbl2Lng ENDP
 
+;; *********************************************************************/
+;; Dbl2Int
+;;
+;; Purpose:
+;;    Converts a double to a long truncating toward zero (C semantics)
+;;    Uses stdcall calling conventions
+;;
 RhpDbl2Int PROC public
-    movsd   xmm0, qword ptr [esp+4]
-    cvttsd2si eax, xmm0
-    ret 8
+    cvttsd2si eax, qword ptr [esp+4]
+    ret       8
 RhpDbl2Int ENDP
 
-RhpDbl2UInt PROC public
-    movsd   xmm0, qword ptr [esp+4]
-    call    __dtol3
-    ret 8
-RhpDbl2UInt ENDP
-
-;EXTERN __ltod3 : PROC
-
+;; *********************************************************************/
+;; Lng2Dbl
+;;
+;; Purpose:
+;;    Converts a long to a double (C semantics)
+;;    Uses stdcall calling conventions
+;;
 RhpLng2Dbl PROC public
     fild    qword ptr [esp+4]
-    ;mov     edx, dword ptr [esp+8]
-    ;mov     ecx, dword ptr [esp+4]
-    ;call    __ltod3
-    ;movsd   qword ptr [esp+4], xmm0
-    ;fld     qword ptr [esp+4]
     ret     8
 RhpLng2Dbl ENDP
 
-EXTERN __ultod3 : PROC
-
+;; *********************************************************************/
+;; ULng2Dbl
+;;
+;; Purpose:
+;;    Converts an unsigned long to a double (C semantics)
+;;    Uses stdcall calling conventions
+;;
+;; NOTE: Adapted from GCC generated code
+;;
 RhpULng2Dbl PROC public
-    mov     edx, dword ptr [esp+8]
-    mov     ecx, dword ptr [esp+4]
-    call    __ultod3
-    movsd   qword ptr [esp+4], xmm0
-    fld     qword ptr [esp+4]
+    sub     esp, 12
+    mov     eax, dword ptr [esp+20]
+    fild    qword ptr [esp+16]
+    test    eax, eax
+    jns     L2
+    fadd    TWO_TO_64
+L2:
+    fstp    qword ptr [esp]
+    fld     qword ptr [esp]
+    add     esp, 12
     ret     8
+.data
+    TWO_TO_64 dd 5f800000h   ;; 2^64
+.code
 RhpULng2Dbl ENDP
-
-EXTERN __alldiv : PROC
-
-RhpLDiv PROC public
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+24]
-    push    dword ptr [esp+24]
-    call    __alldiv
-    ret     16
-RhpLDiv ENDP
-
-EXTERN __allrem : PROC
-
-RhpLMod PROC public
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+24]
-    push    dword ptr [esp+24]
-    call    __allrem
-    ret     16
-RhpLMod ENDP
-
-EXTERN __aulldiv : PROC
-
-RhpULDiv PROC public
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+24]
-    push    dword ptr [esp+24]
-    call    __aulldiv
-    ret     16
-RhpULDiv ENDP
-
-EXTERN __aullrem : PROC
-
-RhpULMod PROC public
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+24]
-    push    dword ptr [esp+24]
-    call    __aullrem
-    ret     16
-RhpULMod ENDP
-
-EXTERN __allmul : PROC
-
-RhpLMul PROC public
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+8]
-    push    dword ptr [esp+24]
-    push    dword ptr [esp+24]
-    call    __allmul
-    ret     16
-RhpLMul ENDP
 
 ;;
 ;; https://github.com/dotnet/runtime/pull/98858 moves the following helpers to

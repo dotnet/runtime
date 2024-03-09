@@ -78,6 +78,32 @@ EXTERN_C double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
     return(fmod(dividend,divisor));
 }
 
+#ifndef HOST_64BIT
+EXTERN_C int64_t QCALLTYPE RhpLDiv(int64_t i, int64_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+
+EXTERN_C uint64_t QCALLTYPE RhpULDiv(uint64_t i, uint64_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+
+EXTERN_C int64_t QCALLTYPE RhpLMod(int64_t i, int64_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+
+EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+#endif
+
 #ifdef HOST_ARM
 EXTERN_C int32_t REDHAWK_CALLCONV RhpIDiv(int32_t i, int32_t j)
 {
@@ -91,18 +117,6 @@ EXTERN_C uint32_t REDHAWK_CALLCONV RhpUDiv(uint32_t i, uint32_t j)
     return i / j;
 }
 
-EXTERN_C int64_t REDHAWK_CALLCONV RhpLDiv(int64_t i, int64_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i / j;
-}
-
-EXTERN_C uint64_t REDHAWK_CALLCONV RhpULDiv(uint64_t i, uint64_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i / j;
-}
-
 EXTERN_C int32_t REDHAWK_CALLCONV RhpIMod(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
@@ -110,18 +124,6 @@ EXTERN_C int32_t REDHAWK_CALLCONV RhpIMod(int32_t i, int32_t j)
 }
 
 EXTERN_C uint32_t REDHAWK_CALLCONV RhpUMod(uint32_t i, uint32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i % j;
-}
-
-EXTERN_C int64_t REDHAWK_CALLCONV RhpLMod(int64_t i, int64_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i % j;
-}
-
-EXTERN_C uint64_t REDHAWK_CALLCONV RhpULMod(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
