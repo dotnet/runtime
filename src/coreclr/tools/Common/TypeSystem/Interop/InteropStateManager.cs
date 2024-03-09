@@ -180,10 +180,10 @@ namespace Internal.TypeSystem
             return _inlineArrayHashtable.GetOrCreateValue(candidate);
         }
 
-        public FieldDesc GetPInvokeLazyFixupField(MethodDesc method, int signatureBytes)
+        public FieldDesc GetPInvokeLazyFixupField(MethodDesc method, MethodSignature nativeSig)
         {
             var fieldDesc = _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(method);
-            fieldDesc.SignatureBytes = signatureBytes;
+            fieldDesc.NativeSignature = nativeSig;
             return fieldDesc;
         }
 

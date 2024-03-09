@@ -300,27 +300,16 @@ namespace Internal.IL.Stubs
 
             if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_targetMethod, out _))
             {
-                int signatureBytes = -1;
-                if (context.Target.IsWindows && context.Target.Architecture == TargetArchitecture.X86 &&
-                    (_targetMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask) == UnmanagedCallingConventions.Stdcall)
-                {
-                    signatureBytes = 0;
-                    foreach (var p in nativeParameterTypes)
-                    {
-                        signatureBytes += AlignmentHelper.AlignUp(p.GetElementSize().AsInt, context.Target.PointerSize);
-                    }
-                }
+                MethodSignature nativeSig = new MethodSignature(
+                    MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
+                    _targetMethod.GetPInvokeMethodCallingConventions().EncodeAsEmbeddedSignatureData(context));
 
                 MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
-                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod, signatureBytes);
+                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod, nativeSig);
 
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
                     .GetKnownMethod("ResolvePInvoke", null)));
-
-                MethodSignature nativeSig = new MethodSignature(
-                    MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
-                    _targetMethod.GetPInvokeMethodCallingConventions().EncodeAsEmbeddedSignatureData(context));
 
                 ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(context
                     .GetWellKnownType(WellKnownType.IntPtr));

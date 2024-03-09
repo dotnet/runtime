@@ -127,11 +127,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             PInvokeMetadata metadata = pInvokeLazyFixupField.PInvokeMetadata;
             ModuleDesc declaringModule = ((MetadataType)pInvokeLazyFixupField.TargetMethod.OwningType).Module;
+            TargetDetails target = declaringModule.Context.Target;
+            EcmaMethod method = pInvokeLazyFixupField.TargetMethod as EcmaMethod;
 
             CustomAttributeValue<TypeDesc>? decodedAttr = null;
 
             // Look for DefaultDllImportSearchPath on the method
-            if (pInvokeLazyFixupField.TargetMethod is EcmaMethod method)
+            if (method is not null)
             {
                 decodedAttr = method.GetDecodedCustomAttribute("System.Runtime.InteropServices", "DefaultDllImportSearchPathsAttribute");
             }
@@ -162,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
             EntryPointName = metadata.Name;
 
             CharSet charSetMangling = default;
-            if (declaringModule.Context.Target.IsWindows && !metadata.Flags.ExactSpelling)
+            if (target.IsWindows && !metadata.Flags.ExactSpelling)
             {
                 // Mirror CharSet normalization from Marshaller.CreateMarshaller
                 bool isAnsi = metadata.Flags.CharSet switch
@@ -177,14 +179,25 @@ namespace ILCompiler.DependencyAnalysis
             }
             CharSetMangling = charSetMangling;
 
-            SignatureBytes = pInvokeLazyFixupField.SignatureBytes;
+            int signatureBytes = -1;
+            if (target.IsWindows && target.Architecture == TargetArchitecture.X86 && method is not null &&
+                (method.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask) == UnmanagedCallingConventions.Stdcall)
+            {
+                signatureBytes = 0;
+                foreach (var p in pInvokeLazyFixupField.NativeSignature)
+                {
+                    signatureBytes += AlignmentHelper.AlignUp(p.GetElementSize().AsInt, target.PointerSize);
+                }
+            }
+            SignatureBytes = signatureBytes;
         }
 
         public bool Equals(PInvokeMethodData other)
         {
             return ModuleData.Equals(other.ModuleData) &&
                 EntryPointName == other.EntryPointName &&
-                CharSetMangling == other.CharSetMangling;
+                CharSetMangling == other.CharSetMangling &&
+                SignatureBytes == other.SignatureBytes;
         }
 
         public override bool Equals(object obj)
@@ -207,7 +220,11 @@ namespace ILCompiler.DependencyAnalysis
             if (moduleCompare != 0)
                 return moduleCompare;
 
-            return CharSetMangling.CompareTo(other.CharSetMangling);
+            var charsetCompare = CharSetMangling.CompareTo(other.CharSetMangling);
+            if (charsetCompare != 0)
+                return charsetCompare;
+
+            return SignatureBytes.CompareTo(other.SignatureBytes);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
