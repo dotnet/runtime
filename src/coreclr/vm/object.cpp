@@ -25,9 +25,6 @@ SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 DWORD Object::ComputeHashCode()
 {
     DWORD hashCode;
-    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
-    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
-    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
@@ -36,8 +33,7 @@ DWORD Object::ComputeHashCode()
     {
         if (pThread == NULL)
         {
-            dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
-            hashCode = (dwHashCodeSeed >> (32-HASHCODE_BITS));
+            hashCode = (GetGlobalNewHashCode() >> (32-HASHCODE_BITS));
         }
         else
         {
@@ -51,6 +47,18 @@ DWORD Object::ComputeHashCode()
      _ASSERTE((hashCode & ((1<<HASHCODE_BITS)-1)) == hashCode);
 
     return hashCode;
+}
+
+DWORD Object::GetGlobalNewHashCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    // Used for generating hash codes for exceptions to determine whether the
+    // Catch_Handler_Found_Event should be reported. See Thread::GetNewHashCode.
+    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
+    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
+    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
+    dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
+    return dwHashCodeSeed;
 }
 
 #ifndef DACCESS_COMPILE

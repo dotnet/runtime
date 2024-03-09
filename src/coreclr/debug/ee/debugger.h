@@ -1968,6 +1968,8 @@ public:
                                          Module *classModule,
                                          BOOL fIsLoadEvent);
 
+    BOOL ForceSendCatchHandlerFound(ThreadExceptionState* pExState);
+
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
                                SIZE_T nOffset,
