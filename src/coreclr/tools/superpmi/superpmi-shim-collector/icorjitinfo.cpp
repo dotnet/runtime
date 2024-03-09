@@ -1523,11 +1523,12 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(CORINFO_FIELD_HANDLE han
 void interceptor_ICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                           bool fEmbedParent, // TRUE - embeds parent type handle of the field/method
                                                              // handle
+                                          CORINFO_METHOD_HANDLE containingFtn,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("embedGenericHandle");
-    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
-    mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
+    mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
 }
 
 // Return information used to locate the exact enclosing type of the current method.

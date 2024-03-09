@@ -949,9 +949,10 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(
 void interceptor_ICJI::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE containingFtn,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
-    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
 }
 
 void interceptor_ICJI::getLocationOfThisType(

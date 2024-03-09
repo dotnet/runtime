@@ -556,6 +556,7 @@ CORINFO_FIELD_HANDLE embedFieldHandle(
 void embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE containingFtn,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 void getLocationOfThisType(

@@ -3101,6 +3101,7 @@ CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_CLASS_HANDLE  classHandle
 
 void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                           bool                          fEmbedParent,
+                                          CORINFO_METHOD_HANDLE         containingFtn,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     if (EmbedGenericHandle == nullptr)
@@ -3131,6 +3132,7 @@ void MethodContext::dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&    
 }
 void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                           bool                          fEmbedParent,
+                                          CORINFO_METHOD_HANDLE         containingFtn,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     AssertMapExistsNoMessage(EmbedGenericHandle);

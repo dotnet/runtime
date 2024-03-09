@@ -2752,7 +2752,7 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* containingFtn, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, ref pResult);
 

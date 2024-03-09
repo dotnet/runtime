@@ -2339,7 +2339,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             info.compCompHnd->resolveToken(&resolvedToken);
 
             CORINFO_GENERICHANDLE_RESULT embedInfo;
-            info.compCompHnd->embedGenericHandle(&resolvedToken, true, &embedInfo);
+            // NOTE: inlining is done at this point, so we don't know which method contained this token.
+            // It's fine because currently this is never used for something that belongs to an inlinee.
+            info.compCompHnd->embedGenericHandle(&resolvedToken, true, nullptr, &embedInfo);
             if (!embedInfo.lookup.lookupKind.needsRuntimeLookup)
             {
                 // Exception type does not need runtime lookup

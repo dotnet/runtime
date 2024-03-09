@@ -7022,7 +7022,10 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, &embedInfo);
+
+    // NOTE: inlining is done at this point, so we don't know which method contained this token.
+    // It's fine because currently this is never used for something that belongs to an inlinee.
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, nullptr, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);

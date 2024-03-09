@@ -1321,10 +1321,11 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
 void WrapICorJitInfo::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE containingFtn,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(embedGenericHandle);
-    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, containingFtn, pResult);
     API_LEAVE(embedGenericHandle);
 }
 

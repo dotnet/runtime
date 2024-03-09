@@ -2792,6 +2792,7 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
 void CEEInfo::embedGenericHandle(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             bool                     fEmbedParent,
+            CORINFO_METHOD_HANDLE    containingFtn,
             CORINFO_GENERICHANDLE_RESULT *pResult)
 {
     CONTRACTL {
@@ -2894,6 +2895,7 @@ void CEEInfo::embedGenericHandle(
                                                   pResolvedToken,
                                                   NULL,
                                                   pTemplateMD,
+                                                  (MethodDesc*)containingFtn,
                                                   &pResult->lookup);
     }
     else
@@ -3064,6 +3066,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
                                                         MethodDesc * pTemplateMD /* for method-based slots */,
+                                                        MethodDesc * pContainingMD,
                                                         CORINFO_LOOKUP *pResultLookup)
 {
     CONTRACTL{
@@ -3099,18 +3102,22 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         return;
     }
 
+    if (inlinedClassParamLookup)
+    {
+        if (pContainingMD == nullptr)
+        {
+            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
+            return;
+        }
+        pContextMD = pContainingMD;
+    }
+
     // There is a pathological case where invalid IL refereces __Canon type directly,
     // but there is no dictionary available to store the lookup.
     if (!inlinedClassParamLookup && !inlinedMethodParamLookup && !pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
-    if (inlinedClassParamLookup)
-    {
-        // TODO: how do we figure out whether we need CORINFO_LOOKUP_THISOBJ or CORINFO_LOOKUP_CLASSPARAM?
-        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
-        return;
-    }
-    else if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
+    if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
     }
@@ -3125,7 +3132,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     BOOL fInstrument = FALSE;
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
-    if (!inlinedClassParamLookup && (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup))
+    if (pContextMD->RequiresInstMethodDescArg() || inlinedMethodParamLookup)
     {
         pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG : CORINFO_HELP_RUNTIMEHANDLE_METHOD;
 
@@ -3192,7 +3199,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     {
         _ASSERTE(pContextMT->GetNumGenericArgs() > 0);
 
-        if (!inlinedClassParamLookup && pContextMD->RequiresInstMethodTableArg())
+        if (pContextMD->RequiresInstMethodTableArg())
         {
             // If we've got a vtable extra argument, go through that
             pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG : CORINFO_HELP_RUNTIMEHANDLE_CLASS;
@@ -5431,6 +5438,7 @@ void CEEInfo::getCallInfo(
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
+                                                        nullptr,
                                                         &pResult->codePointerLookup);
         }
         else
@@ -5482,6 +5490,7 @@ void CEEInfo::getCallInfo(
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
+                                                        nullptr,
                                                         &pResult->stubLookup);
         }
         else
