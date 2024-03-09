@@ -78,12 +78,12 @@ export class PromiseHolder extends ManagedObject {
     }
 
     resolve(data: any) {
-        mono_assert(!this.isResolved, "resolve could be called only once");
-        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise resolution can't be propagated to managed code, mono runtime already exited.");
             return;
         }
+        mono_assert(!this.isResolved, "resolve could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (WasmEnableThreads && !this.setIsResolving()) {
             // we know that cancelation is in flight
             // because we need to keep the GCHandle alive until until the cancelation arrives
@@ -102,12 +102,12 @@ export class PromiseHolder extends ManagedObject {
     }
 
     reject(reason: any) {
-        mono_assert(!this.isResolved, "reject could be called only once");
-        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise rejection can't be propagated to managed code, mono runtime already exited.");
             return;
         }
+        mono_assert(!this.isResolved, "reject could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
         const isCancelation = reason && reason[promise_holder_symbol] === this;
         if (WasmEnableThreads && !isCancelation && !this.setIsResolving()) {
             // we know that cancelation is in flight
@@ -127,6 +127,10 @@ export class PromiseHolder extends ManagedObject {
     }
 
     cancel() {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise cancelation can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
         mono_assert(!this.isResolved, "cancel could be called only once");
         mono_assert(!this.isDisposed, "resolve is already disposed.");
 
