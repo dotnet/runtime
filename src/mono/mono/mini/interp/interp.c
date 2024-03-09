@@ -4274,6 +4274,7 @@ main_loop:
 			call_args_offset = ip [2];
 
 			this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
+			NULL_CHECK (this_arg);
 
 			slot = (gint16)ip [4];
 			ip += 5;
