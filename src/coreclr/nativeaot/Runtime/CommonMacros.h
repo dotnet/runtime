@@ -219,6 +219,21 @@ typedef uint8_t CODE_LOCATION;
     _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_DECL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
 #define FCIMPL_RENAME(_rettype, ...) \
     _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_IMPL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
+#define FCIMPL_RENAME_ARGSIZE(_rettype, _method, _argSize) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_IMPL_ALTNAME(_method, _argSize))))
+
+#define FCIMPL1_D(_rettype, _method, a) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype REDHAWK_CALLCONV _method (a) \
+    {
+#define FCIMPL2_FF(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype REDHAWK_CALLCONV _method (b, a) \
+    {
+#define FCIMPL2_DD(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
+    EXTERN_C _rettype REDHAWK_CALLCONV _method (b, a) \
+    {
 
 #else
 
@@ -227,6 +242,16 @@ typedef uint8_t CODE_LOCATION;
 
 #define FCALL_METHOD_ARGS(dummy, ...) (__VA_ARGS__)
 #define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
+
+#define FCIMPL1_D(_rettype, _method, a) \
+    EXTERN_C _rettype REDHAWK_CALLCONV _method (a) \
+    {
+#define FCIMPL2_FF(_rettype, _method, a, b) \
+    EXTERN_C _rettype REDHAWK_CALLCONV _method (a, b) \
+    {
+#define FCIMPL2_DD(_rettype, _method, a, b) \
+    EXTERN_C _rettype REDHAWK_CALLCONV _method (a, b) \
+    {
 
 #endif
 

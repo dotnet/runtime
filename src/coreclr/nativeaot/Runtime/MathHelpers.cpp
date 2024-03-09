@@ -9,7 +9,7 @@
 // Floating point and 64-bit integer math helpers.
 //
 
-EXTERN_C uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
+FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
@@ -24,12 +24,13 @@ EXTERN_C uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
     }
     return ret;
 }
+FCIMPLEND
 
 #undef min
 #undef max
 #include <cmath>
 
-EXTERN_C float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
+FCIMPL2_FF(float, RhpFltRem, float dividend, float divisor)
 {
     //
     // From the ECMA standard:
@@ -53,8 +54,9 @@ EXTERN_C float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
     // else...
     return fmodf(dividend,divisor);
 }
+FCIMPLEND
 
-EXTERN_C double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
+FCIMPL2_DD(double, RhpDblRem, double dividend, double divisor)
 {
     //
     // From the ECMA standard:
@@ -77,6 +79,7 @@ EXTERN_C double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
     // else...
     return(fmod(dividend,divisor));
 }
+FCIMPLEND
 
 #ifndef HOST_64BIT
 EXTERN_C int64_t QCALLTYPE RhpLDiv(int64_t i, int64_t j)

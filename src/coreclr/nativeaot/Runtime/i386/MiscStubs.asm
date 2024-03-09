@@ -260,22 +260,4 @@ L2:
 .code
 RhpULng2Dbl ENDP
 
-;;
-;; https://github.com/dotnet/runtime/pull/98858 moves the following helpers to
-;; managed code, so no need to optimize this
-;;
-
-REDIRECT_FUNC macro ExportName, ImportName
-    EXTERN ImportName : PROC
-
-    public  ExportName
-    ExportName    proc
-        jmp ImportName
-    ExportName    endp
-endm
-
-REDIRECT_FUNC RhpDbl2ULng, @RhpDbl2ULng@8
-REDIRECT_FUNC RhpFltRem, @RhpFltRem@8
-REDIRECT_FUNC RhpDblRem, @RhpDblRem@16
-
 end
