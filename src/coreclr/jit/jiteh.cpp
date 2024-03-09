@@ -2371,11 +2371,6 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             }
             else
             {
-                // NOTE: It is a bit more complicated than this if this EH filter belongs to an inlinee as
-                // at this point inlining is already done, and we can't rely on the tricks we do in the
-                // importer for inlined runtime lookups. However, we currently never inline methods with EH,
-                // so we don't need to worry about this (yet).
-                //
                 runtimeLookup = getTokenHandleTree(&resolvedToken, true);
             }
             GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOF_EXCEPTION, TYP_INT, runtimeLookup, arg);

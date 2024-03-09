@@ -1538,7 +1538,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 // getRuntimeContextTree: find pointer to context for runtime lookup.
 //
 // Arguments:
-//    kind         - lookup kind.
+//    kind - lookup kind.
 //
 // Return Value:
 //    Return GenTree pointer to generic shared context.
@@ -1564,6 +1564,10 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         ctxTree = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
         assert(ctxTree != nullptr);
         assert(ctxTree->TypeIs(TYP_I_IMPL));
+        if (ctxTree->OperIs(GT_LCL_VAR))
+        {
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        }
     }
     else if (kind == CORINFO_LOOKUP_THISOBJ)
     {
@@ -1575,18 +1579,20 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
             assert(impInlineInfo->inlArgInfo[0].argIsThis);
 
             ctxTree = impInlineFetchArg(impInlineInfo->inlArgInfo[0], impInlineInfo->lclVarInfo[0]);
-            // context is the method table pointer of the this object
-            ctxTree = gtNewMethodTableLookup(ctxTree);
+            if (ctxTree->OperIs(GT_LCL_VAR))
+            {
+                ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+            }
         }
         else
         {
             assert(info.compThisArg != BAD_VAR_NUM);
             ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
             ctxTree->gtFlags |= GTF_VAR_CONTEXT;
-
-            // context is the method table pointer of the this object
-            ctxTree = gtNewMethodTableLookup(ctxTree);
         }
+
+        // context is the method table pointer of the this object
+        ctxTree = gtNewMethodTableLookup(ctxTree);
     }
     else
     {

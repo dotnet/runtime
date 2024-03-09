@@ -7000,9 +7000,6 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                             CORINFO_CALL_INFO*      pCallInfo)
 {
-    // NOTE: Runtime lookups are tricky for inlinees and at this point we're already done with inlining.
-    // The good news is that we currently never inline methods with explicit tail calls.
-    //
     GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
     GenTree* exactMethodDesc = getTokenHandleTree(pResolvedToken, false);
 
@@ -7010,7 +7007,8 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
-// getTokenHandleTree: get a handle tree for a token
+// getTokenHandleTree: get a handle tree for a token. This method should never
+//    be called for tokens imported from inlinees.
 //
 // Arguments:
 //    pResolvedToken - token to get a handle for
@@ -7025,6 +7023,10 @@ GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bo
 
     // NOTE: inlining is done at this point, so we don't know which method contained this token.
     // It's fine because currently this is never used for something that belongs to an inlinee.
+    // Namely, we currently use it for:
+    //   1) Methods with EH are never inlined
+    //   2) Methods with explicit tail calls are never inlined
+    //
     info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
