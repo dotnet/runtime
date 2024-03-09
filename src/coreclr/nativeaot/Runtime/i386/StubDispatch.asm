@@ -41,7 +41,7 @@ StubAVLocation textequ @CatStr( _RhpInterfaceDispatchAVLocation, entries )
         ;; and the push of ebx below is precisely so we can access a second register to hold the MethodTable
         ;; pointer).
     ALTERNATE_ENTRY StubAVLocation
-        cmp     byte ptr [ecx], 0
+        cmp     dword ptr [ecx], 0
 
         ;; eax currently contains the indirection cell address. We need to update it to point to the cache
         ;; block instead.
@@ -118,7 +118,7 @@ ALTERNATE_ENTRY _RhpInitialInterfaceDispatch
         ;; The exception handling infrastructure is aware of the fact that this is the first
         ;; instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
         ;; to a NullReferenceException at the callsite.
-        cmp     byte ptr [ecx], 0
+        cmp     dword ptr [ecx], 0
 
         jmp RhpInterfaceDispatchSlow
 FASTCALL_ENDFUNC
