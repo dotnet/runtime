@@ -8,7 +8,7 @@ stress mode test configuration failures, such as failures in a JIT stress test r
 
 One goal of failure investigation is to quickly route failures to the correct area owner. The ownership of various product areas
 is detailed [here](../../area-owners.md). The GitHub auto-tagging bot uses the ownership information
-in the file [fabricbot.json](../../../.github/fabricbot.json).
+in the file [Policy Service configuration](../../../.github/policies).
 
 ## Platform configuration
 

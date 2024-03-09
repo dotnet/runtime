@@ -4112,10 +4112,6 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
-
-#ifdef SWIFT_SUPPORT
-    GTF_CALL_M_SWIFT_ERROR_HANDLING    = 0x10000000, // call uses the Swift calling convention, and error register will be checked after it returns.
-#endif // SWIFT_SUPPORT
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4419,6 +4415,7 @@ enum class WellKnownArg : unsigned
     R2RIndirectionCell,
     ValidateIndirectCallTarget,
     DispatchIndirectCallTarget,
+    SwiftError,
     SwiftSelf,
 };
 
@@ -5220,6 +5217,15 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
+
+#ifdef SWIFT_SUPPORT
+    bool HasSwiftErrorHandling()
+    {
+        // Most calls aren't Swift calls, so short-circuit this check by checking the calling convention first.
+        return (GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift) &&
+               (gtArgs.FindWellKnownArg(WellKnownArg::SwiftError) != nullptr);
+    }
+#endif // SWIFT_SUPPORT
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
