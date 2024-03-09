@@ -47,48 +47,12 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - IsInternal: ''
-    - HelixApiAccessToken: ''
-    - SharedHelixPreCommands: ''
-    - AdditionalHelixPreCommands: ''
-    - AdditionalHelixPostCommands: ''
-    # run machine-setup and set PYTHONPATH for both public and private jobs
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - SharedHelixPreCommands: 'call %HELIX_WORKITEM_PAYLOAD%\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%'
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - SharedHelixPreCommands: 'chmod +x $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;. $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD'
+    - name: internalParam
+      value: --internal
 
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - HelixPreCommandWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0;py -3 -m pip install --user azure.storage.queue==12.0.0;py -3 -m pip install --user urllib3==1.26.15;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
-      - HelixPostCommandsWindows: 'set PYTHONPATH=%ORIGPYPATH%'
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), ne(parameters.osSubGroup, '_musl')) }}:
-      - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-      - HelixPostCommandsLinux: 'export PYTHONPATH=$ORIGPYPATH'
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
-      - HelixPreCommandMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-      - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
-    - ${{ if eq(parameters.osGroup, 'osx') }}:
-      - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0;pip3 install azure.storage.queue==12.0.0;pip3 install urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-      - HelixPostCommandOSX: 'export PYTHONPATH=$ORIGPYPATH'
-
-    # extra private job settings
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
-        - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
-        - IsInternal: -Internal
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), ne(parameters.osSubGroup, '_musl')) }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
-        - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
-        - IsInternal: --internal
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandMusl)
-        - AdditionalHelixPostCommands: $(HelixPostCommandsMusl)
-        - IsInternal: --internal
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
-        - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
-        - IsInternal: --internal
+      - name: internalParam
+        value: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
 
@@ -123,22 +87,6 @@ jobs:
     - ${{ parameters.steps }}
     - checkout: InternalPerformanceRepo
       path: performance
-    # run run-performance-job.py
-    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
-      displayName: Performance Setup (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-      continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} --uselocalcommittime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
-      displayName: Performance Setup (Linux/MAC)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-      continueOnError: ${{ parameters.continueOnError }}
-    # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd
-      displayName: Run ci setup script (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup.sh
-      displayName: Run ci setup script (Linux/MAC)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm (TODO: move to run-performance-job.py)
     - script: >-
         mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
@@ -148,6 +96,9 @@ jobs:
         find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
       displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
+    # run run-performance-job.py
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --is-scenario --run-kind ${{ parameters.kind }} --architecture ${{ parameters.architecture }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --framework $(_Framework) --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+      displayName: Run performance job script
     # Zip the workitem directory (for xharness (mobile) based workitems)
     - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
       - task: ArchiveFiles@2
@@ -160,16 +111,6 @@ jobs:
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
-        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
-        HelixAccessToken: $(HelixApiAccessToken)
-        HelixTargetQueues: $(Queue)
-        HelixPreCommands: '$(AdditionalHelixPreCommands);$(SharedHelixPreCommands)' # $(HelixPreCommands) should follow $(AdditionalHelixPreCommands) because PYTHONPATH is cleared by the former
-        HelixPostCommands: $(AdditionalHelixPostCommands)
-        Creator: $(Creator)
-        WorkItemTimeout: 4:00 # 4 hours
-        WorkItemDirectory: '$(WorkItemDirectory)' # contains scenario tools, shared python scripts, dotnet tool
-        CorrelationPayloadDirectory: '$(PayloadDirectory)' # contains performance repo and built product
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}
 

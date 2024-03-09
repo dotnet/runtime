@@ -78,7 +78,8 @@ jobs:
     - ${{ parameters.steps }}
     - checkout: InternalPerformanceRepo
       path: performance
-    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --run-kind ${{ parameters.kind }} --architecture ${{ parameters.architecture }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --framework $(_Framework) --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+      # needs pgo run type, physical promotion, r2r, experiment, codegen, runtime
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --run-kind ${{ parameters.kind }} --architecture ${{ parameters.architecture }} --os-group ${{ parameters.osName }} --os-sub-group ${{ parameters.osSubgroup }} --logical-machine ${{ parameters.logicalMachine }} --framework $(_Framework) --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Run performance job script
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
