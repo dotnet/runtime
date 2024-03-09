@@ -107,25 +107,25 @@ jobs:
     - name: _onlySanityCheckArg
       ${{ if eq(parameters.onlySanityCheck, 'true') }}:
         value: '--only-sanity'
-    _name: _hybridGlobalizationArg
+    - name: _hybridGlobalizationArg
       ${{ if eq(parameters.hybridGlobalization, 'True') }}:
         value: '--hybrid-globalization'
-    _name: _pgoRunTypeArg
+    - name: _pgoRunTypeArg
       ${{ if ne(parameters.pgoRunType, '') }}:
         value: '--pgo-run-type ${{ parameters.pgoRunType }}'
-    _name: _physicalPromotionRunTypeArg
+    - name: _physicalPromotionRunTypeArg
       ${{ if ne(parameters.pgoRunType, '') }}:
         value: '--physical-promotion-run-type ${{ parameters.physicalPromotionRunType }}'
-    _name: _r2rRunTypeArg
+    - name: _r2rRunTypeArg
       ${{ if ne(parameters.r2rRunType, '') }}:
         value: '--r2r-run-type ${{ parameters.r2rRunType }}'
-    _name: _experimentArg
+    - name: _experimentArg
       ${{ if ne(parameters.experimentName, '') }}:
         value: '--experiment-name ${{ parameters.experimentName }}'
-    _name: _jsEngineArg
+    - name: _jsEngineArg
       ${{ if eq(parameters.runtimeType, 'wasm') }}:
         value: '--javascript-engine ${{ parameters.javascriptEngine }}'
-    _name: _iosArgs
+    - name: _iosArgs
       ${{ if in(parameters.runtimeType, 'iOSMono', 'iOSNativeAOT') }}:
         value: '-iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}'
 
