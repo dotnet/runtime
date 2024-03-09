@@ -397,7 +397,11 @@ namespace Internal.Runtime.CompilerHelpers
             if (pMethod == IntPtr.Zero && pCell->IsStdcall)
             {
                 int nameLength = string.strlen(methodName);
-                // We need to add an extra bytes for the prefix, null terminator and stack size suffix ('@' and up to 10 digits)
+                // We need to add an extra bytes for the prefix, null terminator and stack size suffix:
+                // - 1 byte for '_' prefix
+                // - 1 byte for '@' suffix
+                // - up to 10 bytes for digits (maximum positive number representable by uint)
+                // - 1 byte for NULL termination character
                 byte* probedMethodName = stackalloc byte[nameLength + 13];
                 probedMethodName[0] = (byte)'_';
                 Unsafe.CopyBlock(probedMethodName + 1, methodName, (uint)nameLength);
