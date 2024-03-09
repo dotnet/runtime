@@ -5,9 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using Internal.TypeSystem;
 
-namespace ILCompiler
+namespace Internal.TypeSystem
 {
     /// <summary>
     /// This type represents a type that has one field in metadata,
@@ -90,49 +89,8 @@ namespace ILCompiler
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
         public override int GetHashCode() => MetadataType.GetHashCode();
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
-        protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer) => comparer.Compare(MetadataType, ((TypeWithRepeatedFields)other).MetadataType);
 
-        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
-        {
-            TypeFlags flags = 0;
-
-            if ((mask & TypeFlags.CategoryMask) != 0)
-            {
-                flags |= MetadataType.Category;
-            }
-
-            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
-            {
-                flags |= TypeFlags.HasGenericVarianceComputed;
-
-                if (MetadataType.HasVariance)
-                    flags |= TypeFlags.HasGenericVariance;
-            }
-
-            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
-            {
-                flags |= TypeFlags.HasFinalizerComputed;
-
-                if (MetadataType.HasFinalizer)
-                    flags |= TypeFlags.HasFinalizer;
-            }
-
-            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
-            {
-                flags |= TypeFlags.AttributeCacheComputed;
-
-                if (MetadataType.IsByRefLike)
-                    flags |= TypeFlags.IsByRefLike;
-
-                if (MetadataType.IsInlineArray)
-                    flags |= TypeFlags.IsInlineArray;
-
-                if (MetadataType.IsIntrinsic)
-                    flags |= TypeFlags.IsIntrinsic;
-            }
-
-            return flags;
-        }
+        protected override TypeFlags ComputeTypeFlags(TypeFlags mask) => MetadataType.GetTypeFlags(mask);
 
         public override string Namespace => MetadataType.Namespace;
 
@@ -160,13 +118,7 @@ namespace ILCompiler
 
         public override PInvokeStringFormat PInvokeStringFormat => MetadataType.PInvokeStringFormat;
 
-        public override string DiagnosticName => MetadataType.DiagnosticName;
-
-        public override string DiagnosticNamespace => MetadataType.DiagnosticNamespace;
-
         public override TypeSystemContext Context => MetadataType.Context;
-
-        protected override int ClassCode => 779393465;
 
         public override IEnumerable<MethodDesc> GetMethods() => MethodDesc.EmptyMethods;
     }
