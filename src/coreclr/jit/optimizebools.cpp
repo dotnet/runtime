@@ -1778,6 +1778,25 @@ void ReinitIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
 }
 
 //-----------------------------------------------------------------------------
+// GetNextOrOp:   Function used for searching the next GT_OR node
+//
+// Arguments:
+//      b3    the tree to inspect
+//
+// Return:
+//      On success, return the next GT_OR node or nullptr if it fails
+//
+GenTree* GetNextOrOp(GenTree* b4)
+{
+    while (b4 != nullptr && !b4->OperIs(GT_OR))
+    {
+        b4 = b4->gtPrev;
+    }
+
+    return b4;
+}
+
+//-----------------------------------------------------------------------------
 // GetNextIntBoolOpToOptimize:   Function used for searching constant INT OR operation that can be folded
 //
 // Arguments:
@@ -1802,25 +1821,20 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
     intBoolOpDsc->lclVarArrLength = 0;
     intBoolOpDsc->start           = nullptr;
     intBoolOpDsc->end             = nullptr;
-    int orOpCount                 = 1;
+    int orOpCount                 = 2;
 
-    GenTree* b4 = b3->gtPrev;
+    GenTree* b4 = GetNextOrOp(b3->gtPrev);
 
-    while (b4 != nullptr && !b4->OperIs(GT_OR))
+    if (b4 != nullptr)
     {
-        b4 = b4->gtPrev;
+        intBoolOpDsc->start = b4->gtNext;
+        b4                  = b4->gtPrev;
     }
 
     while (b4 != nullptr)
     {
         if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
         {
-            if (intBoolOpDsc->start == nullptr)
-            {
-                b4 = b4->gtPrev;
-                continue;
-            }
-
             if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
             {
                 intBoolOpDsc->end = b4;
@@ -1829,98 +1843,92 @@ IntBoolOpDsc* GetNextIntBoolOpToOptimize(GenTree* b3)
             else
             {
                 ReinitIntBoolOpDsc(intBoolOpDsc);
-                b4        = b4->gtPrev;
-                orOpCount = 0;
-                continue;
-            }
-        }
+                b4 = GetNextOrOp(b4);
 
-        if (intBoolOpDsc->start == nullptr)
-        {
-            intBoolOpDsc->start = b4->gtNext;
-        }
-
-        switch (b4->gtOper)
-        {
-            case GT_LCL_VAR:
-            {
-                if (orOpCount <= 0)
+                if (b4 != nullptr)
                 {
-                    if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
-                    {
-                        intBoolOpDsc->end = b4;
-                        return intBoolOpDsc;
-                    }
-
-                    ReinitIntBoolOpDsc(intBoolOpDsc);
-                    break;
-                }
-
-                intBoolOpDsc->lclVarArrLength++;
-                if (intBoolOpDsc->lclVarArr == nullptr)
-                {
-                    intBoolOpDsc->lclVarArr =
-                        reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
-                }
-                else
-                {
-                    intBoolOpDsc->lclVarArr = reinterpret_cast<GenTree**>(
-                        realloc(intBoolOpDsc->lclVarArr, sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
-                }
-
-                intBoolOpDsc->lclVarArr[intBoolOpDsc->lclVarArrLength - 1] = b4;
-                orOpCount--;
-                break;
-            }
-            case GT_CNS_INT:
-            {
-                if (orOpCount <= 0)
-                {
-                    if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
-                    {
-                        intBoolOpDsc->end = b4;
-                        return intBoolOpDsc;
-                    }
-
-                    ReinitIntBoolOpDsc(intBoolOpDsc);
-                    break;
-                }
-
-                intBoolOpDsc->ctsArrayLength++;
-                if (intBoolOpDsc->ctsArray == nullptr)
-                {
-                    intBoolOpDsc->ctsArray =
-                        reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
-                }
-                else
-                {
-                    intBoolOpDsc->ctsArray = reinterpret_cast<ssize_t*>(
-                        realloc(intBoolOpDsc->ctsArray, sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
-                }
-                ssize_t constant                                         = b4->AsIntConCommon()->IconValue();
-                intBoolOpDsc->ctsArray[intBoolOpDsc->ctsArrayLength - 1] = constant;
-                orOpCount--;
-                break;
-            }
-            case GT_OR:
-                if (orOpCount <= 0)
-                {
-                    if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
-                    {
-                        intBoolOpDsc->end = b4;
-                        return intBoolOpDsc;
-                    }
-
-                    ReinitIntBoolOpDsc(intBoolOpDsc);
-                    orOpCount           = 1;
+                    orOpCount           = 2;
                     intBoolOpDsc->start = b4->gtNext;
                 }
+                else
+                {
+                    break;
+                }
+            }
+        }
 
-                orOpCount++;
-                break;
-            default:
+        if (orOpCount <= 0)
+        {
+            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
+            {
+                intBoolOpDsc->end = b4;
+                return intBoolOpDsc;
+            }
+
+            ReinitIntBoolOpDsc(intBoolOpDsc);
+
+            if (!b4->OperIs(GT_OR))
+            {
+                b4 = GetNextOrOp(b4);
+            }
+
+            if (b4 != nullptr)
+            {
+                orOpCount           = 2;
+                intBoolOpDsc->start = b4->gtNext;
+            }
+            else
             {
                 break;
+            }
+        }
+        else
+        {
+            switch (b4->gtOper)
+            {
+                case GT_LCL_VAR:
+                {
+                    intBoolOpDsc->lclVarArrLength++;
+                    if (intBoolOpDsc->lclVarArr == nullptr)
+                    {
+                        intBoolOpDsc->lclVarArr =
+                            reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
+                    }
+                    else
+                    {
+                        intBoolOpDsc->lclVarArr = reinterpret_cast<GenTree**>(
+                            realloc(intBoolOpDsc->lclVarArr, sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
+                    }
+
+                    intBoolOpDsc->lclVarArr[intBoolOpDsc->lclVarArrLength - 1] = b4;
+                    orOpCount--;
+                    break;
+                }
+                case GT_CNS_INT:
+                {
+                    intBoolOpDsc->ctsArrayLength++;
+                    if (intBoolOpDsc->ctsArray == nullptr)
+                    {
+                        intBoolOpDsc->ctsArray =
+                            reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
+                    }
+                    else
+                    {
+                        intBoolOpDsc->ctsArray = reinterpret_cast<ssize_t*>(
+                            realloc(intBoolOpDsc->ctsArray, sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
+                    }
+                    ssize_t constant                                         = b4->AsIntConCommon()->IconValue();
+                    intBoolOpDsc->ctsArray[intBoolOpDsc->ctsArrayLength - 1] = constant;
+                    orOpCount--;
+                    break;
+                }
+                case GT_OR:
+                    orOpCount++;
+                    break;
+                default:
+                {
+                    break;
+                }
             }
         }
 
