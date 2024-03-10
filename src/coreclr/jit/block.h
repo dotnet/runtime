@@ -2431,6 +2431,7 @@ inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::
 {
     if (allowEdits)
     {
+        // For editing iterators, m_next is always used and maintained
         m_pred = m_next;
         m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
     }
