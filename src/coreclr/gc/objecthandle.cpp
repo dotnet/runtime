@@ -222,6 +222,45 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
     }
 }
 
+void CALLBACK PromoteDependentHandleDeferFinalize(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pExtraInfo);
+
+    Object **pPrimaryRef = (Object **)pObjRef;
+    Object **pSecondaryRef = (Object **)pExtraInfo;
+    LOG((LF_GC, LL_INFO1000, "Checking promotion of DependentHandleDeferFinalize\n"));
+    LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tPrimary:\t", pObjRef, "to ", *pObjRef)));
+    LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tSecondary\t", pSecondaryRef, "to ", *pSecondaryRef)));
+
+    ScanContext *sc = (ScanContext*)lp1;
+    DhContext *pDhContext = Ref_GetDependentHandleContext(sc);
+
+    if (*pObjRef)
+    {
+        if (!g_theGCHeap->IsPromoted(*pPrimaryRef))
+        {
+            // If we see a non-cleared primary which hasn't been promoted, record the fact. We will only require a
+            // rescan if this flag has been set (if it's clear then the previous scan found only clear and
+            // promoted handles, so there's no chance of finding an additional handle being promoted on a
+            // subsequent scan).
+            pDhContext->m_fUnpromotedPrimaries = true;
+        }
+
+        if (!g_theGCHeap->IsPromoted(*pSecondaryRef))
+        {
+            LOG((LF_GC, LL_INFO10000, "\tPromoting secondary " LOG_OBJECT_CLASS(*pSecondaryRef)));
+            _ASSERTE(lp2);
+            promote_func* callback = (promote_func*) lp2;
+            callback(pSecondaryRef, (ScanContext *)lp1, 0);
+            // need to rescan because we might have promoted an object that itself has added fields and this
+            // promotion might be all that is pinning that object. If we've already scanned that dependent
+            // handle relationship, we could lose it secondary object.
+            pDhContext->m_fPromoted = true;
+        }
+    }
+}
+
 void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
 {
     LIMITED_METHOD_CONTRACT;
@@ -423,6 +462,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     switch (HandleFetchType(handle))
     {
     case    HNDTYPE_DEPENDENT:
+    case    HNDTYPE_DEPENDENT_DEFER_FINALIZE:
         isDependent = true;
         break;
     case    HNDTYPE_WEAK_SHORT:
@@ -527,6 +567,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_NORMAL,    // HNDTYPE_ASYNCPINNED
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
+    HNDF_EXTRAINFO, // HNDTYPE_DEPENDENT_DEFER_FINALIZE
 };
 
 int getNumberOfSlots()
@@ -839,7 +880,7 @@ int getThreadCount(ScanContext* sc)
     return sc->thread_count;
 }
 
-void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
+void SetDependentHandleSecondary(HandleType type, OBJECTHANDLE handle, OBJECTREF objref)
 {
     CONTRACTL
     {
@@ -850,6 +891,7 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
     CONTRACTL_END;
 
     // sanity
+    _ASSERTE(type == HNDTYPE_DEPENDENT || type == HNDTYPE_DEPENDENT_DEFER_FINALIZE);
     _ASSERTE(handle);
 
 #ifdef _DEBUG
@@ -864,7 +906,7 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
         HndWriteBarrier(handle, objref);
 
     // store the pointer
-    HndSetHandleExtraInfo(handle, HNDTYPE_DEPENDENT, (uintptr_t)value);
+    HndSetHandleExtraInfo(handle, type, (uintptr_t)value);
 }
 
 #ifdef FEATURE_VARIABLE_HANDLES
@@ -1240,7 +1282,6 @@ DhContext *Ref_GetDependentHandleContext(ScanContext* sc)
 bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext)
 {
     LOG((LF_GC, LL_INFO10000, "Checking liveness of referents of dependent handles in generation %u\n", pDhContext->m_iCondemned));
-    uint32_t type = HNDTYPE_DEPENDENT;
     uint32_t flags = (pDhContext->m_pScanContext->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
     flags |= HNDGCF_EXTRAINFO;
 
@@ -1281,8 +1322,18 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext)
                         HHANDLETABLE hTable = pTable[uCPUindex];
                         if (hTable)
                         {
+                            uint32_t type = HNDTYPE_DEPENDENT;
                             HndScanHandlesForGC(hTable,
                                                 PromoteDependentHandle,
+                                                uintptr_t(pDhContext->m_pScanContext),
+                                                uintptr_t(pDhContext->m_pfnPromoteFunction),
+                                                &type, 1,
+                                                pDhContext->m_iCondemned,
+                                                pDhContext->m_iMaxGen,
+                                                flags );
+                            type = HNDTYPE_DEPENDENT_DEFER_FINALIZE;
+                            HndScanHandlesForGC(hTable,
+                                                PromoteDependentHandleDeferFinalize,
                                                 uintptr_t(pDhContext->m_pScanContext),
                                                 uintptr_t(pDhContext->m_pfnPromoteFunction),
                                                 &type, 1,
@@ -1309,7 +1360,11 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext)
 void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 {
     LOG((LF_GC, LL_INFO10000, "Clearing dead dependent handles in generation %u\n", condemned));
-    uint32_t type = HNDTYPE_DEPENDENT;
+    uint32_t types[] =
+    {
+        HNDTYPE_DEPENDENT,
+        HNDTYPE_DEPENDENT_DEFER_FINALIZE
+    };
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
     flags |= HNDGCF_EXTRAINFO;
 
@@ -1330,7 +1385,7 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
                     HHANDLETABLE hTable = pTable[uCPUindex];
                     if (hTable)
                     {
-                        HndScanHandlesForGC(hTable, ClearDependentHandle, uintptr_t(sc), 0, &type, 1, condemned, maxgen, flags );
+                        HndScanHandlesForGC(hTable, ClearDependentHandle, uintptr_t(sc), 0, types, ARRAY_SIZE(types), condemned, maxgen, flags );
                     }
                 }
             }
@@ -1343,7 +1398,11 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
 {
     LOG((LF_GC, LL_INFO10000, "Relocating moved dependent handles in generation %u\n", condemned));
-    uint32_t type = HNDTYPE_DEPENDENT;
+    uint32_t types[] =
+    {
+        HNDTYPE_DEPENDENT,
+        HNDTYPE_DEPENDENT_DEFER_FINALIZE
+    };
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
     flags |= HNDGCF_EXTRAINFO;
 
@@ -1364,7 +1423,7 @@ void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, 
                     HHANDLETABLE hTable = pTable[uCPUindex];
                     if (hTable)
                     {
-                        HndScanHandlesForGC(hTable, UpdateDependentHandle, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                        HndScanHandlesForGC(hTable, UpdateDependentHandle, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags );
                     }
                 }
             }
@@ -1383,7 +1442,11 @@ void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1,
     WRAPPER_NO_CONTRACT;
 
     // set up to scan variable handles with the specified mask and trace function
-    uint32_t type = HNDTYPE_DEPENDENT;
+    uint32_t types[] =
+    {
+        HNDTYPE_DEPENDENT,
+        HNDTYPE_DEPENDENT_DEFER_FINALIZE
+    };
     struct DIAG_DEPSCANINFO info = { pfnTrace, lp2 };
 
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1397,7 +1460,7 @@ void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1,
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
                         HndScanHandlesForGC(hTable, TraceDependentHandle,
-                                    lp1, (uintptr_t)&info, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                                    lp1, (uintptr_t)&info, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_EXTRAINFO | flags);
                 }
             }
         walk = walk->pNext;
@@ -1819,6 +1882,7 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #endif
         HNDTYPE_SIZEDREF,
         HNDTYPE_DEPENDENT,
+        HNDTYPE_DEPENDENT_DEFER_FINALIZE,
     };
 
     // verify these handles

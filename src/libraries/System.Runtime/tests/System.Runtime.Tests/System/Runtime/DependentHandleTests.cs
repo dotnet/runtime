@@ -330,5 +330,95 @@ namespace System.Runtime.Tests
             Assert.False(handle.IsAllocated);
             handle.Dispose();
         }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        extern static DependentHandle CreateDependentHandle(bool isDeferFinalize, object primary, object secondary);
+
+        [InlineData(true)]
+        [InlineData(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void DeferFinalize(bool isDeferFinalize)
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static DependentHandle Initialize(bool isDeferFinalize)
+            {
+                return CreateDependentHandle(isDeferFinalize, new Primary(), new Secondary());
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertTargetAndDependentAreNotNull(DependentHandle hand)
+            {
+                Assert.NotNull(hand.Target);
+                Assert.NotNull(hand.Dependent);
+
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertTargetAndDependentAreNull(DependentHandle hand)
+            {
+                Assert.Null(hand.Target);
+                Assert.Null(hand.Dependent);
+            }
+
+            Primary.s_finialized = false;
+            Secondary.s_finialized = false;
+            Assert.Null(Primary.s_resurrected);
+
+            DependentHandle hand;
+            try
+            {
+                hand = Initialize(isDeferFinalize);
+
+                ForceGC();
+
+                Assert.True(Primary.s_finialized);
+                Assert.Equal(!isDeferFinalize, Secondary.s_finialized);
+                AssertTargetAndDependentAreNotNull(hand);
+            }
+            finally
+            {
+                Primary.s_resurrected = null;
+            }
+
+            ForceGC();
+
+            Assert.True(Primary.s_finialized);
+            Assert.True(Secondary.s_finialized);
+            AssertTargetAndDependentAreNull(hand);
+
+            hand.Dispose();
+        }
+
+        static void ForceGC()
+        {
+            for (int i = 0; i < 5; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
+
+        class Primary
+        {
+            internal static bool s_finialized;
+            internal static Primary? s_resurrected;
+
+            ~Primary()
+            {
+                s_resurrected = this;
+                s_finialized = true;
+            }
+        }
+
+        class Secondary
+        {
+            internal static bool s_finialized;
+
+            ~Secondary()
+            {
+                s_finialized = true;
+            }
+        }
     }
 }

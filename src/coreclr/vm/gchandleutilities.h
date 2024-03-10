@@ -135,9 +135,9 @@ inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object
     return hnd;
 }
 
-inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)
+inline OBJECTHANDLE CreateDependentHandle(bool isDeferFinalize, IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)
 {
-    OBJECTHANDLE hnd = store->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+    OBJECTHANDLE hnd = store->CreateDependentHandle(isDeferFinalize ? HNDTYPE_DEPENDENT_DEFER_FINALIZE : HNDTYPE_DEPENDENT, OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
     if (!hnd)
     {
         COMPlusThrowOM();
@@ -284,6 +284,11 @@ inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
 inline void DestroyDependentHandle(OBJECTHANDLE handle)
 {
     DestroyHandleCommon(handle, HNDTYPE_DEPENDENT);
+}
+
+inline void DestroyDependentDeferFinalizeHandle(OBJECTHANDLE handle)
+{
+    DestroyHandleCommon(handle, HNDTYPE_DEPENDENT_DEFER_FINALIZE);
 }
 
 inline void DestroyGlobalHandle(OBJECTHANDLE handle)

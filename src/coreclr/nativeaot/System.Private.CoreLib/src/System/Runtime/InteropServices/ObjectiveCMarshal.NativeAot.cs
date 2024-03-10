@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     {
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
         private static bool s_initialized;
-        private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
+        private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new(isDeferFinalize: true);
         private static delegate* unmanaged[SuppressGCTransition]<void*, int> s_IsTrackedReferenceCallback;
         private static delegate* unmanaged[SuppressGCTransition]<void*, void> s_OnEnteredFinalizerQueueCallback;
 
@@ -137,7 +137,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
             }
 
             var trackerInfo = s_objects.GetValue(obj, static o => new ObjcTrackingInformation());
-            trackerInfo.EnsureInitialized(obj);
             trackerInfo.GetTaggedMemory(out memInSizeT, out mem);
             return RuntimeImports.RhHandleAllocRefCounted(obj);
         }
@@ -149,7 +148,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
             private const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
 
             internal IntPtr _memory;
-            private IntPtr _longWeakHandle;
 
             public ObjcTrackingInformation()
             {
@@ -162,37 +160,12 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 mem = _memory;
             }
 
-            public void EnsureInitialized(object o)
-            {
-                if (_longWeakHandle != IntPtr.Zero)
-                {
-                    return;
-                }
-
-                IntPtr newHandle = RuntimeImports.RhHandleAlloc(o, GCHandleType.WeakTrackResurrection);
-                if (Interlocked.CompareExchange(ref _longWeakHandle, newHandle, IntPtr.Zero) != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(newHandle);
-                }
-            }
-
             ~ObjcTrackingInformation()
             {
-                if (_longWeakHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(_longWeakHandle) != null)
-                {
-                    GC.ReRegisterForFinalize(this);
-                    return;
-                }
-
                 if (_memory != IntPtr.Zero)
                 {
                     NativeMemory.Free((void*)_memory);
                     _memory = IntPtr.Zero;
-                }
-                if (_longWeakHandle != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(_longWeakHandle);
-                    _longWeakHandle = IntPtr.Zero;
                 }
             }
         }

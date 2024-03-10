@@ -5,20 +5,25 @@ namespace System.Runtime
 {
     public struct DependentHandle : IDisposable
     {
-        private IntPtr _handle;
+        private const nint IsDeferFinalizeBit = 1;
+
+        private nint _taggedHandle;
 
         public DependentHandle(object? target, object? dependent) =>
-            _handle = RuntimeImports.RhHandleAllocDependent(target, dependent);
+            _taggedHandle = RuntimeImports.RhHandleAllocDependent(false, target, dependent);
 
-        public bool IsAllocated => _handle != IntPtr.Zero;
+        internal DependentHandle(bool isDeferFinalize, object? target, object? dependent) =>
+            _taggedHandle = RuntimeImports.RhHandleAllocDependent(isDeferFinalize, target, dependent) | (isDeferFinalize ? IsDeferFinalizeBit : 0);
+
+        public bool IsAllocated => _taggedHandle != 0;
 
         public object? Target
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -27,9 +32,9 @@ namespace System.Runtime
             }
             set
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
-                if ((nint)handle == 0 || value is not null)
+                if (handle == 0 || value is not null)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -43,9 +48,9 @@ namespace System.Runtime
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -55,14 +60,16 @@ namespace System.Runtime
             }
             set
             {
-                IntPtr handle = _handle;
+                nint taggedHandle = _taggedHandle;
 
-                if ((nint)handle == 0)
+                if (taggedHandle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                RuntimeImports.RhHandleSetDependentSecondary(handle, value);
+                nint handle = taggedHandle & ~IsDeferFinalizeBit;
+                bool isDeferFinalize = (taggedHandle & IsDeferFinalizeBit) != 0;
+                RuntimeImports.RhHandleSetDependentSecondary(isDeferFinalize, handle, value);
             }
         }
 
@@ -70,9 +77,9 @@ namespace System.Runtime
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -85,34 +92,35 @@ namespace System.Runtime
 
         internal object? UnsafeGetTarget()
         {
-            return RuntimeImports.RhHandleGet(_handle);
+            return RuntimeImports.RhHandleGet(_taggedHandle & ~IsDeferFinalizeBit);
         }
 
         internal object? UnsafeGetTargetAndDependent(out object? dependent)
         {
-            return RuntimeImports.RhHandleGetDependent(_handle, out dependent);
+            return RuntimeImports.RhHandleGetDependent(_taggedHandle & ~IsDeferFinalizeBit, out dependent);
         }
 
         internal void UnsafeSetTargetToNull()
         {
-            RuntimeImports.RhHandleSet(_handle, null);
+            RuntimeImports.RhHandleSet(_taggedHandle & ~IsDeferFinalizeBit, null);
         }
 
         internal void UnsafeSetDependent(object? dependent)
         {
-            RuntimeImports.RhHandleSetDependentSecondary(_handle, dependent);
+            nint handle = _taggedHandle & ~IsDeferFinalizeBit;
+            bool isDeferFinalize = (_taggedHandle & IsDeferFinalizeBit) != 0;
+            RuntimeImports.RhHandleSetDependentSecondary(isDeferFinalize, handle, dependent);
         }
 
         public void Dispose()
         {
             // Forces the DependentHandle back to non-allocated state
             // (if not already there) and frees the handle if needed.
-            IntPtr handle = _handle;
+            IntPtr handle = _taggedHandle & ~IsDeferFinalizeBit;
 
-            if ((nint)handle != 0)
+            if (handle != 0)
             {
-                _handle = IntPtr.Zero;
-
+                _taggedHandle = 0;
                 RuntimeImports.RhHandleFree(handle);
             }
         }

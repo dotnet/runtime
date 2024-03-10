@@ -443,7 +443,7 @@ namespace System.Runtime.InteropServices
             {
                 _wrapper = wrapper;
                 _wrappedObject = wrappedObject;
-                _releaser = new ManagedObjectWrapperReleaser(wrapper);
+                _releaser = new ManagedObjectWrapperReleaser(wrapper, wrappedObject);
                 _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
             }
 
@@ -457,22 +457,19 @@ namespace System.Runtime.InteropServices
         internal sealed unsafe class ManagedObjectWrapperReleaser
         {
             private ManagedObjectWrapper* _wrapper;
+            private DependentHandle _handle;
 
-            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper)
+            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
+                _handle = new(true, wrappedObject, this);
             }
 
             ~ManagedObjectWrapperReleaser()
             {
-                IntPtr refCountedHandle = _wrapper->HolderHandle;
-                if (refCountedHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(refCountedHandle) != null)
+                if (_handle.IsAllocated)
                 {
-                    // The ManagedObjectWrapperHolder has not been fully collected, so it is still
-                    // potentially reachable via the Conditional Weak Table.
-                    // Keep ourselves alive in case the wrapped object is resurrected.
-                    GC.ReRegisterForFinalize(this);
-                    return;
+                    _handle.Dispose();
                 }
 
                 // Release GC handle created when MOW was built.

@@ -357,11 +357,11 @@ namespace System.Runtime.InteropServices
             if (handle != default)
             {
                 RuntimeImports.RhHandleSet(handle, target);
-                RuntimeImports.RhHandleSetDependentSecondary(handle, dependent);
+                RuntimeImports.RhHandleSetDependentSecondary(false, handle, dependent);
             }
             else
             {
-                _pHandles[_freeIndex] = RuntimeImports.RhpHandleAllocDependent(target, dependent);
+                _pHandles[_freeIndex] = RuntimeImports.RhpHandleAllocDependent(false, target, dependent);
                 if (_pHandles[_freeIndex] == default)
                 {
                     return false;
@@ -412,7 +412,7 @@ namespace System.Runtime.InteropServices
                 if (handle != default)
                 {
                     RuntimeImports.RhHandleSet(handle, null);
-                    RuntimeImports.RhHandleSetDependentSecondary(handle, null);
+                    RuntimeImports.RhHandleSetDependentSecondary(false, handle, null);
                 }
             }
 

@@ -597,7 +597,7 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         }
 #endif
 
-        if (uType == HNDTYPE_DEPENDENT)
+        if (uType == HNDTYPE_DEPENDENT || uType == HNDTYPE_DEPENDENT_DEFER_FINALIZE)
         {
             generation = 0;
         }

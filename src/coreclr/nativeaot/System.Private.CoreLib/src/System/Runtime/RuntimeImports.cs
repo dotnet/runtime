@@ -291,11 +291,11 @@ namespace System.Runtime
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
-        internal static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
+        internal static extern IntPtr RhpHandleAllocDependent(bool isDeferFinalize, object primary, object secondary);
 
-        internal static IntPtr RhHandleAllocDependent(object primary, object secondary)
+        internal static IntPtr RhHandleAllocDependent(bool isDeferFinalize, object primary, object secondary)
         {
-            IntPtr h = RhpHandleAllocDependent(primary, secondary);
+            IntPtr h = RhpHandleAllocDependent(isDeferFinalize, primary, secondary);
             if (h == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return h;
@@ -334,7 +334,7 @@ namespace System.Runtime
         // Set the secondary object reference into a dependent handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleSetDependentSecondary")]
-        internal static extern void RhHandleSetDependentSecondary(IntPtr handle, object secondary);
+        internal static extern void RhHandleSetDependentSecondary(bool isDeferFinalize, IntPtr handle, object secondary);
 
         //
         // calls to runtime for thunk pool

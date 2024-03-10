@@ -6,7 +6,7 @@
 
 // The major version of the IGCHeap interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 5
+#define GC_INTERFACE_MAJOR_VERSION 6
 
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -502,7 +502,17 @@ typedef enum
      *       but we are keeping it here for backward compatibility purposes"
      *
      */
-    HNDTYPE_WEAK_NATIVE_COM   = 9
+    HNDTYPE_WEAK_NATIVE_COM   = 9,
+
+    /*
+     * DEPENDENT DEFER FINIALIZE HANDLES
+     *
+     * Like HNDTYPE_DEPENDENT, but the secondary is always promoted until
+     * the primary is collected.
+     *
+     *
+     */
+    HNDTYPE_DEPENDENT_DEFER_FINALIZE    = 10
 } HandleType;
 
 typedef enum
@@ -543,7 +553,7 @@ public:
 
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) PURE_VIRTUAL
+    virtual OBJECTHANDLE CreateDependentHandle(HandleType type, Object* primary, Object* secondary) PURE_VIRTUAL
 
     virtual ~IGCHandleStore() {};
 };
@@ -577,7 +587,7 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object) PURE_VIRTUAL
 
-    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object) PURE_VIRTUAL
+    virtual void SetDependentHandleSecondary(HandleType type, OBJECTHANDLE handle, Object* object) PURE_VIRTUAL
 
     virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle) PURE_VIRTUAL
 

@@ -978,7 +978,7 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
                         });
 #endif
 
-                    if (uType == HNDTYPE_DEPENDENT)
+                    if (uType == HNDTYPE_DEPENDENT || uType == HNDTYPE_DEPENDENT_DEFER_FINALIZE)
                     {
                         PTR_uintptr_t pUserData = HandleQuickFetchUserDataPointer((OBJECTHANDLE)pValue);
 

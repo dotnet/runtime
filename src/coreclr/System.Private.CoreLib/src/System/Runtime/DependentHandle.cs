@@ -52,9 +52,16 @@ namespace System.Runtime
         //
         // This struct intentionally does no self-synchronization. It's up to the caller to
         // to use DependentHandles in a thread-safe way.
+        //
+        // There are two types of dependant handles: "normal" and "defer finalize". The "defer
+        // finalize" version promotes the secondary until the primary has been completely collected.
+        // The low order bit of the handle is stolen to indicate that the handle is the "defer finalize"
+        // flavor. It should be masked off before using.
         // =========================================================================================
 
-        private IntPtr _handle;
+        private const nint IsDeferFinalizeBit = 1;
+
+        private nint _taggedHandle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DependentHandle"/> struct with the specified arguments.
@@ -63,10 +70,25 @@ namespace System.Runtime
         /// <param name="dependent">The dependent object instance to associate with <paramref name="target"/>.</param>
         public DependentHandle(object? target, object? dependent)
         {
-            IntPtr handle = InternalAlloc(target, dependent);
+            IntPtr handle = InternalAlloc(false, target, dependent);
             if (handle == 0)
-                handle = InternalAllocWithGCTransition(target, dependent);
-            _handle = handle;
+                handle = InternalAllocWithGCTransition(false, target, dependent);
+            _taggedHandle = handle;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DependentHandle"/> struct with the specified arguments.
+        /// </summary>
+        /// <param name="isDeferFinalize">If true, the dependent is not finalized until the target is complexly collected.</param>
+        /// <param name="target">The target object instance to track.</param>
+        /// <param name="dependent">The dependent object instance to associate with <paramref name="target"/>.</param>
+        internal DependentHandle(bool isDeferFinalize, object? target, object? dependent)
+        {
+            // no need to check for null result: InternalInitialize expected to throw OOM.
+            IntPtr handle = InternalAlloc(isDeferFinalize, target, dependent);
+            if (handle == 0)
+                handle = InternalAllocWithGCTransition(isDeferFinalize, target, dependent);
+            _taggedHandle = handle | (isDeferFinalize ? IsDeferFinalizeBit : 0);
         }
 
         /// <summary>
@@ -74,7 +96,7 @@ namespace System.Runtime
         /// <see cref="DependentHandle(object?, object?)"/> and has not yet been disposed.
         /// </summary>
         /// <remarks>This property is thread-safe.</remarks>
-        public readonly bool IsAllocated => _handle != 0;
+        public readonly bool IsAllocated => _taggedHandle != 0;
 
         /// <summary>
         /// Gets or sets the target object instance for the current handle. The target can only be set to a <see langword="null"/> value
@@ -88,7 +110,7 @@ namespace System.Runtime
         {
             readonly get
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
                 if (handle == 0)
                 {
@@ -99,7 +121,7 @@ namespace System.Runtime
             }
             set
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
                 if (handle == 0 || value is not null)
                 {
@@ -125,7 +147,7 @@ namespace System.Runtime
         {
             readonly get
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
                 if (handle == 0)
                 {
@@ -136,14 +158,16 @@ namespace System.Runtime
             }
             set
             {
-                IntPtr handle = _handle;
+                nint taggedHandle = _taggedHandle;
 
-                if (handle == 0)
+                if (taggedHandle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                InternalSetDependent(handle, value);
+                nint handle = taggedHandle & ~IsDeferFinalizeBit;
+                bool isDeferFinalize = (taggedHandle & IsDeferFinalizeBit) != 0;
+                InternalSetDependent(isDeferFinalize, handle, value);
             }
         }
 
@@ -161,7 +185,7 @@ namespace System.Runtime
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _taggedHandle & ~IsDeferFinalizeBit;
 
                 if (handle == 0)
                 {
@@ -181,7 +205,7 @@ namespace System.Runtime
         /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
         internal readonly object? UnsafeGetTarget()
         {
-            return InternalGetTarget(_handle);
+            return InternalGetTarget(_taggedHandle & ~IsDeferFinalizeBit);
         }
 
         /// <summary>
@@ -196,7 +220,7 @@ namespace System.Runtime
         /// </remarks>
         internal readonly object? UnsafeGetTargetAndDependent(out object? dependent)
         {
-            return InternalGetTargetAndDependent(_handle, out dependent);
+            return InternalGetTargetAndDependent(_taggedHandle & ~IsDeferFinalizeBit, out dependent);
         }
 
         /// <summary>
@@ -205,7 +229,7 @@ namespace System.Runtime
         /// <remarks>This method mirrors the <see cref="Target"/> setter, but without allocation and input checks.</remarks>
         internal readonly void UnsafeSetTargetToNull()
         {
-            InternalSetTargetToNull(_handle);
+            InternalSetTargetToNull(_taggedHandle & ~IsDeferFinalizeBit);
         }
 
         /// <summary>
@@ -214,7 +238,9 @@ namespace System.Runtime
         /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
         internal readonly void UnsafeSetDependent(object? dependent)
         {
-            InternalSetDependent(_handle, dependent);
+            nint handle = _taggedHandle & ~IsDeferFinalizeBit;
+            bool isDeferFinalize = (_taggedHandle & IsDeferFinalizeBit) != 0;
+            InternalSetDependent(isDeferFinalize, handle, dependent);
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -223,61 +249,63 @@ namespace System.Runtime
         {
             // Forces the DependentHandle back to non-allocated state
             // (if not already there) and frees the handle if needed.
-            IntPtr handle = _handle;
+            nint taggedHandle = _taggedHandle;
 
-            if (handle != 0)
+            if (taggedHandle != 0)
             {
-                _handle = 0;
+                _taggedHandle = 0;
 
-                if (!InternalFree(handle))
+                nint handle = taggedHandle & ~IsDeferFinalizeBit;
+                bool isDeferFinalize = (taggedHandle & IsDeferFinalizeBit) != 0;
+                if (!InternalFree(isDeferFinalize, handle))
                 {
-                    InternalFreeWithGCTransition(handle);
+                    InternalFreeWithGCTransition(isDeferFinalize, handle);
                 }
             }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalAlloc(object? target, object? dependent);
+        private static extern IntPtr InternalAlloc(bool isDeferFinalize, object? target, object? dependent);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IntPtr InternalAllocWithGCTransition(object? target, object? dependent)
-            => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent));
+        private static IntPtr InternalAllocWithGCTransition(bool isDeferFinalize, object? target, object? dependent)
+            => _InternalAllocWithGCTransition(isDeferFinalize, ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent));
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalAllocWithGCTransition")]
-        private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack target, ObjectHandleOnStack dependent);
+        private static partial IntPtr _InternalAllocWithGCTransition([MarshalAs(UnmanagedType.Bool)] bool isDeferFinalize, ObjectHandleOnStack target, ObjectHandleOnStack dependent);
 
 #if DEBUG
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetTarget(IntPtr dependentHandle);
+        private static extern object? InternalGetTarget(nint dependentHandle);
 #else
         // This optimization is the same that is used in GCHandle in RELEASE mode.
         // This is not used in DEBUG builds as the runtime performs additional checks.
         // The logic below is the inlined copy of ObjectFromHandle in the unmanaged runtime.
 #pragma warning disable 8500 // address of managed types
-        private static unsafe object? InternalGetTarget(IntPtr dependentHandle) => *(object*)dependentHandle;
+        private static unsafe object? InternalGetTarget(nint dependentHandle) => *(object*)dependentHandle;
 #pragma warning restore 8500
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetDependent(IntPtr dependentHandle);
+        private static extern object? InternalGetDependent(nint dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetTargetAndDependent(IntPtr dependentHandle, out object? dependent);
+        private static extern object? InternalGetTargetAndDependent(nint dependentHandle, out object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalSetDependent(IntPtr dependentHandle, object? dependent);
+        private static extern void InternalSetDependent(bool isDeferFinalize, nint dependentHandle, object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalSetTargetToNull(IntPtr dependentHandle);
+        private static extern void InternalSetTargetToNull(nint dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool InternalFree(IntPtr dependentHandle);
+        private static extern bool InternalFree(bool isDeferFinalize, IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void InternalFreeWithGCTransition(IntPtr dependentHandle)
-            => _InternalFreeWithGCTransition(dependentHandle);
+        private static void InternalFreeWithGCTransition(bool isDeferFinalize, IntPtr dependentHandle)
+            => _InternalFreeWithGCTransition(isDeferFinalize, dependentHandle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalFreeWithGCTransition")]
-        private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
+        private static partial void _InternalFreeWithGCTransition([MarshalAs(UnmanagedType.Bool)] bool isDeferFinalize, IntPtr dependentHandle);
     }
 }

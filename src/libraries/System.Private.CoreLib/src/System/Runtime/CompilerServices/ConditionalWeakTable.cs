@@ -31,6 +31,9 @@ namespace System.Runtime.CompilerServices
 
         private const int InitialCapacity = 8;  // Initial length of the table. Must be a power of two.
         private readonly object _lock;          // This lock protects all mutation of data in the table.  Readers do not take this lock.
+#if !MONO
+        private readonly bool _isDeferFinalize; // Whether the values should not be finialized until the primary is completely collected.
+#endif
         private volatile Container _container;  // The actual storage for the table; swapped out as the table grows.
         private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
 
@@ -39,6 +42,15 @@ namespace System.Runtime.CompilerServices
             _lock = new object();
             _container = new Container(this);
         }
+
+#if !MONO
+        internal ConditionalWeakTable(bool isDeferFinalize)
+        {
+            _lock = new object();
+            _isDeferFinalize = isDeferFinalize;
+            _container = new Container(this);
+        }
+#endif
 
         /// <summary>Gets the value of the specified key.</summary>
         /// <param name="key">key of the value to find. Cannot be null.</param>
@@ -508,7 +520,11 @@ namespace System.Runtime.CompilerServices
                 int newEntry = _firstFreeEntry++;
 
                 _entries[newEntry].HashCode = hashCode;
+#if !MONO
+                _entries[newEntry].depHnd = new DependentHandle(_parent._isDeferFinalize, key, value);
+#else
                 _entries[newEntry].depHnd = new DependentHandle(key, value);
+#endif
                 int bucket = hashCode & (_buckets.Length - 1);
                 _entries[newEntry].Next = _buckets[bucket];
 

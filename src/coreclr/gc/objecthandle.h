@@ -58,7 +58,7 @@ GC_DAC_VISIBLE
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle);
 
 #ifndef DACCESS_COMPILE
-void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF secondary);
+void SetDependentHandleSecondary(HandleType type, OBJECTHANDLE handle, OBJECTREF secondary);
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE

@@ -20,7 +20,7 @@ public:
 
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo);
 
-    virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
+    virtual OBJECTHANDLE CreateDependentHandle(HandleType type, Object* primary, Object* secondary);
 
     virtual ~GCHandleStore();
 
@@ -61,7 +61,7 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
 
-    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object);
+    virtual void SetDependentHandleSecondary(HandleType type, OBJECTHANDLE handle, Object* object);
 
     virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle);
 

@@ -174,7 +174,7 @@ void RCWRefCache::ShrinkDependentHandles()
 
         IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
         mgr->StoreObjectInHandle(depHnd, NULL);
-        mgr->SetDependentHandleSecondary(depHnd, NULL);
+        mgr->SetDependentHandleSecondary(HNDTYPE_DEPENDENT, depHnd, NULL);
 
         LOG((LF_INTEROP, LL_INFO1000, "\t[RCWRefCache 0x%p] DependentHandle 0x%p cleared @ index %d\n", this, depHnd, (ULONG) i));
     }
@@ -260,7 +260,7 @@ HRESULT RCWRefCache::AddReferenceUsingDependentHandle(OBJECTREF obj1, OBJECTREF 
 
         IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
         mgr->StoreObjectInHandle(depHnd, OBJECTREFToObject(obj1));
-        mgr->SetDependentHandleSecondary(depHnd, OBJECTREFToObject(obj2));
+        mgr->SetDependentHandleSecondary(HNDTYPE_DEPENDENT, depHnd, OBJECTREFToObject(obj2));
 
         STRESS_LOG3(
             LF_INTEROP, LL_INFO1000,

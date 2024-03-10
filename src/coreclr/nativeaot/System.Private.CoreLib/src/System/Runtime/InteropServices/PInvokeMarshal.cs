@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices
             {
                 Interlocked.CompareExchange(
                     ref s_pInvokeDelegates,
-                    new ConditionalWeakTable<Delegate, PInvokeDelegateThunk>(),
+                    new ConditionalWeakTable<Delegate, PInvokeDelegateThunk>(isDeferFinalize: true),
                     null
                 );
             }
@@ -151,13 +151,6 @@ namespace System.Runtime.InteropServices
                     GCHandle handle = ((ThunkContextData*)ContextData)->Handle;
                     if (handle.IsAllocated)
                     {
-                        // If the delegate is still alive, defer finalization.
-                        if (handle.Target != null)
-                        {
-                            GC.ReRegisterForFinalize(this);
-                            return;
-                        }
-
                         handle.Free();
                     }
 

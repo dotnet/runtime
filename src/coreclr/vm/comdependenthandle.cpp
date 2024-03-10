@@ -12,7 +12,7 @@
 #include "common.h"
 #include "comdependenthandle.h"
 
-FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *dependent)
+FCIMPL3(OBJECTHANDLE, DependentHandle::InternalAlloc, CLR_BOOL isDeferFinalize, Object *target, Object *dependent)
 {
     FCALL_CONTRACT;
 
@@ -20,11 +20,13 @@ FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *de
     if (CORProfilerTrackGC())
         return NULL;
 
-    return GetAppDomain()->GetHandleStore()->CreateDependentHandle(target, dependent);
+    return GetAppDomain()->GetHandleStore()->CreateDependentHandle(
+        isDeferFinalize ? HNDTYPE_DEPENDENT_DEFER_FINALIZE : HNDTYPE_DEPENDENT,
+        target, dependent);
 }
 FCIMPLEND
 
-extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent)
+extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(BOOL isDeferFinalize, QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent)
 {
     QCALL_CONTRACT;
 
@@ -33,7 +35,9 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
     BEGIN_QCALL;
 
     GCX_COOP();
-    result = GetAppDomain()->CreateDependentHandle(target.Get(), dependent.Get());
+    result = isDeferFinalize ?
+             GetAppDomain()->CreateDependentHandleDeferFinalize(target.Get(), dependent.Get()) :
+             GetAppDomain()->CreateDependentHandle(target.Get(), dependent.Get());
 
     END_QCALL;
 
@@ -93,18 +97,18 @@ FCIMPL1(VOID, DependentHandle::InternalSetTargetToNull, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
+FCIMPL3(VOID, DependentHandle::InternalSetDependent, CLR_BOOL isDeferFinalize, OBJECTHANDLE handle, Object *_dependent)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(handle != NULL);
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    mgr->SetDependentHandleSecondary(handle, _dependent);
+    mgr->SetDependentHandleSecondary(isDeferFinalize ? HNDTYPE_DEPENDENT_DEFER_FINALIZE : HNDTYPE_DEPENDENT, handle, _dependent);
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
+FCIMPL2(FC_BOOL_RET, DependentHandle::InternalFree, CLR_BOOL isDeferFinalize, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -114,12 +118,20 @@ FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
 
-    DestroyDependentHandle(handle);
+    if (isDeferFinalize)
+    {
+        DestroyDependentDeferFinalizeHandle(handle);
+    }
+    else
+    {
+        DestroyDependentHandle(handle);
+    }
+
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
+extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(BOOL isDeferFinalize, OBJECTHANDLE handle)
 {
     QCALL_CONTRACT;
 
@@ -128,7 +140,14 @@ extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHAN
     BEGIN_QCALL;
 
     GCX_COOP();
-    DestroyDependentHandle(handle);
+    if (isDeferFinalize)
+    {
+        DestroyDependentDeferFinalizeHandle(handle);
+    }
+    else
+    {
+        DestroyDependentHandle(handle);
+    }
 
     END_QCALL;
 }

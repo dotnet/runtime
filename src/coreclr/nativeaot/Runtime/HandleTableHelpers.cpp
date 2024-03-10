@@ -21,9 +21,10 @@ FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
 }
 FCIMPLEND
 
-FCIMPL2(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
+FCIMPL3(OBJECTHANDLE, RhpHandleAllocDependent, CLR_BOOL isDeferFinalize, Object *pPrimary, Object *pSecondary)
 {
-    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
+    HandleType type = isDeferFinalize ? HNDTYPE_DEPENDENT_DEFER_FINALIZE : HNDTYPE_DEPENDENT;
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(type, pPrimary, pSecondary);
 }
 FCIMPLEND
 
@@ -47,9 +48,10 @@ FCIMPL2(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondar
 }
 FCIMPLEND
 
-FCIMPL2(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
+FCIMPL3(void, RhHandleSetDependentSecondary, CLR_BOOL isDeferFinalize, OBJECTHANDLE handle, Object *pSecondary)
 {
-    SetDependentHandleSecondary(handle, pSecondary);
+    HandleType type = isDeferFinalize ? HNDTYPE_DEPENDENT_DEFER_FINALIZE : HNDTYPE_DEPENDENT;
+    SetDependentHandleSecondary(type, handle, pSecondary);
 }
 FCIMPLEND
 

@@ -40,16 +40,16 @@
 class DependentHandle
 {
 public:
-    static FCDECL2(OBJECTHANDLE, InternalAlloc, Object *target, Object *dependent);
+    static FCDECL3(OBJECTHANDLE, InternalAlloc, CLR_BOOL isDeferFinalize, Object *target, Object *dependent);
     static FCDECL1(Object *, InternalGetTarget, OBJECTHANDLE handle);
     static FCDECL1(Object *, InternalGetDependent, OBJECTHANDLE handle);
     static FCDECL2(Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
     static FCDECL1(VOID, InternalSetTargetToNull, OBJECTHANDLE handle);
-    static FCDECL2(VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
-    static FCDECL1(FC_BOOL_RET, InternalFree, OBJECTHANDLE handle);
+    static FCDECL3(VOID, InternalSetDependent, CLR_BOOL isDeferFinalize, OBJECTHANDLE handle, Object *dependent);
+    static FCDECL2(FC_BOOL_RET, InternalFree, CLR_BOOL isDeferFinalize, OBJECTHANDLE handle);
 };
 
-extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent);
-extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle);
+extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(BOOL isDeferFinalize, QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent);
+extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(BOOL isDeferFinalize, OBJECTHANDLE handle);
 
 #endif

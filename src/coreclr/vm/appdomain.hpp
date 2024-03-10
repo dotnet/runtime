@@ -1068,7 +1068,13 @@ public:
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateDependentHandle(m_handleStore, primary, secondary);
+        return ::CreateDependentHandle(false, m_handleStore, primary, secondary);
+    }
+
+    OBJECTHANDLE CreateDependentHandleDeferFinalize(OBJECTREF primary, OBJECTREF secondary)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateDependentHandle(true, m_handleStore, primary, secondary);
     }
 
 #endif // DACCESS_COMPILE

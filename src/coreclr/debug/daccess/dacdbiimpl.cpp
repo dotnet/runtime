@@ -7582,6 +7582,9 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if (mHandleMask & CorHandleStrongSizedByref)
         result |= (1 << HNDTYPE_SIZEDREF);
 
+    if (mHandleMask & CorHandleStrongDependentDeferFinalize)
+        result |= (1 << HNDTYPE_DEPENDENT_DEFER_FINALIZE);
+
     return result;
 }
 
@@ -7720,6 +7723,11 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
 
             case HNDTYPE_SIZEDREF:
                 roots[i].dwType = (DWORD)CorHandleStrongSizedByref;
+                break;
+
+            case HNDTYPE_DEPENDENT_DEFER_FINALIZE:
+                roots[i].dwType = (DWORD)CorHandleStrongDependentDeferFinalize;
+                roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
                 break;
         }
     }

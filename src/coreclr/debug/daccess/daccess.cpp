@@ -7740,7 +7740,7 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
 
     data.Handle = TO_CDADDR(handle.GetAddr());
     data.Type = param->Type;
-    if (param->Type == HNDTYPE_DEPENDENT)
+    if (param->Type == HNDTYPE_DEPENDENT || param->Type == HNDTYPE_DEPENDENT_DEFER_FINALIZE)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
     else
         data.Secondary = 0;

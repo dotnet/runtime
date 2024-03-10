@@ -102,7 +102,7 @@ namespace System.Threading
             // Allocate the synchronization object outside the lock
             Lock lck = new Lock();
             DeadEntryCollector collector = new DeadEntryCollector();
-            DependentHandle handle = new DependentHandle(obj, collector);
+            DependentHandle handle = new DependentHandle(true, obj, collector);
 
             try
             {
@@ -309,12 +309,7 @@ namespace System.Threading
                 {
                     ref Entry entry = ref s_entries[_index];
 
-                    if (entry.Owner.Target != null)
-                    {
-                        // Retry later if the owner is not collected yet.
-                        GC.ReRegisterForFinalize(this);
-                        return;
-                    }
+                    Debug.Assert(entry.Owner.Target is null);
 
                     dependentHandleToDispose = entry.Owner;
                     entry.Owner = default;

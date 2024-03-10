@@ -89,16 +89,18 @@ OBJECTHANDLE GCHandleStore::CreateHandleWithExtraInfo(Object* object, HandleType
     return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object), reinterpret_cast<uintptr_t>(pExtraInfo));
 }
 
-OBJECTHANDLE GCHandleStore::CreateDependentHandle(Object* primary, Object* secondary)
+OBJECTHANDLE GCHandleStore::CreateDependentHandle(HandleType type, Object* primary, Object* secondary)
 {
+    _ASSERTE(type == HNDTYPE_DEPENDENT || type == HNDTYPE_DEPENDENT_DEFER_FINALIZE);
+
     HHANDLETABLE handletable = _underlyingBucket.pTable[GetCurrentThreadHomeHeapNumber()];
-    OBJECTHANDLE handle = ::HndCreateHandle(handletable, HNDTYPE_DEPENDENT, ObjectToOBJECTREF(primary));
+    OBJECTHANDLE handle = ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(primary));
     if (!handle)
     {
         return nullptr;
     }
 
-    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
+    ::SetDependentHandleSecondary(type, handle, ObjectToOBJECTREF(secondary));
     return handle;
 }
 
@@ -195,9 +197,9 @@ bool GCHandleManager::StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* obj
     return !!::HndFirstAssignHandle(handle, ObjectToOBJECTREF(object));
 }
 
-void GCHandleManager::SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object)
+void GCHandleManager::SetDependentHandleSecondary(HandleType type, OBJECTHANDLE handle, Object* object)
 {
-    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(object));
+    ::SetDependentHandleSecondary(type, handle, ObjectToOBJECTREF(object));
 }
 
 Object* GCHandleManager::GetDependentHandleSecondary(OBJECTHANDLE handle)
@@ -213,7 +215,7 @@ Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE h
 HandleType GCHandleManager::HandleFetchType(OBJECTHANDLE handle)
 {
     uint32_t type = ::HandleFetchType(handle);
-    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_NATIVE_COM);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT_DEFER_FINALIZE);
     return static_cast<HandleType>(type);
 }
 
