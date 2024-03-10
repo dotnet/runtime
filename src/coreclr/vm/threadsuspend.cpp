@@ -3729,7 +3729,7 @@ void RedirectedThrowControl()
 void
 ThrowControlForThread(
 #if !defined(TARGET_X86)
-    FaultingExceptionFrame *pfef
+        FaultingExceptionFrame *pfef
 #endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
@@ -4783,7 +4783,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
 #endif
                         }
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_X86)
+                        // peel off the next frame to expose the return address on the stack
+                        pES->m_FirstPass = FALSE;
+                        action = SWA_CONTINUE;
+#elif defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                         PORTABILITY_ASSERT("Platform NYI");
@@ -4822,7 +4826,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
     else
     {
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+#ifdef TARGET_X86
         // Second pass, looking for the address of the return address so we can
         // hijack:
 

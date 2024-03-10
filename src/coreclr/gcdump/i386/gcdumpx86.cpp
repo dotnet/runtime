@@ -13,6 +13,10 @@
 #endif
 #include "gcdump.h"
 
+// FIXME
+#ifndef FEATURE_EH_FUNCLETS
+#define FEATURE_EH_FUNCLETS
+#endif
 
 /*****************************************************************************/
 

@@ -44,15 +44,11 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
 
     pContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
 
-#define ARGUMENT_AND_SCRATCH_REGISTER(reg) if (rd.pCurrentContextPointers->reg) pContextRecord->reg = *rd.pCurrentContextPointers->reg;
-    ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
-#undef ARGUMENT_AND_SCRATCH_REGISTER
-
 #define CALLEE_SAVED_REGISTER(reg) if (rd.pCurrentContextPointers->reg) pContextRecord->reg = *rd.pCurrentContextPointers->reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pContextRecord->Esp = rd.SP - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo);
+    pContextRecord->Esp = rd.SP;
     pContextRecord->Eip = rd.ControlPC;
 
     return TRUE;

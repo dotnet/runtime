@@ -4,7 +4,6 @@
 #ifndef __REGDISP_H
 #define __REGDISP_H
 
-
 #ifdef DEBUG_REGDISPLAY
 class Thread;
 struct REGDISPLAY;
@@ -146,21 +145,12 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    return stackPointer < ((LPVOID)(display->SP));
-#else
     return (TADDR)stackPointer < display->PCTAddr;
-#endif
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
-    return GetRegdisplaySP(display);
-#else
     return display->PCTAddr;
-#endif
 }
 
 #elif defined(TARGET_64BIT)

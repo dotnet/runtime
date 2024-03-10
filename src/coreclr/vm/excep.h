@@ -252,7 +252,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
-VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj);
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -510,6 +510,15 @@ BOOL        IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pEx
 void        AdjustContextForThreadStop(Thread* pThread, T_CONTEXT* pContext);
 OBJECTREF   CreateCOMPlusExceptionObject(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord, BOOL bAsynchronousThreadStop);
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
+// Pop off any SEH handlers we have registered below pTargetSP
+VOID PopSEHRecords(LPVOID pTargetSP);
+
+// Misc functions to access and update the SEH chain. Be very, very careful about updating the SEH chain.
+PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
+VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH);
+#endif
+
 #if !defined(FEATURE_EH_FUNCLETS)
 EXCEPTION_HANDLER_DECL(COMPlusFrameHandler);
 EXCEPTION_HANDLER_DECL(COMPlusNestedExceptionHandler);
@@ -517,22 +526,12 @@ EXCEPTION_HANDLER_DECL(COMPlusNestedExceptionHandler);
 EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
 #endif // FEATURE_COMINTEROP
 
-// Pop off any SEH handlers we have registered below pTargetSP
-VOID PopSEHRecords(LPVOID pTargetSP);
-
 #ifdef DEBUGGING_SUPPORTED
 VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
 #endif // DEBUGGING_SUPPORTED
 
 BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
 VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
-
-// Misc functions to access and update the SEH chain. Be very, very careful about updating the SEH chain.
-// Frankly, if you think you need to use one of these function, please
-// consult with the owner of the exception system.
-PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
-VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH);
-
 
 #define STACK_OVERWRITE_BARRIER_SIZE 20
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab

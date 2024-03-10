@@ -27,10 +27,19 @@ endif
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
+ifdef FEATURE_EH_FUNCLETS
+EXTERN _ProcessCLRException:PROC
+EXTERN _UMEntryPrestubUnwindFrameChainHandler:PROC
+EXTERN _CallDescrWorkerUnwindFrameChainHandler:PROC
+ifdef FEATURE_COMINTEROP
+EXTERN _ReverseComUnwindFrameChainHandler:PROC
+endif ; FEATURE_COMINTEROP
+else
 EXTERN _COMPlusFrameHandler:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
+endif ; FEATURE_EH_FUNCLETS
 EXTERN __alloca_probe:PROC
 EXTERN _NDirectImportWorker@4:PROC
 
@@ -71,6 +80,11 @@ EXTERN g_chained_lookup_miss_counter:DWORD
 EXTERN g_dispatch_cache_chain_success_counter:DWORD
 endif
 
+EXTERN @IL_Throw_x86@8:PROC
+EXTERN @IL_Rethrow_x86@4:PROC
+
+EXTERN _VSD_ResolveWorker@12:PROC
+
 UNREFERENCED macro arg
     local unref
     unref equ size arg
@@ -85,6 +99,7 @@ FASTCALL_ENDFUNC macro
 FuncNameReal endp
 endm
 
+ifndef FEATURE_EH_FUNCLETS
 ifdef FEATURE_COMINTEROP
 ifdef _DEBUG
     CPFH_STACK_SIZE     equ SIZEOF_FrameHandlerExRecord + STACK_OVERWRITE_BARRIER_SIZE*4
@@ -128,6 +143,38 @@ endif
 
 endm  ; POP_CPFH_FOR_COM
 endif ; FEATURE_COMINTEROP
+
+PUSH_CLR_EXCEPTION_HANDLER macro handlerName
+endm
+POP_CLR_EXCEPTION_HANDLER macro
+endm
+
+else ; FEATURE_EH_FUNCLETS
+
+CPFH_STACK_SIZE     equ 8
+
+PUSH_CLR_EXCEPTION_HANDLER macro handlerName
+    ; setup frame exception handler
+    push        handlerName
+    push        fs:[0]
+    mov         fs:[0], esp
+endm
+
+POP_CLR_EXCEPTION_HANDLER macro
+    ; remove frame exception handler
+    pop         fs:[0]
+    add         esp, 4
+endm
+
+PUSH_CPFH_FOR_COM macro trashReg, pFrameBaseReg, pFrameOffset
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+endm
+
+POP_CPFH_FOR_COM macro trashReg
+    POP_CLR_EXCEPTION_HANDLER
+endm
+
+endif ; FEATURE_EH_FUNCLETS
 
 ;
 ; FramedMethodFrame prolog
@@ -243,19 +290,21 @@ _RestoreFPUContext@4 ENDP
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
 ; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
+ifndef FEATURE_EH_FUNCLETS
 COMPlusFrameHandler proto c
 .safeseh COMPlusFrameHandler
-
 COMPlusNestedExceptionHandler proto c
 .safeseh COMPlusNestedExceptionHandler
-
 FastNExportExceptHandler proto c
 .safeseh FastNExportExceptHandler
-
 ifdef FEATURE_COMINTEROP
 COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
+else ; FEATURE_EH_FUNCLETS
+ProcessCLRException proto c
+.safeseh ProcessCLRException
+endif ; FEATURE_EH_FUNCLETS
 
 ifdef HAS_ADDRESS_SANITIZER
 EXTERN ___asan_handle_no_return:PROC
@@ -277,6 +326,7 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
         RET
 CallRtlUnwind ENDP
 
+ifndef FEATURE_EH_FUNCLETS
 _ResumeAtJitEHHelper@4 PROC public
         ; Call ___asan_handle_no_return here as we are not going to return.
 ifdef HAS_ADDRESS_SANITIZER
@@ -398,6 +448,7 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
+endif
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
@@ -406,6 +457,8 @@ _CallJitEHFinallyHelper@8 ENDP
 ; void STDCALL CallDescrWorkerInternal(CallDescrWorkerParams *  pParams)
 CallDescrWorkerInternal PROC stdcall public USES EBX,
                          pParams: DWORD
+
+        ;; PUSH_CLR_EXCEPTION_HANDLER _CallDescrWorkerUnwindFrameChainHandler
 
         mov     ebx, pParams
 
@@ -434,6 +487,8 @@ donestack:
         mov     ecx, dword ptr [eax+4]
 
         call    [ebx+CallDescrData__pTarget]
+
+CallDescrWorkerInternalReturnAddress:
 ifdef _DEBUG
         nop     ; This is a tag that we use in an assert.  Fcalls expect to
                 ; be called from Jitted code or from certain blessed call sites like
@@ -457,7 +512,8 @@ ReturnsInt:
         mov     [ebx+CallDescrData__returnValue+4], edx
 
 Epilog:
-       RET
+        ;; POP_CLR_EXCEPTION_HANDLER
+        ret
 
 ReturnsFloat:
         fstp    dword ptr [ebx+CallDescrData__returnValue]    ; Spill the Float return value
@@ -466,6 +522,10 @@ ReturnsFloat:
 ReturnsDouble:
         fstp    qword ptr [ebx+CallDescrData__returnValue]    ; Spill the Double return value
         jmp     Epilog
+
+public _CallDescrWorkerInternalReturnAddressOffset
+_CallDescrWorkerInternalReturnAddressOffset:
+        dd      CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
 
 CallDescrWorkerInternal endp
 
@@ -921,11 +981,15 @@ GoCallVarargWorker:
     ; save pMD
     push        eax
 
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+
     push        eax                     ; pMD
     push        dword ptr [esi + 4*7]   ; pVaSigCookie
     push        esi                     ; pTransitionBlock
 
     call        _VarargPInvokeStubWorker@12
+
+    POP_CLR_EXCEPTION_HANDLER
 
     ; restore pMD
     pop     eax
@@ -964,11 +1028,15 @@ GoCallCalliWorker:
     ; save target
     push        eax
 
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+
     push        eax                         ; unmanaged target
     push        ebx                         ; pVaSigCookie (first stack argument)
     push        esi                         ; pTransitionBlock
 
     call        _GenericPInvokeCalliStubWorker@12
+
+    POP_CLR_EXCEPTION_HANDLER
 
     ; restore target
     pop     eax
@@ -1128,6 +1196,11 @@ _ThePreStub@0 proc public
 
     mov         esi, esp
 
+    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
+    je          SkipSEHPush
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+SkipSEHPush:
+
     ; EAX contains MethodDesc* from the precode. Push it here as argument
     ; for PreStubWorker
     push        eax
@@ -1135,6 +1208,11 @@ _ThePreStub@0 proc public
     push        esi
 
     call        _PreStubWorker@8
+
+    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
+    je          SkipSEHPop
+    POP_CLR_EXCEPTION_HANDLER
+SkipSEHPop:
 
     ; eax now contains replacement stub. PreStubWorker will never return
     ; NULL (it throws an exception if stub creation fails.)
@@ -1167,8 +1245,12 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
+    PUSH_CLR_EXCEPTION_HANDLER _UMEntryPrestubUnwindFrameChainHandler
+
     push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
+
+    POP_CLR_EXCEPTION_HANDLER
 
     ; pop argument registers
     pop         edx
@@ -1191,12 +1273,16 @@ _GenericCLRToCOMCallStub@0 proc public
     ; return value
     sub         esp, 8
 
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+
     ; save pMD
     mov         ebx, eax
 
     push        eax                 ; pMD
     push        esi                 ; pTransitionBlock
     call        _CLRToCOMWorker@8
+
+    POP_CLR_EXCEPTION_HANDLER
 
     push        eax
     call        _setFPReturn@12     ; pop & set the return value
@@ -1236,8 +1322,14 @@ _GenericComCallStub@0 proc public
     push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
     sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
-    push        esp
+    mov         esi, esp
+
+    PUSH_CLR_EXCEPTION_HANDLER _ReverseComUnwindFrameChainHandler
+
+    push        esi
     call        _COMToCLRWorker@4
+
+    POP_CLR_EXCEPTION_HANDLER
 
     add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
@@ -1248,6 +1340,7 @@ _GenericComCallStub@0 proc public
     pop         edi
     pop         esi
     pop         ebx
+
     pop         ebp
 
     sub         ecx, COMMETHOD_PREPAD_ASM
@@ -1465,6 +1558,8 @@ _ResolveWorkerAsmStub@0 proc public
 
     mov     esi, esp
 
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+
     push    [esi + 4*4]     ; dispatch token
     push    [esi + 5*4]     ; siteAddrForRegisterIndirect
     push    esi             ; pTransitionBlock
@@ -1478,6 +1573,8 @@ _ResolveWorkerAsmStub@0 proc public
     call    _VSD_ResolveWorker@12
 
     ; From here on, mustn't trash eax
+
+    POP_CLR_EXCEPTION_HANDLER
 
     STUB_EPILOG
     jmp     eax
@@ -1598,5 +1695,109 @@ _BackPatchWorkerAsmStub@0 proc public
     pop     ebp
     ret
 _BackPatchWorkerAsmStub@0 endp
+
+; DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+; ESP based frame
+_CallEHFunclet@16 proc public
+
+    push ebp
+    push ebx
+    push esi
+    push edi
+
+    lea     ebp, [esp + 3*4]
+
+    ; On entry:
+    ;
+    ; [ebp+ 8] = throwable
+    ; [ebp+12] = PC to invoke
+    ; [ebp+16] = address of EDI register in CONTEXT record ; used to restore the non-volatile registers of CrawlFrame
+    ; [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    ;
+
+    ; Save the SP of this function
+    mov     eax, [ebp + 20]
+    mov     [eax], esp
+    ; Save the funclet PC for later call
+    mov     edx, [ebp + 12]
+    ; Pass throwable object to funclet
+    mov     eax, [ebp +  8]
+    ; Restore non-volatiles registers
+    mov     ecx, [ebp + 16]
+    mov     edi, [ecx]
+    mov     esi, [ecx +  4]
+    mov     ebx, [ecx +  8]
+    mov     ebp, [ecx + 24]
+    ; Invoke the funclet
+    call    edx
+
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+
+    ret     16
+
+_CallEHFunclet@16 endp
+
+; DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
+; ESP based frame
+_CallEHFilterFunclet@16 proc public
+
+    push ebp
+    push ebx
+    push esi
+    push edi
+
+    lea     ebp, [esp + 3*4]
+
+    ; On entry:
+    ;
+    ; [ebp+ 8] = throwable
+    ; [ebp+12] = FP to restore
+    ; [ebp+16] = PC to invoke
+    ; [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    ;
+
+    ; Save the SP of this function
+    mov     eax, [ebp + 20]
+    mov     [eax], esp
+    ; Save the funclet PC for later call
+    mov     edx, [ebp + 16]
+    ; Pass throwable object to funclet
+    mov     eax, [ebp +  8]
+    ; Restore FP
+    mov     ebp, [ebp + 12]
+    ; Invoke the funclet
+    call    edx
+
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+
+    ret     16
+
+_CallEHFilterFunclet@16 endp
+
+FASTCALL_FUNC IL_Throw, 4
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    @IL_Throw_x86@8
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_Throw
+
+FASTCALL_FUNC IL_Rethrow, 0
+    STUB_PROLOG
+
+    mov     ecx, esp
+    call    @IL_Rethrow_x86@4
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_Rethrow
 
     end
