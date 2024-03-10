@@ -4,6 +4,7 @@
 #ifndef __REGDISP_H
 #define __REGDISP_H
 
+#include <clrnt.h>
 
 #ifdef DEBUG_REGDISPLAY
 class Thread;

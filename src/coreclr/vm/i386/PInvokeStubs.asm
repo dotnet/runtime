@@ -17,12 +17,16 @@
         include asmconstants.inc
         include asmmacros.inc
 
+        assume fs: nothing
         option  casemap:none
         .code
 
 extern _g_TrapReturningThreads:DWORD
 
 extern _JIT_PInvokeEndRarePath@0:proc
+ifdef FEATURE_EH_FUNCLETS
+extern _ProcessCLRException:PROC
+endif ; FEATURE_EH_FUNCLETS
 
 .686P
 .XMM
@@ -48,6 +52,13 @@ _JIT_PInvokeBegin@4 PROC public
 
         mov             eax, [esp]
         mov             dword ptr [ecx + InlinedCallFrame__m_pCallerReturnAddress], eax
+
+        ;; Link SEH exception registration
+        mov             eax, dword ptr fs:[0]
+        mov             dword ptr [ecx + InlinedCallFrame__m_ExceptionRecord], eax
+        mov             dword ptr [ecx + InlinedCallFrame__m_ExceptionRecord + 4], _ProcessCLRException
+        lea             eax, [ecx + InlinedCallFrame__m_ExceptionRecord]
+        mov             dword ptr fs:[0], eax
 
         ;; edx = GetThread(). Trashes eax
         INLINE_GETTHREAD edx, eax
@@ -90,6 +101,10 @@ _JIT_PInvokeEnd@4 PROC public
         ;; pThread->m_pFrame = pFrame->m_Next
         mov             eax, dword ptr [ecx + Frame__m_Next]
         mov             dword ptr [edx + Thread_m_pFrame], eax
+
+        ;; Unlink SEH exception registration
+        mov             eax, dword ptr [ecx + InlinedCallFrame__m_ExceptionRecord]
+        mov             dword ptr fs:[0], eax
 
         ret
 

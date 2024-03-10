@@ -1810,7 +1810,30 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef TARGET_X86
+static void TransitionBlockToContext(TransitionBlock* transitionBlock, T_CONTEXT *pContext)
+{
+    //#define ARGUMENT_REGISTER(reg) pContext->reg = transitionBlock->m_argumentRegisters.reg;
+    //ENUM_ARGUMENT_REGISTERS();
+    //#undef ARGUMENT_REGISTER
+    pContext->Ecx = transitionBlock->m_argumentRegisters.ECX;
+    pContext->Edx = transitionBlock->m_argumentRegisters.EDX;
+
+    #define CALLEE_SAVED_REGISTER(reg) pContext->reg = transitionBlock->m_calleeSavedRegisters.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+    #undef CALLEE_SAVED_REGISTER
+
+    pContext->Esp = (UINT_PTR)transitionBlock + 2 * sizeof(PVOID);
+    pContext->Eip = transitionBlock->m_ReturnAddress;
+}
+#endif
+
+#ifdef TARGET_X86
+EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_Throw,  Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1827,7 +1850,11 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         Thread *pThread = GetThread();
 
         SoftwareExceptionFrame exceptionFrame;
-        RtlCaptureContext(exceptionFrame.GetContext());
+#ifdef TARGET_X86
+        TransitionBlockToContext(transitionBlock, exceptionFrame.GetContext());
+#else
+        ClrCaptureContext(exceptionFrame.GetContext());
+#endif
         exceptionFrame.InitAndLink(pThread);
 
         FC_CAN_TRIGGER_GC();
@@ -1905,7 +1932,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef TARGET_X86
+EXTERN_C FCDECL0(void, IL_Rethrow);
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+#else
 HCIMPL0(void, IL_Rethrow)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1917,7 +1949,11 @@ HCIMPL0(void, IL_Rethrow)
         Thread *pThread = GetThread();
 
         SoftwareExceptionFrame exceptionFrame;
-        RtlCaptureContext(exceptionFrame.GetContext());
+#ifdef TARGET_X86
+        TransitionBlockToContext(transitionBlock, exceptionFrame.GetContext());
+#else
+        ClrCaptureContext(exceptionFrame.GetContext());
+#endif
         exceptionFrame.InitAndLink(pThread);
 
         ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();

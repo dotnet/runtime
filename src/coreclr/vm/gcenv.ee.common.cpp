@@ -71,7 +71,7 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 
     return state.returnOffs;
 #else
-    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
+    _ASSERTE(!"FindFirstInterruptiblePoint");
     return -1;
 #endif // USE_GC_INFO_DECODER
 }

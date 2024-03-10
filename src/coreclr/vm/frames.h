@@ -2660,6 +2660,10 @@ public:
     TADDR               m_pSPAfterProlog;
 #endif // TARGET_ARM
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS) && !defined(UNIX_X86_ABI)
+    EXCEPTION_REGISTRATION_RECORD m_ExceptionRecord;
+#endif
+
 public:
     //---------------------------------------------------------------
     // Expose key offsets and values for stub generation.

@@ -473,17 +473,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
     if (pCodeInfo == NULL)
     {
-#ifndef TARGET_UNIX
+#if defined(TARGET_WINDOWS) && !defined(TARGET_X86)
         pFunctionEntry = RtlLookupFunctionEntry(uControlPc,
                                             ARM_ONLY((DWORD*))(&uImageBase),
                                             NULL);
-#else // !TARGET_UNIX
+#else // TARGET_WINDOWS && !TARGET_X86
         EECodeInfo codeInfo;
 
         codeInfo.Init(uControlPc);
         pFunctionEntry = codeInfo.GetFunctionEntry();
         uImageBase = (UINT_PTR)codeInfo.GetModuleBase();
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS && !TARGET_X86
     }
     else
     {
@@ -494,7 +494,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
         // expects this indirection to be resolved, so we use RUNTIME_FUNCTION of the hot code even
         // if we are in cold code.
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#if defined(_DEBUG) && defined(TARGET_WINDOWS) && !defined(TARGET_X86)
         UINT_PTR            uImageBaseFromOS;
         PT_RUNTIME_FUNCTION pFunctionEntryFromOS;
 
@@ -505,7 +505,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
         // Note that he address returned from the OS is different from the one we have computed
         // when unwind info is registered using RtlAddGrowableFunctionTable. Compare RUNTIME_FUNCTION content.
         _ASSERTE( (uImageBase == uImageBaseFromOS) && (memcmp(pFunctionEntry, pFunctionEntryFromOS, sizeof(RUNTIME_FUNCTION)) == 0) );
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG && TARGET_WINDOWS
     }
 
     if (pFunctionEntry)
@@ -556,7 +556,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 {
     PCODE uControlPc;
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#if defined(_DEBUG) &&defined(TARGET_WINDOWS) && !defined(TARGET_X86)
     UINT_PTR uImageBase;
 
     PT_RUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
@@ -564,19 +564,24 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
                                                                 NULL);
 
     CONSISTENCY_CHECK(NULL == pFunctionEntry);
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG && TARGET_WINDOWS && !TARGET_X86
 
 #if defined(TARGET_AMD64)
 
-    uControlPc = *(ULONGLONG*)pContext->Rsp;
-    pContext->Rsp += sizeof(ULONGLONG);
+    uControlPc = *(TADDR*)pContext->Rsp;
+    pContext->Rsp += sizeof(TADDR);
 #ifdef TARGET_WINDOWS
     DWORD64 ssp = GetSSP(pContext);
     if (ssp != 0)
     {
-        SetSSP(pContext, ssp + sizeof(ULONGLONG));
+        SetSSP(pContext, ssp + sizeof(TADDR));
     }
 #endif // TARGET_WINDOWS
+
+#elif defined(TARGET_X86)
+
+    uControlPc = *(TADDR*)pContext->Esp;
+    pContext->Esp += sizeof(TADDR);
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 

@@ -12636,6 +12636,13 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
         }
     }
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS) && !defined(UNIX_X86_ABI)
+    // GenerateInitPInvokeFrameHelper doesn't establish an EH frame that we would
+    // need for handling SEH exceptions thrown by native code. Inlining that code
+    // for both prolog and epilog would need a JIT change.
+    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS);
+#endif
+
     return flags;
 }
 
