@@ -274,7 +274,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
     # common BDN environment var settings
     # Disable ReadyToRun so we always JIT R2R methods and collect them
-    collection_command += f"--envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0 "
+    collection_command += f"--envVars DOTNET_JitName:{shim_name} DOTNET_ReadyToRun:0 "
 
     # custom BDN environment var settings
     if coreclr_args.tiered_pgo:

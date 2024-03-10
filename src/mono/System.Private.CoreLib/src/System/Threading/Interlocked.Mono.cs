@@ -10,6 +10,14 @@ namespace System.Threading
     {
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern byte CompareExchange(ref byte location1, byte value, byte comparand);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern short CompareExchange(ref short location1, short value, short comparand);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);
 
         [Intrinsic]
@@ -52,6 +60,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Increment(ref long location);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern byte Exchange(ref byte location1, byte value);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern short Exchange(ref short location1, short value);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

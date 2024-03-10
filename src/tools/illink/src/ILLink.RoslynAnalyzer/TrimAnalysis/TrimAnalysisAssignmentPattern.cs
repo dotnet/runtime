@@ -17,11 +17,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisAssignmentPattern
 	{
-		public MultiValue Source { init; get; }
-		public MultiValue Target { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
-		public FeatureContext FeatureContext { init; get; }
+		public MultiValue Source { get; init; }
+		public MultiValue Target { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisAssignmentPattern (
 			MultiValue source,
@@ -58,7 +58,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
-				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode)) {
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
 				foreach (var sourceValue in Source.AsEnumerable ()) {
 					foreach (var targetValue in Target.AsEnumerable ()) {
 						// The target should always be an annotated value, but the visitor design currently prevents

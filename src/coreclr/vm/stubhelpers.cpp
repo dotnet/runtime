@@ -476,17 +476,37 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 }
 FCIMPLEND
 
-
-
-FCIMPL2(void, StubHelpers::ThrowInteropParamException, UINT resID, UINT paramIdx)
+#include <optsmallperfcritical.h>
+FCIMPL2(FC_BOOL_RET, StubHelpers::TryGetStringTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-    ::ThrowInteropParamException(resID, paramIdx);
-    HELPER_METHOD_FRAME_END();
+    STRINGREF thisRef = ObjectToSTRINGREF(thisRefUNSAFE);
+    FC_RETURN_BOOL(thisRef->GetTrailByte(pbData));
 }
 FCIMPLEND
+#include <optdefault.h>
+
+extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    str.Get()->SetTrailByte(bData);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    ::ThrowInteropParamException(resID, paramIdx);
+    END_QCALL;
+}
 
 #ifdef PROFILING_SUPPORTED
 FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretParam, Thread* pThread, Object* unsafe_pThis)
@@ -637,88 +657,6 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
 }
 FCIMPLEND
 #endif // FEATURE_COMINTEROP
-
-FCIMPL3(void, StubHelpers::FmtClassUpdateNativeInternal, Object* pObjUNSAFE, BYTE* pbNative, OBJECTREF *ppCleanupWorkListOnStack)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
-
-    MethodTable* pMT = pObj->GetMethodTable();
-
-    if (pMT->IsBlittable())
-    {
-        memcpyNoGCRefs(pbNative, pObj->GetData(), pMT->GetNativeSize());
-    }
-    else
-    {
-        MethodDesc* structMarshalStub;
-
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), pbNative, StructMarshalStubs::MarshalOperation::Marshal, (void**)ppCleanupWorkListOnStack);
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, StubHelpers::FmtClassUpdateCLRInternal, Object* pObjUNSAFE, BYTE* pbNative)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
-
-    MethodTable* pMT = pObj->GetMethodTable();
-
-    if (pMT->IsBlittable())
-    {
-        memcpyNoGCRefs(pObj->GetData(), pbNative, pMT->GetNativeSize());
-    }
-    else
-    {
-        MethodDesc* structMarshalStub;
-
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), pbNative, StructMarshalStubs::MarshalOperation::Unmarshal);
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, StubHelpers::LayoutDestroyNativeInternal, Object* pObjUNSAFE, BYTE* pbNative)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
-    MethodTable* pMT = pObj->GetMethodTable();
-
-    if (!pMT->IsBlittable())
-    {
-        MethodDesc* structMarshalStub;
-
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), pbNative, StructMarshalStubs::MarshalOperation::Cleanup);
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegisteredTypeHnd)
 {

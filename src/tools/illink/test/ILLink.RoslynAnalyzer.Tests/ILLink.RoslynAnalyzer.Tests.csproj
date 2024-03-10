@@ -5,46 +5,53 @@
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>generated</CompilerGeneratedFilesOutputPath>
+    <TestCaseBuildOutputRoot>$(ArtifactsBinDir)Mono.Linker.Tests.Cases\$(Configuration)\$(TargetFramework)</TestCaseBuildOutputRoot>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <TestCaseBuildOutputRoot>$(ArtifactsBinDir)/Mono.Linker.Tests.Cases/$(Configuration)/$(TargetFramework)</TestCaseBuildOutputRoot>
-  </PropertyGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="TestCaseBuildOutputRoot" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\tests\SourceGenerators\LiveReferencePack.cs" />
     <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
+
+    <!-- Upgrade transitive references of Microsoft.CodeAnalysis.Analyzer.Testing which bring in NS 1.x deps -->
+    <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
+
     <ProjectReference Include="..\..\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" />
     <ProjectReference Include="..\..\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
-    <ProjectReference Include="../Mono.Linker.Tests.Cases/**/*.csproj" />
-    <ProjectReference Include="../ILLink.RoslynAnalyzer.Tests.Generator/ILLink.RoslynAnalyzer.Tests.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\**\*.csproj" />
+    <ProjectReference Include="..\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 
-    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.RepoRoot">
-      <Value>$(RepoRoot)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.Configuration">
-      <Value>$(Configuration)</Value>
-    </RuntimeHostConfigurationOption>
+  <ItemGroup>
     <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.ArtifactsDir">
-      <Value>$(ArtifactsDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.ArtifactsBinDir">
-      <Value>$(ArtifactsBinDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.TargetArchitecture">
-      <Value>$(TargetArchitecture)</Value>
-    </RuntimeHostConfigurationOption>
   </ItemGroup>
+
+  <!-- The analyzer tests require the reference assemblies that are compiled against.
+       Copy them to the output/publish directory so that tests still work on a different
+       machine (i.e. when testing with Helix). -->
+  <Target Name="CopyReferenceAssembliesToOutputDir"
+          DependsOnTargets="FindReferenceAssembliesForReferences"
+          BeforeTargets="AssignTargetPaths;GetCopyToPublishDirectoryItems">
+    <ItemGroup>
+      <None Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('FrameworkReferenceName', 'Microsoft.NETCore.App'))"
+            CopyToOutputDirectory="PreserveNewest"
+            CopyToPublishDirectory="PreserveNewest"
+            Link="live-ref-pack\%(RecursiveDir)%(Filename)%(Extension)"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
 
 </Project>

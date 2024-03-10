@@ -163,11 +163,6 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
   </PropertyGroup>
 
-  <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
-  <PropertyGroup>
-    <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
-  </PropertyGroup>
-
   <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID
        and including the RID breaks some of our glob expressions in issues.targets -->
   <PropertyGroup>
@@ -223,6 +218,7 @@
     <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
     <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
+    <HybridGlobalization Condition="'$(_IsApplePlatform)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />

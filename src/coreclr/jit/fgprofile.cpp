@@ -381,7 +381,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -467,7 +467,7 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -488,7 +488,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -507,11 +507,11 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary =
-                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
-            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK;
+            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
-            m_comp->fgAddRefPred(block, intermediary);
+            FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
+            intermediary->SetTargetEdge(newEdge);
             SetModifiedFlow();
 
             while (criticalPreds.Height() > 0)
@@ -520,15 +520,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
                 // Redirect any jumps
                 //
-                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
-
-                // Handle case where we had a fall through critical edge
-                //
-                if (pred->NextIs(intermediary))
-                {
-                    m_comp->fgRemoveRefPred(pred, block);
-                    m_comp->fgAddRefPred(intermediary, block);
-                }
+                m_comp->fgReplaceJumpTarget(pred, block, intermediary);
             }
         }
     }
@@ -633,14 +625,14 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
-    if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+    if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
         // This block probe needs to be relocated; instrument each predecessor.
         //
         bool first = true;
         for (BasicBlock* pred : block->PredBlocks())
         {
-            const bool isLivePred = ShouldProcess(pred) || ((pred->bbFlags & BBF_MARKED) == BBF_MARKED);
+            const bool isLivePred = ShouldProcess(pred) || pred->HasFlag(BBF_MARKED);
             if (!isLivePred)
             {
                 continue;
@@ -652,7 +644,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
                 incCount = m_comp->gtCloneExpr(incCount);
             }
             m_comp->fgNewStmtAtBeg(pred, incCount);
-            pred->bbFlags &= ~BBF_MARKED;
+            pred->RemoveFlags(BBF_MARKED);
             first = false;
         }
     }
@@ -935,7 +927,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -949,7 +941,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // some new keying scheme. For now we just
                 // ignore this (rare) case.
                 //
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
                     // This block should be the only pred of the continuation.
                     //
@@ -1008,7 +1000,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
-                    BasicBlock* const target = block->GetJumpDest();
+                    BasicBlock* const target = block->GetTarget();
 
                     // In some bad IL cases we may not have a target.
                     // In others we may see something other than LEAVE be most-nested in a try.
@@ -1076,11 +1068,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     BasicBlock* const target = block->GetSucc(0, this);
                     if (BlockSetOps::IsMember(this, marked, target->bbNum))
                     {
-                        // We can't instrument in the call always pair tail block
+                        // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
                         //
                         visitor->VisitNonTreeEdge(block, target,
-                                                  block->isBBCallAlwaysPairTail()
+                                                  block->isBBCallFinallyPairTail()
                                                       ? SpanningTreeVisitor::EdgeKind::CriticalEdge
                                                       : SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                     }
@@ -1232,7 +1224,7 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
     // We'll use their bbNum in place of IL offset, and set
     // a high bit as a "flag"
     //
-    if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+    if (block->HasFlag(BBF_INTERNAL))
     {
         key = block->bbNum | IS_INTERNAL_BLOCK;
     }
@@ -1366,7 +1358,7 @@ public:
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & BBF_IMPORTED) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED);
     }
     bool ShouldInstrument(BasicBlock* block) override
     {
@@ -1540,7 +1532,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                     if (found)
                     {
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
-                        instrumentedBlock->bbFlags |= BBF_IMPORTED;
+                        instrumentedBlock->SetFlags(BBF_IMPORTED);
                         edgesSplit++;
 
                         // Add in the relocated probe
@@ -1632,7 +1624,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
         // Nothing to do unless the block is a tail call successor.
         //
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -1661,7 +1653,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             //
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -1677,7 +1669,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 // Ensure this pred always jumps to block
                 //
                 assert(pred->KindIs(BBJ_ALWAYS));
-                assert(pred->HasJumpTo(block));
+                assert(pred->TargetIs(block));
             }
         }
 
@@ -1686,18 +1678,18 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary =
-                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
-            intermediary->bbFlags |= BBF_IMPORTED | BBF_NONE_QUIRK;
+            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
-            m_comp->fgAddRefPred(block, intermediary);
+            FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
+            intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
 
             while (criticalPreds.Height() > 0)
             {
                 BasicBlock* const pred = criticalPreds.Pop();
-                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+                m_comp->fgReplaceJumpTarget(pred, block, intermediary);
             }
         }
     }
@@ -1928,6 +1920,41 @@ public:
 };
 
 //------------------------------------------------------------------------
+// ValueHistogramProbeVisitor: invoke functor on each node requiring a generic value probe
+//
+template <class TFunctor>
+class ValueHistogramProbeVisitor final : public GenTreeVisitor<ValueHistogramProbeVisitor<TFunctor>>
+{
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    TFunctor& m_functor;
+    Compiler* m_compiler;
+
+    ValueHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    {
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+        if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
+        {
+            const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
+            if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+            {
+                m_functor(m_compiler, node);
+            }
+        }
+        return Compiler::WALK_CONTINUE;
+    }
+};
+
+//------------------------------------------------------------------------
 // BuildHandleHistogramProbeSchemaGen: functor that creates class probe schema elements
 //
 class BuildHandleHistogramProbeSchemaGen
@@ -1989,6 +2016,35 @@ public:
         schemaElem.Count = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
 
+        m_schemaCount++;
+    }
+};
+
+class BuildValueHistogramProbeSchemaGen
+{
+    Schema&   m_schema;
+    unsigned& m_schemaCount;
+
+public:
+    BuildValueHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
+        : m_schema(schema), m_schemaCount(schemaCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTree* call)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
+        schemaElem.Count                                 = 1;
+        schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
+                                             ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        m_schema.push_back(schemaElem);
+        m_schemaCount++;
+
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::ValueHistogram;
+        schemaElem.Count               = ICorJitInfo::HandleHistogram32::SIZE;
+        m_schema.push_back(schemaElem);
         m_schemaCount++;
     }
 };
@@ -2191,6 +2247,85 @@ private:
 };
 
 //------------------------------------------------------------------------
+// ValueHistogramProbeInserter: functor that adds generic probes
+//
+class ValueHistogramProbeInserter
+{
+    Schema&   m_schema;
+    uint8_t*  m_profileMemory;
+    int*      m_currentSchemaIndex;
+    unsigned& m_instrCount;
+
+public:
+    ValueHistogramProbeInserter(Schema& schema, uint8_t* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
+        : m_schema(schema)
+        , m_profileMemory(profileMemory)
+        , m_currentSchemaIndex(pCurrentSchemaIndex)
+        , m_instrCount(instrCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTree* node)
+    {
+        if (*m_currentSchemaIndex >= (int)m_schema.size())
+        {
+            return;
+        }
+
+        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
+               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
+
+        const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
+        if (countEntry.ILOffset !=
+            static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset))
+        {
+            return;
+        }
+
+        bool is32 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        bool is64 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount;
+        if (!is32 && !is64)
+        {
+            return;
+        }
+
+        assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
+        const ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
+        assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram));
+        uint8_t* hist = &m_profileMemory[countEntry.Offset];
+        assert(hist != nullptr);
+
+        *m_currentSchemaIndex += 2;
+
+        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+
+        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for the len:
+        //
+        //  \--*  COMMA     long
+        //     +--*  CALL help void   CORINFO_HELP_VALUEPROFILE
+        //     |  +--*  COMMA     long
+        //     |  |  +--*  STORE_LCL_VAR long  tmp
+        //     |  |  |  \--*  (node to poll)
+        //     |  |  \--*  LCL_VAR   long   tmp
+        //     |  \--*  CNS_INT   long   <hist>
+        //     \--*  LCL_VAR   long   tmp
+        //
+
+        const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
+        GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
+        GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
+        GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
+        GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+        GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
+
+        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
+                                             compiler->gtCloneExpr(lengthLocal));
+        m_instrCount++;
+    }
+};
+
+//------------------------------------------------------------------------
 // HandleHistogramProbeInstrumentor: instrumentor that adds a class probe to each
 //   virtual call in the basic block
 //
@@ -2202,7 +2337,25 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
+    }
+    void Prepare(bool isPreImport) override;
+    void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
+};
+
+//------------------------------------------------------------------------
+// ValueInstrumentor: instrumentor that adds a generic probe for integer values
+//
+class ValueInstrumentor : public Instrumentor
+{
+public:
+    ValueInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -2242,7 +2395,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 //
 void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2271,7 +2424,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 //
 void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2288,6 +2441,58 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
 
     HandleHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
     HandleHistogramProbeVisitor<HandleHistogramProbeInserter> visitor(m_comp, insertProbes);
+    for (Statement* const stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+void ValueInstrumentor::Prepare(bool isPreImport)
+{
+    if (isPreImport)
+    {
+        return;
+    }
+
+#ifdef DEBUG
+    // Set schema index to invalid value
+    //
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        block->bbCountSchemaIndex = -1;
+    }
+#endif
+}
+
+void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+{
+    if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
+    {
+        return;
+    }
+
+    block->bbHistogramSchemaIndex = (int)schema.size();
+
+    BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
+    ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
+    for (Statement* const stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
+{
+    if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
+    {
+        return;
+    }
+
+    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
+
+    ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
+    ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_comp, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -2333,10 +2538,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
             // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
             // In other cases they have large managed implementations we want to profile.
             case NI_System_String_Equals:
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
 
             // Same here, these are only folded when JIT knows the exact types
             case NI_System_Type_IsAssignableFrom:
@@ -2356,6 +2564,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         {
             fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgValueInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             return PhaseStatus::MODIFIED_NOTHING;
         }
     }
@@ -2393,11 +2602,22 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
+    if (!prejit && JitConfig.JitProfileValues())
+    {
+        fgValueInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
+    }
+    else
+    {
+        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileValues=0")
+        fgValueInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+    }
+
     // Make pre-import preparations.
     //
     const bool isPreImport = true;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
+    fgValueInstrumentor->Prepare(isPreImport);
 
     return PhaseStatus::MODIFIED_NOTHING;
 }
@@ -2427,6 +2647,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     const bool isPreImport = false;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
+    fgValueInstrumentor->Prepare(isPreImport);
 
     // Walk the flow graph to build up the instrumentation schema.
     //
@@ -2442,15 +2663,21 @@ PhaseStatus Compiler::fgInstrumentMethod()
         {
             fgHistogramInstrumentor->BuildSchemaElements(block, schema);
         }
+
+        if (fgValueInstrumentor->ShouldProcess(block))
+        {
+            fgValueInstrumentor->BuildSchemaElements(block, schema);
+        }
     }
 
     // Even though we haven't yet instrumented, we may have made changes in anticipation...
     //
-    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() ||
+                                         fgHistogramInstrumentor->ModifiedFlow() || fgValueInstrumentor->ModifiedFlow();
     const PhaseStatus earlyExitPhaseStatus =
         madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 
-    // Optionally, when jitting, if there were no class probes and only one count probe,
+    // Optionally, when jitting, if there were no class probes, no value probes and only one count probe,
     // suppress instrumentation.
     //
     // We leave instrumentation in place when prejitting as the sample hits in the method
@@ -2469,10 +2696,11 @@ PhaseStatus Compiler::fgInstrumentMethod()
         minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
     }
 
-    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgHistogramInstrumentor->SchemaCount() == 0))
+    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
+        (fgHistogramInstrumentor->SchemaCount() == 0) && (fgValueInstrumentor->SchemaCount() == 0))
     {
-        JITDUMP(
-            "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
+        JITDUMP("Not instrumenting method: minimal probing enabled, and method has only one counter and no class and "
+                "no value probes\n");
 
         return earlyExitPhaseStatus;
     }
@@ -2483,8 +2711,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         return earlyExitPhaseStatus;
     }
 
-    JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
-            fgHistogramInstrumentor->SchemaCount());
+    JITDUMP("Instrumenting method: %d count probes, %d class probes and %d value probes\n",
+            fgCountInstrumentor->SchemaCount(), fgHistogramInstrumentor->SchemaCount(),
+            fgValueInstrumentor->SchemaCount())
 
     assert(schema.size() > 0);
 
@@ -2531,6 +2760,11 @@ PhaseStatus Compiler::fgInstrumentMethod()
         {
             fgHistogramInstrumentor->Instrument(block, schema, profileMemory);
         }
+
+        if (fgValueInstrumentor->ShouldInstrument(block))
+        {
+            fgValueInstrumentor->Instrument(block, schema, profileMemory);
+        }
     }
 
     // Verify we instrumented everything we created schemas for.
@@ -2546,6 +2780,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
     fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
+    fgValueInstrumentor->InstrumentMethodEntry(schema, profileMemory);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -2566,6 +2801,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         JITDUMP("JitStress -- incorporating random profile data\n");
         fgIncorporateBlockCounts();
         fgApplyProfileScale();
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -3624,18 +3860,22 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 {
     // We expect one pseudo-edge and at least one normal edge.
     //
-    Edge*    pseudoEdge = nullptr;
-    unsigned nEdges     = 0;
+    Edge*    pseudoEdge       = nullptr;
+    weight_t pseudoEdgeWeight = 0;
+    unsigned nEdges           = 0;
+    weight_t successorWeight  = BB_ZERO_WEIGHT;
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
         if (edge->m_isPseudoEdge)
         {
             assert(pseudoEdge == nullptr);
-            pseudoEdge = edge;
+            pseudoEdge       = edge;
+            pseudoEdgeWeight = edge->m_weight;
             continue;
         }
 
+        successorWeight += edge->m_weight;
         nEdges++;
     }
 
@@ -3652,28 +3892,25 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 
     assert(nEdges == nSucc);
 
-    if (info->m_weight == BB_ZERO_WEIGHT)
+    if ((info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
     {
-        JITDUMP("\nPropagate: OSR entry block weight is zero\n");
+        JITDUMP("\nPropagate: OSR entry block or successor weight is zero\n");
         EntryWeightZero();
         return;
     }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
-    assert(nEdges == nSucc);
-    weight_t totalLikelihood = 0;
+    JITDUMP("Normalizing OSR successor likelihoods with factor 1/" FMT_WT "\n", successorWeight);
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
         assert(block == edge->m_sourceBlock);
 
-        // The pseudo edge doesn't correspond to a flow edge,
-        // but it carries away some flow.
+        // The pseudo edge doesn't correspond to a flow edge.
         //
         if (edge == pseudoEdge)
         {
-            totalLikelihood += edge->m_weight / info->m_weight;
             continue;
         }
 
@@ -3681,56 +3918,27 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(edge->m_targetBlock, block);
 
         assert(flowEdge != nullptr);
-        assert(!flowEdge->hasLikelihood());
+
+        // Naive likelihood should have been set during pred initialization in fgLinkBasicBlocks
+        //
+        assert(flowEdge->hasLikelihood());
         weight_t likelihood = 0;
 
         if (nEdges == 1)
         {
-            // Conceptually we could assert(edge->m_weight == info->m_weight);
-            // but we can have inconsistencies.
-            //
             // Go with what we know for sure, edge should be 100% likely.
             //
             likelihood = 1.0;
             JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (uniq)\n", block->bbNum,
                     edge->m_targetBlock->bbNum, likelihood);
             flowEdge->setLikelihood(likelihood);
-            totalLikelihood += likelihood;
             break;
         }
 
-        assert(info->m_weight != BB_ZERO_WEIGHT);
-
-        // We may see nonsensical weights here, cap likelihood.
-        //
-        bool capped = false;
-        if (edge->m_weight > info->m_weight)
-        {
-            capped     = true;
-            likelihood = 1.0;
-        }
-        else
-        {
-            likelihood = edge->m_weight / info->m_weight;
-        }
-        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (%s)\n", block->bbNum,
-                edge->m_targetBlock->bbNum, likelihood, capped ? "pgo -- capped" : "pgo");
+        likelihood = edge->m_weight / successorWeight;
+        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (pgo)\n", block->bbNum,
+                edge->m_targetBlock->bbNum, likelihood);
         flowEdge->setLikelihood(likelihood);
-        totalLikelihood += likelihood;
-    }
-
-    // Note we expect real flow imbalances here as it's likely there
-    // was no observed flow from the OSR entry to some of its successors.
-    // Since we added in the pseudo edge likelihood above, the check below
-    // probably won't flag this.
-    //
-    // Seems like for OSR we will always want to run synthesis/repair.
-    //
-    if (totalLikelihood != 1.0)
-    {
-        // Consider what to do here... flag this method as needing immediate profile repairs?
-        //
-        JITDUMP(FMT_BB " total outgoing likelihood inaccurate: " FMT_WT "\n", block->bbNum, totalLikelihood);
     }
 }
 
@@ -3743,10 +3951,6 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 //    info - model info for the block
 //    nSucc - number of successors of the block in the flow graph
 //
-// Notes:
-//    This block requires special handling because original method flow
-//    was interrupted here.
-//
 void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInfo* info, unsigned nSucc)
 {
     // There is at least one FlowEdge.
@@ -3754,8 +3958,9 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     // Check the reconstruction graph edges. For normal blocks, if we have
     // any pseudo-edges there should be only one pseudo-edge, and no regular edges.
     //
-    Edge*    pseudoEdge = nullptr;
-    unsigned nEdges     = 0;
+    Edge*    pseudoEdge      = nullptr;
+    unsigned nEdges          = 0;
+    weight_t successorWeight = BB_ZERO_WEIGHT;
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
@@ -3766,14 +3971,15 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
             continue;
         }
 
+        successorWeight += edge->m_weight;
         nEdges++;
     }
 
     // If there is a pseudo edge,
     // There should be only one successor for block. The flow
     // from block to successor will not represent real flow.
-    // We set likelihood anyways so we can assert later
-    // that all flow edges have known likelihood.
+    // Likelihood should be set to 1.0 already, as we already know
+    // this block has only one successor.
     //
     // Note the flowEdge target may not be the same as the pseudo edge target.
     //
@@ -3781,10 +3987,10 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->HasInitializedJumpDest());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
+        assert(block->HasInitializedTarget());
+        FlowEdge* const flowEdge = block->GetTargetEdge();
         assert(flowEdge != nullptr);
-        flowEdge->setLikelihood(1.0);
+        assert(flowEdge->getLikelihood() == 1.0);
         return;
     }
 
@@ -3792,7 +3998,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbJumpDest of
+    // to just yet (specially, in WalkSpanningTree, we may not add the target of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit
@@ -3805,19 +4011,19 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // (TODO: use synthesis here)
     //
-    if ((nEdges != nSucc) || (info->m_weight == BB_ZERO_WEIGHT))
+    if ((nEdges != nSucc) || (info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
     {
         JITDUMP(FMT_BB " %s , setting outgoing likelihoods heuristically\n", block->bbNum,
                 (nEdges != nSucc) ? "has inaccurate flow model" : "has zero weight");
 
         weight_t equalLikelihood = 1.0 / nSucc;
 
-        for (BasicBlock* succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(succ, block);
-            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum, succ->bbNum,
-                    equalLikelihood);
-            flowEdge->setLikelihood(equalLikelihood);
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
+                    succBlock->bbNum, equalLikelihood);
+            succEdge->setLikelihood(equalLikelihood);
         }
 
         return;
@@ -3826,58 +4032,29 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
     assert(nEdges == nSucc);
-    weight_t totalLikelihood = 0;
+    JITDUMP("Normalizing successor likelihoods with factor 1/" FMT_WT "\n", successorWeight);
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
         assert(block == edge->m_sourceBlock);
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(edge->m_targetBlock, block);
         assert(flowEdge != nullptr);
-        assert(!flowEdge->hasLikelihood());
         weight_t likelihood = 0;
 
         if (nEdges == 1)
         {
             assert(nSucc == 1);
-
-            // Conceptually we could assert(edge->m_weight == info->m_weight);
-            // but we can have inconsistencies.
-            //
-            // Go with what we know for sure, edge should be 100% likely.
-            //
             likelihood = 1.0;
             JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (uniq)\n", block->bbNum,
                     edge->m_targetBlock->bbNum, likelihood);
             flowEdge->setLikelihood(likelihood);
-            totalLikelihood += likelihood;
             break;
         }
 
-        assert(info->m_weight != BB_ZERO_WEIGHT);
-
-        // We may see nonsensical weights here, cap likelihood.
-        //
-        bool capped = false;
-        if (edge->m_weight > info->m_weight)
-        {
-            capped     = true;
-            likelihood = 1.0;
-        }
-        else
-        {
-            likelihood = edge->m_weight / info->m_weight;
-        }
-        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (%s)\n", block->bbNum,
-                edge->m_targetBlock->bbNum, likelihood, capped ? "pgo -- capped" : "pgo");
+        likelihood = edge->m_weight / successorWeight;
+        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (pgo)\n", block->bbNum,
+                edge->m_targetBlock->bbNum, likelihood);
         flowEdge->setLikelihood(likelihood);
-        totalLikelihood += likelihood;
-    }
-
-    if (totalLikelihood != 1.0)
-    {
-        // Consider what to do here... flag this method as needing immediate profile repairs?
-        //
-        JITDUMP(FMT_BB " total outgoing likelihood inaccurate: " FMT_WT "\n", block->bbNum, totalLikelihood);
     }
 }
 
@@ -3900,7 +4077,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -3994,18 +4171,19 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetJumpSwt()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetJumpSwt()->bbsDstTab;
-    unsigned           dominantCase = caseCount;
+    const unsigned   caseCount    = block->GetSwitchTargets()->bbsCount;
+    FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+    unsigned         dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
     {
-        if (jumpTab[i] == dominantEdge->m_targetBlock)
+        BasicBlock* jumpTarget = jumpTab[i]->getDestinationBlock();
+        if (jumpTarget == dominantEdge->m_targetBlock)
         {
             if (dominantCase != caseCount)
             {
                 JITDUMP("Both case %u and %u lead to " FMT_BB "-- can't optimize\n", i, dominantCase,
-                        jumpTab[i]->bbNum);
+                        jumpTarget->bbNum);
                 dominantCase = caseCount;
                 break;
             }
@@ -4021,7 +4199,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->GetJumpSwt()->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTargets()->bbsHasDefault && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4035,9 +4213,9 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetJumpSwt()->bbsHasDominantCase  = true;
-    block->GetJumpSwt()->bbsDominantCase     = dominantCase;
-    block->GetJumpSwt()->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->bbsHasDominantCase  = true;
+    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
+    block->GetSwitchTargets()->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -4409,7 +4587,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // Does this block flow into only one other block
                     if (bSrc->KindIs(BBJ_ALWAYS))
                     {
-                        bOnlyNext = bSrc->GetJumpDest();
+                        bOnlyNext = bSrc->GetTarget();
                     }
                     else
                     {
@@ -4426,7 +4604,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 // Does this block flow into only one other block
                 if (bDst->KindIs(BBJ_ALWAYS))
                 {
-                    bOnlyNext = bDst->GetJumpDest();
+                    bOnlyNext = bDst->GetTarget();
+                }
+                else if (bDst->KindIs(BBJ_CALLFINALLYRET)) // TODO-Quirk: remove (was added to reduce asmdiffs)
+                {
+                    bOnlyNext = bDst->GetFinallyContinuation();
                 }
                 else
                 {
@@ -4473,11 +4655,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbWeight = newWeight;
                     if (newWeight == BB_ZERO_WEIGHT)
                     {
-                        bDst->bbFlags |= BBF_RUN_RARELY;
+                        bDst->SetFlags(BBF_RUN_RARELY);
                     }
                     else
                     {
-                        bDst->bbFlags &= ~BBF_RUN_RARELY;
+                        bDst->RemoveFlags(BBF_RUN_RARELY);
                     }
                 }
             }
@@ -4550,7 +4732,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
+        while (firstILBlock->HasFlag(BBF_INTERNAL))
         {
             firstILBlock = firstILBlock->Next();
         }
@@ -4657,11 +4839,12 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetJumpKind())
+            switch (bSrc->GetKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
                 case BBJ_CALLFINALLY:
+                case BBJ_CALLFINALLYRET:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
                     assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
@@ -4681,7 +4864,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
                 default:
                     // We should never have an edge that starts from one of these jump kinds
-                    noway_assert(!"Unexpected bbJumpKind");
+                    noway_assert(!"Unexpected bbKind");
                     break;
             }
 
@@ -4730,15 +4913,15 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->NextIs(bDst))
+                    if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetJumpDest();
+                        otherEdge = bSrc->GetTrueEdge();
                     }
                     else
                     {
-                        otherDst = bSrc->Next();
+                        otherEdge = bSrc->GetFalseEdge();
                     }
-                    otherEdge = fgGetPredForBlock(otherDst, bSrc);
+                    otherDst = otherEdge->getDestinationBlock();
 
                     // If we see min/max violations, just give up on the computations
                     //
@@ -5037,20 +5220,23 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   (or nearly so)
 //
 // Notes:
-//   Does nothing, if profile checks are disabled, or there are
-//   no profile weights or pred lists.
+//   By default, just checks for each flow edge having likelihood.
+//   Can be altered via external config.
 //
 void Compiler::fgDebugCheckProfileWeights()
 {
-    // Optionally check profile data, if we have any.
-    //
-    const bool enabled = (JitConfig.JitProfileChecks() > 0) && fgHaveProfileWeights() && fgPredsComputed;
-    if (!enabled)
-    {
-        return;
-    }
+    const bool configEnabled = (JitConfig.JitProfileChecks() >= 0) && fgHaveProfileWeights() && fgPredsComputed;
 
-    fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
+    if (configEnabled)
+    {
+        fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
+    }
+    else
+    {
+        ProfileChecks checks =
+            ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::CHECK_LIKELIHOODSUM | ProfileChecks::RAISE_ASSERT;
+        fgDebugCheckProfileWeights(checks);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -5075,19 +5261,22 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
-    // new likelyhood based weights.
+    // new likelihood based weights.
     //
     const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
     const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
     const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights))
+    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
     {
+        JITDUMP("[profile weight checks disabled]\n");
         return;
     }
 
-    JITDUMP("Checking Profile Data\n");
+    JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
@@ -5197,22 +5386,25 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
     // Verify overall input-output balance.
     //
-    if (entryProfiled && exitProfiled)
+    if (verifyClassicWeights || verifyLikelyWeights)
     {
-        // Note these may not agree, if fgEntryBB is a loop header.
-        //
-        if (fgFirstBB->bbRefs > 1)
+        if (entryProfiled && exitProfiled)
         {
-            JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
-        }
-        else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
-        {
-            problemBlocks++;
-            JITDUMP("  Method entry " FMT_WT " method exit " FMT_WT " weight mismatch\n", entryWeight, exitWeight);
+            // Note these may not agree, if fgEntryBB is a loop header.
+            //
+            if (fgFirstBB->bbRefs > 1)
+            {
+                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
+            }
+            else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
+            {
+                problemBlocks++;
+                JITDUMP("  Method entry " FMT_WT " method exit " FMT_WT " weight mismatch\n", entryWeight, exitWeight);
+            }
         }
     }
 
-    // Sum up what we discovered.
+    // Summarize what we discovered.
     //
     if (problemBlocks == 0)
     {
@@ -5220,10 +5412,18 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         {
             JITDUMP("No blocks were profiled, so nothing to check\n");
         }
-        else
+        else if (verifyClassicWeights || verifyLikelyWeights)
         {
             JITDUMP("Profile is self-consistent (%d profiled blocks, %d unprofiled)\n", profiledBlocks,
                     unprofiledBlocks);
+        }
+        else if (verifyLikelihoodSum)
+        {
+            JITDUMP("All block successor flow edge likelihoods sum to 1.0\n");
+        }
+        else if (verifyHasLikelihood)
+        {
+            JITDUMP("All flow edges have likelihoods\n");
         }
     }
     else
@@ -5256,8 +5456,9 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 {
     const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights))
+    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
     {
         return true;
     }
@@ -5282,6 +5483,8 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         }
         else
         {
+            JITDUMP("Missing likelihood on %p " FMT_BB "->" FMT_BB "\n", predEdge, predEdge->getSourceBlock()->bbNum,
+                    block->bbNum);
             missingLikelyWeight++;
         }
 
@@ -5325,7 +5528,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
                         block->bbNum, blockWeight, incomingLikelyWeight);
                 likelyWeightsValid = false;
             }
+        }
 
+        if (verifyHasLikelihood)
+        {
             if (missingLikelyWeight > 0)
             {
                 JITDUMP("  " FMT_BB " -- %u incoming edges are missing likely weights\n", block->bbNum,
@@ -5355,9 +5561,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
     const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights))
+    if (!(verifyClassicWeights || verifyHasLikelihood || verifyLikelihoodSum))
     {
         return true;
     }
@@ -5381,17 +5588,10 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (FlowEdge* succEdge : block->SuccEdges(this))
         {
-            BasicBlock* succBlock = block->GetSucc(i, this);
-            FlowEdge*   succEdge  = fgGetPredForBlock(succBlock, block);
-
-            if (succEdge == nullptr)
-            {
-                missingEdges++;
-                JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum, succBlock->bbNum);
-                continue;
-            }
+            assert(succEdge != nullptr);
+            BasicBlock* succBlock = succEdge->getDestinationBlock();
 
             outgoingWeightMin += succEdge->edgeWeightMin();
             outgoingWeightMax += succEdge->edgeWeightMax();
@@ -5402,6 +5602,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
             }
             else
             {
+                JITDUMP("Missing likelihood on %p " FMT_BB "->" FMT_BB "\n", succEdge, block->bbNum, succBlock->bbNum);
                 missingLikelihood++;
             }
         }
@@ -5437,14 +5638,17 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
             }
         }
 
-        if (verifyLikelyWeights)
+        if (verifyHasLikelihood)
         {
             if (missingLikelihood > 0)
             {
                 JITDUMP("  " FMT_BB " - missing likelihood on %d successor edges\n", block->bbNum, missingLikelihood);
                 likelyWeightsValid = false;
             }
+        }
 
+        if (verifyLikelihoodSum)
+        {
             if (!fgProfileWeightsConsistent(outgoingLikelihood, 1.0))
             {
                 JITDUMP("  " FMT_BB " - outgoing likelihood " FMT_WT " should be 1.0\n", block->bbNum,

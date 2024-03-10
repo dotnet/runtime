@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
 {
     public class IcuTests
     {
-        private static bool IsIcuCompatiblePlatform => !PlatformDetection.IsHybridGlobalizationOnOSX && PlatformDetection.IsNotWindows ||
+        private static bool IsIcuCompatiblePlatform => PlatformDetection.IsNotHybridGlobalizationOnApplePlatform && PlatformDetection.IsNotWindows ||
                                                        ((PlatformDetection.IsWindowsServer2019 || PlatformDetection.IsWindows10Version1903OrGreater) &&
                                                         // Server core doesn't have icu.dll on SysWOW64
                                                         !(PlatformDetection.IsWindowsServerCore && PlatformDetection.IsX86Process));

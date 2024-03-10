@@ -1756,7 +1756,7 @@ mono_empty_compile (MonoCompile *cfg)
 	cfg->headers_to_free = NULL;
 
 	if (cfg->mempool) {
-	//mono_mempool_stats (cfg->mempool);
+		//mono_mempool_stats (cfg->mempool);
 		mono_mempool_destroy (cfg->mempool);
 		cfg->mempool = NULL;
 	}
@@ -1787,6 +1787,10 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_hash_table_destroy (cfg->abs_patches);
 
 	mono_debug_free_method (cfg);
+
+	g_free (cfg->asm_symbol);
+	g_free (cfg->asm_debug_symbol);
+	g_free (cfg->llvm_method_name);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
@@ -2310,6 +2314,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->gshared)
 		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
+	if (cfg->init_method_rgctx_elim)
+		flags |= JIT_INFO_NO_MRGCTX;
 
 	if (cfg->arch_eh_jit_info) {
 		MonoJitArgumentInfo *arg_info;
@@ -3547,8 +3553,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		}
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
-
-		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
 	cfg->after_method_to_ir = TRUE;
@@ -3793,6 +3797,18 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
 		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
+		if (cfg->init_method_rgctx_ins_load) {
+			cfg->init_method_rgctx_ins_load->opcode = OP_PCONST;
+			cfg->init_method_rgctx_ins_load->inst_p0 = GINT_TO_POINTER (0x1);
+			MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_load);
+		}
+
+		/*
+		 * Avoid creating rgctx trampolines when calling this method.
+		 * Static/vtype etc. methods still need an rgctx arg for EH.
+		 */
+		if (!mono_method_needs_mrgctx_arg_for_eh (cfg->method))
+			cfg->init_method_rgctx_elim = TRUE;
 	}
 
 	if (cfg->got_var) {
@@ -3961,7 +3977,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
 
-	if (cfg->verbose_level >= 2) {
+	if (cfg->verbose_level >= 2 && !cfg->llvm_only) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);
 		g_print ("\n*** ASM for %s ***\n", id);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
@@ -4577,6 +4593,10 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	} else if (!strcmp (klass_name, "Vector2")) {
 		*nelems = 2;
 		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector3")) {
+		// For LLVM SIMD support, Vector3 is treated as a 4-element vector (three elements + zero).
+		*nelems = 4;
+		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
@@ -4588,3 +4608,4 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		return MONO_TYPE_VOID;
 	}
 }
+

@@ -510,14 +510,6 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoComObject);
 
 typedef struct {
-	MonoRealProxy real_proxy;
-	MonoComObject *com_object;
-	gint32 ref_count;
-} MonoComInteropProxy;
-
-TYPED_HANDLE_DECL (MonoComInteropProxy);
-
-typedef struct {
 	MonoObject	 object;
 	MonoRealProxy	*rp;
 	MonoRemoteClass *remote_class;

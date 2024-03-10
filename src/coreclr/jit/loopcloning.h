@@ -135,10 +135,7 @@ exception occurs.
 
     Preconditions
 
-    1. Loop detection has completed and the loop table is populated.
-
-    2. The loops that will be considered are the ones with the LPFLG_ITER flag:
-       "for ( ; test_condition(); i++)"
+    Loop detection has completed and the Compiler::m_loops is populated.
 
     Limitations
 
@@ -147,11 +144,7 @@ exception occurs.
        is "hard".) There are a few other EH-related edge conditions that also cause us to
        reject cloning.
 
-    2. If the loop contains RETURN blocks, and cloning those would push us over the maximum
-       number of allowed RETURN blocks in the function (either due to GC info encoding limitations
-       or otherwise), we reject cloning.
-
-    3. Loop increment must be `i += 1`
+    2. Loop increment must be `i += 1`
 
     4. Loop test must be `i < x` or `i <= x` where `x` is a constant, a variable, or `a.Length` for array `a`
 
@@ -168,10 +161,6 @@ exception occurs.
        For non-constant (or not found) iterator variable `i` initialization, we add a dynamic check that
        `i >= 0`. Constant initializations can be checked statically.
 
-    9. The cloned loop (the slow path) is not added to the loop table, meaning certain
-       downstream optimization passes do not see them. See
-       https://github.com/dotnet/runtime/issues/43713.
-
     Assumptions
 
     1. The assumption is that the optimization candidates collected during the
@@ -181,7 +170,7 @@ exception occurs.
        collect additional information at the same time as identifying the optimization
        candidates. This later helps us to perform the optimizations during actual cloning.
 
-    2. All loop cloning choice conditions will automatically be "AND"-ed. These are bitwise AND operations.
+    2. All loop cloning choice conditions will automatically be "AND"-ed.
 
     3. Perform short circuit AND for (array != null) side effect check
       before hoisting (limit <= a.length) check.

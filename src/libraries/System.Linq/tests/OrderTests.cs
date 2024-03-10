@@ -196,6 +196,9 @@ namespace System.Linq.Tests
         {
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().Order().First());
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().OrderDescending().First());
+
+            Assert.Equal(0, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).Order().First());
+            Assert.Equal(9, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).OrderDescending().First());
         }
 
         [Fact]
@@ -281,6 +284,9 @@ namespace System.Linq.Tests
         {
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().Order().Last());
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().OrderDescending().Last());
+
+            Assert.Equal(9, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).Order().Last());
+            Assert.Equal(0, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).OrderDescending().Last());
         }
 
         [Fact]
@@ -305,6 +311,16 @@ namespace System.Linq.Tests
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().Order().LastOrDefault());
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().OrderDescending().LastOrDefault());
             Assert.Equal(0, Enumerable.Empty<int>().Order().LastOrDefault());
+        }
+
+        [Fact]
+        public void ElementAtOnOrdered()
+        {
+            Assert.Equal(4, Enumerable.Range(0, 10).Shuffle().Order().ElementAt(4));
+            Assert.Equal(5, Enumerable.Range(0, 10).Shuffle().OrderDescending().ElementAt(4));
+
+            Assert.Equal(4, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).Order().ElementAt(4));
+            Assert.Equal(5, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).OrderDescending().ElementAt(4));
         }
 
         [Fact]
@@ -492,6 +508,25 @@ namespace System.Linq.Tests
             byte[] values = new byte[] { 0x45, 0x7D, 0x4B, 0x61, 0x27 };
             byte[] newValues = values.Order(Comparer<byte>.Create((a, b) => 0)).ToArray();
             AssertExtensions.SequenceEqual(values, newValues);
+        }
+
+        [Fact]
+        public void Order_FirstLast_MatchesArray()
+        {
+            object[][] arrays =
+            [
+                [1],
+                [1, 1],
+                [1, 2, 1],
+                [1, 2, 1, 3],
+                [2, 1, 3, 1, 4],
+            ];
+
+            foreach (object[] objects in arrays)
+            {
+                Assert.Same(objects.Order().First(), objects.Order().ToArray().First());
+                Assert.Same(objects.Order().Last(), objects.Order().ToArray().Last());
+            }
         }
     }
 }

@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
-        public static unsafe int QueryInterface(IntPtr pUnk, ref readonly Guid iid, out IntPtr ppv)
+        public static unsafe int QueryInterface(IntPtr pUnk, in Guid iid, out IntPtr ppv)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
 
@@ -165,6 +165,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
@@ -173,6 +174,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
 #pragma warning disable 8500 // sizeof of managed types
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
@@ -1094,11 +1096,11 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(t);
 
             ArgumentNullException.ThrowIfNull(ptr);
-            if (t is not RuntimeType)
+            if (t is not RuntimeType rt)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             }
-            if (t.IsGenericType)
+            if (rt.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
@@ -1106,20 +1108,20 @@ namespace System.Runtime.InteropServices
             // For backward compatibility, we allow lookup of existing delegate to
             // function pointer mappings using abstract MulticastDelegate type. We will check
             // for the non-abstract delegate type later if no existing mapping is found.
-            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
+            if (rt.BaseType != typeof(MulticastDelegate) && rt != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
             }
 
-            return GetDelegateForFunctionPointerInternal(ptr, t);
+            return GetDelegateForFunctionPointerInternal(ptr, rt);
         }
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
         {
             ArgumentNullException.ThrowIfNull(ptr);
 
-            Type t = typeof(TDelegate);
-            if (t.IsGenericType)
+            RuntimeType rt = (RuntimeType)typeof(TDelegate);
+            if (rt.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(TDelegate));
             }
@@ -1127,12 +1129,12 @@ namespace System.Runtime.InteropServices
             // For backward compatibility, we allow lookup of existing delegate to
             // function pointer mappings using abstract MulticastDelegate type. We will check
             // for the non-abstract delegate type later if no existing mapping is found.
-            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
+            if (rt.BaseType != typeof(MulticastDelegate) && rt != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(TDelegate));
             }
 
-            return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, t);
+            return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, rt);
         }
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]

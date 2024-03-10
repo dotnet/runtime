@@ -13,6 +13,9 @@ public class Test
 {
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/65698", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/179", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static int TestEntryPoint()
     {
         try

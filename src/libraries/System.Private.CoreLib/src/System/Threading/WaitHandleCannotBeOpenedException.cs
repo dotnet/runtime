@@ -16,12 +16,12 @@ namespace System.Threading
             HResult = HResults.COR_E_WAITHANDLECANNOTBEOPENED;
         }
 
-        public WaitHandleCannotBeOpenedException(string? message) : base(message)
+        public WaitHandleCannotBeOpenedException(string? message) : base(message ?? SR.Threading_WaitHandleCannotBeOpenedException)
         {
             HResult = HResults.COR_E_WAITHANDLECANNOTBEOPENED;
         }
 
-        public WaitHandleCannotBeOpenedException(string? message, Exception? innerException) : base(message, innerException)
+        public WaitHandleCannotBeOpenedException(string? message, Exception? innerException) : base(message ?? SR.Threading_WaitHandleCannotBeOpenedException, innerException)
         {
             HResult = HResults.COR_E_WAITHANDLECANNOTBEOPENED;
         }

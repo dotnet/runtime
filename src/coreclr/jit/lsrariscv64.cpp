@@ -295,38 +295,24 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildBinaryUses(tree->AsOp());
 
             GenTree* divisorOp = tree->gtGetOp2();
+
+            ExceptionSetFlags exceptions = tree->OperExceptions(compiler);
+
             if (!varTypeIsFloating(tree->TypeGet()) &&
-                !(divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_R0))
+                !((exceptions & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None &&
+                  (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_ZERO)))
             {
                 bool needTemp = false;
                 if (divisorOp->isContainedIntOrIImmed())
                 {
-                    needTemp = true; // divisorReg
-                }
-                else if (tree->OperIsCommutative())
-                {
-                    if (tree->gtGetOp1()->isContainedIntOrIImmed())
-                        needTemp = true; // reg1
+                    if (!emitter::isGeneralRegister(divisorOp->GetRegNum()))
+                        needTemp = true;
                 }
 
-                if (!needTemp && (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD))
+                if (!needTemp && tree->OperIs(GT_DIV, GT_MOD))
                 {
-                    bool checkDividend = true;
-                    // Do we have an immediate for the 'divisorOp'?
-                    if (divisorOp->IsCnsIntOrI())
-                    {
-                        ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-                        if (intConstValue != -1)
-                        {
-                            checkDividend = false; // We statically know that the dividend is not -1
-                        }
-                    }
-                    ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
-                    if (checkDividend &&
-                        ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None))
-                    {
+                    if ((exceptions & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                         needTemp = true;
-                    }
                 }
 
                 if (needTemp)
@@ -526,7 +512,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -619,6 +604,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BOUNDS_CHECK:
         {
             GenTreeBoundsChk* node = tree->AsBoundsChk();
+            if (genActualType(node->GetArrayLength()) == TYP_INT)
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
+            if (genActualType(node->GetIndex()) == TYP_INT)
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
+            buildInternalRegisterUses();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
             srcCount = BuildOperandUses(node->GetIndex());
@@ -889,6 +883,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~(genRegMask(REG_GSCOOKIE_TMP_0) | genRegMask(REG_GSCOOKIE_TMP_1));
+            }
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }
@@ -1256,11 +1254,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                assert(!src->isContained());
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for tempReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
             default:
@@ -1311,22 +1307,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 buildInternalIntRegisterDefForNode(blkNode);
                 break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_ARG_1;
-                }
-                sizeRegMask = RBM_ARG_2;
-                break;
-
             default:
                 unreached();
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    if (sizeRegMask != RBM_NONE)
     {
         // Reserve a temp register for the block size argument.
         buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
@@ -1357,12 +1343,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
-    }
-
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
@@ -1388,6 +1368,12 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     buildInternalRegisterUses();
     int srcCount = BuildOperandUses(cast->CastOp());
     BuildDef(cast);
+
+    if (varTypeIsFloating(cast->gtOp1) && !varTypeIsFloating(cast->TypeGet()))
+    {
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalRegisterUses();
+    }
 
     return srcCount;
 }

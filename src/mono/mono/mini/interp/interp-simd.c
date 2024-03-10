@@ -315,47 +315,15 @@ interp_v128_u2_widen_upper (gpointer res, gpointer v1)
 static void
 interp_v128_u1_narrow (gpointer res, gpointer v1, gpointer v2)
 {
-	guint8 *res_typed = (guint8*)res;
+	guint8 res_typed [SIZEOF_V128];
 	guint16 *v1_typed = (guint16*)v1;
 	guint16 *v2_typed = (guint16*)v2;
 
-	if (res != v2) {
-		res_typed [0] = v1_typed [0];
-		res_typed [1] = v1_typed [1];
-		res_typed [2] = v1_typed [2];
-		res_typed [3] = v1_typed [3];
-		res_typed [4] = v1_typed [4];
-		res_typed [5] = v1_typed [5];
-		res_typed [6] = v1_typed [6];
-		res_typed [7] = v1_typed [7];
-
-		res_typed [8] = v2_typed [0];
-		res_typed [9] = v2_typed [1];
-		res_typed [10] = v2_typed [2];
-		res_typed [11] = v2_typed [3];
-		res_typed [12] = v2_typed [4];
-		res_typed [13] = v2_typed [5];
-		res_typed [14] = v2_typed [6];
-		res_typed [15] = v2_typed [7];
-	} else {
-		res_typed [15] = v2_typed [7];
-		res_typed [14] = v2_typed [6];
-		res_typed [13] = v2_typed [5];
-		res_typed [12] = v2_typed [4];
-		res_typed [11] = v2_typed [3];
-		res_typed [10] = v2_typed [2];
-		res_typed [9] = v2_typed [1];
-		res_typed [8] = v2_typed [0];
-
-		res_typed [0] = v1_typed [0];
-		res_typed [1] = v1_typed [1];
-		res_typed [2] = v1_typed [2];
-		res_typed [3] = v1_typed [3];
-		res_typed [4] = v1_typed [4];
-		res_typed [5] = v1_typed [5];
-		res_typed [6] = v1_typed [6];
-		res_typed [7] = v1_typed [7];
-	}
+	for (int i = 0; i < 8; i++)
+		res_typed [i] = v1_typed [i];
+	for (int i = 0; i < 8; i++)
+		res_typed [i + 8] = v2_typed [i];
+	memcpy (res, res_typed, SIZEOF_V128);
 }
 
 // GreaterThan
@@ -413,6 +381,43 @@ static void
 interp_v128_i8_equals (gpointer res, gpointer v1, gpointer v2)
 {
 	*(v128_i8*)res = *(v128_i8*)v1 == *(v128_i8*)v2;
+}
+
+// EqualsAny
+static void
+interp_v128_i1_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i1 resv = *(v128_i1*)v1 == *(v128_i1*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i2_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i2 resv = *(v128_i2*)v1 == *(v128_i2*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i4_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i4 resv = *(v128_i4*)v1 == *(v128_i4*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i8_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i8 resv = *(v128_i8*)v1 == *(v128_i8*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
 }
 
 // CreateScalar

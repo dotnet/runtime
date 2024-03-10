@@ -5,7 +5,12 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
+[UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "MakeGenericType - Intentional")]
+[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType/MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3054", Justification = "Generic expansion aborted - Intentional")]
 class Generics
 {
     internal static int Run()
@@ -54,6 +59,7 @@ class Generics
         TestRefAny.Run();
         TestNullableCasting.Run();
         TestVariantCasting.Run();
+        TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
@@ -1159,6 +1165,24 @@ class Generics
         }
     }
 
+    class TestVariantDispatchUnconstructedTypes
+    {
+        interface IFoo { }
+        class Foo : IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IEnumerable<IFoo> GetFoos() => new Foo[5];
+
+        public static void Run()
+        {
+            int j = 0;
+            foreach (var f in GetFoos())
+                j++;
+            if (j != 5)
+                throw new Exception();
+        }
+    }
+
     class TestMDArrayAddressMethod
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1952,8 +1976,10 @@ class Generics
             Foo<object>.s_floatField = 12.34f;
             Foo<object>.s_longField1 = 0x1111;
 
-            var fooDynamicOfClassType = typeof(Foo<>).MakeGenericType(typeof(ClassType)).GetTypeInfo();
-            var fooDynamicOfClassType2 = typeof(Foo<>).MakeGenericType(typeof(ClassType2)).GetTypeInfo();
+            var fooDynamicOfClassType = typeof(Foo<>).MakeGenericType(GetClassType()).GetTypeInfo();
+            static Type GetClassType() => typeof(ClassType);
+            var fooDynamicOfClassType2 = typeof(Foo<>).MakeGenericType(GetClassType2()).GetTypeInfo();
+            static Type GetClassType2() => typeof(ClassType2);
 
             FieldInfo fi = fooDynamicOfClassType.GetDeclaredField("s_intField");
             FieldInfo fi2 = fooDynamicOfClassType2.GetDeclaredField("s_intField");
@@ -2007,7 +2033,8 @@ class Generics
             heh2.GenericVirtualMethod(new Program(), "ayy");
 
             // Simple method invocation
-            var dynamicBaseOfString = typeof(DynamicBase<>).MakeGenericType(typeof(string));
+            var dynamicBaseOfString = typeof(DynamicBase<>).MakeGenericType(GetString());
+            static Type GetString() => typeof(string);
             object obj = Activator.CreateInstance(dynamicBaseOfString);
             {
                 var simpleMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("SimpleMethod");
@@ -2030,7 +2057,7 @@ class Generics
             }
 
             {
-                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(typeof(string));
+                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(GetString());
                 object dynamicDerivedObj = Activator.CreateInstance(dynamicDerivedOfString);
                 var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("VirtualMethod");
                 string result = (string)virtualMethodDynamicDerived.Invoke(dynamicDerivedObj, new[] { "fad" });
@@ -2039,7 +2066,7 @@ class Generics
 
             // Test generic method invocation
             {
-                var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericMethod").MakeGenericMethod(new[] { typeof(string) });
+                var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericMethod").MakeGenericMethod(new[] { GetString() });
                 string result = (string)genericMethod.Invoke(obj, new[] { "hey", "hello" });
 
                 Verify("System.Stringhello", result);
@@ -2048,15 +2075,15 @@ class Generics
             // Test GVM invocation
             {
                 var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod");
-                genericMethod = genericMethod.MakeGenericMethod(new[] { typeof(string) });
+                genericMethod = genericMethod.MakeGenericMethod(new[] { GetString() });
                 string result = (string)genericMethod.Invoke(obj, new[] { "hey", "hello" });
                 Verify("DynamicBaseSystem.Stringhello", result);
             }
 
             {
-                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(typeof(string));
+                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(GetString());
                 object dynamicDerivedObj = Activator.CreateInstance(dynamicDerivedOfString);
-                var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod").MakeGenericMethod(new[] { typeof(string) });
+                var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod").MakeGenericMethod(new[] { GetString() });
                 string result = (string)virtualMethodDynamicDerived.Invoke(dynamicDerivedObj, new[] { "hey", "fad" });
                 Verify("DynamicDerivedSystem.Stringfad", result);
             }

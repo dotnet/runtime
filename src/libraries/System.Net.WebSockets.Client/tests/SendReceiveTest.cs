@@ -249,12 +249,12 @@ namespace System.Net.WebSockets.Client.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         // This will also pass when no exception is thrown. Current implementation doesn't throw.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+                var cts = new CancellationTokenSource(PlatformDetection.LocalEchoServerIsNotAvailable ? TimeOutMilliseconds : 200);
 
                 Task[] tasks = new Task[2];
 

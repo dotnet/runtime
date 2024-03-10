@@ -7,20 +7,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-public class AnsiBStrTest
+[OuterLoop]
+public partial class StringTests
 {
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            CommonStringTests.RunTests(runStringBuilderTests: false, runStructTests: false);
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-            return 101;
-        }
-        return 100;
-    }
 }

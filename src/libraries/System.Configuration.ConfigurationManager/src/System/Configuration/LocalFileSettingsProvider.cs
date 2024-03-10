@@ -149,8 +149,8 @@ namespace System.Configuration
         public override void SetPropertyValues(SettingsContext context, SettingsPropertyValueCollection values)
         {
             string sectionName = GetSectionName(context);
-            IDictionary roamingUserSettings = new Hashtable();
-            IDictionary localUserSettings = new Hashtable();
+            Hashtable roamingUserSettings = new Hashtable();
+            Hashtable localUserSettings = new Hashtable();
 
             foreach (SettingsPropertyValue value in values)
             {

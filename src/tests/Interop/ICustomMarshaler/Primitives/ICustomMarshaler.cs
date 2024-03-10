@@ -8,6 +8,7 @@ using static TestLibrary.Utilities;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public class ICustomMarshalerTests
     {
         // To avoid having to create a native test library to reference in tests that

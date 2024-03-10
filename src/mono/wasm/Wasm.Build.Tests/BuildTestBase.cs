@@ -27,7 +27,7 @@ namespace Wasm.Build.Tests
     {
         public const string DefaultTargetFramework = "net9.0";
         public const string DefaultTargetFrameworkForBlazor = "net9.0";
-        public const string TargetFrameworkForTasks = "net8.0";
+        public const string TargetFrameworkForTasks = "net9.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
@@ -323,7 +323,7 @@ namespace Wasm.Build.Tests
             {
                 _testOutput.WriteLine($"Exit code: {exitCode}");
                 if (exitCode != expectedAppExitCode)
-                    throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {testCommand} {args}");
+                    throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {args}");
             }
 
             return output;
@@ -370,6 +370,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>

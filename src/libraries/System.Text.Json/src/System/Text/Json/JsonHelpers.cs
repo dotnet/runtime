@@ -13,12 +13,67 @@ namespace System.Text.Json
     internal static partial class JsonHelpers
     {
         /// <summary>
-        /// Returns the span for the given reader.
+        /// Returns the unescaped span for the given reader.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> GetSpan(this scoped ref Utf8JsonReader reader)
+        public static ReadOnlySpan<byte> GetUnescapedSpan(this scoped ref Utf8JsonReader reader)
         {
-            return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
+            ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+            return reader.ValueIsEscaped ? JsonReaderHelper.GetUnescapedSpan(span) : span;
+        }
+
+        /// <summary>
+        /// Attempts to perform a Read() operation and optionally checks that the full JSON value has been buffered.
+        /// The reader will be reset if the operation fails.
+        /// </summary>
+        /// <param name="reader">The reader to advance.</param>
+        /// <param name="requiresReadAhead">If reading a partial payload, read ahead to ensure that the full JSON value has been buffered.</param>
+        /// <returns>True if the the reader has been buffered with all required data.</returns>
+        // AggressiveInlining used since this method is on a hot path and short. The AdvanceWithReadAhead method should not be inlined.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryAdvanceWithOptionalReadAhead(this scoped ref Utf8JsonReader reader, bool requiresReadAhead)
+        {
+            // No read-ahead necessary if we're at the final block of JSON data.
+            bool readAhead = requiresReadAhead && !reader.IsFinalBlock;
+            return readAhead ? TryAdvanceWithReadAhead(ref reader) : reader.Read();
+
+            // The read-ahead method is not inlined
+            static bool TryAdvanceWithReadAhead(scoped ref Utf8JsonReader reader)
+            {
+                // When we're reading ahead we always have to save the state
+                // as we don't know if the next token is a start object or array.
+                Utf8JsonReader restore = reader;
+
+                if (!reader.Read())
+                {
+                    return false;
+                }
+
+                // Perform the actual read-ahead.
+                JsonTokenType tokenType = reader.TokenType;
+                if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    // Attempt to skip to make sure we have all the data we need.
+                    bool complete = reader.TrySkipPartial();
+
+                    // We need to restore the state in all cases as we need to be positioned back before
+                    // the current token to either attempt to skip again or to actually read the value.
+                    reader = restore;
+
+                    if (!complete)
+                    {
+                        // Couldn't read to the end of the object, exit out to get more data in the buffer.
+                        return false;
+                    }
+
+                    // Success, requeue the reader to the start token.
+                    reader.ReadWithVerify();
+                    Debug.Assert(tokenType == reader.TokenType);
+                }
+
+                return true;
+            }
         }
 
 #if !NETCOREAPP
@@ -85,6 +140,22 @@ namespace System.Text.Json
         {
             bool result = reader.Read();
             Debug.Assert(result);
+        }
+
+        /// <summary>
+        /// Performs a TrySkip() with a Debug.Assert verifying the reader did not return false.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SkipWithVerify(this ref Utf8JsonReader reader)
+        {
+            bool success = reader.TrySkipPartial(reader.CurrentDepth);
+            Debug.Assert(success, "The skipped value should have already been buffered.");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TrySkipPartial(this ref Utf8JsonReader reader)
+        {
+            return reader.TrySkipPartial(reader.CurrentDepth);
         }
 
         /// <summary>

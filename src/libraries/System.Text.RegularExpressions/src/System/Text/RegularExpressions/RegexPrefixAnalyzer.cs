@@ -11,6 +11,316 @@ namespace System.Text.RegularExpressions
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
     internal static class RegexPrefixAnalyzer
     {
+        /// <summary>Finds an array of multiple prefixes that a node can begin with.</summary>
+        /// <param name="node">The node to search.</param>
+        /// <param name="ignoreCase">true to find ordinal ignore-case prefixes; false for case-sensitive.</param>
+        /// <returns>
+        /// If a fixed set of prefixes is found, such that a match for this node is guaranteed to begin
+        /// with one of those prefixes, an array of those prefixes is returned.  Otherwise, null.
+        /// </returns>
+        public static string[]? FindPrefixes(RegexNode node, bool ignoreCase)
+        {
+            // Minimum string length for prefixes to be useful. If any prefix has length 1,
+            // then we're generally better off just using IndexOfAny with chars.
+            const int MinPrefixLength = 2;
+
+            // Arbitrary string length limit (with some wiggle room) to avoid creating strings that are longer than is useful and consuming too much memory.
+            const int MaxPrefixLength = 8;
+
+            // Arbitrary limit on the number of prefixes to find. If we find more than this, we're likely to be spending too much time finding prefixes that won't be useful.
+            const int MaxPrefixes = 16;
+
+            // Analyze the node to find prefixes.
+            List<StringBuilder> results = [new StringBuilder()];
+            FindPrefixesCore(node, results, ignoreCase);
+
+            // If we found too many prefixes or if any found is too short, fail.
+            if (results.Count > MaxPrefixes || !results.TrueForAll(sb => sb.Length >= MinPrefixLength))
+            {
+                return null;
+            }
+
+            // Return the prefixes.
+            string[] resultStrings = new string[results.Count];
+            for (int i = 0; i < results.Count; i++)
+            {
+                resultStrings[i] = results[i].ToString();
+            }
+            return resultStrings;
+
+            // <summary>
+            // Updates the results list with found prefixes. All existing strings in the list are treated as existing
+            // discovered prefixes prior to the node being processed. The method returns true if subsequent nodes after
+            // this one should be examined, or returns false if they shouldn't be because the node wasn't guaranteed
+            // to be fully processed.
+            // </summary>
+            static bool FindPrefixesCore(RegexNode node, List<StringBuilder> results, bool ignoreCase)
+            {
+                // If we're too deep to analyze further, we can't trust what we've already computed, so stop iterating.
+                // Also bail if any of our results is already hitting the threshold, or if this node is RTL, which is
+                // not worth the complexity of handling.
+                if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                    !results.TrueForAll(sb => sb.Length < MaxPrefixLength) ||
+                    (node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    return false;
+                }
+
+                // These limits are approximations. We'll stop trying to make strings longer once we exceed the max length,
+                // and if we exceed the max number of prefixes by a non-trivial amount, we'll fail the operation.
+                Span<char> setChars = stackalloc char[MaxPrefixes]; // limit how many chars we get from a set based on the max prefixes we care about
+
+                // Loop down the left side of the tree, looking for a starting node we can handle. We only loop through
+                // atomic and capture nodes, as the child is guaranteed to execute once, as well as loops with a positive
+                // minimum and thus at least one guaranteed iteration.
+                while (true)
+                {
+                    switch (node.Kind)
+                    {
+                        // These nodes are all guaranteed to execute at least once, so we can just
+                        // skip through them to their child.
+                        case RegexNodeKind.Atomic:
+                        case RegexNodeKind.Capture:
+                            node = node.Child(0);
+                            continue;
+
+                        // Zero-width anchors and assertions don't impact a prefix and may be skipped over.
+                        case RegexNodeKind.Bol:
+                        case RegexNodeKind.Eol:
+                        case RegexNodeKind.Boundary:
+                        case RegexNodeKind.ECMABoundary:
+                        case RegexNodeKind.NonBoundary:
+                        case RegexNodeKind.NonECMABoundary:
+                        case RegexNodeKind.Beginning:
+                        case RegexNodeKind.Start:
+                        case RegexNodeKind.EndZ:
+                        case RegexNodeKind.End:
+                        case RegexNodeKind.Empty:
+                        case RegexNodeKind.UpdateBumpalong:
+                        case RegexNodeKind.PositiveLookaround:
+                        case RegexNodeKind.NegativeLookaround:
+                            return true;
+
+                        // If we hit a single character, we can just return that character.
+                        // This is only relevant for case-sensitive searches, as for case-insensitive we'd have sets for anything
+                        // that produces a different result when case-folded, or for strings composed entirely of characters that
+                        // don't participate in case conversion. Single character loops are handled the same as single characters
+                        // up to the min iteration limit. We can continue processing after them as well if they're repeaters such
+                        // that their min and max are the same.
+                        case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or RegexNodeKind.Oneloopatomic when !ignoreCase || !RegexCharClass.ParticipatesInCaseConversion(node.Ch):
+                            {
+                                int reps = node.Kind is RegexNodeKind.One ? 1 : Math.Min(node.M, MaxPrefixLength);
+                                foreach (StringBuilder sb in results)
+                                {
+                                    sb.Append(node.Ch, reps);
+                                }
+                                return node.Kind is RegexNodeKind.One || reps == node.N;
+                            }
+
+                        // If we hit a string, we can just return that string.
+                        // As with One above, this is only relevant for case-sensitive searches.
+                        case RegexNodeKind.Multi:
+                            if (!ignoreCase)
+                            {
+                                foreach (StringBuilder sb in results)
+                                {
+                                    sb.Append(node.Str);
+                                }
+                            }
+                            else
+                            {
+                                // If we're ignoring case, then only append up through characters that don't participate in case conversion.
+                                // If there are any beyond that, we can't go further and need to stop with what we have.
+                                foreach (char c in node.Str!)
+                                {
+                                    if (RegexCharClass.ParticipatesInCaseConversion(c))
+                                    {
+                                        return false;
+                                    }
+
+                                    foreach (StringBuilder sb in results)
+                                    {
+                                        sb.Append(c);
+                                    }
+                                }
+                            }
+                            return true;
+
+                        // For case-sensitive,  try to extract the characters that comprise it, and if there are
+                        // any and there aren't more than the max number of prefixes, we can return
+                        // them each as a prefix. Effectively, this is an alternation of the characters
+                        // that comprise the set. For case-insensitive, we need the set to be two ASCII letters that case fold to the same thing.
+                        // As with One and loops, set loops are handled the same as sets up to the min iteration limit.
+                        case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic when !RegexCharClass.IsNegated(node.Str!): // negated sets are too complex to analyze
+                            {
+                                int charCount = RegexCharClass.GetSetChars(node.Str!, setChars);
+                                if (charCount == 0)
+                                {
+                                    return false;
+                                }
+
+                                int reps = node.Kind is RegexNodeKind.Set ? 1 : Math.Min(node.M, MaxPrefixLength);
+                                if (!ignoreCase)
+                                {
+                                    int existingCount = results.Count;
+
+                                    // Duplicate all of the existing strings for all of the new suffixes, other than the first.
+                                    foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                    {
+                                        for (int existing = 0; existing < existingCount; existing++)
+                                        {
+                                            StringBuilder newSb = new StringBuilder().Append(results[existing]);
+                                            newSb.Append(suffix, reps);
+                                            results.Add(newSb);
+                                        }
+                                    }
+
+                                    // Then append the first suffix to all of the existing strings.
+                                    for (int existing = 0; existing < existingCount; existing++)
+                                    {
+                                        results[existing].Append(setChars[0], reps);
+                                    }
+                                }
+                                else
+                                {
+                                    // For ignore-case, we currently only handle the simple (but common) case of a single
+                                    // ASCII character that case folds to the same char.
+                                    if (!RegexCharClass.SetContainsAsciiOrdinalIgnoreCaseCharacter(node.Str!, setChars))
+                                    {
+                                        return false;
+                                    }
+
+                                    // Append it to each.
+                                    foreach (StringBuilder sb in results)
+                                    {
+                                        sb.Append(setChars[1], reps);
+                                    }
+                                }
+
+                                return node.Kind is RegexNodeKind.Set || reps == node.N;
+                            }
+
+                        case RegexNodeKind.Concatenate:
+                            {
+                                int childCount = node.ChildCount();
+                                for (int i = 0; i < childCount; i++)
+                                {
+                                    if (!FindPrefixesCore(node.Child(i), results, ignoreCase))
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
+                            return true;
+
+                        // We can append any guaranteed iterations as if they were a concatenation.
+                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                            {
+                                int limit = Math.Min(node.M, MaxPrefixLength); // MaxPrefixLength here is somewhat arbitrary, as a single loop iteration could yield multiple chars
+                                for (int i = 0; i < limit; i++)
+                                {
+                                    if (!FindPrefixesCore(node.Child(0), results, ignoreCase))
+                                    {
+                                        return false;
+                                    }
+                                }
+                                return limit == node.N;
+                            }
+
+                        // For alternations, we need to find a prefix for every branch; if we can't compute a
+                        // prefix for any one branch, we can't trust the results and need to give up, since we don't
+                        // know if our set of prefixes is complete.
+                        case RegexNodeKind.Alternate:
+                            {
+                                // If there are more children than our maximum, just give up immediately, as we
+                                // won't be able to get a prefix for every branch and have it be within our max.
+                                int childCount = node.ChildCount();
+                                Debug.Assert(childCount >= 2); // otherwise it would have been optimized out
+                                if (childCount > MaxPrefixes)
+                                {
+                                    return false;
+                                }
+
+                                // Build up the list of all prefixes across all branches.
+                                List<StringBuilder>? allBranchResults = null;
+                                List<StringBuilder>? alternateBranchResults = [new StringBuilder()];
+                                for (int i = 0; i < childCount; i++)
+                                {
+                                    _ = FindPrefixesCore(node.Child(i), alternateBranchResults, ignoreCase);
+
+                                    Debug.Assert(alternateBranchResults.Count > 0);
+                                    foreach (StringBuilder sb in alternateBranchResults)
+                                    {
+                                        // If a branch yields an empty prefix, then none of the other branches
+                                        // matter, e.g. if the pattern is abc(def|ghi|), then this would result
+                                        // in prefixes abcdef, abcghi, and abc, and since abc is a prefix of both
+                                        // abcdef and abcghi, the former two would never be used.
+                                        if (sb.Length == 0)
+                                        {
+                                            return false;
+                                        }
+                                    }
+
+                                    if (allBranchResults is null)
+                                    {
+                                        allBranchResults = alternateBranchResults;
+                                        alternateBranchResults = [new StringBuilder()];
+                                    }
+                                    else
+                                    {
+                                        allBranchResults.AddRange(alternateBranchResults);
+                                        alternateBranchResults.Clear();
+                                        alternateBranchResults.Add(new StringBuilder());
+                                    }
+                                }
+
+                                // At this point, we know we can successfully incorporate the alternation's results
+                                // into the main results.
+
+                                // If the results are currently empty (meaning a single empty StringBuilder), we can remove
+                                // that builder and just replace the results with the alternation's results. We would otherwise
+                                // be creating a dot product of every builder in the results with every branch's result, which
+                                // is logically the same thing.
+                                if (results.Count == 1 && results[0].Length == 0)
+                                {
+                                    results.Clear();
+                                    results.AddRange(allBranchResults!);
+                                }
+                                else
+                                {
+                                    // Duplicate all of the existing strings for all of the new suffixes, other than the first.
+                                    int existingCount = results.Count;
+                                    for (int i = 1; i < allBranchResults!.Count; i++)
+                                    {
+                                        StringBuilder suffix = allBranchResults[i];
+                                        for (int existing = 0; existing < existingCount; existing++)
+                                        {
+                                            StringBuilder newSb = new StringBuilder().Append(results[existing]);
+                                            newSb.Append(suffix);
+                                            results.Add(newSb);
+                                        }
+                                    }
+
+                                    // Then append the first suffix to all of the existing strings.
+                                    for (int existing = 0; existing < existingCount; existing++)
+                                    {
+                                        results[existing].Append(allBranchResults[0]);
+                                    }
+                                }
+                            }
+
+                            // We don't know that we fully processed every branch, so we can't iterate through what comes after this node.
+                            // The results were successfully updated, but return false to indicate that nothing after this node should be examined.
+                            return false;
+
+                        // Something else we don't recognize, so stop iterating.
+                        default:
+                            return false;
+                    }
+                }
+            }
+        }
+
         /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
         public static string FindPrefix(RegexNode node)
         {

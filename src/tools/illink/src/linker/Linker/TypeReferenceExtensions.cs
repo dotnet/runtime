@@ -362,7 +362,7 @@ namespace Mono.Linker
 		public static bool IsTypeOf<T> (this TypeReference tr)
 		{
 			var type = typeof (T);
-			return tr.Name == type.Name && tr.Namespace == tr.Namespace;
+			return tr.Name == type.Name && tr.Namespace == type.Namespace;
 		}
 
 		public static bool IsTypeOf (this TypeReference tr, WellKnownType type)

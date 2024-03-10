@@ -36,26 +36,28 @@ unsafe partial class GenericsNative
     public static extern Vector128<uint> AddVector128Us(in Vector128<uint> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector128U()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector128U()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128U(1u, 2u, 3u, 4u));
 
         Vector128<uint> value2;
         GenericsNative.GetVector128UOut(1u, 2u, 3u, 4u, &value2);
-        Assert.Equal(value2.GetElement(0), 1u);
-        Assert.Equal(value2.GetElement(1), 2u);
-        Assert.Equal(value2.GetElement(2), 3u);
-        Assert.Equal(value2.GetElement(3), 4u);
+        Assert.Equal(1u, value2.GetElement(0));
+        Assert.Equal(2u, value2.GetElement(1));
+        Assert.Equal(3u, value2.GetElement(2));
+        Assert.Equal(4u, value2.GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128UOut(1u, 2u, 3u, 4u, out Vector128<uint> value3));
 
         Vector128<uint>* value4 = GenericsNative.GetVector128UPtr(1u, 2u, 3u, 4u);
-        Assert.Equal(value4->GetElement(0), 1u);
-        Assert.Equal(value4->GetElement(1), 2u);
-        Assert.Equal(value4->GetElement(2), 3u);
-        Assert.Equal(value4->GetElement(3), 4u);
+        Assert.Equal(1u, value4->GetElement(0));
+        Assert.Equal(2u, value4->GetElement(1));
+        Assert.Equal(3u, value4->GetElement(2));
+        Assert.Equal(4u, value4->GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128URef(1u, 2u, 3u, 4u));
 

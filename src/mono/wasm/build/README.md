@@ -32,8 +32,6 @@ Implementation:
     - *after* any of the wasm build targets, use `AfterTargets="WasmBuildApp"` on that target
 - Avoid depending on this target, because it is available only when the workload is installed. Use `$(WasmNativeWorkload)` to check if it is installed.
 
-- When `Module.disableDotnet6Compatibility` is set it would not pollute global namespace.
-
 ## `Publish`
 
 Implementation:
@@ -104,7 +102,7 @@ The various task inputs correspond to properties as:
 
 This should be a step towards eventually having this build as a sdk.
 
-Refer to `WasmApp.targets` for more information about the properties/items used as inputs to the process.
+Refer to `BrowserWasmApp.targets` for more information about the properties/items used as inputs to the process.
 
 ## Updating dependencies needed for building wasm apps
 

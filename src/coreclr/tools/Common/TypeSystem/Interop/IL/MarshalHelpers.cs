@@ -934,7 +934,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
-            if (!target.IsOSXLike)
+            if (!target.IsApplePlatform)
                 return false;
 
             const string ObjectiveCMsgSend = "objc_msgSend";
@@ -951,7 +951,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
         {
-            if (!target.IsOSXLike || pinvokeModule != ObjectiveCLibrary)
+            if (!target.IsApplePlatform || pinvokeModule != ObjectiveCLibrary)
                 return null;
 
 #pragma warning disable CA1416

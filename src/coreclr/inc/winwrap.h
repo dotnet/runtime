@@ -254,112 +254,13 @@ WszCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     );
 
-#if defined(HOST_X86) && defined(_MSC_VER)
+#ifdef HOST_WINDOWS
 
 //
-// Windows SDK does not use intrinsics on x86. Redefine the interlocked operations to use intrinsics.
+// Workaround for https://github.com/microsoft/WindowsAppSDK/issues/4074
+// Windows SDK is missing InterlockedCompareExchange8 definition.
 //
+#define InterlockedCompareExchange8 _InterlockedCompareExchange8
 
-#include "intrin.h"
-
-#define InterlockedIncrement            _InterlockedIncrement
-#define InterlockedDecrement            _InterlockedDecrement
-#define InterlockedExchange             _InterlockedExchange
-#define InterlockedCompareExchange      _InterlockedCompareExchange
-#define InterlockedExchangeAdd          _InterlockedExchangeAdd
-#define InterlockedCompareExchange64    _InterlockedCompareExchange64
-#define InterlockedAnd                  _InterlockedAnd
-#define InterlockedOr                   _InterlockedOr
-
-//
-// There is no _InterlockedCompareExchangePointer intrinsic in VC++ for x86.
-// winbase.h #defines InterlockedCompareExchangePointer as __InlineInterlockedCompareExchangePointer,
-// which calls the Win32 InterlockedCompareExchange, not the intrinsic _InterlockedCompareExchange.
-// We want the intrinsic, so we #undef the Windows version of this API, and define our own.
-//
-#ifdef InterlockedCompareExchangePointer
-#undef InterlockedCompareExchangePointer
-#endif
-
-FORCEINLINE
-PVOID
-InterlockedCompareExchangePointer (
-    __inout  PVOID volatile *Destination,
-    _In_opt_ PVOID ExChange,
-    _In_opt_ PVOID Comperand
-    )
-{
-    return((PVOID)(LONG_PTR)_InterlockedCompareExchange((LONG volatile *)Destination, (LONG)(LONG_PTR)ExChange, (LONG)(LONG_PTR)Comperand));
-}
-
-#endif // HOST_X86 && _MSC_VER
-
-#if defined(HOST_X86) & !defined(InterlockedIncrement64)
-
-// Interlockedxxx64 that do not have intrinsics are only supported on Windows Server 2003
-// or higher for X86 so define our own portable implementation
-
-#undef InterlockedIncrement64
-#define InterlockedIncrement64          __InterlockedIncrement64
-#undef InterlockedDecrement64
-#define InterlockedDecrement64          __InterlockedDecrement64
-#undef InterlockedExchange64
-#define InterlockedExchange64           __InterlockedExchange64
-#undef InterlockedExchangeAdd64
-#define InterlockedExchangeAdd64        __InterlockedExchangeAdd64
-
-__forceinline LONGLONG __InterlockedIncrement64(LONGLONG volatile *Addend)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Addend;
-    } while (InterlockedCompareExchange64(Addend,
-                                          Old + 1,
-                                          Old) != Old);
-
-    return Old + 1;
-}
-
-__forceinline LONGLONG __InterlockedDecrement64(LONGLONG volatile *Addend)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Addend;
-    } while (InterlockedCompareExchange64(Addend,
-                                          Old - 1,
-                                          Old) != Old);
-
-    return Old - 1;
-}
-
-__forceinline LONGLONG __InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Target;
-    } while (InterlockedCompareExchange64(Target,
-                                          Value,
-                                          Old) != Old);
-
-    return Old;
-}
-
-__forceinline LONGLONG __InterlockedExchangeAdd64(LONGLONG volatile * Addend, LONGLONG Value)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Addend;
-    } while (InterlockedCompareExchange64(Addend,
-                                          Old + Value,
-                                          Old) != Old);
-
-    return Old;
-}
-
-#endif // HOST_X86
-
+#endif // HOST_WINDOWS
 #endif  // __WIN_WRAP_H__

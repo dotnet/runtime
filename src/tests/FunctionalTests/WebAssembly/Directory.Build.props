@@ -3,7 +3,7 @@
     <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
     <Configuration>Release</Configuration>
     <OutputType>Exe</OutputType>
-    
+
     <TestRuntime>true</TestRuntime>
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
@@ -11,10 +11,6 @@
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
-  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
 
@@ -28,7 +24,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
-    <_InTreeEmSdk>$(MSBuildThisFileDirectory)..\..\..\mono\wasm\emsdk</_InTreeEmSdk>
+    <_InTreeEmSdk>$(BrowserProjectRoot)emsdk</_InTreeEmSdk>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists($(_InTreeEmSdk))">$(_InTreeEmSdk)</EMSDK_PATH>
   </PropertyGroup>
 </Project>

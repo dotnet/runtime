@@ -3,8 +3,8 @@
 
 #pragma warning disable 0420 //passing volatile fields by ref
 
-
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
@@ -97,7 +97,7 @@ namespace System.Threading
 
         public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        public unsafe bool Wait(int millisecondsTimeout)
+        public unsafe bool Wait(int millisecondsTimeout, object? associatedObjectForMonitorWait = null)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
@@ -111,7 +111,14 @@ namespace System.Threading
             bool success = false;
             try
             {
-                success = waiter.ev.WaitOne(millisecondsTimeout);
+                success =
+                    waiter.ev.WaitOneNoCheck(
+                        millisecondsTimeout,
+                        false, // useTrivialWaits
+                        associatedObjectForMonitorWait,
+                        associatedObjectForMonitorWait != null
+                            ? NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait
+                            : NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown);
             }
             finally
             {

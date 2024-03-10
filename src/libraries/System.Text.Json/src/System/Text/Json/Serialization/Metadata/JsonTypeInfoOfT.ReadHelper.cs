@@ -104,16 +104,9 @@ namespace System.Text.Json.Serialization.Metadata
         {
             var reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
 
-            // If we haven't read in the entire stream's payload we'll need to signify that we want
-            // to enable read ahead behaviors to ensure we have complete json objects and arrays
-            // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
-            // to assign to object and JsonElement properties in the constructed .NET object.)
-            readStack.ReadAhead = !bufferState.IsFinalBlock;
-            readStack.BytesConsumed = 0;
-
             T? value = EffectiveConverter.ReadCore(ref reader, Options, ref readStack);
-            Debug.Assert(readStack.BytesConsumed <= bufferState.Bytes.Length);
-            bufferState.AdvanceBuffer((int)readStack.BytesConsumed);
+            Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
+            bufferState.AdvanceBuffer((int)reader.BytesConsumed);
             jsonReaderState = reader.CurrentState;
             return value;
         }

@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => IsTypeNodeShareable(_type);
-        protected override bool EmitVirtualSlotsAndInterfaces => true;
+        protected override bool EmitVirtualSlots => true;
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

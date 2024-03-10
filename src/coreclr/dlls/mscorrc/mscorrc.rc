@@ -309,9 +309,12 @@ BEGIN
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
 
-    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'. Assembly: '%2'."
+
+    IDS_CLASSLOAD_BYREF_OF_BYREF            "Could not create a ByRef of a ByRef. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_POINTER_OF_BYREF          "Could not create a pointer to a ByRef. Type: '%1'. Assembly: '%2'."
 
     IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD "Could not load type '%1' from assembly '%2' because of an invalid self-referential generic field."
 
@@ -393,7 +396,6 @@ BEGIN
 
     IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
-    IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 
     IDS_EE_INVALIDLCIDPARAM                 "The value of the LCID conversion attribute must not exceed the number of parameters."
 
@@ -586,7 +588,7 @@ BEGIN
         BFA_METHOD_WITH_NONZERO_RVA             "Method with non-zero RVA in an Import."
         BFA_ABSTRACT_METHOD_WITH_RVA            "Abstract method with non-zero RVA."
         BFA_RUNTIME_METHOD_WITH_RVA             "Runtime-implemented method with non-zero RVA."
-        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method with non_NULL RVA."
+        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method '%1.%3' with non-zero RVA."
         BFA_AB_METHOD_IN_AB_CLASS               "Abstract method in non-abstract class."
         BFA_NONVIRT_AB_METHOD                   "Non-virtual abstract method."
         BFA_NONAB_NONCCTOR_METHOD_ON_INT        "Non-abstract, non-.cctor method in an interface."

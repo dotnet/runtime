@@ -4,8 +4,6 @@
 
 Note that this document focuses on coreclr testing in `dotnet/runtime`.
 
-https://github.com/dotnet/runtime/issues/702 was opened as a way to simply view in one place all issues that are affecting `dotnet/runtime`'s CI.
-
 ## TOC
 
 1. [Terminology](#Terminology)

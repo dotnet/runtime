@@ -11,7 +11,7 @@ public:
 #define TARGET_WINDOWS_POSSIBLY_SUPPORTED
     static const bool IsWindows = true;
     static const bool IsUnix = false;
-    static const bool IsMacOS = false;
+    static const bool IsApplePlatform = false;
 #elif defined(TARGET_UNIX)
 #define TARGET_UNIX_POSSIBLY_SUPPORTED
     static const bool IsWindows = false;
@@ -20,12 +20,12 @@ public:
 #define TARGET_OS_RUNTIMEDETERMINED
 #define TARGET_UNIX_OS_RUNTIMEDETERMINED
     static bool OSSettingConfigured;
-    static bool IsMacOS;
+    static bool IsApplePlatform;
 #else
 #if defined(TARGET_OSX)
-    static const bool IsMacOS = true;
+    static const bool IsApplePlatform = true;
 #else
-    static const bool IsMacOS = false;
+    static const bool IsApplePlatform = false;
 #endif
 #endif
 #else
@@ -35,7 +35,7 @@ public:
     static bool OSSettingConfigured;
     static bool IsWindows;
     static bool IsUnix;
-    static bool IsMacOS;
+    static bool IsApplePlatform;
 #endif
 };
 

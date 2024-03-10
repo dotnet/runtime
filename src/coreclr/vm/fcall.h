@@ -1336,9 +1336,6 @@ typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
 
 
-// FC_TypedByRef should be used for TypedReferences in FCall signatures
-#define FC_TypedByRef   TypedByRef
-
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make
 // the code of the fcalls unique if you get assert in ecall.cpp that mentions it.

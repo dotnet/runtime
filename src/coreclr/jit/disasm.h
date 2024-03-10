@@ -6,7 +6,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
 XX                          DisAsm                                           XX
 XX                                                                           XX
-XX  The dis-assembler to display the native code generated                   XX
+XX  The "late disassembler" to display the native code generated             XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -17,6 +17,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _DIS_H_
 /*****************************************************************************/
 #ifdef LATE_DISASM
+
+#ifdef USE_COREDISTOOLS
+#include "coredistools.h"
+#endif // USE_COREDISTOOLS
+
+#ifdef USE_MSVCDIS
 
 // free() is deprecated (we should only allocate and free memory through CLR hosting interfaces)
 // and is redefined in clrhost.h to cause a compiler error.
@@ -55,6 +61,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
+#endif // USE_MSVCDIS
+
 #ifdef HOST_64BIT
 template <typename T>
 struct SizeTKeyFuncs : JitLargePrimitiveKeyFuncs<T>
@@ -78,11 +86,19 @@ public:
     // Constructor
     void disInit(Compiler* pComp);
 
+    // Destructor
+    void disDone();
+
     // Initialize the class for the current method being generated.
     void disOpenForLateDisAsm(const char* curMethodName, const char* curClassName, PCCOR_SIGNATURE sig);
 
     // Disassemble a buffer: called after code for a method is generated.
-    void disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCodePtr, size_t coldCodeSize);
+    void disAsmCode(BYTE*  hotCodePtr,
+                    BYTE*  hotCodePtrRW,
+                    size_t hotCodeSize,
+                    BYTE*  coldCodePtr,
+                    BYTE*  coldCodePtrRW,
+                    size_t coldCodeSize);
 
     // Register an address to be associated with a method handle.
     void disSetMethod(size_t addr, CORINFO_METHOD_HANDLE methHnd);
@@ -176,6 +192,8 @@ private:
 #pragma warning(pop)
     }
 
+#ifdef USE_MSVCDIS
+
     /* Callbacks from msdis */
 
     static size_t __stdcall disCchAddr(
@@ -220,6 +238,24 @@ private:
                          bool        printit       = false,
                          bool        dispOffs      = false,
                          bool        dispCodeBytes = false);
+
+#endif // USE_MSVCDIS
+
+#ifdef USE_COREDISTOOLS
+
+    bool                      InitCoredistoolsLibrary();            // Load the coredistools library
+    static LONG               s_disCoreDisToolsLibraryInitializing; // 0 = not initializing; 1 = initializing
+    static bool               s_disCoreDisToolsLibraryInitialized;
+    static bool               s_disCoreDisToolsLibraryLoadSuccessful;
+    static NewDisasm_t*       s_PtrNewDisasm;
+    static DumpInstruction_t* s_PtrDumpInstruction;
+    static FinishDisasm_t*    s_PtrFinishDisasm;
+
+    bool       InitCoredistoolsDisasm(); // Prepare for disassembly
+    void       DoneCoredistoolsDisasm(); // Done with disassembly
+    CorDisasm* corDisasm;
+
+#endif // USE_COREDISTOOLS
 };
 
 /*****************************************************************************/

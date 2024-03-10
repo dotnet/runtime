@@ -928,7 +928,7 @@ namespace System.Net.Security
 
             _headerSize = streamSizes.Header;
             _trailerSize = streamSizes.Trailer;
-            _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
+            _maxDataSize = streamSizes.MaximumMessage;
             Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
@@ -942,18 +942,6 @@ namespace System.Net.Security
 #endif
         }
 
-        /*++
-            Encrypt - Encrypts our bytes before we send them over the wire
-
-            PERF: make more efficient, this does an extra copy when the offset
-            is non-zero.
-
-            Input:
-                buffer - bytes for sending
-                offset -
-                size   -
-                output - Encrypted bytes
-        --*/
         internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
@@ -1337,7 +1325,7 @@ namespace System.Net.Security
 
             var oldPayload = Payload;
 
-            Payload = RentBuffer? ArrayPool<byte>.Shared.Rent(Size + size) : new byte[Size + size];
+            Payload = RentBuffer ? ArrayPool<byte>.Shared.Rent(Size + size) : new byte[Size + size];
             if (oldPayload != null)
             {
                 oldPayload.AsSpan<byte>().CopyTo(Payload);

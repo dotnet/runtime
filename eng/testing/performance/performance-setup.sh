@@ -298,16 +298,16 @@ if [[ "$internal" == true ]]; then
     extra_benchmark_dotnet_arguments=
 
     if [[ "$logical_machine" == "perfiphone12mini" ]]; then
-        queue=OSX.1015.Amd64.Iphone.Perf
+        queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
-        queue=Ubuntu.2004.Arm64.Perf
+        queue=Ubuntu.2204.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
         queue=Ubuntu.2204.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
-            queue=Ubuntu.1804.Amd64.Owl.Perf
+            queue=Ubuntu.2204.Amd64.Owl.Perf
         elif [[ "$logical_machine" == "perftiger_crossgen" ]]; then
             queue=Ubuntu.1804.Amd64.Tiger.Perf
         else
@@ -492,7 +492,7 @@ if [[ "$nor2r" == "true" ]]; then
 fi
 
 if [[ ! -z "$experimentname" ]]; then
-    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
+    setup_arguments="$setup_arguments --experiment-name $experimentname"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

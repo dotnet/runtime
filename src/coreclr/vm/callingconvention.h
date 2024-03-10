@@ -2322,6 +2322,16 @@ public:
         m_pSig = pSig;
     }
 
+#ifdef FEATURE_INTERPRETER
+    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
+    {
+        m_pSig = pSig;
+        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            m_pSig->ClearHasThis();
+    }
+#endif // FEATURE_INTERPRETER
+
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()
     {

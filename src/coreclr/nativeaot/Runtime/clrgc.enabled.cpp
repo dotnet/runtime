@@ -32,6 +32,20 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 // The version of the GC that we have loaded.
 VersionInfo g_gc_version_info;
 
+CrstStatic g_eventStashLock;
+
+GCEventLevel g_stashedLevel = GCEventLevel_None;
+GCEventKeyword g_stashedKeyword = GCEventKeyword_None;
+GCEventLevel g_stashedPrivateLevel = GCEventLevel_None;
+GCEventKeyword g_stashedPrivateKeyword = GCEventKeyword_None;
+
+BOOL g_gcEventTracingInitialized = FALSE;
+
+void InitializeGCEventLock()
+{
+    g_eventStashLock.InitNoThrow(CrstGcEvent);
+}
+
 HRESULT InitializeStandaloneGC();
 
 HRESULT InitializeGCSelector()
@@ -137,6 +151,12 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     if (initResult == S_OK)
     {
         g_pGCHeap = heap;
+        {
+            CrstHolder lh(&g_eventStashLock);
+            g_pGCHeap->ControlEvents(g_stashedKeyword, g_stashedLevel);
+            g_pGCHeap->ControlPrivateEvents(g_stashedPrivateKeyword, g_stashedPrivateLevel);
+            g_gcEventTracingInitialized = TRUE;
+        }
         g_pGCHandleManager = manager;
         g_gcDacGlobals = &g_gc_dac_vars;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
@@ -147,4 +167,33 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     }
 
     return initResult;
+}
+
+void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
+{
+    CrstHolder lh(&g_eventStashLock);
+    if (g_gcEventTracingInitialized)
+    {
+        if (isPublicProvider)
+        {
+            g_pGCHeap->ControlEvents(keywords, level);
+        }
+        else
+        {
+            g_pGCHeap->ControlPrivateEvents(keywords, level);
+        }
+    }
+    else
+    {
+        if (isPublicProvider)
+        {
+            g_stashedKeyword = keywords;
+            g_stashedLevel = level;
+        }
+        else
+        {
+            g_stashedPrivateKeyword = keywords;
+            g_stashedPrivateLevel = level;
+        }
+    }
 }

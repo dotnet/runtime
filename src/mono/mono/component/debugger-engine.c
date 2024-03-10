@@ -1549,7 +1549,7 @@ mono_de_set_log_level (int level, FILE *file)
 }
 
 void
-mono_de_set_using_icordbg ()
+mono_de_set_using_icordbg (void)
 {
 	using_icordbg = TRUE;
 }

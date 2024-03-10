@@ -39,18 +39,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new PhoneAttribute(), "425-555-1212 ext. xyz");
             yield return new TestCase(new PhoneAttribute(), "-.()");
             yield return new TestCase(new PhoneAttribute(), "ext.123 1");
-
-            // By design, certain phone numbers are reported as valid with .NET Core, whereas .NET Framework
-            // considers them invalid. See https://github.com/dotnet/runtime/issues/20884.
-            if (PlatformDetection.IsNetFramework)
-            {
-                yield return new TestCase(new PhoneAttribute(), "+4+2+5+-+5+5+5+-+1+2++1+2++");
-                yield return new TestCase(new PhoneAttribute(), "425-555-1212    ");
-                yield return new TestCase(new PhoneAttribute(), " \r \n 1  \t ");
-                yield return new TestCase(new PhoneAttribute(), "1-.()");
-                yield return new TestCase(new PhoneAttribute(), "(425555-1212");
-                yield return new TestCase(new PhoneAttribute(), ")425555-1212");
-            }
         }
 
         [Fact]

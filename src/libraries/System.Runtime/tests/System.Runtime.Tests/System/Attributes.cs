@@ -44,7 +44,8 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot) /* Stripping ComVisible because descriptors tell us so */)]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming)
+            /* Stripping ComVisible because descriptors tell us so */)]
         public void IsDefined_PropertyInfo()
         {
             PropertyInfo pi = typeof(TestBase).GetProperty("PropBase3");
@@ -327,6 +328,8 @@ namespace System.Tests
     {
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsTrimmedWithILLink))
+            /* Stripping security attributes removes UnverifiableCodeAttribute */]
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();

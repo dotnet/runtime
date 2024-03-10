@@ -6,7 +6,7 @@ using System.Runtime;
 
 namespace Internal.Runtime
 {
-    static unsafe class IDynamicCastableSupport
+    internal static unsafe class IDynamicCastableSupport
     {
         [RuntimeExport("IDynamicCastableIsInterfaceImplemented")]
         internal static bool IDynamicCastableIsInterfaceImplemented(object instance, MethodTable* interfaceType, bool throwIfNotImplemented)

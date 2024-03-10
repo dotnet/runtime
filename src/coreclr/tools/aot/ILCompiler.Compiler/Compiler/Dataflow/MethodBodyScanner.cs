@@ -123,8 +123,8 @@ namespace ILCompiler.Dataflow
             }
 
             Stack<StackSlot> newStack = new Stack<StackSlot>(a.Count);
-            IEnumerator<StackSlot> aEnum = a.GetEnumerator();
-            IEnumerator<StackSlot> bEnum = b.GetEnumerator();
+            Stack<StackSlot>.Enumerator aEnum = a.GetEnumerator();
+            Stack<StackSlot>.Enumerator bEnum = b.GetEnumerator();
             while (aEnum.MoveNext() && bEnum.MoveNext())
             {
                 newStack.Push(MergeStackElement(aEnum.Current, bEnum.Current));
@@ -188,8 +188,7 @@ namespace ILCompiler.Dataflow
                     _foundEndOfPrevBlock = false;
                 }
 
-                var reader = new ILReader(_methodBody.GetILBytes());
-                reader.Seek(offset);
+                var reader = new ILReader(_methodBody.GetILBytes(), offset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode.IsControlFlowInstruction())
                 {

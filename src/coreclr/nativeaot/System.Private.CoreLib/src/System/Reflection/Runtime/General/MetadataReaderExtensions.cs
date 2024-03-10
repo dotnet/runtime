@@ -47,16 +47,6 @@ namespace System.Reflection.Runtime.General
             return *(int*)&handle;
         }
 
-        /// <summary>
-        /// Convert typed metadata handle to the raw token value.
-        /// </summary>
-        /// <param name="handle">Typed metadata handle</param>
-        /// <returns>Token - raw integral handle represented as unsigned int</returns>
-        public static unsafe uint AsUInt(this Handle handle)
-        {
-            return *(uint*)&handle;
-        }
-
         public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
         {
             return reader.GetConstantStringValue(handle).Value;
@@ -138,7 +128,7 @@ namespace System.Reflection.Runtime.General
             int contentType = ((int)assemblyFlags) & 0x00000E00;
             assemblyNameFlags |= (AssemblyNameFlags)contentType;
 
-            ArrayBuilder<byte> keyOrTokenArrayBuilder = new ArrayBuilder<byte>();
+            ArrayBuilder<byte> keyOrTokenArrayBuilder = default;
             foreach (byte b in publicKeyOrToken)
                 keyOrTokenArrayBuilder.Add(b);
 

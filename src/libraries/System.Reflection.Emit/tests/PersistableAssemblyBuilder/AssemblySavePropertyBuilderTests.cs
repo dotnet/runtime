@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
                 PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.SpecialName | PropertyAttributes.HasDefault, typeof(int), null);
                 MethodBuilder getMethod = type.DefineMethod("GetMethod", MethodAttributes.Public | MethodAttributes.HideBySig, typeof(int), null);
@@ -44,29 +44,32 @@ namespace System.Reflection.Emit.Tests
                 otherILGenerator.Emit(OpCodes.Ret);
                 property.AddOtherMethod(otherMethod);
                 type.CreateType();
-                saveMethod.Invoke(ab, new [] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                PropertyInfo propertyFromDisk = typeFromDisk.GetProperty("TestProperty", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                MethodInfo getMethodFromFile = propertyFromDisk.GetGetMethod(true);
-                MethodInfo setMethodFromFile = propertyFromDisk.GetSetMethod(true);
-                Assert.Equal(getMethod.Name, getMethodFromFile.Name);
-                Assert.Equal(setMethod.Name, setMethodFromFile.Name);
-                // Not sure how other methods should have loaded/tested
-                // 'propertyFromDisk.GetAccessors(true)' did not return other method
-                Assert.NotNull(typeFromDisk.GetMethod("OtherMethod", BindingFlags.NonPublic | BindingFlags.Instance));
-                Assert.True(property.CanRead);
-                Assert.True(property.CanWrite);
-                Assert.Equal(property.CanRead, propertyFromDisk.CanRead);
-                Assert.Equal(property.CanWrite, propertyFromDisk.CanWrite);
-                Assert.Equal(property.Attributes, propertyFromDisk.Attributes);
-                Assert.Equal(property.DeclaringType.FullName, propertyFromDisk.DeclaringType.FullName);
-                IList<CustomAttributeData> caData = propertyFromDisk.GetCustomAttributesData();
-                Assert.Equal(1, caData.Count);
-                Assert.Equal(typeof(IntPropertyAttribute).FullName, caData[0].AttributeType.FullName);
-                Assert.Equal(1, caData[0].ConstructorArguments.Count);
-                Assert.Equal(9, caData[0].ConstructorArguments[0].Value);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    PropertyInfo propertyFromDisk = typeFromDisk.GetProperty("TestProperty", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    MethodInfo getMethodFromFile = propertyFromDisk.GetGetMethod(true);
+                    MethodInfo setMethodFromFile = propertyFromDisk.GetSetMethod(true);
+                    Assert.Equal(getMethod.Name, getMethodFromFile.Name);
+                    Assert.Equal(setMethod.Name, setMethodFromFile.Name);
+                    // Not sure how other methods should have loaded/tested
+                    // 'propertyFromDisk.GetAccessors(true)' did not return other method
+                    Assert.NotNull(typeFromDisk.GetMethod("OtherMethod", BindingFlags.NonPublic | BindingFlags.Instance));
+                    Assert.True(property.CanRead);
+                    Assert.True(property.CanWrite);
+                    Assert.Equal(property.CanRead, propertyFromDisk.CanRead);
+                    Assert.Equal(property.CanWrite, propertyFromDisk.CanWrite);
+                    Assert.Equal(property.Attributes, propertyFromDisk.Attributes);
+                    Assert.Equal(property.DeclaringType.FullName, propertyFromDisk.DeclaringType.FullName);
+                    IList<CustomAttributeData> caData = propertyFromDisk.GetCustomAttributesData();
+                    Assert.Equal(1, caData.Count);
+                    Assert.Equal(typeof(IntPropertyAttribute).FullName, caData[0].AttributeType.FullName);
+                    Assert.Equal(1, caData[0].ConstructorArguments.Count);
+                    Assert.Equal(9, caData[0].ConstructorArguments[0].Value);
+                }
             }
         }
 
@@ -81,7 +84,7 @@ namespace System.Reflection.Emit.Tests
                 PropertyInfo prop = typeof(CustomAttributeBuilder).GetProperty("Data", BindingFlags.NonPublic | BindingFlags.Instance);
                 byte[] binaryData = (byte[])prop.GetValue(customAttrBuilder, null);
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
                 property.SetCustomAttribute(con, binaryData);
                 property.SetCustomAttribute(new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), []));
@@ -93,30 +96,33 @@ namespace System.Reflection.Emit.Tests
                 methodILGenerator.Emit(OpCodes.Ret);
                 property.SetGetMethod(method);
                 type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                PropertyInfo propertyFromDisk = typeFromDisk.GetProperty("TestProperty", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.True(propertyFromDisk.Attributes.HasFlag(PropertyAttributes.SpecialName));
-                IList<CustomAttributeData> attributes = propertyFromDisk.GetCustomAttributesData();
-                Assert.Equal(2, attributes.Count);
-                if (typeof(MaybeNullAttribute).FullName == attributes[0].AttributeType.FullName)
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
-                    Assert.Equal(0, attributes[0].ConstructorArguments.Count);
-                    Assert.Equal(1, attributes[1].ConstructorArguments.Count);
-                    Assert.Equal(typeof(IntPropertyAttribute).FullName, attributes[1].AttributeType.FullName);
-                    Assert.Equal(expectedValue, attributes[1].ConstructorArguments[0].Value);
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    PropertyInfo propertyFromDisk = typeFromDisk.GetProperty("TestProperty", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+                    Assert.True(propertyFromDisk.Attributes.HasFlag(PropertyAttributes.SpecialName));
+                    IList<CustomAttributeData> attributes = propertyFromDisk.GetCustomAttributesData();
+                    Assert.Equal(2, attributes.Count);
+                    if (typeof(MaybeNullAttribute).FullName == attributes[0].AttributeType.FullName)
+                    {
+                        Assert.Equal(0, attributes[0].ConstructorArguments.Count);
+                        Assert.Equal(1, attributes[1].ConstructorArguments.Count);
+                        Assert.Equal(typeof(IntPropertyAttribute).FullName, attributes[1].AttributeType.FullName);
+                        Assert.Equal(expectedValue, attributes[1].ConstructorArguments[0].Value);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, attributes[1].ConstructorArguments.Count);
+                        Assert.Equal(1, attributes[0].ConstructorArguments.Count);
+                        Assert.Equal(typeof(IntPropertyAttribute).FullName, attributes[0].AttributeType.FullName);
+                        Assert.Equal(expectedValue, attributes[0].ConstructorArguments[0].Value);
+                    }
+                    Assert.Empty(attributes[0].NamedArguments);
+                    Assert.Empty(attributes[1].NamedArguments);
                 }
-                else
-                {
-                    Assert.Equal(0, attributes[1].ConstructorArguments.Count);
-                    Assert.Equal(1, attributes[0].ConstructorArguments.Count);
-                    Assert.Equal(typeof(IntPropertyAttribute).FullName, attributes[0].AttributeType.FullName);
-                    Assert.Equal(expectedValue, attributes[0].ConstructorArguments[0].Value);
-                }
-                Assert.Empty(attributes[0].NamedArguments);
-                Assert.Empty(attributes[1].NamedArguments);
             }
         }
 
@@ -149,7 +155,7 @@ namespace System.Reflection.Emit.Tests
         [MemberData(nameof(SetConstant_TestData))]
         public void SetConstantVariousValues(Type returnType, object defaultValue)
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
 
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, returnType, null);
             property.SetConstant(defaultValue);
@@ -160,7 +166,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray_NullConstructorInfo_ThrowsArgumentNullException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
 
             AssertExtensions.Throws<ArgumentNullException>("con", () => property.SetCustomAttribute(null, new byte[6]));
@@ -169,7 +175,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void Set_NullValue_ThrowsArgumentNullException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
 
             AssertExtensions.Throws<ArgumentNullException>("mdBuilder", () => property.SetGetMethod(null));
@@ -181,12 +187,13 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void Set_WhenTypeAlreadyCreated_ThrowsInvalidOperationException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
 
             MethodAttributes getMethodAttributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
             MethodBuilder method = type.DefineMethod("TestMethod", getMethodAttributes, typeof(int), null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
             AssertExtensions.Throws<ArgumentException>(() => property.SetConstant((decimal)10));
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor([typeof(int)]), [10]);
             type.CreateType();
@@ -201,7 +208,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void SetConstant_ValidationThrows()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
 

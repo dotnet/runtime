@@ -419,7 +419,6 @@ namespace System.Xml.XmlSchemaValidatorApiTests
         [InlineData("SCHEMA", "schB1_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schM2_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schH2_a.xsd", 1, 3, 3)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75132", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddValid_Import_Include_Redefine(string testDir, string testFile, int expCount, int expCountGT, int expCountGE)
         {
             string xsd = Path.Combine(path, testDir, testFile);

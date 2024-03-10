@@ -54,9 +54,6 @@
 
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
-bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
-
 namespace utils
 {
     template<size_t L>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -17,8 +18,28 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="list">The list to get the data view over.</param>
         /// <typeparam name="T">The type of the elements in the list.</typeparam>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> AsSpan<T>(List<T>? list)
-            => list is null ? default : new Span<T>(list._items, 0, list._size);
+        {
+            Span<T> span = default;
+            if (list is not null)
+            {
+                int size = list._size;
+                T[] items = list._items;
+                Debug.Assert(items is not null, "Implementation depends on List<T> always having an array.");
+
+                if ((uint)size > (uint)items.Length)
+                {
+                    // List<T> was erroneously mutated concurrently with this call, leading to a count larger than its array.
+                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                }
+
+                Debug.Assert(typeof(T[]) == list._items.GetType(), "Implementation depends on List<T> always using a T[] and not U[] where U : T.");
+                span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(items), size);
+            }
+
+            return span;
+        }
 
         /// <summary>
         /// Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/> or a ref null if it does not exist in the <paramref name="dictionary"/>.

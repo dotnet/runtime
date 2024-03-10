@@ -1,17 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CMakeProjectReference -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);ANSIBSTR</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
-    <Compile Include="../Common/*.cs" />
+    <Compile Include="../Common/Helpers.cs" />
+    <Compile Include="../Common/StringTests.cs" />
     <Compile Include="../Native/StringMarshalingTestNative.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
-    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

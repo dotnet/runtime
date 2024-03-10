@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using System;
-using System.Text.RegularExpressions;
-using System.Collections;
-using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Tests
 {

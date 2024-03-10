@@ -6,7 +6,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64;freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+    <!-- FreeBSD runtime/apphost packs aren't built in the official build so only reference the RIDs when targetting FreeBSD -->
+    <RuntimeIdentifiers Condition="'$(TargetOS)' == 'freebsd'">$(RuntimeIdentifiers);freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
@@ -41,6 +43,7 @@
       <ReproResponseLines Include="--feature:System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported=false" />
       <ReproResponseLines Include="--feature:System.Globalization.Invariant=true" />
       <ReproResponseLines Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+      <ReproResponseLines Include="--feature:System.StartupHookProvider.IsSupported=false" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"

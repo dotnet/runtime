@@ -8,7 +8,7 @@ using Internal.Metadata.NativeFormat;
 
 namespace Internal.StackTraceMetadata
 {
-    class MethodNameFormatter
+    internal class MethodNameFormatter
     {
         /// <summary>
         /// Metadata reader used for the purpose of method name formatting.
@@ -417,17 +417,6 @@ namespace Internal.StackTraceMetadata
             ByReferenceSignature byRefSig = _metadataReader.GetByReferenceSignature(byRefSigHandle);
             EmitTypeName(byRefSig.Type, namespaceQualified: false);
             _outputBuilder.Append('&');
-        }
-
-        /// <summary>
-        /// Emit angle-bracketed list of type / method generic arguments.
-        /// </summary>
-        /// <param name="genericArguments">Collection of generic argument type handles</param>
-        private void EmitGenericArguments(HandleCollection genericArguments)
-        {
-            _outputBuilder.Append('[');
-            EmitTypeVector(genericArguments);
-            _outputBuilder.Append(']');
         }
 
         /// <summary>

@@ -3,7 +3,9 @@
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -18,7 +20,8 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal JSMarshalerArgumentImpl slot;
 
-        [StructLayout(LayoutKind.Explicit, Pack = 16, Size = 16)]
+        // keep in sync with JSMarshalerArgumentOffsets in marshal.ts
+        [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 32)]
         internal struct JSMarshalerArgumentImpl
         {
             [FieldOffset(0)]
@@ -55,15 +58,124 @@ namespace System.Runtime.InteropServices.JavaScript
             internal MarshalerType Type;
             [FieldOffset(13)]
             internal MarshalerType ElementType;
+
+#if FEATURE_WASM_MANAGED_THREADS
+            [FieldOffset(16)]
+            internal IntPtr ContextHandle;
+
+            [FieldOffset(20)]
+            internal bool ReceiverShouldFree;
+
+            [FieldOffset(24)]
+            internal IntPtr CallerNativeTID;
+#endif
         }
 
         /// <summary>
         /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void Initialize()
         {
             slot.Type = MarshalerType.None;
+#if FEATURE_WASM_MANAGED_THREADS
+            // we know that this is at the start of some JSImport call, but we don't know yet what would be the target thread
+            // also this is called multiple times
+            JSProxyContext.JSImportWithUnknownContext();
+            slot.ContextHandle = IntPtr.Zero;
+            slot.ReceiverShouldFree = false;
+#endif
+        }
+
+#if FEATURE_WASM_MANAGED_THREADS
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        internal unsafe void InitializeWithContext(JSProxyContext knownProxyContext)
+        {
+            slot.Type = MarshalerType.None;
+            slot.ContextHandle = knownProxyContext.ContextHandle;
+            slot.ReceiverShouldFree = false;
+        }
+#endif
+        // this is always called from ToManaged() marshaler
+#pragma warning disable CA1822 // Mark members as static
+        internal JSProxyContext ToManagedContext
+#pragma warning restore CA1822 // Mark members as static
+        {
+            get
+            {
+#if !FEATURE_WASM_MANAGED_THREADS
+                return JSProxyContext.MainThreadContext;
+#else
+                // ContextHandle always has to be set
+                // during JSImport, this is marshaling result/exception and it would be set by:
+                //    - InvokeJSImport implementation
+                //    - ActionJS.InvokeJS
+                //    - ResolveVoidPromise/ResolvePromise/RejectPromise
+                // during JSExport, this is marshaling parameters and it would be set by:
+                //    - alloc_stack_frame
+                //    - set_js_handle/set_gc_handle
+                if (slot.ContextHandle == IntPtr.Zero)
+                {
+                    Environment.FailFast($"ContextHandle not set (ManagedThreadId {Environment.CurrentManagedThreadId}): {Environment.NewLine} {Environment.StackTrace}");
+                }
+                var proxyContextGCHandle = (GCHandle)slot.ContextHandle;
+                var argumentContext = (JSProxyContext)proxyContextGCHandle.Target!;
+                return argumentContext;
+#endif
+            }
+        }
+
+        // this is always called from ToJS() marshaler
+#pragma warning disable CA1822 // Mark members as static
+        internal JSProxyContext ToJSContext
+#pragma warning restore CA1822 // Mark members as static
+        {
+            get
+            {
+#if !FEATURE_WASM_MANAGED_THREADS
+                return JSProxyContext.MainThreadContext;
+#else
+                if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
+                {
+                    // we are called from ToJS, during JSImport
+                    // we need to check for captured or default context
+                    return JSProxyContext.CurrentOperationContext;
+                }
+                // ContextHandle must be set be set by JS side of JSExport, and we are marshaling result of JSExport
+                var proxyContextGCHandle = slot.ContextHandle;
+                if (proxyContextGCHandle == IntPtr.Zero)
+                {
+                    Environment.FailFast($"ContextHandle not set, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                }
+                var argumentContext = (JSProxyContext)((GCHandle)proxyContextGCHandle).Target!;
+                return argumentContext;
+#endif
+            }
+        }
+
+        // make sure that we are on a thread with JS interop and that it matches the target of the argument
+#pragma warning disable CA1822 // Mark members as static
+        internal JSProxyContext AssertCurrentThreadContext()
+#pragma warning restore CA1822 // Mark members as static
+        {
+#if !FEATURE_WASM_MANAGED_THREADS
+            return JSProxyContext.MainThreadContext;
+#else
+            var currentThreadContext = JSProxyContext.CurrentThreadContext;
+            if (currentThreadContext == null)
+            {
+                Environment.FailFast($"Must be called on same thread with JS interop, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+            }
+            if (slot.ContextHandle != currentThreadContext.ContextHandle)
+            {
+                Environment.FailFast($"Must be called on same thread which created the stack frame, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+            }
+            return currentThreadContext;
+#endif
         }
     }
 }

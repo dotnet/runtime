@@ -14,8 +14,9 @@ namespace System.Security.Cryptography.X509Certificates
             SafePasswordHandle password,
             bool ephemeralSpecified)
         {
-            using (ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData))
+            using (ApplePkcs12Reader reader = new ApplePkcs12Reader())
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified);
                 return ImportPkcs12(reader.GetSingleCert());
             }

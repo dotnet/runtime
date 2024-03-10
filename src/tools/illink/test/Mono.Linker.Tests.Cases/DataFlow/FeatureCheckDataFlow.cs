@@ -20,7 +20,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
 	// not as a separate substitution file, for it to work with NativeAot.
 	// Related: https://github.com/dotnet/runtime/issues/88647
-	[SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
+		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
 	[IgnoreSubstitutions (false)]
 	public class FeatureCheckDataFlow
 	{
@@ -525,14 +526,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresUnreferencedCode ();
 			}
 
-			static void CallTestRequiresDynamicCodeGuarded ()
+			static void CallTestDynamicCodeGuarded ()
 			{
 				if (RuntimeFeature.IsDynamicCodeSupported)
 					RequiresDynamicCode ();
 			}
 
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			static void CallTestRequiresDynamicCodeUnguarded ()
+			static void CallTestDynamicCodeUnguarded ()
 			{
 				RequiresDynamicCode ();
 			}
@@ -554,8 +555,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				CallTestUnreferencedCodeGuarded ();
 				CallTestUnreferencedCodeUnguarded ();
-				CallTestRequiresDynamicCodeGuarded ();
-				CallTestRequiresDynamicCodeUnguarded ();
+				CallTestDynamicCodeGuarded ();
+				CallTestDynamicCodeUnguarded ();
 				CallTestAssemblyFilesGuarded ();
 				CallTestAssemblyFilesUnguarded ();
 			}
@@ -673,8 +674,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			// TODO: move generic analysis to dataflow analyzer to support this if it is an actual scenario.
-			[ExpectedWarning ("IL2091", nameof (RequiresAllGeneric<T>), ProducedBy = Tool.Analyzer)]
 			static void GenericRequirement<T> ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -1220,14 +1219,5 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class RequiresAllGeneric<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> {}
-	}
-}
-
-namespace ILLink.RoslynAnalyzer
-{
-	class TestFeatures
-	{
-		public static bool IsUnreferencedCodeSupported => true;
-		public static bool IsAssemblyFilesSupported => true;
 	}
 }

@@ -42,7 +42,7 @@ public class Test_RefCharArrayTest
 
     #region "TestMethod"
     //TestMethod1,Pinvoke,Cdecl
-    
+
     static bool TestMethod_PInvoke_Cdecl()
     {
         TestFramework.BeginScenario("Pinvoke,Cdecl");
@@ -76,7 +76,7 @@ public class Test_RefCharArrayTest
     }
 
     //TestMethod2,Pinvoke,StdCall
-    
+
     static bool TestMethod_PInvoke_StdCall()
     {
         TestFramework.BeginScenario("Pinvoke,StdCall");
@@ -112,8 +112,8 @@ public class Test_RefCharArrayTest
     //TestMethod3:ReversePinvoke,Cdecl
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate bool CdeclCallBack( ref char[] arr );
-    
-    
+
+
     public static bool TestMethod_MarshalRefCharArray_Cdecl( ref char[] arr )
     {
         TestFramework.BeginScenario("Pinvoke,StdCall");
@@ -143,8 +143,8 @@ public class Test_RefCharArrayTest
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool StdCallBack( ref char[] arr );
 
-    
-    
+
+
     public static bool TestMethod_MarshalRefCharArray_Stdcall( ref char[] arr )
     {
         TestFramework.BeginScenario("ReversePinvoke,Stdcall");
@@ -173,7 +173,7 @@ public class Test_RefCharArrayTest
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate bool DelegatePInvokeCdecl( ref char[] arr );
 
-    
+
     private static bool TestMethod_DelegatePInvokeCdecl()
     {
         TestFramework.BeginScenario("DelegatePinvoke,Cdecl");
@@ -211,7 +211,7 @@ public class Test_RefCharArrayTest
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool DelegatePInvokeStdcall( ref char[] arr );
 
-    
+
     private static bool TestMethod_DelegatePInvokeStdcall()
     {
         TestFramework.BeginScenario("DelegatePinvoke,Cdecl");
@@ -247,8 +247,10 @@ public class Test_RefCharArrayTest
 
     #endregion
 
-    
+
     [Fact]
+    [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         bool bresult = true;

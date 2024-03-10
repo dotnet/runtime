@@ -58,7 +58,6 @@ private:
     weight_t SumOutgoingLikelihoods(BasicBlock* block, WeightVector* likelihoods = nullptr);
 
     void AssignLikelihoods();
-    void AssignLikelihoodNext(BasicBlock* block);
     void AssignLikelihoodJump(BasicBlock* block);
     void AssignLikelihoodCond(BasicBlock* block);
     void AssignLikelihoodSwitch(BasicBlock* block);
@@ -78,7 +77,7 @@ private:
 
 private:
     Compiler* const        m_comp;
-    FlowGraphDfsTree*      m_dfs;
+    FlowGraphDfsTree*      m_dfsTree;
     FlowGraphNaturalLoops* m_loops;
     weight_t*              m_cyclicProbabilities;
     unsigned               m_improperLoopHeaders;

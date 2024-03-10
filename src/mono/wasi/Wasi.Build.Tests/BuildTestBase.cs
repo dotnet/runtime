@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
         {
             _testIdx = Interlocked.Increment(ref s_testCounter);
             _buildContext = buildContext;
-            _testOutput = output;
+            _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
@@ -160,6 +160,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
@@ -603,8 +604,6 @@ namespace Wasm.Build.Tests
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine($"{label} {message}");
             }
         }
 
@@ -692,6 +691,35 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
+
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRun() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { "Debug" },
+                new object?[] { "Release" }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*propertyValue*/
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
+        protected CommandResult RunWithoutBuild(string config, string id)
+        {
+            string runArgs = $"run --no-build -c {config}";
+            runArgs += " x y z";
+            // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
+            int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
+                            .WithWorkingDirectory(_projectDir!)
+                            .ExecuteWithCapturedOutput(runArgs)
+                            .EnsureExitCode(expectedExitCode);
+
+            Assert.Contains("Hello, Wasi Console!", res.Output);
+            Assert.Contains("args[0] = x", res.Output);
+            Assert.Contains("args[1] = y", res.Output);
+            Assert.Contains("args[2] = z", res.Output);
+            return res;
+        }
     }
 
     public record BuildArgs(string ProjectName,

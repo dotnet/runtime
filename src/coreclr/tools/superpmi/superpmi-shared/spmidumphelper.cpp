@@ -158,12 +158,10 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
 #define AddFlag(__name)\
     if (flags & __name) { s += std::string(" ") + std::string(#__name); flags = (CorInfoFlag)((DWORD)flags & ~(DWORD)__name); }
 
-    AddFlag(CORINFO_FLG_PROTECTED);
     AddFlag(CORINFO_FLG_STATIC);
     AddFlag(CORINFO_FLG_FINAL);
     AddFlag(CORINFO_FLG_SYNCH);
     AddFlag(CORINFO_FLG_VIRTUAL);
-    AddFlag(CORINFO_FLG_NATIVE);
     AddFlag(CORINFO_FLG_INTRINSIC_TYPE);
     AddFlag(CORINFO_FLG_ABSTRACT);
     AddFlag(CORINFO_FLG_EnC);
@@ -186,7 +184,6 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_CONTAINS_GC_PTR);
     AddFlag(CORINFO_FLG_DELEGATE);
     AddFlag(CORINFO_FLG_BYREF_LIKE);
-    AddFlag(CORINFO_FLG_VARIANCE);
     AddFlag(CORINFO_FLG_BEFOREFIELDINIT);
     AddFlag(CORINFO_FLG_GENERIC_TYPE_VARIABLE);
     AddFlag(CORINFO_FLG_UNSAFE_VALUECLASS);

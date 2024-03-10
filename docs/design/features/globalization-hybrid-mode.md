@@ -17,21 +17,55 @@ For WebAssembly in Browser we are using Web API instead of some ICU data. Ideall
 
 Hybrid has higher priority than sharding or custom modes, described in globalization-icu-wasm.md.
 
+**HashCode**
+
+Affected public APIs:
+- System.Globalization.CompareInfo.GetHashCode
+
+For invariant culture all `CompareOptions` are available.
+
+For non-invariant cultures following `CompareOptions` are available:
+- `CompareOption.None`
+- `CompareOption.IgnoreCase`
+
+The remaining combinations for non-invariant cultures throw `PlatformNotSupportedException`.
+
 **SortKey**
 
 Affected public APIs:
-- CompareInfo.GetSortKey
-- CompareInfo.GetSortKeyLength
-- CompareInfo.GetHashCode
+- System.Globalization.CompareInfo.GetSortKey
+- System.Globalization.CompareInfo.GetSortKeyLength
 
-Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+For invariant culture all `CompareOptions` are available.
+
+For non-invariant cultures `PlatformNotSupportedException` is thrown.
+
+Indirectly affected APIs (the list might not be complete):
+- Microsoft.VisualBasic.Collection.Add
+- System.Collections.Hashtable.Add
+- System.Collections.Hashtable.GetHash
+- System.Collections.CaseInsensitiveHashCodeProvider.GetHashCode
+- System.Collections.Specialized.NameObjectCollectionBase.BaseAdd
+- System.Collections.Specialized.NameValueCollection.Add
+- System.Collections.Specialized.NameObjectCollectionBase.BaseGet
+- System.Collections.Specialized.NameValueCollection.Get
+- System.Collections.Specialized.NameObjectCollectionBase.BaseRemove
+- System.Collections.Specialized.NameValueCollection.Remove
+- System.Collections.Specialized.OrderedDictionary.Add
+- System.Collections.Specialized.NameObjectCollectionBase.BaseSet
+- System.Collections.Specialized.NameValueCollection.Set
+- System.Data.DataColumnCollection.Add
+- System.Collections.Generic.HashSet
+- System.Collections.Generic.Dictionary
+- System.Net.Mail.MailAddress.GetHashCode
+- System.Xml.Xsl.XslCompiledTransform.Transform
 
 **Case change**
 
 Affected public APIs:
-- TextInfo.ToLower,
-- TextInfo.ToUpper,
-- TextInfo.ToTitleCase.
+- System.Globalization.TextInfo.ToLower,
+- System.Globalization.TextInfo.ToUpper,
+- System.Globalization.TextInfo.ToTitleCase.
 
 Case change with invariant culture uses `toUpperCase` / `toLoweCase` functions that do not guarantee a full match with the original invariant culture.
 Hybrid case change, same as ICU-based, does not support code points expansion e.g. "straße" -> "STRAßE".
@@ -49,9 +83,26 @@ Dependencies:
 **String comparison**
 
 Affected public APIs:
-- CompareInfo.Compare,
-- String.Compare,
-- String.Equals.
+- System.Globalization.CompareInfo.Compare,
+- System.String.Compare,
+- System.String.Equals.
+Indirectly affected APIs (the list might not be complete):
+- Microsoft.VisualBasic.Strings.InStrRev
+- Microsoft.VisualBasic.Strings.Replace
+- Microsoft.VisualBasic.Strings.InStr
+- Microsoft.VisualBasic.Strings.Split
+- Microsoft.VisualBasic.Strings.StrComp
+- Microsoft.VisualBasic.CompilerServices.LikeOperator.LikeObject
+- Microsoft.VisualBasic.CompilerServices.LikeOperator.LikeString
+- Microsoft.VisualBasic.CompilerServices.ObjectType.ObjTst
+- Microsoft.VisualBasic.CompilerServices.ObjectType.LikeObj
+- Microsoft.VisualBasic.CompilerServices.StringType.StrLike
+- Microsoft.VisualBasic.CompilerServices.Operators.ConditionalCompareObjectEqual
+- Microsoft.VisualBasic.CompilerServices.StringType.StrLike
+- Microsoft.VisualBasic.CompilerServices.StringType.StrLikeText
+- Microsoft.VisualBasic.CompilerServices.StringType.StrCmp
+- System.Data.DataSet.ReadXml
+- System.Data.DataTableCollection.Add
 
 Dependencies:
 - [String.prototype.localeCompare()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)
@@ -328,9 +379,9 @@ The Hybrid responses may differ because they use Web API functions. To better il
 |        ShortTimePattern       |                                       `Intl.DateTimeFormat(locale, { timeStyle: "medium" })`                                       |                 bg-BG                |        HH:mm       |        H:mm       |
 |        YearMonthPattern       |                           `Date.prototype.toLocaleDateString(locale, { year: "numeric", month: "long" })`                          |                 ar-SA                |      MMMM yyyy     |    MMMM yyyy g    |
 
-### OSX
+### Apple platforms
 
-For OSX platforms we are using native apis instead of ICU data.
+For Apple platforms (iOS/tvOS/maccatalyst) we are using native apis instead of ICU data.
 
 ## String comparison
 
@@ -343,7 +394,8 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
 - `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
 
-- `IgnoreKanaType` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+- `IgnoreKanaType` is implemented using [`kCFStringTransformHiraganaKatakana`](https://developer.apple.com/documentation/corefoundation/kcfstringtransformhiraganakatakana?language=objc) then comparing strings.
+
 
 - `None`:
 
@@ -383,9 +435,7 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
 - All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
 
-   `IgnoreSymbols`,
-
-   `IgnoreKanaType`,
+   `IgnoreSymbols`
 
 ## String starts with / ends with
 
@@ -463,7 +513,9 @@ Affected public APIs:
 - CompareInfo.GetSortKeyLength
 - CompareInfo.GetHashCode
 
-Apple Native API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+Implemeneted using [stringByFoldingWithOptions:locale:](https://developer.apple.com/documentation/foundation/nsstring/1413779-stringbyfoldingwithoptions)
+
+Note: This implementation does not construct SortKeys like ICU ucol_getSortKey does, and might not adhere to the specifications specifications of SortKey such as SortKeys from different collators not being comparable and merging sortkeys.
 
 
 ## Case change

@@ -1,5 +1,8 @@
 name: CI - Unix
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     paths:
@@ -16,106 +19,118 @@ on:
       - master
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    name: build-${{ join(matrix.*, ' ') }}
+  build-native:
+    runs-on: ubuntu-22.04
+    name: build-${{ matrix.toolchain.compiler }}-${{ matrix.target.arch }}${{ matrix.optimization.CFLAGS }}
+
     strategy:
       fail-fast: false
       matrix:
-        HOST:
-          - x86_64-linux-gnu
-          - x86-linux-gnu
-          - arm-linux-gnueabihf
-          - aarch64-linux-gnu
-          - mipsel-linux-gnu
-          - powerpc64-linux-gnu
-        OPT:
-          - O0
-          - O3
+        target:
+          - { arch: i686,   triple: i686-pc-linux-gnu,   CFLAGS: -m32 }
+          - { arch: x86_64, triple: x86_64-pc-linux-gnu, CFLAGS:      }
+        toolchain:
+          - { compiler: gcc,   CC: gcc-12,   CXX: g++-12     }
+          - { compiler: clang, CC: clang-13, CXX: clang++-13 }
+        optimization:
+          - { CFLAGS: -O0 }
+          - { CFLAGS: -O3 }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
       - name: Setup
+        if: ${{ matrix.target.arch }} = 'i686'
         run: |
-          HOST=${{ matrix.HOST }}
-          if [ $HOST = 'x86-linux-gnu' ]; then
-            sudo apt-get update
-            sudo apt-get install -yqq -o=Dpkg::Use-Pty=0 g++-multilib
-          elif [ $HOST != 'x86_64-linux-gnu' ]; then
-            sudo apt-get update
-            sudo apt-get install -yqq -o=Dpkg::Use-Pty=0 g++-$HOST
-          fi
+          sudo apt update
+          sudo apt install -y g++-12-multilib
+
       - name: Configure
         run: |
           set -x
-          HOST=${{ matrix.HOST }}
-          BUILD=x86_64-linux-gnu
-          if [ $HOST = 'x86-linux-gnu' ]; then
-            CFLAGS="-m32"
-            CXXFLAGS="-m32"
-            BUILD=x86-linux-gnu
-          fi
-          export CFLAGS="$CFLAGS -${{ matrix.OPT }}"
-          export CXXFLAGS="$CXXFLAGS -${{ matrix.OPT}}"
           autoreconf -i
-          ./configure --build=$BUILD --host=$HOST
+          ./configure --build=x86_64-pc-linux-gnu --host=${{ matrix.target.triple }}
+        env:
+          CC: ${{ matrix.toolchain.CC }}
+          CXX: ${{ matrix.toolchain.CXX }}
+          CFLAGS: "${{ matrix.target.CFLAGS }} ${{ matrix.optimization.CFLAGS }} -Wall -Wextra"
+          CXXFLAGS: "${{ matrix.target.CFLAGS }} ${{ matrix.optimization.CFLAGS }} -Wall -Wextra"
+          LDFLAGS: ${{ matrix.target.CFLAGS }}
+
+      - name: Build
+        run: |
           make -j8
+
       - name: Test (native)
-        if: ${{ success() && (matrix.HOST == 'x86_64-linux-gnu' || matrix.HOST == 'x86-linux-gnu') }}
+        if: ${{ success() }}
         run: |
           set -x
           sudo bash -c 'echo core.%p.%p > /proc/sys/kernel/core_pattern'
           ulimit -c unlimited
-          make check -j32
+          make check -j8
+
       - name: Show Logs
         if: ${{ failure() }}
         run: |
           cat tests/test-suite.log 2>/dev/null
 
-  build-cross-qemu:
-    runs-on: ubuntu-latest
-    name: build-cross-qemu-${{ matrix.config.target }}
+  build-cross:
+    runs-on: ubuntu-22.04
+    name: build-cross-${{ matrix.config.target }}
 
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {target: arm,     toolchain: g++-arm-linux-gnueabi,       host: arm-linux-gnueabi,      qemu: arm     }
-          - {target: armhf,   toolchain: g++-arm-linux-gnueabihf,     host: arm-linux-gnueabihf,    qemu: arm     }
-          - {target: aarch64, toolchain: g++-aarch64-linux-gnu,       host: aarch64-linux-gnu,      qemu: aarch64 }
-          - {target: riscv64, toolchain: g++-riscv64-linux-gnu,       host: riscv64-linux-gnu,      qemu: riscv64 }
-          - {target: ppc,     toolchain: g++-powerpc-linux-gnu,       host: powerpc-linux-gnu,      qemu: ppc     }
-          - {target: ppc64,   toolchain: g++-powerpc64-linux-gnu,     host: powerpc64-linux-gnu,    qemu: ppc64   }
-          - {target: ppc64le, toolchain: g++-powerpc64le-linux-gnu,   host: powerpc64le-linux-gnu,  qemu: ppc64le }
-          - {target: s390x,   toolchain: g++-s390x-linux-gnu,         host: s390x-linux-gnu,        qemu: s390x   }
-          - {target: mips,    toolchain: g++-mips-linux-gnu,          host: mips-linux-gnu,         qemu: mips     }
-          - {target: mips64,  toolchain: g++-mips64-linux-gnuabi64,   host: mips64-linux-gnuabi64,  qemu: mips64   }
-          - {target: mipsel,  toolchain: g++-mipsel-linux-gnu,        host: mipsel-linux-gnu,       qemu: mipsel   }
-          - {target: mips64el,toolchain: g++-mips64el-linux-gnuabi64, host: mips64el-linux-gnuabi64,qemu: mips64el }
+          - {target: arm,      host: arm-linux-gnueabi,       qemu: arm,      gccver: 12 }
+          - {target: armhf,    host: arm-linux-gnueabihf,     qemu: arm,      gccver: 12 }
+          - {target: aarch64,  host: aarch64-linux-gnu,       qemu: aarch64,  gccver: 12 }
+          - {target: riscv64,  host: riscv64-linux-gnu,       qemu: riscv64,  gccver: 12 }
+          - {target: ppc,      host: powerpc-linux-gnu,       qemu: ppc,      gccver: 12 }
+          - {target: ppc64,    host: powerpc64-linux-gnu,     qemu: ppc64,    gccver: 12 }
+          - {target: ppc64le,  host: powerpc64le-linux-gnu,   qemu: ppc64le,  gccver: 12 }
+          - {target: s390x,    host: s390x-linux-gnu,         qemu: s390x,    gccver: 12 }
+          - {target: mips,     host: mips-linux-gnu,          qemu: mips,     gccver: 10 }
+          - {target: mips64,   host: mips64-linux-gnuabi64,   qemu: mips64,   gccver: 10 }
+          - {target: mipsel,   host: mipsel-linux-gnu,        qemu: mipsel,   gccver: 10 }
+          - {target: mips64el, host: mips64el-linux-gnuabi64, qemu: mips64el, gccver: 10 }
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install QEMU
         # this ensure install latest qemu on ubuntu, apt get version is old
         env:
           QEMU_SRC: "http://archive.ubuntu.com/ubuntu/pool/universe/q/qemu"
-          QEMU_VER: "qemu-user-static_4\\.2-.*_amd64.deb$"
+          QEMU_VER: "qemu-user-static_7\\.2.*_amd64.deb$"
         run: |
           DEB=`curl -s $QEMU_SRC/ | grep -o -E 'href="([^"#]+)"' | cut -d'"' -f2 | grep $QEMU_VER | tail -1`
           wget $QEMU_SRC/$DEB
           sudo dpkg -i $DEB
-      - name: Install ${{ matrix.config.toolchain }}
+
+      - name: Install ${{ matrix.config.host }} Toolchain
         run: |
           sudo apt update
-          sudo apt install ${{ matrix.config.toolchain }} -y
+          sudo apt install g++-${{ matrix.config.gccver }}-${{ matrix.config.host }} -y
+
       - name: Configure with ${{ matrix.config.cc }}
         run: |
           set -x
           autoreconf -i
           BUILD=x86_64-linux-gnu
-          ./configure --build=$BUILD --host=${{ matrix.config.host }} --with-testdriver=$(pwd)/scripts/qemu-test-driver
+          ./configure --build=$BUILD --host=${{ matrix.config.host }} --with-testdriver=$(pwd)/scripts/qemu-test-driver --enable-debug
+        env:
+          CC: ${{ matrix.config.host }}-gcc-${{ matrix.config.gccver }}
+          CXX: ${{ matrix.config.host }}-g++-${{ matrix.config.gccver }}
+
       - name: Build
         run: |
           make -j8
+        env:
+          CFLAGS: "-Wall -Wextra"
+
+      - name: ABI Check
+        run: |
+            cd tests && ./run-check-namespace
+
       - name: Test
         run: |
           set -x
@@ -123,6 +138,9 @@ jobs:
           ulimit -c unlimited
           CROSS_LIB="/usr/${{ matrix.config.host }}"
           make -j8 check LOG_DRIVER_FLAGS="--qemu-arch ${{ matrix.config.qemu }}" LDFLAGS="-L$CROSS_LIB/lib -static" QEMU_LD_PREFIX="$CROSS_LIB"
+        env:
+          UNW_DEBUG_LEVEL: 4
+
       - name: Show Logs
         if: ${{ failure() }}
         run: |

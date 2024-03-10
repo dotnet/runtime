@@ -13,8 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// Math helpers for generated code. The helpers marked with [RuntimeExport] and the type
     /// itself need to be public because they constitute a public contract with the .NET Native toolchain.
     /// </summary>
-    [CLSCompliant(false)]
-    public static class MathHelpers
+    internal static class MathHelpers
     {
 #if !TARGET_64BIT
         //
@@ -165,6 +164,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (j == 0)
                 return ThrowLngDivByZero();
+            else if (j == -1 && i == long.MinValue)
+                return ThrowLngOvf();
             else
                 return RhpLMod(i, j);
         }
@@ -190,7 +191,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (j == 0)
                 return ThrowLngDivByZero();
             else if (j == -1 && i == long.MinValue)
-                return ThrowLngArithExc();
+                return ThrowLngOvf();
             else
                 return RhpLDiv(i, j);
         }
@@ -205,12 +206,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static ulong ThrowULngDivByZero()
         {
             throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngArithExc()
-        {
-            throw new ArithmeticException();
         }
 #endif // TARGET_64BIT
 
@@ -296,7 +291,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (j == 0)
                 return ThrowIntDivByZero();
             else if (j == -1 && i == int.MinValue)
-                return ThrowIntArithExc();
+                return ThrowIntOvf();
             else
                 return RhpIDiv(i, j);
         }
@@ -321,6 +316,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (j == 0)
                 return ThrowIntDivByZero();
+            else if (j == -1 && i == int.MinValue)
+                return ThrowIntOvf();
             else
                 return RhpIMod(i, j);
         }
@@ -378,12 +375,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static uint ThrowUIntDivByZero()
         {
             throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ThrowIntArithExc()
-        {
-            throw new ArithmeticException();
         }
 #endif // TARGET_ARM
     }

@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration.Id);
 
-        private static readonly char[] s_comma = new[] { ',' };
+        private static readonly char[] s_comma = [','];
 
         public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
@@ -222,9 +222,9 @@ namespace System.Text.RegularExpressions.Generator
             // Generate the GeneratedRegex attribute syntax node with the specified parameters.
             SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
             {
-                ({ }, null, null) => new[] { patternValue },
-                ({ }, { }, null) => new[] { patternValue, regexOptionsValue },
-                ({ }, { }, { }) => new[] { patternValue, regexOptionsValue, cultureNameValue },
+                ({ }, null, null) => [patternValue],
+                ({ }, { }, null) => [patternValue, regexOptionsValue],
+                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
                 _ => Array.Empty<SyntaxNode>(),
             });
 

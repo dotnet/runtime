@@ -10,15 +10,17 @@ namespace SafeHandleTests
 {
     public class InvalidSafeHandleMarshallingTests
     {
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48084", TestRuntimes.Mono)]
         public static void RunTest()
         {
-            if (TestLibrary.Utilities.IsWindows)
+            if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
             {
                 // The interface marshaller is only available when COM interop is
                 // enabled. The interface marshaller is what initiates the COM
                 // interop system which is what subsequently defines defined exception
-                // type to throw - matches .NET Framework behavior. At present support
-                // is limited to Windows so we branch on that.
+                // type to throw - matches .NET Framework behavior.
                 Assert.Throws<InvalidOperationException>(() => MarshalSafeHandleAsInterface());
             }
             else

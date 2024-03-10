@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class BestFitMapping
 {
 

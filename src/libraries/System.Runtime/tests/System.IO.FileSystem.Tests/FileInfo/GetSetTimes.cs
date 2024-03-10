@@ -52,7 +52,7 @@ namespace System.IO.Tests
 
             if (!HasNonZeroNanoseconds(fileinfo.LastWriteTime))
             {
-                if (PlatformDetection.IsOSXLike)
+                if (PlatformDetection.IsApplePlatform)
                     return null;
 
                 DateTime dt = fileinfo.LastWriteTime;

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime
 {
-    static unsafe class IDynamicCastableSupport
+    internal static unsafe class IDynamicCastableSupport
     {
         [RuntimeExport("IDynamicCastableIsInterfaceImplemented")]
         internal static bool IDynamicCastableIsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwIfNotImplemented)
@@ -28,7 +28,7 @@ namespace Internal.Runtime
             {
                 ThrowInvalidOperationException(implType);
             }
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(new EETypePtr(implType), new EETypePtr(interfaceType), slot);
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(implType, interfaceType, slot);
             if (result == IntPtr.Zero)
             {
                 IDynamicCastableGetInterfaceImplementationFailure(instance, interfaceType, implType);

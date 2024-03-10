@@ -57,14 +57,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append (value);
 		}
 
-		public virtual void LinkFromAssembly (string fileName)
+		public virtual void RootAssemblyEntryPoint (string fileName)
 		{
 			Append ("-a");
 			Append (fileName);
 			Append ("entrypoint");
 		}
 
-		public virtual void LinkFromPublicAndFamily (string fileName)
+		public virtual void RootAssemblyVisible (string fileName)
 		{
 #if NETCOREAPP
 			Append ("-a");
@@ -74,6 +74,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append ("-r");
 			Append (fileName);
 #endif
+		}
+
+		public virtual void RootAssembly (string fileName)
+		{
+			Append ("-a");
+			Append (fileName);
 		}
 
 		public virtual void IgnoreDescriptors (bool value)
@@ -179,9 +185,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)
 		{
 			if (_metadataProvider.LinkPublicAndFamily ())
-				LinkFromPublicAndFamily (inputAssemblyPath.ToString ());
+				RootAssemblyVisible (inputAssemblyPath.ToString ());
+			else if (_metadataProvider.LinkAll ())
+				RootAssembly (inputAssemblyPath.ToString ());
 			else
-				LinkFromAssembly (inputAssemblyPath.ToString ());
+				RootAssemblyEntryPoint (inputAssemblyPath.ToString ());
 		}
 
 		public virtual void ProcessOptions (TestCaseLinkerOptions options)

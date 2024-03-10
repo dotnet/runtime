@@ -5,7 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public class ReversePInvoke_MashalArrayByRef_AsManagedTest
+namespace SizeParamIndex.ReversePInvoke;
+public class PassingByRefTest
 {
     public static int arrSize = 10;
 
@@ -208,6 +209,9 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34196", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/167", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try{

@@ -109,7 +109,26 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private int _disposed;
 
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
-    private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
+    private readonly ResettableValueTaskSource _shutdownTcs = new ResettableValueTaskSource()
+    {
+        CancellationAction = target =>
+        {
+            try
+            {
+                if (target is QuicConnection connection)
+                {
+                    // The OCE will be propagated through stored CancellationToken in ResettableValueTaskSource.
+                    connection._shutdownTcs.TrySetResult();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // We collided with a Dispose in another thread. This can happen
+                // when using CancellationTokenSource.CancelAfter.
+                // Ignore the exception
+            }
+        }
+    };
 
     private readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
 
@@ -467,7 +486,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
+        if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
             unsafe
             {
@@ -520,7 +539,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
         _shutdownTokenSource.Cancel();
-        _shutdownTcs.TrySetResult();
+        _shutdownTcs.TrySetResult(final: true);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
@@ -552,15 +571,20 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
-        try
+        //
+        // The certificate validation is an expensive operation and we don't want to delay MsQuic
+        // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
+        // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
+        // worker threads.
+        //
+
+        var task = _sslConnectionOptions.StartAsyncCertificateValidation((IntPtr)data.Certificate, (IntPtr)data.Chain);
+        if (task.IsCompletedSuccessfully)
         {
-            return _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
+            return task.Result ? QUIC_STATUS_SUCCESS : QUIC_STATUS_BAD_CERTIFICATE;
         }
-        catch (Exception ex)
-        {
-            _connectedTcs.TrySetException(ex);
-            return QUIC_STATUS_HANDSHAKE_FAILURE;
-        }
+
+        return QUIC_STATUS_PENDING;
     }
 
     private unsafe int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
@@ -626,7 +650,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         // Check if the connection has been shut down and if not, shut it down.
-        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
+        if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this))
         {
             unsafe
             {
@@ -636,9 +660,19 @@ public sealed partial class QuicConnection : IAsyncDisposable
                     (ulong)_defaultCloseErrorCode);
             }
         }
+        else if (!valueTask.IsCompletedSuccessfully)
+        {
+            unsafe
+            {
+                MsQuicApi.Api.ConnectionShutdown(
+                    _handle,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
+                    (ulong)_defaultCloseErrorCode);
+            }
+        }
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
-        await valueTask.ConfigureAwait(false);
+        await _shutdownTcs.GetFinalTask(this).ConfigureAwait(false);
         Debug.Assert(_connectedTcs.IsCompleted);
         _handle.Dispose();
         _shutdownTokenSource.Dispose();

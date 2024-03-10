@@ -96,7 +96,11 @@ ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 #define LazyMachState_captureX19_X29 MachState__captureX19_X29
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureX19_X29 == offsetof(LazyMachState, captureX19_X29))
 
+#ifdef __APPLE__
+#define LazyMachState_captureSp     (MachState__isValid+8+88) // padding for alignment
+#else // __APPLE__
 #define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
+#endif // __APPLE
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
 
 #define LazyMachState_captureIp     (LazyMachState_captureSp+8)
@@ -129,7 +133,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
 
 #define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define ArrayBase__m_NumComponents     0x8
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));

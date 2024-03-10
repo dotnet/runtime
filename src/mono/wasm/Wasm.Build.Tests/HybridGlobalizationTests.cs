@@ -22,7 +22,6 @@ namespace Wasm.Build.Tests
                 .WithRunHosts(host)
                 .UnwrapItemsAsArrays();
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94212")]
         [Theory]
         [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]

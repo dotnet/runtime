@@ -87,7 +87,8 @@ namespace Mono.Linker.Steps
 				Context.MetadataTrimming = MetadataTrimming.None;
 				break;
 			case AssemblyRootMode.AllMembers:
-				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);
+				Annotations.SetRootAssembly (assembly);
+				Annotations.Mark (assembly.MainModule, di, origin);
 				return;
 			}
 		}

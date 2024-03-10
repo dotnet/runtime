@@ -10,7 +10,7 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoNames
     {
-        private static bool SupportFullIcuResources => PlatformDetection.IsNotMobile && PlatformDetection.IsIcuGlobalization;
+        private static bool SupportFullIcuResources => (PlatformDetection.IsNotMobile && PlatformDetection.IsIcuGlobalization) || PlatformDetection.IsHybridGlobalizationOnApplePlatform;
 
         [ConditionalTheory(nameof(SupportFullIcuResources))]
         [InlineData("en", "en", "English", "English")]

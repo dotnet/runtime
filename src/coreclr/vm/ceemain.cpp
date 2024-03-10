@@ -162,6 +162,7 @@
 #include "disassembler.h"
 #include "jithost.h"
 #include "pgo.h"
+#include "pendingload.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -623,6 +624,8 @@ void EEStartupHelper()
         // This needs to be done before the EE has started
         InitializeStartupFlags();
 
+        PendingTypeLoadTable::Init();
+
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         Thread::StaticInitialize();
@@ -633,6 +636,7 @@ void EEStartupHelper()
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
         OnStackReplacementManager::StaticInitialize();
+        MethodTable::InitMethodDataCache();
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
@@ -864,8 +868,6 @@ void EEStartupHelper()
 
         // Set up the sync block
         SyncBlockCache::Start();
-
-        StackwalkCache::Init();
 
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
@@ -1753,9 +1755,9 @@ struct TlsDestructionMonitor
                     GCX_COOP_NO_DTOR_END();
                 }
                 thread->DetachThread(TRUE);
-                DeleteThreadLocalMemory();
             }
 
+            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1787,16 +1789,11 @@ void DeleteThreadLocalMemory()
     t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
     t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
 
-    if (t_ThreadStatics.NonGCThreadStaticBlocks != nullptr)
-    {
-        delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-        t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-    }
-    if (t_ThreadStatics.GCThreadStaticBlocks != nullptr)
-    {
-        delete[] t_ThreadStatics.GCThreadStaticBlocks;
-        t_ThreadStatics.GCThreadStaticBlocks = nullptr;
-    }
+    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
+    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
+
+    delete[] t_ThreadStatics.GCThreadStaticBlocks;
+    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED

@@ -137,7 +137,28 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // We're now left-to-right only and looking for sets.
+            // We're now left-to-right only and looking for multiple prefixes and/or sets.
+
+            // If there are multiple leading strings, we can search for any of them.
+            if (compiled)
+            {
+                if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
+                {
+                    LeadingPrefixes = caseInsensitivePrefixes;
+                    FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
+                    return;
+                }
+
+                // TODO: While some benchmarks benefit from this significantly, others regressed a bit (in particular those with few
+                //       matches). Before enabling this, we need to investigate the performance impact on real-world scenarios,
+                //       and see if there are ways to reduce the impact.
+                //if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) is { Length: > 1 } caseSensitivePrefixes)
+                //{
+                //    LeadingPrefixes = caseSensitivePrefixes;
+                //    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
+                //    return;
+                //}
+            }
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
             List<FixedDistanceSet>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
@@ -244,6 +265,9 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
         public string LeadingPrefix { get; } = string.Empty;
 
+        /// <summary>Gets the leading prefixes.  May be an empty array.</summary>
+        public string[] LeadingPrefixes { get; } = Array.Empty<string>();
+
         /// <summary>When in fixed distance literal mode, gets the literal and how far it is from the start of the pattern.</summary>
         public (char Char, string? String, int Distance) FixedDistanceLiteral { get; }
 
@@ -252,23 +276,17 @@ namespace System.Text.RegularExpressions
         public List<FixedDistanceSet>? FixedDistanceSets { get; }
 
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
-        public struct FixedDistanceSet
+        public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-            public FixedDistanceSet(char[]? chars, string set, int distance)
-            {
-                Chars = chars;
-                Set = set;
-                Distance = distance;
-            }
 
             /// <summary>The character class description.</summary>
-            public string Set;
+            public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
             public bool Negated;
             /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
-            public char[]? Chars;
+            public char[]? Chars = chars;
             /// <summary>The distance of the set from the beginning of the match.</summary>
-            public int Distance;
+            public int Distance = distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
             public (char LowInclusive, char HighInclusive)? Range;
         }
@@ -773,10 +791,16 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
+                // Not supported in the interpreter, but we could end up here for patterns so complex the compiler gave up on them.
+
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
+                    return true;
+
                 // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
 
                 default:
-                    Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch);
+                    Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch, $"Unexpected FindMode {FindMode}");
                     return true;
             }
         }
@@ -815,6 +839,11 @@ namespace System.Text.RegularExpressions
         LeadingString_RightToLeft,
         /// <summary>A multi-character ordinal case-insensitive substring at the beginning of the pattern.</summary>
         LeadingString_OrdinalIgnoreCase_LeftToRight,
+
+        /// <summary>Multiple leading prefix strings</summary>
+        LeadingStrings_LeftToRight,
+        /// <summary>Multiple leading ordinal case-insensitive prefix strings</summary>
+        LeadingStrings_OrdinalIgnoreCase_LeftToRight,
 
         /// <summary>A set starting the pattern.</summary>
         LeadingSet_LeftToRight,

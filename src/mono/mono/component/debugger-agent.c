@@ -4124,7 +4124,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		if (assembly) {
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
-			if (tls->invoke == NULL) {
+			if (!CHECK_ICORDBG (TRUE) || tls->invoke == NULL) {
 				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
 			} else {
 				assembly_load(prof, assembly); //send later
@@ -5010,7 +5010,7 @@ buffer_add_fixed_array (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain
 {
 	buffer_add_byte (buf, VALUE_TYPE_ID_FIXED_ARRAY);
 	buffer_add_byte (buf, t->type);
-	buffer_add_int (buf, len_fixed_array );
+	buffer_add_int (buf, len_fixed_array);
 	for (gint32 i = 0; i < len_fixed_array; i++) {
 		switch (t->type) {
 			case MONO_TYPE_BOOLEAN:
@@ -5459,6 +5459,53 @@ decode_fixed_size_array_internal (MonoType *t, int type, MonoDomain *domain, gui
 	return err;
 }
 
+
+static int 
+decode_fixed_size_array_compute_size_internal (MonoType *t, int type, MonoDomain *domain, guint8 *buf, guint8 **endbuf, guint8 *limit)
+{
+	int ret = 0;
+	int fixedSizeLen = 1;
+	int newType = MONO_TYPE_END;
+	if (CHECK_PROTOCOL_VERSION (2, 53)) {
+		newType = decode_byte (buf, &buf, limit);
+		fixedSizeLen = decode_int (buf, &buf, limit);
+		//t->type = newType;
+	}
+	for (int i = 0 ; i < fixedSizeLen; i++) {
+		switch (newType) {
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+				decode_int (buf, &buf, limit);
+				ret += sizeof(guint8);
+				break;
+			case MONO_TYPE_CHAR:
+				decode_int (buf, &buf, limit);
+				ret += sizeof(gunichar2);
+				break;
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+				decode_int (buf, &buf, limit);
+				ret += sizeof(guint16);
+				break;
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_R4:
+				decode_int (buf, &buf, limit);
+				ret += sizeof(guint32);
+				break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:	
+			case MONO_TYPE_R8:
+				decode_long (buf, &buf, limit);
+				ret += sizeof(guint64);
+				break;
+		}
+	}
+	*endbuf = buf;
+	return ret;
+}
+
 static int
 decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean from_by_ref_value_type)
 {
@@ -5531,7 +5578,6 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	if (type == 0)
 		type = decode_byte (buf, &buf, limit);
 	int ret = 0;
-	ErrorCode err;
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
@@ -5548,7 +5594,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		goto end;
 	}
 	if (type == VALUE_TYPE_ID_FIXED_ARRAY && t->type != MONO_TYPE_VALUETYPE) {
-		//decode_fixed_size_array_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+		ret += decode_fixed_size_array_compute_size_internal (t, type, domain, buf, &buf, limit);
 		goto end;
 	}
 	switch (t->type) {
@@ -5619,13 +5665,6 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 					decode_int (buf, &buf, limit); //not used
 				}
 			} else if (type == MONO_TYPE_VALUETYPE) {
-				MonoDomain *d;
-				decode_byte (buf, &buf, limit);
-				if (CHECK_PROTOCOL_VERSION(2, 61))
-					decode_byte (buf, &buf, limit); //ignore is boxed
-				if (CHECK_PROTOCOL_VERSION(2, 65))
-					decode_int (buf, &buf, limit); //ignore inline array
-				decode_typeid (buf, &buf, limit, &d, &err);
 				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
 			} else {
 				goto end;
@@ -5673,7 +5712,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		return ERR_INVALID_ARGUMENT;
 	}
 	if (type == VALUE_TYPE_ID_FIXED_ARRAY && t->type != MONO_TYPE_VALUETYPE) {
-		decode_fixed_size_array_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+		decode_fixed_size_array_internal (t, type, domain, addr, buf, &buf, limit, check_field_datatype);
+		*endbuf = buf;
 		return ERR_NONE;
 	}
 

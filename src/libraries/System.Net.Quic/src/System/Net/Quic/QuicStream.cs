@@ -613,6 +613,7 @@ public sealed partial class QuicStream
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);
         }
+        _startedTcs.TrySetResult();
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }

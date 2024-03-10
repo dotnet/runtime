@@ -15,13 +15,11 @@ namespace System.Reflection
     {
         private readonly MethodBaseInvoker _methodBaseInvoker;
         private readonly int _parameterCount;
-        private readonly RuntimeTypeHandle _declaringTypeHandle;
 
         internal ConstructorInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
             _parameterCount = constructor.GetParametersAsSpan().Length;
-            _declaringTypeHandle = constructor.DeclaringType.TypeHandle;
         }
 
         public static ConstructorInvoker Create(ConstructorInfo constructor)
@@ -42,7 +40,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>());
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             col.CopyTo(recipients, 0);
 
             string[] actualIssuers = recipients.Select(r => r.RecipientIdentifier.Value).Cast<X509IssuerSerial>().Select(xis => xis.IssuerName).OrderBy(s => s).ToArray();
-            Assert.Equal<string>(expectedIssuers, actualIssuers);
+            Assert.Equal(expectedIssuers, actualIssuers);
         }
 
         [Fact]

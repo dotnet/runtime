@@ -199,7 +199,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-TR", DayOfWeek.Monday };
             yield return new object[] { "uk-UA", DayOfWeek.Monday };
             yield return new object[] { "vi-VN", DayOfWeek.Monday };
-            yield return new object[] { "zh-CN", DayOfWeek.Monday  };
+            yield return new object[] { "zh-CN", DayOfWeek.Monday };
             yield return new object[] { "zh-Hans-HK", DayOfWeek.Sunday };
             yield return new object[] { "zh-SG", DayOfWeek.Sunday };
             yield return new object[] { "zh-HK", DayOfWeek.Sunday };

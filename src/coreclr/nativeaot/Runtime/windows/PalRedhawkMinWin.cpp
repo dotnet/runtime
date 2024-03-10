@@ -258,7 +258,7 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
 {
 #ifdef XBOX_ONE
     return TRUE;
@@ -543,7 +543,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         pThread->SetActivationPending(false);
 
         DWORD lastError = GetLastError();
-        if (lastError != ERROR_INVALID_PARAMETER)
+        if (lastError != ERROR_INVALID_PARAMETER && lastError != ERROR_NOT_SUPPORTED)
         {
             // An unexpected failure has happened. It is a concern.
             ASSERT_UNCONDITIONALLY("Failed to queue an APC for unusual reason.");
