@@ -5291,8 +5291,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(block->GetTargetEdge());
 
-        constexpr bool allowEdits = true;
-        for (BasicBlock* const predBlock : block->PredBlocks<allowEdits>())
+        for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
             /* change all jumps/refs to the removed block */
             switch (predBlock->GetKind())

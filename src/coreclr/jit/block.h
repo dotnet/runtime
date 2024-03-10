@@ -1531,10 +1531,18 @@ public:
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
     //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
     //
-    template <bool            allowEdits = false>
-    PredBlockList<allowEdits> PredBlocks() const
+    PredBlockList<false> PredBlocks() const
     {
-        return PredBlockList<allowEdits>(bbPreds);
+        return PredBlockList<false>(bbPreds);
+    }
+
+    // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
+    //    for (BasicBlock* const predBlock : block->PredBlocksList()) ...
+    // This iterator tolerates modifications to bbPreds.
+    //
+    PredBlockList<true> PredBlocksEditing() const
+    {
+        return PredBlockList<true>(bbPreds);
     }
 
     // Pred list maintenance

@@ -2002,8 +2002,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        constexpr bool allowEdits = true;
-        for (BasicBlock* const predBlock : nonCanonicalBlock->PredBlocks<allowEdits>())
+        for (BasicBlock* const predBlock : nonCanonicalBlock->PredBlocksEditing())
         {
             switch (predBlock->GetKind())
             {
