@@ -164,19 +164,30 @@ RhpLRsz ENDP
 ;; Exit:
 ;;    EDX:EAX - product of multiplier and multiplicand
 ;;
-;; NOTE: Adapted from clang generated code
+;; NOTE: Adapted from JIT_LMul in CoreCLR
 ;;
 RhpLMul PROC public
-    push    esi
-    mov     ecx, dword ptr [esp + 16]
-    mov     esi, dword ptr [esp + 8]
-    mov     eax, ecx
-    mul     esi
-    imul    ecx, dword ptr [esp + 12]
-    add     edx, ecx
-    imul    esi, dword ptr [esp + 20]
-    add     edx, esi
-    pop     esi
+    mov     eax, dword ptr [esp + 8]   ; AHI
+    mov     ecx, dword ptr [esp + 16]  ; BHI
+    or      ecx, eax                   ; test for both hiwords zero.
+    mov     ecx, [esp + 12]            ; BLO
+    jnz     LMul_hard                  ; both are zero, just mult ALO and BLO
+
+    mov     eax, [esp + 4]
+    mul     ecx
+    ret     16
+
+LMul_hard:
+    push    ebx
+    mul     ecx                        ; eax has AHI, ecx has BLO, so AHI * BLO
+    mov     ebx, eax                   ; save result
+    mov     eax, dword ptr [esp + 8]   ; ALO
+    mul     dword ptr [esp + 20]       ; ALO * BHI
+    add     ebx, eax                   ; ebx = ((ALO * BHI) + (AHI * BLO))
+    mov     eax, dword ptr [esp + 8]   ; ALO   ;ecx = BLO
+    mul     ecx                        ; so edx:eax = ALO*BLO
+    add     edx, ebx                   ; now edx has all the LO*HI stuff
+    pop     ebx
     ret     16
 RhpLMul ENDP
 
