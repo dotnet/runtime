@@ -115,8 +115,7 @@ internal static partial class Interop
                 return new DriveInfo(SysFsCgroupFileSystemPath).DriveFormat switch
                 {
                     "cgroup2fs" => CGroupVersion.CGroup2,
-                    "tmpfs" => CGroupVersion.CGroup1,
-                    _ => CGroupVersion.None,
+                    _ => CGroupVersion.CGroup1,
                 };
             }
             catch (Exception ex) when (ex is DriveNotFoundException || ex is ArgumentException)
