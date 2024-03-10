@@ -170,10 +170,10 @@ RhpLMul PROC public
     mov     eax, dword ptr [esp + 8]   ; AHI
     mov     ecx, dword ptr [esp + 16]  ; BHI
     or      ecx, eax                   ; test for both hiwords zero.
-    mov     ecx, [esp + 12]            ; BLO
+    mov     ecx, dword ptr [esp + 12]  ; BLO
     jnz     LMul_hard                  ; both are zero, just mult ALO and BLO
 
-    mov     eax, [esp + 4]
+    mov     eax, dword ptr [esp + 4]
     mul     ecx
     ret     16
 
