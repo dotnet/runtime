@@ -625,7 +625,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 {
     PCODE uControlPc;
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#if defined(_DEBUG) && defined(TARGET_WINDOWS) && !defined(TARGET_X86)
     UINT_PTR uImageBase;
 
     PT_RUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
@@ -633,7 +633,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
                                                                 NULL);
 
     CONSISTENCY_CHECK(NULL == pFunctionEntry);
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG && TARGET_WINDOWS && !TARGET_X86
 
 #if defined(TARGET_AMD64)
 

@@ -2599,8 +2599,12 @@ struct ReversePInvokeFrame
 {
     Thread* currentThread;
     MethodDesc* pMD;
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     FrameHandlerExRecord record;
+#else
+    EXCEPTION_REGISTRATION_RECORD m_ExReg;
+#endif
 #endif
 };
 
