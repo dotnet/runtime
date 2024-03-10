@@ -641,6 +641,8 @@
 
     <PropertyGroup>
       <CrossgenDir>$(__BinDir)\$(BuildArchitecture)</CrossgenDir>
+      <Crossgen2Path>$(CrossgenDir)\crossgen2\tools\crossgen2</Crossgen2Path>
+      <Crossgen2Path Condition="'$(TargetOS)' == 'windows'">$(Crossgen2Path).exe</Crossgen2Path>
 
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
 
@@ -661,7 +663,7 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\tools\crossgen2.dll"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(Crossgen2Path)"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />
