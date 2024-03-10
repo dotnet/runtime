@@ -983,7 +983,6 @@ namespace System.Net.Sockets
 
         internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)
         {
-        Console.WriteLine("FinishOperationAsyncSuccess called on {0} with {1}", GetHashCode(), bytesTransferred);
             ExecutionContext? context = _context; // store context before it's cleared as part of finishing the operation
 
             FinishOperationSyncSuccess(bytesTransferred, flags);

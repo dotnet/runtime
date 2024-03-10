@@ -67,28 +67,24 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        //private void ConnectCompletionCallback(SocketError socketError)
         private void ConnectCompletionCallback(int bytesTransferred, Memory<byte> socketAddress, SocketFlags receivedFlags, SocketError socketError)
         {
-            Console.WriteLine("ConnectCompletionCallback: with {0}", bytesTransferred);
-            Console.WriteLine(new StackTrace(true));
             CompletionCallback(bytesTransferred, SocketFlags.None, socketError);
         }
 
         internal unsafe SocketError DoOperationConnectEx(Socket _ /*socket*/, SafeSocketHandle handle)
         {
-            Console.WriteLine("DoOperationConnectEx with {0} bytes of data", _buffer.Length);
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer, out int sentBytes);
             if (socketError != SocketError.IOPending)
             {
-                FinishOperationSync(socketError, 0, SocketFlags.None);
+                FinishOperationSync(socketError, sentBytes, SocketFlags.None);
             }
             return socketError;
         }
 
         internal unsafe SocketError DoOperationConnect(SafeSocketHandle handle)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, Memory<byte>.Empty);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, Memory<byte>.Empty, out int _);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, 0, SocketFlags.None);

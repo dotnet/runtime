@@ -654,10 +654,6 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             sent = 0;
 
-Console.WriteLine("TryStartConnect {0}  {1}", tfo, socket.TfoEnabled);
-Console.WriteLine("TryStartConnect  called for TFO {0} {1} ", socket.TfoEnabled, socket.GetHashCode());
-
-
             if (socket.IsDisconnected)
             {
                 errorCode = SocketError.IsConnected;
@@ -1415,12 +1411,6 @@ Console.WriteLine("TryStartConnect  called for TFO {0} {1} ", socket.TfoEnabled,
         {
             Interop.Error err;
 
-           // if (optionLevel == SocketOptionLevel.Tcp && (int)optionName == 15)
-          //  {
-          //          handle.TfoEnabled = optionValue != 0;
-         //           //return SocketError.Success;
-          //  }
-Console.WriteLine("SetSockOpt called fopr {0} {1}", optionLevel, optionName);
             if (optionLevel == SocketOptionLevel.Socket)
             {
                 if (optionName == SocketOptionName.ReceiveTimeout)
@@ -1476,9 +1466,6 @@ Console.WriteLine("SetSockOpt called fopr {0} {1}", optionLevel, optionName);
             if (optionLevel == SocketOptionLevel.Tcp && (int)optionName == 15)
             {
                 handle.TfoEnabled = optionValue != 0;
-
-Console.WriteLine("SetSockOpt called for TFO {0} {1} {2}", handle.TfoEnabled, optionValue, handle.GetHashCode());
-
                 // Silently ignore errors - TFO is best effor and it may be disabled by configuration or not
                 // supported by OS.
                 err = Interop.Error.SUCCESS;

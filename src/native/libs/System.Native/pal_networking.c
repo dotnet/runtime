@@ -1595,10 +1595,8 @@ int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t s
         return Error_EFAULT;
     }
 
+    int fd = ToFileDescriptor(socket);
 #if HAVE_CONNECTX
-
-    printf("%s:%d: called!!!! %p %d tfoEnabled %d\n", __func__, __LINE__, data, dataLen, tfo);
-
     struct sa_endpoints eps;
     struct iovec iovec;
     int flags = 0;
@@ -1608,33 +1606,26 @@ int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t s
     eps.sae_dstaddr = (struct sockaddr *)socketAddress;
     eps.sae_dstaddrlen = socketAddressLen;
 
-    int fd = ToFileDescriptor(socket);
-    socklen_t len = 4;
-    int enabled = 0;
-    int err;
-
-    if ((err = getsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &enabled, &len)) == 0)
-    {
-        printf("%s:%d: TCP_FASTOPEN is %d\n", __func__, __LINE__, enabled);
-    }
-    printf("%s:%d: TCP_FASTOPEN is %d %d %s\n", __func__, __LINE__, err, enabled, strerror(errno));
-    err = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &enabled, len);
-    printf("%s:%d: TCP_FASTOPEN is %d %d %s\n", __func__, __LINE__, err, enabled, strerror(errno));
-
     size_t length = 0;
     while ((err = connectx(fd, &eps, SAE_ASSOCID_ANY, tfo != 0 ? CONNECT_DATA_IDEMPOTENT : 0, dataLen > 0 ? &iovec : NULL, dataLen > 0 ? 1 : 0, &length, NULL)) < 0 && errno == EINTR);
     *sent = (int)length;
-    printf("%s:%d: sent %d\n", __func__, __LINE__, *sent);
 
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 #else
 #ifdef TCP_FASTOPEN_CONNECT
     int enabled = 1;
     socklen_t len = sizeof(enabled);
-    err = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &enabled, len);
-    printf("%s:%d: TCP_FASTOPEN_CONNECT is %d %d %s\n", __func__, __LINE__, err, enabled, strerror(errno));
-#endif
 
+    if (tfo)
+    {
+        // This will either success and connect will finish without sending SYN until we write to so the socket.
+        // If this is not available we simply connect and write provided data afterwards.
+        setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &enabled, len);
+    }
+#endif
+    (void*)data;
+    (void)dataLen;
+    (void)tfo;
     sent = 0;
     return SystemNative_Connect(socket, socketAddress, socketAddressLen);
 #endif
