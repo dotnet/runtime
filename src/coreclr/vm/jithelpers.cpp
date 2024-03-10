@@ -378,12 +378,6 @@ HCIMPLEND
 
 /*********************************************************************/
 // needed for ARM and x86
-HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
-{
-    FCALL_CONTRACT;
-    return (double)val;
-}
-HCIMPLEND
 
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {

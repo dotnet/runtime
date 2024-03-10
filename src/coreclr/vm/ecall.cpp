@@ -165,6 +165,10 @@ void ECall::PopulateManagedHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
 
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__LONG_TO_DOUBLE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_LNG2DBL, pDest);
+
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ULONG_TO_DOUBLE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ULNG2DBL, pDest);

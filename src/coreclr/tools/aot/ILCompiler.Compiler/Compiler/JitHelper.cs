@@ -171,6 +171,9 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ULongMultiplyOverflow", null);
                     break;
 
+                case ReadyToRunHelper.Lng2Dbl:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("LongToDouble", null);
+                    break;
                 case ReadyToRunHelper.ULng2Dbl:
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ULongToDouble", null);
                     break;
@@ -215,9 +218,6 @@ namespace ILCompiler
                         new MethodSignature(MethodSignatureFlags.Static, 0, floatType, [floatType]));
                     break;
 
-                case ReadyToRunHelper.Lng2Dbl:
-                    mangledName = "RhpLng2Dbl";
-                    break;
                 case ReadyToRunHelper.Dbl2Lng:
                     mangledName = "RhpDbl2Lng";
                     break;

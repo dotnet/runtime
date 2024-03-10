@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -1613,13 +1614,29 @@ namespace System
             return 0;
         }
 
+        private static ref double DoubleConversionTable => ref MemoryMarshal.GetReference([0.0, 4294967296.0]);
+
+        private static double LongToDouble(long val)
+        {
+            uint upper = (uint)(val >>> 32);
+            uint lower = (uint)val;
+            double a = (int)upper;
+            double b = (int)lower;
+            b += Unsafe.Add(ref DoubleConversionTable, lower >> 31);
+            // todo: check if https://github.com/dotnet/runtime/issues/98053 will be useful here
+            return a * Unsafe.Add(ref DoubleConversionTable, 1U) + b;
+        }
+
         private static double ULongToDouble(ulong val)
         {
-            double conv = (long)val;
-            if (conv < 0)
-                conv += 4294967296.0 * 4294967296.0; // add 2^64
-            Debug.Assert(conv >= 0);
-            return conv;
+            uint upper = (uint)(val >> 32);
+            uint lower = (uint)val;
+            double a = (int)upper;
+            double b = (int)lower;
+            a += Unsafe.Add(ref DoubleConversionTable, upper >> 31);
+            b += Unsafe.Add(ref DoubleConversionTable, lower >> 31);
+            // todo: check if https://github.com/dotnet/runtime/issues/98053 will be useful here
+            return a * Unsafe.Add(ref DoubleConversionTable, 1U) + b;
         }
 
         private static ulong DoubleToULong(double val)

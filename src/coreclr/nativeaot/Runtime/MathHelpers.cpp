@@ -86,9 +86,4 @@ EXTERN_C int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
 {
     return (int64_t)val;
 }
-
-EXTERN_C double REDHAWK_CALLCONV RhpLng2Dbl(int64_t val)
-{
-    return (double)val;
-}
 #endif // HOST_ARM

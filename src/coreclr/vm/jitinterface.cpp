@@ -10695,6 +10695,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LNG2DBL ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULNG2DBL ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT_OVF ||

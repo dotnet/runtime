@@ -1303,6 +1303,7 @@ namespace Internal.IL
                     break;
                 case WellKnownType.Single:
                 case WellKnownType.Double:
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Lng2Dbl), "conv_r");
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULng2Dbl), "conv_r");
                     break;
             }
