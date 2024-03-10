@@ -155,8 +155,7 @@ namespace System.Runtime.Loader
             {
                 if ((dwRefOrDefFlags & CorAssemblyFlags.afPublicKey) != 0)
                 {
-                    byte[]? publicKeyToken = AssemblyNameHelpers.ComputePublicKeyToken(new ReadOnlySpan<byte>(pvPublicKeyToken, (int)dwPublicKeyToken));
-                    Debug.Assert(publicKeyToken != null);
+                    byte[] publicKeyToken = AssemblyNameHelpers.ComputePublicKeyToken(new ReadOnlySpan<byte>(pvPublicKeyToken, (int)dwPublicKeyToken));
 
                     PublicKeyOrTokenBLOB = publicKeyToken;
                 }

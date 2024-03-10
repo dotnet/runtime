@@ -8,13 +8,18 @@ namespace System.Reflection
 {
     internal static partial class AssemblyNameHelpers
     {
-        public static byte[]? ComputePublicKeyToken(ReadOnlySpan<byte> publicKey)
+        public static byte[]? ComputePublicKeyToken(byte[]? publicKey)
         {
-            if (publicKey == default)
+            if (publicKey is null)
                 return null;
 
+            return ComputePublicKeyToken(publicKey.AsSpan());
+        }
+
+        public static byte[] ComputePublicKeyToken(ReadOnlySpan<byte> publicKey)
+        {
             if (publicKey.Length == 0)
-                return Array.Empty<byte>();
+                return [];
 
             if (!IsValidPublicKey(publicKey))
                 throw new SecurityException(SR.Security_InvalidAssemblyPublicKey);
