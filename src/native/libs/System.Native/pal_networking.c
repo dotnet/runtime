@@ -1607,6 +1607,7 @@ int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t s
     eps.sae_dstaddrlen = socketAddressLen;
 
     size_t length = 0;
+    int err;
     while ((err = connectx(fd, &eps, SAE_ASSOCID_ANY, tfo != 0 ? CONNECT_DATA_IDEMPOTENT : 0, dataLen > 0 ? &iovec : NULL, dataLen > 0 ? 1 : 0, &length, NULL)) < 0 && errno == EINTR);
     *sent = (int)length;
 
