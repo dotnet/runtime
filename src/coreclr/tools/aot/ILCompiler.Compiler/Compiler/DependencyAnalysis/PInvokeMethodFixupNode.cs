@@ -237,6 +237,10 @@ namespace ILCompiler.DependencyAnalysis
                 sb.Append("__");
                 sb.Append(CharSetMangling.ToString());
             }
+            if (SignatureBytes >= 0)
+            {
+                sb.Append($"@{SignatureBytes}");
+            }
         }
     }
 }
