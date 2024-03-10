@@ -1980,17 +1980,10 @@ namespace System.Net.Sockets
             }
         }
 
-        //public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
-        //{
-        //    bytesSent = 0;
-        //    return SendToAsync(buffer, offset, count, flags, socketAddress, ref bytesSent, callback, cancellationToken);
-        //}
-
         public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, ref int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
-            //bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
