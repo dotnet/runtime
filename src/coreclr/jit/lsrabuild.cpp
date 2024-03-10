@@ -1906,7 +1906,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
 #endif // TARGET_ARM64
                 {
                     newRefPosition->registerAssignment =
-                        getConstrainedRegMask(newRefPosition, oldAssignment, calleeSaveMask, minRegCountForRef);
+                        getConstrainedRegMask(newRefPosition, interval->registerType, oldAssignment, calleeSaveMask, minRegCountForRef);
                 }
 
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
@@ -2304,8 +2304,8 @@ void           LinearScan::buildIntervals()
     RegState* floatRegState                 = &compiler->codeGen->floatRegState;
     intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
     floatRegState->rsCalleeRegArgMaskLiveIn = RBM_NONE;
-    regsInUseThisLocation                   = RBM_NONE;
-    regsInUseNextLocation                   = RBM_NONE;
+    regsInUseThisLocation                   = AllRegsMask();
+    regsInUseNextLocation                   = AllRegsMask();
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
@@ -2817,18 +2817,17 @@ void           LinearScan::buildIntervals()
     needNonIntegerRegisters |= compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
     {
-        availableRegCount = REG_INT_COUNT;
+        availableRegCount   = REG_INT_COUNT;
+        availableFloatRegs  = RBM_NONE;
+        availableDoubleRegs = RBM_NONE;
+        //availableMaskRegs   = RBM_NONE; // Is this also needed?
     }
 
-    if (availableRegCount < (sizeof(regMaskMixed) * 8))
-    {
-        // Mask out the bits that are between 64 ~ availableRegCount
-        actualRegistersMask = (1ULL << availableRegCount) - 1;
-    }
-    else
-    {
-        actualRegistersMask = ~RBM_NONE;
-    }
+    actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs
+#ifdef HAS_PREDICATE_REGS
+        , availableMaskRegs
+#endif // HAS_PREDICATE_REGS
+    );
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited

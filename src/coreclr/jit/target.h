@@ -200,6 +200,9 @@ enum _regMask_enum : unsigned
 
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
 #define HAS_PREDICATE_REGS
+#define REGISTER_TYPE_COUNT 3
+#else
+#define REGISTER_TYPE_COUNT 2
 #endif
 
 /*****************************************************************************/
@@ -320,6 +323,15 @@ typedef struct _regMaskAll
 #endif
     }
 
+    void Clear()
+    {
+        gprRegs   = RBM_NONE;
+        floatRegs = RBM_NONE;
+#ifdef HAS_PREDICATE_REGS
+        predicateRegs = RBM_NONE;
+#endif
+    }
+
     bool IsEmpty()
     {
         return (gprRegs == RBM_NONE) && (floatRegs == RBM_NONE)
@@ -338,9 +350,13 @@ typedef struct _regMaskAll
             ;
     }
 
+    // Rename this to AddRegNum
     void AddRegNumInMask(regNumber reg, var_types type);
+    void RemoveRegNumInMask(regNumber reg);
+    void RemoveRegNumInMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type);
 
+    // Rename this to AddRegMask()
     void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
     {
         if (varTypeRegister[type] == VTR_INT)
@@ -378,6 +394,26 @@ typedef struct _regMaskAll
         }
     }
 
+    regMaskOnlyOne& operator[](int index)
+    {
+        if (index == 0)
+        {
+            return gprRegs;
+        }
+        else if (index == 1)
+        {
+            return floatRegs;
+        }
+        else
+        {
+#ifdef HAS_PREDICATE_REGS
+            return predicateRegs;
+#else
+            unreached();
+#endif
+        }
+    }
+
     //void AllRegsMask& operator|=(const AllRegsMask& second);
     //{
     //    gprRegs
@@ -403,10 +439,12 @@ AllRegsMask             operator&(const AllRegsMask& first, const AllRegsMask& s
 regMaskOnlyOne          operator&(const AllRegsMask& first, const regNumber reg);
 AllRegsMask             operator|(const AllRegsMask& first, const AllRegsMask& second);
 AllRegsMask             operator|=(AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask             operator&=(AllRegsMask& first, const AllRegsMask& second);
 AllRegsMask             operator|=(AllRegsMask& first, const regNumber reg);
 // AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
 AllRegsMask operator~(const AllRegsMask& first);
 // inline AllRegsMask createRegMask(regNumber reg)
+
 
 /*****************************************************************************/
 

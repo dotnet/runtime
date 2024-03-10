@@ -87,10 +87,12 @@
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM31
+  #define REG_FP_COUNT             (REG_FP_LAST - REG_FP_FIRST + 1)
   #define FIRST_FP_ARGREG          REG_XMM0
 
   #define REG_MASK_FIRST           REG_K0
   #define REG_MASK_LAST            REG_K7
+  #define REG_MASK_COUNT           (REG_MASK_LAST - REG_MASK_FIRST + 1)
 
   #define RBM_ALLMASK_INIT         (0)
   #define RBM_ALLMASK_EVEX         (RBM_K1 | RBM_K2 | RBM_K3 | RBM_K4 | RBM_K5 | RBM_K6 | RBM_K7)

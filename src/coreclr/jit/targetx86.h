@@ -70,9 +70,11 @@
 
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM7
+  #define REG_FP_COUNT             (REG_FP_LAST - REG_FP_FIRST + 1)
 
   #define REG_MASK_FIRST           REG_K0
   #define REG_MASK_LAST            REG_K7
+  #define REG_MASK_COUNT           (REG_MASK_LAST - REG_MASK_FIRST)
   #define CNT_MASK_REGS            8
 
   #define FIRST_FP_ARGREG          REG_XMM0

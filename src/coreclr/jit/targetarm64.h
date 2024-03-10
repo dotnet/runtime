@@ -48,10 +48,12 @@
 
   #define REG_FP_FIRST             REG_V0
   #define REG_FP_LAST              REG_V31
+  #define REG_FP_COUNT             (REG_FP_LAST - REG_FP_FIRST + 1)  
   #define FIRST_FP_ARGREG          REG_V0
   #define LAST_FP_ARGREG           REG_V15
   #define REG_PREDICATE_FIRST      REG_P0
   #define REG_PREDICATE_LAST       REG_P15
+  #define REG_MASK_COUNT           (REG_PREDICATE_LAST - REG_PREDICATE_FIRST + 1)
   #define REG_PREDICATE_LOW_LAST   REG_P7  // Some instructions can only use the first half of the predicate registers.
   #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
   #define REG_PREDICATE_HIGH_LAST  REG_P15

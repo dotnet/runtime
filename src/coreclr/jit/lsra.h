@@ -831,6 +831,7 @@ private:
 
     // TODO: Can have separate methods for each type
     regMaskOnlyOne getConstrainedRegMask(RefPosition*   refPosition,
+        RegisterType regType,
                                          regMaskOnlyOne regMaskActual,
                                          regMaskOnlyOne regMaskConstrain,
                                        unsigned     minRegCount);
@@ -899,7 +900,7 @@ private:
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
     }
-    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskMixed availableRegs);
+    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, AllRegsMask availableRegs);
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
@@ -962,7 +963,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
-    void verifyFreeRegisters(regMaskMixed regsToFree);
+    void verifyFreeRegisters(AllRegsMask regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -1125,7 +1126,7 @@ private:
 
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskMixed regsToFree);
+    void freeRegisters(AllRegsMask regsToFree);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1684,7 +1685,7 @@ private:
 
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap             sharedCriticalVarToRegMap;
-    PhasedVar<regMaskMixed> actualRegistersMask;
+    PhasedVar<AllRegsMask> actualRegistersMask;
     PhasedVar<regMaskGpr>   availableIntRegs;
     PhasedVar<regMaskFloat> availableFloatRegs;
     PhasedVar<regMaskFloat> availableDoubleRegs;
@@ -1831,17 +1832,14 @@ private:
         }
     }
 
-    void setRegsInUse(regMaskMixed regMask)
+    void setRegsInUse(AllRegsMask regMask)
     {
         //TODO: Fix this later.
-        m_AvailableRegs[0] &= ~(regMask & ~RBM_ALLFLOAT);
-        m_AvailableRegs[1] &= ~(regMask & RBM_ALLFLOAT);
+        m_AvailableRegs[0] &= regMask.gprRegs;
+        m_AvailableRegs[1] &= regMask.floatRegs;
 #ifdef HAS_PREDICATE_REGS
-        m_AvailableRegs[2] &= ~(regMask & RBM_ALLMASK);
+        m_AvailableRegs[2] &= regMask.predicateRegs;
 #endif
-
-        assert(compiler->IsGprRegMask(m_AvailableRegs[0]));
-        assert(compiler->IsFloatRegMask(m_AvailableRegs[1]));
     }
     void setRegInUse(regNumber reg, var_types regType)
     {
@@ -1867,14 +1865,17 @@ private:
         }
 #endif
     }
-    void makeRegsAvailable(regMaskMixed regMask)
+    void makeRegsAvailable(AllRegsMask regMask)
     {
         // TODO: This will be just `regMask`
-        m_AvailableRegs[0] |= regMask & ~RBM_ALLFLOAT;
-        m_AvailableRegs[1] |= regMask & RBM_ALLFLOAT;
+        m_AvailableRegs[0] |= regMask.gprRegs;
+        m_AvailableRegs[1] |= regMask.floatRegs;
 #ifdef HAS_PREDICATE_REGS
-        m_AvailableRegs[2] |= regMask & RBM_ALLMASK;
+        m_AvailableRegs[2] |= regMask.predicateRegs;
+        assert(compiler->IsPredicateRegMask(m_AvailableRegs[2]));
 #endif
+        assert(compiler->IsGprRegMask(m_AvailableRegs[0]));
+        assert(compiler->IsFloatRegMask(m_AvailableRegs[1]));
 
     }
     void makeRegAvailable(regNumber reg, var_types regType)
@@ -1943,8 +1944,8 @@ private:
 
     FORCEINLINE void updateRegsFreeBusyState(RefPosition&    refPosition,
                                              regMaskOnlyOne  regsBusy,
-                                             regMaskOnlyOne* regsToFree,
-                                             regMaskOnlyOne* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                             AllRegsMask* regsToFree,
+                                             AllRegsMask* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
 #ifdef HAS_PREDICATE_REGS
@@ -2002,37 +2003,36 @@ private:
     }
     weight_t spillCost[REG_COUNT];
 
-    regMaskMixed regsBusyUntilKill; // TODO: Likewise, probably have this global 32-bit and set it point to the specific
+    AllRegsMask regsBusyUntilKill; // TODO: Likewise, probably have this global 32-bit and set it point to the specific
                                     // version like gpr, vector, etc.
-    regMaskMixed regsInUseThisLocation;
-    regMaskMixed regsInUseNextLocation;
+    AllRegsMask regsInUseThisLocation;
+    AllRegsMask regsInUseNextLocation;
 #ifdef TARGET_ARM64
     regMaskFloat consecutiveRegsInUseThisLocation;
 #endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
-        regMaskOnlyOne regMask = getRegMask(reg, regType);
-        return (regsBusyUntilKill & regMask) != RBM_NONE;
+        return regsBusyUntilKill.IsRegNumInMask(reg, regType);
     }
     void setRegBusyUntilKill(regNumber reg, var_types regType)
     {
-        regsBusyUntilKill |= getRegMask(reg, regType);
+        regsBusyUntilKill.AddRegNumInMask(reg, regType);
     }
     void clearRegBusyUntilKill(regNumber reg)
     {
-        regsBusyUntilKill &= ~genRegMask(reg);
+        regsBusyUntilKill.RemoveRegNumInMask(reg);
     }
 
     bool isRegInUse(regNumber reg, var_types regType)
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        return (regsInUseThisLocation & regMask) != RBM_NONE;
+        return regsInUseThisLocation.IsRegNumInMask(reg, regType);
     }
 
     void resetRegState()
     {
         resetAvailableRegs();
-        regsBusyUntilKill = RBM_NONE;
+        regsBusyUntilKill = AllRegsMask();;
     }
 
     bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);

@@ -46,6 +46,7 @@
 
   #define REG_FP_FIRST             REG_F0
   #define REG_FP_LAST              REG_F31
+  #define REG_FP_COUNT             (REG_FP_LAST - REG_FP_FIRST + 1)
   #define FIRST_FP_ARGREG          REG_F0
   #define LAST_FP_ARGREG           REG_F15
 
