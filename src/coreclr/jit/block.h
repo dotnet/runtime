@@ -2429,24 +2429,24 @@ inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
 template <bool                                       allowEdits>
 inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
 {
-    FlowEdge* next              = m_pred->getNextPredEdge();
-    bool      updateNextPointer = allowEdits;
-
-#ifdef DEBUG
-    // If allowEdits=false, check that the next block is the one we expect to see.
-    // If allowEdits=true, the user can modify the predecessor list while traversing it,
-    // so (next == m_next) may not be true. Since we cached the next pointer in m_next, this won't break iteration.
-    assert((next == m_next) || allowEdits);
-    updateNextPointer = true;
-#endif // DEBUG
-
-    if (updateNextPointer)
+    if (allowEdits)
     {
-        next   = m_next;
+        m_pred = m_next;
         m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
     }
+    else
+    {
+        FlowEdge* next = m_pred->getNextPredEdge();
 
-    m_pred = next;
+#ifdef DEBUG
+        // If allowEdits=false, check that the next block is the one we expect to see.
+        assert(next == m_next);
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
+#endif // DEBUG
+
+        m_pred = next;
+    }
+
     return *this;
 }
 
