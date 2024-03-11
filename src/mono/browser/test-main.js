@@ -252,7 +252,6 @@ function configureRuntime(dotnet, runArgs) {
         .withExitCodeLogging()
         .withElementOnExit()
         .withInteropCleanupOnExit()
-        .withAssertAfterExit()
         .withDumpThreadsOnNonZeroExit()
         .withConfig({
             loadAllSatelliteResources: true

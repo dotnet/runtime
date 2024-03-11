@@ -139,6 +139,9 @@ export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
 
 export function upgrade_managed_proxy_to_strong_ref(owner: any, gc_handle: GCHandle): void {
     const sr = create_strong_ref(owner);
+    if (_use_finalization_registry) {
+        _js_owned_object_registry.unregister(owner);
+    }
     _js_owned_object_table.set(gc_handle, sr);
 }
 
@@ -157,7 +160,7 @@ export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipMana
         }
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle) && !skipManaged) {
-        if (loaderHelpers.is_runtime_running()) {
+        if (loaderHelpers.is_runtime_running() && !force_dispose_proxies_in_progress) {
             release_js_owned_object_by_gc_handle(gc_handle);
         }
     }
@@ -201,11 +204,14 @@ export function assertNoProxies(): void {
     mono_assert(js_import_wrapper_by_fn_handle.length === 1, "There should be no imports on this thread.");
 }
 
+let force_dispose_proxies_in_progress = false;
+
 // when we arrive here from UninstallWebWorkerInterop, the C# will unregister the handles too.
 // when called from elsewhere, C# side could be unbalanced!!
 export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): void {
     let keepSomeCsAlive = false;
     let keepSomeJsAlive = false;
+    force_dispose_proxies_in_progress = true;
 
     let doneImports = 0;
     let doneExports = 0;

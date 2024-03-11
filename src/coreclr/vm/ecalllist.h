@@ -251,10 +251,6 @@ FCFuncStart(gCOMCustomAttributeFuncs)
     FCFuncElement("_GetPropertyOrFieldData",  COMCustomAttribute::GetPropertyOrFieldData)
 FCFuncEnd()
 
-FCFuncStart(gCompatibilitySwitchFuncs)
-    FCFuncElement("GetValueInternal", CompatibilitySwitch::GetValue)
-FCFuncEnd()
-
 FCFuncStart(gRuntimeAssemblyFuncs)
     FCFuncElement("FCallIsDynamic", AssemblyNative::IsDynamic)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
@@ -565,7 +561,6 @@ FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadCont
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
-FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
 FCClassElement("Delegate", "System", gDelegateFuncs)

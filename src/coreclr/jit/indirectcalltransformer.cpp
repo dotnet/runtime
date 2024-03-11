@@ -1219,9 +1219,7 @@ private:
             // Finally, rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRemoveRefPred(coldBlock->GetTargetEdge());
-            FlowEdge* const newEdge = compiler->fgAddRefPred(elseBlock, coldBlock, coldBlock->GetTargetEdge());
-            coldBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+            compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
         }
 
         // When the current candidate has sufficiently high likelihood, scan

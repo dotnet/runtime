@@ -9541,6 +9541,23 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	cfg = mini_method_compile (method, acfg->jit_opts, flags, 0, index);
 	mono_time_track_end (&mono_jit_stats.jit_time, jit_time_start);
 
+	if (cfg->prefer_instances) {
+		/*
+		 * Compile the original specific instances in addition to the gshared method
+		 * for performance reasons, since gshared methods cannot implement some
+		 * features like static virtual methods efficiently.
+		 */
+		/* Instances encountered later will be handled in add_extra_method_full () */
+		g_hash_table_insert (acfg->prefer_instances, method, method);
+		GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
+		if (instances) {
+			for (guint i = 0; i < instances->len; ++i) {
+				MonoMethod *instance = (MonoMethod*)g_ptr_array_index (instances, i);
+				add_extra_method_full (acfg, instance, FALSE, 0);
+			}
+		}
+	}
+
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (gshared failure): %s (%s)\n", mono_method_get_full_name (method), cfg->exception_message);
@@ -9624,23 +9641,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			fprintf (acfg->instances_logfile, "%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
 		else
 			printf ("%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
-	}
-
-	if (cfg->prefer_instances) {
-		/*
-		 * Compile the original specific instances in addition to the gshared method
-		 * for performance reasons, since gshared methods cannot implement some
-		 * features like static virtual methods efficiently.
-		 */
-		/* Instances encountered later will be handled in add_extra_method_full () */
-		g_hash_table_insert (acfg->prefer_instances, method, method);
-		GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
-		if (instances) {
-			for (guint i = 0; i < instances->len; ++i) {
-				MonoMethod *instance = (MonoMethod*)g_ptr_array_index (instances, i);
-				add_extra_method_full (acfg, instance, FALSE, 0);
-			}
-		}
 	}
 
 	/* Adds generic instances referenced by this method */
