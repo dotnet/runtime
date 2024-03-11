@@ -4029,7 +4029,9 @@ _End_arg:
 #if !defined(DACCESS_COMPILE)
 namespace
 {
-    enum class SwiftPhysicalLoweringTag
+    // Underlying type specified so we can use memset in the algorithm below
+    // to set a range of values to a particular tag.
+    enum class SwiftPhysicalLoweringTag : uint8_t
     {
         Empty,
         Opaque,
