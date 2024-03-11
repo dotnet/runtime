@@ -34,7 +34,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		IEnumerator IEnumerable.GetEnumerator () => new ParameterEnumerator (_start, _end, _method);
 
-		public struct ParameterEnumerator : IEnumerator<ParameterProxy>
+		internal struct ParameterEnumerator : IEnumerator<ParameterProxy>
 		{
 			private readonly int _start;
 			private int _current;
