@@ -578,7 +578,14 @@ PosRem:
                 bufNum.Low64 = low64;
                 bufNum.High64 = Math.BigMul(bufNum.U2, power) + (nuint)hi64;
 #else
-                bufNum.U3 = IncreaseScale(ref *(Buf12*)Unsafe.AsPointer(ref bufNum), power);
+                ulong tmp = Math.BigMul(bufNum.U0, power);
+                bufNum.U0 = (uint)tmp;
+                tmp >>= 32;
+                tmp += Math.BigMul(bufNum.U1, power);
+                bufNum.U1 = (uint)tmp;
+                tmp >>= 32;
+                tmp += Math.BigMul(bufNum.U2, power);
+                bufNum.High64 = tmp;
 #endif
             }
 
