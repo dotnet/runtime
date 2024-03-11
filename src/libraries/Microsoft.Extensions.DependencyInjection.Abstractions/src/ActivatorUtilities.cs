@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.DependencyInjection
             int maxArgs = GetMaxArgCount();
             if (maxArgs <= StackAllocatedObjects.MaxStackAllocArgCount / 2)
             {
-                values = MemoryMarshal.CreateSpan(ref stackValues._args, maxArgs * 2);
+                values = MemoryMarshal.CreateSpan(ref stackValues._args._arg0, maxArgs * 2);
             }
             else
             {
@@ -1228,15 +1228,14 @@ namespace Microsoft.Extensions.DependencyInjection
         [StructLayout(LayoutKind.Sequential)]
         private ref struct StackAllocatedObjects
         {
-            public const int MaxStackAllocArgCount = 8;
-            public object? _args;
-            private object? _arg2;
-            private object? _arg3;
-            private object? _arg4;
-            private object? _arg5;
-            private object? _arg6;
-            private object? _arg7;
-            private object? _arg8;
+            internal const int MaxStackAllocArgCount = 8;
+            internal StackAllocatedObjectValues _args;
+
+            [InlineArray(MaxStackAllocArgCount)]
+            internal struct StackAllocatedObjectValues
+            {
+                internal object? _arg0;
+            }
         }
 #endif
 
