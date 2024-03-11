@@ -221,7 +221,7 @@ public:
                 // fgGetStubAddrArg cannot handle complex trees (it calls gtClone)
                 //
                 bool isCallTarget = false;
-                if (parent->IsCall())
+                if ((parent != nullptr) && parent->IsCall())
                 {
                     GenTreeCall* const parentCall = parent->AsCall();
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
