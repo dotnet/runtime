@@ -328,12 +328,14 @@ public:
     void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                             mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
+                                            CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
     void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                             Agnostic_CORINFO_LOOKUP                 pLookup);
     void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                             mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
+                                            CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
     void recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, void* result);
