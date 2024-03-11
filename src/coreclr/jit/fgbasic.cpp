@@ -30,8 +30,6 @@ void Compiler::fgInit()
     fgRangeUsedInEdgeWeights = true;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
-    fgReturnBlocksComputed = false;
-
     /* Initialize the basic block list */
 
     fgFirstBB          = nullptr;
@@ -654,6 +652,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
             {
                 if (block->FalseEdgeIs(block->GetTrueEdge()))
                 {
+                    // Branch was degenerate, simplify it first
+                    //
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     assert(block->TargetIs(oldTarget));
@@ -666,6 +666,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
             }
             else
             {
+                // Already degenerate cases should have taken the true path above
+                //
                 assert(block->FalseTargetIs(oldTarget));
                 assert(!block->TrueEdgeIs(block->GetFalseEdge()));
                 fgRedirectFalseEdge(block, newTarget);
@@ -673,10 +675,13 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
             if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
             {
+                // Block became degenerate, simplify
+                //
                 fgRemoveConditionalJump(block);
                 assert(block->KindIs(BBJ_ALWAYS));
                 assert(block->TargetIs(newTarget));
             }
+
             break;
 
         case BBJ_SWITCH:
