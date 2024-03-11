@@ -1137,31 +1137,14 @@ emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg){
 		sum->inst_c1 = MONO_TYPE_R4;
 	}
 
-	MonoInst *recip_sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
-	recip_sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FRSQRTE;
-	recip_sqrt->inst_c1 = MONO_TYPE_R4;
+	MonoInst *sqrt_vec = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
+	sqrt_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
+	sqrt_vec->inst_c1 = MONO_TYPE_R4;
 
-
-	MonoInst *recip_sqrt_2, *corr;
-
-	for (int i = 0; i < 2; i++) {
-		recip_sqrt_2 = emit_simd_ins (cfg, klass, OP_XBINOP, recip_sqrt->dreg, recip_sqrt->dreg);
-		recip_sqrt_2->inst_c0 = OP_FMUL;
-		recip_sqrt_2->inst_c1 = MONO_TYPE_R4;
-
-		corr = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X_X, sum->dreg, recip_sqrt_2->dreg);
-		corr->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FRSQRTS;
-		corr->inst_c1 = MONO_TYPE_R4;
-
-		recip_sqrt = emit_simd_ins (cfg, klass, OP_XBINOP, recip_sqrt->dreg, corr->dreg);
-		recip_sqrt->inst_c0 = OP_FMUL;
-		recip_sqrt->inst_c1 = MONO_TYPE_R4;
-	}
-
-	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, recip_sqrt->dreg);
-	normalized_vec->inst_c0 = OP_FMUL;
+	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, sqrt_vec->dreg);
+	normalized_vec->inst_c0 = OP_FDIV;
 	normalized_vec->inst_c1 = MONO_TYPE_R4;
-
+	
 	return normalized_vec;
 }
 #endif

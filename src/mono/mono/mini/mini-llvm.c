@@ -8486,7 +8486,7 @@ MONO_RESTORE_WARNING
 #endif
 				break;
 			}
-			
+
 			default:
 				g_assert_not_reached ();
 			}
