@@ -942,6 +942,19 @@ void InitJITHelpers1()
     JIT_TrialAlloc::Flags flags = GCHeapUtilities::UseThreadAllocationContexts() ?
         JIT_TrialAlloc::MP_ALLOCATOR : JIT_TrialAlloc::NORMAL;
 
+    // Get CPU features and check for SSE3 support.
+    // This code should eventually probably be moved into codeman.cpp,
+    // where we set the cpu feature flags for the JIT based on CPU type and features.
+    int cpuFeatures[4];
+    __cpuid(cpuFeatures, 1);
+
+    DWORD dwCPUFeaturesECX = cpuFeatures[2];
+
+    if (dwCPUFeaturesECX & 1)  // check SSE3
+    {
+        SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngFpu);
+    }
+
     if (!(TrackAllocationsEnabled()
         || LoggingOn(LF_GCALLOC, LL_INFO10)
 #ifdef _DEBUG

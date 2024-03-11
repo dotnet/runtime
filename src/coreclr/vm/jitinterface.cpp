@@ -10666,7 +10666,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         {
             _ASSERTE(ppIndirection != NULL);
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
-            return NULL;
+            result = NULL;
+            goto Exit;
         }
 #endif
 
@@ -10675,7 +10676,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
         if (finalTierAddr != NULL)
         {
-            return finalTierAddr;
+            result = finalTierAddr;
+            goto Exit;
         }
 
         if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
@@ -10733,16 +10735,15 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                     {
                         // Cache it for future uses to avoid taking the lock again.
                         hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
-                        EE_TO_JIT_TRANSITION_LEAF();
-                        return finalTierAddr;
+                        result = finalTierAddr;
+                        goto Exit;
                     }
                 }
             }
 
             *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-
-            EE_TO_JIT_TRANSITION_LEAF();
-            return NULL;
+            result = NULL;
+            goto Exit;
         }
 
         pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
@@ -10756,8 +10757,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
 
     result = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
 
+Exit:
     EE_TO_JIT_TRANSITION_LEAF();
-
     return result;
 }
 

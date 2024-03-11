@@ -36,7 +36,7 @@ JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
 JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
 JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
 JIT_LMul                        TEXTEQU <@JIT_LMul@16>
-JIT_Dbl2Lng                     TEXTEQU <@JIT_Dbl2Lng@8>
+JIT_Dbl2LngFpu                  TEXTEQU <@JIT_Dbl2LngFpu@8>
 JIT_InternalThrowFromHelper     TEXTEQU <@JIT_InternalThrowFromHelper@4>
 JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
 JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
@@ -631,6 +631,34 @@ LMul_hard:
 
 JIT_LMul ENDP
 
+;*********************************************************************/
+; JIT_Dbl2LngFpu
+;
+;Purpose:
+;   converts a double to a long truncating toward zero (C semantics)
+;
+;	uses stdcall calling conventions
+;
+;   This code is faster than C++ even on modern CPUs but it requires SSE3
+;
+.686P
+.XMM
+PUBLIC JIT_Dbl2LngFpu
+JIT_Dbl2LngFpu PROC
+arg1	equ	<[esp+0Ch]>
+
+    sub esp, 8                      ; get some local space
+
+    fld qword ptr arg1              ; fetch arg
+    fisttp qword ptr [esp]          ; convert
+    mov eax, dword ptr [esp]        ; reload FP result
+    mov edx, dword ptr [esp+4]
+
+    add esp, 8                      ; restore stack
+
+    ret	8
+JIT_Dbl2LngFpu ENDP
+.586
 
 ;*********************************************************************/
 ; This is the small write barrier thunk we use when we know the

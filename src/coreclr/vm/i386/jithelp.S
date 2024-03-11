@@ -552,6 +552,31 @@ LOCAL_LABEL(LRszMORE32):
 LEAF_END JIT_LRsz, _TEXT
 
 // *********************************************************************/
+//  JIT_Dbl2LngFpu
+//
+// Purpose:
+//    converts a double to a long truncating toward zero (C semantics)
+//
+//  uses stdcall calling conventions
+//
+//    This code is faster than C++ even on modern CPUs but it requires SSE3
+//
+LEAF_ENTRY JIT_Dbl2LngFpu, _TEXT
+    // get some local space
+    sub     esp, 8
+
+    fld     QWORD PTR [esp + 0x0C]   // fetch arg
+    fisttp  QWORD PTR [esp]         // convert
+    mov     eax, DWORD PTR [esp]    // reload FP result
+    mov     edx, DWORD PTR [esp + 4]
+
+    // restore stack
+    add     esp, 8
+
+    ret
+LEAF_END JIT_Dbl2LngFpu, _TEXT
+
+// *********************************************************************/
 // JIT_StackProbe
 //
 // Purpose:
