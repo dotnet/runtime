@@ -6581,7 +6581,6 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->unsafe_accessor_cache);
 }
 
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
 typedef enum {
 	SWIFT_EMPTY = 0,
 	SWIFT_OPAQUE,
@@ -6704,24 +6703,24 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 
 	// Non-value types are illegal at the interop boundary.
 	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
-		lowering.byReference = TRUE;
+		lowering.by_reference = TRUE;
 		return lowering;
 	}
 
 	if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
-		lowering.byReference = TRUE;
+		lowering.by_reference = TRUE;
 		return lowering;
 	}
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 
-	// TODO: We currently don't support vector types, so we can say that the maximum size of a non-byreference struct
+	// TODO: We currently don't support vector types, so we can say that the maximum size of a non-by_reference struct
 	// is 4 * PointerSize.
 	// Strictly, this is inaccurate in the case where a struct has a fully-empty 8 bytes of padding using explicit layout,
 	// but that's not possible in the Swift layout algorithm.
 
 	if (m_class_get_instance_size(klass) > 4 * TARGET_SIZEOF_VOID_P) {
-		lowering.byReference = TRUE;
+		lowering.by_reference = TRUE;
 		return lowering;
 	}
 
@@ -6786,7 +6785,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	for (int i = 0; i < intervals->len; ++i, ++num_lowered_types) {
 		if (num_lowered_types == 4) {
 			// We can't handle more than 4 fields
-			lowering.byReference = TRUE;
+			lowering.by_reference = TRUE;
 			g_array_free(intervals, TRUE);
 			return lowering;
 		}
@@ -6828,7 +6827,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 				for (;remaining_interval_size > 0; num_lowered_types++) {
 					if (num_lowered_types == 4) {
 						// We can't handle more than 4 fields
-						lowering.byReference = TRUE;
+						lowering.by_reference = TRUE;
 						g_array_free(intervals, TRUE);
 						return lowering;
 					}
@@ -6857,11 +6856,10 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 		}
 	}
 
-	memcpy(lowering.loweredElements, lowered_types, num_lowered_types * sizeof(MonoTypeEnum));
+	memcpy(lowering.lowered_elements, lowered_types, num_lowered_types * sizeof(MonoTypeEnum));
 	memcpy(lowering.offsets, offsets, num_lowered_types * sizeof(guint32));
-	lowering.numLoweredElements = num_lowered_types;
-	lowering.byReference = FALSE;
+	lowering.num_lowered_elements = num_lowered_types;
+	lowering.by_reference = FALSE;
 
 	return lowering;
 }
-#endif /* MONO_ARCH_HAVE_SWIFTCALL */
