@@ -107,6 +107,15 @@ bool interceptor_ICJI::haveSameMethodDefinition(
     return result;
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
+    CORINFO_CLASS_HANDLE type)
+{
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getTypeDefinition(type);
+    mc->recGetTypeDefinition(type, result);
+
+    return result;
+}
+
 // Decides if you have any limitations for inlining. If everything's OK, it will return
 // INLINE_PASS.
 //
