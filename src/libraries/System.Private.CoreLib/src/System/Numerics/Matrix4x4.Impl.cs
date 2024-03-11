@@ -165,33 +165,106 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl operator *(in Impl left, in Impl right)
             {
-                Impl result;
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    var lhs = Unsafe.BitCast<Impl, Vector512<float>>(left);
 
-                // result.X = Transform(left.X, in right);
-                result.X = right.X * left.X.X;
-                result.X += right.Y * left.X.Y;
-                result.X += right.Z * left.X.Z;
-                result.X += right.W * left.X.W;
+                    var t0 = lhs.GetLower();
+                    var t1 = lhs.GetUpper();
 
-                // result.Y = Transform(left.Y, in right);
-                result.Y = right.X * left.Y.X;
-                result.Y += right.Y * left.Y.Y;
-                result.Y += right.Z * left.Y.Z;
-                result.Y += right.W * left.Y.W;
+                    var a0 = Vector256.Shuffle(t0, Vector256.Create(0, 0, 0, 0, 4, 4, 4, 4));
+                    var a1 = Vector256.Shuffle(t1, Vector256.Create(0, 0, 0, 0, 4, 4, 4, 4));
+                    var b = Vector256.Create(right.X.AsVector128(), right.X.AsVector128());
+                    var c0 = a0 * b;
+                    var c1 = a1 * b;
 
-                // result.Z = Transform(left.Z, in right);
-                result.Z = right.X * left.Z.X;
-                result.Z += right.Y * left.Z.Y;
-                result.Z += right.Z * left.Z.Z;
-                result.Z += right.W * left.Z.W;
+                    a0 = Vector256.Shuffle(t0, Vector256.Create(1, 1, 1, 1, 5, 5, 5, 5));
+                    a1 = Vector256.Shuffle(t1, Vector256.Create(1, 1, 1, 1, 5, 5, 5, 5));
+                    b = Vector256.Create(right.Y.AsVector128(), right.Y.AsVector128());
+                    var c2 = a0 * b;
+                    var c3 = a1 * b;
 
-                // result.W = Transform(left.W, in right);
-                result.W = right.X * left.W.X;
-                result.W += right.Y * left.W.Y;
-                result.W += right.Z * left.W.Z;
-                result.W += right.W * left.W.W;
+                    a0 = Vector256.Shuffle(t0, Vector256.Create(2, 2, 2, 2, 6, 6, 6, 6));
+                    a1 = Vector256.Shuffle(t1, Vector256.Create(2, 2, 2, 2, 6, 6, 6, 6));
+                    b = Vector256.Create(right.Z.AsVector128(), right.Z.AsVector128());
+                    var c4 = a0 * b;
+                    var c5 = a1 * b;
 
-                return result;
+                    a0 = Vector256.Shuffle(t0, Vector256.Create(3, 3, 3, 3, 7, 7, 7, 7));
+                    a1 = Vector256.Shuffle(t1, Vector256.Create(3, 3, 3, 3, 7, 7, 7, 7));
+                    b = Vector256.Create(right.W.AsVector128(), right.W.AsVector128());
+
+                    var n0 = c0 + c2 + c4 + (a0 * b);
+                    var n1 = c1 + c3 + c5 + (a1 * b);
+
+                    var result = Vector512.Create(n0, n1);
+                    return Unsafe.BitCast<Vector512<float>, Impl>(result);
+                }
+                else if (Vector128.IsHardwareAccelerated)
+                {
+                    Impl result;
+
+                    var rowX = right.X.AsVector128();
+                    var rowY = right.Y.AsVector128();
+                    var rowZ = right.Z.AsVector128();
+                    var rowW = right.W.AsVector128();
+
+                    var brodXx = Vector128.Create(left.X.X);
+                    var brodXy = Vector128.Create(left.X.Y);
+                    var brodXz = Vector128.Create(left.X.Z);
+                    var brodXw = Vector128.Create(left.X.W);
+                    result.X = (brodXx * rowX + brodXy * rowY + brodXz * rowZ + brodXw * rowW).AsVector4();
+
+                    var brodYx = Vector128.Create(left.Y.X);
+                    var brodYy = Vector128.Create(left.Y.Y);
+                    var brodYz = Vector128.Create(left.Y.Z);
+                    var brodYw = Vector128.Create(left.Y.W);
+                    result.Y = (brodYx * rowX + brodYy * rowY + brodYz * rowZ + brodYw * rowW).AsVector4();
+
+                    var brodZx = Vector128.Create(left.Z.X);
+                    var brodZy = Vector128.Create(left.Z.Y);
+                    var brodZz = Vector128.Create(left.Z.Z);
+                    var brodZw = Vector128.Create(left.Z.W);
+                    result.Z = (brodZx * rowX + brodZy * rowY + brodZz * rowZ + brodZw * rowW).AsVector4();
+
+                    var brodWx = Vector128.Create(left.W.X);
+                    var brodWy = Vector128.Create(left.W.Y);
+                    var brodWz = Vector128.Create(left.W.Z);
+                    var brodWw = Vector128.Create(left.W.W);
+                    result.W = (brodWx * rowX + brodWy * rowY + brodWz * rowZ + brodWw * rowW).AsVector4();
+
+                    return result;
+                }
+                else
+                {
+                    Impl result;
+
+                    // result.X = Transform(left.X, in right);
+                    result.X = right.X * left.X.X;
+                    result.X += right.Y * left.X.Y;
+                    result.X += right.Z * left.X.Z;
+                    result.X += right.W * left.X.W;
+
+                    // result.Y = Transform(left.Y, in right);
+                    result.Y = right.X * left.Y.X;
+                    result.Y += right.Y * left.Y.Y;
+                    result.Y += right.Z * left.Y.Z;
+                    result.Y += right.W * left.Y.W;
+
+                    // result.Z = Transform(left.Z, in right);
+                    result.Z = right.X * left.Z.X;
+                    result.Z += right.Y * left.Z.Y;
+                    result.Z += right.Z * left.Z.Z;
+                    result.Z += right.W * left.Z.W;
+
+                    // result.W = Transform(left.W, in right);
+                    result.W = right.X * left.W.X;
+                    result.W += right.Y * left.W.Y;
+                    result.W += right.Z * left.W.Z;
+                    result.W += right.W * left.W.W;
+
+                    return result;
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

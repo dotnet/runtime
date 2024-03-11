@@ -306,17 +306,19 @@ namespace System.Numerics
             {
                 var v1 = vector1.AsVector128();
                 var v2 = vector2.AsVector128();
-                return (Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)) *
-                        Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3))) -
-                       (Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)) *
-                        Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3)));
+                return ((Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)) *
+                         Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3))) -
+                        (Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)) *
+                         Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3)))).AsVector3();
             }
-            
-            return new Vector3(
-                (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
-                (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
-                (vector1.X * vector2.Y) - (vector1.Y * vector2.X)
-            );
+            else
+            {
+                return new Vector3(
+                    (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
+                    (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
+                    (vector1.X * vector2.Y) - (vector1.Y * vector2.X)
+                );
+            }
         }
 
         /// <summary>Computes the Euclidean distance between the two given points.</summary>
