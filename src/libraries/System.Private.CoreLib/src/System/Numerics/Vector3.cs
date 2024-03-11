@@ -532,7 +532,7 @@ namespace System.Numerics
                 var rVector = Unsafe.BitCast<Quaternion, Vector128<float>>(rotation);
 
                 // v + 2 * (q x (q.W  * v + q x v)
-                return (vVector + Vector128.Create(2f) * Cross(qVector, Vector128.Shuffle(qVector, Vector128.Create(3, 3, 3, 3)) * vVector + Cross(qVector, vVector))).AsVector3();
+                return (vVector + Vector128.Create(2f) * Cross(rVector, Vector128.Shuffle(rVector, Vector128.Create(3, 3, 3, 3)) * vVector + Cross(rVector, vVector))).AsVector3();
 
                 static Vector128<float> Cross(Vector128<float> v1, Vector128<float> v2)
                 {
