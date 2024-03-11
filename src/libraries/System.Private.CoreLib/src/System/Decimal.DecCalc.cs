@@ -964,7 +964,7 @@ ThrowOverflow:
                     }
 
                     uint power;
-                    ulong tmp64, tmpLow;
+                    ulong tmp64;
 
                     // d1 will need to be multiplied by 10^scale so
                     // it will have the same scale as d2.  We could be
@@ -1005,10 +1005,7 @@ ThrowOverflow:
                             power = TenToPowerNine;
                             if (scale < MaxInt32Scale)
                                 power = UInt32Powers10[scale];
-                            tmpLow = Math.BigMul((uint)low64, power);
-                            tmp64 = Math.BigMul((uint)(low64 >> 32), power) + (tmpLow >> 32);
-                            low64 = (uint)tmpLow + (tmp64 << 32);
-                            high = (uint)(tmp64 >> 32);
+                            high = (uint)Math.BigMul(low64, power, out low64);
                             if ((scale -= MaxInt32Scale) <= 0)
                                 goto AlignedAdd;
                         } while (high == 0);
@@ -1021,10 +1018,7 @@ ThrowOverflow:
                         power = TenToPowerNine;
                         if (scale < MaxInt32Scale)
                             power = UInt32Powers10[scale];
-                        tmpLow = Math.BigMul((uint)low64, power);
-                        tmp64 = Math.BigMul((uint)(low64 >> 32), power) + (tmpLow >> 32);
-                        low64 = (uint)tmpLow + (tmp64 << 32);
-                        tmp64 >>= 32;
+                        tmp64 = Math.BigMul(low64, power, out low64);
                         tmp64 += Math.BigMul(high, power);
 
                         scale -= MaxInt32Scale;
@@ -1260,12 +1254,8 @@ ReturnResult:
                     if (pdecIn.High != 0)
                         goto ThrowOverflow;
                     uint pwr = UInt32Powers10[-scale];
-                    ulong high = Math.BigMul(pwr, pdecIn.Mid);
-                    if (high > uint.MaxValue)
-                        goto ThrowOverflow;
-                    ulong low = Math.BigMul(pwr, pdecIn.Low);
-                    low += high <<= 32;
-                    if (low < high)
+                    ulong high = Math.BigMul(pdecIn.Low64, pwr, out ulong low);
+                    if (high != 0)
                         goto ThrowOverflow;
                     value = (long)low;
                 }
@@ -1348,10 +1338,7 @@ ThrowOverflow:
                     do
                     {
                         uint power = scale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[scale];
-                        ulong tmpLow = Math.BigMul((uint)low64, power);
-                        ulong tmp = Math.BigMul((uint)(low64 >> 32), power) + (tmpLow >> 32);
-                        low64 = (uint)tmpLow + (tmp << 32);
-                        tmp >>= 32;
+                        ulong tmp = Math.BigMul(low64, power, out low64);
                         tmp += Math.BigMul(high, power);
                         // If the scaled value has more than 96 significant bits then it's greater than d2
                         if (tmp > uint.MaxValue)
@@ -1638,12 +1625,8 @@ ReturnZero:
                         else
                         {
                             ulong low64 = Math.BigMul(mant, UInt32Powers10[power - 9]);
-                            ulong hi64 = Math.BigMul(TenToPowerNine, (uint)(low64 >> 32));
-                            low64 = Math.BigMul(TenToPowerNine, (uint)low64);
-                            result.Low = (uint)low64;
-                            hi64 += low64 >> 32;
-                            result.Mid = (uint)hi64;
-                            hi64 >>= 32;
+                            ulong hi64 = Math.BigMul(TenToPowerNine, low64, out low64);
+                            result.Low64 = low64;
                             result.High = (uint)hi64;
                         }
                     }
@@ -2223,12 +2206,9 @@ ThrowOverflow:
                     do
                     {
                         uint power = scale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[scale];
-                        ulong tmp = Math.BigMul(d2.Low, power);
-                        d2.Low = (uint)tmp;
-                        tmp >>= 32;
-                        tmp += (d2.Mid + ((ulong)d2.High << 32)) * power;
-                        d2.Mid = (uint)tmp;
-                        d2.High = (uint)(tmp >> 32);
+                        uint hi32 = (uint)Math.BigMul(d2.Low64, power, out ulong low64);
+                        d2.Low64 = low64;
+                        d2.High = hi32 + d2.High * power;
                     } while ((scale -= MaxInt32Scale) > 0);
                     scale = 0;
                 }
