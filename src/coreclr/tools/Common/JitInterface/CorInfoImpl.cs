@@ -2938,6 +2938,13 @@ namespace Internal.JitInterface
             return _compilation.IsEffectivelySealed(type);
         }
 
+        private bool isGenericType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            return type.HasInstantiation;
+        }
+
         private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);

@@ -2718,6 +2718,11 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    // Returns true if a class handle represents a generic type.
+    virtual bool isGenericType(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
     // Returns whether a class handle represents a Nullable type, if that can be statically determined.
     virtual TypeCompareState isNullableType(
             CORINFO_CLASS_HANDLE        cls

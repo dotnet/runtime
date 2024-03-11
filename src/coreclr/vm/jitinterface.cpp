@@ -4547,6 +4547,27 @@ bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+// Returns true if a class handle represents a generic type.
+bool CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    result = TypeHandle(cls).HasInstantiation();
+
+    EE_TO_JIT_TRANSITION();
+    return result;
+}
+
 // Returns whether a class handle represents a Nullable type, if that can be statically determined.
 TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
 {
