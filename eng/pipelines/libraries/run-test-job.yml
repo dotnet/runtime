@@ -145,6 +145,8 @@ jobs:
           SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
           SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
           SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
+          ${{ if eq(parameters.SuperPmiCollect, true) }}:
+            extraHelixArguments: /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
 
           ${{ if ne(parameters.scenarios[0], '') }}:
             scenarios: ${{ parameters.scenarios }}

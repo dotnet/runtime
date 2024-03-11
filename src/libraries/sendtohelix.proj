@@ -201,7 +201,8 @@
   </Target>
 
   <Target Name="PrepareSuperPmiCollectCorrelationPayload"
-          Condition="'$(SuperPmiCollect)' == 'true'">
+          Condition="'$(SuperPmiCollect)' == 'true'"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <!-- Copy Files needed for SuperPMI collection into a directory that will be added to the single, compressed file used as the correlation payload by Helix. -->
     <Message Importance="High" Text="Preparing SuperPMI collection payload directory" />
 
@@ -220,10 +221,10 @@
          (superpmi, mcs, superpmi-shim-collector, clrjit), but it's easier to just copy everything.
     -->
 
-    <Message Importance="High" Text="Copying Runtime binaries from $(ArtifactsDir)transport/coreclr to $(NetCoreAppCurrentTestHostPath)coreclr" />
+    <Message Importance="High" Text="Copying Runtime binaries from $(CoreCLRArtifactsPath) to $(NetCoreAppCurrentTestHostPath)coreclr" />
     <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)coreclr" />
     <ItemGroup>
-      <SuperPMICoreClrFiles Include="$(ArtifactsDir)transport\coreclr\**\*.*"/>
+      <SuperPMICoreClrFiles Include="$(CoreCLRArtifactsPath)\**\*.*"/>
     </ItemGroup>
     <Copy SourceFiles="@(SuperPMICoreClrFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)coreclr\%(RecursiveDir)" />
   </Target>
