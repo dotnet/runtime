@@ -9570,7 +9570,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
-    regMaskMixed targetRegsToDo      = RBM_NONE;
+    AllRegsMask targetRegsToDo;
     regMaskMixed targetRegsReady     = RBM_NONE;
     regMaskMixed targetRegsFromStack = RBM_NONE;
 
@@ -9693,19 +9693,19 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             location[fromReg]        = (regNumberSmall)fromReg;
             source[toReg]            = (regNumberSmall)fromReg;
             sourceIntervals[fromReg] = interval;
-            targetRegsToDo |= genRegMask(toReg);
+            targetRegsToDo |= toReg;
         }
     }
 
     // REGISTER to REGISTER MOVES
 
     // First, find all the ones that are ready to move now
-    regMaskMixed targetCandidates = targetRegsToDo;
-    while (targetCandidates != RBM_NONE)
+    AllRegsMask targetCandidates = targetRegsToDo;
+    while (!targetCandidates.IsEmpty())
     {
-        regNumber     targetReg     = genFirstRegNumFromMask(targetCandidates);
+        regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetCandidates);
         singleRegMask targetRegMask = genRegMask(targetReg);
-        targetCandidates ^= targetRegMask;
+        targetCandidates ^= targetReg;
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -9730,14 +9730,14 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     }
 
     // Perform reg to reg moves
-    while (targetRegsToDo != RBM_NONE)
+    while (!targetRegsToDo.IsEmpty())
     {
         while (targetRegsReady != RBM_NONE)
         {
             regNumber     targetReg     = genFirstRegNumFromMask(targetRegsReady);
             singleRegMask targetRegMask = genRegMask(targetReg);
-            targetRegsToDo ^= targetRegMask;
-            targetRegsReady ^= targetRegMask;
+            targetRegsToDo ^= targetReg;
+            targetRegsReady ^= targetReg;
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -9803,7 +9803,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 }
             }
         }
-        if (targetRegsToDo != RBM_NONE)
+        if (!targetRegsToDo.IsEmpty())
         {
             regNumber     targetReg     = genFirstRegNumFromMask(targetRegsToDo);
             singleRegMask targetRegMask = genRegMask(targetReg);
@@ -9814,7 +9814,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             regNumber fromReg   = (regNumber)location[sourceReg];
             if (targetReg == fromReg)
             {
-                targetRegsToDo &= ~targetRegMask;
+                targetRegsToDo.RemoveRegNumInMask(targetReg);
             }
             else
             {
@@ -9857,16 +9857,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // Otherwise, we'll spill it to the stack and reload it later.
                         if (useSwap)
                         {
-                            singleRegMask fromRegMask = genRegMask(fromReg);
-                            targetRegsToDo &= ~fromRegMask;
+                            targetRegsToDo.RemoveRegNumInMask(fromReg);
                         }
                     }
                     else
                     {
                         // Look at the remaining registers from targetRegsToDo (which we expect to be relatively
                         // small at this point) to find out what's currently in targetReg.
-                        regMaskMixed mask = targetRegsToDo;
-                        while (mask != RBM_NONE && otherTargetReg == REG_NA)
+                        AllRegsMask mask = targetRegsToDo;
+                        while (!mask.IsEmpty() && otherTargetReg == REG_NA)
                         {
                             regNumber nextReg = genFirstRegNumFromMaskAndToggle(mask);
                             if (location[source[nextReg]] == targetReg)
@@ -9905,7 +9904,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         singleRegMask otherTargetRegMask = genRegMask(otherTargetReg);
                         targetRegsFromStack |= otherTargetRegMask;
                         stackToRegIntervals[otherTargetReg] = otherInterval;
-                        targetRegsToDo &= ~otherTargetRegMask;
+                        targetRegsToDo.RemoveRegNumInMask(otherTargetReg);
 
                         // Now, move the interval that is going to targetReg.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg,
@@ -9937,7 +9936,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 #endif // TARGET_ARM
                         }
                     }
-                    targetRegsToDo &= ~targetRegMask;
+                    targetRegsToDo.RemoveRegNumInMask(targetReg);
                 }
                 else
                 {
@@ -14074,6 +14073,28 @@ AllRegsMask operator&=(AllRegsMask& first, const AllRegsMask& second)
 #ifdef HAS_PREDICATE_REGS
     first.predicateRegs &= second.predicateRegs;
 #endif
+    return first;
+}
+
+
+AllRegsMask operator^=(AllRegsMask& first, const regNumber reg)
+{
+    if (emitter::isGeneralRegister(reg))
+    {
+        first.gprRegs ^= genRegMask(reg);
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        first.floatRegs ^= genRegMask(reg);
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        first.predicateRegs ^= genRegMask(reg);
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
     return first;
 }
 

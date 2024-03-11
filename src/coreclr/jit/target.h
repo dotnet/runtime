@@ -444,6 +444,7 @@ AllRegsMask             operator|(const AllRegsMask& first, const AllRegsMask& s
 AllRegsMask             operator|=(AllRegsMask& first, const AllRegsMask& second);
 AllRegsMask             operator&=(AllRegsMask& first, const AllRegsMask& second);
 AllRegsMask             operator|=(AllRegsMask& first, const regNumber reg);
+AllRegsMask             operator^=(AllRegsMask& first, const regNumber reg);
 // AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
 AllRegsMask operator~(const AllRegsMask& first);
 // inline AllRegsMask createRegMask(regNumber reg)

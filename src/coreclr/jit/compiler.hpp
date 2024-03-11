@@ -970,6 +970,80 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskMixed& mask)
 }
 
 //------------------------------------------------------------------------------
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
+//
+
+inline regNumber genFirstRegNumFromMaskAndToggle(AllRegsMask& mask)
+{
+    assert(!mask.IsEmpty()); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+    regNumber regNum;
+
+    if (mask.gprRegs != RBM_NONE)
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.gprRegs);
+        mask.gprRegs ^= genRegMask(regNum);
+    }
+#ifdef HAS_PREDICATE_REGS
+    else if (mask.predicateRegs != RBM_NONE)
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs);
+        mask.predicateRegs ^= genRegMask(regNum);
+    }
+#endif
+    else
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.floatRegs);
+        mask.floatRegs ^= genRegMask(regNum);
+    }
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
+//
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask.
+//
+
+inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
+{
+    assert(!mask.IsEmpty()); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+    regNumber regNum;
+
+    if (mask.gprRegs != RBM_NONE)
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.gprRegs);
+    }
+#ifdef HAS_PREDICATE_REGS
+    else if (mask.predicateRegs != RBM_NONE)
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs);
+    }
+#endif
+    else
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.floatRegs);
+    }
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
 // genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
 //
 // Arguments:
