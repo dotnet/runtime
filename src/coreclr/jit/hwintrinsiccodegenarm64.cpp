@@ -1292,16 +1292,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 break;
 
-            case NI_Sve_CreateTrueMaskAllByte:
-            case NI_Sve_CreateTrueMaskAllDouble:
-            case NI_Sve_CreateTrueMaskAllInt16:
-            case NI_Sve_CreateTrueMaskAllInt32:
-            case NI_Sve_CreateTrueMaskAllInt64:
-            case NI_Sve_CreateTrueMaskAllSByte:
-            case NI_Sve_CreateTrueMaskAllSingle:
-            case NI_Sve_CreateTrueMaskAllUInt16:
-            case NI_Sve_CreateTrueMaskAllUInt32:
-            case NI_Sve_CreateTrueMaskAllUInt64:
+            case NI_Sve_CreateTrueMaskAll:
                 // Must use the pattern variant, as the non-pattern varient is SVE2.1.
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;

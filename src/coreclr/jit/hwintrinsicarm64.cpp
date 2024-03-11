@@ -2220,54 +2220,7 @@ GenTree* Compiler::convertHWIntrinsicToMask(var_types   type,
                                             unsigned    simdSize)
 {
     // ConvertVectorToMask uses cmpne which requires an embedded mask.
-    // TODO-SVE: Refactor this out once full embedded masking is adding.
-    NamedIntrinsic maskName;
-    switch (simdBaseJitType)
-    {
-        case CORINFO_TYPE_UBYTE:
-            maskName = NI_Sve_CreateTrueMaskAllByte;
-            break;
-
-        case CORINFO_TYPE_DOUBLE:
-            maskName = NI_Sve_CreateTrueMaskAllDouble;
-            break;
-
-        case CORINFO_TYPE_SHORT:
-            maskName = NI_Sve_CreateTrueMaskAllInt16;
-            break;
-
-        case CORINFO_TYPE_INT:
-            maskName = NI_Sve_CreateTrueMaskAllInt32;
-            break;
-
-        case CORINFO_TYPE_LONG:
-            maskName = NI_Sve_CreateTrueMaskAllInt64;
-            break;
-
-        case CORINFO_TYPE_BYTE:
-            maskName = NI_Sve_CreateTrueMaskAllSByte;
-            break;
-
-        case CORINFO_TYPE_FLOAT:
-            maskName = NI_Sve_CreateTrueMaskAllSingle;
-            break;
-
-        case CORINFO_TYPE_USHORT:
-            maskName = NI_Sve_CreateTrueMaskAllUInt16;
-            break;
-
-        case CORINFO_TYPE_UINT:
-            maskName = NI_Sve_CreateTrueMaskAllUInt32;
-            break;
-
-        case CORINFO_TYPE_ULONG:
-            maskName = NI_Sve_CreateTrueMaskAllUInt64;
-            break;
-
-        default:
-            unreached();
-    }
-    GenTree* embeddedMask = gtNewSimdHWIntrinsicNode(TYP_MASK, maskName, simdBaseJitType, simdSize);
+    GenTree* embeddedMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
     return gtNewSimdHWIntrinsicNode(TYP_MASK, embeddedMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType,
                                     simdSize);
 }
