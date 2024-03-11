@@ -662,6 +662,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
                 if (block->FalseEdgeIs(oldEdge))
                 {
+                    // Branch was degenerate, simplify it first
+                    //
                     // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
@@ -671,10 +673,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 // fgRemoveRefPred should have removed the flow edge
                 fgRemoveRefPred(oldEdge);
                 assert(oldEdge->getDupCount() == 0);
-
-                // TODO-NoFallThrough: Proliferate weight from oldEdge
-                // (as a quirk, we avoid doing so for the true target to reduce diffs for now)
-                FlowEdge* const newEdge = fgAddRefPred(newTarget, block);
+                FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
 
                 if (block->KindIs(BBJ_ALWAYS))
                 {
@@ -684,11 +683,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 {
                     assert(block->KindIs(BBJ_COND));
                     block->SetTrueEdge(newEdge);
-
-                    if (oldEdge->hasLikelihood())
-                    {
-                        newEdge->setLikelihood(oldEdge->getLikelihood());
-                    }
                 }
             }
             else
@@ -696,12 +690,41 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 assert(block->FalseTargetIs(oldTarget));
                 FlowEdge* const oldEdge = block->GetFalseEdge();
 
+                if (block->TrueEdgeIs(oldEdge))
+                {
+                    // Branch was degenerate
+                    //
+                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
+                    fgRemoveConditionalJump(block);
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    assert(block->TargetIs(oldTarget));
+                }
+
                 // fgRemoveRefPred should have removed the flow edge
                 fgRemoveRefPred(oldEdge);
                 assert(oldEdge->getDupCount() == 0);
                 FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
-                block->SetFalseEdge(newEdge);
+
+                if (block->KindIs(BBJ_ALWAYS))
+                {
+                    block->SetTargetEdge(newEdge);
+                }
+                else
+                {
+                    assert(block->KindIs(BBJ_COND));
+                    block->SetFalseEdge(newEdge);
+                }
             }
+
+            if (block->GetFalseEdge() == block->GetTrueEdge())
+            {
+                // Block became degenerate, simplify
+                //
+                fgRemoveConditionalJump(block);
+                assert(block->KindIs(BBJ_ALWAYS));
+                assert(block->TargetIs(newTarget));
+            }
+
             break;
 
         case BBJ_SWITCH:
