@@ -278,12 +278,12 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     if (nextRefPosition == nullptr)
     {
         nextLocation = MaxLocation;
-        fixedRegs &= ~genRegMask(regRecord->regNum);
+        fixedRegs[regTypeIndex(regRecord->registerType)]  &= ~genRegMask(regRecord->regNum);
     }
     else
     {
         nextLocation = nextRefPosition->nodeLocation;
-        fixedRegs |= genRegMask(regRecord->regNum);
+        fixedRegs[regTypeIndex(regRecord->registerType)] |= genRegMask(regRecord->regNum);
     }
     nextFixedRef[regRecord->regNum] = nextLocation;
 }
@@ -4988,7 +4988,7 @@ void LinearScan::allocateRegistersMinimal()
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
         // Include all the arg regs, as they may already have values assigned to them.
-        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet | RBM_ARG_REGS;
+        registersToDump = AllRegsMask(LsraLimitSmallIntSet | RBM_ARG_REGS, LsraLimitSmallFPSet, RBM_NONE);
         dumpRegRecordHeader();
         // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
         printf(indentFormat, "");
@@ -5652,7 +5652,7 @@ void LinearScan::allocateRegisters()
                 updateNextIntervalRef(reg, interval);
                 updateSpillCost(reg, interval);
                 setRegInUse(reg, interval->registerType);
-                INDEBUG(registersToDump |= getRegMask(reg, interval->registerType));
+                INDEBUG(registersToDump.AddRegNumInMask(reg, interval->registerType));
             }
         }
         else
@@ -5672,7 +5672,7 @@ void LinearScan::allocateRegisters()
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
         // Include all the arg regs, as they may already have values assigned to them.
-        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet | RBM_ARG_REGS;
+        registersToDump = AllRegsMask(LsraLimitSmallIntSet | RBM_ARG_REGS, LsraLimitSmallFPSet , RBM_NONE);
         dumpRegRecordHeader();
         // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
         printf(indentFormat, "");
@@ -11046,7 +11046,7 @@ void LinearScan::dumpLsraAllocationEvent(
     }
     if ((interval != nullptr) && (reg != REG_NA) && (reg != REG_STK))
     {
-        registersToDump |= getRegMask(reg, interval->registerType);
+        registersToDump.AddRegNumInMask(reg, interval->registerType);
         dumpRegRecordTitleIfNeeded();
     }
 
@@ -11385,7 +11385,7 @@ void LinearScan::dumpRegRecordHeader()
               regColumnWidth + 1);
 
     // Print a "title row" including the legend and the reg names.
-    lastDumpedRegisters = RBM_NONE;
+    lastDumpedRegisters = AllRegsMask();
     dumpRegRecordTitleIfNeeded();
 }
 
@@ -11397,7 +11397,7 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
         int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
-            if ((registersToDump & genRegMask((regNumber)regNumIndex)) != 0)
+            if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
             {
                 lastUsedRegNumIndex = regNumIndex;
             }
@@ -13528,7 +13528,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
     }
 
 #ifdef DEBUG
-    regMaskMixed inUseOrBusyRegsMask = RBM_NONE;
+    AllRegsMask inUseOrBusyRegsMask;
 #endif
 
     // Eliminate candidates that are in-use or busy.
@@ -13537,8 +13537,8 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
-        regMaskMixed busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-        candidates &= ~busyRegs;
+        AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
+        candidates           = busyRegs.ApplyTo(candidates, regType);
 
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -13548,7 +13548,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+            candidates &= ~((busyRegs.floatRegs & RBM_ALLDOUBLE_HIGH) >> 1);
         }
 #endif // TARGET_ARM
 
@@ -13559,7 +13559,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
         // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-        regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs;
+        regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs[regTypeIndex(regType)];
         while (checkConflictMask != RBM_NONE)
         {
             regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
@@ -13573,7 +13573,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
             {
                 candidates &= ~checkConflictBit;
 #ifdef DEBUG
-                inUseOrBusyRegsMask |= checkConflictBit;
+                inUseOrBusyRegsMask |= checkConflictReg;
 #endif
             }
         }
@@ -13653,7 +13653,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
                 // Remove the `inUseOrBusyRegsMask` from the original candidates list and find one
                 // such range that is consecutive. Next, append that range to the `candidates`.
                 //
-                regMaskFloat limitCandidatesForConsecutive = refPosition->registerAssignment & ~inUseOrBusyRegsMask;
+                regMaskFloat limitCandidatesForConsecutive = refPosition->registerAssignment & ~inUseOrBusyRegsMask.floatRegs;
                 regMaskFloat overallLimitCandidates;
                 regMaskFloat limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
@@ -13897,7 +13897,7 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs;
+    regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs[regTypeIndex(regType)];
     while (checkConflictMask != RBM_NONE)
     {
         regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
@@ -13985,6 +13985,11 @@ bool operator==(const AllRegsMask& first, const AllRegsMask& second)
            && first.predicateRegs == second.predicateRegs
 #endif
         ;
+}
+
+bool operator!=(const AllRegsMask& first, const AllRegsMask& second)
+{
+    return !(first == second);
 }
 
 AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second)
@@ -14143,6 +14148,26 @@ bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type)
     else if (emitter::isFloatReg(reg))
     {
         return (floatRegs & genRegMask(reg, type)) != RBM_NONE;
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        return (predicateRegs & genRegMask(reg)) != RBM_NONE;
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg)
+{
+    if (emitter::isGeneralRegister(reg))
+    {
+        return (gprRegs & genRegMask(reg)) != RBM_NONE;
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        return (floatRegs & genRegMask(reg)) != RBM_NONE;
     }
     else
     {

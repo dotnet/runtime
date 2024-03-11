@@ -355,6 +355,7 @@ typedef struct _regMaskAll
     void RemoveRegNumInMask(regNumber reg);
     void RemoveRegNumInMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type);
+    bool IsRegNumInMask(regNumber reg);
 
     // Rename this to AddRegMask()
     void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
@@ -375,6 +376,28 @@ typedef struct _regMaskAll
             floatRegs |= maskToAdd;
         }
     }
+
+    regMaskOnlyOne ApplyTo(regMaskOnlyOne dstMask, var_types type)
+    {        
+        if (varTypeRegister[type] == VTR_INT)
+        {
+            dstMask &= gprRegs;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeRegister[type] == VTR_MASK)
+        {
+            dstMask &= predicateRegs;
+        }
+#endif
+        else
+        {
+            assert(varTypeRegister[type] == VTR_FLOAT);
+            dstMask &= floatRegs;
+        }
+
+        return dstMask;
+    }
+
     regMaskOnlyOne GetRegTypeMask(var_types type)
     {
         if (varTypeRegister[type] == VTR_INT)
@@ -435,6 +458,7 @@ typedef unsigned __int64 regMaskSmall;
 #endif
 
 bool                    operator==(const AllRegsMask& first, const AllRegsMask& second);
+bool                    operator!=(const AllRegsMask& first, const AllRegsMask& second);
 AllRegsMask             operator&(const AllRegsMask& first, const AllRegsMask& second);
 regMaskOnlyOne          operator&(const AllRegsMask& first, const regNumber reg);
 AllRegsMask             operator|(const AllRegsMask& first, const AllRegsMask& second);

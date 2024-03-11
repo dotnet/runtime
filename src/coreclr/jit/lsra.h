@@ -1501,12 +1501,12 @@ private:
     static const int MAX_ROWS_BETWEEN_TITLES = 50;
     int              rowCountSinceLastTitle;
     // Current mask of registers being printed in the dump.
-    regMaskMixed lastDumpedRegisters;
-    regMaskMixed registersToDump;
+    AllRegsMask lastDumpedRegisters;
+    AllRegsMask registersToDump;
     int          lastUsedRegNumIndex;
     bool shouldDumpReg(regNumber regNum)
     {
-        return (registersToDump & genRegMask(regNum)) != 0;
+        return registersToDump.IsRegNumInMask(regNum);
     }
 
     void dumpRegRecordHeader();
@@ -1950,8 +1950,10 @@ private:
 
 #ifdef HAS_PREDICATE_REGS
     regMaskOnlyOne m_RegistersWithConstants[3]; // TODO: Change this to m_GprRegistersWithConstant, m_FloatRegistersWithConstant, etc.
+    regMaskOnlyOne fixedRegs[3];
 #else
     regMaskOnlyOne m_RegistersWithConstants[2];
+    regMaskOnlyOne fixedRegs[2];
 #endif
 
     void clearConstantReg(regNumber reg, var_types regType)
@@ -1974,7 +1976,6 @@ private:
     }
     regMaskOnlyOne getMatchingConstants(regMaskMixed mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskMixed fixedRegs; // TODO: Should be also seperate
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
