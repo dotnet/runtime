@@ -10,12 +10,23 @@ namespace System.Diagnostics.Tracing
     // It contains the runtime specific interop to native event sinks.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
+#if NATIVEAOT
+        // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
+        public static partial class Keywords
+        {
+            public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
+            public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
+            public const EventKeywords WaitHandleKeyword = (EventKeywords)0x40000000000;
+        }
+#endif
+
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionLockCreated")]
         private static partial void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionStart")]
         private static partial void LogContentionStart(
             ContentionFlagsMap ContentionFlags,
             ushort ClrInstanceID,
@@ -24,38 +35,38 @@ namespace System.Diagnostics.Tracing
             ulong LockOwnerThreadID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionStop")]
         private static partial void LogContentionStop(
             ContentionFlagsMap ContentionFlags,
             ushort ClrInstanceID,
             double DurationNs);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart")]
         private static partial void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop")]
         private static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait")]
         private static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolMinMaxThreads")]
         private static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample")]
         private static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment")]
         private static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats")]
         private static partial void LogThreadPoolWorkerThreadAdjustmentStats(
             double Duration,
             double Throughput,
@@ -70,7 +81,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIOEnqueue")]
         private static partial void LogThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
@@ -78,37 +89,34 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIODequeue")]
         private static partial void LogThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount")]
         private static partial void LogThreadPoolWorkingThreadCount(
             uint Count,
-            ushort ClrInstanceID
-        );
+            ushort ClrInstanceID);
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIOPack")]
         private static partial void LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
-#pragma warning disable IDE0060 // Remove unused parameter
         [NonEvent]
-        private static void LogWaitHandleWaitStart(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStart")]
+        private static partial void LogWaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             IntPtr AssociatedObjectID,
-            ushort ClrInstanceID) =>
-            Debug.Fail("This event is currently not expected to be raised by managed code in CoreCLR.");
+            ushort ClrInstanceID);
 
         [NonEvent]
-        private static void LogWaitHandleWaitStop(ushort ClrInstanceID) =>
-            Debug.Fail("This event is currently not expected to be raised by managed code in CoreCLR.");
-#pragma warning restore IDE0060
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStop")]
+        private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID);
     }
 }

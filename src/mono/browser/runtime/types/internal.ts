@@ -80,7 +80,6 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
-    assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
@@ -123,7 +122,6 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
-    assertAfterExit: boolean;
 
     exitCode: number | undefined;
     exitReason: any;

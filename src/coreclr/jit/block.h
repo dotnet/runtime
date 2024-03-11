@@ -258,7 +258,9 @@ public:
 // PredBlockList: adapter class for forward iteration of the predecessor edge linked list yielding
 // predecessor blocks, using range-based `for`, normally used via BasicBlock::PredBlocks(), e.g.:
 //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
+// allowEdits controls whether the iterator should be resilient to changes to the predecessor list.
 //
+template <bool allowEdits>
 class PredBlockList
 {
     FlowEdge* m_begin;
@@ -270,13 +272,12 @@ class PredBlockList
     {
         FlowEdge* m_pred;
 
-#ifdef DEBUG
-        // Try to guard against the user of the iterator from making changes to the IR that would invalidate
-        // the iterator: cache the edge we think should be next, then check it when we actually do the `++`
+        // When allowEdits=false, try to guard against the user of the iterator from modifying the predecessor list
+        // being traversed: cache the edge we think should be next, then check it when we actually do the `++`
         // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
         // this iterator implementation.
+        // When allowEdits=true, m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
         FlowEdge* m_next;
-#endif
 
     public:
         iterator(FlowEdge* pred);
@@ -1530,9 +1531,18 @@ public:
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
     //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
     //
-    PredBlockList PredBlocks() const
+    PredBlockList<false> PredBlocks() const
     {
-        return PredBlockList(bbPreds);
+        return PredBlockList<false>(bbPreds);
+    }
+
+    // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
+    //    for (BasicBlock* const predBlock : block->PredBlocksList()) ...
+    // This iterator tolerates modifications to bbPreds.
+    //
+    PredBlockList<true> PredBlocksEditing() const
+    {
+        return PredBlockList<true>(bbPreds);
     }
 
     // Pred list maintenance
@@ -2399,29 +2409,45 @@ inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
     return *this;
 }
 
-inline PredBlockList::iterator::iterator(FlowEdge* pred) : m_pred(pred)
+template <bool allowEdits>
+inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred) : m_pred(pred)
 {
-#ifdef DEBUG
-    m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
-#endif
+    bool initNextPointer = allowEdits;
+    INDEBUG(initNextPointer = true);
+    if (initNextPointer)
+    {
+        m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
+    }
 }
 
-inline BasicBlock* PredBlockList::iterator::operator*() const
+template <bool     allowEdits>
+inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
 {
     return m_pred->getSourceBlock();
 }
 
-inline PredBlockList::iterator& PredBlockList::iterator::operator++()
+template <bool                                       allowEdits>
+inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
 {
-    FlowEdge* next = m_pred->getNextPredEdge();
+    if (allowEdits)
+    {
+        // For editing iterators, m_next is always used and maintained
+        m_pred = m_next;
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
+    }
+    else
+    {
+        FlowEdge* next = m_pred->getNextPredEdge();
 
 #ifdef DEBUG
-    // Check that the next block is the one we expect to see.
-    assert(next == m_next);
-    m_next = (next == nullptr) ? nullptr : next->getNextPredEdge();
+        // If allowEdits=false, check that the next block is the one we expect to see.
+        assert(next == m_next);
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
 #endif // DEBUG
 
-    m_pred = next;
+        m_pred = next;
+    }
+
     return *this;
 }
 

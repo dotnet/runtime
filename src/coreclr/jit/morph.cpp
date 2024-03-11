@@ -765,6 +765,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "ValidateIndirectCallTarget";
         case WellKnownArg::DispatchIndirectCallTarget:
             return "DispatchIndirectCallTarget";
+        case WellKnownArg::SwiftError:
+            return "SwiftError";
         case WellKnownArg::SwiftSelf:
             return "SwiftSelf";
     }

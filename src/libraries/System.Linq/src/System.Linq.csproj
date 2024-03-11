@@ -73,6 +73,7 @@
     <Compile Include="System\Linq\OfType.cs" />
     <Compile Include="System\Linq\OrderBy.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.cs" />
+    <Compile Include="System\Linq\PartialArrayEnumerator.cs" />
     <Compile Include="System\Linq\Range.cs" />
     <Compile Include="System\Linq\Repeat.cs" />
     <Compile Include="System\Linq\Reverse.cs" />
