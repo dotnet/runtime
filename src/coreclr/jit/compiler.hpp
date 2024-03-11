@@ -957,7 +957,7 @@ inline regNumber genRegNumFromMask(regMaskOnlyOne mask)
 //    the bit.
 //
 
-inline regNumber genFirstRegNumFromMaskAndToggle(regMaskMixed& mask)
+inline regNumber genFirstRegNumFromMaskAndToggle(regMaskOnlyOne& mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -1053,7 +1053,7 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
 //    The number of the first register contained in the mask.
 //
 
-inline regNumber genFirstRegNumFromMask(regMaskMixed mask)
+inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 

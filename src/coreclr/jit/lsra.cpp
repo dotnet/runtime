@@ -773,7 +773,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
-    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskMixed) * TYP_COUNT);
+    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskOnlyOne) * TYP_COUNT);
 
     if (!compiler->canUseEvexEncoding())
     {
