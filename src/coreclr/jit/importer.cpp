@@ -4429,16 +4429,21 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // Calling the finally block.
 
                 // callBlock calls the finally handler
-                callBlock               = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
-                FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-                callBlock->SetTargetEdge(newEdge);
+                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
+
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                    callBlock->SetTargetEdge(newEdge);
+                }
 
                 // step's jump target shouldn't be set yet
                 assert(!step->HasInitializedTarget());
 
-                // the previous call to a finally returns to this call (to the next finally in the chain)
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                step->SetTargetEdge(newEdge);
+                {
+                    // the previous call to a finally returns to this call (to the next finally in the chain)
+                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                    step->SetTargetEdge(newEdge);
+                }
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
