@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static partial class CancelablePromise
     {
-        public static void CancelPromise(Task promise)
+        public static unsafe void CancelPromise(Task promise)
         {
             // this check makes sure that promiseGCHandle is still valid handle
             if (promise.IsCompleted)
@@ -24,7 +24,6 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
-            holder.IsCanceling = true;
             Interop.Runtime.CancelPromise(holder.GCHandle);
 #else
 
@@ -34,7 +33,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     return;
                 }
-                holder.IsCanceling = true;
+
+                if (Interlocked.CompareExchange(ref (*holder.State).IsResolving, 1, 0) != 0)
+                {
+                    return;
+                }
 
                 if (holder.ProxyContext.IsCurrentThread())
                 {
@@ -42,9 +45,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    // FIXME: race condition
-                    // we know that holder.GCHandle is still valid because we hold the ProxyContext lock
-                    // but the message may arrive to the target thread after it was resolved, making GCHandle invalid
                     Interop.Runtime.CancelPromisePost(holder.ProxyContext.JSNativeTID, holder.GCHandle);
                 }
             }

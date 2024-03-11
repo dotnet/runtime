@@ -8,6 +8,7 @@ public class Program
     [Fact]
     public static unsafe int TestEntryPoint()
     {
+#pragma warning disable CS8500 // takes address of managed type
         bool result = true;
 
         int poisoned;
@@ -16,7 +17,7 @@ public class Program
 
         GCRef zeroed;
         Unsafe.SkipInit(out zeroed);
-        result &= VerifyZero(Unsafe.AsPointer(ref zeroed), Unsafe.SizeOf<GCRef>());
+        result &= VerifyZero(&zeroed, sizeof(GCRef));
 
         WithoutGCRef poisoned2;
         Unsafe.SkipInit(out poisoned2);
@@ -36,9 +37,10 @@ public class Program
 
         GCRef zeroed2;
         Unsafe.SkipInit(out zeroed2);
-        result &= VerifyZero(Unsafe.AsPointer(ref zeroed2), Unsafe.SizeOf<GCRef>());
+        result &= VerifyZero(&zeroed2, sizeof(GCRef));
 
         return result ? 100 : 101;
+#pragma warning restore CS8500
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

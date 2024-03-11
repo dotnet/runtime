@@ -617,16 +617,17 @@ jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 		initialize_opcode_value_table ();
 
 	guint16 opcode = ins->opcode;
-	g_assert(opcode < MINT_LASTOP);
+	g_assert (opcode < MINT_LASTOP);
 	int table_value = opcode_value_table[opcode];
 
-	if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
-		return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
-	} else if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
-		return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
-	} else if (table_value == VALUE_BEGIN_BRANCH_BLOCK) {
-		*inside_branch_block = TRUE;
-		return VALUE_NORMAL;
+	switch (table_value) {
+		case VALUE_ABORT_OUTSIDE_BRANCH_BLOCK:
+			return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
+		case VALUE_ABORT_OUTSIDE_BRANCH_BLOCK_NONE:
+			return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
+		case VALUE_BEGIN_BRANCH_BLOCK:
+			*inside_branch_block = TRUE;
+			return VALUE_NORMAL;
 	}
 
 	switch (opcode) {
@@ -884,7 +885,10 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
 		//  the new instruction counter will be the number of instructions in the block, so if
 		//  it's big enough we'll be able to insert another entry point right away.
-		instruction_count += bb->in_count;
+		for (InterpInst * ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (!MINT_IS_EMIT_NOP (ins->opcode))
+				instruction_count++;
+		}
 
 		build_address_taken_bitset (td, bb, bitset_size);
 	}
@@ -999,7 +1003,7 @@ mono_jiterp_parse_option (const char *option)
 
 	const char *arr[2] = { option, NULL };
 	int temp;
-	mono_options_parse_options (arr, 1, &temp, NULL);
+	mono_options_parse_options (arr, 1, &temp, NULL, NULL);
 	return TRUE;
 }
 
@@ -1673,7 +1677,20 @@ mono_jiterp_tlqueue_clear (int queue) {
 
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
+#else
+int
+mono_jiterp_is_enabled (void);
 #endif // HOST_BROWSER
 
-void jiterp_preserve_module (void) {
+int
+mono_jiterp_is_enabled (void) {
+#if HOST_BROWSER
+	return mono_opt_jiterpreter_traces_enabled;
+#else
+	return 0;
+#endif
+}
+
+void
+jiterp_preserve_module (void) {
 }

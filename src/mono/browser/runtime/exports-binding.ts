@@ -10,7 +10,6 @@ import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js }
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
-import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
@@ -27,8 +26,13 @@ import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } fro
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
-import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered, mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name } from "./pthreads";
-import { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop } from "./pthreads";
+import {
+    mono_wasm_eventloop_has_unsettled_interop_promises, mono_wasm_start_deputy_thread_async,
+    mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
+    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop
+} from "./pthreads";
+import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
+
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -38,9 +42,12 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_pthread_on_pthread_attached,
     mono_wasm_pthread_on_pthread_unregistered,
     mono_wasm_pthread_set_name,
+    mono_wasm_start_deputy_thread_async,
 
     // threads.c
     mono_wasm_eventloop_has_unsettled_interop_promises,
+    // mono-threads.c
+    mono_wasm_dump_threads,
     // diagnostics_server.c
     mono_wasm_diagnostic_server_on_server_thread_created,
     mono_wasm_diagnostic_server_on_runtime_server_init,
