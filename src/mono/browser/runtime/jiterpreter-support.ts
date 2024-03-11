@@ -1246,12 +1246,14 @@ class Cfg {
             this.overheadBytes += 11;
         }
 
-        // Account for the size of the safepoint
-        if (
-            (branchType === CfgBranchType.SafepointConditional) ||
-            (branchType === CfgBranchType.SafepointUnconditional)
-        ) {
-            this.overheadBytes += 17;
+        if (WasmEnableThreads) {
+            // Account for the size of the safepoint
+            if (
+                (branchType === CfgBranchType.SafepointConditional) ||
+                (branchType === CfgBranchType.SafepointUnconditional)
+            ) {
+                this.overheadBytes += 17;
+            }
         }
     }
 
