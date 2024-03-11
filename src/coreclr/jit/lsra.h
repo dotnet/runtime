@@ -1943,7 +1943,8 @@ private:
     FORCEINLINE void updateRegsFreeBusyState(RefPosition&   refPosition,
                                              regMaskOnlyOne regsBusy,
                                              AllRegsMask*   regsToFree,
-                                             AllRegsMask* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                             AllRegsMask*   delayRegsToFree,
+                                             RegisterType   regType DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
 #ifdef HAS_PREDICATE_REGS

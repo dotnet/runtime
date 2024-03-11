@@ -389,11 +389,10 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 void LinearScan::updateRegsFreeBusyState(RefPosition&   refPosition,
                                          regMaskOnlyOne regsBusy,
                                          AllRegsMask*   regsToFree,
-                                         AllRegsMask* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                         AllRegsMask* delayRegsToFree, RegisterType regType DEBUG_ARG(Interval* interval)
                                              DEBUG_ARG(regNumber assignedReg))
 {
     assert(compiler->IsOnlyOneRegMask(regsBusy));
-    RegisterType regType = interval->registerType;
 
     regsInUseThisLocation.AddRegTypeMask(regsBusy, regType);
     if (refPosition.lastUse)
@@ -5374,7 +5373,8 @@ void LinearScan::allocateRegistersMinimal()
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
                     updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                                            &delayRegsToFree, currentInterval->registerType DEBUG_ARG(currentInterval)
+                                                DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
                         copyRegsToFree.AddRegNumInMask(copyReg, currentInterval->registerType);
@@ -6419,7 +6419,8 @@ void LinearScan::allocateRegisters()
                             // we will copy the entire vector value from it to the `copyReg`.
 
                             updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                                    &delayRegsToFree DEBUG_ARG(currentInterval)
+                                                    &delayRegsToFree,
+                                                    currentInterval->registerType DEBUG_ARG(currentInterval)
                                                         DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
                             {
@@ -6528,7 +6529,9 @@ void LinearScan::allocateRegisters()
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
                     updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                                            &delayRegsToFree,
+                                            currentInterval->registerType DEBUG_ARG(currentInterval)
+                                                DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
                         copyRegsToFree.AddRegNumInMask(copyReg, currentInterval->registerType);
@@ -9805,7 +9808,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     while (!targetCandidates.IsEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetCandidates);
-        targetCandidates ^= targetReg;
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -9834,9 +9836,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
         while (!targetRegsReady.IsEmpty())
         {
-            regNumber targetReg = genFirstRegNumFromMask(targetRegsReady);
+            regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo ^= targetReg;
-            targetRegsReady ^= targetReg;
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
