@@ -2352,6 +2352,62 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func)
 }
 
 //----------------------------------------------------------------------------------------
+// IsObjectHandle: Returns true if the given ValueNum represents a handle to an object.
+//   It can be either a nongc object handle or a regular movable object handle
+//   which is guaranteed to be non-movable during the JIT compilation.
+//
+// Arguments:
+//   comp          - The compiler instance
+//   vn            - The ValueNum to check
+//   handle        - The actual object handle if the ValueNum represents a handle to an object
+//   ignoreMovable - If true, ignore movable object handles
+//
+// Return Value:
+//   Returns true if the given ValueNum represents a handle to an object.
+//
+static bool IsObjectHandle(Compiler* comp, ValueNum vn, CORINFO_OBJECT_HANDLE* handle, bool ignoreMovable = false)
+{
+    *handle = NO_OBJECT_HANDLE;
+
+    if (comp->vnStore->IsVNObjHandle(vn))
+    {
+        *handle = comp->vnStore->ConstantObjHandle(vn);
+        return true;
+    }
+
+    // Now see if we can extract a movable object handle, it's typically represented as IND<ref>(constAddr)
+    // where addr is a known address of the pinned handle to that movable object. The object is guaranteed to be
+    // non-movable during the JIT compilation. It is important for JIT to never bake its address into the code.
+    //
+    VNFuncApp funcApp;
+    if (!ignoreMovable && comp->vnStore->GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad) &&
+        comp->vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_FIELD_SEQ))
+    {
+        const FieldSeq* fieldSeq = comp->vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[0]);
+        if (fieldSeq != nullptr)
+        {
+            CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
+            if (field != NULL)
+            {
+                uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                if (comp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
+                                                                  /*ignoreMovableObjects*/ false))
+                {
+                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                    // It's done to match the current crossgen/ILC behavior.
+                    CORINFO_OBJECT_HANDLE objHandle = NULL;
+                    memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                    *handle = objHandle;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------------------
 //  VNForFunc  - Returns the ValueNum associated with 'func'('arg0VN')
 //               There is a one-to-one relationship between the ValueNum
 //               and 'func'('arg0VN')
@@ -2384,52 +2440,20 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
         // Check if we can fold GT_ARR_LENGTH on top of a known array (immutable)
         if (func == VNFunc(GT_ARR_LENGTH))
         {
-            // Case 1: ARR_LENGTH(FROZEN_OBJ)
             ValueNum addressVN = VNNormalValue(arg0VN);
-            if (IsVNObjHandle(addressVN))
+
+            // Case 1: ARR_LENGTH(ObjHandle)
+            CORINFO_OBJECT_HANDLE objHandle = NULL;
+            if (IsObjectHandle(m_pComp, addressVN, &objHandle))
             {
-                size_t handle = CoercedConstantValue<size_t>(addressVN);
-                int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
+                int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
                 if (len >= 0)
                 {
                     resultVN = VNForIntCon(len);
                 }
             }
 
-            // Case 2: ARR_LENGTH(static-readonly-field)
-            VNFuncApp funcApp;
-            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
-            {
-                ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
-                if (IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
-                {
-                    FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
-                    if (fieldSeq != nullptr)
-                    {
-                        CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
-                        if (field != NULL)
-                        {
-                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                            if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
-                                                                                 false))
-                            {
-                                // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
-                                // value holding 32bit handle with upper half zeroed (hence, "= NULL").
-                                // It's done to match the current crossgen/ILC behavior.
-                                CORINFO_OBJECT_HANDLE objHandle = NULL;
-                                memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-                                int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
-                                if (len >= 0)
-                                {
-                                    resultVN = VNForIntCon(len);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Case 3: ARR_LENGTH(new T[cns])
+            // Case 2: ARR_LENGTH(new T[cns])
             // TODO: Add support for MD arrays
             int knownSize;
             if ((resultVN == NoVN) && TryGetNewArrSize(addressVN, &knownSize))
@@ -11155,84 +11179,24 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 
     ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
-    if (!vnStore->GetVNFunc(addrVN, &funcApp))
-    {
-        return false;
-    }
-
-    // Is given VN representing a frozen object handle
-    auto isCnsObjHandle = [](ValueNumStore* vnStore, ValueNum vn, CORINFO_OBJECT_HANDLE* handle) -> bool {
-        if (vnStore->IsVNObjHandle(vn))
-        {
-            *handle = vnStore->ConstantObjHandle(vn);
-            return true;
-        }
-        return false;
-    };
-
-    CORINFO_OBJECT_HANDLE objHandle = NO_OBJECT_HANDLE;
-    size_t                index     = -1;
-
-    // First, let see if we have PtrToArrElem
-    ValueNum addr = funcApp.m_args[0];
-    if (funcApp.m_func == VNF_PtrToArrElem)
+    if (vnStore->GetVNFunc(addrVN, &funcApp) && funcApp.m_func == VNF_PtrToArrElem)
     {
         ValueNum arrVN  = funcApp.m_args[1];
         ValueNum inxVN  = funcApp.m_args[2];
         ssize_t  offset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[3]);
 
-        if (isCnsObjHandle(vnStore, arrVN, &objHandle) && (offset == 0) && vnStore->IsVNConstant(inxVN))
+        CORINFO_OBJECT_HANDLE objHandle;
+        if ((offset == 0) && vnStore->IsVNConstant(inxVN) && IsObjectHandle(this, arrVN, &objHandle))
         {
-            index = vnStore->CoercedConstantValue<size_t>(inxVN);
+            size_t index = vnStore->CoercedConstantValue<size_t>(inxVN);
+            USHORT charValue;
+            if ((index < INT_MAX) && info.compCompHnd->getStringChar(objHandle, (int)index, &charValue))
+            {
+                JITDUMP("Folding \"cns_str\"[%d] into %u", (int)index, (unsigned)charValue);
+                tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
+                return true;
+            }
         }
-    }
-    else if (funcApp.m_func == (VNFunc)GT_ADD)
-    {
-        ssize_t  dataOffset = 0;
-        ValueNum baseVN     = ValueNumStore::NoVN;
-
-        // Loop to accumulate total dataOffset, e.g.:
-        // ADD(C1, ADD(ObjHandle, C2)) -> C1 + C2
-        do
-        {
-            ValueNum op1VN = funcApp.m_args[0];
-            ValueNum op2VN = funcApp.m_args[1];
-
-            if (vnStore->IsVNConstant(op1VN) && varTypeIsIntegral(vnStore->TypeOfVN(op1VN)) &&
-                !isCnsObjHandle(vnStore, op1VN, &objHandle))
-            {
-                dataOffset += vnStore->CoercedConstantValue<ssize_t>(op1VN);
-                baseVN = op2VN;
-            }
-            else if (vnStore->IsVNConstant(op2VN) && varTypeIsIntegral(vnStore->TypeOfVN(op2VN)) &&
-                     !isCnsObjHandle(vnStore, op2VN, &objHandle))
-            {
-                dataOffset += vnStore->CoercedConstantValue<ssize_t>(op2VN);
-                baseVN = op1VN;
-            }
-            else
-            {
-                // one of the args is expected to be an integer constant
-                return false;
-            }
-        } while (vnStore->GetVNFunc(baseVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD));
-
-        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
-            ((dataOffset % 2) == 0))
-        {
-            static_assert_no_msg((OFFSETOF__CORINFO_String__chars % 2) == 0);
-            index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
-        }
-    }
-
-    USHORT charValue;
-    if (((size_t)index < INT_MAX) && (objHandle != NO_OBJECT_HANDLE) &&
-        info.compCompHnd->getStringChar(objHandle, (int)index, &charValue))
-    {
-        JITDUMP("Folding \"cns_str\"[%d] into %u", (int)index, (unsigned)charValue);
-
-        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
-        return true;
     }
     return false;
 }
