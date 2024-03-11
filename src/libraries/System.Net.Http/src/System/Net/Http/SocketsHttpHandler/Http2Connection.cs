@@ -765,12 +765,14 @@ namespace System.Net.Http
             // Just ignore the frame in this case.
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
-
             if (http2Stream != null)
             {
                 bool endStream = frameHeader.EndStreamFlag;
 
-                http2Stream.OnResponseData(frameData, endStream);
+                if (frameData.Length > 0 || endStream)
+                {
+                    http2Stream.OnResponseData(frameData, endStream);
+                }
 
                 if (!endStream && frameData.Length > 0)
                 {
