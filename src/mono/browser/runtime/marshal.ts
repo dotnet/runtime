@@ -202,7 +202,7 @@ export function set_arg_element_type(arg: JSMarshalerArgument, type: MarshalerTy
 
 export function get_arg_bool(arg: JSMarshalerArgument): boolean {
     mono_assert(arg, "Null arg");
-    return getB32(<any>arg);
+    return !!getU8(<any>arg);
 }
 
 export function get_arg_u8(arg: JSMarshalerArgument): number {

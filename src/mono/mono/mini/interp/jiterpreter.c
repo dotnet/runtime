@@ -1683,7 +1683,7 @@ mono_jiterp_is_enabled (void);
 #endif // HOST_BROWSER
 
 int
-mono_jiterp_is_enabled () {
+mono_jiterp_is_enabled (void) {
 #if HOST_BROWSER
 	return mono_opt_jiterpreter_traces_enabled;
 #else

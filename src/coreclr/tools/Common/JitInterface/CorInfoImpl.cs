@@ -3285,7 +3285,7 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
+            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
@@ -4020,8 +4020,10 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                     return (ushort)RelocType.IMAGE_REL_BASED_REL32;
 
+#if READYTORUN
                 case TargetArchitecture.ARM:
                     return (ushort)RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
+#endif
 
                 default:
                     return ushort.MaxValue;
