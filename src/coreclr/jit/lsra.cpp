@@ -5021,7 +5021,7 @@ void LinearScan::allocateRegistersMinimal()
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        for (int rType = 0; rType < REGISTER_TYPE_COUNT; rType)
+        for (int rType = 0; rType < REGISTER_TYPE_COUNT; rType++)
         {
             regMaskOnlyOne tempRegsMaskInactive = tempRegsToMakeInactive[rType];
             while (tempRegsMaskInactive != RBM_NONE)
@@ -5705,7 +5705,7 @@ void LinearScan::allocateRegisters()
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        for (int rType = 0; rType < REGISTER_TYPE_COUNT; rType)
+        for (int rType = 0; rType < REGISTER_TYPE_COUNT; rType++)
         {
             regMaskOnlyOne tempRegsMaskInactive = tempRegsToMakeInactive[rType];
             while (tempRegsMaskInactive != RBM_NONE)
@@ -13538,7 +13538,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
         AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-        candidates           = busyRegs.ApplyTo(candidates, regType);
+        candidates           &= ~busyRegs.GetRegTypeMask(regType);
 
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half

@@ -377,27 +377,6 @@ typedef struct _regMaskAll
         }
     }
 
-    regMaskOnlyOne ApplyTo(regMaskOnlyOne dstMask, var_types type)
-    {        
-        if (varTypeRegister[type] == VTR_INT)
-        {
-            dstMask &= gprRegs;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeRegister[type] == VTR_MASK)
-        {
-            dstMask &= predicateRegs;
-        }
-#endif
-        else
-        {
-            assert(varTypeRegister[type] == VTR_FLOAT);
-            dstMask &= floatRegs;
-        }
-
-        return dstMask;
-    }
-
     regMaskOnlyOne GetRegTypeMask(var_types type)
     {
         if (varTypeRegister[type] == VTR_INT)

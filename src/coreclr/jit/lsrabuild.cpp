@@ -2818,8 +2818,8 @@ void           LinearScan::buildIntervals()
     if (!needNonIntegerRegisters)
     {
         availableRegCount   = REG_INT_COUNT;
-        availableFloatRegs  = RBM_NONE;
-        availableDoubleRegs = RBM_NONE;
+        availableFloatRegs.OverrideAssign(RBM_NONE);
+        availableDoubleRegs.OverrideAssign(RBM_NONE);
         //availableMaskRegs   = RBM_NONE; // Is this also needed?
     }
 

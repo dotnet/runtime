@@ -1835,10 +1835,10 @@ private:
     void setRegsInUse(AllRegsMask regMask)
     {
         //TODO: Fix this later.
-        m_AvailableRegs[0] &= regMask.gprRegs;
-        m_AvailableRegs[1] &= regMask.floatRegs;
+        m_AvailableRegs[0] &= ~regMask.gprRegs;
+        m_AvailableRegs[1] &= ~regMask.floatRegs;
 #ifdef HAS_PREDICATE_REGS
-        m_AvailableRegs[2] &= regMask.predicateRegs;
+        m_AvailableRegs[2] &= ~regMask.predicateRegs;
 #endif
     }
     void setRegInUse(regNumber reg, var_types regType)
@@ -1850,7 +1850,7 @@ private:
 #else
         if (emitter::isGeneralRegister(reg))
 #endif
-        {
+        { 
             m_AvailableRegs[0] &= ~regMask;
         }
         else if (emitter::isFloatReg(reg))
