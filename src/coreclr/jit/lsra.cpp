@@ -2779,7 +2779,7 @@ void LinearScan::setFrameType()
 
     // If we are using FPBASE as the frame register, we cannot also use it for
     // a local var.
-    regMaskMixed removeMask = RBM_NONE;
+    regMaskGpr removeMask = RBM_NONE;
     if (frameType == FT_EBP_FRAME)
     {
         removeMask |= RBM_FPBASE;
@@ -2862,7 +2862,7 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
 {
     assert(refPosition->getInterval() == currentInterval);
     RegisterType regType    = currentInterval->registerType;
-    regMaskMixed candidates = refPosition->registerAssignment;
+    regMaskOnlyOne candidates = refPosition->registerAssignment;
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // The LoongArch64's ABI which the float args maybe passed by integer register
     // when no float register left but free integer register.
@@ -6201,7 +6201,7 @@ void LinearScan::allocateRegisters()
             // it might be beneficial to keep it in this reg for PART of the lifetime
             if (currentInterval->isLocalVar)
             {
-                regMaskMixed preferences        = currentInterval->registerPreferences;
+                regMaskOnlyOne preferences        = currentInterval->registerPreferences;
                 bool         keepAssignment     = true;
                 bool         matchesPreferences = (preferences & genRegMask(assignedRegister)) != RBM_NONE;
 
@@ -6310,8 +6310,8 @@ void LinearScan::allocateRegisters()
                         if (copyReg != assignedRegister)
                         {
                             lastAllocatedRefPosition     = &currentRefPosition;
-                            regMaskMixed copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                            regMaskMixed assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                            regMaskOnlyOne copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
+                            regMaskOnlyOne assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
                             if ((consecutiveRegsInUseThisLocation & assignedRegMask) != RBM_NONE)
                             {
@@ -6408,8 +6408,8 @@ void LinearScan::allocateRegisters()
                     }
 
                     lastAllocatedRefPosition     = &currentRefPosition;
-                    regMaskMixed copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                    regMaskMixed assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                    regMaskOnlyOne copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
+                    regMaskOnlyOne assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
 #ifdef TARGET_ARM64
                     if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
@@ -8317,7 +8317,7 @@ void           LinearScan::resolveRegisters()
 
                 if (varDsc->lvIsParam)
                 {
-                    regMaskMixed initialRegMask = interval->firstRefPosition->registerAssignment;
+                    regMaskOnlyOne initialRegMask = interval->firstRefPosition->registerAssignment;
                     regNumber    initialReg     = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
                                                ? REG_STK
                                                : genRegNumFromMask(initialRegMask);
@@ -12173,7 +12173,7 @@ void LinearScan::verifyFinalAllocation()
                 // However, we will assert that, at resolution time, no registers contain GC refs.
                 {
                     DBEXEC(VERBOSE, printf("           "));
-                    regMaskMixed candidateRegs = currentRefPosition.registerAssignment;
+                    regMaskOnlyOne candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
                         regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
@@ -12560,7 +12560,7 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskOn
 {
     assert(linearScan->compiler->IsOnlyOneRegMask(selectionCandidates));
 
-    regMaskMixed newCandidates = candidates & selectionCandidates;
+    regMaskOnlyOne newCandidates = candidates & selectionCandidates;
     if (newCandidates != RBM_NONE)
     {
         candidates = newCandidates;
@@ -12584,7 +12584,7 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
     assert(linearScan->compiler->IsOnlyOneRegMask(selectionCandidate));
     assert(LinearScan::isSingleRegister(selectionCandidate));
 
-    regMaskMixed newCandidates = candidates & selectionCandidate;
+    regMaskOnlyOne newCandidates = candidates & selectionCandidate;
     if (newCandidates != RBM_NONE)
     {
         candidates = newCandidates;
