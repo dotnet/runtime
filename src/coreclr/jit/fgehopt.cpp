@@ -2002,36 +2002,30 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (FlowEdge* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
+        for (BasicBlock* const predBlock : nonCanonicalBlock->PredBlocksEditing())
         {
-            BasicBlock* const predBlock = predEdge->getSourceBlock();
-            nextPredEdge                = predEdge->getNextPredEdge();
-
             switch (predBlock->GetKind())
             {
-                case BBJ_ALWAYS:
-                {
-                    fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updated = true;
-                }
-                break;
-
+                // TODO: Use fgReplaceJumpTarget once it preserves edge weights for BBJ_COND blocks
                 case BBJ_COND:
                 {
-                    // Flow to non canonical block could be via fall through or jump or both.
+                    // Flow to non canonical block could be via true or false target.
                     if (predBlock->FalseTargetIs(nonCanonicalBlock))
                     {
-                        fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
+                        fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock,
+                                                           predBlock->GetFalseEdge());
                     }
 
                     if (predBlock->TrueTargetIs(nonCanonicalBlock))
                     {
-                        fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
+                        fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock,
+                                                      predBlock->GetTrueEdge());
                     }
                     updated = true;
                 }
                 break;
 
+                case BBJ_ALWAYS:
                 case BBJ_SWITCH:
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
@@ -2127,21 +2121,12 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 {
     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
 
-    if (predBlock->KindIs(BBJ_ALWAYS))
-    {
-        // Update flow to new target
-        assert(predBlock->TargetIs(nonCanonicalBlock));
-        fgRedirectTargetEdge(predBlock, canonicalBlock);
-    }
-    else
-    {
-        // Remove the old flow
-        assert(predBlock->KindIs(BBJ_COND));
-        assert(predBlock->TrueTargetIs(nonCanonicalBlock));
-        fgRemoveRefPred(predBlock->GetTrueEdge());
+    // Remove the old flow
+    assert(predBlock->KindIs(BBJ_COND));
+    assert(predBlock->TrueTargetIs(nonCanonicalBlock));
+    fgRemoveRefPred(predBlock->GetTrueEdge());
 
-        // Wire up the new flow
-        FlowEdge* const trueEdge = fgAddRefPred(canonicalBlock, predBlock, predEdge);
-        predBlock->SetTrueEdge(trueEdge);
-    }
+    // Wire up the new flow
+    FlowEdge* const trueEdge = fgAddRefPred(canonicalBlock, predBlock, predEdge);
+    predBlock->SetTrueEdge(trueEdge);
 }

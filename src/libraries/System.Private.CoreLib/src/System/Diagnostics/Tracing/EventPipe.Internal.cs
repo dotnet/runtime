@@ -5,8 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-#if FEATURE_PERFTRACING
-
 namespace System.Diagnostics.Tracing
 {
     internal static partial class EventPipeInternal
@@ -68,5 +66,3 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial bool WaitForSessionSignal(ulong sessionID, int timeoutMs);
     }
 }
-
-#endif // FEATURE_PERFTRACING

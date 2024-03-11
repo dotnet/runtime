@@ -4824,18 +4824,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
-        // Compute reachability sets and dominators.
+        // Compute DFS tree and remove all unreachable blocks.
         //
-        DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
-
-        // Scale block weights and mark run rarely blocks.
-        //
-        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+        DoPhase(this, PHASE_DFS_BLOCKS2, &Compiler::fgDfsBlocksAndRemove);
 
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
+
+        // Scale block weights and mark run rarely blocks.
+        //
+        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
@@ -5851,19 +5851,16 @@ void Compiler::RecomputeFlowGraphAnnotations()
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
 
-    fgComputeReachability();
+    fgRenumberBlocks();
+    fgInvalidateDfsTree();
+    fgDfsBlocksAndRemove();
+    optFindLoops();
     optSetBlockWeights();
 
-    fgInvalidateDfsTree();
-    m_dfsTree = fgComputeDfs();
-    optFindLoops();
-
-    if (fgHasLoops)
+    if (m_domTree == nullptr)
     {
-        optFindAndScaleGeneralLoopBlocks();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     }
-
-    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 }
 
 /*****************************************************************************/
