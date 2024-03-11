@@ -520,9 +520,9 @@ EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
 // Pop off any SEH handlers we have registered below pTargetSP
 VOID __cdecl PopSEHRecords(LPVOID pTargetSP);
 
-#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
 VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
-#endif // TARGET_X86 && DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
 
 BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
 VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
