@@ -243,7 +243,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isIntegerRegister(id->idReg1()) || // ZR
                    isVectorRegister(id->idReg1()));
             assert(isIntegerRegister(id->idReg2())); // SP
-            assert(isValidUimm12(emitGetInsSC(id)));
+            assert(isValidUimm<12>(emitGetInsSC(id)));
             assert(insOptsNone(id->idInsOpt()));
             break;
 
@@ -358,7 +358,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isValidUimm12(emitGetInsSC(id)));
+            assert(isValidUimm<12>(emitGetInsSC(id)));
             assert(insOptsNone(id->idInsOpt()) || insOptsLSL12(id->idInsOpt()));
             break;
 
@@ -394,7 +394,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isIntegerRegister(id->idReg1())); // SP
             assert(isIntegerRegister(id->idReg2())); // SP
-            assert(isValidUimm12(emitGetInsSC(id)));
+            assert(isValidUimm<12>(emitGetInsSC(id)));
             assert(insOptsNone(id->idInsOpt()) || insOptsLSL12(id->idInsOpt()));
             break;
 
@@ -574,7 +574,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             elemsize = id->idOpSize();
             assert(isValidVectorElemsizeFloat(elemsize));
             assert(isVectorRegister(id->idReg1()));
-            assert(isValidUimm8(emitGetInsSC(id)));
+            assert(isValidUimm<8>(emitGetInsSC(id)));
             break;
 
         case IF_DV_1B: // DV_1B   .QX..........iii cmod..iiiiiddddd      Vd imm8    (immediate vector)
@@ -613,7 +613,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 }
             }
             assert(isVectorRegister(id->idReg1()));
-            assert(isValidUimm8(imm));
+            assert(isValidUimm<8>(imm));
             break;
 
         case IF_DV_1C: // DV_1C   .........X...... ......nnnnn.....      Vn #0.0    (fcmp - with zero)
@@ -1124,7 +1124,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm2(emitGetInsSC(id))); // hh
+            assert(isValidUimm<2>(emitGetInsSC(id))); // hh
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
@@ -1133,7 +1133,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm2(emitGetInsSC(id))); // hh
+            assert(isValidUimm<2>(emitGetInsSC(id))); // hh
             break;
 
         case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
@@ -1175,7 +1175,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
-            assert(isValidUimm8(emitGetInsSC(id))); // iiiii iii
+            assert(isValidUimm<8>(emitGetInsSC(id))); // iiiii iii
             break;
 
         case IF_SVE_BU_2A: // ........xx..gggg ...iiiiiiiiddddd -- SVE copy floating-point immediate (predicated)
@@ -1325,7 +1325,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isPredicateRegister(id->idReg1()));    // DDDD
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3()));       // nnnnn
-            assert(isValidUimm7(emitGetInsSC(id)));       // iiiii
+            assert(isValidUimm<7>(emitGetInsSC(id)));       // iiiii
             break;
 
         case IF_SVE_BR_3B:   // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
@@ -1378,7 +1378,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmm
             assert((REG_V0 <= id->idReg3()) && (id->idReg3() <= REG_V7));
-            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(isValidUimm<2>(emitGetInsSC(id))); // ii
             break;
 
         case IF_SVE_FD_3A: // .........i.iimmm ......nnnnnddddd -- SVE2 integer multiply (indexed)
@@ -1398,7 +1398,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmm
             assert((REG_V0 <= id->idReg3()) && (id->idReg3() <= REG_V7));
-            assert(isValidUimm3(emitGetInsSC(id))); // iii
+            assert(isValidUimm<3>(emitGetInsSC(id))); // iii
             break;
 
         case IF_SVE_FE_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply long (indexed)
@@ -1409,7 +1409,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
             assert(isLowVectorRegister(id->idReg3())); // mmmm
-            assert(isValidUimm2(emitGetInsSC(id)));    // ii
+            assert(isValidUimm<2>(emitGetInsSC(id)));    // ii
             break;
 
         case IF_SVE_EY_3B: // ...........immmm ......nnnnnddddd -- SVE integer dot product (indexed)
@@ -1423,7 +1423,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
             assert(isLowVectorRegister(id->idReg3())); // mmmm
-            assert(isValidImm1(emitGetInsSC(id)));     // i
+            assert(isValidUimm<1>(emitGetInsSC(id)));     // i
             break;
 
         case IF_SVE_CZ_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
@@ -1931,15 +1931,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             switch (id->idInsOpt())
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3(imm)); // iii
+                    assert(isValidUimm<3>(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4(imm)); // x iii
+                    assert(isValidUimm<4>(imm)); // x iii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5(imm)); // xx iii
+                    assert(isValidUimm<5>(imm)); // xx iii
                     break;
 
                 default:
@@ -2043,19 +2043,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             switch (id->idInsOpt())
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm4(imm));
+                    assert(isValidUimm<4>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm3(imm));
+                    assert(isValidUimm<3>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));
+                    assert(isValidUimm<2>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidImm1(imm));
+                    assert(isValidUimm<1>(imm));
                     break;
 
                 default:
@@ -2067,14 +2067,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         }
 
         case IF_SVE_DW_2B: // ........xx...... .......iNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
-            assert(isValidImm1(emitGetInsSC(id))); // i
+            assert(isValidUimm<1>(emitGetInsSC(id))); // i
 
             FALLTHROUGH;
         case IF_SVE_DW_2A: // ........xx...... ......iiNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isPredicateRegister(id->idReg1()));                        // DDDD
             assert(isHighPredicateRegister(id->idReg2()));                    // NNN
-            assert(isValidUimm2(emitGetInsSC(id)));                           // ii
+            assert(isValidUimm<2>(emitGetInsSC(id)));                           // ii
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
@@ -2105,7 +2105,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
-            assert(isValidUimm8(emitGetInsSC(id)));                           // iiiiiiii
+            assert(isValidUimm<8>(emitGetInsSC(id)));                           // iiiiiiii
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
@@ -2122,7 +2122,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
-            assert(isValidUimm8(imm));                                        // iiiiiiii
+            assert(isValidUimm<8>(imm));                                        // iiiiiiii
             break;
 
         case IF_SVE_EB_1B: // ........xx...... ...........ddddd -- SVE broadcast integer immediate (unpredicated)
@@ -2134,7 +2134,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                                   // ddddd
-            assert(isValidSimm8(emitGetInsSC(id)) || isValidUimm8(emitGetInsSC(id))); // iiiiiiii
+            assert(isValidSimm8(emitGetInsSC(id)) || isValidUimm<8>(emitGetInsSC(id))); // iiiiiiii
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt())));         // xx
             break;
 
@@ -2166,7 +2166,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmm
             assert((REG_V0 <= id->idReg3()) && (id->idReg3() <= REG_V7));
-            assert(isValidUimm4(emitGetInsSC(id))); // ii rr
+            assert(isValidUimm<4>(emitGetInsSC(id))); // ii rr
             break;
 
         case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
@@ -2177,7 +2177,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
             assert(isLowVectorRegister(id->idReg3())); // mmm
-            assert(isValidUimm3(emitGetInsSC(id)));    // i rr
+            assert(isValidUimm<3>(emitGetInsSC(id)));    // i rr
             break;
 
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -2621,7 +2621,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            assert(isValidUimm3(imm));
+            assert(isValidUimm<3>(imm));
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -2682,7 +2682,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(isValidUimm<2>(emitGetInsSC(id))); // ii
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             break;
 
@@ -2693,7 +2693,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(isValidUimm<2>(emitGetInsSC(id))); // ii
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             break;
 
@@ -2702,7 +2702,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm3(emitGetInsSC(id))); // ii
+            assert(isValidUimm<3>(emitGetInsSC(id))); // ii
                                                     // i
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             break;
@@ -2713,7 +2713,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidImm1(emitGetInsSC(id)));  // i
+            assert(isValidUimm<1>(emitGetInsSC(id)));  // i
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             break;
 
@@ -2771,7 +2771,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
-            assert(isValidUimm5(emitGetInsSC(id)));
+            assert(isValidUimm<5>(emitGetInsSC(id)));
             break;
 
         case IF_SVE_HX_3A_E: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
@@ -2903,19 +2903,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             switch (id->idInsOpt())
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm4(imm));
+                    assert(isValidUimm<4>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm3(imm));
+                    assert(isValidUimm<3>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));
+                    assert(isValidUimm<2>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidImm1(imm));
+                    assert(isValidUimm<1>(imm));
                     break;
 
                 default:
@@ -2931,7 +2931,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isScalableVectorSize(elemsize));
-            assert(isValidUimm4(imm));
+            assert(isValidUimm<4>(imm));
             break;
 
         default:
@@ -7784,7 +7784,7 @@ void emitter::emitIns_R_I(instruction     ins,
             assert(isValidGeneralDatasize(size));
             assert(insOptsNone(opt)); // No LSL here (you must use emitIns_R_I_I if a shift is needed)
             assert(isGeneralRegister(reg));
-            assert(isValidUimm16(imm));
+            assert(isValidUimm<16>(imm));
 
             hwi.immHW  = 0;
             hwi.immVal = imm;
@@ -7880,7 +7880,7 @@ void emitter::emitIns_R_I(instruction     ins,
                     }
                 }
                 imm = imm8;
-                assert(isValidUimm8(imm));
+                assert(isValidUimm<8>(imm));
                 fmt = IF_DV_1B;
                 break;
             }
@@ -7959,7 +7959,7 @@ void emitter::emitIns_R_I(instruction     ins,
                     ins = insReverse(ins);
                     imm = -imm;
                 }
-                assert(isValidUimm12(imm));
+                assert(isValidUimm<12>(imm));
                 canEncode = true;
                 fmt       = IF_DI_1A;
             }
@@ -7974,7 +7974,7 @@ void emitter::emitIns_R_I(instruction     ins,
                 }
                 assert((imm & 0xfff) == 0);
                 imm >>= 12;
-                assert(isValidUimm12(imm));
+                assert(isValidUimm<12>(imm));
                 canEncode = true;
                 fmt       = IF_DI_1A;
             }
@@ -8010,7 +8010,7 @@ void emitter::emitIns_R_I(instruction     ins,
             }
             else
             {
-                assert(isValidUimm8(imm)); // iiiiiiii
+                assert(isValidUimm<8>(imm)); // iiiiiiii
             }
 
             fmt       = IF_SVE_ED_1A;
@@ -8094,7 +8094,7 @@ void emitter::emitIns_R_I(instruction     ins,
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg));                         // ddddd
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            if (!isValidUimm8(imm))
+            if (!isValidUimm<8>(imm))
             {
                 // Size specifier must be able to fit left-shifted immediate
                 assert(isValidUimm8_MultipleOf256(imm)); // iiiiiiii
@@ -9548,7 +9548,7 @@ void emitter::emitIns_R_I_I(instruction ins,
         case INS_movz:
             assert(isValidGeneralDatasize(size));
             assert(isGeneralRegister(reg));
-            assert(isValidUimm16(imm1));
+            assert(isValidUimm<16>(imm1));
             assert(insOptsLSL(opt)); // Must be INS_OPTS_LSL
 
             if (size == EA_8BYTE)
@@ -10403,13 +10403,13 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
             if (sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR)
             {
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_DW_2B;
             }
             else
             {
                 assert(insScalableOptsNone(sopt));
-                assert(isValidUimm2(imm)); // ii
+                assert(isValidUimm<2>(imm)); // ii
                 fmt = IF_SVE_DW_2A;
             }
             break;
@@ -10426,15 +10426,15 @@ void emitter::emitIns_R_R_I(instruction     ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3(imm)); // iii
+                    assert(isValidUimm<3>(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4(imm)); // x iii
+                    assert(isValidUimm<4>(imm)); // x iii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5(imm)); // xx iii
+                    assert(isValidUimm<5>(imm)); // xx iii
                     break;
 
                 default:
@@ -10505,7 +10505,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(insScalableOptsNone(sopt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            assert(isValidUimm3(imm));
+            assert(isValidUimm<3>(imm));
             assert(isScalableVectorSize(size));
             fmt = IF_SVE_HN_2A;
             break;
@@ -10580,7 +10580,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(opt == INS_OPTS_SCALABLE_B);
             assert(isVectorRegister(reg1)); // ddddd
             assert(isVectorRegister(reg2)); // nnnnn
-            assert(isValidUimm8(imm));      // iiiii iii
+            assert(isValidUimm<8>(imm));      // iiiii iii
 
             if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
             {
@@ -10603,19 +10603,19 @@ void emitter::emitIns_R_R_I(instruction     ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm4(imm));
+                    assert(isValidUimm<4>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm3(imm));
+                    assert(isValidUimm<3>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));
+                    assert(isValidUimm<2>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidImm1(imm));
+                    assert(isValidUimm<1>(imm));
                     break;
 
                 default:
@@ -10631,7 +10631,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isScalableVectorSize(size));
-            assert(isValidUimm4(imm));
+            assert(isValidUimm<4>(imm));
             fmt = IF_SVE_BY_2A;
             break;
 
@@ -10743,7 +10743,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
                 ins = insReverse(ins);
                 imm = -imm;
             }
-            assert(isValidUimm12(imm));
+            assert(isValidUimm<12>(imm));
             fmt = IF_DI_2A;
         }
         else if (canEncodeWithShiftImmBy12(imm)) // Try the shifted by 12 encoding
@@ -10757,7 +10757,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
             assert((imm & 0xfff) == 0);
             imm >>= 12;
-            assert(isValidUimm12(imm));
+            assert(isValidUimm<12>(imm));
             fmt = IF_DI_2A;
         }
         else
@@ -13668,7 +13668,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1)); // ddddd
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmmmm
-            assert(isValidUimm2(imm));
+            assert(isValidUimm<2>(imm));
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_S:
@@ -13712,7 +13712,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isPredicateRegister(reg1));    // DDDD
             assert(isLowPredicateRegister(reg2)); // ggg
             assert(isVectorRegister(reg3));       // nnnnn
-            assert(isValidUimm7(imm));            // iiiii
+            assert(isValidUimm<7>(imm));            // iiiii
             fmt = IF_SVE_CY_3B;
             break;
 
@@ -13726,19 +13726,19 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_B)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_EY_3A;
             }
             else if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_EG_3A;
             }
             else
             {
                 assert(insOptsNone(opt));
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 opt = INS_OPTS_SCALABLE_H;
                 fmt = IF_SVE_EY_3B;
             }
@@ -13752,7 +13752,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm2(imm)); // ii
+            assert(isValidUimm<2>(imm)); // ii
             fmt = IF_SVE_EZ_3A;
             break;
 
@@ -13766,19 +13766,19 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm3(imm));                    // iii
+                    assert(isValidUimm<3>(imm));                    // iii
                     assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                     fmt = IF_SVE_FD_3A;
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));                    // ii
+                    assert(isValidUimm<2>(imm));                    // ii
                     assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                     fmt = IF_SVE_FD_3B;
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidImm1(imm)); // i
+                    assert(isValidUimm<1>(imm)); // i
                     fmt = IF_SVE_FD_3C;
                     break;
 
@@ -13920,7 +13920,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             {
                 assert(insOptsScalableWords(opt));
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5(imm));
+                assert(isValidUimm<5>(imm));
                 fmt = IF_SVE_HX_3A_B;
             }
             break;
@@ -13940,7 +13940,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             {
                 assert(insOptsScalableWords(opt));
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5(imm));
+                assert(isValidUimm<5>(imm));
                 fmt = IF_SVE_HX_3A_B;
             }
             break;
@@ -13952,7 +13952,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(isValidUimm5(imm));
+            assert(isValidUimm<5>(imm));
             fmt = IF_SVE_HX_3A_B;
             break;
 
@@ -14508,7 +14508,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 switch (ins)
                 {
                     case INS_sve_st1b:
-                        assert(isValidUimm5(imm));
+                        assert(isValidUimm<5>(imm));
                         break;
 
                     case INS_sve_st1h:
@@ -14535,13 +14535,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_GU_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_D);
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_GU_3B;
             }
             break;
@@ -14554,7 +14554,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm3(imm)); // i ii
+            assert(isValidUimm<3>(imm)); // i ii
             fmt = IF_SVE_GU_3C;
             break;
 
@@ -14567,13 +14567,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_GX_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_D);
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_GX_3B;
             }
             break;
@@ -14585,7 +14585,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm3(imm)); // i ii
+            assert(isValidUimm<3>(imm)); // i ii
             fmt = IF_SVE_GX_3C;
             break;
 
@@ -14595,24 +14595,24 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm2(imm)); // ii
+            assert(isValidUimm<2>(imm)); // ii
 
             if (opt == INS_OPTS_SCALABLE_B)
             {
                 unreached();               // TODO-SVE: Not yet supported.
-                assert(isValidUimm2(imm)); // ii
+                assert(isValidUimm<2>(imm)); // ii
                 fmt = IF_SVE_GY_3B_D;
             }
             else if (opt == INS_OPTS_SCALABLE_H)
             {
-                assert(isValidUimm2(imm)); // ii
+                assert(isValidUimm<2>(imm)); // ii
                 fmt = IF_SVE_GY_3B;
             }
             else
             {
                 unreached(); // TODO-SVE: Not yet supported.
                 assert(insOptsNone(opt));
-                assert(isValidUimm3(imm)); // i ii
+                assert(isValidUimm<3>(imm)); // i ii
 
                 // Simplify emitDispInsHelp logic by setting insOpt
                 opt = INS_OPTS_SCALABLE_B;
@@ -14627,7 +14627,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm2(imm)); // ii
+            assert(isValidUimm<2>(imm)); // ii
             fmt = IF_SVE_GY_3B;
             break;
 
@@ -14641,19 +14641,19 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // i ii
+                assert(isValidUimm<3>(imm));                    // i ii
                 fmt = IF_SVE_FF_3A;
             }
             else if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_FF_3B;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_D);
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_FF_3C;
             }
             break;
@@ -14670,13 +14670,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // ii i
+                assert(isValidUimm<3>(imm));                    // ii i
                 fmt = IF_SVE_FE_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidUimm2(imm)); // i i
+                assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FE_3B;
             }
             break;
@@ -14697,13 +14697,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // ii i
+                assert(isValidUimm<3>(imm));                    // ii i
                 fmt = IF_SVE_FG_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidUimm2(imm)); // i i
+                assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FG_3B;
             }
             break;
@@ -14718,13 +14718,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // ii i
+                assert(isValidUimm<3>(imm));                    // ii i
                 fmt = IF_SVE_FH_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidUimm2(imm)); // i i
+                assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FH_3B;
             }
             break;
@@ -14739,19 +14739,19 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // ii i
+                assert(isValidUimm<3>(imm));                    // ii i
                 fmt = IF_SVE_FI_3A;
             }
             else if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_FI_3B;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_D);
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_FI_3C;
             }
             break;
@@ -14768,13 +14768,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // ii i
+                assert(isValidUimm<3>(imm));                    // ii i
                 fmt = IF_SVE_FJ_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidUimm2(imm)); // ii
+                assert(isValidUimm<2>(imm)); // ii
                 fmt = IF_SVE_FJ_3B;
             }
             break;
@@ -14789,19 +14789,19 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm3(imm));                    // i ii
+                assert(isValidUimm<3>(imm));                    // i ii
                 fmt = IF_SVE_FK_3A;
             }
             else if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
+                assert(isValidUimm<2>(imm));                    // ii
                 fmt = IF_SVE_FK_3B;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_D);
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_FK_3C;
             }
             break;
@@ -14873,7 +14873,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6(imm));
+            assert(isValidUimm<6>(imm));
             fmt = IF_SVE_IC_3A_B;
             break;
 
@@ -14883,7 +14883,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6(imm));
+            assert(isValidUimm<6>(imm));
             fmt = IF_SVE_IC_3A_C;
             break;
 
@@ -14901,7 +14901,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm3(imm)); // ii i
+            assert(isValidUimm<3>(imm)); // ii i
             fmt = IF_SVE_GZ_3A;
             break;
 
@@ -14913,13 +14913,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
-                assert(isValidUimm3(imm)); // iii
+                assert(isValidUimm<3>(imm)); // iii
                 fmt = IF_SVE_GG_3B;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_B);
-                assert(isValidUimm2(imm)); // ii i
+                assert(isValidUimm<2>(imm)); // ii i
                 fmt = IF_SVE_GG_3A;
             }
             unreached();
@@ -14932,7 +14932,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
-                assert(isValidUimm2(imm));
+                assert(isValidUimm<2>(imm));
 
                 if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
                 {
@@ -14948,7 +14948,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             {
                 assert(opt == INS_OPTS_SCALABLE_B);
                 assert(insScalableOptsNone(sopt));
-                assert(isValidImm1(imm)); // i
+                assert(isValidUimm<1>(imm)); // i
                 fmt = IF_SVE_GH_3A;
             }
             unreached();
@@ -15004,14 +15004,14 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
 
             if (opt == INS_OPTS_SCALABLE_B)
             {
-                assert(isValidUimm2(imm1));                   // ii
+                assert(isValidUimm<2>(imm1));                   // ii
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 fmt = IF_SVE_FA_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_H);
-                assert(isValidImm1(imm1)); // i
+                assert(isValidUimm<1>(imm1)); // i
                 fmt = IF_SVE_FA_3B;
             }
             break;
@@ -15026,14 +15026,14 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
-                assert(isValidUimm2(imm1));                   // ii
+                assert(isValidUimm<2>(imm1));                   // ii
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 fmt = IF_SVE_FB_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidImm1(imm1)); // i
+                assert(isValidUimm<1>(imm1)); // i
                 fmt = IF_SVE_FB_3B;
             }
             break;
@@ -15048,14 +15048,14 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
-                assert(isValidUimm2(imm1));                   // ii
+                assert(isValidUimm<2>(imm1));                   // ii
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 fmt = IF_SVE_FC_3A;
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidImm1(imm1)); // i
+                assert(isValidUimm<1>(imm1)); // i
                 fmt = IF_SVE_FC_3B;
             }
             break;
@@ -15065,7 +15065,7 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
             assert(isVectorRegister(reg1));    // ddddd
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidImm1(imm1));         // i
+            assert(isValidUimm<1>(imm1));         // i
             assert(isValidRot(imm2));          // rr
 
             // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
@@ -16555,19 +16555,19 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm4(imm));
+                    assert(isValidUimm<4>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm3(imm));
+                    assert(isValidUimm<3>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));
+                    assert(isValidUimm<2>(imm));
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidImm1(imm));
+                    assert(isValidUimm<1>(imm));
                     break;
 
                 default:
@@ -16802,7 +16802,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
                 ins = insReverse(ins);
                 imm = -imm;
             }
-            if (isValidUimm5(imm))
+            if (isValidUimm<5>(imm))
             {
                 cfi.imm5  = imm;
                 cfi.flags = flags;
@@ -17140,7 +17140,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
                 switch (ins)
                 {
                     case INS_sve_prfb:
-                        assert(isValidUimm5(imm));
+                        assert(isValidUimm<5>(imm));
                         break;
 
                     case INS_sve_prfh:
@@ -19997,7 +19997,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     switch (opt)
     {
         case INS_OPTS_SCALABLE_B:
-            assert(isValidUimm4(imm));
+            assert(isValidUimm<4>(imm));
             encoding = 0x040000; // set the bit at location 18
             // encode immediate at location 23-22:20-19
             encoding |= ((imm & 0b1100) << 22);
@@ -20005,7 +20005,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             break;
 
         case INS_OPTS_SCALABLE_H:
-            assert(isValidUimm3(imm));
+            assert(isValidUimm<3>(imm));
             encoding = 0x080000; // set the bit at location 19
             // encode immediate at location 23-22:20
             encoding |= ((imm & 0b110) << 22);
@@ -20013,13 +20013,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
             break;
 
         case INS_OPTS_SCALABLE_S:
-            assert(isValidUimm2(imm));
+            assert(isValidUimm<2>(imm));
             encoding = 0x100000;     // set the bit at location 20
             encoding |= (imm << 22); // encode immediate at location 23:22
             break;
 
         case INS_OPTS_SCALABLE_D:
-            assert(isValidImm1(imm));
+            assert(isValidUimm<1>(imm));
             encoding = 0x400000;     // set the bit at location 22
             encoding |= (imm << 23); // encode immediate at location 23
             break;
@@ -20089,25 +20089,25 @@ void emitter::emitIns_Call(EmitCallType          callType,
     switch (opt)
     {
         case INS_OPTS_SCALABLE_B:
-            assert(isValidUimm4(imm));
+            assert(isValidUimm<4>(imm));
             encoding |= (1 << 16);   // bit 16
             encoding |= (imm << 17); // bits 20-17
             break;
 
         case INS_OPTS_SCALABLE_H:
-            assert(isValidUimm3(imm));
+            assert(isValidUimm<3>(imm));
             encoding |= (1 << 17);   // bit 17
             encoding |= (imm << 18); // bits 20-18
             break;
 
         case INS_OPTS_SCALABLE_S:
-            assert(isValidUimm2(imm));
+            assert(isValidUimm<2>(imm));
             encoding |= (1 << 18);   // bit 18
             encoding |= (imm << 19); // bits 20-19
             break;
 
         case INS_OPTS_SCALABLE_D:
-            assert(isValidImm1(imm));
+            assert(isValidUimm<1>(imm));
             encoding |= (1 << 19);   // bit 19
             encoding |= (imm << 20); // bit 20
             break;
@@ -22126,7 +22126,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm2_9_to_8(ssize_t imm)
 {
-    assert(isValidUimm2(imm));
+    assert(isValidUimm<2>(imm));
     return (code_t)imm << 8;
 }
 
@@ -22137,7 +22137,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm2_11_to_10(ssize_t imm)
 {
-    assert(isValidUimm2(imm));
+    assert(isValidUimm<2>(imm));
     return (code_t)imm << 10;
 }
 
@@ -22148,7 +22148,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm2_20_to_19(ssize_t imm)
 {
-    assert(isValidUimm2(imm));
+    assert(isValidUimm<2>(imm));
     return (code_t)imm << 19;
 }
 
@@ -22159,7 +22159,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm2_23_to_22(ssize_t imm)
 {
-    assert(isValidUimm2(imm));
+    assert(isValidUimm<2>(imm));
     return (code_t)imm << 22;
 }
 
@@ -22170,7 +22170,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm1_23(ssize_t imm)
 {
-    assert(isValidImm1(imm));
+    assert(isValidUimm<1>(imm));
     return (code_t)imm << 23;
 }
 
@@ -22181,7 +22181,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm)
 {
-    assert(isValidUimm3(imm));
+    assert(isValidUimm<3>(imm));
 
     code_t h = (code_t)(imm & 0x6) << 21; // encode high 2-bits at locations '23-22'
     code_t l = (code_t)(imm & 0x1) << 12; // encode low 1-bit at locations '12'
@@ -22196,7 +22196,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeImm1_10(ssize_t imm)
 {
-    assert(isValidImm1(imm));
+    assert(isValidUimm<1>(imm));
     return (code_t)imm << 10;
 }
 
@@ -22207,7 +22207,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeImm1_11(ssize_t imm)
 {
-    assert(isValidImm1(imm));
+    assert(isValidUimm<1>(imm));
     return (code_t)imm << 11;
 }
 
@@ -22218,7 +22218,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeImm1_22(ssize_t imm)
 {
-    assert(isValidImm1(imm));
+    assert(isValidUimm<1>(imm));
     return (code_t)imm << 22;
 }
 
@@ -22229,7 +22229,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm7_20_to_14(ssize_t imm)
 {
-    assert(isValidUimm7(imm));
+    assert(isValidUimm<7>(imm));
     return (code_t)imm << 14;
 }
 
@@ -22240,7 +22240,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm4_19_to_16(ssize_t imm)
 {
-    assert(isValidUimm4(imm));
+    assert(isValidUimm<4>(imm));
     return (code_t)imm << 16;
 }
 
@@ -22262,7 +22262,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_20_to_16(ssize_t imm)
 {
-    assert(isValidUimm5(imm));
+    assert(isValidUimm<5>(imm));
     return (code_t)imm << 16;
 }
 
@@ -22273,7 +22273,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_21_to_16(ssize_t imm)
 {
-    assert(isValidUimm6(imm));
+    assert(isValidUimm<6>(imm));
     return (code_t)imm << 16;
 }
 
@@ -22284,7 +22284,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeImm8_12_to_5(ssize_t imm)
 {
-    assert(isValidSimm8(imm) || isValidUimm8(imm));
+    assert(isValidSimm8(imm) || isValidUimm<8>(imm));
     return (code_t)((imm & 0xFF) << 5);
 }
 
@@ -22295,7 +22295,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm3_12_to_10(ssize_t imm)
 {
-    assert(isValidUimm3(imm));
+    assert(isValidUimm<3>(imm));
     return (code_t)imm << 10;
 }
 
@@ -22306,7 +22306,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm3_18_to_16(ssize_t imm)
 {
-    assert(isValidUimm3(imm));
+    assert(isValidUimm<3>(imm));
     return (code_t)imm << 16;
 }
 
@@ -22453,7 +22453,7 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
 
         // add x, x, page offs -- compute address = page addr + page offs
         ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
-        assert(isValidUimm12(imm12));
+        assert(isValidUimm<12>(imm12));
         code_t code =
             emitInsCode(INS_add, IF_DI_2A);  // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
         code |= insEncodeDatasize(EA_8BYTE); // X
@@ -22574,7 +22574,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
 
                 ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
-                assert(isValidUimm12(imm12));
+                assert(isValidUimm<12>(imm12));
 
                 // Special case: emit add + ld1 instructions for loading 16-byte data into vector register.
                 if (isVectorRegister(dstReg) && (opSize == EA_16BYTE))
@@ -22987,7 +22987,7 @@ BYTE* emitter::emitOutputShortConstant(
     {
         //  ldr     Rt,[Xn+pimm12]       LS_2B  1X11100101iiiiii iiiiiinnnnnttttt   B940 0000   imm(0-4095<<{2,3})
         // INS_ldr or INS_ldrsw (PC-Relative)
-        noway_assert(isValidUimm12(imm));
+        noway_assert(isValidUimm<12>(imm));
         assert(isGeneralRegister(reg));
 
         if (opSize == EA_8BYTE)
@@ -23312,7 +23312,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
             assert(insOptsNone(id->idInsOpt()));
             imm = emitGetInsSC(id);
-            assert(isValidUimm12(imm));
+            assert(isValidUimm<12>(imm));
             code = emitInsCode(ins, fmt);
             // Is the target a vector register?
             if (isVectorRegister(id->idReg1()))
@@ -23525,7 +23525,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
             assert(insOptsNone(id->idInsOpt()) || insOptsLSL12(id->idInsOpt()));
             imm = emitGetInsSC(id);
-            assert(isValidUimm12(imm));
+            assert(isValidUimm<12>(imm));
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize());   // X
             code |= insEncodeShiftImm12(id->idInsOpt()); // sh
@@ -23603,7 +23603,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DI_2A: // DI_2A   X.......shiiiiii iiiiiinnnnnddddd      Rd Rn    imm(i12,sh)
             assert(insOptsNone(id->idInsOpt()) || insOptsLSL12(id->idInsOpt()));
             imm = emitGetInsSC(id);
-            assert(isValidUimm12(imm));
+            assert(isValidUimm<12>(imm));
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize());   // X
             code |= insEncodeShiftImm12(id->idInsOpt()); // sh
@@ -24372,7 +24372,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
             imm = emitGetInsSC(id);
-            assert(isValidUimm16(imm));
+            assert(isValidUimm<16>(imm));
             code = emitInsCode(ins, fmt);
             code |= ((code_t)imm << 5); // iiiii iiiiiiiiiii
             dst += emitOutput_Instr(dst, code);
