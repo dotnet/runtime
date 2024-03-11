@@ -266,7 +266,6 @@ namespace System.Net.Sockets.Tests
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)

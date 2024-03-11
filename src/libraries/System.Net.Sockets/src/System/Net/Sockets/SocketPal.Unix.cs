@@ -663,7 +663,7 @@ namespace System.Net.Sockets
             Interop.Error err;
             fixed (byte* rawSocketAddress = socketAddress.Span)
             {
-                if (data.Length> 0)
+                if (data.Length > 0)
                 {
                     int sentBytes = 0;
                     err = Interop.Sys.Connectx(socket, rawSocketAddress, socketAddress.Length, data, data.Length, tfo ? 1 : 0, &sentBytes);

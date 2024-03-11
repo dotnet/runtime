@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -424,13 +425,19 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(false, 1)]
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag
         [InlineData(true, 10_000)]      // This should be too big to fit completely to first packet.
         public async Task ConnectAsync_WithData_OK(bool useFastOpen, int size)
         {
+            if (useFastOpen && PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
+            {
+                // Old Windows versions do not support fast open and SetSocketOption fails with error.
+                throw new SkipTestException("TCP fast open is not supported");
+            }
+
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
