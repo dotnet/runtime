@@ -2222,9 +2222,15 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
             GCX_COOP();
             uint32_t doubleSlots = AlignUp(cbMem, sizeof(double)) / sizeof(double);
             BASEARRAYREF ptrArray = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_R8, doubleSlots);
-            CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
-            pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
-            g_pMoveableGCPointerTracker->AddPointer(m_hLoaderAllocatorObjectHandle, OBJECTREFToObject(ptrArray), &pStaticsInfo->m_pNonGCStatics);
+            GCPROTECT_BEGIN(ptrArray);
+            // Keep this allocation alive till the LoaderAllocator is collected
+            AllocateHandle(ptrArray);
+            {
+                CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
+                pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
+                g_pMoveableGCPointerTracker->AddPointer(m_hLoaderAllocatorObjectHandle, OBJECTREFToObject(ptrArray), &pStaticsInfo->m_pNonGCStatics);
+            }
+            GCPROTECT_END();
         }
         else
         {
@@ -2258,6 +2264,8 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
                 pMTToFillWithStaticBoxes->AllocateRegularStaticBoxes(&pArray);
                 GCPROTECT_END();
             }
+            // Keep this allocation alive till the LoaderAllocator is collected
+            AllocateHandle(ptrArray);
 
             {
                 CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
