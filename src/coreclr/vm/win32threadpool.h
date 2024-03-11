@@ -752,17 +752,23 @@ public:
 
 #ifndef TARGET_UNIX
             if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-                processorNumber = CPUGroupInfo::CalculateCurrentProcessorNumber();
+            {
+                // The current processor number may not be within the total number of active processors determined at
+                // initialization time.
+                processorNumber = CPUGroupInfo::CalculateCurrentProcessorNumber() % CPUGroupInfo::GetNumActiveProcessors();
+            }
             else
+            {
                 // Turns out GetCurrentProcessorNumber can return a value greater than the number of processors reported by
                 // GetSystemInfo, if we're running in WOW64 on a machine with >32 processors.
-        	    processorNumber = GetCurrentProcessorNumber()%NumberOfProcessors;
+                processorNumber = GetCurrentProcessorNumber() % g_SystemInfo.dwNumberOfProcessors;
+            }
 #else // !TARGET_UNIX
             if (PAL_HasGetCurrentProcessorNumber())
             {
                 // On linux, GetCurrentProcessorNumber which uses sched_getcpu() can return a value greater than the number
                 // of processors reported by sysconf(_SC_NPROCESSORS_ONLN) when using OpenVZ kernel.
-                processorNumber = GetCurrentProcessorNumber()%NumberOfProcessors;
+                processorNumber = GetCurrentProcessorNumber() % PAL_GetTotalCpuCount();
             }
 #endif // !TARGET_UNIX
             return pRecycledListPerProcessor[processorNumber][memType];
