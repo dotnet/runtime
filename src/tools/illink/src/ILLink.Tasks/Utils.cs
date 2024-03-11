@@ -7,7 +7,7 @@ using System.Reflection.PortableExecutable;
 
 namespace ILLink.Tasks
 {
-	public static class Utils
+	internal static class Utils
 	{
 		public static bool IsManagedAssembly (string fileName)
 		{

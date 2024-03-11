@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class MemberReferenceExtensions
+	internal static class MemberReferenceExtensions
 	{
 		public static string GetDisplayName (this MemberReference member)
 		{

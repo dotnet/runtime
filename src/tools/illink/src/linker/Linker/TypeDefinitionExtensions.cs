@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class TypeDefinitionExtensions
+	internal static class TypeDefinitionExtensions
 	{
 		public static TypeReference GetEnumUnderlyingType (this TypeDefinition enumType)
 		{

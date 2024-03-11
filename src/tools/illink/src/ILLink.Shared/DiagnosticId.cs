@@ -208,6 +208,8 @@ namespace ILLink.Shared
 		InvalidFeatureGuard = 4001
 	}
 
+	// Must be public, because code fixer references the AsString extension.
+	// Or, could use InternalsVisibleto.
 	public static class DiagnosticIdExtensions
 	{
 		public static string AsString (this DiagnosticId diagnosticId) => $"IL{(int) diagnosticId}";

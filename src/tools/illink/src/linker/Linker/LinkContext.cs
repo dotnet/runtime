@@ -55,7 +55,7 @@ namespace Mono.Linker
 		public virtual AssemblyResolver CreateResolver (LinkContext context) => new AssemblyResolver (context, new ReaderParameters ());
 	}
 
-	public static class TargetRuntimeVersion
+	internal static class TargetRuntimeVersion
 	{
 		public const int NET5 = 5;
 		public const int NET6 = 6;

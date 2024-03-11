@@ -7,7 +7,7 @@ using ILLink.Shared;
 
 namespace Mono.Linker
 {
-	public static class FeatureSettings
+	internal static class FeatureSettings
 	{
 		public static bool ShouldProcessElement (XPathNavigator nav, LinkContext context, string documentLocation)
 		{

@@ -22,7 +22,7 @@ namespace Mono.Linker
 		[Event (4, Keywords = Keywords.Step)]
 		public void LinkerStepStop (string stepName) => WriteEvent (4, stepName);
 
-		public static class Keywords
+		internal static class Keywords
 		{
 			public const EventKeywords Step = (EventKeywords) (1 << 1);
 		}

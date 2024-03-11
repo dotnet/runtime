@@ -5,7 +5,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class CustomAttributeArgumentExtensions
+	internal static class CustomAttributeArgumentExtensions
 	{
 		public static bool IsEqualTo (this CustomAttributeArgument A, CustomAttributeArgument B)
 		{
