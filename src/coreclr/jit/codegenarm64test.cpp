@@ -5507,6 +5507,14 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V27, REG_P13, -5632, INS_OPTS_SCALABLE_H,
                               INS_SCALABLE_OPTS_PREDICATE_MERGE); // MOV <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
 
+    // IF_SVE_BV_2B
+    theEmitter->emitIns_R_R(INS_sve_fmov, EA_SCALABLE, REG_V0, REG_P1,
+                            INS_OPTS_SCALABLE_H); // FMOV <Zd>.<T>, <Pg>/M, #0.0
+    theEmitter->emitIns_R_R(INS_sve_fmov, EA_SCALABLE, REG_V2, REG_P3,
+                            INS_OPTS_SCALABLE_S); // FMOV <Zd>.<T>, <Pg>/M, #0.0
+    theEmitter->emitIns_R_R(INS_sve_fmov, EA_SCALABLE, REG_V4, REG_P5,
+                            INS_OPTS_SCALABLE_D); // FMOV <Zd>.<T>, <Pg>/M, #0.0
+
     // IF_SVE_BZ_3A
     theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
                               INS_OPTS_SCALABLE_B); // TBL <Zd>.<T>, {<Zn>.<T>}, <Zm>.<T>
