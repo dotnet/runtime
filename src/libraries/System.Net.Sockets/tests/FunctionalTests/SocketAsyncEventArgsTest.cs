@@ -428,7 +428,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(false, 1)]
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag
-        [InlineData(true, 10_000)]      // This should be too big to fit completly to first packet.
+        [InlineData(true, 10_000)]      // This should be too big to fit completely to first packet.
         public async Task ConnectAsync_WithData_OK(bool useFastOpen, int size)
         {
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -478,7 +478,7 @@ namespace System.Net.Sockets.Tests
                 serverSocket.Close();
                 client.Close();
 
-                // DO second rond so TFO has chance to get cookies set up
+                // DO second round so TFO has chance to get cookies set up
 
                 tcs = new TaskCompletionSource<SocketError>();
                 client = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -489,7 +489,7 @@ namespace System.Net.Sockets.Tests
                 connectSaea = new SocketAsyncEventArgs();
                 connectSaea.Completed += (s, e) => tcs.SetResult(e.SocketError);
                 connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
-                connectSaea.SetBuffer(new byte[size], 0, 1);
+                connectSaea.SetBuffer(new byte[size], 0, size);
 
                 pending = client.ConnectAsync(connectSaea);
                 if (!pending) tcs.SetResult(connectSaea.SocketError);
