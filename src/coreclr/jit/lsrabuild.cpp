@@ -2411,7 +2411,7 @@ void           LinearScan::buildIntervals()
     }
 
     numPlacedArgLocals = 0;
-    placedArgRegs      = RBM_NONE;
+    placedArgRegs      = AllRegsMask();
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
@@ -3255,7 +3255,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
     // _after_ the call, then we are going to prefer callee-saved registers for
     // such local anyway, so there is no need to look at such local uses.
     //
-    if (placedArgRegs == RBM_NONE)
+    if (placedArgRegs.IsEmpty())
     {
         return;
     }
@@ -3270,7 +3270,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 
     // Find the registers that we should remove from the preference set because
     // they are occupied with argument values.
-    regMaskMixed unpref   = placedArgRegs;
+    AllRegsMask unpref   = placedArgRegs;
     unsigned     varIndex = interval->getVarIndex(compiler);
     for (size_t i = 0; i < numPlacedArgLocals; i++)
     {
@@ -3278,11 +3278,11 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         {
             // This local's value is going to be available in this register so
             // keep it in the preferences.
-            unpref &= ~genRegMask(placedArgLocals[i].Reg);
+            unpref.RemoveRegNumInMask(placedArgLocals[i].Reg);
         }
     }
 
-    if (unpref != RBM_NONE)
+    if (!unpref.IsEmpty())
     {
 #ifdef DEBUG
         if (VERBOSE)
@@ -3294,8 +3294,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         }
 #endif
 
-        interval->registerAversion |= unpref;
-        regMaskOnlyOne newPreferences = allRegs(interval->registerType) & ~unpref;
+        regMaskOnlyOne unprefRegMask = unpref.GetRegTypeMask(interval->registerType);
+        interval->registerAversion |= unprefRegMask;
+        regMaskOnlyOne newPreferences = allRegs(interval->registerType) & ~unprefRegMask;
         interval->updateRegisterPreferences(newPreferences);
     }
 }
@@ -4275,7 +4276,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     RefPosition*  use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
-    placedArgRegs |= argMask;
+    placedArgRegs |= argReg;
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
     {

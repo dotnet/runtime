@@ -1705,7 +1705,7 @@ private:
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
     // CALL node and is used to avoid preferring these registers for locals
     // which would otherwise force a spill.
-    regMaskMixed placedArgRegs;
+    AllRegsMask placedArgRegs;
 
     struct PlacedLocal
     {

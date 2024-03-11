@@ -1379,7 +1379,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
 
     // No args are placed in registers anymore.
-    placedArgRegs      = RBM_NONE;
+    placedArgRegs      = AllRegsMask();
     numPlacedArgLocals = 0;
     return srcCount;
 }
