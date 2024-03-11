@@ -356,6 +356,7 @@ typedef struct _regMaskAll
     void RemoveRegNumInMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg);
+    bool IsOnlyRegNumInMask(regNumber reg);
 
     // Rename this to AddRegMask()
     void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)

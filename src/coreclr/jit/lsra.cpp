@@ -9572,7 +9572,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
     AllRegsMask targetRegsToDo;
     AllRegsMask  targetRegsReady;
-    regMaskMixed targetRegsFromStack = RBM_NONE;
+    AllRegsMask targetRegsFromStack;
 
     // The following arrays capture the location of the registers as they are moved:
     // - location[reg] gives the current location of the var that was originally in 'reg'.
@@ -9679,7 +9679,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         if (fromReg == REG_STK)
         {
             stackToRegIntervals[toReg] = interval;
-            targetRegsFromStack |= genRegMask(toReg);
+            targetRegsFromStack |= toReg;
         }
         else if (toReg == REG_STK)
         {
@@ -9754,7 +9754,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             // Do we have a free targetReg?
             if (fromReg == sourceReg)
             {
-                if (source[fromReg] != REG_NA && ((targetRegsFromStack & fromRegMask) != fromRegMask))
+                if (source[fromReg] != REG_NA && !targetRegsFromStack.IsOnlyRegNumInMask(fromReg))
                 {
                     targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
@@ -9790,7 +9790,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
                         !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
-                        ((targetRegsFromStack & lowerHalfRegMask) != lowerHalfRegMask))
+                        !targetRegsFromStack.IsOnlyRegNumInMask(lowerHalfReg))
                     {
                         // This must be a double interval, otherwise it would be in targetRegsReady, or already
                         // completed.
@@ -9898,8 +9898,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[source[otherTargetReg]] = REG_STK;
 
-                        singleRegMask otherTargetRegMask = genRegMask(otherTargetReg);
-                        targetRegsFromStack |= otherTargetRegMask;
+                        targetRegsFromStack |= otherTargetReg;
                         stackToRegIntervals[otherTargetReg] = otherInterval;
                         targetRegsToDo.RemoveRegNumInMask(otherTargetReg);
 
@@ -9972,7 +9971,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
     // Finally, perform stack to reg moves
     // All the target regs will be empty at this point
-    while (targetRegsFromStack != RBM_NONE)
+    while (!targetRegsFromStack.IsEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsFromStack);
 
@@ -14178,18 +14177,40 @@ bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type)
 
 bool AllRegsMask::IsRegNumInMask(regNumber reg)
 {
+    regMaskOnlyOne regMask = genRegMask(reg);
     if (emitter::isGeneralRegister(reg))
     {
-        return (gprRegs & genRegMask(reg)) != RBM_NONE;
+        return (gprRegs & regMask) != RBM_NONE;
     }
     else if (emitter::isFloatReg(reg))
     {
-        return (floatRegs & genRegMask(reg)) != RBM_NONE;
+        return (floatRegs & regMask) != RBM_NONE;
     }
     else
     {
 #ifdef HAS_PREDICATE_REGS
-        return (predicateRegs & genRegMask(reg)) != RBM_NONE;
+        return (predicateRegs & regMask) != RBM_NONE;
+#else
+        unreached();
+#endif // HAS_PREDICATE_REGS
+    }
+}
+
+bool AllRegsMask::IsOnlyRegNumInMask(regNumber reg)
+{
+    regMaskOnlyOne regMask = genRegMask(reg);
+    if (emitter::isGeneralRegister(reg))
+    {
+        return (gprRegs & regMask) == regMask;
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        return (floatRegs & regMask) == regMask;
+    }
+    else
+    {
+#ifdef HAS_PREDICATE_REGS
+        return (predicateRegs & regMask) == regMask;
 #else
         unreached();
 #endif // HAS_PREDICATE_REGS
