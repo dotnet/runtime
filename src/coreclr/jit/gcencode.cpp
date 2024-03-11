@@ -4418,9 +4418,9 @@ void GCInfo::gcMakeRegPtrTable(
             }
         }
     }
-    else if (compiler->isFramePointerUsed()) // GetInterruptible() is false, and we're using EBP as a frame pointer.
+    else if (!compiler->IsFullPtrRegMapRequired()) // GetInterruptible() is false, and we're using EBP as a frame pointer.
     {
-        assert(compiler->IsFullPtrRegMapRequired() == false);
+        // assert(compiler->IsFullPtrRegMapRequired() == false);
 
         // Walk the list of pointer register/argument entries.
 

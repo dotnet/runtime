@@ -5159,8 +5159,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     auto linearScanPhase = [this]() { m_pLinearScan->doLinearScan(); };
     DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
 
+#ifdef USE_GC_INFO_DECODER
+    // TODO: VS just to check.
+    SetFullPtrRegMapRequired(true);
+#else
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
+#endif
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions
