@@ -4029,7 +4029,7 @@ _End_arg:
 #if !defined(DACCESS_COMPILE)
 namespace
 {
-    enum class SwiftPhysicalLoweringTag : uint8_t
+    enum class SwiftPhysicalLoweringTag
     {
         Empty,
         Opaque,
@@ -4091,7 +4091,7 @@ namespace
             tag = SwiftPhysicalLoweringTag::Opaque;
         }
 
-        memset(&intervals[start], (uint8_t)tag, size);
+        memset(&intervals[start], (uint8_t)tag, sizeof(SwiftPhysicalLoweringTag) * size);
     }
 
     void GetNativeSwiftPhysicalLowering(CQuickArray<SwiftPhysicalLoweringTag>& intervals, PTR_MethodTable pMT, uint32_t offset = 0);
@@ -4149,7 +4149,7 @@ namespace
         _ASSERTE(hr == S_OK);
         if (hr != S_OK)
         {
-            return;
+            ThrowHR(hr);
         }
 
         // Validity of the InlineArray attribute is checked at type-load time,
@@ -4232,7 +4232,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     // from that information.
     CQuickArray<SwiftPhysicalLoweringTag> loweredBytes;
     loweredBytes.AllocThrows(GetNumInstanceFieldBytes());
-    memset(loweredBytes.Ptr(), (uint8_t)SwiftPhysicalLoweringTag::Empty, loweredBytes.Size());
+    memset(loweredBytes.Ptr(), (uint8_t)SwiftPhysicalLoweringTag::Empty, sizeof(SwiftPhysicalLoweringTag) * loweredBytes.Size());
 
     if (useNativeLayout && !IsBlittable())
     {
