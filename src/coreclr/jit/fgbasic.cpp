@@ -30,8 +30,6 @@ void Compiler::fgInit()
     fgRangeUsedInEdgeWeights = true;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
-    fgReturnBlocksComputed = false;
-
     /* Initialize the basic block list */
 
     fgFirstBB          = nullptr;

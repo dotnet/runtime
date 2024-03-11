@@ -39,6 +39,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunGenericHelperNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
         {
+            Debug.Assert(
+                (dictionaryOwner is TypeDesc type && type.HasInstantiation)
+                || (dictionaryOwner is MethodDesc method && method.HasInstantiation));
             _id = helperId;
             _dictionaryOwner = dictionaryOwner;
             _target = target;
