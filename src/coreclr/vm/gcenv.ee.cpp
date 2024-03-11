@@ -311,6 +311,12 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         }
     }
 
+    // Scan the moveable GC Pointer table, which is used to ensure that
+    // pointers into managed object which are kept alive by collectible
+    // LoaderAllocators will be updated if their objects are moved.
+    // We use this for static variable bases and for
+    g_pMoveableGCPointerTracker->ScanTable(fn, sc);
+
     // In server GC, we should be competing for marking the statics
     // It's better to do this *after* stack scanning, because this way
     // we can make up for imbalances in stack scanning
@@ -1657,6 +1663,9 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
     LIMITED_METHOD_CONTRACT;
+
+    // This callback is called at least once per run of the GC, so we can reset the work stealing infra in the MoveableGCPointerTracker here
+    g_pMoveableGCPointerTracker->ResetForNextSetOfTableScans();
 
     uint64_t elapsed = 0;
     if (GenAwareMatchingGeneration(condemnedGeneration) && gcGenAnalysisTime > 0)

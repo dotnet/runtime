@@ -943,6 +943,36 @@ public:
 
 typedef VPTR(AssemblyLoaderAllocator) PTR_AssemblyLoaderAllocator;
 
+#ifndef DACCESS_COMPILE
+class CollectibleMoveableGCPointerTracker
+{
+private:
+    struct MoveableGCPointer
+    {
+        OBJECTHANDLE LifetimeTrackingHandle;
+        Object* PointerValue;
+        uintptr_t *TrackedInteriorPointer;
+    };
+
+    MoveableGCPointer *m_pointers;
+    uintptr_t m_numPointers; // Number of elements in use in m_pointers
+    uintptr_t m_maxPointers; // Allocated size of m_pointers;
+    LONG m_nextTableScanChunk;
+    Crst m_Crst;
+
+public:
+    CollectibleMoveableGCPointerTracker();
+    CrstBase* GetCrst() { LIMITED_METHOD_CONTRACT; return &m_Crst; }
+    void AddPointer(OBJECTHANDLE gcHandleDescribingLifetime, Object *pObject, uintptr_t *pTrackedInteriorPointer);
+    void ScanTable(promote_func* fn, ScanContext* sc);
+    void RemoveEntriesAssociatedWithGCHandle(OBJECTHANDLE gcHandleDescribingLifetime);
+    void ResetForNextSetOfTableScans() { LIMITED_METHOD_CONTRACT; VolatileStore(&m_nextTableScanChunk, (LONG)-1); }
+};
+
+extern CollectibleMoveableGCPointerTracker *g_pMoveableGCPointerTracker;
+void InitMoveableGCPointerTracker();
+#endif
+
 #include "loaderallocator.inl"
 
 #endif //  __LoaderAllocator_h__

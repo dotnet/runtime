@@ -1887,6 +1887,12 @@ void AssemblyLoaderAllocator::CleanupHandles()
 
     _ASSERTE(GetDomain()->IsAppDomain());
 
+    if (m_hLoaderAllocatorObjectHandle != NULL)
+    {
+        GCX_COOP();
+        g_pMoveableGCPointerTracker->RemoveEntriesAssociatedWithGCHandle(m_hLoaderAllocatorObjectHandle);
+    }
+
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
     while (!m_handleCleanupList.IsEmpty())
@@ -2211,12 +2217,24 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
 
     if (cbMem > 0)
     {
-        uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
-        pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
+        if (IsCollectible())
+        {
+            GCX_COOP();
+            uint32_t doubleSlots = AlignUp(cbMem, sizeof(double)) / sizeof(double);
+            BASEARRAYREF ptrArray = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_R8, doubleSlots);
+            CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
+            pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
+            g_pMoveableGCPointerTracker->AddPointer(m_hLoaderAllocatorObjectHandle, OBJECTREFToObject(ptrArray), &pStaticsInfo->m_pNonGCStatics);
+        }
+        else
+        {
+            uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
+            pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
+        }
     }
 }
 
-void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes)
+void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTToFillWithStaticBoxes)
 {
     CONTRACTL
     {
@@ -2228,7 +2246,179 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
 
     if (cSlots > 0)
     {
-        GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTWithStaticBoxes);
+        if (IsCollectible())
+        {
+            GCX_COOP();
+            BASEARRAYREF ptrArray = (BASEARRAYREF)AllocateObjectArray(cSlots, g_pObjectClass, /* bAllocateInPinnedHeap = */FALSE);
+            GCPROTECT_BEGIN(ptrArray);
+            if (pMTToFillWithStaticBoxes != NULL)
+            {
+                OBJECTREF* pArray = (OBJECTREF*)ptrArray->GetDataPtr();
+                GCPROTECT_BEGININTERIOR(pArray);
+                pMTToFillWithStaticBoxes->AllocateRegularStaticBoxes(&pArray);
+                GCPROTECT_END();
+            }
+
+            {
+                CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
+                pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr());
+                g_pMoveableGCPointerTracker->AddPointer(m_hLoaderAllocatorObjectHandle, OBJECTREFToObject(ptrArray), &pStaticsInfo->m_pGCStatics);
+            }
+            GCPROTECT_END();
+        }
+        else
+        {
+            GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTToFillWithStaticBoxes);
+        }
     }
 }
+#endif // !DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+CollectibleMoveableGCPointerTracker *g_pMoveableGCPointerTracker;
+void InitMoveableGCPointerTracker()
+{
+    STANDARD_VM_CONTRACT;
+    g_pMoveableGCPointerTracker = new CollectibleMoveableGCPointerTracker();
+}
+
+CollectibleMoveableGCPointerTracker::CollectibleMoveableGCPointerTracker() : 
+    m_pointers(nullptr),
+    m_numPointers(0),
+    m_maxPointers(0),
+    m_nextTableScanChunk(-1),
+    m_Crst(CrstLeafLock, (CrstFlags)(CRST_UNSAFE_COOPGC | CRST_REENTRANCY))
+{
+}
+
+void CollectibleMoveableGCPointerTracker::AddPointer(OBJECTHANDLE gcHandleDescribingLifetime, Object *pObject, uintptr_t *pTrackedInteriorPointer)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE; // Since the GC reads the array without taking locks, we need to be in cooperative mode
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_Crst);
+    MoveableGCPointer structToAdd;
+    structToAdd.LifetimeTrackingHandle = gcHandleDescribingLifetime;
+    structToAdd.PointerValue = pObject;
+    structToAdd.TrackedInteriorPointer = pTrackedInteriorPointer;
+    if (m_numPointers >= m_maxPointers)
+    {
+        uintptr_t newMaxPointers = max(16, m_maxPointers * 2);
+        MoveableGCPointer *newPointers = new MoveableGCPointer[newMaxPointers];
+        if (m_pointers != nullptr)
+        {
+            memcpy(newPointers, m_pointers, m_maxPointers * sizeof(MoveableGCPointer));
+            delete[] m_pointers;
+        }
+        m_pointers = newPointers;
+        m_maxPointers = newMaxPointers;
+    }
+    
+    m_pointers[m_numPointers] = structToAdd;
+    m_numPointers++;
+}
+
+void CollectibleMoveableGCPointerTracker::ScanTable(promote_func* fn, ScanContext* sc)
+{
+    // This executes during the GC, so we don't need to take a lock, as the table cannot be modified, as all modifications involve cooperative mode
+    WRAPPER_NO_CONTRACT;
+
+
+    if (sc->promotion)
+    {
+        // We must not promote anything, as the lifetime of these pointers is driven by the lifetime of the LifetimeTrackingHandle
+        return;
+    }
+
+    if (m_numPointers == 0)
+    {
+        // There isn't any work to do.
+        return;
+    }
+
+    // On the server heap, where multiple threads may be scanning the table, we can to divide the work up. Use a simple work-stealing approach
+    //
+    // Notably, in GCToEEInterface::AnalyzeSurvivorsFinished which is called once for each time that there is a set of relocations, we reset the current
+    // chunk index to -1. Then in this function, we operate on chunks from 0 to maxChunkCount. We use InterlockedIncrement to get the next chunk index, and
+    // when a chunk is done, we increment the next chunk index. This is done is a loop, so if 1 (or more) threads of the GC is running ahead of the others,
+    // it will do more chunks than another thread which is running behind, thus balancing the work.
+    uintptr_t maxChunkCount = GCHeapUtilities::IsServerHeap() ? sc->thread_count : 1;
+    LONG chunkIndex = InterlockedIncrement(&m_nextTableScanChunk);
+    while ((uintptr_t)chunkIndex < maxChunkCount)
+    {
+        uintptr_t pointerRangeStart = 0;
+        uintptr_t pointerRangeEnd = m_numPointers;
+
+        uintptr_t pointersPerThread = (m_numPointers / maxChunkCount) + 1;
+        pointerRangeStart = pointersPerThread * chunkIndex;
+        pointerRangeEnd = pointerRangeStart + pointersPerThread;
+        if (pointerRangeEnd > m_numPointers)
+        {
+            pointerRangeEnd = m_numPointers;
+        }
+
+        for (uintptr_t i = pointerRangeStart; i < pointerRangeEnd; ++i)
+        {
+            if (!ObjectHandleIsNull(m_pointers[i].LifetimeTrackingHandle))
+            {
+                Object *pObjectOld = m_pointers[i].PointerValue;
+                fn(&m_pointers[i].PointerValue, sc, 0);
+                Object *pObject = m_pointers[i].PointerValue;
+
+                if (pObject != pObjectOld)
+                {
+                    uintptr_t delta = (uintptr_t)pObject - (uintptr_t)pObjectOld;
+                    // Use VolatileLost/Store to handle the case where the GC is running on one thread and another thread updates the lowest bit
+                    // on the pointer. This can happen when the GC is running on one thread, and another thread is running the JIT, and happens to trigger
+                    // the pre-init logic for a collectible type. The jit will update the value using InterlockedCompareExchange, and this code will do the update
+                    // using VolatileStoreWithoutBarrier. This may result in the flag bit update from SetClassInited to be lost, but that's ok, as the flag bit will
+                    // being lost won't actually change program behavior, and the lost bit is an extremely rare occurence.
+                    uintptr_t *trackedInteriorPointer = m_pointers[i].TrackedInteriorPointer;
+                    uintptr_t currentInteriorPointerVale = VolatileLoadWithoutBarrier(trackedInteriorPointer);
+                    uintptr_t newInteriorPointerValue = currentInteriorPointerVale + delta;
+                    VolatileStoreWithoutBarrier(trackedInteriorPointer, newInteriorPointerValue);
+                }
+            }
+        }
+
+        chunkIndex = InterlockedIncrement(&m_nextTableScanChunk);
+    }
+}
+
+void CollectibleMoveableGCPointerTracker::RemoveEntriesAssociatedWithGCHandle(OBJECTHANDLE gcHandleDescribingLifetime)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE; // Since the GC reads the array without taking locks, we need to be in cooperative mode
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_Crst);
+    if (m_numPointers == 0)
+        return;
+
+    uintptr_t index = m_numPointers - 1;
+
+    while (true)
+    {
+        MoveableGCPointer &currentElement = m_pointers[index];
+        if (currentElement.LifetimeTrackingHandle == gcHandleDescribingLifetime)
+        {
+            currentElement = m_pointers[m_numPointers - 1];
+            --m_numPointers;
+        }
+
+        if (index == 0)
+            break;
+        index--;
+    }
+}
+
 #endif // !DACCESS_COMPILE
