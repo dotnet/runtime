@@ -95,10 +95,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       $(ResolveStaticWebAssetsInputsDependsOn);
       _AddWasmStaticWebAssets;
     </ResolveStaticWebAssetsInputsDependsOn>
-    <StaticWebAssetsPrepareForRunDependsOn>
-      _GenerateBuildWasmBootJson;
-      $(StaticWebAssetsPrepareForRunDependsOn)
-    </StaticWebAssetsPrepareForRunDependsOn>
     <ResolvePublishStaticWebAssetsDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolvePublishStaticWebAssetsDependsOn);
       ProcessPublishFilesForWasm;
@@ -114,12 +110,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ResolveCompressedFilesDependsOn>
       $(ResolveCompressedFilesDependsOn);
       ResolveWasmOutputs;
+      _GenerateBuildWasmBootJson;
       _AddWasmStaticWebAssets;
     </ResolveCompressedFilesDependsOn>
     <ResolveCompressedFilesForPublishDependsOn>
       $(ResolveCompressedFilesForPublishDependsOn);
       ProcessPublishFilesForWasm;
       ComputeWasmExtensions;
+      GeneratePublishWasmBootJson;
       _AddPublishWasmBootJsonToStaticWebAssets;
     </ResolveCompressedFilesForPublishDependsOn>
     <CompressFilesDependsOn>
@@ -299,31 +297,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_BuildWasmBootJson
-        Include="$(_WasmBuildBootJsonPath)"
-        RelativePath="_framework/blazor.boot.json" />
-    </ItemGroup>
-
-    <DefineStaticWebAssets
-      CandidateAssets="@(_BuildWasmBootJson)"
-      SourceId="$(PackageId)"
-      SourceType="Computed"
-      AssetKind="Build"
-      AssetRole="Primary"
-      AssetTraitName="WasmResource"
-      AssetTraitValue="manifest"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="Never"
-      ContentRoot="$(OutDir)wwwroot"
-      BasePath="$(StaticWebAssetBasePath)"
-    >
-      <Output TaskParameter="Assets" ItemName="_BuildWasmBootJsonStaticWebAsset" />
-    </DefineStaticWebAssets>
   </Target>
 
   <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="$(AddWasmStaticWebAssetsDependsOn)">
@@ -386,6 +359,33 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
+
+        <PropertyGroup>
+      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_BuildWasmBootJson
+        Include="$(_WasmBuildBootJsonPath)"
+        RelativePath="_framework/blazor.boot.json" />
+    </ItemGroup>
+
+    <DefineStaticWebAssets
+      CandidateAssets="@(_BuildWasmBootJson)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      AssetKind="Build"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="manifest"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="Never"
+      ContentRoot="$(OutDir)wwwroot"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="_BuildWasmBootJsonStaticWebAsset" />
+    </DefineStaticWebAssets>
+
   </Target>
 
   <!-- Publish starts here -->
