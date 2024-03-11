@@ -142,34 +142,24 @@ namespace System.Linq
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TypeIsImplicitlyStable<T>()
         {
-            // Check for integral primitive types that compare equally iff they have the same bit pattern.
-            // (bool is included because, even though technically it can have 256 different values, anything
-            // other than 0/1 is only producable using unsafe code.)
-            if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) || typeof(T) == typeof(bool) ||
-                typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
-                typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
-                typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
-                typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
-                typeof(T) == typeof(nint) || typeof(T) == typeof(nuint))
-            {
-                return true;
-            }
-
+            Type t = typeof(T);
             if (typeof(T).IsEnum)
             {
-                // Check for all integral underlying types.
-                Type underlying = typeof(T).GetEnumUnderlyingType();
-                return underlying == typeof(sbyte) || underlying == typeof(byte) ||
-                       underlying == typeof(short) || underlying == typeof(ushort) || underlying == typeof(char) ||
-                       underlying == typeof(int) || underlying == typeof(uint) ||
-                       underlying == typeof(long) || underlying == typeof(ulong) ||
-                       underlying == typeof(nint) || underlying == typeof(nuint);
+                t = typeof(T).GetEnumUnderlyingType();
             }
 
-            // It's tempting to include a type like string here, as it's so commonly used with ordering,
-            // but two different string objects can compare equally, and their reference identity can be
-            // observable in a stable vs unstable sort.
-            return false;
+            // Check for integral primitive types that compare equally iff they have the same bit pattern.
+            // bool is included because, even though technically it can have 256 different values, anything
+            // other than 0/1 is only producible using unsafe code. It's tempting to include a type like string
+            // here, as it's so commonly used with ordering, but two different string objects can compare equally,
+            // and their reference identity can be observable in a stable vs unstable sort.
+            return
+                t == typeof(sbyte) || t == typeof(byte) || t == typeof(bool) ||
+                t == typeof(short) || t == typeof(ushort) || t == typeof(char) ||
+                t == typeof(int) || t == typeof(uint) ||
+                t == typeof(long) || t == typeof(ulong) ||
+                t == typeof(Int128) || t == typeof(UInt128) ||
+                t == typeof(nint) || t == typeof(nuint);
         }
     }
 
