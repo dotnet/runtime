@@ -9092,7 +9092,9 @@ GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 //    can't be represented in jitted code. If this happens, this method will return
 //    nullptr.
 //
-GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool useParent)
+GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_METHOD_HANDLE   callerHandle,
+                                             bool                    useParent)
 {
     const bool      mustRestoreHandle     = true;
     bool* const     pRuntimeLookup        = nullptr;
