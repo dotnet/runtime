@@ -120,10 +120,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       GeneratePublishWasmBootJson;
       _AddPublishWasmBootJsonToStaticWebAssets;
     </ResolveCompressedFilesForPublishDependsOn>
-    <CompressFilesDependsOn>
-      $(CompressFilesDependsOn)
-      _GenerateBuildWasmBootJson;
-    </CompressFilesDependsOn>
     <CompressFilesForPublishDependsOn>
       $(CompressFilesForPublishDependsOn);
       GeneratePublishWasmBootJson;
@@ -136,11 +132,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </AddWasmStaticWebAssetsDependsOn>
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
-      ResolveStaticWebAssetsInputs;
+      ResolveWasmOutputs;
     </GenerateBuildWasmBootJsonDependsOn>
-    <GeneratePublishWasmBootJsonDependsOn>
-      $(GeneratePublishWasmBootJsonDependsOn);
-    </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
   <Target Name="_WasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
