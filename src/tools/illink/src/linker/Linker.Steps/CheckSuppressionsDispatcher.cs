@@ -15,7 +15,7 @@ namespace Mono.Linker.Steps
 
 		}
 
-		public override void Process (LinkContext context)
+		internal override void Process (LinkContext context)
 		{
 			base.Process (context);
 			var redundantSuppressions = context.Suppressions.GetUnusedSuppressions ();

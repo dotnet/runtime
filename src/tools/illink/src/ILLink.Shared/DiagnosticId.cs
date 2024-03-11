@@ -8,6 +8,7 @@ using System;
 
 namespace ILLink.Shared
 {
+	// Must be public, or visible to codefix assembly.
 	public enum DiagnosticId
 	{
 		// Trimming error ids.

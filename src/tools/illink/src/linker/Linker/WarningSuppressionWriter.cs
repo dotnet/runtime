@@ -120,7 +120,7 @@ namespace Mono.Linker
 			return "member";
 		}
 
-		public enum FileOutputKind
+		internal enum FileOutputKind
 		{
 			CSharp,
 			Xml

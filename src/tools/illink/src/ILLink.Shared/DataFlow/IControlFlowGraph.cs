@@ -11,7 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ILLink.Shared.DataFlow
 {
-	public enum RegionKind
+	internal enum RegionKind
 	{
 		Try,
 		Catch,
@@ -19,24 +19,24 @@ namespace ILLink.Shared.DataFlow
 		Finally
 	}
 
-	public enum ConditionKind
+	internal enum ConditionKind
 	{
 		None,
 		WhenFalse,
 		WhenTrue,
 	}
 
-	public interface IRegion<TRegion> : IEquatable<TRegion>
+	internal interface IRegion<TRegion> : IEquatable<TRegion>
 	{
 		RegionKind Kind { get; }
 	}
 
-	public interface IBlock<TBlock> : IEquatable<TBlock>
+	internal interface IBlock<TBlock> : IEquatable<TBlock>
 	{
 		ConditionKind ConditionKind { get; }
 	}
 
-	public interface IControlFlowGraph<TBlock, TRegion>
+	internal interface IControlFlowGraph<TBlock, TRegion>
 		where TBlock : struct, IBlock<TBlock>
 		where TRegion : IRegion<TRegion>
 	{

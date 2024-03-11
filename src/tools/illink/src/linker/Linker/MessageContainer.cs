@@ -13,30 +13,32 @@ namespace Mono.Linker
 {
 	public readonly struct MessageContainer : IComparable<MessageContainer>, IEquatable<MessageContainer>
 	{
-		public static readonly MessageContainer Empty;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+		internal static readonly MessageContainer Empty;
+#pragma warning restore CS0649
 
 		/// <summary>
 		/// Optional data with a filename, line and column that triggered
 		/// to output an error (or warning) message.
 		/// </summary>
-		public MessageOrigin? Origin { get; }
+		internal MessageOrigin? Origin { get; }
 
-		public MessageCategory Category { get; }
+		internal MessageCategory Category { get; }
 
 		/// <summary>
 		/// Further categorize the message.
 		/// </summary>
-		public string SubCategory { get; }
+		internal string SubCategory { get; }
 
 		/// <summary>
 		/// Code identifier for errors and warnings.
 		/// </summary>
-		public int? Code { get; }
+		internal int? Code { get; }
 
 		/// <summary>
 		/// User friendly text describing the error or warning.
 		/// </summary>
-		public string Text { get; }
+		internal string Text { get; }
 
 		/// <summary>
 		/// Create an error message.
@@ -197,7 +199,7 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Warning, id, subcategory, origin, args);
 		}
 
-		public bool IsWarningMessage ([NotNullWhen (true)] out int? code)
+		internal bool IsWarningMessage ([NotNullWhen (true)] out int? code)
 		{
 			code = null;
 
@@ -283,7 +285,7 @@ namespace Mono.Linker
 
 		public override string ToString () => ToMSBuildString ();
 
-		public string ToMSBuildString ()
+		internal string ToMSBuildString ()
 		{
 			const string originApp = Constants.ILLink;
 			string origin = Origin?.ToString () ?? originApp;

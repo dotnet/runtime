@@ -11,7 +11,7 @@ namespace Mono.Linker.Dataflow
 	// storage location for a hoisted local (a local variable which is lifted to a
 	// field on a state machine type, or to a field on a closure accessed by lambdas
 	// or local functions).
-	public readonly struct HoistedLocalKey : IEquatable<HoistedLocalKey>
+	internal readonly struct HoistedLocalKey : IEquatable<HoistedLocalKey>
 	{
 		readonly FieldDefinition Field;
 

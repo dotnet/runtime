@@ -35,7 +35,7 @@ namespace Mono.Linker
 			=> InterfaceImplementor?.InterfaceType;
 
 		[MemberNotNullWhen (true, nameof (InterfaceImplementor), nameof (MatchingInterfaceImplementation))]
-		public bool IsOverrideOfInterfaceMember
+		internal bool IsOverrideOfInterfaceMember
 			=> InterfaceImplementor != null;
 	}
 }

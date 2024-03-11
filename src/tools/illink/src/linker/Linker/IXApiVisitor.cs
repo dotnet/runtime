@@ -36,7 +36,7 @@ using Mono.Cecil;
 namespace Mono.Linker
 {
 
-	public interface IXApiVisitor
+	internal interface IXApiVisitor
 	{
 
 		void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly);

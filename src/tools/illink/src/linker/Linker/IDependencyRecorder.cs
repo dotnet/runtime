@@ -32,7 +32,7 @@ namespace Mono.Linker
 	/// Abstraction exposed by ILLink(mostly MarkStep, but not only) - it will call this interface
 	/// every time it finds a dependency between two parts of the dependency graph.
 	/// </summary>
-	public interface IDependencyRecorder
+	internal interface IDependencyRecorder
 	{
 		/// <summary>
 		/// Reports a dependency detected by ILLink.

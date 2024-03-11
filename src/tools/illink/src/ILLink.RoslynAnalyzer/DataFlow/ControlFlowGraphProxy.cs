@@ -23,7 +23,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// any kind of value equality for different block instances. In practice
 	// this should be fine as long as we consistently use block instances from
 	// a single ControlFlowGraph.
-	public readonly record struct BlockProxy (BasicBlock Block) : IBlock<BlockProxy>
+	internal readonly record struct BlockProxy (BasicBlock Block) : IBlock<BlockProxy>
 	{
 		public override string ToString ()
 		{
@@ -33,7 +33,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public ConditionKind ConditionKind => (ConditionKind) Block.ConditionKind;
 	}
 
-	public readonly record struct RegionProxy (ControlFlowRegion Region) : IRegion<RegionProxy>
+	internal readonly record struct RegionProxy (ControlFlowRegion Region) : IRegion<RegionProxy>
 	{
 		public RegionKind Kind => Region.Kind switch {
 			ControlFlowRegionKind.Try => RegionKind.Try,
@@ -44,7 +44,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		};
 	}
 
-	public readonly record struct ControlFlowGraphProxy (ControlFlowGraph ControlFlowGraph) : IControlFlowGraph<BlockProxy, RegionProxy>
+	internal readonly record struct ControlFlowGraphProxy (ControlFlowGraph ControlFlowGraph) : IControlFlowGraph<BlockProxy, RegionProxy>
 	{
 		public IEnumerable<BlockProxy> Blocks {
 			get {

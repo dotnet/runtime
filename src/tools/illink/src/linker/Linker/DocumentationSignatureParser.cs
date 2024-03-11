@@ -27,7 +27,7 @@ namespace Mono.Linker
 	internal static class DocumentationSignatureParser
 	{
 		[Flags]
-		public enum MemberType
+		internal enum MemberType
 		{
 			Method = 0x0001,
 			Field = 0x0002,

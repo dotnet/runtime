@@ -17,14 +17,14 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 	[Flags]
-	public enum AllowedAssemblies
+	internal enum AllowedAssemblies
 	{
 		ContainingAssembly = 0x1,
 		AnyAssembly = 0x2 | ContainingAssembly,
 		AllAssemblies = 0x4 | AnyAssembly
 	}
 
-	public abstract class ProcessLinkerXmlBase
+	internal abstract class ProcessLinkerXmlBase
 	{
 		const string FullNameAttributeName = "fullname";
 		const string LinkerElementName = "linker";

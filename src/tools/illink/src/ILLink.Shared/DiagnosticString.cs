@@ -8,7 +8,7 @@ using System;
 
 namespace ILLink.Shared
 {
-	public readonly struct DiagnosticString
+	internal readonly struct DiagnosticString
 	{
 		private readonly string _titleFormat;
 		private readonly string _messageFormat;

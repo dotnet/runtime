@@ -176,7 +176,7 @@ namespace Mono.Linker
 			Context.LogError (null, DiagnosticId.MissingArgumentForCommanLineOptionName, optionName);
 		}
 
-		public enum DependenciesFileFormat
+		internal enum DependenciesFileFormat
 		{
 			Xml,
 			Dgml

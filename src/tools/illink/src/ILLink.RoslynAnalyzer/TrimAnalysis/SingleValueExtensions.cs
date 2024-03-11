@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public static class SingleValueExtensions
+	internal static class SingleValueExtensions
 	{
 		public static SingleValue? FromTypeSymbol (ITypeSymbol type)
 		{

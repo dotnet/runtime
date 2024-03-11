@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- UnityLinker extension points -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.assembly_actions</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.context</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.fieldType_init</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.indirectly_called</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.marked_attributes</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.marked_instantiated</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.marked_pending</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.pending_preserve</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.preserved_exportedtype_members</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.preserved_methods</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.preserved_type_members</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.preserved_types</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.processed</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.public_api</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.resources_to_remove</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.symbol_readers</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.AnnotationStore.types_relevant_to_variant_casting</Target>
+  </Suppression> 
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.LinkerILProcessor</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+
+  <!-- TypeParser from corert, where we don't want to modify sources. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.Runtime.TypeParsing.AssemblyQualifiedTypeName</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.Runtime.TypeParsing.NonQualifiedTypeName</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.Runtime.TypeParsing.TypeName</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.Runtime.TypeParsing.TypeParser</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.AssemblyNameHelpers</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.RuntimeAssemblyName</Target>
+  </Suppression>
+
+  <!-- Types used by the codefix provider assembly that must be public -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.DiagnosticId</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.DiagnosticIdExtensions</Target>
+  </Suppression>
+  <!-- ObsoleteAttribute on implementation but not ref assembly. -->
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.CustomAttribute):[T:System.ObsoleteAttribute]</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.IMetadataTokenProvider):[T:System.ObsoleteAttribute]</Target>
+  </Suppression>
+  <!-- Interface implementation not in ref assembly. -->
+  <Suppression>
+    <DiagnosticId>CP0008</DiagnosticId>
+    <Target>T:Mono.Linker.MessageContainer</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0008</DiagnosticId>
+    <Target>T:Mono.Linker.MessageOrigin</Target>
+  </Suppression>
+
+  <!-- Plus related warnings for public methods on implementation that implement the interface. -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.MessageContainer.CompareTo(Mono.Linker.MessageContainer)</Target>
+  </Suppression>
+
+  <!-- Interface implementation not present in ref assembly requires public methods -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.Dispose</Target>
+  </Suppression>
+  <!-- Ref assembly doesn't have nullable annotations. -->
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.TryGetCustomData(System.String,System.String@)$1:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+  </Suppression>
+  <!-- Ref assembly doesn't have this enum member. -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.MessageCategory.WarningAsError</Target>
+  </Suppression>
+</Suppressions>
