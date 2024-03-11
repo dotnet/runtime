@@ -48,8 +48,10 @@ using Mono.Linker.Dataflow;
 
 namespace Mono.Linker.Steps
 {
-
-	public partial class MarkStep : IStep
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal partial class MarkStep : IStep
+#pragma warning restore CA1852
 	{
 		LinkContext? _context;
 		protected LinkContext Context {
@@ -3885,7 +3887,7 @@ namespace Mono.Linker.Steps
 			scanner.InterproceduralScan (methodIL);
 		}
 
-		protected class AttributeProviderPair
+		protected sealed class AttributeProviderPair
 		{
 			public AttributeProviderPair (CustomAttribute attribute, ICustomAttributeProvider provider)
 			{

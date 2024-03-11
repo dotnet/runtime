@@ -38,8 +38,10 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-
-	public class TypeMapInfo
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal class TypeMapInfo
+#pragma warning restore CA1852
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
 		readonly LinkContext context;

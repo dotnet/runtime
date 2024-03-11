@@ -18,7 +18,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// - field
 	// - parameter
 	// - method return
-	public abstract class LocalDataFlowVisitor<TValue, TContext, TValueLattice, TContextLattice, TConditionValue> :
+	internal abstract class LocalDataFlowVisitor<TValue, TContext, TValueLattice, TContextLattice, TConditionValue> :
 		OperationWalker<LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>, TValue>,
 		ITransfer<
 			BlockProxy,

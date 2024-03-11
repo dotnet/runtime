@@ -8,8 +8,7 @@ using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
-
-	public class AddBypassNGenStep : BaseStep
+	internal sealed class AddBypassNGenStep : BaseStep
 	{
 
 		AssemblyDefinition? coreLibAssembly;

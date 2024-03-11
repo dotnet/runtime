@@ -8,7 +8,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public class ValueNodeList : List<MultiValue>
+	internal sealed class ValueNodeList : List<MultiValue>
 	{
 		public ValueNodeList ()
 		{
@@ -48,7 +48,7 @@ namespace Mono.Linker.Dataflow
 		}
 	}
 
-	public struct ValueBasicBlockPair : IEquatable<ValueBasicBlockPair>
+	internal struct ValueBasicBlockPair : IEquatable<ValueBasicBlockPair>
 	{
 		public ValueBasicBlockPair (MultiValue value, int basicBlockIndex)
 		{

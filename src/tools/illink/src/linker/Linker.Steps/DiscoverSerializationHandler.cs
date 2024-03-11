@@ -11,7 +11,7 @@ namespace Mono.Linker.Steps
 	// of xamarin-android. It is not meant to be complete. Unlike xamarin-andorid:
 	// - this will only discover attributed types that are marked
 	// - this will discover types in non-"link" assemblies as well
-	public class DiscoverSerializationHandler : IMarkHandler
+	internal sealed class DiscoverSerializationHandler : IMarkHandler
 	{
 		LinkContext? _context;
 		LinkContext Context {

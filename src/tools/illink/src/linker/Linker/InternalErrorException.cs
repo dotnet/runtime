@@ -5,7 +5,7 @@ using System;
 
 namespace Mono.Linker
 {
-	public class InternalErrorException : Exception
+	internal sealed class InternalErrorException : Exception
 	{
 		/// <summary>
 		/// Represents an internal fatal error. Should be used in places that are not expected to be hit by ILLink.

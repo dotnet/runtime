@@ -5,9 +5,9 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class MarkingHelpers
+	internal sealed class MarkingHelpers
 	{
-		protected readonly LinkContext _context;
+		readonly LinkContext _context;
 
 		public MarkingHelpers (LinkContext context)
 		{

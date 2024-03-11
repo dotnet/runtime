@@ -12,7 +12,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly record struct TrimAnalysisMethodCallPattern
+	internal readonly record struct TrimAnalysisMethodCallPattern
 	{
 		public readonly Instruction Operation;
 		public readonly MethodReference CalledMethod;

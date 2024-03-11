@@ -38,7 +38,11 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class AssemblyResolver : IAssemblyResolver
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+
+	internal class AssemblyResolver : IAssemblyResolver
+#pragma warning restore CA1852
 	{
 		readonly List<string> _references = new ();
 		readonly LinkContext _context;

@@ -13,7 +13,7 @@ using Mono.Cecil.Cil;
 namespace Mono.Linker.Dataflow
 {
 	// Currently this is implemented using heuristics
-	public class CompilerGeneratedState
+	internal sealed class CompilerGeneratedState
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, MethodDefinition> _compilerGeneratedTypeToUserCodeMethod;

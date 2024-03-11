@@ -11,7 +11,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class BodySubstitutionParser : ProcessLinkerXmlBase
+	internal sealed class BodySubstitutionParser : ProcessLinkerXmlBase
 	{
 		SubstitutionInfo? _substitutionInfo;
 

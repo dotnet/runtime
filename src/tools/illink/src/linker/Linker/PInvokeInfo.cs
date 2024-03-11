@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 namespace Mono.Linker
 {
 	[DataContract]
-	public class PInvokeInfo : IComparable<PInvokeInfo>
+	internal sealed class PInvokeInfo : IComparable<PInvokeInfo>
 	{
 		[DataMember (Name = "assembly")]
 		internal string AssemblyName { get; set; }

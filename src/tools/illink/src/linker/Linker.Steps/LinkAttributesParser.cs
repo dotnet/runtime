@@ -15,7 +15,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class LinkAttributesParser : ProcessLinkerXmlBase
+	internal sealed class LinkAttributesParser : ProcessLinkerXmlBase
 	{
 		AttributeInfo? _attributeInfo;
 

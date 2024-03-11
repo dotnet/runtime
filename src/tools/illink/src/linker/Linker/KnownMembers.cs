@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class KnownMembers
+	internal sealed class KnownMembers
 	{
 		public MethodDefinition? NotSupportedExceptionCtorString { get; set; }
 		public MethodDefinition? DisablePrivateReflectionAttributeCtor { get; set; }

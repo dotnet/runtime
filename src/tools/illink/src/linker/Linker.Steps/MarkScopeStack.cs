@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class MarkScopeStack
+	internal sealed class MarkScopeStack
 	{
 		public readonly struct Scope
 		{

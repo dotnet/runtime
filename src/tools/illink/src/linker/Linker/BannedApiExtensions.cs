@@ -10,7 +10,7 @@ namespace Mono.Linker;
 /// <summary>
 /// Extension methods to help make working with banned apis easier and more discoverable
 /// </summary>
-public static class BannedApiExtensions
+internal static class BannedApiExtensions
 {
 	public static Collection<Instruction> Instructions (this MethodBody body, LinkContext context)
 		=> context.GetMethodIL(body.Method).Instructions;

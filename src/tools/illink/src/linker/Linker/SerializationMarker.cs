@@ -49,7 +49,7 @@ namespace Mono.Linker
 		DataContractSerializer = 2,
 	}
 
-	public class SerializationMarker
+	internal sealed class SerializationMarker
 	{
 		readonly LinkContext _context;
 

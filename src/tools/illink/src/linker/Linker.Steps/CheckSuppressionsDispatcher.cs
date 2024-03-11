@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class CheckSuppressionsDispatcher : SubStepsDispatcher
+	internal sealed class CheckSuppressionsDispatcher : SubStepsDispatcher
 	{
 		public CheckSuppressionsDispatcher () : base (new List<ISubStep> { new CheckSuppressionsStep () })
 		{

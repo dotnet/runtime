@@ -12,7 +12,10 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class DescriptorMarker : ProcessLinkerXmlBase
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal class DescriptorMarker : ProcessLinkerXmlBase
+#pragma warning restore CA1852
 	{
 		const string NamespaceElementName = "namespace";
 

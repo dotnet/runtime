@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class ValidateVirtualMethodAnnotationsStep : BaseStep
+	internal sealed class ValidateVirtualMethodAnnotationsStep : BaseStep
 	{
 		protected override void Process ()
 		{

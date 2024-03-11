@@ -78,7 +78,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	}
 
 	// Wrapper struct exists purely to substitute a concrete LocalKey for TKey of DictionaryLattice
-	public readonly struct LocalStateLattice<TValue, TValueLattice> : ILattice<LocalState<TValue>>
+	internal readonly struct LocalStateLattice<TValue, TValueLattice> : ILattice<LocalState<TValue>>
 		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{

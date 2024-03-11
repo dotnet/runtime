@@ -12,7 +12,7 @@ namespace Mono.Linker
 	/// <summary>
 	/// Class which implements IDependencyRecorder and writes the dependencies into an DGML file.
 	/// </summary>
-	public class DgmlDependencyRecorder : IDependencyRecorder, IDisposable
+	internal sealed class DgmlDependencyRecorder : IDependencyRecorder, IDisposable
 	{
 		public const string DefaultDependenciesFileName = "linker-dependencies.dgml";
 		public Dictionary<string, int> nodeList = new ();

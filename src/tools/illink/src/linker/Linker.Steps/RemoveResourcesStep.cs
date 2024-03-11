@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class RemoveResourcesStep : BaseStep
+	internal sealed class RemoveResourcesStep : BaseStep
 	{
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{

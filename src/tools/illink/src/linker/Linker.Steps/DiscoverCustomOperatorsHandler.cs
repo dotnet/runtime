@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class DiscoverOperatorsHandler : IMarkHandler
+	internal sealed class DiscoverOperatorsHandler : IMarkHandler
 	{
 		LinkContext? _context;
 		LinkContext Context {

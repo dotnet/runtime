@@ -11,7 +11,7 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly struct ReflectionMarker
+	internal readonly struct ReflectionMarker
 	{
 		readonly LinkContext _context;
 		readonly MarkStep _markStep;

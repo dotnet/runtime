@@ -10,7 +10,10 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
-	public class EmbeddedXmlInfo
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal class EmbeddedXmlInfo
+#pragma warning restore CA1852
 	{
 		static EmbeddedResource? GetEmbeddedXml (AssemblyDefinition assembly, Func<Resource, bool> predicate)
 		{

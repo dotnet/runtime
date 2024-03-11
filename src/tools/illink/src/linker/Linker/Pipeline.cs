@@ -35,8 +35,10 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
-
-	public class Pipeline
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal class Pipeline
+#pragma warning restore CA1852
 	{
 
 		readonly List<IStep> _steps;

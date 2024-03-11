@@ -10,7 +10,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly struct GenericArgumentDataFlow
+	internal readonly struct GenericArgumentDataFlow
 	{
 		readonly LinkContext _context;
 		readonly MarkStep _markStep;

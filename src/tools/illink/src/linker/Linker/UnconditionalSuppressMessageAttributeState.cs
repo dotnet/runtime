@@ -10,13 +10,13 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class UnconditionalSuppressMessageAttributeState
+	internal sealed class UnconditionalSuppressMessageAttributeState
 	{
 		internal const string ScopeProperty = "Scope";
 		internal const string TargetProperty = "Target";
 		internal const string MessageIdProperty = "MessageId";
 
-		public class Suppression
+		internal sealed class Suppression
 		{
 			public SuppressMessageInfo SuppressMessageInfo { get; }
 			public bool Used { get; set; }

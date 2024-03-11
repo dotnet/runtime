@@ -3,7 +3,7 @@
 
 namespace Mono.Linker.Steps
 {
-	public class ProcessWarningsStep : BaseStep
+	internal sealed class ProcessWarningsStep : BaseStep
 	{
 		protected override void Process ()
 		{

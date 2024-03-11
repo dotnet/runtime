@@ -83,7 +83,7 @@ namespace Mono.Linker
 
 		public bool ProcessSatelliteAssemblies { get; set; }
 
-		protected Tracer Tracer {
+		internal Tracer Tracer {
 			get {
 				return context.Tracer;
 			}
@@ -93,9 +93,9 @@ namespace Mono.Linker
 
 		internal HashSet<MethodDefinition> VirtualMethodsWithAnnotationsToValidate { get; }
 
-		public TypeMapInfo TypeMapInfo { get; }
+		internal TypeMapInfo TypeMapInfo { get; }
 
-		public MemberActionStore MemberActions { get; }
+		internal MemberActionStore MemberActions { get; }
 
 		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump ()

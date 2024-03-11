@@ -35,9 +35,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker
 {
-	public class Tracer
+	internal sealed class Tracer
 	{
-		protected readonly LinkContext context;
+		readonly LinkContext context;
 
 		List<IDependencyRecorder>? recorders;
 

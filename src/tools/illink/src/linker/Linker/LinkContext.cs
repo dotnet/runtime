@@ -43,8 +43,10 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
-
-	public class UnintializedContextFactory
+	// Unity extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal class UnintializedContextFactory
+#pragma warning restore CA1852
 	{
 		public virtual AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
 		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
@@ -84,13 +86,13 @@ namespace Mono.Linker
 		readonly Dictionary<AssemblyDefinition, bool> _isTrimmable;
 		readonly UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 
-		public Pipeline Pipeline {
+		internal Pipeline Pipeline {
 			get { return _pipeline; }
 		}
 
-		public CustomAttributeSource CustomAttributes => _customAttributes;
+		internal CustomAttributeSource CustomAttributes => _customAttributes;
 
-		public CompilerGeneratedState CompilerGeneratedState => _compilerGeneratedState;
+		internal CompilerGeneratedState CompilerGeneratedState => _compilerGeneratedState;
 
 		public AnnotationStore Annotations => _annotations;
 
@@ -134,7 +136,7 @@ namespace Mono.Linker
 
 		public Dictionary<string, bool> FeatureSettings { get; init; }
 
-		public List<PInvokeInfo> PInvokes { get; private set; }
+		internal List<PInvokeInfo> PInvokes { get; private set; }
 
 		public string? PInvokesListFile;
 
@@ -144,7 +146,7 @@ namespace Mono.Linker
 			get { return _actions; }
 		}
 
-		public AssemblyResolver Resolver {
+		internal AssemblyResolver Resolver {
 			get { return _resolver; }
 		}
 
@@ -156,11 +158,11 @@ namespace Mono.Linker
 
 		public bool LogMessages { get; set; }
 
-		public MarkingHelpers MarkingHelpers { get; private set; }
+		internal MarkingHelpers MarkingHelpers { get; private set; }
 
-		public KnownMembers MarkedKnownMembers { get; private set; }
+		internal KnownMembers MarkedKnownMembers { get; private set; }
 
-		public WarningSuppressionWriter? WarningSuppressionWriter { get; set; }
+		internal WarningSuppressionWriter? WarningSuppressionWriter { get; set; }
 
 		public HashSet<int> NoWarn { get; set; }
 
@@ -172,13 +174,13 @@ namespace Mono.Linker
 
 		public WarnVersion WarnVersion { get; set; }
 
-		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
+		internal UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
 
-		public Tracer Tracer { get; private set; }
+		internal Tracer Tracer { get; private set; }
 
-		public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
+		internal EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
 
-		public CodeOptimizationsSettings Optimizations { get; set; }
+		internal CodeOptimizationsSettings Optimizations { get; set; }
 
 		public bool AddReflectionAnnotations { get; set; }
 
@@ -192,14 +194,14 @@ namespace Mono.Linker
 
 		public HashSet<string> AssembliesWithGeneratedSingleWarning { get; set; }
 
-		public SerializationMarker SerializationMarker { get; }
+		internal SerializationMarker SerializationMarker { get; }
 
-		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
+		internal LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
 			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
 		{
 		}
 
-		protected LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
+		private LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
 		{
 			_pipeline = pipeline;
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
@@ -1019,7 +1021,7 @@ namespace Mono.Linker
 		}
 	}
 
-	public class CodeOptimizationsSettings
+	internal sealed class CodeOptimizationsSettings
 	{
 		sealed class Pair
 		{

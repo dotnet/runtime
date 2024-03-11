@@ -9,7 +9,7 @@ namespace Mono.Linker
 	/// Represents a known error that occurred during link time which is not solvable by the user.
 	/// This is used when we want to present the non-recoverable error with a specific error code.
 	/// </summary>
-	public class LinkerFatalErrorException : Exception
+	internal sealed class LinkerFatalErrorException : Exception
 	{
 		public MessageContainer MessageContainer { get; }
 

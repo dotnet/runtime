@@ -43,8 +43,10 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
-
-	public partial class Driver : IDisposable
+	// Extensible for testing purposes
+#pragma warning disable CA1852 // Seal internal types
+	internal partial class Driver : IDisposable
+#pragma warning restore CA1852
 	{
 		const string resolvers = "-a|-x";
 		const string _linker = "IL Linker";
@@ -185,7 +187,7 @@ namespace Mono.Linker
 		// 0 => successfully set up context with all arguments
 		// 1 => argument processing stopped early without errors
 		// -1 => error setting up context
-		protected int SetupContext (ILogger? customLogger = null)
+		int SetupContext (ILogger? customLogger = null)
 		{
 			Pipeline p = GetStandardPipeline ();
 			context = GetDefaultContext (p, customLogger);
