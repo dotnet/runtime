@@ -1956,7 +1956,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     // Check the signature of the Swift call for the special types
     CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
 
-    CORINFO_SWIFT_LOWERING** lowerings = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING*[sig->numArgs]{};
+    CORINFO_SWIFT_LOWERING** lowerings = sig->numArgs == 0 ? nullptr : (new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING* [sig->numArgs] {});
 
     for (unsigned short argIndex = 0; argIndex < sig->numArgs;
          sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
