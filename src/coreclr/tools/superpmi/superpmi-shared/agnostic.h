@@ -686,6 +686,7 @@ struct GetReadyToRunHelper_TOKENin
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
     Agnostic_CORINFO_LOOKUP_KIND    GenericLookupKind;
     DWORD                           id;
+    DWORDLONG                       callerHandle;
 };
 
 struct GetReadyToRunHelper_TOKENout
