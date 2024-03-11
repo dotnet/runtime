@@ -920,7 +920,7 @@ AllRegsMask LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask |= RBM_SWIFT_ERROR;
+        killMask.gprRegs |= RBM_SWIFT_ERROR;
     }
 #endif // SWIFT_SUPPORT
 

@@ -5233,7 +5233,8 @@ void LinearScan::allocateRegistersMinimal()
 #ifdef SWIFT_SUPPORT
                 if (currentRefPosition.delayRegFree)
                 {
-                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                    regsInUseNextLocation.AddRegTypeMask(currentRefPosition.registerAssignment,
+                                                         regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
             }
@@ -5952,7 +5953,8 @@ void LinearScan::allocateRegisters()
 #ifdef SWIFT_SUPPORT
                 if (currentRefPosition.delayRegFree)
                 {
-                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                    regsInUseNextLocation.AddRegTypeMask(currentRefPosition.registerAssignment,
+                                                         regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
             }
@@ -6100,7 +6102,7 @@ void LinearScan::allocateRegisters()
                                 updateSpillCost(assignedRegister, currentInterval);
                             }
 
-                            regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
+                            regsToFree.AddRegNumInMask(assignedRegister, currentInterval->registerType);
                         }
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
                         currentRefPosition.registerAssignment = RBM_NONE;

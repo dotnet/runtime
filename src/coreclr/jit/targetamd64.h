@@ -211,8 +211,14 @@
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
 
+  #define AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF GprRegsMask(RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
+
+
   // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
+
+// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF   GprRegsMask(RBM_CALLEE_TRASH_WRITEBARRIER_BYREF)
 
   // We have two register classifications
   // * callee trash: aka     volatile or caller saved
