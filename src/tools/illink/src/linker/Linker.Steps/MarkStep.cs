@@ -3722,7 +3722,8 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					} else {
+					}
+					else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;

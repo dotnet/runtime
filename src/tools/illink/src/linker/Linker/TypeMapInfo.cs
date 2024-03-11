@@ -155,26 +155,29 @@ namespace Mono.Linker
 			if (_interfaces.ContainsKey (type))
 				return;
 
-			// Map from inflated interface type => list of every way to recursively implement that interface
-			Dictionary<TypeReference, SortedSet<ImplNode>> waysToImplementIface = new (InflatedInterfaceComparer);
+			// Map from inflated interface type => list of every way to recursively implement that interface in 'type declaration order' according to ECMA 335 12.2
+			Dictionary<TypeReference, List<InterfaceImplementationNode>> waysToImplementIface = new (InflatedInterfaceComparer);
 
-			// Get all interfaces directly implemented by this type
+			// Get all explicit interfaces of this type
 			foreach (var directIface in type.Interfaces) {
-				ImplNode directlyImplementedNode = new ImplNode (directIface, type, []);
+				InterfaceImplementationNode directlyImplementedNode = new InterfaceImplementationNode (directIface, type, []);
 				TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
 				waysToImplementIface.AddToList (inflatedDirectIface, directlyImplementedNode);
 			}
 
-			// Add interfaces on base type with the same implementation chain
+			// Add interfaces on base type
 			if (type.BaseType is { } baseType && context.Resolve (baseType) is { } baseDef) {
 				MapInterfacesOnType (baseDef);
 				var baseInterfaces = _interfaces[baseDef];
 				foreach (var item in baseInterfaces) {
-					foreach (var node in item.InterfaceImplementationNode) {
-						waysToImplementIface.AddToList (item.InflatedInterface, node);
+					var inflatedInterface = item.InflatedInterface.TryInflateFrom (type.BaseType, context);
+					Debug.Assert (inflatedInterface is not null);
+					foreach (var node in item.InterfaceImplementationNodes) {
+						waysToImplementIface.AddToList (inflatedInterface, node);
 					}
 				}
 			}
+
 			// Recursive interfaces next to preserve Inherit/Implement tree order
 			foreach (var directIface in type.Interfaces) {
 				// If we can't resolve the interface type we can't find recursive interfaces
@@ -186,7 +189,7 @@ namespace Mono.Linker
 				TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
 				var recursiveInterfaces = _interfaces[ifaceDirectlyOnType];
 				foreach (var recursiveInterface in recursiveInterfaces) {
-					var implToRecursiveIfaceChain = new ImplNode (directIface, type, recursiveInterface.InterfaceImplementationNode);
+					var implToRecursiveIfaceChain = new InterfaceImplementationNode (directIface, type, recursiveInterface.InterfaceImplementationNodes);
 					// Inflate the generic arguments up to the terminal interfaceImpl to get the inflated interface type implemented by this type
 					TypeReference inflatedRecursiveInterface = inflatedDirectIface;
 					foreach (var interfaceImpl in recursiveInterface.MostDirectInterfaceImplementationPath) {
@@ -348,6 +351,9 @@ namespace Mono.Linker
 			return context.TryResolve (type)?.BaseType;
 		}
 
+		/// <summary>
+		/// Compares two TypeReferences to interface types and determines if they are equivalent references, taking into account generic arguments and element types.
+		/// </summary>
 		public bool InterfaceTypeEquals (TypeReference? type, TypeReference? other)
 		{
 			Debug.Assert (type is not null && other is not null);

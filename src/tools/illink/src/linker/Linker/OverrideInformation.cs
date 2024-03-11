@@ -4,8 +4,6 @@
 using System.Diagnostics;
 using Mono.Cecil;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Transactions;
 
 namespace Mono.Linker
 {

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 {
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]

@@ -29,7 +29,7 @@
     } // end of class I000
 
     .class interface nested public auto ansi abstract beforefieldinit I010
-        implements Library/I00
+        implements Library/I01
     {
     } // end of class I010
 

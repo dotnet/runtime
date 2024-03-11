@@ -116,7 +116,6 @@ namespace Mono.Linker
 			}
 		}
 
-
 		public static TypeReference? GetInflatedDeclaringType (this TypeReference type, ITryResolveMetadata resolver)
 		{
 			if (type.IsGenericParameter || type.IsByReference || type.IsPointer)

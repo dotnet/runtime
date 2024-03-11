@@ -8,9 +8,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 {
 	/// <summary>
 	/// This tests that when a type implements an interface recursively (via implementations on implemented interfaces),
-	/// the shortest chain of interface implementations required to keep the implementation is marked
-	/// MyFoo => I000 => I00 => I0 (3 interfaceImpl long chain)
-	/// MyFoo => I0100 => I010 => I01 => I0 (4 interfaceImpl long chain)
+	/// the interface implementations kept are in type declaration order according to ECMA-335 12.2
 	/// </summary>
 	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
@@ -18,13 +16,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[SkipILVerify]
 #if IL_ASSEMBLY_AVAILABLE
 	[KeptTypeInAssembly ("library.dll", typeof(Library.MyClass))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I000))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I000), "library.dll", typeof (Library.I00))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I00), "library.dll", typeof (Library.I0))]
-	[RemovedTypeInAssembly("library.dll", typeof(Library.I01))]
-	[RemovedTypeInAssembly("library.dll", typeof(Library.I010))]
-	[RemovedTypeInAssembly("library.dll", typeof(Library.I0100))]
-	[RemovedInterfaceOnTypeInAssembly("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I0100))]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I0100))]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I0100), "library.dll", typeof (Library.I010))]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I010), "library.dll", typeof (Library.I01))]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I01), "library.dll", typeof (Library.I0))]
+	[RemovedTypeInAssembly("library.dll", typeof(Library.I00))]
+	[RemovedTypeInAssembly("library.dll", typeof(Library.I000))]
+	[RemovedInterfaceOnTypeInAssembly("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I000))]
 #endif
 	public class RecursiveInterfaceKept
 	{
