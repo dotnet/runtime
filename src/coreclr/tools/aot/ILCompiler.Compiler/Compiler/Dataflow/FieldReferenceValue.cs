@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    public partial record FieldReferenceValue(FieldDesc FieldDefinition)
+    internal sealed partial record FieldReferenceValue(FieldDesc FieldDefinition)
         : ReferenceValue(FieldDefinition.FieldType)
     {
         public override SingleValue DeepCopy() => this;
