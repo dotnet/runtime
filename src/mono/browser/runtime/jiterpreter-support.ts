@@ -1505,6 +1505,9 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 let scratchBuffer: NativePointer = <any>0;
 
 export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+    // safepoints are never triggered in a single-threaded build
+    if (!WasmEnableThreads)
+        return;
     // Check whether a safepoint is required
     builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
     builder.appendU8(WasmOpcode.i32_load);
