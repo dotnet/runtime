@@ -186,6 +186,22 @@ namespace System
                 result.High = (uint)high;
             }
 
+            // Do partial divide for the case where (left >> 32) < den
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static (uint Quotient, uint Remainder) Div64By32(ulong dividend, uint den)
+            {
+                if (X86.X86Base.IsSupported)
+                {
+                    return X86.X86Base.DivRem((uint)dividend, (uint)(dividend >> 32), den);
+                }
+                else
+                {
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
+                    uint quo = (uint)(dividend / den);
+                    return (quo, (uint)dividend - quo * den);
+                }
+            }
+
             /// <summary>
             /// Do full divide, yielding 96-bit result and 32-bit remainder.
             /// </summary>
@@ -235,8 +251,7 @@ Div1Word:
                     tmp = bufNum.Low64;
                     if (tmp == 0)
                         return 0;
-                    (div, rem) = Math.DivRem(tmp, den);
-                    bufNum.Low64 = div;
+                    (bufNum.Low64, rem) = Math.DivRem(tmp, den);
                     return (uint)rem;
                 }
             }
@@ -425,9 +440,9 @@ Div1Word:
                     //
                     return 0;
 
-                // TODO: https://github.com/dotnet/runtime/issues/5213
-                quo = (uint)(num64 / denHigh32);
-                num = bufNum.U0 | ((num64 - quo * denHigh32) << 32); // remainder
+
+                (quo, uint rem) = Div64By32(num64, denHigh32);
+                num = bufNum.U0 | ((ulong)rem << 32); // remainder
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
@@ -471,19 +486,7 @@ Div1Word:
                     //
                     return 0;
 
-
-                uint quo;
-                uint remainder;
-                if (X86.X86Base.IsSupported)
-                {
-                    (quo, remainder) = X86.X86Base.DivRem(bufNum.U2, bufNum.U3, den);
-                }
-                else
-                {
-                    // TODO: https://github.com/dotnet/runtime/issues/5213
-                    quo = (uint)(dividend / den);
-                    remainder = (uint)dividend - quo * den;
-                }
+                (uint quo, uint remainder) = Div64By32(dividend, den);
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
@@ -1992,20 +1995,7 @@ ReturnZero:
                             goto ThrowOverflow;
 
                         ulong num = Math.BigMul(remainder, power);
-                        uint div;
-#if TARGET_32BIT
-                        if (X86.X86Base.IsSupported)
-                        {
-                            (div, remainder) = X86.X86Base.DivRem((uint)num, (uint)(num >> 32), den);
-                        }
-                        else
-#endif
-                        {
-                            // Do full 64bit divide and cast result to 32bit
-                            var divRes = Math.DivRem(num, den);
-                            div = (uint)divRes.Quotient;
-                            remainder = (uint)divRes.Remainder;
-                        }
+                        (uint div, remainder) = Div64By32(num, den);
 
                         if (!Add32To96(ref bufQuo, div))
                         {
