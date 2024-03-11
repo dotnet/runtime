@@ -4849,7 +4849,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 
     GenTree* addr = mem->Addr();
 
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -4899,7 +4899,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         data = data->gtGetOp1();
     }
 
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -5140,18 +5140,18 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             switch (memBase->OperGet())
             {
                 case GT_LCL_ADDR:
-                {
-                    assert(memBase->isContained());
-                    varNum = memBase->AsLclFld()->GetLclNum();
-                    offset = memBase->AsLclFld()->GetLclOffs();
+                    if (memBase->isContained())
+                    {
+                        varNum = memBase->AsLclFld()->GetLclNum();
+                        offset = memBase->AsLclFld()->GetLclOffs();
 
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
-                    break;
-                }
+                        // Ensure that all the GenTreeIndir values are set to their defaults.
+                        assert(!memIndir->HasIndex());
+                        assert(memIndir->Scale() == 1);
+                        assert(memIndir->Offset() == 0);
+                        break;
+                    }
+                    FALLTHROUGH;
 
                 default: // Addressing mode [base + index * scale + offset]
                 {
@@ -12479,9 +12479,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
             assert(paddingToAdd == paddingNeeded);
         }
     }
-
-    emitComp->loopsAligned++;
 #endif
+
+    emitComp->Metrics.LoopsAligned++;
 
 #ifdef DEBUG
     // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
@@ -15335,13 +15335,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
             {
-                if (id->idAddr()->iiaSecRel)
-                {
-                    // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                    emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
-                }
+                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
             }
             else
             {

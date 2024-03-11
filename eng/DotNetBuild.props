@@ -21,6 +21,10 @@
     <_hostArch>$(_hostRid.Substring($(_hostRidPlatformIndex)).TrimStart('-'))</_hostArch>
 
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
+
+    <!-- When using the inner clone functionality in the repo build, copy the sources
+         directly as source-link doesn't support local path clones anymore. -->
+    <CopySrcInsteadOfClone>true</CopySrcInsteadOfClone>
   </PropertyGroup>
 
   <PropertyGroup Label="ShortStacks">
@@ -61,9 +65,11 @@
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
       <InnerBuildArgs Condition="'$(DotNetBuildRepo)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildRepo=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildOrchestrator=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>

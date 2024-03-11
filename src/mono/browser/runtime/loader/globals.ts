@@ -86,12 +86,13 @@ export function setLoaderGlobals(
 
         maxParallelDownloads: 16,
         enableDownloadRetry: true,
-        assertAfterExit: !ENVIRONMENT_IS_WEB,
 
         _loaded_files: [],
         loadedFiles: [],
         loadedAssemblies: [],
         libraryInitializers: [],
+        loadingWorkers: [],
+        workerNextNumber: 1,
         actual_downloaded_assets_count: 0,
         actual_instantiated_assets_count: 0,
         expected_downloaded_assets_count: 0,

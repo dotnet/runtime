@@ -4419,7 +4419,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     float insExeCost = insEvaluateExecutionCost(id);
     // All compPerfScore calculations must be performed using doubles
     double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
-    emitComp->info.compPerfScore += insPerfScore;
+    emitComp->Metrics.PerfScore += insPerfScore;
     ig->igPerfScore += insPerfScore;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
@@ -8635,9 +8635,10 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
 
     desc->vpdNext = nullptr;
 
-#if !defined(JIT32_GCENCODER) || !defined(FEATURE_EH_FUNCLETS)
     /* the lower 2 bits encode props about the stk ptr */
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
+#if defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
     if (offs == emitSyncThisObjOffs)
     {
         desc->vpdVarNum |= this_OFFSET_FLAG;

@@ -9,7 +9,7 @@
 // Floating point and 64-bit integer math helpers.
 //
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
+EXTERN_C uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
 {
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
@@ -29,7 +29,7 @@ EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
 #undef max
 #include <cmath>
 
-EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
+EXTERN_C float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
 {
     //
     // From the ECMA standard:
@@ -54,7 +54,7 @@ EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float di
     return fmodf(dividend,divisor);
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
+EXTERN_C double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
 {
     //
     // From the ECMA standard:
@@ -79,100 +79,95 @@ EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double
 }
 
 #ifdef HOST_ARM
-EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpIDiv(int32_t i, int32_t j)
+EXTERN_C int32_t REDHAWK_CALLCONV RhpIDiv(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpUDiv(uint32_t i, uint32_t j)
+EXTERN_C uint32_t REDHAWK_CALLCONV RhpUDiv(uint32_t i, uint32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLDiv(int64_t i, int64_t j)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpLDiv(int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpULDiv(uint64_t i, uint64_t j)
+EXTERN_C uint64_t REDHAWK_CALLCONV RhpULDiv(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpIMod(int32_t i, int32_t j)
+EXTERN_C int32_t REDHAWK_CALLCONV RhpIMod(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpUMod(uint32_t i, uint32_t j)
+EXTERN_C uint32_t REDHAWK_CALLCONV RhpUMod(uint32_t i, uint32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLMod(int64_t i, int64_t j)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpLMod(int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpULMod(uint64_t i, uint64_t j)
+EXTERN_C uint64_t REDHAWK_CALLCONV RhpULMod(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLMul(int64_t i, int64_t j)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpLMul(int64_t i, int64_t j)
 {
     return i * j;
 }
 
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpULMul(uint64_t i, uint64_t j)
-{
-    return i * j;
-}
-
-EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpLRsz(uint64_t i, int32_t j)
+EXTERN_C uint64_t REDHAWK_CALLCONV RhpLRsz(uint64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLRsh(int64_t i, int32_t j)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpLRsh(int64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpLLsh(int64_t i, int32_t j)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpLLsh(int64_t i, int32_t j)
 {
     return i << (j & 0x3f);
 }
 
-EXTERN_C NATIVEAOT_API int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
+EXTERN_C int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
 {
     return (int64_t)val;
 }
 
-EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
+EXTERN_C int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
 {
     return (int32_t)val;
 }
 
-EXTERN_C NATIVEAOT_API uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
+EXTERN_C uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
 {
     return (uint32_t)val;
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpLng2Dbl(int64_t val)
+EXTERN_C double REDHAWK_CALLCONV RhpLng2Dbl(int64_t val)
 {
     return (double)val;
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpULng2Dbl(uint64_t val)
+EXTERN_C double REDHAWK_CALLCONV RhpULng2Dbl(uint64_t val)
 {
     return (double)val;
 }

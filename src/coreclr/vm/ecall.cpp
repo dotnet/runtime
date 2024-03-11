@@ -96,7 +96,7 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedCastHelpers()
+void ECall::PopulateManagedHelpers()
 {
 
     STANDARD_VM_CONTRACT;
@@ -144,6 +144,18 @@ void ECall::PopulateManagedCastHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMSET));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMSET, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMZERO));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMZERO, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
 }
 
 static CrstStatic gFCallLock;

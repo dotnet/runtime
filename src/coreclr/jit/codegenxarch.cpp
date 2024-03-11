@@ -332,7 +332,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #endif // !FEATURE_EH_FUNCLETS
 
     // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTarget - that is already used to point
+    // jump target using bbTargetEdge - that is already used to point
     // to the finally block. So just skip past the BBJ_CALLFINALLYRET unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))
@@ -2107,6 +2107,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NOP:
             break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            genCodeForSwiftErrorReg(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
+
         case GT_KEEPALIVE:
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             break;
@@ -2177,7 +2183,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -3055,7 +3060,7 @@ ALLOC_DONE:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
-    assert(storeBlkNode->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(storeBlkNode->OperIs(GT_STORE_BLK));
 
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
@@ -3074,19 +3079,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             genCodeForInitBlkLoop(storeBlkNode);
             break;
 
-#ifdef TARGET_AMD64
-        case GenTreeBlk::BlkOpKindHelper:
-            assert(!storeBlkNode->gtBlkOpGcUnsafe);
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(storeBlkNode);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(storeBlkNode);
-            }
-            break;
-#endif // TARGET_AMD64
         case GenTreeBlk::BlkOpKindRepInstr:
 #ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -3405,27 +3397,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         gcInfo.gcMarkGprRegNpt(dstReg);
     }
 }
-
-#ifdef TARGET_AMD64
-//------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-#endif // TARGET_AMD64
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 // Generate code for a load from some address + offset
@@ -4314,27 +4285,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     gcInfo.gcMarkGprRegNpt(REG_RDI);
 }
 
-#ifdef TARGET_AMD64
-//----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-}
-#endif // TARGET_AMD64
-
 // generate code do a switch statement based on a table of ip-relative offsets
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
@@ -4357,32 +4307,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabOffs;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
@@ -10850,9 +10775,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindEndProlog();
 
     // TODO We may need EBP restore sequence here if we introduce PSPSym
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+#endif
 }
 
 /*****************************************************************************
@@ -10871,8 +10799,10 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
+#ifdef UNIX_X86_ABI
     // Revert a padding that was added for 16-byte alignment
     inst_RV_IV(INS_add, REG_SPBASE, 12, EA_PTRSIZE);
+#endif
 
     instGen_Return(0);
 }

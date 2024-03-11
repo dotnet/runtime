@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert } from "./globals";
-import { setI32, localHeapViewU8 } from "./memory";
+import { setI32, localHeapViewU8, forceThreadMemoryViewRefresh } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
@@ -69,6 +69,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         try {
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+            }
             open_promise_control.resolve(ws);
             prevent_timer_throttling();
         } catch (error: any) {
@@ -79,6 +82,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         try {
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+            }
             web_socket_on_message(ws, ev);
             prevent_timer_throttling();
         } catch (error: any) {
@@ -90,6 +96,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
             ws.removeEventListener("message", local_on_message);
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+            }
 
             ws[wasm_ws_close_received] = true;
             ws["close_status"] = ev.code;
@@ -119,6 +128,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         try {
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+            }
             ws.removeEventListener("message", local_on_message);
             const message = ev.message
                 ? "WebSocket error: " + ev.message

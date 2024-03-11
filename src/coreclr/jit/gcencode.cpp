@@ -1564,7 +1564,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
 
-#ifndef UNIX_X86_ABI
+#if !defined(FEATURE_EH_FUNCLETS)
     // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
     if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
@@ -4698,7 +4698,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
     // unused by alignment
     C_ASSERT((OFFSET_MASK + 1) <= sizeof(int));
 
-#ifdef DEBUG
+#if defined(DEBUG) && defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         // Tracked variables can't be pinned, and the encoding takes
@@ -4712,7 +4712,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
             assert((flags & this_OFFSET_FLAG) == 0);
         }
     }
-#endif // DEBUG
+#endif
 
     // Only need to do this once, and only if we have EH.
     if ((mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS) && compiler->ehAnyFunclets())

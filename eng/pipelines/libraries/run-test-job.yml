@@ -183,7 +183,7 @@ jobs:
               - jitstress1_tiered
               - jitstress2
               - jitstress2_tiered
-              - zapdisable
+              - disabler2r
               - tailcallstress
             ${{ if in(parameters.coreclrTestGroup, 'jitstress-random') }}:
               scenarios:
@@ -220,9 +220,9 @@ jobs:
             ${{ if in(parameters.coreclrTestGroup, 'gcstress-extra') }}:
               scenarios:
               - heapverify1
-              - gcstress0xc_zapdisable
-              - gcstress0xc_zapdisable_jitstress2
-              - gcstress0xc_zapdisable_heapverify1
+              - gcstress0xc_disabler2r
+              - gcstress0xc_disabler2r_jitstress2
+              - gcstress0xc_disabler2r_heapverify1
               - gcstress0xc_jitstress1
               - gcstress0xc_jitstress2
               - gcstress0xc_jitminopts_heapverify1
@@ -242,7 +242,7 @@ jobs:
                 - jitosr_stress_random
                 - syntheticpgo
                 - syntheticpgo_blend
-                - jitcrossblocklocalassertionprop
+                - jitrlcse
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
           - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml

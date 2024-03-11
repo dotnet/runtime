@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <_XUnitBackgroundExec Condition="'$(_XUnitBackgroundExec)' == ''">true</_XUnitBackgroundExec>
+    <AssemblyName>System.Runtime.InteropServices.JavaScript.Tests</AssemblyName>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)..\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
+</Project>
