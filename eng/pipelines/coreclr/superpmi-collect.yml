@@ -77,7 +77,7 @@ extends:
           - osx_arm64
           jobParameters:
             testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release
+            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release /p:ArchiveTests=true
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml
@@ -116,7 +116,7 @@ extends:
           - linux_arm64
           jobParameters:
             testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release
+            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release /p:ArchiveTests=true
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml
