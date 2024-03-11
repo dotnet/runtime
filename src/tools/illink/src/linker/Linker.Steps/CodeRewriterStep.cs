@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps
 {
-	// Unity extension point
+	// UnityLinker extension point
 #pragma warning disable CA1852 // Seal internal types
 	internal class CodeRewriterStep : BaseStep
 #pragma warning restore CA1852

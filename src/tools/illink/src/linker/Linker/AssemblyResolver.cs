@@ -38,9 +38,8 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	// Unity extension point
+	// UnityLinker extension point
 #pragma warning disable CA1852 // Seal internal types
-
 	internal class AssemblyResolver : IAssemblyResolver
 #pragma warning restore CA1852
 	{

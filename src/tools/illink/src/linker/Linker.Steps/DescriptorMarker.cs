@@ -12,7 +12,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	// Unity extension point
+	// UnityLinker extension point
 #pragma warning disable CA1852 // Seal internal types
 	internal class DescriptorMarker : ProcessLinkerXmlBase
 #pragma warning restore CA1852

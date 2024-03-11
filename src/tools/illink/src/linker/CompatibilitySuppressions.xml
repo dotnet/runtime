@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- Types used by the codefix provider assembly that must be public -->
+
+  <!-- Types visible to the codefix provider assembly -->
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DiagnosticId</Target>
@@ -11,7 +12,7 @@
     <Target>T:ILLink.Shared.DiagnosticIdExtensions</Target>
   </Suppression>
 
-  <!-- TypeParser from corert, where we don't want to modify sources. -->
+  <!-- TypeParser from external sources -->
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.AssemblyNameHelpers</Target>
@@ -113,25 +114,21 @@
     <Target>F:Mono.Linker.AnnotationStore.types_relevant_to_variant_casting</Target>
   </Suppression> 
 
-  <!-- Ref assembly doesn't have this enum member. -->
+  <!-- Ref assembly doesn't have this enum member -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.MessageCategory.WarningAsError</Target>
   </Suppression>
 
-  <!-- Interface implementation not present in ref assembly requires public methods -->
+  <!-- Interface methods or operator overloads not present in ref assembly, must be public -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.Dispose</Target>
   </Suppression>
-
-  <!-- Plus related warnings for public methods on implementation that implement the interface. -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.CompareTo(Mono.Linker.MessageContainer)</Target>
   </Suppression>
-
-  <!-- Operator overload methods must be public. -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.op_Equality(Mono.Linker.MessageContainer,Mono.Linker.MessageContainer)</Target>
@@ -140,13 +137,10 @@
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.op_Inequality(Mono.Linker.MessageContainer,Mono.Linker.MessageContainer)</Target>
   </Suppression>
-
-  <!-- Interface members for MessageOrigin. -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.CompareTo(Mono.Linker.MessageOrigin)</Target>
   </Suppression>
-  <!-- Operators too. -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.op_Equality(Mono.Linker.MessageOrigin,Mono.Linker.MessageOrigin)</Target>
@@ -156,7 +150,7 @@
     <Target>M:Mono.Linker.MessageOrigin.op_Inequality(Mono.Linker.MessageOrigin,Mono.Linker.MessageOrigin)</Target>
   </Suppression>
 
-  <!-- Interface implementation not in ref assembly. -->
+  <!-- Interface implementation not in ref assembly -->
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:Mono.Linker.MessageContainer</Target>
@@ -166,7 +160,7 @@
     <Target>T:Mono.Linker.MessageOrigin</Target>
   </Suppression>
 
-  <!-- ObsoleteAttribute on implementation but not ref assembly. -->
+  <!-- ObsoleteAttribute on implementation but not ref assembly -->
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.CustomAttribute):[T:System.ObsoleteAttribute]</Target>
@@ -176,9 +170,10 @@
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.IMetadataTokenProvider):[T:System.ObsoleteAttribute]</Target>
   </Suppression>
 
-  <!-- Ref assembly doesn't have nullable annotations. -->
+  <!-- Ref assembly doesn't have nullable annotations -->
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.TryGetCustomData(System.String,System.String@)$1:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
   </Suppression>
+
 </Suppressions>

@@ -6,7 +6,6 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer
 {
-	// Used by codefix assembly
 	public static class DiagnosticDescriptors
 	{
 		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId)

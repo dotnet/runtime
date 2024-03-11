@@ -48,7 +48,7 @@ using Mono.Linker.Dataflow;
 
 namespace Mono.Linker.Steps
 {
-	// Unity extension point
+	// UnityLinker extension point
 #pragma warning disable CA1852 // Seal internal types
 	internal partial class MarkStep : IStep
 #pragma warning restore CA1852
