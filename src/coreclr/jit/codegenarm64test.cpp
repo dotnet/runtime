@@ -6006,6 +6006,28 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V10, REG_P11, 0.5,
                               INS_OPTS_SCALABLE_D); // FMOV <Zd>.<T>, <Pg>/M, #<const>
 
+    // IF_SVE_CC_2A
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V0, REG_V13,
+                            INS_OPTS_SCALABLE_B); // INSR    <Zdn>.<T>, <V><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V29, REG_V0,
+                            INS_OPTS_SCALABLE_H); // INSR    <Zdn>.<T>, <V><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V4, REG_V15,
+                            INS_OPTS_SCALABLE_S); // INSR    <Zdn>.<T>, <V><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V8, REG_V2,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <V><m>
+
+    // IF_SVE_CD_2A
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V4, REG_R23,
+                            INS_OPTS_SCALABLE_B); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V11, REG_R1,
+                            INS_OPTS_SCALABLE_H); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V14, REG_R9,
+                            INS_OPTS_SCALABLE_S); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V19, REG_R0,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V29, REG_ZR,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <R><m>
+
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
                               INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>

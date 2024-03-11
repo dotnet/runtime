@@ -2226,9 +2226,6 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, GenTree* const swiftE
 
     GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(swiftErrorArg->TypeGet(), swiftErrorArg, errorRegNode);
     impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
-
-    // Indicate the error register will be checked after this call returns
-    call->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
 }
 #endif // SWIFT_SUPPORT
 

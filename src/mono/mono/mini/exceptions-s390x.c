@@ -515,7 +515,6 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		uintptr_t address;
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -527,8 +526,6 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			frame->type = FRAME_TYPE_MANAGED;
 
 		unwind_info = mono_jinfo_get_unwind_info (ji, &unwind_info_len);
-
-		address = (char *)ip - (char *)ji->code_start;
 
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
