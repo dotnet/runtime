@@ -13,7 +13,6 @@ namespace System.Runtime.Intrinsics.Arm
     /// </summary>
     [CLSCompliant(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
-    [Experimental(diagnosticId: "Sve")]
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
