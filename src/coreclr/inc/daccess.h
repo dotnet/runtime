@@ -573,6 +573,10 @@
 #include "crosscomp.h"
 #endif
 
+#if !defined(HOST_WINDOWS) && !defined(NATIVEAOT)
+#include <pal_mstypes.h>
+#endif
+
 #include <dn-u16.h>
 
 // Information stored in the DAC table of interest to the DAC implementation

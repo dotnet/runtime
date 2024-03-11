@@ -467,7 +467,7 @@ struct MSLAYOUT DacpAssemblyData
 
     HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr)
     {
-        return Request(sos, addr, NULL);
+        return Request(sos, addr, 0);
     }
 };
 
