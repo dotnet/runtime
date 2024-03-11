@@ -1692,7 +1692,7 @@ private:
 #if defined(TARGET_XARCH)
     PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
-    PhasedVar<regMaskMixed>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
+    PhasedVar<regMaskOnlyOne>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
                                                        // predicate
 
 #if defined(TARGET_XARCH)
