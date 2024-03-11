@@ -146,23 +146,42 @@ internal static partial class MsQuicConfiguration
             return handle;
         }
 
+        //
+        // if we get here, the handle is either not in the cache, or we lost the race between
+        // TryAddRentCount on this thread and MarkForDispose on another thread doing cache cleanup.
+        // In either case, we need to create a new handle.
+        //
+
         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"MsQuicConfiguration not found in cache, creating new.");
 
         handle = CreateInternal(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+        handle.TryAddRentCount(); // we are the first renter
 
         SafeMsQuicConfigurationHandle cached;
         do
         {
             cached = s_configurationCache.GetOrAdd(key, handle);
         }
-        while (!cached.TryAddRentCount());
+        //
+        // If we get the same handle back, we successfully added it to the cache and we are done.
+        // If we get a different handle back, we need to increase the rent count.
+        // If we fail to add the rent count, then the existing/cached handle is in process of
+        // being removed from the and we can try again, eventually either succeeding to add our
+        // new handle or getting a fresh handle inserted by another thread meanwhile.
+        //
+        while (cached != handle && !cached.TryAddRentCount());
 
         if (cached != handle)
         {
             // we lost a race with another thread to insert new handle into the cache
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Discarding MsQuicConfiguration {handle} (preferring cached {cached}).");
+
+            // Decrement the rent count we added before attempting the cache insertion
+            // and close the handle
+            handle.Dispose();
             handle.ReleaseHandleFromCache();
-            handle = cached;
+
+            return cached;
         }
 
         // we added a new handle, check if we need to cleanup
