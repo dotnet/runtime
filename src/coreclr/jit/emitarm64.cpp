@@ -9324,7 +9324,8 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_BV_2B;
 
-            // MOV is an alias for FMOV, and is always the preferred disassembly.
+            // CPY is an alias for FMOV, and MOV is an alias for CPY.
+            // Thus, MOV is the preferred disassembly.
             ins = INS_sve_mov;
             break;
 
