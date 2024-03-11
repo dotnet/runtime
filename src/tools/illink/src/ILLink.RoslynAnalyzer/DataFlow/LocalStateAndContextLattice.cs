@@ -8,7 +8,7 @@ using ILLink.Shared.DataFlow;
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	// A lattice value that holds both a local state, and a context
-	public struct LocalStateAndContext<TValue, TContext> : IEquatable<LocalStateAndContext<TValue, TContext>>
+	internal struct LocalStateAndContext<TValue, TContext> : IEquatable<LocalStateAndContext<TValue, TContext>>
 		where TValue : IEquatable<TValue>
 		where TContext : IEquatable<TContext>
 	{

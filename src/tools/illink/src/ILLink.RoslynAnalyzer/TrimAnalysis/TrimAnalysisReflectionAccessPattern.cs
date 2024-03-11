@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisReflectionAccessPattern
+	internal readonly record struct TrimAnalysisReflectionAccessPattern
 	{
 		public IMethodSymbol ReferencedMethod { get; init; }
 		public IOperation Operation { get; init; }
@@ -30,7 +30,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		public TrimAnalysisReflectionAccessPattern Merge (
-			ValueSetLattice<SingleValue> lattice,
 			FeatureContextLattice featureContextLattice,
 			TrimAnalysisReflectionAccessPattern other)
 		{

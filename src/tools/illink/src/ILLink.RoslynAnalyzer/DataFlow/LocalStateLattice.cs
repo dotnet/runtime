@@ -35,7 +35,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 	}
 
-	public struct LocalState<TValue> : IEquatable<LocalState<TValue>>
+	internal struct LocalState<TValue> : IEquatable<LocalState<TValue>>
 		where TValue : IEquatable<TValue>
 	{
 		public DefaultValueDictionary<LocalKey, TValue> Dictionary;
