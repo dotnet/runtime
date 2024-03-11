@@ -37,6 +37,8 @@ namespace Mono.Linker
 		/// </summary>
 		public readonly ImmutableArray<InterfaceImplementationNode> InterfaceImplementationNodes;
 
+		public bool HasExplicitImplementation => InterfaceImplementationNodes[0].Length == 0;
+
 		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImmutableArray<InterfaceImplementationNode> implNode, LinkContext context)
 		{
 			Implementor = implementor;
@@ -101,7 +103,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Represents a node in the graph of a type implementing an interface.
 		/// </summary>
-		public sealed class InterfaceImplementationNode : IComparable<InterfaceImplementationNode>
+		public sealed class InterfaceImplementationNode
 		{
 			/// <summary>
 			/// The <see cref="Mono.Cecil.InterfaceImplementation"/> that is on <see cref="InterfaceImplementationProvider"/> that is part of the chain of interface implementations.
@@ -171,8 +173,6 @@ namespace Mono.Linker
 				}
 				return curr.InterfaceImplementation;
 			}
-
-			int IComparable<InterfaceImplementationNode>.CompareTo (InterfaceImplementationNode? other) => this.Length - other!.Length;
 		}
 	}
 }
