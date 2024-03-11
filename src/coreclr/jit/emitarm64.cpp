@@ -1194,9 +1194,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BV_2B: // ........xx..gggg ...........ddddd -- SVE copy integer immediate (predicated)
-            assert(insOptsScalableStandard(id->idInsOpt())); // xx
-            assert(isVectorRegister(id->idReg1()));          // ddddd
-            assert(isPredicateRegister(id->idReg2()));       // gggg
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));             // ddddd
+            assert(isPredicateRegister(id->idReg2()));          // gggg
             break;
 
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
