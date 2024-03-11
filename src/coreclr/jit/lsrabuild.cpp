@@ -911,8 +911,8 @@ AllRegsMask LinearScan::getKillSetForCall(GenTreeCall* call)
     // We don't just add them unconditionally to the killMask because for most architectures
     // they are already in the RBM_CALLEE_TRASH set,
     // and we don't want to introduce extra checks and calls in this hot function.
-    assert(!call->IsVirtualStub() ||
-           ((killMask.gprRegs & compiler->virtualStubParamInfo->GetRegMask()) == compiler->virtualStubParamInfo->GetRegMask()));
+    assert(!call->IsVirtualStub() || ((killMask.gprRegs & compiler->virtualStubParamInfo->GetRegMask()) ==
+                                      compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
 
 #ifdef SWIFT_SUPPORT
@@ -1194,7 +1194,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     continue;
                 }
-                Interval*  interval   = getIntervalForLocalVar(varIndex);
+                Interval*      interval     = getIntervalForLocalVar(varIndex);
                 regMaskOnlyOne regsKillMask = killMask.GetRegTypeMask(interval->registerType);
 
                 const bool isCallKill = ((regsKillMask == RBM_INT_CALLEE_TRASH) || (regsKillMask == RBM_CALLEE_TRASH));
@@ -1932,7 +1932,8 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
 #endif // TARGET_ARM64
                 {
                     newRefPosition->registerAssignment =
-                        getConstrainedRegMask(newRefPosition, interval->registerType, oldAssignment, calleeSaveMask, minRegCountForRef);
+                        getConstrainedRegMask(newRefPosition, interval->registerType, oldAssignment, calleeSaveMask,
+                                              minRegCountForRef);
                 }
 
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
@@ -2843,17 +2844,18 @@ void           LinearScan::buildIntervals()
     needNonIntegerRegisters |= compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
     {
-        availableRegCount   = REG_INT_COUNT;
+        availableRegCount = REG_INT_COUNT;
         availableFloatRegs.OverrideAssign(RBM_NONE);
         availableDoubleRegs.OverrideAssign(RBM_NONE);
-        //availableMaskRegs   = RBM_NONE; // Is this also needed?
+        // availableMaskRegs   = RBM_NONE; // Is this also needed?
     }
 
     actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs
 #ifdef HAS_PREDICATE_REGS
-        , availableMaskRegs
+                                      ,
+                                      availableMaskRegs
 #endif // HAS_PREDICATE_REGS
-    );
+                                      );
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
@@ -3194,7 +3196,6 @@ void LinearScan::BuildKills(GenTree* tree, AllRegsMask killMask)
     }
 }
 
-
 #ifndef TARGET_ARMARCH
 //------------------------------------------------------------------------
 // BuildDefWithKills: Build one or two (for 32-bit) RefTypeDef RefPositions for the given node,
@@ -3229,7 +3230,7 @@ void LinearScan::BuildDefWithKills(GenTree* tree, regMaskGpr dstCandidates, AllR
         assert((int)genCountBits(dstCandidates) == 2);
         BuildDefs(tree, 2, dstCandidates);
     }
-#endif // TARGET_64BIT   
+#endif // TARGET_64BIT
 }
 #endif
 
@@ -3297,7 +3298,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
     // Find the registers that we should remove from the preference set because
     // they are occupied with argument values.
     AllRegsMask unpref   = placedArgRegs;
-    unsigned     varIndex = interval->getVarIndex(compiler);
+    unsigned    varIndex = interval->getVarIndex(compiler);
     for (size_t i = 0; i < numPlacedArgLocals; i++)
     {
         if (placedArgLocals[i].VarIndex == varIndex)
@@ -3831,7 +3832,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         defCandidates = allRegs(type);
     }
 #else
-    defCandidates  = allRegs(type);
+    defCandidates = allRegs(type);
 #endif // TARGET_X86
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);

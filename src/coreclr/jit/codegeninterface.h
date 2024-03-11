@@ -158,8 +158,8 @@ protected:
     bool      genTempLiveChg;
 #endif
 
-    VARSET_TP      genLastLiveSet;  // A one element map (genLastLiveSet-> genLastLiveMask)
-    regMaskTP      genLastLiveMask; // these two are used in genLiveMask
+    VARSET_TP genLastLiveSet;  // A one element map (genLastLiveSet-> genLastLiveMask)
+    regMaskTP genLastLiveMask; // these two are used in genLiveMask
 
     regMaskOnlyOne genGetRegMask(const LclVarDsc* varDsc);
     regMaskOnlyOne genGetRegMask(GenTree* tree);

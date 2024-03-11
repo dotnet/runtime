@@ -210,9 +210,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #endif // TARGET_ARM
 
     // Set destination candidates for return value of the call.
-    AllRegsMask  dstReturnCandidates;
+    AllRegsMask    dstReturnCandidates;
     regMaskOnlyOne dstCandidates = RBM_NONE;
-    RegisterType registerType = call->TypeGet();
+    RegisterType   registerType  = call->TypeGet();
 
 #ifdef TARGET_ARM
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -570,7 +570,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
 
-    regNumber    argReg  = argNode->GetRegNum();
+    regNumber  argReg  = argNode->GetRegNum();
     regMaskGpr argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
@@ -889,7 +889,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-        assert(compiler->IsGprRegMask(sizeRegMask));
+    assert(compiler->IsGprRegMask(sizeRegMask));
 
     buildInternalRegisterUses();
     AllRegsMask killMask = getKillSetForBlockStore(blkNode);

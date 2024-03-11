@@ -2714,7 +2714,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     }
                 }
 
-                //if ((structIntRegs > 0) && (structFloatRegs > 0))
+                // if ((structIntRegs > 0) && (structFloatRegs > 0))
                 //{
                 //    assert(!"Different numbers");
                 //}
@@ -2830,7 +2830,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         ++structFloatRegs;
                     }
                 }
-                //if ((structIntRegs > 0) && (structFloatRegs > 0))
+                // if ((structIntRegs > 0) && (structFloatRegs > 0))
                 //{
                 //    assert(!"Different numbers");
                 //}

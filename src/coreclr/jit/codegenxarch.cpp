@@ -9077,8 +9077,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
     addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regNumber    callTarget        = REG_NA;
-    AllRegsMask killMask          = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regNumber   callTarget         = REG_NA;
+    AllRegsMask killMask           = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {
@@ -9721,7 +9721,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // Figure out which set of int callee saves was already saved by Tier0.
     // Emit appropriate unwind.
     //
-    PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
+    PatchpointInfo* const patchpointInfo      = compiler->info.compPatchpointInfo;
     regMaskGpr            tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
     int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
 
@@ -9800,7 +9800,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
 
     // Figure out which set of int callee saves still needs saving.
     //
-    PatchpointInfo* const patchpointInfo              = compiler->info.compPatchpointInfo;
+    PatchpointInfo* const patchpointInfo      = compiler->info.compPatchpointInfo;
     regMaskGpr            tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
     unsigned const        tier0IntCalleeSaveUsedSize  = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
     regMaskGpr const      osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
@@ -10135,13 +10135,13 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
             regMaskGpr const tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskGpr const   osrIntCalleeSaves          = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskGpr const   allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
-            unsigned const     tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
-            unsigned const     tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
-            unsigned const     osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
-            unsigned const     osrFramePointerSize        = isFramePointerUsed() ? REGSIZE_BYTES : 0;
-            unsigned const     osrAdjust =
+            regMaskGpr const osrIntCalleeSaves   = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const allIntCalleeSaves   = osrIntCalleeSaves | tier0IntCalleeSaves;
+            unsigned const   tier0FrameSize      = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+            unsigned const   tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
+            unsigned const   osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+            unsigned const   osrFramePointerSize        = isFramePointerUsed() ? REGSIZE_BYTES : 0;
+            unsigned const   osrAdjust =
                 tier0FrameSize - tier0IntCalleeSaveUsedSize + osrCalleeSaveSize + osrFramePointerSize;
 
             JITDUMP("OSR epilog adjust factors: tier0 frame %u, tier0 callee saves -%u, osr callee saves %u, osr "

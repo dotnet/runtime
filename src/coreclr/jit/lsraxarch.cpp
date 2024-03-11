@@ -45,9 +45,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int          srcCount;
-    int          dstCount      = 0;
-    bool         isLocalDefUse = false;
+    int  srcCount;
+    int  dstCount      = 0;
+    bool isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();
@@ -190,7 +190,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
         {
-            srcCount = BuildReturn(tree);
+            srcCount             = BuildReturn(tree);
             AllRegsMask killMask = getKillSetForReturn();
             BuildKills(tree, killMask);
             break;
@@ -1169,7 +1169,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         ctrlExpr = call->gtCallAddr;
     }
 
-    AllRegsMask  dstReturnCandidates;
+    AllRegsMask    dstReturnCandidates;
     regMaskOnlyOne dstCandidates = RBM_NONE;
     RegisterType   registerType  = regType(call);
 
@@ -1658,7 +1658,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-        assert(compiler->IsGprRegMask(sizeRegMask));
+    assert(compiler->IsGprRegMask(sizeRegMask));
 
 #ifdef TARGET_X86
     // If we require a byte register on x86, we may run into an over-constrained situation

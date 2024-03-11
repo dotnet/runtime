@@ -154,7 +154,6 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 
     regMaskOnlyOne mask = genRegMask(reg);
 
-
 #if defined(TARGET_ARM)
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
                   reg >= REG_FP_FIRST ? 2 * REGSIZE_BYTES : REGSIZE_BYTES);

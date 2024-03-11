@@ -3526,7 +3526,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (call->IsFastTailCall())
     {
-        regMaskGpr trashedGprByEpilog = RBM_INT_CALLEE_SAVED;
+        regMaskGpr   trashedGprByEpilog   = RBM_INT_CALLEE_SAVED;
         regMaskFloat trashedFloatByEpilog = RBM_FLT_CALLEE_SAVED;
 #ifdef HAS_PREDICATE_REGS
         regMaskPredicate trashedPredicateByEpilog = RBM_MSK_CALLEE_SAVED;
@@ -3795,7 +3795,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // are not frequent.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaGetDesc(varNum);
+        varDsc           = compiler->lvaGetDesc(varNum);
         regNumber varReg = varDsc->GetRegNum();
 
         if (varDsc->lvPromoted)
@@ -4902,7 +4902,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskGpr rsPushGprRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr   rsPushGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskFloat rsPushFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
@@ -4937,7 +4937,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //
     rsPushGprRegs |= RBM_LR; // We must save the return address (in the LR register)
 
-    regSet.rsGprMaskCalleeSaved = rsPushGprRegs;
+    regSet.rsGprMaskCalleeSaved   = rsPushGprRegs;
     regSet.rsFloatMaskCalleeSaved = rsPushFloatRegs;
 
 #ifdef DEBUG
@@ -5550,8 +5550,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     if (jmpEpilog ||
-        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED) ==
-            RBM_NONE)
+        genStackAllocRegisterMask(compiler->compLclFrameSize,
+                                  regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
     {
         genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
     }

@@ -253,7 +253,7 @@ typedef unsigned __int64 singleRegMask;
 
 #else
 // x86 and arm
-typedef unsigned       regMaskTP;
+typedef unsigned regMaskTP;
 #define regMaskGpr regMaskTP
 #define regMaskFloat regMaskTP
 #define regMaskPredicate regMaskTP
@@ -417,7 +417,7 @@ typedef struct _regMaskAll
         }
     }
 
-    //void AllRegsMask& operator|=(const AllRegsMask& second);
+    // void AllRegsMask& operator|=(const AllRegsMask& second);
     //{
     //    gprRegs
     //    return *this;
@@ -437,19 +437,18 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-bool                    operator==(const AllRegsMask& first, const AllRegsMask& second);
-bool                    operator!=(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask             operator&(const AllRegsMask& first, const AllRegsMask& second);
-regMaskOnlyOne          operator&(const AllRegsMask& first, const regNumber reg);
-AllRegsMask             operator|(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask             operator|=(AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask             operator&=(AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask             operator|=(AllRegsMask& first, const regNumber reg);
-AllRegsMask             operator^=(AllRegsMask& first, const regNumber reg);
+bool operator==(const AllRegsMask& first, const AllRegsMask& second);
+bool operator!=(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second);
+regMaskOnlyOne operator&(const AllRegsMask& first, const regNumber reg);
+AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator|=(AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator&=(AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
+AllRegsMask operator^=(AllRegsMask& first, const regNumber reg);
 // AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
 AllRegsMask operator~(const AllRegsMask& first);
 // inline AllRegsMask createRegMask(regNumber reg)
-
 
 /*****************************************************************************/
 

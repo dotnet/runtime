@@ -2472,11 +2472,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskGpr rsGprMaskSaveRegs  = regSet.rsGprMaskCalleeSaved;
-        regMaskFloat rsFloatMaskSaveRegs  = regSet.rsFloatMaskCalleeSaved;
+        regMaskGpr   rsGprMaskSaveRegs   = regSet.rsGprMaskCalleeSaved;
+        regMaskFloat rsFloatMaskSaveRegs = regSet.rsFloatMaskCalleeSaved;
         unsigned     saveRegsCount       = genCountBits(rsGprMaskSaveRegs) + genCountBits(rsFloatMaskSaveRegs);
-        unsigned     saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
-        unsigned     saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
+        unsigned     saveRegsSize        = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
+        unsigned     saveSizeWithPSP     = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
         if (compiler->lvaMonAcquired != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
@@ -2494,8 +2494,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         /* Now save it for future use */
 
-        genFuncletInfo.fiSaveGprRegs                 = rsGprMaskSaveRegs;
-        genFuncletInfo.fiSaveFloatRegs               = rsFloatMaskSaveRegs;
+        genFuncletInfo.fiSaveGprRegs              = rsGprMaskSaveRegs;
+        genFuncletInfo.fiSaveFloatRegs            = rsFloatMaskSaveRegs;
         genFuncletInfo.fiSpDelta                  = spDelta;
         genFuncletInfo.fiPSP_slot_SP_offset       = PSP_slot_SP_offset;
         genFuncletInfo.fiPSP_slot_CallerSP_offset = PSP_slot_CallerSP_offset;
@@ -2628,9 +2628,9 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     //
     // <optional> str     rZero1,[rAddr]   // When cnt is odd
 
-    regNumber    rAddr;
-    regNumber    rCnt = REG_NA; // Invalid
-    regMaskGpr   regMask;
+    regNumber  rAddr;
+    regNumber  rCnt = REG_NA; // Invalid
+    regMaskGpr regMask;
 
     regMaskGpr availMask = regSet.rsGetModifiedGprRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are

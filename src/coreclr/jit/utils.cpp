@@ -434,9 +434,11 @@ void dspRegMask(regMaskOnlyOne mask, size_t minSiz)
 {
     dspRegMask(AllRegsMask(mask, mask
 #ifdef HAS_PREDICATE_REGS
-        , mask
+                           ,
+                           mask
 #endif
-    ), minSiz);
+                           ),
+               minSiz);
 }
 
 /*****************************************************************************
@@ -446,7 +448,7 @@ void dspRegMask(regMaskOnlyOne mask, size_t minSiz)
  */
 void dspRegMask(AllRegsMask mask, size_t minSiz)
 {
-    //TODO: Need to fix all the callers where we don't know if the input is gpr/float but is of type `regMaskOnlyOne`.
+    // TODO: Need to fix all the callers where we don't know if the input is gpr/float but is of type `regMaskOnlyOne`.
     //      For now, I am just making `floatMask` as optional and default to RBM_NONE so we don't have to deal with
     //      lot of build errors.
     const char* sep = "";

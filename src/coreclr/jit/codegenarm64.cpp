@@ -36,7 +36,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskGpr rsRestoreGprRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr   rsRestoreGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskFloat rsRestoreFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
     if (isFramePointerUsed())
@@ -1022,12 +1022,12 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int sp
 //    None.
 
 void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
-                                                 int          lowestCalleeSavedOffset,
-                                                 int          spDelta)
+                                                 int         lowestCalleeSavedOffset,
+                                                 int         spDelta)
 {
     assert(spDelta >= 0);
 
-    regMaskGpr maskRestoreRegsInt = regsToRestoreMask.gprRegs;
+    regMaskGpr   maskRestoreRegsInt   = regsToRestoreMask.gprRegs;
     regMaskFloat maskRestoreRegsFloat = regsToRestoreMask.floatRegs;
 
     assert(compiler->IsGprRegMask(maskRestoreRegsInt));
@@ -1743,8 +1743,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
 
-    regMaskGpr rsMaskSaveGprRegs = regSet.rsGprMaskCalleeSaved;
-    regMaskFloat rsMaskSaveFloatRegs = regSet.rsFloatMaskCalleeSaved;
+    regMaskGpr       rsMaskSaveGprRegs       = regSet.rsGprMaskCalleeSaved;
+    regMaskFloat     rsMaskSaveFloatRegs     = regSet.rsFloatMaskCalleeSaved;
     regMaskPredicate rsMaskSavePredicateRegs = RBM_NONE;
 #ifdef HAS_PREDICATE_REGS
     rsMaskSavePredicateRegs = regSet.rsPredicateMaskCalleeSaved;
@@ -1873,9 +1873,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     /* Now save it for future use */
 
-    genFuncletInfo.fiSaveGprRegs                   = rsMaskSaveGprRegs;
-    genFuncletInfo.fiSaveFloatRegs                   = rsMaskSaveFloatRegs;
-    genFuncletInfo.fiSavePredicateRegs             = rsMaskSavePredicateRegs;
+    genFuncletInfo.fiSaveGprRegs                = rsMaskSaveGprRegs;
+    genFuncletInfo.fiSaveFloatRegs              = rsMaskSaveFloatRegs;
+    genFuncletInfo.fiSavePredicateRegs          = rsMaskSavePredicateRegs;
     genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
     genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
     genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + PSPSize;
@@ -1887,8 +1887,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("\n");
         printf("Funclet prolog / epilog info\n");
         printf("                        Save regs: ");
-        dspRegMask(
-            AllRegsMask(genFuncletInfo.fiSaveGprRegs, genFuncletInfo.fiSaveFloatRegs, genFuncletInfo.fiSavePredicateRegs));
+        dspRegMask(AllRegsMask(genFuncletInfo.fiSaveGprRegs, genFuncletInfo.fiSaveFloatRegs,
+                               genFuncletInfo.fiSavePredicateRegs));
         printf("\n");
         if (compiler->opts.IsOSR())
         {
@@ -5132,7 +5132,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
         }
 
-        regMaskGpr   callTargetMask = genRegMask(callTargetReg);
+        regMaskGpr  callTargetMask = genRegMask(callTargetReg);
         AllRegsMask callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet

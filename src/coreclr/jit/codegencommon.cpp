@@ -5328,7 +5328,7 @@ void CodeGen::genFinalizeFrame()
     if (compiler->compLclFrameSize >= compiler->eeGetPageSize())
     {
         regSet.rsSetGprRegsModified(RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
-                                 RBM_STACK_PROBE_HELPER_TRASH);
+                                    RBM_STACK_PROBE_HELPER_TRASH);
     }
 
     // If there are any reserved registers, add them to the modified set.
@@ -5344,9 +5344,10 @@ void CodeGen::genFinalizeFrame()
         printf("Modified regs: ");
         dspRegMask(AllRegsMask(regSet.rsGetModifiedGprRegsMask(), regSet.rsGetModifiedFloatRegsMask()
 #ifdef HAS_PREDICATE_REGS
-                   ,regSet.rsGetModifiedPredicateRegsMask()
+                                                                      ,
+                               regSet.rsGetModifiedPredicateRegsMask()
 #endif
-        ));
+                                   ));
         printf("\n");
     }
 #endif // DEBUG
@@ -5399,7 +5400,7 @@ void CodeGen::genFinalizeFrame()
 #endif
 
 #ifdef TARGET_ARM
-    // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
+// TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
 #endif
     regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
@@ -5495,7 +5496,7 @@ void CodeGen::genFinalizeFrame()
     if (verbose)
     {
         printf("Callee-saved registers pushed: %d ", compiler->compCalleeRegsPushed);
-        dspRegMask(maskPushRegsInt, maskPushRegsFloat); //TODO: Should this also have maskPushRegsPredicate
+        dspRegMask(maskPushRegsInt, maskPushRegsFloat); // TODO: Should this also have maskPushRegsPredicate
         printf("\n");
     }
 #endif // DEBUG
@@ -5834,9 +5835,9 @@ void CodeGen::genFnProlog()
     // Track if initReg holds non-zero value. Start conservative and assume it has non-zero value.
     // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
     // will be skipped.
-    bool           initRegZeroed = false;
+    bool       initRegZeroed = false;
     regMaskGpr excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskGpr     tempMask;
+    regMaskGpr tempMask;
 
     // We should not use the special PINVOKE registers as the initReg
     // since they are trashed by the jithelper call to setup the PINVOKE frame
@@ -8188,16 +8189,16 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         unsigned regCount = op1->GetMultiRegCount(compiler);
         assert(regCount <= MAX_MULTIREG_COUNT);
 
-        // First set the source registers as busy if they haven't been spilled.
-        // (Note that this is just for verification that we don't have circular dependencies.)
+// First set the source registers as busy if they haven't been spilled.
+// (Note that this is just for verification that we don't have circular dependencies.)
 #ifdef DEBUG
         AllRegsMask busyRegs;
         for (unsigned i = 0; i < regCount; ++i)
         {
             if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
             {
-                regNumber      reg     = op1->GetRegByIndex(i);
-                //regMaskOnlyOne regMask = genRegMask();
+                regNumber reg = op1->GetRegByIndex(i);
+                // regMaskOnlyOne regMask = genRegMask();
                 if (genIsValidIntReg(reg))
                 {
                     busyRegs.gprRegs |= genRegMask(reg);
@@ -8225,13 +8226,17 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
 #ifdef DEBUG
 
-#define DO_VALIDATION(regType)                              \
-if (targetReg != sourceReg)                                 \
-{                                                           \
-    singleRegMask targetRegMask = genRegMask(targetReg);    \
-    assert((busyRegs.regType & targetRegMask) == 0);        \
-    busyRegs.regType &= ~genRegMask(sourceReg);             \
-}                                                           \
+#define DO_VALIDATION(regType)                                                                                         \
+    \
+if(targetReg != sourceReg)                                                                                             \
+    \
+{                                                                                                               \
+        singleRegMask targetRegMask = genRegMask(targetReg);                                                           \
+        assert((busyRegs.regType & targetRegMask) == 0);                                                               \
+        busyRegs.regType &= ~genRegMask(sourceReg);                                                                    \
+    \
+}                                                                                                               \
+    \
 busyRegs.regType |= genRegMask(targetReg);
 
             if (genIsValidIntReg(targetReg))
@@ -8248,14 +8253,14 @@ busyRegs.regType |= genRegMask(targetReg);
                 DO_VALIDATION(predicateRegs)
             }
 #endif // HAS_PREDICATE_REGS
-            //if (targetReg != sourceReg)
-            //{
-            //    singleRegMask targetRegMask = genRegMask(targetReg);
-            //    assert((busyRegs & targetRegMask) == 0);
-            //    // Clear sourceReg from the busyRegs, and add targetReg.
-            //    busyRegs &= ~genRegMask(sourceReg);
-            //}
-            //busyRegs |= genRegMask(targetReg);
+       // if (targetReg != sourceReg)
+//{
+//    singleRegMask targetRegMask = genRegMask(targetReg);
+//    assert((busyRegs & targetRegMask) == 0);
+//    // Clear sourceReg from the busyRegs, and add targetReg.
+//    busyRegs &= ~genRegMask(sourceReg);
+//}
+// busyRegs |= genRegMask(targetReg);
 #endif // DEBUG
         }
         return;

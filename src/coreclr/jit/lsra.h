@@ -737,7 +737,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskGpr     terminatorConsumedRegs);
+                     regMaskGpr       terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -831,10 +831,10 @@ private:
 
     // TODO: Can have separate methods for each type
     regMaskOnlyOne getConstrainedRegMask(RefPosition*   refPosition,
-        RegisterType regType,
+                                         RegisterType   regType,
                                          regMaskOnlyOne regMaskActual,
                                          regMaskOnlyOne regMaskConstrain,
-                                       unsigned     minRegCount);
+                                         unsigned       minRegCount);
     regMaskOnlyOne stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask);
 
     // This controls the heuristics used to select registers
@@ -1096,14 +1096,14 @@ private:
     }
 
     // Helpers for getKillSetForNode().
-    AllRegsMask  getKillSetForStoreInd(GenTreeStoreInd* tree);
+    AllRegsMask getKillSetForStoreInd(GenTreeStoreInd* tree);
     regMaskGpr getKillSetForShiftRotate(GenTreeOp* tree);
     regMaskGpr getKillSetForMul(GenTreeOp* tree);
-    AllRegsMask  getKillSetForCall(GenTreeCall* call);
+    AllRegsMask getKillSetForCall(GenTreeCall* call);
     regMaskGpr getKillSetForModDiv(GenTreeOp* tree);
     AllRegsMask getKillSetForBlockStore(GenTreeBlk* blkNode);
-    AllRegsMask  getKillSetForReturn();
-    AllRegsMask  getKillSetForProfilerHook();
+    AllRegsMask getKillSetForReturn();
+    AllRegsMask getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskGpr getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
@@ -1433,7 +1433,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskOnlyOne     terminatorConsumedRegs);
+                                      regMaskOnlyOne   terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -1503,7 +1503,7 @@ private:
     // Current mask of registers being printed in the dump.
     AllRegsMask lastDumpedRegisters;
     AllRegsMask registersToDump;
-    int          lastUsedRegNumIndex;
+    int         lastUsedRegNumIndex;
     bool shouldDumpReg(regNumber regNum)
     {
         return registersToDump.IsRegNumInMask(regNum);
@@ -1685,7 +1685,7 @@ private:
 
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap             sharedCriticalVarToRegMap;
-    PhasedVar<AllRegsMask> actualRegistersMask;
+    PhasedVar<AllRegsMask>  actualRegistersMask;
     PhasedVar<regMaskGpr>   availableIntRegs;
     PhasedVar<regMaskFloat> availableFloatRegs;
     PhasedVar<regMaskFloat> availableDoubleRegs;
@@ -1693,7 +1693,7 @@ private:
     PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
     PhasedVar<regMaskOnlyOne>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
-                                                       // predicate
+                                                         // predicate
 
 #if defined(TARGET_XARCH)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
@@ -1750,14 +1750,14 @@ private:
     VARSET_TP largeVectorCalleeSaveCandidateVars;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-    //-----------------------------------------------------------------------
-    // Register status
-    //-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+// Register status
+//-----------------------------------------------------------------------
 
-    //TODO: One option is to also just have another current_AvailableREgs that
-    // gets reset for every refposition we are processing depending on the
-    // register type. That wawy we do not have to query and fetch the appropriate
-    // entry again and agin.
+// TODO: One option is to also just have another current_AvailableREgs that
+// gets reset for every refposition we are processing depending on the
+// register type. That wawy we do not have to query and fetch the appropriate
+// entry again and agin.
 #ifdef HAS_PREDICATE_REGS
     regMaskOnlyOne m_AvailableRegs[3]; // TODO: Change this to m_AvailableGprRegs, m_AvailableFloatRegs, etc.
 #else
@@ -1801,14 +1801,13 @@ private:
 #ifdef HAS_PREDICATE_REGS
         m_RegistersWithConstants[2] = RBM_NONE;
 #endif
-
     }
 
     bool isRegAvailable(regNumber reg, var_types regType) // only used in asserts
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
 
-        #ifdef TARGET_ARM64
+#ifdef TARGET_ARM64
         if (emitter::isGeneralRegisterOrZR(reg))
 #else
         if (emitter::isGeneralRegister(reg))
@@ -1834,7 +1833,7 @@ private:
 
     void setRegsInUse(AllRegsMask regMask)
     {
-        //TODO: Fix this later.
+        // TODO: Fix this later.
         m_AvailableRegs[0] &= ~regMask.gprRegs;
         m_AvailableRegs[1] &= ~regMask.floatRegs;
 #ifdef HAS_PREDICATE_REGS
@@ -1850,7 +1849,7 @@ private:
 #else
         if (emitter::isGeneralRegister(reg))
 #endif
-        { 
+        {
             m_AvailableRegs[0] &= ~regMask;
         }
         else if (emitter::isFloatReg(reg))
@@ -1876,7 +1875,6 @@ private:
 #endif
         assert(compiler->IsGprRegMask(m_AvailableRegs[0]));
         assert(compiler->IsFloatRegMask(m_AvailableRegs[1]));
-
     }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
@@ -1888,7 +1886,7 @@ private:
         // rbx - 0
         // ...
         // xmm0 - 1
-        // here it will be, m_AvailableRegs[regTypeIndex[reg]] = 
+        // here it will be, m_AvailableRegs[regTypeIndex[reg]] =
         if (emitter::isGeneralRegisterOrZR(reg))
 #else
         if (emitter::isGeneralRegister(reg))
@@ -1942,14 +1940,15 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
-    FORCEINLINE void updateRegsFreeBusyState(RefPosition&    refPosition,
-                                             regMaskOnlyOne  regsBusy,
-                                             AllRegsMask* regsToFree,
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition&   refPosition,
+                                             regMaskOnlyOne regsBusy,
+                                             AllRegsMask*   regsToFree,
                                              AllRegsMask* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
 #ifdef HAS_PREDICATE_REGS
-    regMaskOnlyOne m_RegistersWithConstants[3]; // TODO: Change this to m_GprRegistersWithConstant, m_FloatRegistersWithConstant, etc.
+    regMaskOnlyOne m_RegistersWithConstants[3]; // TODO: Change this to m_GprRegistersWithConstant,
+                                                // m_FloatRegistersWithConstant, etc.
     regMaskOnlyOne fixedRegs[3];
 #else
     regMaskOnlyOne m_RegistersWithConstants[2];
@@ -1958,7 +1957,7 @@ private:
 
     void clearConstantReg(regNumber reg, var_types regType)
     {
-        //TODO: If we decide to have curr_RegistersWithConstants, then here we will
+        // TODO: If we decide to have curr_RegistersWithConstants, then here we will
         // just operate on curr_RegistersWithConstants and assert
         // assert(m_RegistersWithConstants[regTypeIndex(regType)] == curr_RegistersWithConstants);
         // but we will have to make sure that we save it back too??
@@ -2005,7 +2004,7 @@ private:
     weight_t spillCost[REG_COUNT];
 
     AllRegsMask regsBusyUntilKill; // TODO: Likewise, probably have this global 32-bit and set it point to the specific
-                                    // version like gpr, vector, etc.
+                                   // version like gpr, vector, etc.
     AllRegsMask regsInUseThisLocation;
     AllRegsMask regsInUseNextLocation;
 #ifdef TARGET_ARM64
@@ -2033,7 +2032,8 @@ private:
     void resetRegState()
     {
         resetAvailableRegs();
-        regsBusyUntilKill = AllRegsMask();;
+        regsBusyUntilKill = AllRegsMask();
+        ;
     }
 
     bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);
@@ -2129,7 +2129,7 @@ private:
 #else
     void BuildDefWithKills(GenTree* tree, regMaskGpr dstCandidates, AllRegsMask killMask);
 #endif
-    void         BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
+    void BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

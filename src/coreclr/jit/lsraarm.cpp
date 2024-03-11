@@ -192,9 +192,9 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int          srcCount;
-    int          dstCount      = 0;
-    bool         isLocalDefUse = false;
+    int  srcCount;
+    int  dstCount      = 0;
+    bool isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();
@@ -468,7 +468,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
         {
-            srcCount = BuildReturn(tree);
+            srcCount             = BuildReturn(tree);
             AllRegsMask killMask = getKillSetForReturn();
             BuildKills(tree, killMask);
             break;

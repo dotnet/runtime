@@ -582,9 +582,9 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat  allCandidates,
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int          srcCount;
-    int          dstCount      = 0;
-    bool         isLocalDefUse = false;
+    int  srcCount;
+    int  dstCount      = 0;
+    bool isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();

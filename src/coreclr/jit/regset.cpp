@@ -251,8 +251,8 @@ void RegSet::rsClearRegsModified()
     rsModifiedRegsMaskInitialized = true;
 #endif // DEBUG
 
-    rsModifiedGprRegsMask = RBM_NONE;
-    rsModifiedFloatRegsMask = RBM_NONE;
+    rsModifiedGprRegsMask       = RBM_NONE;
+    rsModifiedFloatRegsMask     = RBM_NONE;
     rsModifiedPredicateRegsMask = RBM_NONE;
 }
 
@@ -276,7 +276,9 @@ void RegSet::rsSetPredicateRegsModified(regMaskPredicate mask DEBUGARG(bool supp
 }
 #endif // HAS_PREDICATE_REGS
 
-void RegSet::rsSetRegsModified(regMaskOnlyOne& trackingMask, regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump) DEBUGARG(regMaskOnlyOne calleeSaveMask))
+void RegSet::rsSetRegsModified(regMaskOnlyOne& trackingMask,
+                               regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump)
+                                   DEBUGARG(regMaskOnlyOne calleeSaveMask))
 {
     assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
@@ -407,7 +409,7 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
     rsMaskResvd = RBM_NONE;
 
 #if defined(TARGET_ARMARCH)
-    rsGprMaskCalleeSaved = RBM_NONE;
+    rsGprMaskCalleeSaved   = RBM_NONE;
     rsFloatMaskCalleeSaved = RBM_NONE;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     rsMaskCalleeSaved = RBM_NONE;

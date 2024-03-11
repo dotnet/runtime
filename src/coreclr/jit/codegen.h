@@ -385,7 +385,7 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskGpr fiSaveGprRegs;                 // Set of GPR registers saved in the funclet prolog (includes LR)
+        regMaskGpr   fiSaveGprRegs;               // Set of GPR registers saved in the funclet prolog (includes LR)
         regMaskFloat fiSaveFloatRegs;             // Set of Float registers saved in the funclet prolog (includes LR)
         unsigned     fiFunctionCallerSPtoFPdelta; // Delta between caller SP and the frame pointer
         unsigned     fiSpDelta;                   // Stack pointer delta
@@ -404,7 +404,8 @@ protected:
     {
         regMaskGpr   fiSaveGprRegs;   // Set of callee-saved GPR registers saved in the funclet prolog (includes LR)
         regMaskFloat fiSaveFloatRegs; // Set of callee-saved float registers saved in the funclet prolog (includes LR)
-        regMaskFloat fiSavePredicateRegs; // Set of callee-saved predicate registers saved in the funclet prolog (includes LR)
+        regMaskFloat fiSavePredicateRegs;    // Set of callee-saved predicate registers saved in the funclet prolog
+                                             // (includes LR)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_FPLR_save_delta;         // FP/LR register save offset from SP (positive)

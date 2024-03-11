@@ -3634,7 +3634,7 @@ void Compiler::dumpRegMask(regMaskOnlyOne mask) const
 
     dumpRegMask(AllRegsMask(mask, mask, mask));
 }
-    //------------------------------------------------------------------------
+//------------------------------------------------------------------------
 // dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
 // a potentially large number of registers.
 //

@@ -67,11 +67,12 @@ private:
     //
 
 private:
-    bool         rsNeededSpillReg;   // true if this method needed to spill any registers
-    regMaskGpr rsModifiedGprRegsMask; // mask of the registers modified by the current function.
-    regMaskFloat rsModifiedFloatRegsMask; // mask of the registers modified by the current function.
+    bool             rsNeededSpillReg;            // true if this method needed to spill any registers
+    regMaskGpr       rsModifiedGprRegsMask;       // mask of the registers modified by the current function.
+    regMaskFloat     rsModifiedFloatRegsMask;     // mask of the registers modified by the current function.
     regMaskPredicate rsModifiedPredicateRegsMask; // mask of the registers modified by the current function.
-    FORCEINLINE void             rsSetRegsModified(regMaskOnlyOne& trackingMask, regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
+    FORCEINLINE void rsSetRegsModified(regMaskOnlyOne& trackingMask,
+                                       regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
                                            DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE));
 
 #ifdef DEBUG
@@ -79,7 +80,6 @@ private:
 #endif                                  // DEBUG
 
 public:
-
     regMaskGpr rsGetModifiedRegsMask(var_types type) const
     {
         if (varTypeUsesIntReg(type))
@@ -194,7 +194,7 @@ public:
     }
 
     // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
-    void RemoveMaskVars(var_types type, regMaskOnlyOne removeMaskVars) 
+    void RemoveMaskVars(var_types type, regMaskOnlyOne removeMaskVars)
     {
         AllRegsMask newMask = _rsAllMaskVars;
         if (varTypeRegister[type] == VTR_INT)
@@ -227,11 +227,11 @@ private:
     AllRegsMask _rsAllMaskVars; // backing store for rsGprMaskVars property
 
 #if defined(TARGET_ARMARCH)
-    regMaskGpr rsGprMaskCalleeSaved; // TODO: Can use AllRegsMask here as well
+    regMaskGpr   rsGprMaskCalleeSaved; // TODO: Can use AllRegsMask here as well
     regMaskFloat rsFloatMaskCalleeSaved;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif  // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_LOONGARCH64
 
 #ifdef HAS_PREDICATE_REGS
     regMaskPredicate rsPredicateMaskCalleeSaved;

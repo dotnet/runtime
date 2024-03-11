@@ -182,7 +182,6 @@ void GCInfo::gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput))
     gcRegGCrefSetCur = gcRegGCrefSetNew;
 }
 
-
 /*****************************************************************************
  *
  *  Mark the gpr register as holding non-pointer values.
@@ -198,7 +197,7 @@ void GCInfo::gcMarkGprRegNpt(regNumber reg DEBUGARG(bool forceOutput))
 /*****************************************************************************
  *
  *  Mark the register as holding non-pointer values.
- * 
+ *
  */
 
 void GCInfo::gcMarkRegNpt(regNumber reg DEBUGARG(bool forceOutput))
@@ -807,6 +806,6 @@ void GCInfo::gcUpdateForRegVarMove(regMaskOnlyOne srcMask, regMaskOnlyOne dstMas
         VarSetOps::AddElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
     }
 }
-#endif 
+#endif
 /*****************************************************************************/
 /*****************************************************************************/

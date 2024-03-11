@@ -3202,8 +3202,8 @@ public:
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
-    void        emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyOne regs);
-    void        emitDispGprRegSet(regMaskGpr regs);
+    void emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyOne regs);
+    void emitDispGprRegSet(regMaskGpr regs);
     void emitDispRegSet(AllRegsMask regs);
     void emitDispVarSet();
 #endif
