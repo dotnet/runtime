@@ -2517,6 +2517,10 @@ public:
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // If upper vector save/restore can be avoided.
     unsigned char skipSaveRestore : 1;
+    // If upper vector save is related to live var
+    // or created just based on bbLiveIn/bbDefs and
+    // whose liveness is not entirely know.
+    unsigned char liveVarUpperSave : 1;
 #endif
 
 #ifdef DEBUG
@@ -2720,6 +2724,11 @@ public:
 #endif
 #endif // TARGET_ARM64
 
+    FORCEINLINE bool IsExtraUpperVectorSave() const
+    {
+        assert(refType == RefTypeUpperVectorSave);
+        return (nextRefPosition == nullptr) || (nextRefPosition->refType != RefTypeUpperVectorRestore);
+    }
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique
     RefPosition& operator=(const RefPosition& rp)

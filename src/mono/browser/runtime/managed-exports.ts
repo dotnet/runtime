@@ -80,6 +80,7 @@ export function call_entry_point(main_assembly_name: string, program_args: strin
 
 // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
 export function load_satellite_assembly(dll: Uint8Array): void {
+    loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
         const size = 3;
@@ -95,6 +96,7 @@ export function load_satellite_assembly(dll: Uint8Array): void {
 
 // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
 export function load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): void {
+    loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
         const size = 4;
@@ -134,22 +136,18 @@ export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
 }
 
 // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-export function complete_task(holder_gc_handle: GCHandle, isCanceling: boolean, error?: any, data?: any, res_converter?: MarshalerToCs) {
+export function complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
         const size = 5;
         const args = alloc_stack_frame(size);
-        const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, holder_gc_handle);
         const arg2 = get_arg(args, 3);
         if (error) {
             marshal_exception_to_cs(arg2, error);
-            if (isCanceling) {
-                set_arg_type(res, MarshalerType.Discard);
-            }
         } else {
             set_arg_type(arg2, MarshalerType.None);
             const arg3 = get_arg(args, 4);
