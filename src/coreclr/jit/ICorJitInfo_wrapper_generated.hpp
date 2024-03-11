@@ -811,13 +811,22 @@ bool WrapICorJitInfo::isExactType(
     return temp;
 }
 
+bool WrapICorJitInfo::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isGenericType);
+    bool temp = wrapHnd->isGenericType(cls);
+    API_LEAVE(isGenericType);
+    return temp;
+}
+
 TypeCompareState WrapICorJitInfo::isNullableType(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(isNullableType);
     TypeCompareState temp = wrapHnd->isNullableType(cls);
     API_LEAVE(isNullableType);
-    return temp;
+    return temp
 }
 
 TypeCompareState WrapICorJitInfo::isEnum(
