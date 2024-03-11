@@ -680,10 +680,11 @@ namespace System.Net.Sockets
                 {
                     AssociatedContext.ReturnOperation(this);
                 }
+
                 if (buffer.Length == 0)
                 {
-                    // Invoke callback only when we are completly done.
-                    // In case dfata were provided for Connect we may or may not send them all.
+                    // Invoke callback only when we are completely done.
+                    // In case data were provided for Connect we may or may not send them all.
                     // If we did not we will need follow-up with Send operation
                     cb(bt, sa, SocketFlags.None, ec);
                 }
@@ -1545,6 +1546,7 @@ namespace System.Net.Sockets
                 _socket.RegisterConnectResult(errorCode);
 
                 int remains = buffer.Length - sentBytes;
+
                 if (errorCode == SocketError.Success && remains > 0)
                 {
                     errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes, callback!, default);
@@ -1562,6 +1564,10 @@ namespace System.Net.Sockets
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
             {
+                if (operation.ErrorCode == SocketError.Success)
+                {
+                    sentBytes += operation.BytesTransferred;
+                }
                 return operation.ErrorCode;
             }
 

@@ -74,7 +74,7 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationConnectEx(Socket _ /*socket*/, SafeSocketHandle handle)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer, out int sentBytes);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer.Slice(_offset, _count), out int sentBytes);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, sentBytes, SocketFlags.None);
