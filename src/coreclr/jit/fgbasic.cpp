@@ -664,7 +664,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 {
                     // Branch was degenerate, simplify it first
                     //
-                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     assert(block->TargetIs(oldTarget));
@@ -690,15 +689,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 assert(block->FalseTargetIs(oldTarget));
                 FlowEdge* const oldEdge = block->GetFalseEdge();
 
-                if (block->TrueEdgeIs(oldEdge))
-                {
-                    // Branch was degenerate
-                    //
-                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
-                    fgRemoveConditionalJump(block);
-                    assert(block->KindIs(BBJ_ALWAYS));
-                    assert(block->TargetIs(oldTarget));
-                }
+                // Already degenerate cases should have taken the true path above.
+                assert(!block->TrueEdgeIs(oldEdge));
 
                 // fgRemoveRefPred should have removed the flow edge
                 fgRemoveRefPred(oldEdge);
@@ -716,7 +708,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 }
             }
 
-            if (block->GetFalseEdge() == block->GetTrueEdge())
+            if (block->KindIs(BBJ_COND) && (block->GetFalseEdge() == block->GetTrueEdge()))
             {
                 // Block became degenerate, simplify
                 //
