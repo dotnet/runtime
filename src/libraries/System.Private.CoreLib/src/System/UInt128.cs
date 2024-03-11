@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -1098,7 +1099,18 @@ namespace System
                     ThrowHelper.ThrowDivideByZeroException();
                 }
 
-                if (left._upper == 0)
+                if (X86Base.X64.IsSupported)
+                {
+                    ulong highRes = 0ul;
+                    ulong remainder = left._upper;
+
+                    // We might need 2 division to avoid overflow
+                    if (remainder >= right._lower)
+                        (highRes, remainder) = X86Base.X64.DivRem(remainder, 0, right._lower);
+
+                    return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
+                }
+                else if (left._upper == 0)
                 {
                     // left and right are both uint64
                     return left._lower / right._lower;
