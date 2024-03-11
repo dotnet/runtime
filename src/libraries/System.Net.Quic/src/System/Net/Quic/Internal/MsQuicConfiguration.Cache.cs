@@ -16,6 +16,35 @@ internal static partial class MsQuicConfiguration
 {
     private const int CheckExpiredModulo = 32;
 
+    private const string DisableCacheEnvironmentVariable = "DOTNET_SYSTEM_NET_QUIC_DISABLE_CONFIGURATION_CACHE";
+    private const string DisableCacheCtxSwitch = "System.Net.Quic.DisableConfigurationCache";
+
+    private static volatile int s_configurationCacheEnabled = -1;
+    private static bool ConfigurationCacheEnabled
+    {
+        get
+        {
+            int enabled = s_configurationCacheEnabled;
+            if (enabled != -1)
+            {
+                return enabled != 0;
+            }
+
+            // AppContext switch takes precedence
+            if (AppContext.TryGetSwitch(DisableCacheCtxSwitch, out bool value))
+            {
+                s_configurationCacheEnabled = value ? 0 : 1;
+            }
+            else
+            {
+                // check environment variable
+                s_configurationCacheEnabled = Environment.GetEnvironmentVariable(DisableCacheEnvironmentVariable) is string envVar && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 0 : 1;
+            }
+
+            return s_configurationCacheEnabled != 0;
+        }
+    }
+
     private static readonly ConcurrentDictionary<CacheKey, MsQuicSafeHandle> s_configurationCache = new();
 
     private readonly struct CacheKey : IEquatable<CacheKey>
@@ -26,12 +55,22 @@ internal static partial class MsQuicConfiguration
         public readonly List<SslApplicationProtocol> ApplicationProtocols;
         public readonly QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
-        public CacheKey(List<byte[]> certificateThumbprints, QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, List<SslApplicationProtocol> applicationProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
+        public CacheKey(QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
-            CertificateThumbprints = certificateThumbprints;
+            CertificateThumbprints = certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() };
+
+            if (intermediates != null)
+            {
+                foreach (X509Certificate2 intermediate in intermediates)
+                {
+                    CertificateThumbprints.Add(intermediate.GetCertHash());
+                }
+            }
+
             Flags = flags;
             Settings = settings;
-            ApplicationProtocols = applicationProtocols;
+            // make defensive copy to prevent modification (the list comes from user code)
+            ApplicationProtocols = new List<SslApplicationProtocol>(alpnProtocols);
             AllowedCipherSuites = allowedCipherSuites;
         }
 
@@ -94,8 +133,16 @@ internal static partial class MsQuicConfiguration
         }
     }
 
-    private static MsQuicSafeHandle? TryGetCachedConfigurationHandle(CacheKey key)
+    private static MsQuicSafeHandle GetCachedCredentialOrCreate(QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
+        CacheKey key = new CacheKey(
+            flags,
+            settings,
+            certificate,
+            intermediates,
+            alpnProtocols,
+            allowedCipherSuites);
+
         if (s_configurationCache.TryGetValue(key, out MsQuicSafeHandle? handle))
         {
             try
@@ -115,7 +162,10 @@ internal static partial class MsQuicConfiguration
             }
         }
 
-        return null;
+        handle = CreateInternal(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+        CacheConfigurationHandle(key, handle);
+
+        return handle;
     }
 
     private static void CacheConfigurationHandle(CacheKey key, ref MsQuicSafeHandle handle)

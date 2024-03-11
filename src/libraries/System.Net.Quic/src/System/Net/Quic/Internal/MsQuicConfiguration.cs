@@ -117,7 +117,7 @@ internal static partial class MsQuicConfiguration
         return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
-    private static unsafe MsQuicSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
+    private static MsQuicSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
     {
         // Validate options and SSL parameters.
         if (alpnProtocols is null || alpnProtocols.Count <= 0)
@@ -184,31 +184,25 @@ internal static partial class MsQuicConfiguration
             allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
         }
 
-        CacheKey cacheKey = new CacheKey(
-            certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() },
-            flags,
-            settings,
-            new List<SslApplicationProtocol>(alpnProtocols), // make defensive copy to prevent modification
-            allowedCipherSuites);
-
-        if (intermediates != null)
+        if (!MsQuicApi.UsesSChannelBackend)
         {
-            foreach (X509Certificate2 intermediate in intermediates)
-            {
-                cacheKey.CertificateThumbprints.Add(intermediate.GetCertHash());
-            }
+            flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
         }
 
-        MsQuicSafeHandle? configurationHandle = TryGetCachedConfigurationHandle(cacheKey);
-        if (configurationHandle != null)
+        if (ConfigurationCacheEnabled)
         {
-            return configurationHandle;
+            return GetCachedCredentialOrCreate(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
         }
 
+        return CreateInternal(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+    }
+
+    private static unsafe MsQuicSafeHandle CreateInternal(QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
+    {
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
-        msquicBuffers.Initialize(cacheKey.ApplicationProtocols, alpnProtocol => alpnProtocol.Protocol);
+        msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
         ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConfigurationOpen(
             MsQuicApi.Api.Registration,
             msquicBuffers.Buffers,
@@ -218,17 +212,15 @@ internal static partial class MsQuicConfiguration
             (void*)IntPtr.Zero,
             &handle),
             "ConfigurationOpen failed");
-        configurationHandle = new MsQuicSafeHandle(handle, SafeHandleType.Configuration);
+        MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, SafeHandleType.Configuration);
 
         try
         {
-            QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG { Flags = flags };
-            config.Flags |= (MsQuicApi.UsesSChannelBackend ? QUIC_CREDENTIAL_FLAGS.NONE : QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES);
-
-            if (cipherSuitesPolicy != null)
+            QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG
             {
-                config.AllowedCipherSuites = allowedCipherSuites;
-            }
+                Flags = flags,
+                AllowedCipherSuites = allowedCipherSuites
+            };
 
             int status;
             if (certificate is null)
@@ -300,8 +292,6 @@ internal static partial class MsQuicConfiguration
             configurationHandle.Dispose();
             throw;
         }
-
-        CacheConfigurationHandle(cacheKey, ref configurationHandle);
 
         return configurationHandle;
     }
