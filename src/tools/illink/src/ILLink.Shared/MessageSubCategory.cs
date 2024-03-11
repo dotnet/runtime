@@ -6,7 +6,7 @@
 
 namespace ILLink.Shared
 {
-	internal static class MessageSubCategory
+	public static class MessageSubCategory
 	{
 		public const string None = "";
 		public const string TrimAnalysis = "Trim analysis";

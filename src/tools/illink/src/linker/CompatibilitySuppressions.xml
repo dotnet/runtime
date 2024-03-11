@@ -12,6 +12,12 @@
     <Target>T:ILLink.Shared.DiagnosticIdExtensions</Target>
   </Suppression>
 
+  <!-- Types visible to ILCompiler.RyuJit -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.MessageSubCategory</Target>
+  </Suppression>
+
   <!-- TypeParser from external sources -->
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
