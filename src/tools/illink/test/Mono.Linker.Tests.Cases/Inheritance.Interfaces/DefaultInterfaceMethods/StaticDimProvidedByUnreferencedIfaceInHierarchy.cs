@@ -16,7 +16,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	[KeptTypeInAssembly ("library.dll", typeof(Program.IBase))]
 	[KeptMemberInAssembly ("library.dll", typeof(Program.IBase), "Method()")]
 	[KeptTypeInAssembly ("library.dll", typeof(Program.I4))]
-	// https://github.com/dotnet/runtime/issues/98536
 	[KeptTypeInAssembly ("library.dll", typeof(Program.I2))]
 	[KeptMemberInAssembly ("library.dll", typeof(Program.I2), "Program.IBase.Method()")]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I2), "library.dll", typeof (Program.IBase))]

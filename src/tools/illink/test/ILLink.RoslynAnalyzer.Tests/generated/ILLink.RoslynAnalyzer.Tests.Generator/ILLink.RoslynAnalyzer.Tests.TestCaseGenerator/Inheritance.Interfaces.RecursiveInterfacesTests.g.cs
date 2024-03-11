@@ -1,0 +1,19 @@
+﻿using System;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
+{
+	public sealed partial class RecursiveInterfacesTests : LinkerTestBase
+	{
+
+		protected override string TestSuiteName => "Inheritance.Interfaces.RecursiveInterfaces";
+
+		[Fact]
+		public Task RecursiveInterfaceKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+	}
+}

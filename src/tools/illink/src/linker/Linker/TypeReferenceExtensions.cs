@@ -171,6 +171,13 @@ namespace Mono.Linker
 			}
 		}
 
+		public static TypeReference? TryInflateFrom (this TypeReference type, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		{
+			if (maybeGenericInstanceProvider is GenericInstanceType git)
+				return InflateGenericType (git, type, resolver);
+			return type;
+		}
+
 		public static TypeReference? InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
 		{
 			if (typeToInflate is ArrayType arrayType) {

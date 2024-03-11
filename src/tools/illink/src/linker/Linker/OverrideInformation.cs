@@ -45,7 +45,7 @@ namespace Mono.Linker
 				if (InterfaceImplementor is null)
 					return null;
 				InterfaceImplementation? last = null;
-				foreach (InterfaceImplementation curr in InterfaceImplementor!.ShortestInterfaceImplementationChain) {
+				foreach (InterfaceImplementation curr in InterfaceImplementor!.MostDirectInterfaceImplementationPath) {
 					last = curr;
 				}
 				return last;

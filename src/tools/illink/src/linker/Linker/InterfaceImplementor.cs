@@ -25,11 +25,11 @@ namespace Mono.Linker
 		/// </summary>
 		public TypeDefinition? InterfaceType { get; }
 
-		public ImplNode[] InterfaceImplementationNode { get; }
+		public ImmutableArray<ImplNode> InterfaceImplementationNode { get; }
 
 		public TypeReference InflatedInterface { get; }
 
-		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImplNode[] implNode, LinkContext context)
+		public InterfaceImplementor (TypeDefinition implementor, TypeDefinition? interfaceType, TypeReference inflatedInterface, ImmutableArray<ImplNode> implNode, LinkContext context)
 		{
 			Implementor = implementor;
 			InterfaceType = interfaceType;
@@ -38,20 +38,9 @@ namespace Mono.Linker
 			Debug.Assert (context.Resolve (inflatedInterface) == interfaceType);
 			Debug.Assert (implNode.Length != 0);
 			Debug.Assert (implNode.All (i => interfaceType == context.Resolve (i.GetLast ().InterfaceType)));
-			// Ensure the ImplNode is sorted by Length
-			Debug.Assert (
-				implNode.Aggregate (
-					(true, 0),
-					(acc, next) => {
-						if (!acc.Item1) return acc;
-						if (acc.Item2 <= next.Length)
-							return (true, next.Length);
-						return (false, next.Length);
-					})
-					.Item1);
 		}
 
-		public ShortestInterfaceImplementationChainEnumerator ShortestInterfaceImplementationChain => new (this);
+		public ShortestInterfaceImplementationChainEnumerator MostDirectInterfaceImplementationPath => new (this);
 
 		public struct ShortestInterfaceImplementationChainEnumerator
 		{
@@ -83,6 +72,11 @@ namespace Mono.Linker
 			InterfaceImplementationNode[0].MarkShortestImplementation (annotations, reason, origin);
 		}
 
+		public bool IsMostDirectImplementationMarked(AnnotationStore annotations)
+		{
+			return InterfaceImplementationNode[0].IsMostDirectImplementationMarked (annotations);
+		}
+
 		public bool IsMarked(AnnotationStore annotations)
 		{
 			foreach(var i in InterfaceImplementationNode) {
@@ -93,7 +87,7 @@ namespace Mono.Linker
 		}
 	}
 
-	public sealed record ImplNode (InterfaceImplementation InterfaceImplementation, TypeDefinition InterfaceImplementationProvider, ImmutableArray<ImplNode> Next)
+	public sealed record ImplNode (InterfaceImplementation InterfaceImplementation, TypeDefinition InterfaceImplementationProvider, ImmutableArray<ImplNode> Next) : IComparable<ImplNode>
 	{
 		int _length = -1;
 		public int Length {
@@ -114,6 +108,15 @@ namespace Mono.Linker
 				curr = curr.Next[0];
 				annotations.Mark (curr.InterfaceImplementation, reason, origin);
 			}
+		}
+
+		public bool IsMostDirectImplementationMarked(AnnotationStore annotations)
+		{
+			if (!annotations.IsMarked (InterfaceImplementation))
+				return false;
+			if (Next.Length == 0)
+				return true;
+			return Next[0].IsMostDirectImplementationMarked (annotations);
 		}
 
 		public bool IsMarked (AnnotationStore annotations)
@@ -139,5 +142,7 @@ namespace Mono.Linker
 			}
 			return curr.InterfaceImplementation;
 		}
+
+		public int CompareTo (ImplNode? other) => this.Length - other!.Length;
 	}
 }

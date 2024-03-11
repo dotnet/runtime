@@ -29,38 +29,23 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class DictOfListE
-	{
-		public static void AddToList<TKey, TList, TValueElement> (this Dictionary<TKey, TList> me, TKey key, TValueElement value) where TKey : notnull where TList : IList<TValueElement>, new()
-		{
-			if (!me.TryGetValue (key, out TList? methods)) {
-				methods = new TList ();
-				me[key] = methods;
-			}
-			methods.Add (value);
-		}
-	}
-
-	public class TypeMapInfo
+	internal sealed class TypeMapInfo
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
 		readonly LinkContext context;
-		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		readonly Dictionary<TypeDefinition, List<InterfaceImplementor>> _interfaces = new ();
+		readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
+		readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
+		readonly Dictionary<MethodDefinition, List<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
+		readonly Dictionary<TypeDefinition, ImmutableArray<InterfaceImplementor>> _interfaces = new ();
 
 		public TypeMapInfo (LinkContext context)
 		{
@@ -102,7 +87,7 @@ namespace Mono.Linker
 			return bases;
 		}
 
-		public InterfaceImplementor? GetInterfaceImplementor (TypeDefinition implementor, TypeDefinition interfaceType)
+		InterfaceImplementor? GetInterfaceImplementor (TypeDefinition implementor, TypeDefinition interfaceType)
 		{
 			if (!_interfaces.TryGetValue (implementor, out var implrs))
 				return null;
@@ -121,44 +106,38 @@ namespace Mono.Linker
 		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
 		/// </summary>
 		/// <param name="method">The interface method to find default implementations for</param>
-		public IEnumerable<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition baseMethod)
+		public List<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition baseMethod)
 		{
+			EnsureProcessed (baseMethod.Module.Assembly);
 			default_interface_implementations.TryGetValue (baseMethod, out var ret);
 			return ret;
 		}
 
-		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, InterfaceImplementor? interfaceImplementor)
+		internal ImmutableArray<InterfaceImplementor> GetRecursiveInterfaces (TypeDefinition type)
 		{
-			if (!base_methods.TryGetValue (method, out List<OverrideInformation>? methods)) {
-				methods = new List<OverrideInformation> ();
-				base_methods[method] = methods;
-			}
-
-			methods.Add (new OverrideInformation (@base, method, interfaceImplementor));
+			EnsureProcessed (type.Module.Assembly);
+			return _interfaces.TryGetValue (type, out var value) ? value : [];
 		}
 
-		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
+		void AddBaseMethod (MethodDefinition method, OverrideInformation overrideInformation)
 		{
-			if (!override_methods.TryGetValue (@base, out List<OverrideInformation>? methods)) {
-				methods = new List<OverrideInformation> ();
-				override_methods.Add (@base, methods);
-			}
-
-			methods.Add (new OverrideInformation (@base, @override, interfaceImplementor));
+			Debug.Assert (overrideInformation.Override == method);
+			base_methods.AddToList (method, overrideInformation);
 		}
 
-		public void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
+		void AddOverrideOfMethod (MethodDefinition @base, OverrideInformation overrideInformation)
+		{
+			Debug.Assert (overrideInformation.Base == @base);
+			override_methods.AddToList (@base, overrideInformation);
+		}
+
+		void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
 		{
 			Debug.Assert (@base.DeclaringType.IsInterface);
-			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
-				implementations = new List<OverrideInformation> ();
-				default_interface_implementations.Add (@base, implementations);
-			}
-
-			implementations.Add (new (@base, defaultImplementationMethod, interfaceImplementor));
+			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
 		}
 
-		protected virtual void MapType (TypeDefinition type)
+		void MapType (TypeDefinition type)
 		{
 			MapInterfacesOnType (type);
 			MapVirtualMethods (type);
@@ -171,88 +150,19 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		public bool InterfaceTypeEquals (TypeReference? type, TypeReference? other)
-		{
-			Debug.Assert (type is not null && other is not null);
-			if (type == other)
-				return true;
-
-			if (context.TryResolve (type) != context.TryResolve (other))
-				return false;
-
-			if (type is GenericInstanceType genericInstance1) {
-				if (other is not GenericInstanceType genericInstance2)
-					return false;
-				if (genericInstance1.HasGenericParameters != genericInstance2.HasGenericParameters)
-					return false;
-				if (genericInstance1.GenericParameters.Count != genericInstance2.GenericParameters.Count
-					|| genericInstance2.GenericArguments.Count != genericInstance2.GenericArguments.Count)
-					return false;
-				for (var i = 0; i < genericInstance1.GenericArguments.Count; ++i) {
-					if (!InterfaceTypeEquals (genericInstance1.GenericArguments[i], genericInstance2.GenericArguments[i]))
-						return false;
-				}
-				return true;
-			}
-
-			if (type is TypeSpecification typeSpec1) {
-				if (other is not TypeSpecification typeSpec2)
-					return false;
-				return InterfaceTypeEquals (typeSpec1.ElementType, typeSpec2.ElementType);
-			}
-			return type.FullName == other.FullName;
-		}
-
-		TypeReference? TryInflateType(TypeReference type, TypeReference genericProvider)
-		{
-			if (genericProvider is GenericInstanceType git)
-				return TypeReferenceExtensions.InflateGenericType (git, type, context);
-			return type;
-		}
-
-		EqualityComparer<TypeReference>? _inflatedInterfaceComparer;
-		EqualityComparer<TypeReference> InflatedInterfaceComparer => _inflatedInterfaceComparer ??= EqualityComparer<TypeReference>.Create (InterfaceTypeEquals, t => context.Resolve (t)?.GetHashCode () ?? 0);
-
-		protected void MapInterfacesOnType (TypeDefinition type)
+		void MapInterfacesOnType (TypeDefinition type)
 		{
 			if (_interfaces.ContainsKey (type))
 				return;
 
-			Dictionary<TypeReference, List<ImplNode>> waysToImplementIface = new (InflatedInterfaceComparer);
-			//Dictionary<string, List<ImplNode>> unresolvedImpls = new ();
+			// Map from inflated interface type => list of every way to recursively implement that interface
+			Dictionary<TypeReference, SortedSet<ImplNode>> waysToImplementIface = new (InflatedInterfaceComparer);
 
 			// Get all interfaces directly implemented by this type
-			foreach (var iface in type.Interfaces) {
-				ImplNode implNode = new ImplNode (iface, type, []);
-				waysToImplementIface.AddToList (iface.InterfaceType, implNode);
-				var ifaceDirectlyOnType = context.Resolve (iface.InterfaceType);
-				if (ifaceDirectlyOnType is null) {
-					continue;
-				}
-
-				MapInterfacesOnType (ifaceDirectlyOnType);
-				var recursiveInterfaces = _interfaces[ifaceDirectlyOnType];
-				foreach (var recursiveInterface in recursiveInterfaces) {
-					//if (recursiveInterface.InterfaceType is null) {
-					//unresolvedImpls.AddToList (recursiveInterface.InflatedInterface.FullName, implNode);
-					//continue;
-					//}
-					var ifaceImplr = new ImplNode (iface, type, recursiveInterface.InterfaceImplementationNode.ToImmutableArray ());
-
-					// inflate interface type reference here with the type
-					TypeReference inflatedIface = TryInflateType (iface.InterfaceType, type)!;
-					if (recursiveInterface.InterfaceImplementationNode.Length > 0) {
-						var currNode = recursiveInterface.InterfaceImplementationNode[0];
-						while(currNode.Next.Length > 0) {
-							inflatedIface = TryInflateType (currNode.InterfaceImplementation.InterfaceType, inflatedIface)!;
-							currNode = currNode.Next[0];
-						}
-						// One last inflation
-						inflatedIface = TryInflateType (currNode.InterfaceImplementation.InterfaceType, inflatedIface)!;
-					}
-					// After inflating the first
-					waysToImplementIface.AddToList (inflatedIface, ifaceImplr);
-				}
+			foreach (var directIface in type.Interfaces) {
+				ImplNode directlyImplementedNode = new ImplNode (directIface, type, []);
+				TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
+				waysToImplementIface.AddToList (inflatedDirectIface, directlyImplementedNode);
 			}
 
 			// Add interfaces on base type with the same implementation chain
@@ -261,16 +171,35 @@ namespace Mono.Linker
 				var baseInterfaces = _interfaces[baseDef];
 				foreach (var item in baseInterfaces) {
 					foreach (var node in item.InterfaceImplementationNode) {
-						//if (item.InterfaceType is not null)
-							waysToImplementIface.AddToList (item.InflatedInterface, node);
-						//else
-							//unresolvedImpls.AddToList (item.InflatedInterface.FullName, node);
+						waysToImplementIface.AddToList (item.InflatedInterface, node);
 					}
 				}
 			}
-			List<InterfaceImplementor> implrs = waysToImplementIface.Select (kvp => new InterfaceImplementor (type, context.Resolve (kvp.Key), kvp.Key, kvp.Value.OrderBy (i => i.Length).ToArray (), context)).ToList ();
-				//.Concat (unresolvedImpls.Select (kvp => new InterfaceImplementor (type, null, kvp.Value[0].GetLast ().InterfaceType, kvp.Value.OrderBy (i => i.Length).ToArray (), context))).ToList ();
-			_interfaces.Add (type, implrs);
+			// Recursive interfaces next to preserve Inherit/Implement tree order
+			foreach (var directIface in type.Interfaces) {
+				// If we can't resolve the interface type we can't find recursive interfaces
+				var ifaceDirectlyOnType = context.Resolve (directIface.InterfaceType);
+				if (ifaceDirectlyOnType is null) {
+					continue;
+				}
+				MapInterfacesOnType (ifaceDirectlyOnType);
+				TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
+				var recursiveInterfaces = _interfaces[ifaceDirectlyOnType];
+				foreach (var recursiveInterface in recursiveInterfaces) {
+					var implToRecursiveIfaceChain = new ImplNode (directIface, type, recursiveInterface.InterfaceImplementationNode);
+					// Inflate the generic arguments up to the terminal interfaceImpl to get the inflated interface type implemented by this type
+					TypeReference inflatedRecursiveInterface = inflatedDirectIface;
+					foreach (var interfaceImpl in recursiveInterface.MostDirectInterfaceImplementationPath) {
+						inflatedRecursiveInterface = interfaceImpl.InterfaceType.TryInflateFrom (inflatedRecursiveInterface, context)!;
+					}
+					waysToImplementIface.AddToList (inflatedRecursiveInterface, implToRecursiveIfaceChain);
+				}
+			}
+			ImmutableArray<InterfaceImplementor>.Builder builder = ImmutableArray.CreateBuilder<InterfaceImplementor> (waysToImplementIface.Count);
+			foreach (var kvp in waysToImplementIface) {
+				builder.Add (new InterfaceImplementor (type, context.Resolve (kvp.Key), kvp.Key, kvp.Value.ToImmutableArray (), context));
+			}
+			_interfaces.Add (type, builder.MoveToImmutable ());
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)
@@ -312,7 +241,7 @@ namespace Mono.Linker
 							continue;
 						}
 					}
-					// Look along the chain of interfaceImpls to find the closest implementing
+					// Look for a default implementation last.
 					FindAndAddDefaultInterfaceImplementations (type, resolvedInterfaceMethod, interfaceImplementor);
 				}
 			}
@@ -366,8 +295,9 @@ namespace Mono.Linker
 
 		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
 		{
-			AddBaseMethod (@override, @base, interfaceImplementor);
-			AddOverride (@base, @override, interfaceImplementor);
+			OverrideInformation ov = new OverrideInformation (@base, @override, interfaceImplementor);
+			AddBaseMethod (@override, ov);
+			AddOverrideOfMethod (@base, ov);
 		}
 
 		MethodDefinition? GetBaseMethodInTypeHierarchy (MethodDefinition method)
@@ -418,6 +348,51 @@ namespace Mono.Linker
 			return context.TryResolve (type)?.BaseType;
 		}
 
+		public bool InterfaceTypeEquals (TypeReference? type, TypeReference? other)
+		{
+			Debug.Assert (type is not null && other is not null);
+			Debug.Assert (context.TryResolve (type)?.IsInterface is null or true);
+			Debug.Assert (context.TryResolve (other)?.IsInterface is null or true);
+			return TypeEquals (type, other);
+
+			bool TypeEquals (TypeReference type1, TypeReference type2)
+			{
+				if (type1 == type2)
+					return true;
+
+				if (context.TryResolve (type1) != context.TryResolve (type2))
+					return false;
+
+				if (type1 is GenericInstanceType genericInstance1) {
+					if (type2 is not GenericInstanceType genericInstance2)
+						return false;
+					if (genericInstance1.HasGenericParameters != genericInstance2.HasGenericParameters)
+						return false;
+					if (genericInstance1.GenericParameters.Count != genericInstance2.GenericParameters.Count
+						|| genericInstance2.GenericArguments.Count != genericInstance2.GenericArguments.Count)
+						return false;
+					for (var i = 0; i < genericInstance1.GenericArguments.Count; ++i) {
+						if (!TypeEquals (genericInstance1.GenericArguments[i], genericInstance2.GenericArguments[i]))
+							return false;
+					}
+					return true;
+				}
+
+				if (type1 is TypeSpecification typeSpec1) {
+					if (type2 is not TypeSpecification typeSpec2)
+						return false;
+					return InterfaceTypeEquals (typeSpec1.ElementType, typeSpec2.ElementType);
+				}
+				return type1.FullName == type2.FullName;
+			}
+		}
+
+		/// <summary>
+		/// Used only to compare inflated interfaces in MapInterfacesOnType
+		/// </summary>
+		public EqualityComparer<TypeReference> InflatedInterfaceComparer => _inflatedInterfaceComparer ??= EqualityComparer<TypeReference>.Create (InterfaceTypeEquals, t => context.Resolve (t)?.GetHashCode () ?? 0);
+		public EqualityComparer<TypeReference>? _inflatedInterfaceComparer;
+
 		/// <summary>
 		/// Returns a list of default implementations of the given interface method on this type.
 		/// Note that this returns a list to potentially cover the diamond case (more than one
@@ -431,7 +406,6 @@ namespace Mono.Linker
 		/// </param>
 		void FindAndAddDefaultInterfaceImplementations (TypeDefinition typeThatImplementsInterface, MethodDefinition interfaceMethodToBeImplemented, InterfaceImplementor implr)
 		{
-			// Can I maybe only look at types in the implNode chain? I'd need all the chains that lead to the interfaceType, but it could be possible.
 			bool foundImpl = false;
 			foreach (var potentialDimProviderImplementation in _interfaces[typeThatImplementsInterface]) {
 				if (potentialDimProviderImplementation.InterfaceType is null)
@@ -624,7 +598,5 @@ namespace Mono.Linker
 
 			return a.FullName == b.FullName;
 		}
-
-		internal List<InterfaceImplementor> GetRecursiveInterfaces (TypeDefinition type) => _interfaces.TryGetValue (type, out var value) ? value : [];
 	}
 }
