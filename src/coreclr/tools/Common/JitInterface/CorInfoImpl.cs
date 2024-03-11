@@ -2941,6 +2941,13 @@ namespace Internal.JitInterface
             return _compilation.IsEffectivelySealed(type);
         }
 
+        private bool isGenericType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            return type.HasInstantiation;
+        }
+
         private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
         {
             Debug.Assert(cls != null);
