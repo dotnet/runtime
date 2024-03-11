@@ -140,14 +140,37 @@ namespace System.Linq
 
         /// <summary>Gets whether the results of an unstable sort will be observably the same as a stable sort.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool TypeIsImplicitlyStable<T>() =>
-            typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
-            typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
-            typeof(T) == typeof(short) || typeof(T) == typeof(ushort) ||
-            typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
-            typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
-            typeof(T) == typeof(nint) || typeof(T) == typeof(nuint) ||
-            typeof(T) == typeof(bool) || typeof(T) == typeof(char);
+        internal static bool TypeIsImplicitlyStable<T>()
+        {
+            // Check for integral primitive types that compare equally iff they have the same bit pattern.
+            // (bool is included because, even though technically it can have 256 different values, anything
+            // other than 0/1 is only producable using unsafe code.)
+            if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) || typeof(T) == typeof(bool) ||
+                typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
+                typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
+                typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
+                typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
+                typeof(T) == typeof(nint) || typeof(T) == typeof(nuint))
+            {
+                return true;
+            }
+
+            if (typeof(T).IsEnum)
+            {
+                // Check for all integral underlying types.
+                Type underlying = typeof(T).GetEnumUnderlyingType();
+                return underlying == typeof(sbyte) || underlying == typeof(byte) ||
+                       underlying == typeof(short) || underlying == typeof(ushort) || underlying == typeof(char) ||
+                       underlying == typeof(int) || underlying == typeof(uint) ||
+                       underlying == typeof(long) || underlying == typeof(ulong) ||
+                       underlying == typeof(nint) || underlying == typeof(nuint);
+            }
+
+            // It's tempting to include a type like string here, as it's so commonly used with ordering,
+            // but two different string objects can compare equally, and their reference identity can be
+            // observable in a stable vs unstable sort.
+            return false;
+        }
     }
 
     public interface IOrderedEnumerable<out TElement> : IEnumerable<TElement>
