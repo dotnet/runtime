@@ -189,31 +189,20 @@ internal sealed class SafeMsQuicConfigurationHandle : MsQuicSafeHandle
         return true;
     }
 
-    public void ReleaseHandleFromCache()
-    {
-        Debug.Assert(_rentCount == -1);
-
-        // calls SafeHandle.Dispose
-        base.Dispose(true);
-        GC.SuppressFinalize(this);
-
-        // There should not be more outstanding refs to the native handle.
-        Debug.Assert(IsClosed);
-    }
-
     protected override void Dispose(bool disposing)
     {
-        if (MsQuicConfiguration.ConfigurationCacheEnabled)
+        int oldCount;
+        do
         {
-            // only decrement the rent count
-            Debug.Assert(_rentCount > 0);
-            Interlocked.Decrement(ref _rentCount);
-        }
-        else
-        {
-            // dispose as usual
-            Debug.Assert(_rentCount == 0);
-            base.Dispose(disposing);
-        }
+            oldCount = _rentCount;
+            if (oldCount <= 0)
+            {
+                // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
+                // and is -1 when evicted from cache.
+                base.Dispose(disposing);
+                return;
+            }
+
+        } while (Interlocked.CompareExchange(ref _rentCount, oldCount - 1, oldCount) != oldCount);
     }
 }

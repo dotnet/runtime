@@ -176,10 +176,11 @@ internal static partial class MsQuicConfiguration
             // we lost a race with another thread to insert new handle into the cache
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Discarding MsQuicConfiguration {handle} (preferring cached {cached}).");
 
-            // Decrement the rent count we added before attempting the cache insertion
-            // and close the handle
+            // First dispose decrements the rent count we added before attempting the cache insertion
+            // and second closes the handle
             handle.Dispose();
-            handle.ReleaseHandleFromCache();
+            handle.Dispose();
+            Debug.Assert(handle.IsClosed, "Handle should be closed.");
 
             return cached;
         }
@@ -218,7 +219,8 @@ internal static partial class MsQuicConfiguration
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}.");
             bool removed = s_configurationCache.TryRemove(key, out _);
             Debug.Assert(removed, "Handle was marked for disposal, but was not found in the cache.");
-            handle.ReleaseHandleFromCache();
+            handle.Dispose();
+            Debug.Assert(handle.IsClosed, "Handle should be closed.");
         }
 
         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, new size: {s_configurationCache.Count}.");
