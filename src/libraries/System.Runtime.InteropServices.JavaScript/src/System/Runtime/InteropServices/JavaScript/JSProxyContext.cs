@@ -517,7 +517,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                     }
-                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     List<WeakReference<JSObject>> copy = new(ThreadCsOwnedObjects.Values);
@@ -531,6 +530,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_MANAGED_THREADS
                     Interop.Runtime.UninstallWebWorkerInterop();
+                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     foreach (var gch in ThreadJsOwnedObjects.Values)
@@ -544,6 +544,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             holder.Callback!.Invoke(null);
                         }
+                        ((GCHandle)holder.GCHandle).Free();
                     }
 
                     ThreadCsOwnedObjects.Clear();

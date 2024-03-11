@@ -7,7 +7,6 @@ using System.Text;
 
 namespace System.Diagnostics.Tracing
 {
-#if FEATURE_PERFTRACING
     internal static class EventPipePayloadDecoder
     {
         /// <summary>
@@ -138,5 +137,4 @@ namespace System.Diagnostics.Tracing
             return decodedFields;
         }
     }
-#endif // FEATURE_PERFTRACING
 }
