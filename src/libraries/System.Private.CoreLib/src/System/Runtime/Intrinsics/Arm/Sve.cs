@@ -14,6 +14,7 @@ namespace System.Runtime.Intrinsics.Arm
     [Intrinsic]
     [CLSCompliant(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
+    [Experimental(diagnosticId: "Sve")]
     public abstract class Sve : AdvSimd
     {
         internal Sve() { }
