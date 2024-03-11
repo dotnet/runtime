@@ -488,7 +488,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that OCEs don't result in the unobserved event firing
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancellationDoesntResultInEventFiring()
         {
             var cts = new CancellationTokenSource();

@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Tests
 {
     public class TaskAwaiterTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(false, null)]
@@ -66,7 +66,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(false, null)]
@@ -123,7 +123,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task Await_TaskCompletesOnNonDefaultSyncCtx_ContinuesOnDefaultSyncCtx()
         {
             await Task.Run(async delegate // escape xunit's sync context
@@ -153,7 +153,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public async Task Await_TaskCompletesOnNonDefaultScheduler_ContinuesOnDefaultScheduler()
         {
             await Task.Run(async delegate // escape xunit's sync context
@@ -179,7 +179,7 @@ namespace System.Threading.Tasks.Tests
                             yield return new object[] { numContinuations, runContinuationsAsynchronously, valueTask, scheduler };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously_MemberData))]
         public async Task Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously(
             int numContinuations, bool runContinuationsAsynchronously, bool valueTask, object scheduler)
@@ -476,7 +476,7 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEqual(task.ConfigureAwait(true).GetAwaiter(), task.ConfigureAwait(false).GetAwaiter());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void BaseSynchronizationContext_SameAsNoSynchronizationContext()
         {
             var quwi = new QUWITaskScheduler();
@@ -513,7 +513,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [MemberData(nameof(CanceledTasksAndExpectedCancellationExceptions))]
         public static void OperationCanceledException_PropagatesThroughCanceledTask(int lineNumber, Task task, OperationCanceledException expected)
         {

@@ -17,7 +17,7 @@ namespace System.Threading.Tasks.Tests
     {
         #region ContinueWith Tests
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithAsyncStateCheckTests()
         {
             Task t = new Task(() => { });
@@ -613,7 +613,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Make sure that cancellation works for monadic versions of ContinueWith()
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunUnwrapTests()
         {
             Task taskRoot = null;

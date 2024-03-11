@@ -411,28 +411,28 @@ namespace System.Threading.Tasks.Tests
 
         #region Test methods
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest0()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Canceled, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest1()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Canceled, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithoutInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest2()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Canceled, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.Default);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [OuterLoop]
         public static void TaskRunSyncTest3()
         {
@@ -440,35 +440,35 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest4()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Completed, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithoutInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest5()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Completed, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.Default);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest6()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Continued, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest7()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Continued, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithoutInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest8()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Continued, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.Default);
@@ -476,7 +476,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest9()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Cancel, WorkloadType.ContinueInside, TaskCreationOptions.LongRunning, TaskSchedulerType.Default);
@@ -484,7 +484,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest10()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Cancel, WorkloadType.CreateChildTask, TaskCreationOptions.LongRunning, TaskSchedulerType.CustomWithoutInlineExecution);
@@ -492,7 +492,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest11()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Cancel, WorkloadType.CreateDetachedChildTask, TaskCreationOptions.AttachedToParent, TaskSchedulerType.CustomWithoutInlineExecution);
@@ -500,7 +500,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest12()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Cancel, WorkloadType.CreateDetachedChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
@@ -508,14 +508,14 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest13()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Cancel, WorkloadType.RunWithUserScheduler, TaskCreationOptions.None, TaskSchedulerType.Default);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest14()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Cancel, WorkloadType.ThrowException, TaskCreationOptions.AttachedToParent, TaskSchedulerType.CustomWithInlineExecution);
@@ -523,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         [OuterLoop]
         public static void TaskRunSyncTest15()
@@ -533,7 +533,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest16()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.ContinueWith, WorkloadType.CreateChildTask, TaskCreationOptions.AttachedToParent, TaskSchedulerType.Default);
@@ -541,7 +541,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         [OuterLoop]
         public static void TaskRunSyncTest17()
@@ -551,7 +551,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         [OuterLoop]
         public static void TaskRunSyncTest18()
@@ -560,7 +560,7 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         [OuterLoop]
         public static void TaskRunSyncTest19()
@@ -570,7 +570,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         [OuterLoop]
         public static void TaskRunSyncTest20()
@@ -579,7 +579,7 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest21()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.Null);
@@ -587,7 +587,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest22()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Wait, WorkloadType.CreateDetachedChildTask, TaskCreationOptions.LongRunning, TaskSchedulerType.Default);
@@ -595,7 +595,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         [OuterLoop]
         public static void TaskRunSyncTest23()
@@ -604,7 +604,7 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         [OuterLoop]
         public static void TaskRunSyncTest24()
         {
@@ -612,21 +612,21 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest28()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Running, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest29()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Running, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithoutInlineExecution);
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskRunSyncTest30()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Running, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.Default);

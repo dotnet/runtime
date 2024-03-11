@@ -13,7 +13,7 @@ namespace TaskCoverage
     public class Coverage
     {
         // Regression test: Validates that tasks can wait on int.MaxValue without assertion.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskWait_MaxInt32()
         {
             Task t = Task.Delay(1);
@@ -89,7 +89,7 @@ namespace TaskCoverage
         /// <summary>
         /// Test various Task.WhenAll and Wait overloads - EH
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskWaitWithCTS()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -138,7 +138,7 @@ namespace TaskCoverage
         /// <summary>
         /// test WaitAny and when Any overloads
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskWaitAny_WhenAny()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -278,7 +278,7 @@ namespace TaskCoverage
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void CancellationTokenRegitration()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -295,7 +295,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -315,7 +315,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void TaskConfigurableAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -335,7 +335,7 @@ namespace TaskCoverage
         /// <summary>
         /// FromAsync testing: Not supported in .NET Native
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void FromAsync()
         {
             Task emptyTask = new Task(() => { });
@@ -788,7 +788,7 @@ namespace TaskCoverage
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithSameCancellationForBoth()
         {
             // Non-generic, first completes first

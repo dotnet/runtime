@@ -12,7 +12,7 @@ namespace System.Threading.Tasks.Tests
         #region Test Methods
 
         // Exercise functionality of TaskFactory and TaskFactory<TResult>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunTaskFactoryTests()
         {
             TaskScheduler tm = TaskScheduler.Default;

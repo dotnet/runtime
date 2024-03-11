@@ -453,7 +453,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that Unwrap with a generic task doesn't use TaskScheduler.Current.
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void Generic_DefaultSchedulerUsed()
         {
             var scheduler = new CountingScheduler();
@@ -473,7 +473,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that a long chain of Unwraps can execute without overflowing the stack.
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public void RunStackGuardTests()
         {
             const int DiveDepth = 12000;

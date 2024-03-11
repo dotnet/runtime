@@ -21,7 +21,7 @@ namespace System.Threading.Tasks.Tests
 
         #region Test Methods
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskTask_State()
         {
             RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.None);
@@ -31,7 +31,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskFuture_State()
         {
             RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions.None);
@@ -41,7 +41,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureTask_State()
         {
             RunContinueWithFutureTask_State_Helper(TaskContinuationOptions.None);
@@ -51,7 +51,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureFuture_State()
         {
             RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions.None);
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskTask_State_FaultedCanceled()
         {
             RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled);
@@ -71,7 +71,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskFuture_State_FaultedCanceled()
         {
             RunContinueWithTaskFuture_State_Helper(s_onlyOnCanceled);
@@ -81,7 +81,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureTask_State_FaultedCanceled()
         {
             RunContinueWithFutureTask_State_Helper(s_onlyOnCanceled);
@@ -91,7 +91,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureFuture_State_FaultedCanceled()
         {
             RunContinueWithFutureFuture_State_Helper(s_onlyOnCanceled);
@@ -101,7 +101,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskTask_State_OnException()
         {
             RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.None, true);
@@ -111,7 +111,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskFuture_State_OnException()
         {
             RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions.None, true);
@@ -121,7 +121,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureTask_State_OnException()
         {
             RunContinueWithFutureTask_State_Helper(TaskContinuationOptions.None, true);
@@ -131,7 +131,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureFuture_State_OnException()
         {
             RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions.None, true);
@@ -141,7 +141,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskTask_State_FaultedCanceled_OnException()
         {
             RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled, true);
@@ -151,7 +151,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithTaskFuture_State_FaultedCanceled_OnException()
         {
             RunContinueWithTaskFuture_State_Helper(s_onlyOnCanceled, true);
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureTask_State_FaultedCanceled_OnException()
         {
             RunContinueWithFutureTask_State_Helper(s_onlyOnCanceled, true);
@@ -171,7 +171,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithFutureTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithFutureFuture_State_FaultedCanceled_OnException()
         {
             RunContinueWithFutureFuture_State_Helper(s_onlyOnCanceled, true);
@@ -372,7 +372,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunContinueWithParamsTest_State_IllegalParameters()
         {
             Task t1 = new Task(delegate { });

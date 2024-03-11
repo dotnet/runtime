@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(tasks);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedAndBlockingWait))]
         public static void RunBuggySchedulerTests()
         {
             Debug.WriteLine("* RunBuggySchedulerTests()");
