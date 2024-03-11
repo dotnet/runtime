@@ -9571,7 +9571,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     }
 
     AllRegsMask targetRegsToDo;
-    regMaskMixed targetRegsReady     = RBM_NONE;
+    AllRegsMask  targetRegsReady;
     regMaskMixed targetRegsFromStack = RBM_NONE;
 
     // The following arrays capture the location of the registers as they are moved:
@@ -9704,7 +9704,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     while (!targetCandidates.IsEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetCandidates);
-        singleRegMask targetRegMask = genRegMask(targetReg);
         targetCandidates ^= targetReg;
         if (location[targetReg] == REG_NA)
         {
@@ -9718,13 +9717,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 regNumber anotherHalfRegNum = REG_NEXT(targetReg);
                 if (location[anotherHalfRegNum] == REG_NA)
                 {
-                    targetRegsReady |= targetRegMask;
+                    targetRegsReady |= targetReg;
                 }
             }
             else
 #endif // TARGET_ARM
             {
-                targetRegsReady |= targetRegMask;
+                targetRegsReady |= targetReg;
             }
         }
     }
@@ -9732,10 +9731,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // Perform reg to reg moves
     while (!targetRegsToDo.IsEmpty())
     {
-        while (targetRegsReady != RBM_NONE)
+        while (!targetRegsReady.IsEmpty())
         {
             regNumber     targetReg     = genFirstRegNumFromMask(targetRegsReady);
-            singleRegMask targetRegMask = genRegMask(targetReg);
             targetRegsToDo ^= targetReg;
             targetRegsReady ^= targetReg;
             assert(location[targetReg] != targetReg);
@@ -9758,7 +9756,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             {
                 if (source[fromReg] != REG_NA && ((targetRegsFromStack & fromRegMask) != fromRegMask))
                 {
-                    targetRegsReady |= fromRegMask;
+                    targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
                     if (genIsValidDoubleReg(fromReg))
                     {
@@ -9769,7 +9767,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         regNumber upperHalfReg  = REG_NEXT(fromReg);
                         if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                         {
-                            targetRegsReady &= ~fromRegMask;
+                            targetRegsReady.RemoveRegNumInMask(fromReg);
                         }
                     }
                 }
@@ -9791,13 +9789,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     //                                            lowerHalfRegMask)
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        ((targetRegsReady & lowerHalfRegMask) == RBM_NONE) &&
+                        !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
                         ((targetRegsFromStack & lowerHalfRegMask) != lowerHalfRegMask))
                     {
                         // This must be a double interval, otherwise it would be in targetRegsReady, or already
                         // completed.
                         assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady |= lowerHalfRegMask;
+                        targetRegsReady |= lowerHalfReg;
                     }
 #endif // TARGET_ARM
                 }
@@ -9806,7 +9804,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         if (!targetRegsToDo.IsEmpty())
         {
             regNumber     targetReg     = genFirstRegNumFromMask(targetRegsToDo);
-            singleRegMask targetRegMask = genRegMask(targetReg);
 
             // Is it already there due to other moves?
             // If not, move it to the temp reg, OR swap it with another register
@@ -9918,8 +9915,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         //   value will be retrieved from STK.
                         if (source[fromReg] != REG_NA && fromReg != otherTargetReg)
                         {
-                            singleRegMask fromRegMask = genRegMask(fromReg);
-                            targetRegsReady |= fromRegMask;
+                            targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
                             if (genIsValidDoubleReg(fromReg))
                             {
@@ -9930,7 +9926,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                 regNumber upperHalfReg  = REG_NEXT(fromReg);
                                 if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                                 {
-                                    targetRegsReady &= ~fromRegMask;
+                                    targetRegsReady.RemoveRegNumInMask(fromReg);
                                 }
                             }
 #endif // TARGET_ARM
@@ -9968,7 +9964,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[targetReg] = (regNumberSmall)tempReg;
                     }
-                    targetRegsReady |= targetRegMask;
+                    targetRegsReady |= targetReg;
                 }
             }
         }
