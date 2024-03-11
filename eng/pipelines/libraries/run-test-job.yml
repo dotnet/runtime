@@ -70,7 +70,6 @@ jobs:
           - group: DotNet-HelixApi-Access
           - group: AzureDevOps-Artifact-Feeds-Pats
 
-        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:

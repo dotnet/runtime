@@ -343,8 +343,8 @@ extends:
             - normal
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
 
       #
@@ -374,6 +374,6 @@ extends:
             - no_tiered_compilation
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
