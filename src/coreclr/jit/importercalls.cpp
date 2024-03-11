@@ -2616,7 +2616,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (isIntrinsic)
     {
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
+        mustExpand = method == info.compMethodHnd && !(methodFlags & CORINFO_FLG_VIRTUAL);
     }
     else
     {
