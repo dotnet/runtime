@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+#if NETCOREAPP
+using System.Buffers;
+#endif
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -76,7 +79,17 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.Flush();
                 }
 #if NETCOREAPP
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
+                var messageBytes = output.WrittenMemory.Span;
+                var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetCharCount(messageBytes));
+                try
+                {
+                    var charsWritten = Encoding.UTF8.GetChars(messageBytes, logMessageBuffer);
+                    textWriter.Write(logMessageBuffer, 0, charsWritten);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(logMessageBuffer);
+                }
 #else
                 textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
 #endif
