@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
+using static Mono.Linker.InterfaceImplementor;
 
 namespace Mono.Linker
 {
@@ -106,7 +107,7 @@ namespace Mono.Linker
 		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
 		/// </summary>
 		/// <param name="method">The interface method to find default implementations for</param>
-		public List<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition baseMethod)
+		public IEnumerable<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition baseMethod)
 		{
 			EnsureProcessed (baseMethod.Module.Assembly);
 			default_interface_implementations.TryGetValue (baseMethod, out var ret);
@@ -387,7 +388,7 @@ namespace Mono.Linker
 				if (type1 is TypeSpecification typeSpec1) {
 					if (type2 is not TypeSpecification typeSpec2)
 						return false;
-					return InterfaceTypeEquals (typeSpec1.ElementType, typeSpec2.ElementType);
+					return TypeEquals (typeSpec1.ElementType, typeSpec2.ElementType);
 				}
 				return type1.FullName == type2.FullName;
 			}
@@ -412,8 +413,8 @@ namespace Mono.Linker
 		/// </param>
 		void FindAndAddDefaultInterfaceImplementations (TypeDefinition typeThatImplementsInterface, MethodDefinition interfaceMethodToBeImplemented, InterfaceImplementor implr)
 		{
-			bool foundImpl = false;
 			foreach (var potentialDimProviderImplementation in _interfaces[typeThatImplementsInterface]) {
+				bool foundImpl = false;
 				if (potentialDimProviderImplementation.InterfaceType is null)
 					continue;
 				// If this interface doesn't implement the interface with the method we're looking for, it can't provide a default implementation.

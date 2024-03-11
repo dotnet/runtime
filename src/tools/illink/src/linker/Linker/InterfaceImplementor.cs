@@ -18,6 +18,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// The type of the interface that is implemented by <see cref="InterfaceImplementor.Implementor"/>
+		/// Null if the type could not be resolved
 		/// </summary>
 		public TypeDefinition? InterfaceType { get; }
 
@@ -61,10 +62,10 @@ namespace Mono.Linker
 				_current = implementor.InterfaceImplementationNodes[0];
 				_hasMoved = false;
 			}
-			public ShortestInterfaceImplementationChainEnumerator GetEnumerator() => this;
+			public ShortestInterfaceImplementationChainEnumerator GetEnumerator () => this;
 			public InterfaceImplementation Current => _current.InterfaceImplementation;
 
-			public bool MoveNext()
+			public bool MoveNext ()
 			{
 				if (!_hasMoved) {
 					_hasMoved = true;
@@ -80,7 +81,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns true if the most direct implementation of <see cref="InflatedInterface"/> is marked. <see cref="Implementor"/> may still have a different recursive implementation marked.
 		/// </summary>
-		public bool IsMostDirectImplementationMarked(AnnotationStore annotations)
+		public bool IsMostDirectImplementationMarked (AnnotationStore annotations)
 		{
 			return InterfaceImplementationNodes[0].IsMostDirectImplementationMarked (annotations);
 		}
@@ -88,90 +89,90 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns true if <see cref="Implementor"/> implements <see cref="InflatedInterface"/> via any of the possible interface implementation chains.
 		/// </summary>
-		public bool IsMarked(AnnotationStore annotations)
-		{
-			foreach(var i in InterfaceImplementationNodes) {
-				if (i.IsMarked(annotations))
-					return true;
-			}
-			return false;
-		}
-	}
-
-	/// <summary>
-	/// Represents a node in the graph of a type implementing an interface.
-	/// </summary>
-	public sealed class InterfaceImplementationNode : IComparable<InterfaceImplementationNode>
-	{
-		/// <summary>
-		/// The <see cref="Mono.Cecil.InterfaceImplementation"/> that is on <see cref="InterfaceImplementationProvider"/> that is part of the chain of interface implementations.
-		/// </summary>
-		public InterfaceImplementation InterfaceImplementation { get; }
-
-		/// <summary>
-		/// The type that has <see cref="InterfaceImplementation"/> in its <see cref="TypeDefinition.Interfaces"/>.
-		/// </summary>
-		public TypeDefinition InterfaceImplementationProvider { get; }
-
-		/// <summary>
-		/// The <see cref="InterfaceImplementationNode"/>s that are on the type pointed to by <see cref="InterfaceImplementation"/> that lead to the interface type.
-		/// </summary>
-		public ImmutableArray<InterfaceImplementationNode> Next { get; }
-
-		/// <summary>
-		/// The number of interface implementations on the most direct way the interface is implemented from <see cref="InterfaceImplementationProvider"/>
-		/// </summary>
-		public int Length {
-			get {
-				if (_length != -1)
-					return _length;
-				if (Next.Length == 0)
-					return _length = 0;
-				return _length = Next[0].Length + 1;
-			}
-		}
-		int _length = -1;
-
-		public InterfaceImplementationNode(InterfaceImplementation interfaceImplementation, TypeDefinition interfaceImplementationProvider, ImmutableArray<InterfaceImplementationNode> next)
-		{
-			InterfaceImplementation = interfaceImplementation;
-			InterfaceImplementationProvider = interfaceImplementationProvider;
-			Next = next;
-		}
-
-		public bool IsMostDirectImplementationMarked(AnnotationStore annotations)
-		{
-			if (!annotations.IsMarked (InterfaceImplementation))
-				return false;
-			if (Next.Length == 0)
-				return true;
-			return Next[0].IsMostDirectImplementationMarked (annotations);
-		}
-
 		public bool IsMarked (AnnotationStore annotations)
 		{
-			if (!annotations.IsMarked (InterfaceImplementation))
-				return false;
-
-			if (Next.Length == 0)
-				return true;
-
-			foreach(var impl in Next) {
-				if (impl.IsMarked (annotations))
+			foreach (var i in InterfaceImplementationNodes) {
+				if (i.IsMarked (annotations))
 					return true;
 			}
 			return false;
 		}
 
-		public InterfaceImplementation GetLast ()
+		/// <summary>
+		/// Represents a node in the graph of a type implementing an interface.
+		/// </summary>
+		public sealed class InterfaceImplementationNode : IComparable<InterfaceImplementationNode>
 		{
-			var curr = this;
-			while (curr.Next.Length > 0) {
-				curr = curr.Next[0];
-			}
-			return curr.InterfaceImplementation;
-		}
+			/// <summary>
+			/// The <see cref="Mono.Cecil.InterfaceImplementation"/> that is on <see cref="InterfaceImplementationProvider"/> that is part of the chain of interface implementations.
+			/// </summary>
+			public InterfaceImplementation InterfaceImplementation { get; }
 
-		int IComparable<InterfaceImplementationNode>.CompareTo (InterfaceImplementationNode? other) => this.Length - other!.Length;
+			/// <summary>
+			/// The type that has <see cref="InterfaceImplementation"/> in its <see cref="TypeDefinition.Interfaces"/>.
+			/// </summary>
+			public TypeDefinition InterfaceImplementationProvider { get; }
+
+			/// <summary>
+			/// The <see cref="InterfaceImplementationNode"/>s that are on the type pointed to by <see cref="InterfaceImplementation"/> that lead to the interface type.
+			/// </summary>
+			public ImmutableArray<InterfaceImplementationNode> Next { get; }
+
+			/// <summary>
+			/// The number of interface implementations on the most direct way the interface is implemented from <see cref="InterfaceImplementationProvider"/>
+			/// </summary>
+			public int Length {
+				get {
+					if (_length != -1)
+						return _length;
+					if (Next.Length == 0)
+						return _length = 0;
+					return _length = Next[0].Length + 1;
+				}
+			}
+			int _length = -1;
+
+			public InterfaceImplementationNode (InterfaceImplementation interfaceImplementation, TypeDefinition interfaceImplementationProvider, ImmutableArray<InterfaceImplementationNode> next)
+			{
+				InterfaceImplementation = interfaceImplementation;
+				InterfaceImplementationProvider = interfaceImplementationProvider;
+				Next = next;
+			}
+
+			public bool IsMostDirectImplementationMarked (AnnotationStore annotations)
+			{
+				if (!annotations.IsMarked (InterfaceImplementation))
+					return false;
+				if (Next.Length == 0)
+					return true;
+				return Next[0].IsMostDirectImplementationMarked (annotations);
+			}
+
+			public bool IsMarked (AnnotationStore annotations)
+			{
+				if (!annotations.IsMarked (InterfaceImplementation))
+					return false;
+
+				if (Next.Length == 0)
+					return true;
+
+				foreach (var impl in Next) {
+					if (impl.IsMarked (annotations))
+						return true;
+				}
+				return false;
+			}
+
+			public InterfaceImplementation GetLast ()
+			{
+				var curr = this;
+				while (curr.Next.Length > 0) {
+					curr = curr.Next[0];
+				}
+				return curr.InterfaceImplementation;
+			}
+
+			int IComparable<InterfaceImplementationNode>.CompareTo (InterfaceImplementationNode? other) => this.Length - other!.Length;
+		}
 	}
 }

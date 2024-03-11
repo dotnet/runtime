@@ -16,12 +16,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 		}
 
 		[Fact]
-		public Task GenericInterfaceImplementedMultipleTimes ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task InterfaceOnUninstantiatedTypeRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -35,18 +29,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 
 		[Fact]
 		public Task InterfaceWithoutNewSlot ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task GenericInterfaceImplementedRecursively ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task InterfaceImplementedRecursively ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

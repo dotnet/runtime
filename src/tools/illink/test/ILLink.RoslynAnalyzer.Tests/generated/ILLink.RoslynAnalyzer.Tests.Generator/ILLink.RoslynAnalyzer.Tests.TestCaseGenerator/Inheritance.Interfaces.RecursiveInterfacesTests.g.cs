@@ -10,6 +10,18 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		protected override string TestSuiteName => "Inheritance.Interfaces.RecursiveInterfaces";
 
 		[Fact]
+		public Task GenericInterfaceImplementedRecursively ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task InterfaceImplementedRecursively ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task RecursiveInterfaceKept ()
 		{
 			return RunTest (allowMissingWarnings: true);

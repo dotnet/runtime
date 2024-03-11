@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DimProvidedByUnreferencedIfaceInHierarchy.il" })]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DimProvidedByRecursiveInterface.il" })]
 	[SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBaz), "library.dll", typeof (Program.IBar))]
 	[KeptMemberInAssembly ("library.dll", typeof(Program), "CallMethod(Program/IFoo)")]
 #endif
-	class DimProvidedByUnreferencedIfaceInHierarchy
+	class DimProvidedByRecursiveInterface
 	{
 		static void Main ()
 		{
