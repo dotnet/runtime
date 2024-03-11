@@ -398,6 +398,64 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
         }
+        else if (isRMW)
+        {
+            assert(!hasImmediateOperand);
+            assert(!HWIntrinsicInfo::SupportsContainment(intrin.id));
+
+            // Move the RMW register out of the way and do not pass it to the emit.
+
+            if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrin.id))
+            {
+                // op1Reg contains a mask, op2Reg contains the RMW register.
+
+                if (targetReg != op2Reg)
+                {
+                    assert(targetReg != op3Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
+                }
+
+                switch (intrin.numOperands)
+                {
+                    case 2:
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                        break;
+
+                    case 3:
+                        assert(targetReg != op3Reg);
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt);
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                // op1Reg contains the RMW register.
+
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    assert(targetReg != op3Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                }
+
+                switch (intrin.numOperands)
+                {
+                    case 2:
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                        break;
+
+                    case 3:
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+        }
         else
         {
             assert(!hasImmediateOperand);
@@ -416,33 +474,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
-                    else if (isRMW)
-                    {
-                        if (targetReg != op1Reg)
-                        {
-                            assert(targetReg != op2Reg);
-
-                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
-                                                      /* canSkip */ true);
-                        }
-                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-                    }
                     else
                     {
                         GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                     }
-                    break;
-
-                case 3:
-                    assert(isRMW);
-                    if (targetReg != op1Reg)
-                    {
-                        assert(targetReg != op2Reg);
-                        assert(targetReg != op3Reg);
-
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                    }
-                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                     break;
 
                 default:

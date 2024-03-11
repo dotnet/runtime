@@ -29,6 +29,124 @@ namespace System.Runtime.Intrinsics.Arm
         }
 
 
+        ///  Abs : Absolute value
+
+        /// <summary>
+        /// svint8_t svabs[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svabs[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svabs[_s8]_z(svbool_t pg, svint8_t op)
+        /// </summary>
+        public static unsafe Vector<sbyte> Abs(Vector<sbyte> value) => Abs(value);
+
+        /// <summary>
+        /// svint16_t svabs[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svabs[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svabs[_s16]_z(svbool_t pg, svint16_t op)
+        /// </summary>
+        public static unsafe Vector<short> Abs(Vector<short> value) => Abs(value);
+
+        /// <summary>
+        /// svint32_t svabs[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svabs[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svabs[_s32]_z(svbool_t pg, svint32_t op)
+        /// </summary>
+        public static unsafe Vector<int> Abs(Vector<int> value) => Abs(value);
+
+        /// <summary>
+        /// svint64_t svabs[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svabs[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svabs[_s64]_z(svbool_t pg, svint64_t op)
+        /// </summary>
+        public static unsafe Vector<long> Abs(Vector<long> value) => Abs(value);
+
+        /// <summary>
+        /// svfloat32_t svabs[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        /// svfloat32_t svabs[_f32]_x(svbool_t pg, svfloat32_t op)
+        /// svfloat32_t svabs[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> Abs(Vector<float> value) => Abs(value);
+
+        /// <summary>
+        /// svfloat64_t svabs[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        /// svfloat64_t svabs[_f64]_x(svbool_t pg, svfloat64_t op)
+        /// svfloat64_t svabs[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> Abs(Vector<double> value) => Abs(value);
+
+
+        ///  Add : Add
+
+        /// <summary>
+        /// svint8_t svadd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svadd[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svadd[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// </summary>
+        public static unsafe Vector<sbyte> Add(Vector<sbyte> left, Vector<sbyte> right) => Add(left, right);
+
+        /// <summary>
+        /// svint16_t svadd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svadd[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svadd[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// </summary>
+        public static unsafe Vector<short> Add(Vector<short> left, Vector<short> right) => Add(left, right);
+
+        /// <summary>
+        /// svint32_t svadd[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svadd[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svadd[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// </summary>
+        public static unsafe Vector<int> Add(Vector<int> left, Vector<int> right) => Add(left, right);
+
+        /// <summary>
+        /// svint64_t svadd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svadd[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svadd[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// </summary>
+        public static unsafe Vector<long> Add(Vector<long> left, Vector<long> right) => Add(left, right);
+
+        /// <summary>
+        /// svuint8_t svadd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svadd[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svadd[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// </summary>
+        public static unsafe Vector<byte> Add(Vector<byte> left, Vector<byte> right) => Add(left, right);
+
+        /// <summary>
+        /// svuint16_t svadd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svadd[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svadd[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// </summary>
+        public static unsafe Vector<ushort> Add(Vector<ushort> left, Vector<ushort> right) => Add(left, right);
+
+        /// <summary>
+        /// svuint32_t svadd[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svadd[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svadd[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// </summary>
+        public static unsafe Vector<uint> Add(Vector<uint> left, Vector<uint> right) => Add(left, right);
+
+        /// <summary>
+        /// svuint64_t svadd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svadd[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svadd[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// </summary>
+        public static unsafe Vector<ulong> Add(Vector<ulong> left, Vector<ulong> right) => Add(left, right);
+
+        /// <summary>
+        /// svfloat32_t svadd[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svadd[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svadd[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// </summary>
+        public static unsafe Vector<float> Add(Vector<float> left, Vector<float> right) => Add(left, right);
+
+        /// <summary>
+        /// svfloat64_t svadd[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svadd[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svadd[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// </summary>
+        public static unsafe Vector<double> Add(Vector<double> left, Vector<double> right) => Add(left, right);
+
+
         ///  CreateTrueMaskByte : Set predicate elements to true
 
         /// <summary>
