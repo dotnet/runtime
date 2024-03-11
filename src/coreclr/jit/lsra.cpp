@@ -288,7 +288,7 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     nextFixedRef[regRecord->regNum] = nextLocation;
 }
 
-regMaskOnlyOne LinearScan::getMatchingConstants(regMaskMixed mask, Interval* currentInterval, RefPosition* refPosition)
+regMaskOnlyOne LinearScan::getMatchingConstants(regMaskOnlyOne mask, Interval* currentInterval, RefPosition* refPosition)
 {
     assert(currentInterval->isConstant && RefTypeIsDef(refPosition->refType));
     regMaskOnlyOne candidates = (mask & m_RegistersWithConstants[regTypeIndex(currentInterval->registerType)]);

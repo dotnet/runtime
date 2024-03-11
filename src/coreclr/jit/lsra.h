@@ -1974,7 +1974,7 @@ private:
         regMaskOnlyOne regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants[regTypeIndex(regType)] & regMask) == regMask;
     }
-    regMaskOnlyOne getMatchingConstants(regMaskMixed mask, Interval* currentInterval, RefPosition* refPosition);
+    regMaskOnlyOne getMatchingConstants(regMaskOnlyOne mask, Interval* currentInterval, RefPosition* refPosition);
 
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
