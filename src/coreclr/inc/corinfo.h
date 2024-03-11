@@ -1982,11 +1982,13 @@ enum class GetTypeLayoutResult
     Failure,
 };
 
+#define MAX_SWIFT_LOWERED_ELEMENTS 4
+
 struct CORINFO_SWIFT_LOWERING
 {
     bool byReference;
-    CorInfoType loweredElements[4];
-    uint32_t offsets[4];
+    CorInfoType loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
+    uint32_t offsets[MAX_SWIFT_LOWERED_ELEMENTS];
     size_t numLoweredElements;
 };
 

@@ -4321,15 +4321,15 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     }
 
     // Now we have the intervals, we can calculate the lowering.
-    CorInfoType loweredTypes[4];
-    uint32_t offsets[4];
+    CorInfoType loweredTypes[MAX_SWIFT_LOWERED_ELEMENTS];
+    uint32_t offsets[MAX_SWIFT_LOWERED_ELEMENTS];
     uint32_t numLoweredTypes = 0;
 
     for (uint32_t i = 0; i < mergedIntervals.Size(); i++, numLoweredTypes++)
     {
         SwiftLoweringInterval interval = mergedIntervals[i];
 
-        if (numLoweredTypes == 4)
+        if (numLoweredTypes == ARRAY_SIZE(loweredTypes))
         {
             // If we have more than four intervals, this type is passed by-reference in Swift.
             pSwiftLowering->byReference = true;
@@ -4375,7 +4375,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 uint32_t remainingIntervalSize = interval.size;
                 for (;remainingIntervalSize > 0; numLoweredTypes++)
                 {
-                    if (numLoweredTypes == 4)
+                    if (numLoweredTypes == ARRAY_SIZE(loweredTypes))
                     {
                         // If we have more than four intervals and we still need to add another interval, this type is passed by-reference in Swift.
                         pSwiftLowering->byReference = true;
