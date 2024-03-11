@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
@@ -20,7 +21,7 @@ internal static partial class MsQuicConfiguration
     private const string DisableCacheCtxSwitch = "System.Net.Quic.DisableConfigurationCache";
 
     private static volatile int s_configurationCacheEnabled = -1;
-    private static bool ConfigurationCacheEnabled
+    internal static bool ConfigurationCacheEnabled
     {
         get
         {
@@ -45,7 +46,7 @@ internal static partial class MsQuicConfiguration
         }
     }
 
-    private static readonly ConcurrentDictionary<CacheKey, MsQuicSafeHandle> s_configurationCache = new();
+    private static readonly ConcurrentDictionary<CacheKey, SafeMsQuicConfigurationHandle> s_configurationCache = new();
 
     private readonly struct CacheKey : IEquatable<CacheKey>
     {
@@ -133,87 +134,38 @@ internal static partial class MsQuicConfiguration
         }
     }
 
-    private static MsQuicSafeHandle GetCachedCredentialOrCreate(QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
+    private static SafeMsQuicConfigurationHandle GetCachedCredentialOrCreate(QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
-        CacheKey key = new CacheKey(
-            flags,
-            settings,
-            certificate,
-            intermediates,
-            alpnProtocols,
-            allowedCipherSuites);
+        CacheKey key = new CacheKey(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
 
-        if (s_configurationCache.TryGetValue(key, out MsQuicSafeHandle? handle))
+        SafeMsQuicConfigurationHandle? handle;
+
+        if (s_configurationCache.TryGetValue(key, out handle) && handle.TryAddRentCount())
         {
-            try
-            {
-                //
-                // This races with a potential cache cleanup, which may close the
-                // handle before we claim it.
-                //
-                bool ignore = false;
-                handle.DangerousAddRef(ref ignore);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Using cached MsQuicConfiguration {handle}.");
-                return handle;
-            }
-            catch (ObjectDisposedException)
-            {
-                // we lost the race, behave as if the handle was not in the cache.
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Found cached MsQuicConfiguration: {handle}.");
+            return handle;
         }
 
+        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"MsQuicConfiguration not found in cache, creating new.");
+
         handle = CreateInternal(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
-        CacheConfigurationHandle(key, handle);
 
-        return handle;
-    }
-
-    private static void CacheConfigurationHandle(CacheKey key, ref MsQuicSafeHandle handle)
-    {
-        var cached = s_configurationCache.AddOrUpdate(
-            key,
-            (_, newHandle) =>
-            {
-                // The cache now holds the ownership of the handle.
-                bool ignore = false;
-                newHandle.DangerousAddRef(ref ignore);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching MsQuicConfiguration {newHandle}.");
-                return newHandle;
-            },
-            (_, existingHandle, newHandle) =>
-            {
-                // another thread was faster in creating the configuration, check if we can
-                // use the cached one
-                bool ignore = false;
-                try
-                {
-                    //
-                    // This also races with the cache cleanup but should be rare since the
-                    // configuration was just added to the cache and is likely still being used.
-                    //
-                    existingHandle.DangerousAddRef(ref ignore);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Found existing MsQuicConfiguration {existingHandle} in cache.");
-                    return existingHandle;
-                }
-                catch (ObjectDisposedException)
-                {
-                    // we lost the race with cleanup, the existing configuration handle is closed,
-                    // keep the one we created.
-                    newHandle.DangerousAddRef(ref ignore);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching MsQuicConfiguration {newHandle}.");
-                    return newHandle;
-                }
-            },
-            handle);
+        SafeMsQuicConfigurationHandle cached;
+        do
+        {
+            cached = s_configurationCache.GetOrAdd(key, handle);
+        }
+        while (!cached.TryAddRentCount());
 
         if (cached != handle)
         {
+            // we lost a race with another thread to insert new handle into the cache
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Discarding MsQuicConfiguration {handle} (preferring cached {cached}).");
-            handle.Dispose();
+            handle.ReleaseHandleFromCache();
             handle = cached;
-            return;
         }
 
+        // we added a new handle, check if we need to cleanup
         if (s_configurationCache.Count % CheckExpiredModulo == 0)
         {
             // let only one thread perform cleanup at a time
@@ -225,49 +177,29 @@ internal static partial class MsQuicConfiguration
                 }
             }
         }
+
+        return handle;
     }
 
     private static void CleanupCachedCredentials()
     {
-        KeyValuePair<CacheKey, MsQuicSafeHandle>[] toRemoveAttempt = s_configurationCache.ToArray();
+        KeyValuePair<CacheKey, SafeMsQuicConfigurationHandle>[] toRemoveAttempt = s_configurationCache.ToArray();
 
         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, current size: {toRemoveAttempt.Length}.");
 
-        foreach (KeyValuePair<CacheKey, MsQuicSafeHandle> kvp in toRemoveAttempt)
+        foreach ((CacheKey key, SafeMsQuicConfigurationHandle handle) in toRemoveAttempt)
         {
-            var handle = kvp.Value;
-
-            //
-            // We can't directly get the current refcount of the handle, we know it's at least 1,
-            // so we decrement it and if it does not close, then it must be in use, so we increment
-            // it back.
-            //
-
-            handle.DangerousRelease();
-            bool inUse = false;
-            try
+            if (!handle.TryMarkForDispose())
             {
-                if (!handle.IsClosed)
-                {
-                    // handle is in use, add the ref back.
-                    // This add-ref races with QuicConnection.Dispose();
-                    handle.DangerousAddRef(ref inUse);
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // we lost the race, the handle is closed, we can proceed to remove it from
-                // the cache.
+                // handle in use
+                continue;
             }
 
-            if (!inUse)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}.");
-                s_configurationCache.TryRemove(kvp.Key, out _);
-                // The handle is closed, but we did not call Dispose on it. Doing so would throw ODE,
-                // suppress finalization to prevent Dispose from being called in a Finalizer thread.
-                GC.SuppressFinalize(handle);
-            }
+            // the handle is not in use and has been marked such that no new rents can be added.
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}.");
+            bool removed = s_configurationCache.TryRemove(key, out _);
+            Debug.Assert(removed, "Handle was marked for disposal, but was not found in the cache.");
+            handle.ReleaseHandleFromCache();
         }
 
         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, new size: {s_configurationCache.Count}.");
