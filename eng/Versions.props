@@ -108,18 +108,18 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>6.0.0-rc.1.21415.6</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>6.0.0-beta.23512.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.23512.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>6.0.0-beta.23512.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>6.0.0-beta.23512.1</SystemDrawingCommonTestDataVersion>
-    <SystemIOCompressionTestDataVersion>6.0.0-beta.23512.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>6.0.0-beta.23512.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>6.0.0-beta.23512.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>6.0.0-beta.23512.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>6.0.0-beta.23512.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>6.0.0-beta.23512.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>6.0.0-beta.23512.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>6.0.0-beta.23512.1</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>6.0.0-beta.24124.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.24124.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>6.0.0-beta.24124.1</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>6.0.0-beta.24124.1</SystemDrawingCommonTestDataVersion>
+    <SystemIOCompressionTestDataVersion>6.0.0-beta.24124.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>6.0.0-beta.24124.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>6.0.0-beta.24124.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>6.0.0-beta.24124.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>6.0.0-beta.24124.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>6.0.0-beta.24124.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>6.0.0-beta.24124.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>6.0.0-beta.24124.1</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21416.5</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21416.5</optimizationwindows_ntx86MIBCRuntimeVersion>
