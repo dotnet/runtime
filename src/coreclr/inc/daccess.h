@@ -561,6 +561,10 @@
 #ifndef NATIVEAOT
 #include <stdint.h>
 
+#if !defined(HOST_WINDOWS) && !defined(NATIVEAOT)
+#include <pal_mstypes.h>
+#endif
+
 #include "switches.h"
 #include "safemath.h"
 #include "corerror.h"
@@ -571,10 +575,6 @@
 #include <type_traits>
 #ifndef PAL_STDCPP_COMPAT
 #include "crosscomp.h"
-#endif
-
-#if !defined(HOST_WINDOWS) && !defined(NATIVEAOT)
-#include <pal_mstypes.h>
 #endif
 
 #include <dn-u16.h>

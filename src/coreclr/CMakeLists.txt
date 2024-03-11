@@ -207,6 +207,7 @@ if(CLR_CMAKE_HOST_UNIX)
   # Suppress these warnings here to avoid breaking the build.
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GCC>:-Wno-null-arithmetic>)
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GCC>:-Wno-null-conversion>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GCC>:-Wno-conversion-null>)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})

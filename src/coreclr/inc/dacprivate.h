@@ -577,7 +577,7 @@ struct MSLAYOUT DacpMethodDescData
     {
         return sos->GetMethodDescData(
             addr,
-            NULL,   // IP address
+            0,      // IP address
             this,
             0,      // cRejitData
             NULL,   // rejitData[]
