@@ -3834,25 +3834,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             }
                             break;
                         case NI_System_Type_get_IsGenericType:
-                            // a type is a generic type if there is at least one type argument that is
-                            // some valid type, so we can always just check the one at index 0 for this.
-                            // This will work on open generic types as well, and the returned type handle
-                            // will be some handle that represents the (non constructed) type parameter.
-                            if (info.compCompHnd->getTypeInstantiationArgument(hClass, 0) != NO_CLASS_HANDLE)
-                            {
-                                retNode = gtNewTrue();
-                            }
-                            else if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST) != 0)
-                            {
-                                // if we have no type arguments, check that the type itself is not __Canon, and
-                                // simply skip expanding the intrinsic in that case, rather than incorrectly
-                                // hardcoding 'false' as the resulting expression.
-                                retNode = nullptr;
-                            }
-                            else
-                            {
-                                retNode = gtNewFalse();
-                            }
+                            retNode = info.compCompHnd->isGenericType(hClass) ? gtNewTrue() : gtNewFalse();
                             break;
 
                         default:
