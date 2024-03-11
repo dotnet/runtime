@@ -16,6 +16,9 @@
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetsAppleMobile)' == 'true')">true</MetadataUpdaterSupport>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- The JsonSerializerIsReflectionEnabledByDefault feature switch is turned off automatically in projects that enable the PublishTrimmed property -->
+    <!-- Enable reflection and preserve required assemblies  -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <XunitShowProgress>true</XunitShowProgress>
@@ -308,6 +311,7 @@
     <TrimmerRootAssembly Include="System.Reflection" />
     <TrimmerRootAssembly Include="System.Collections" />
     <TrimmerRootAssembly Include="System.Runtime.Serialization" />
+    <TrimmerRootAssembly Include="System.Runtime.Serialization.Json" />
     <TrimmerRootAssembly Include="System.Text.Json" />
   </ItemGroup>
 
