@@ -5431,6 +5431,46 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_zip2, EA_SCALABLE, REG_V15, REG_V16, REG_V17, INS_OPTS_SCALABLE_Q,
                               INS_SCALABLE_OPTS_UNPREDICATED); // ZIP2 <Zd>.Q, <Zn>.Q, <Zm>.Q
 
+    // IF_SVE_BV_2A
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V15, REG_P5, 0,
+                              INS_OPTS_SCALABLE_B); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V5, REG_P15, 27,
+                              INS_OPTS_SCALABLE_B); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V31, REG_P0, -128,
+                              INS_OPTS_SCALABLE_B); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V0, REG_P5, 127,
+                              INS_OPTS_SCALABLE_B); // MOV <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V15, REG_P5, 0,
+                              INS_OPTS_SCALABLE_H); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V23, REG_P12, 10,
+                              INS_OPTS_SCALABLE_S); // MOV <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V4, REG_P0, -128,
+                              INS_OPTS_SCALABLE_D); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V19, REG_P15, 127,
+                              INS_OPTS_SCALABLE_H); // MOV <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V1, REG_P0, 256,
+                              INS_OPTS_SCALABLE_S); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V1, REG_P0, 3072,
+                              INS_OPTS_SCALABLE_D); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V1, REG_P0, -3072,
+                              INS_OPTS_SCALABLE_H); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V1, REG_P0, -32768,
+                              INS_OPTS_SCALABLE_S); // CPY <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_P0, REG_V0, 32512,
+                              INS_OPTS_SCALABLE_D); // MOV <Zd>.<T>, <Pg>/Z, #<imm>{, <shift>}
+
+    // IF_SVE_BV_2A_A
+    theEmitter->emitIns_R_R_I(INS_sve_cpy, EA_SCALABLE, REG_V1, REG_P12, 5, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_PREDICATE_MERGE); // CPY <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+
+    // IF_SVE_BV_2A_J
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V27, REG_P13, 5632, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_PREDICATE_MERGE); // MOV <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V27, REG_P13, -5632, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_PREDICATE_MERGE); // MOV <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+
     // IF_SVE_BZ_3A
     theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
                               INS_OPTS_SCALABLE_B); // TBL <Zd>.<T>, {<Zn>.<T>}, <Zm>.<T>
@@ -5871,6 +5911,122 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                                     INS_OPTS_SCALABLE_H); // INCH <Zdn>.H{, <pattern>{, MUL #<imm>}}
     theEmitter->emitIns_R_PATTERN_I(INS_sve_incw, EA_SCALABLE, REG_V5, SVE_PATTERN_VL6, 16,
                                     INS_OPTS_SCALABLE_S); // INCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+
+    // IF_SVE_BO_1A
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecb, EA_4BYTE, REG_R0, SVE_PATTERN_POW2,
+                                    1); // SQDECB <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecd, EA_8BYTE, REG_R1, SVE_PATTERN_VL1,
+                                    2); // SQDECD <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdech, EA_4BYTE, REG_R2, SVE_PATTERN_VL2,
+                                    3); // SQDECH <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecw, EA_8BYTE, REG_R3, SVE_PATTERN_VL3,
+                                    4); // SQDECW <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincb, EA_4BYTE, REG_R4, SVE_PATTERN_VL4,
+                                    5); // SQINCB <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincd, EA_8BYTE, REG_R5, SVE_PATTERN_VL5,
+                                    6); // SQINCD <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqinch, EA_4BYTE, REG_R6, SVE_PATTERN_VL6,
+                                    7); // SQINCH <Xdn>, <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincw, EA_8BYTE, REG_R7, SVE_PATTERN_VL7,
+                                    8); // SQINCW <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecb, EA_4BYTE, REG_R8, SVE_PATTERN_VL8,
+                                    9); // UQDECB <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecd, EA_8BYTE, REG_R9, SVE_PATTERN_VL16,
+                                    10); // UQDECD <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdech, EA_4BYTE, REG_R10, SVE_PATTERN_VL32,
+                                    11); // UQDECH <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecw, EA_8BYTE, REG_R11, SVE_PATTERN_VL64,
+                                    12); // UQDECW <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincb, EA_4BYTE, REG_R12, SVE_PATTERN_VL128,
+                                    13); // UQINCB <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincd, EA_8BYTE, REG_R13, SVE_PATTERN_VL256,
+                                    14); // UQINCD <Xdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqinch, EA_4BYTE, REG_R14, SVE_PATTERN_MUL4,
+                                    15); // UQINCH <Wdn>{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincw, EA_8BYTE, REG_R15, SVE_PATTERN_ALL,
+                                    16); // UQINCW <Xdn>{, <pattern>{, MUL #<imm>}}
+
+    // IF_SVE_BP_1A
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecd, EA_SCALABLE, REG_V0, SVE_PATTERN_VL1, 1,
+                                    INS_OPTS_SCALABLE_D); // SQDECD <Zdn>.D{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdech, EA_SCALABLE, REG_V1, SVE_PATTERN_VL2, 2,
+                                    INS_OPTS_SCALABLE_H); // SQDECH <Zdn>.H{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqdecw, EA_SCALABLE, REG_V2, SVE_PATTERN_VL3, 3,
+                                    INS_OPTS_SCALABLE_S); // SQDECW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincd, EA_SCALABLE, REG_V3, SVE_PATTERN_VL4, 4,
+                                    INS_OPTS_SCALABLE_D); // SQINCD <Zdn>.D{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqinch, EA_SCALABLE, REG_V4, SVE_PATTERN_VL5, 5,
+                                    INS_OPTS_SCALABLE_H); // SQINCH <Zdn>.H{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_sqincw, EA_SCALABLE, REG_V5, SVE_PATTERN_VL6, 6,
+                                    INS_OPTS_SCALABLE_S); // SQINCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecd, EA_SCALABLE, REG_V6, SVE_PATTERN_VL7, 7,
+                                    INS_OPTS_SCALABLE_D); // UQDECD <Zdn>.D{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdech, EA_SCALABLE, REG_V7, SVE_PATTERN_VL8, 8,
+                                    INS_OPTS_SCALABLE_H); // UQDECH <Zdn>.H{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqdecw, EA_SCALABLE, REG_V8, SVE_PATTERN_VL16, 9,
+                                    INS_OPTS_SCALABLE_S); // UQDECW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincd, EA_SCALABLE, REG_V9, SVE_PATTERN_VL32, 10,
+                                    INS_OPTS_SCALABLE_D); // UQINCD <Zdn>.D{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqinch, EA_SCALABLE, REG_V10, SVE_PATTERN_POW2, 11,
+                                    INS_OPTS_SCALABLE_H); // UQINCH <Zdn>.H{, <pattern>{, MUL #<imm>}}
+    theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincw, EA_SCALABLE, REG_V11, SVE_PATTERN_ALL, 16,
+                                    INS_OPTS_SCALABLE_S); // UQINCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
+
+    // IF_SVE_BQ_2A
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V0, REG_V1, 0, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V2, REG_V3, 5, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V4, REG_V5, 128, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V6, REG_FP_LAST, 255, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+
+    // IF_SVE_BQ_2B
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V0, REG_V1, 0,
+                              INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V2, REG_V3, 31,
+                              INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V4, REG_V5, 64,
+                              INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V6, REG_V7, 255,
+                              INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+
+    // IF_SVE_BU_2A
+    theEmitter->emitIns_R_R_F(INS_sve_fcpy, EA_SCALABLE, REG_V0, REG_P1, 2.0,
+                              INS_OPTS_SCALABLE_H); // FCPY <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fcpy, EA_SCALABLE, REG_V2, REG_P3, 1.0,
+                              INS_OPTS_SCALABLE_S); // FCPY <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fcpy, EA_SCALABLE, REG_V4, REG_P5, -10.0,
+                              INS_OPTS_SCALABLE_D); // FCPY <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V6, REG_P7, -0.125,
+                              INS_OPTS_SCALABLE_H); // FMOV <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V8, REG_P9, 31.0,
+                              INS_OPTS_SCALABLE_S); // FMOV <Zd>.<T>, <Pg>/M, #<const>
+    theEmitter->emitIns_R_R_F(INS_sve_fmov, EA_SCALABLE, REG_V10, REG_P11, 0.5,
+                              INS_OPTS_SCALABLE_D); // FMOV <Zd>.<T>, <Pg>/M, #<const>
+
+    // IF_SVE_CC_2A
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V0, REG_V13,
+                            INS_OPTS_SCALABLE_B); // INSR    <Zdn>.<T>, <V><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V29, REG_V0,
+                            INS_OPTS_SCALABLE_H); // INSR    <Zdn>.<T>, <V><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V4, REG_V15,
+                            INS_OPTS_SCALABLE_S); // INSR    <Zdn>.<T>, <V><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V8, REG_V2,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <V><m>
+
+    // IF_SVE_CD_2A
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V4, REG_R23,
+                            INS_OPTS_SCALABLE_B); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V11, REG_R1,
+                            INS_OPTS_SCALABLE_H); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V14, REG_R9,
+                            INS_OPTS_SCALABLE_S); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V19, REG_R0,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <R><m>
+    theEmitter->emitIns_R_R(INS_sve_insr, EA_SCALABLE, REG_V29, REG_ZR,
+                            INS_OPTS_SCALABLE_D); // INSR    <Zdn>.<T>, <R><m>
 
     // IF_SVE_CI_3A
     theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
@@ -6626,20 +6782,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_EB_1A
     theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V0, -128,
                             INS_OPTS_SCALABLE_B); // DUP <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V1, 0, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // DUP <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V1, 0,
+                            INS_OPTS_SCALABLE_H); // DUP <Zd>.<T>, #<imm>{, <shift>}
     theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V2, 5,
                             INS_OPTS_SCALABLE_S); // DUP <Zd>.<T>, #<imm>{, <shift>}
     theEmitter->emitIns_R_I(INS_sve_dup, EA_SCALABLE, REG_V3, 127,
                             INS_OPTS_SCALABLE_D); // DUP <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 0,
-                            INS_OPTS_SCALABLE_B); // MOV <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, -128, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 5, INS_OPTS_SCALABLE_S,
-                            INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 127, INS_OPTS_SCALABLE_D,
-                            INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V4, 256,
+                            INS_OPTS_SCALABLE_D); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V5, -32768,
+                            INS_OPTS_SCALABLE_H); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V6, 1280,
+                            INS_OPTS_SCALABLE_S); // MOV <Zd>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 32512,
+                            INS_OPTS_SCALABLE_D); // MOV <Zd>.<T>, #<imm>{, <shift>}
 
     // IF_SVE_EB_1B
     theEmitter->emitIns_R(INS_sve_fmov, EA_SCALABLE, REG_V0, INS_OPTS_SCALABLE_B); // FMOV <Zd>.<T>, #0.0
@@ -6650,18 +6806,18 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_EC_1A
     theEmitter->emitIns_R_I(INS_sve_add, EA_SCALABLE, REG_V0, 0,
                             INS_OPTS_SCALABLE_B); // ADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_sqadd, EA_SCALABLE, REG_V1, 0, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // SQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_sqsub, EA_SCALABLE, REG_V2, 1,
+    theEmitter->emitIns_R_I(INS_sve_sqadd, EA_SCALABLE, REG_V1, 5,
+                            INS_OPTS_SCALABLE_H); // SQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_sqsub, EA_SCALABLE, REG_V2, 128,
                             INS_OPTS_SCALABLE_S); // SQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_sub, EA_SCALABLE, REG_V3, 128,
+    theEmitter->emitIns_R_I(INS_sve_sub, EA_SCALABLE, REG_V3, 255,
                             INS_OPTS_SCALABLE_D); // SUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_subr, EA_SCALABLE, REG_V4, 255,
-                            INS_OPTS_SCALABLE_B); // SUBR <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_uqadd, EA_SCALABLE, REG_V5, 5, INS_OPTS_SCALABLE_H,
-                            INS_SCALABLE_OPTS_SHIFT); // UQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
-    theEmitter->emitIns_R_I(INS_sve_uqsub, EA_SCALABLE, REG_V6, 255, INS_OPTS_SCALABLE_S,
-                            INS_SCALABLE_OPTS_SHIFT); // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_subr, EA_SCALABLE, REG_V4, 256,
+                            INS_OPTS_SCALABLE_D); // SUBR <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_uqadd, EA_SCALABLE, REG_V5, 1280,
+                            INS_OPTS_SCALABLE_H); // UQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+    theEmitter->emitIns_R_I(INS_sve_uqsub, EA_SCALABLE, REG_V6, 65280,
+                            INS_OPTS_SCALABLE_S); // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
 
     // IF_SVE_EG_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_sdot, EA_SCALABLE, REG_V1, REG_V2, REG_V0, 0,
