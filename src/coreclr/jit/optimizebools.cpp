@@ -1282,9 +1282,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         else
         {
             edge2 = m_b2->GetFalseEdge();
-            m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
-            FlowEdge* const newEdge = m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
-            m_b1->SetTrueEdge(newEdge);
+            m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
         }
 
         assert(edge1 != nullptr);

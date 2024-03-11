@@ -2489,25 +2489,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     fgRedirectTargetEdge(firstBb, nullcheckBb);
 
-    {
-        FlowEdge* const trueEdge = fgAddRefPred(lastBb, nullcheckBb);
-        nullcheckBb->SetTrueEdge(trueEdge);
-    }
-
-    if (typeCheckNotNeeded)
-    {
-        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
-    }
-    else
-    {
-        FlowEdge* const falseEdge = fgAddRefPred(typeChecksBbs[0], nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
-
-        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
-        typeCheckSucceedBb->SetTargetEdge(newEdge);
-    }
-
     //
     // Re-distribute weights
     //
@@ -2558,13 +2539,32 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
 
+    FlowEdge* falseEdge;
+
+    if (typeCheckNotNeeded)
+    {
+        falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
+    }
+    else
+    {
+        falseEdge = fgAddRefPred(typeChecksBbs[0], nullcheckBb);
+
+        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
+        typeCheckSucceedBb->SetTargetEdge(newEdge);
+    }
+
     // call guarantees that obj is never null, we can drop the nullcheck
     // by converting it to a BBJ_ALWAYS to its false target.
     if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) != 0)
     {
         fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
-        fgRemoveRefPred(nullcheckBb->GetTrueEdge());
-        nullcheckBb->SetKindAndTargetEdge(BBJ_ALWAYS, nullcheckBb->GetFalseEdge());
+        nullcheckBb->SetKindAndTargetEdge(BBJ_ALWAYS, falseEdge);
+    }
+    else
+    {
+        FlowEdge* const trueEdge = fgAddRefPred(lastBb, nullcheckBb);
+        nullcheckBb->SetTrueEdge(trueEdge);
+        nullcheckBb->SetFalseEdge(falseEdge);
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable

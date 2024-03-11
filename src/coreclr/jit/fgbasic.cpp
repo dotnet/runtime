@@ -652,49 +652,30 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_COND:
             if (block->TrueTargetIs(oldTarget))
             {
-                FlowEdge* const oldEdge = block->GetTrueEdge();
-
-                if (block->FalseEdgeIs(oldEdge))
+                if (block->FalseEdgeIs(block->GetTrueEdge()))
                 {
-                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     assert(block->TargetIs(oldTarget));
-                }
-
-                // fgRemoveRefPred should have removed the flow edge
-                fgRemoveRefPred(oldEdge);
-                assert(oldEdge->getDupCount() == 0);
-
-                // TODO-NoFallThrough: Proliferate weight from oldEdge
-                // (as a quirk, we avoid doing so for the true target to reduce diffs for now)
-                FlowEdge* const newEdge = fgAddRefPred(newTarget, block);
-
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    block->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(block, newTarget);
                 }
                 else
                 {
-                    assert(block->KindIs(BBJ_COND));
-                    block->SetTrueEdge(newEdge);
-
-                    if (oldEdge->hasLikelihood())
-                    {
-                        newEdge->setLikelihood(oldEdge->getLikelihood());
-                    }
+                    fgRedirectTrueEdge(block, newTarget);
                 }
             }
             else
             {
                 assert(block->FalseTargetIs(oldTarget));
-                FlowEdge* const oldEdge = block->GetFalseEdge();
+                assert(!block->TrueEdgeIs(block->GetFalseEdge()));
+                fgRedirectFalseEdge(block, newTarget);
+            }
 
-                // fgRemoveRefPred should have removed the flow edge
-                fgRemoveRefPred(oldEdge);
-                assert(oldEdge->getDupCount() == 0);
-                FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
-                block->SetFalseEdge(newEdge);
+            if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
+            {
+                fgRemoveConditionalJump(block);
+                assert(block->KindIs(BBJ_ALWAYS));
+                assert(block->TargetIs(newTarget));
             }
             break;
 

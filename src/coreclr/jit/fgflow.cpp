@@ -449,6 +449,84 @@ void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
     newTarget->bbRefs++;
 }
 
+void Compiler::fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget)
+{
+    assert(block != nullptr);
+    assert(newTarget != nullptr);
+    assert(block->KindIs(BBJ_COND));
+    assert(!block->TrueEdgeIs(block->GetFalseEdge()));
+
+    // Update oldTarget's pred list.
+    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
+    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
+    //
+    FlowEdge*   trueEdge  = block->GetTrueEdge();
+    BasicBlock* oldTarget = trueEdge->getDestinationBlock();
+    fgRemoveAllRefPreds(oldTarget, block);
+
+    // Splice edge into new target block's pred list
+    //
+    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
+    FlowEdge*  predEdge    = *predListPtr;
+
+    if (block->FalseEdgeIs(predEdge))
+    {
+        block->SetTrueEdge(predEdge);
+        predEdge->incrementDupCount();
+    }
+    else
+    {
+        trueEdge->setNextPredEdge(predEdge);
+        trueEdge->setDestinationBlock(newTarget);
+        *predListPtr = trueEdge;
+    }
+
+    newTarget->bbRefs++;
+
+    // Pred list of target should (stilL) be ordered
+    //
+    assert(newTarget->checkPredListOrder());
+}
+
+void Compiler::fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget)
+{
+    assert(block != nullptr);
+    assert(newTarget != nullptr);
+    assert(block->KindIs(BBJ_COND));
+    assert(!block->TrueEdgeIs(block->GetFalseEdge()));
+
+    // Update oldTarget's pred list.
+    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
+    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
+    //
+    FlowEdge*   falseEdge = block->GetFalseEdge();
+    BasicBlock* oldTarget = falseEdge->getDestinationBlock();
+    fgRemoveAllRefPreds(oldTarget, block);
+
+    // Splice edge into new target block's pred list
+    //
+    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
+    FlowEdge*  predEdge    = *predListPtr;
+
+    if (block->TrueEdgeIs(predEdge))
+    {
+        block->SetFalseEdge(predEdge);
+        predEdge->incrementDupCount();
+    }
+    else
+    {
+        falseEdge->setNextPredEdge(predEdge);
+        falseEdge->setDestinationBlock(newTarget);
+        *predListPtr = falseEdge;
+    }
+
+    newTarget->bbRefs++;
+
+    // Pred list of target should (stilL) be ordered
+    //
+    assert(newTarget->checkPredListOrder());
+}
+
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
     assert(switchBlk->KindIs(BBJ_SWITCH));
