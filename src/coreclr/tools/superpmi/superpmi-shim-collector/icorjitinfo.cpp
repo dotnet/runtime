@@ -914,6 +914,15 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// Returns true if a class handle represents a generic type.
+bool interceptor_ICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isGenericType");
+    bool temp = original_ICorJitInfo->isGenericType(cls);
+    mc->recIsGenericType(cls, temp);
+    return temp;
+}
+
 // Returns TypeCompareState::Must if cls is known to be an enum.
 // For enums with known exact type returns the underlying
 // type in underlyingType when the provided pointer is
