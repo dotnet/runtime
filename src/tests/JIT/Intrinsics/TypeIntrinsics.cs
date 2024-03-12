@@ -233,7 +233,7 @@ public partial class Program
         IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericType());
         IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericType());
         IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericType());
-        IsFalse(new ClassUsingIsGenericTypeOnT<RuntimeArgumentHandle>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<SimpleStruct>().IsGenericType());
         IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericTypeFromArray());
         IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromArray());
         IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromArray());
