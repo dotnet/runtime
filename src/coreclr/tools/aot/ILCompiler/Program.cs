@@ -564,7 +564,6 @@ namespace ILCompiler
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_command.OptimizationMode)
-                .UseInliningForMethodsWithRuntimeLookups(_command.OptimizationMode != OptimizationMode.None && Get(_command.NoScanner))
                 .UseSecurityMitigationOptions(securityMitigationOptions)
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(Get(_command.UseDwarf5))

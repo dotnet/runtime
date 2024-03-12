@@ -75,19 +75,6 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (DependencyListEntry canonDep in staticDependencies)
                 {
                     var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
-
-                    // ???
-                    var canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-                    if (runtimeDep is ReadyToRunGenericLookupFromDictionaryNode lookupFromMethod
-                        && (!canonMethod.RequiresInstMethodDescArg() || lookupFromMethod.DictionaryOwner != canonMethod))
-                        continue;
-
-                    if (runtimeDep is ReadyToRunGenericLookupFromTypeNode lookupFromType
-                        && (!canonMethod.RequiresInstMethodTableArg() || (TypeDesc)lookupFromType.DictionaryOwner != canonMethod.OwningType))
-                        continue;
-
-
                     if (runtimeDep != null)
                     {
                         dependencies.AddRange(runtimeDep.InstantiateDependencies(factory, typeInst, methodInst));
