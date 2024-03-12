@@ -6464,7 +6464,26 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			interp_handle_isinst (td, klass, isinst_instr);
+
+			if (isinst_instr && td->last_ins && MINT_IS_BOX (td->last_ins->opcode)) {
+				MonoClass *box_class;
+				if (td->last_ins->opcode == MINT_BOX_NULLABLE_PTR)
+					box_class = (MonoClass*)td->data_items [td->last_ins->data [0]];
+				else
+					box_class = ((MonoVTable*)td->data_items [td->last_ins->data [0]])->klass;
+				gboolean isinst = mono_class_is_assignable_from_internal (klass, box_class);
+				if (isinst) {
+					// We just leave boxed instance on the stack, nothing to do
+				} else {
+					td->sp--;
+					interp_add_ins (td, MINT_LDNULL);
+					push_type (td, STACK_TYPE_O, NULL);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+				}
+				td->ip += 5;
+			} else {
+				interp_handle_isinst (td, klass, isinst_instr);
+			}
 			break;
 		}
 		case CEE_CONV_R_UN:
