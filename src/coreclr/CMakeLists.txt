@@ -205,9 +205,9 @@ if(CLR_CMAKE_HOST_UNIX)
   # The CoreCLR PAL used to redefine NULL, which caused a number of null conversion and arithmetic
   # warnings and errors to be suppressed.
   # Suppress these warnings here to avoid breaking the build.
-  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GCC>:-Wno-null-arithmetic>)
-  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GCC>:-Wno-null-conversion>)
-  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GCC>:-Wno-conversion-null>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-null-arithmetic>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-conversion-null>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-pointer-arith>)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
