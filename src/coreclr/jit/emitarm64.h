@@ -780,18 +780,6 @@ static bool isStackRegister(regNumber reg)
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
-// Returns true if 'value' is a legal signed immediate 4 bit encoding (such as for LDNF1SW).
-static bool isValidSimm4(ssize_t value)
-{
-    return (-8 <= value) && (value <= 7);
-};
-
-// Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
-static bool isValidSimm9(ssize_t value)
-{
-    return (-0x100 <= value) && (value <= 0xFF);
-};
-
 // Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
 static bool isValidSimm4_MultipleOf2(ssize_t value)
 {
@@ -874,52 +862,24 @@ static bool isValidUimmFrom1(ssize_t value)
     return (1 <= value) && (value <= max);
 }
 
+// Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
+template <const size_t bits>
+static bool isValidSimm(ssize_t value)
+{
+    constexpr ssize_t max = 1 << (bits - 1);
+    return (-max <= value) && (value < max);
+}
+
 // Returns true if 'value' is a legal unsigned multiple of 256 immediate 8 bit encoding (such as for ADD).
 static bool isValidUimm8_MultipleOf256(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFF00) && (value % 256 == 0);
 };
 
-// Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
-static bool isValidSimm8(ssize_t value)
-{
-    return (-0x80 <= value) && (value <= 0x7F);
-};
-
 // Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
 static bool isValidSimm8_MultipleOf256(ssize_t value)
 {
     return (-0x8000 <= value) && (value <= 0x7F00) && (value % 256 == 0);
-};
-
-// Returns true if 'value' is a legal signed immediate 26 bit encoding (such as for B or BL).
-static bool isValidSimm26(ssize_t value)
-{
-    return (-0x2000000LL <= value) && (value <= 0x1FFFFFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 19 bit encoding (such as for B.cond, CBNZ, CBZ).
-static bool isValidSimm19(ssize_t value)
-{
-    return (-0x40000LL <= value) && (value <= 0x3FFFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 14 bit encoding (such as for TBNZ, TBZ).
-static bool isValidSimm14(ssize_t value)
-{
-    return (-0x2000LL <= value) && (value <= 0x1FFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 5 bit encoding (such as for CMPLO, CMPHI).
-static bool isValidSimm5(ssize_t value)
-{
-    return (-0x10LL <= value) && (value <= 0xFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 6 bit encoding (such as for PRFB).
-static bool isValidSimm6(ssize_t value)
-{
-    return (-32 <= value) && (value <= 31);
 };
 
 // Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
