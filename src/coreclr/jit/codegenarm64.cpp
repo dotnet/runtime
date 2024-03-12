@@ -2241,7 +2241,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     {
         if (emitter::emitIns_valid_imm_for_mov(imm, size))
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
+                                      INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
         else
         {

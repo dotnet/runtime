@@ -102,33 +102,18 @@ namespace Mono.Linker
 
 		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, InterfaceImplementor? interfaceImplementor)
 		{
-			if (!base_methods.TryGetValue (method, out List<OverrideInformation>? methods)) {
-				methods = new List<OverrideInformation> ();
-				base_methods[method] = methods;
-			}
-
-			methods.Add (new OverrideInformation (@base, method, interfaceImplementor));
+			base_methods.AddToList (method, new OverrideInformation (@base, method, interfaceImplementor));
 		}
 
 		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
 		{
-			if (!override_methods.TryGetValue (@base, out List<OverrideInformation>? methods)) {
-				methods = new List<OverrideInformation> ();
-				override_methods.Add (@base, methods);
-			}
-
-			methods.Add (new OverrideInformation (@base, @override, interfaceImplementor));
+			override_methods.AddToList (@base, new OverrideInformation (@base, @override, interfaceImplementor));
 		}
 
 		public void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
 		{
 			Debug.Assert(@base.DeclaringType.IsInterface);
-			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
-				implementations = new List<OverrideInformation> ();
-				default_interface_implementations.Add (@base, implementations);
-			}
-
-			implementations.Add (new (@base, defaultImplementationMethod, interfaceImplementor));
+			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
 		}
 
 		protected virtual void MapType (TypeDefinition type)

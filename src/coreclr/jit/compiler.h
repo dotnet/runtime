@@ -4554,6 +4554,11 @@ protected:
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
 
+#if defined(TARGET_ARM64)
+    GenTree* convertHWIntrinsicToMask(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type);
+#endif
+
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
@@ -5129,7 +5134,6 @@ public:
 
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
-    bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
     bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
@@ -5229,14 +5233,6 @@ public:
     void fgCleanupContinuation(BasicBlock* continuation);
 
     PhaseStatus fgTailMergeThrows();
-    void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
-                                            BasicBlock* nonCanonicalBlock,
-                                            BasicBlock* canonicalBlock,
-                                            FlowEdge*   predEdge);
-    void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
-                                       BasicBlock* nonCanonicalBlock,
-                                       BasicBlock* canonicalBlock,
-                                       FlowEdge*   predEdge);
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -5787,8 +5783,6 @@ protected:
     template <typename CanRemoveBlockBody>
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
-    PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
-
     PhaseStatus fgComputeDominators(); // Compute dominators
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
@@ -5917,6 +5911,10 @@ private:
 
 public:
     void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 
@@ -6810,7 +6808,7 @@ private:
 public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optSwitchRecognition();
-    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest);
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
     bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.

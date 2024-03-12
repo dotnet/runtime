@@ -6003,7 +6003,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
     // that consumes the error register is the call node's successor.
     // This is to simplify logic for marking the error register as busy in LSRA.
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    if (call->HasSwiftErrorHandling())
     {
         GenTree* swiftErrorNode = call->gtNext;
         assert(swiftErrorNode != nullptr);
