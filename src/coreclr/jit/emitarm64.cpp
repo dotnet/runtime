@@ -2892,6 +2892,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_BW_2A: // ........ii.xxxxx ......nnnnnddddd -- SVE broadcast indexed element
+            imm = emitGetInsSC(id);
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isValidBroadcastImm(imm, optGetSveElemsize(id->idInsOpt())));
+            break;
+
         case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
             imm      = emitGetInsSC(id);
             elemsize = id->idOpSize();
@@ -10332,6 +10340,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
             break;
 
         case INS_sve_mov:
+            if (sopt == INS_SCALABLE_OPTS_BROADCAST)
+            {
+                return emitIns_R_R_I(INS_sve_dup, attr, reg1, reg2, imm, opt, sopt);
+            }
+            FALLTHROUGH;
         case INS_sve_cpy:
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));    // DDDDD
@@ -10358,6 +10371,15 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
             // MOV is an alias for CPY, and is always the preferred disassembly.
             ins = INS_sve_mov;
+            break;
+
+        case INS_sve_dup:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1)); // DDDDD
+            assert(isVectorRegister(reg2)); // GGGG
+            assert(isValidBroadcastImm(imm, optGetSveElemsize(opt)));
+            fmt = IF_SVE_BW_2A;
+            ins = INS_sve_mov; // Set preferred alias for disassembly
             break;
 
         case INS_sve_pmov:
@@ -19328,6 +19350,18 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for an immediate in the SVE variant of dup (indexed)
+ */
+/*static*/ emitter::code_t emitter::insEncodeSveBroadcastIndex(emitAttr elemsize, ssize_t index)
+{
+    unsigned lane_bytes = genLog2(elemsize) + 1;
+    code_t   tsz        = (1 << (lane_bytes - 1));
+    code_t   imm        = (code_t)index << lane_bytes | tsz;
+    return insEncodeSplitUimm<23, 22, 20, 16>(imm);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the 'index' for an Arm64 'mul' by element instruction
  */
 /*static*/ emitter::code_t emitter::insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index)
@@ -24886,6 +24920,15 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BW_2A: // ........ii.xxxxx ......nnnnnddddd -- SVE broadcast indexed element
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
+            code |= insEncodeSveBroadcastIndex(optGetSveElemsize(id->idInsOpt()), imm);
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -30801,6 +30844,23 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Zd>.<T>, <Zn>.<T>[<imm>]
+        // <Zd>.<T>, <V><n>
+        case IF_SVE_BW_2A: // ........ii.xxxxx ......nnnnnddddd -- SVE broadcast indexed element
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            if (imm > 0)
+            {
+                emitDispSveReg(id->idReg2(), id->idInsOpt(), false); // nnnnn
+                emitDispElementIndex(imm, false);
+            }
+            else
+            {
+                assert(imm == 0);
+                emitDispReg(id->idReg2(), optGetSveElemsize(id->idInsOpt()), false);
+            }
+            break;
+
+        // <Zd>.<T>, <Zn>.<T>[<imm>]
         case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
             imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
@@ -33354,6 +33414,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BV_2B:   // ........xx..gggg ...........ddddd -- SVE copy integer immediate (predicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_BW_2A: // ........ii.xxxxx ......nnnnnddddd -- SVE broadcast indexed element
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
             break;
 
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
