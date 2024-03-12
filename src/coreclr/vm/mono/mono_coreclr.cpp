@@ -912,6 +912,22 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID
     g_profControlBlock.storedProfilers.InsertHead(profilerData);
 }
 
+extern "C" EXPORT_API ObjectHandleID EXPORT_CC coreclr_unity_profiler_get_managed_assembly_load_context(AssemblyID assemblyID)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    Assembly *pAssembly = (Assembly*)assemblyID;
+    if (pAssembly == NULL)
+        return NULL;
+
+    AssemblyBinder* pAssemblyBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+    if (pAssemblyBinder->IsDefault())
+        return NULL;
+
+    // ManagedAssemblyLoadContext is a handle to the managed AssemblyLoadContext object
+    return (ObjectHandleID)pAssemblyBinder->GetManagedAssemblyLoadContext();
+}
+
 extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_concurrent_mode(gboolean state)
 {
     CONTRACTL
