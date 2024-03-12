@@ -346,8 +346,13 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 ;;
 ;; Macro to get a pointer to the Thread* object for the currently executing thread
 ;;
+    SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
+
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
 
-        INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
+        EXTERN $gCurrentThreadInfo
+
+        INLINE_GET_TLS_VAR $destReg, $trashReg, gCurrentThreadInfo
+        ldr $destReg, [$destReg] ; return gCurrentThreadInfo.m_pThread
     MEND
