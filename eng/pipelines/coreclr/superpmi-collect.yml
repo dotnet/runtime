@@ -42,7 +42,7 @@ extends:
           - linux_x64
           jobParameters:
             testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -77,7 +77,7 @@ extends:
           - osx_arm64
           jobParameters:
             testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml
@@ -116,7 +116,7 @@ extends:
           - linux_arm64
           jobParameters:
             testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -lc Release /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml
@@ -336,7 +336,7 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             testScope: innerloop
-            liveRuntimeBuildConfig: checked
+            liveRuntimeBuildConfig: Checked
             dependsOnTestBuildConfiguration: Release
             dependsOnTestArchitecture: x64
             scenarios:
@@ -367,7 +367,7 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             testScope: innerloop
-            liveRuntimeBuildConfig: checked
+            liveRuntimeBuildConfig: Checked
             dependsOnTestBuildConfiguration: Release
             dependsOnTestArchitecture: x64
             scenarios:
