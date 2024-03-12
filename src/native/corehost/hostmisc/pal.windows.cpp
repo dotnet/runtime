@@ -727,16 +727,10 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
 }
 
-// Return if path is valid and file exists, return true and adjust path as appropriate.
-//bool pal::realpath(string_t* path, bool skip_error_logging)
-//{
-//    return fullpath(path, skip_error_logging);
-//}
-
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
 
-// Like realpath, but resolves symlinks.
-bool pal::realpath2(pal::string_t* path, bool skip_error_logging)
+// Like fullpath, but resolves symlinks.
+bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 {
     if (path->empty())
     {

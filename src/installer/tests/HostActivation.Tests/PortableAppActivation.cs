@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -22,16 +23,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_behind_symlink()
         {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
+            var app = sharedTestState.App.Copy();
 
-            var dotnetLoc = fixture.BuiltDotnet.DotnetExecutablePath;
-            var appDll = fixture.TestProject.AppDll;
-            var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
+            var dotnetLoc = TestContext.BuiltDotNet.DotnetExecutablePath;
+            var appDll = app.AppDll;
+            var testDir = Directory.GetParent(app.Location).ToString();
 
             var exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
-            using var symlink = new SymLink(Path.Combine(testDir, "dn" + exeSuffix), dotnetLoc);
+            using var symlink = new SymLink(Path.Combine(testDir, "dotnet" + exeSuffix), dotnetLoc);
 
             var cmd = Command.Create(symlink.SrcPath, new[] { appDll })
                 .CaptureStdOut()
