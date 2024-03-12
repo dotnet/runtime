@@ -2507,7 +2507,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
             printf("Funclet prolog / epilog info\n");
             printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunctionCallerSPtoFPdelta);
             printf("                        Save regs: ");
-            dspRegMask(rsGprMaskSaveRegs, rsFloatMaskSaveRegs);
+            dspRegMask(AllRegsMask(rsGprMaskSaveRegs, rsFloatMaskSaveRegs));
             printf("\n");
             printf("                         SP delta: %d\n", genFuncletInfo.fiSpDelta);
             printf("               PSP slot SP offset: %d\n", genFuncletInfo.fiPSP_slot_SP_offset);

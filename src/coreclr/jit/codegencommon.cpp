@@ -5404,6 +5404,9 @@ void CodeGen::genFinalizeFrame()
 #endif
     regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+#ifdef HAS_PREDICATE_REGS
+    regMaskPredicate maskPushRegsPredicate = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
+#endif
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
@@ -5496,7 +5499,11 @@ void CodeGen::genFinalizeFrame()
     if (verbose)
     {
         printf("Callee-saved registers pushed: %d ", compiler->compCalleeRegsPushed);
-        dspRegMask(maskPushRegsInt, maskPushRegsFloat); // TODO: Should this also have maskPushRegsPredicate
+        dspRegMask(AllRegsMask(maskPushRegsInt, maskPushRegsFloat
+#ifdef HAS_PREDICATE_REGS
+                                                    ,maskPushRegsPredicate
+#endif
+        ));
         printf("\n");
     }
 #endif // DEBUG

@@ -4946,7 +4946,11 @@ void CodeGen::genPushCalleeSavedRegisters()
     {
         printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
                compiler->compCalleeRegsPushed, pushRegsCnt);
-        dspRegMask(rsPushGprRegs, rsPushFloatRegs);
+        dspRegMask(AllRegsMask(rsPushGprRegs, rsPushFloatRegs
+#ifdef HAS_PREDICATE_REGS
+                                                    ,RBM_NONE
+#endif
+        ));
         printf("\n");
         assert(compiler->compCalleeRegsPushed == pushRegsCnt);
     }
