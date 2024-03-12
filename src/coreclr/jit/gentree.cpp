@@ -1845,6 +1845,10 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 #endif
 
 #ifdef SWIFT_SUPPORT
+        case WellKnownArg::SwiftError:
+            assert(cc == CorInfoCallConvExtension::Swift);
+            return REG_SWIFT_ERROR;
+
         case WellKnownArg::SwiftSelf:
             assert(cc == CorInfoCallConvExtension::Swift);
             return REG_SWIFT_SELF;
@@ -13101,6 +13105,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
         case WellKnownArg::ValidateIndirectCallTarget:
         case WellKnownArg::DispatchIndirectCallTarget:
             return "cfg tgt";
+        case WellKnownArg::SwiftError:
+            return "swift error";
         case WellKnownArg::SwiftSelf:
             return "swift self";
         default:
@@ -13293,48 +13299,45 @@ void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, Indent
 //
 void Compiler::gtDispStmt(Statement* stmt, const char* msg /* = nullptr */)
 {
-    if (opts.compDbgInfo)
+    if (msg != nullptr)
     {
-        if (msg != nullptr)
-        {
-            printf("%s ", msg);
-        }
-        printStmtID(stmt);
-        printf(" ( ");
-        const DebugInfo& di = stmt->GetDebugInfo();
-        // For statements in the root we display just the location without the
-        // inline context info.
-        if (di.GetInlineContext() == nullptr || di.GetInlineContext()->IsRoot())
-        {
-            di.GetLocation().Dump();
-        }
-        else
-        {
-            stmt->GetDebugInfo().Dump(false);
-        }
-        printf(" ... ");
-
-        IL_OFFSET lastILOffs = stmt->GetLastILOffset();
-        if (lastILOffs == BAD_IL_OFFSET)
-        {
-            printf("???");
-        }
-        else
-        {
-            printf("0x%03X", lastILOffs);
-        }
-
-        printf(" )");
-
-        DebugInfo par;
-        if (stmt->GetDebugInfo().GetParent(&par))
-        {
-            printf(" <- ");
-            par.Dump(true);
-        }
-
-        printf("\n");
+        printf("%s ", msg);
     }
+    printStmtID(stmt);
+    printf(" ( ");
+    const DebugInfo& di = stmt->GetDebugInfo();
+    // For statements in the root we display just the location without the
+    // inline context info.
+    if (di.GetInlineContext() == nullptr || di.GetInlineContext()->IsRoot())
+    {
+        di.GetLocation().Dump();
+    }
+    else
+    {
+        stmt->GetDebugInfo().Dump(false);
+    }
+    printf(" ... ");
+
+    IL_OFFSET lastILOffs = stmt->GetLastILOffset();
+    if (lastILOffs == BAD_IL_OFFSET)
+    {
+        printf("???");
+    }
+    else
+    {
+        printf("0x%03X", lastILOffs);
+    }
+
+    printf(" )");
+
+    DebugInfo par;
+    if (stmt->GetDebugInfo().GetParent(&par))
+    {
+        printf(" <- ");
+        par.Dump(true);
+    }
+    printf("\n");
+
     gtDispTree(stmt->GetRootNode());
 }
 
@@ -26064,8 +26067,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-
                 addr = Op(3);
+                break;
+
+            case NI_Sve_LoadVector:
+                addr = Op(2);
                 break;
 #endif // TARGET_ARM64
 

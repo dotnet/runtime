@@ -468,6 +468,9 @@ static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
 // Returns the encoding to select 'index2' for an Arm64 'ins' elem instruction
 static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 
+// Returns the encoding for an immediate in the SVE variant of dup (indexed)
+static code_t insEncodeSveBroadcastIndex(emitAttr elemsize, ssize_t index);
+
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
@@ -529,6 +532,10 @@ static code_t insEncodeSveElemsize_22_to_21(emitAttr size);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the size at bit locations '18-17'.
 static code_t insEncodeSveElemsize_18_to_17(emitAttr size);
+
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the field 'sz' at bit location '20'.
+static code_t insEncodeSveElemsize_sz_20(emitAttr size);
 
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the field 'sz' at bit location '21'.
@@ -639,7 +646,16 @@ static code_t insEncodeSplitUimm(size_t imm)
     size_t immhi = (imm >> lo_bits) & (hi_max - 1);
     size_t immlo = imm & (lo_max - 1);
 
-    return insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
+    code_t result = insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
+
+    // Calculate and generate a mask for the number of bits between hi2-lo1, and assert that these bits
+    // are not set in the result. Note if between_bits == 0 then the mask will always be 0 and this will
+    // pass.
+    size_t between_bits = lo1 - hi2 - 1;
+    code_t between_mask = ((1 << between_bits) - 1) << (hi2 + 1);
+    assert((result & between_mask) == 0);
+
+    return result;
 }
 
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
@@ -737,6 +753,9 @@ static code_t insEncodeUimm6_21_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
+
+// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
+static code_t insEncodeUimm3_12_to_10(ssize_t imm);
 
 // Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
 static code_t insEncodeUimm3_18_to_16(ssize_t imm);
@@ -930,6 +949,12 @@ static bool isValidUimm8(ssize_t value)
     return (0 <= value) && (value <= 0xFFLL);
 };
 
+// Returns true if 'value' is a legal unsigned multiple of 256 immediate 8 bit encoding (such as for ADD).
+static bool isValidUimm8_MultipleOf256(ssize_t value)
+{
+    return (0 <= value) && (value <= 0xFF00) && (value % 256 == 0);
+};
+
 // Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
 static bool isValidSimm8(ssize_t value)
 {
@@ -939,7 +964,7 @@ static bool isValidSimm8(ssize_t value)
 // Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
 static bool isValidSimm8_MultipleOf256(ssize_t value)
 {
-    return (-0x8000 <= value) && (value <= 0x7f00) && (value % 256 == 0);
+    return (-0x8000 <= value) && (value <= 0x7F00) && (value % 256 == 0);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
@@ -984,6 +1009,36 @@ static bool isValidSimm6(ssize_t value)
     return (-32 <= value) && (value <= 31);
 };
 
+// Returns true if 'imm' is a valid broadcast immediate for some SVE DUP variants
+static bool isValidBroadcastImm(ssize_t imm, emitAttr laneSize)
+{
+    // imm fits within 0 <= imm < 2**(7 - (log2(bytes_in_lane) + 1))
+    // e.g. for B => imm < 2**6, H => imm < 2**5, ...
+    ssize_t max = 0;
+    switch (laneSize)
+    {
+        case EA_16BYTE:
+            max = 4;
+            break;
+        case EA_8BYTE:
+            max = 8;
+            break;
+        case EA_4BYTE:
+            max = 16;
+            break;
+        case EA_2BYTE:
+            max = 32;
+            break;
+        case EA_1BYTE:
+            max = 64;
+            break;
+        default:
+            unreached();
+    };
+
+    return (imm >= 0) && (imm < max);
+}
+
 // Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
 static bool isValidRot(ssize_t value)
 {
@@ -995,6 +1050,92 @@ static bool isValidImmNRS(size_t value, emitAttr size)
 {
     return (value >= 0) && (value < 0x2000);
 } // any unsigned 13-bit immediate
+
+// Returns one of the following patterns, depending on width, where `mn` is imm:
+// 0xFFFFFFFFFFFFFFmn, 0xFFFFFFmnFFFFFFmn, 0xFFmnFFmnFFmnFFmn,
+// 0xFFFFFFFFFFFFmnFF, 0xFFFFmnFFFFFFmnFF, 0xmnFFmnFFmnFFmnFF,
+// 0xmnmnmnmnmnmnmnmn
+static ssize_t getBitMaskOnes(const ssize_t imm, const unsigned width)
+{
+    assert(isValidUimm16(imm));
+    assert((width % 8) == 0);
+    assert(isValidGeneralLSDatasize((emitAttr)(width / 8)));
+    const unsigned immWidth = isValidUimm8(imm) ? 8 : 16;
+
+    const unsigned numIterations = 64 / width;
+    const ssize_t  ones          = ((UINT64)-1) >> (64 - width + immWidth);
+    ssize_t        mask          = 0;
+
+    for (unsigned i = 0; i < numIterations; i++)
+    {
+        mask <<= width;
+        mask |= (ones << immWidth) | imm;
+    }
+
+    return mask;
+}
+
+// Returns one of the following patterns, depending on width, where `mn` is imm:
+// 0x00000000000000mn, 0x000000mn000000mn, 0x00mn00mn00mn00mn,
+// 0x000000000000mn00, 0x0000mn000000mn00, 0xmn00mn00mn00mn00,
+// 0xmnmnmnmnmnmnmnmn
+static ssize_t getBitMaskZeroes(const ssize_t imm, const unsigned width)
+{
+    assert(isValidUimm16(imm));
+    assert((width % 8) == 0);
+    assert(isValidGeneralLSDatasize((emitAttr)(width / 8)));
+    const unsigned numIterations = 64 / width;
+    ssize_t        mask          = 0;
+
+    for (unsigned i = 0; i < numIterations; i++)
+    {
+        mask <<= width;
+        mask |= imm;
+    }
+
+    return mask;
+}
+
+// For the IF_SVE_BT_1A encoding, we prefer the DUPM disasm for the following immediate patterns,
+// where 'mn' is some nonzero value:
+// 0xFFFFFFFFFFFFFFmn, 0x00000000000000mn, 0xFFFFFFFFFFFFmn00, 0x000000000000mn00
+// 0xFFFFFFmnFFFFFFmn, 0x000000mn000000mn, 0xFFFFmn00FFFFmn00, 0x0000mn000000mn00
+// 0xFFmnFFmnFFmnFFmn, 0x00mn00mn00mn00mn, 0xmn00mn00mn00mn00
+// 0xmnmnmnmnmnmnmnmn
+// Else, we prefer the MOV disasm.
+static bool useMovDisasmForBitMask(const ssize_t value)
+{
+    ssize_t  imm = value & 0xFF;
+    unsigned minFieldSize;
+
+    if (imm == 0)
+    {
+        imm          = value & 0xFF00;
+        minFieldSize = 16;
+    }
+    else
+    {
+        minFieldSize = 8;
+    }
+
+    assert(isValidUimm16(imm));
+
+    // Check for all possible bit field sizes
+    for (unsigned width = minFieldSize; width <= 64; width <<= 1)
+    {
+        if (value == getBitMaskZeroes(imm, width))
+        {
+            return false;
+        }
+
+        if (value == getBitMaskOnes(imm, width))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 // Returns true if 'value' represents a valid 'halfword immediate' encoding.
 static bool isValidImmHWVal(size_t value, emitAttr size)
@@ -1038,6 +1179,9 @@ static emitAttr optGetDatasize(insOpts arrangement);
 
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
+
+//  For the given 'elemsize' returns the 'arrangement' when used in a SVE vector register arrangement.
+static insOpts optGetSveInsOpt(emitAttr elemsize);
 
 //  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
 static emitAttr optGetSveElemsize(insOpts arrangement);

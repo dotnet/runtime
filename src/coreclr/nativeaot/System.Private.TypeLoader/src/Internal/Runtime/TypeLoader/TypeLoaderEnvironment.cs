@@ -145,7 +145,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // To keep the synchronization simple, we execute all type loading under a global lock
-        private Lock _typeLoaderLock = new Lock();
+        private Lock _typeLoaderLock = new Lock(useTrivialWaits: true);
 
         public void VerifyTypeLoaderLockHeld()
         {
