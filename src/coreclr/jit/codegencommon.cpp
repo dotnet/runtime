@@ -139,9 +139,15 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     compiler->genCallSite2DebugInfoMap = nullptr;
 
+#ifdef USE_GC_INFO_DECODER
+    // TODO: VS just to check.
+    SetFullPtrRegMapRequired(true);
+#else
     /* Assume that we not fully interruptible */
 
     SetInterruptible(false);
+#endif
+
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     SetHasTailCalls(false);
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
