@@ -1470,6 +1470,73 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 }
 #endif
 
+static MonoInst*
+emit_dot (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum arg0_type, MonoInst **args) {
+	if (!is_element_type_primitive (fsig->params [0]))
+		return NULL;
+#if defined(TARGET_WASM)
+	if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8))
+		return NULL;
+#elif defined(TARGET_ARM64)
+	if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_I || arg0_type == MONO_TYPE_U))
+		return NULL;
+#endif
+
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+	int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
+	MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+	return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+#elif defined(TARGET_AMD64)
+	int instc =-1;
+	if (type_enum_is_float (arg0_type)) {
+		if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41)) {
+			int mask_val = -1;
+			switch (arg0_type) {
+			case MONO_TYPE_R4:
+				instc = COMPILE_LLVM (cfg) ? OP_SSE41_DPPS : OP_SSE41_DPPS_IMM;
+				mask_val = 0xf1; // 0xf1 ... 0b11110001
+				break;
+			case MONO_TYPE_R8:
+				instc = COMPILE_LLVM (cfg) ? OP_SSE41_DPPD : OP_SSE41_DPPD_IMM;
+				mask_val = 0x31; // 0x31 ... 0b00110001
+				break;
+			default:
+				return NULL;
+			}	
+
+			MonoInst *dot;
+			if (COMPILE_LLVM (cfg)) {
+				int mask_reg = alloc_ireg (cfg);
+				MONO_EMIT_NEW_ICONST (cfg, mask_reg, mask_val);
+
+				dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+				dot->sreg3 = mask_reg;
+			} else {
+				dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+				dot->inst_c0 = mask_val;
+			}
+			return extract_first_element (cfg, klass, arg0_type, dot->dreg);
+		} else {
+			instc = OP_FMUL;
+		}	
+	} else {
+		if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)
+			return NULL; 	// We don't support sum vector for byte, sbyte types yet
+
+		// FIXME:
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+
+		instc = OP_IMUL;
+	}
+	MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc, arg0_type, fsig, args);
+
+	return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+#else
+	return NULL;
+#endif
+}
+
 /*
  * Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512.
  * If the intrinsic is not supported for some reasons, return NULL, and fall back to the c#
@@ -1845,70 +1912,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_Dot: {
-		if (!is_element_type_primitive (fsig->params [0]))
-			return NULL;
-#if defined(TARGET_WASM)
-		if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8))
-			return NULL;
-#elif defined(TARGET_ARM64)
-		if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_I || arg0_type == MONO_TYPE_U))
-			return NULL;
-#endif
-
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
-		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
-		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
-#elif defined(TARGET_AMD64)
-		int instc =-1;
-		if (type_enum_is_float (arg0_type)) {
-			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41)) {
-				int mask_val = -1;
-				switch (arg0_type) {
-				case MONO_TYPE_R4:
-					instc = COMPILE_LLVM (cfg) ? OP_SSE41_DPPS : OP_SSE41_DPPS_IMM;
-					mask_val = 0xf1; // 0xf1 ... 0b11110001
-					break;
-				case MONO_TYPE_R8:
-					instc = COMPILE_LLVM (cfg) ? OP_SSE41_DPPD : OP_SSE41_DPPD_IMM;
-					mask_val = 0x31; // 0x31 ... 0b00110001
-					break;
-				default:
-					return NULL;
-				}	
-
-				MonoInst *dot;
-				if (COMPILE_LLVM (cfg)) {
-					int mask_reg = alloc_ireg (cfg);
-					MONO_EMIT_NEW_ICONST (cfg, mask_reg, mask_val);
-
-					dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
-					dot->sreg3 = mask_reg;
-				} else {
-					dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
-					dot->inst_c0 = mask_val;
-				}
-
-				return extract_first_element (cfg, klass, arg0_type, dot->dreg);
-			} else {
-				instc = OP_FMUL;
-			}	
-		} else {
-			if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)
-				return NULL; 	// We don't support sum vector for byte, sbyte types yet
-
-			// FIXME:
-			if (!COMPILE_LLVM (cfg))
-				return NULL;
-
-			instc = OP_IMUL;
-		}
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc, arg0_type, fsig, args);
-
-		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
-#else
-		return NULL;
-#endif
+		return emit_dot (cfg, klass, fsig, arg0_type, args);
 	}
 	case SN_Equals:
 	case SN_EqualsAll:
@@ -3068,28 +3072,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
 	case SN_Dot: {
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FMUL, MONO_TYPE_R4, fsig, args);
-		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
-#elif defined(TARGET_AMD64)
-		if (!(mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41))
-			return NULL;
-
-		int mask_reg = alloc_ireg (cfg);
-		MONO_EMIT_NEW_ICONST (cfg, mask_reg, 0xf1);
-		MonoInst *dot = emit_simd_ins (cfg, klass, OP_SSE41_DPPS, args [0]->dreg, args [1]->dreg);
-		dot->sreg3 = mask_reg;
-
-		MONO_INST_NEW (cfg, ins, OP_EXTRACT_R4);
-		ins->dreg = alloc_freg (cfg);
-		ins->sreg1 = dot->dreg;
-		ins->inst_c0 = 0;
-		ins->inst_c1 = MONO_TYPE_R4;
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
-#else
-		return NULL;
-#endif
+		return emit_dot (cfg, klass, fsig, MONO_TYPE_R4, args);
 	}
 	case SN_Negate:
 	case SN_op_UnaryNegation: {
