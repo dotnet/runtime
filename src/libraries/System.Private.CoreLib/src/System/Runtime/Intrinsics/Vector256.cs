@@ -2343,9 +2343,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].
-        /// On hardware with <see cref="Avx2"/> support, but not <see cref="Avx512Vbmi.VL"/>, indices are treated as modulo 32, and if the high bit is set, the result will be set to 0 for that element.
-        /// On hardware with <see cref="Avx512Vbmi.VL"/> support, indices are treated as modulo 32.</remarks>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
@@ -2362,13 +2360,13 @@ namespace System.Runtime.Intrinsics
                 if (RuntimeHelpers.IsKnownConstant(indices))
                 {
                     // check for all in correct lane (or will result in 0)
-                    if (LessThanAll(Xor(BitwiseAnd(indices, Vector256.Create((byte)0x9F)), Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
+                    if (LessThanAll(((indices & Vector256.Create((byte)0x9F)) ^ Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
                         return Avx2.Shuffle(vector, indices);
                     }
 
                     // check for all indices in first lane (or will result in 0)
-                    if (LessThanAll(BitwiseAnd(indices, Vector256.Create((byte)0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
+                    if (LessThanAll((indices & Vector256.Create((byte)0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
                         var laneShuffle = Avx2.Permute2x128(vector, vector, 0b00000000);
                         return Avx2.Shuffle(laneShuffle, indices);
@@ -2379,18 +2377,18 @@ namespace System.Runtime.Intrinsics
 
                 // get the indices, but only keep the high bit and bits used for indexing, and xor the cross-lane bit on the high 128-bit lane part of indices
                 // we begin computing this early as it seems to take the longest to calculate (it can be done in parallel to other operations ideally)
-                var indicesXord = Avx2.And(Avx2.Xor(indices, Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))), Vector256.Create((byte)0x9F));
+                Vector256<byte> indicesXord = (indices ^ Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))) & Vector256.Create((byte)0x9F);
 
                 // swap the low and high 128-bit lanes
                 // calculate swap before shuf1 so they can be computed in parallel
-                var swap = Avx2.Permute2x128(vector, vector, 0b00000001);
+                Vector256<byte> swap = Avx2.Permute2x128(vector, vector, 0b00000001);
 
                 // shuffle with both the normal and swapped values
-                var shuf1 = Avx2.Shuffle(vector, indices);
-                var shuf2 = Avx2.Shuffle(swap, indices);
+                Vector256<byte> shuf1 = Avx2.Shuffle(vector, indices);
+                Vector256<byte> shuf2 = Avx2.Shuffle(swap, indices);
 
                 // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping lane and 0x00 otherwise
-                var selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), Vector256.Create((sbyte)0x0F)).AsByte();
+                Vector256<byte> selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), Vector256.Create((sbyte)0x0F)).AsByte();
 
                 // blend our two shuffles based on whether each element swaps lanes or not
                 return Avx2.BlendVariable(shuf1, shuf2, selection);
