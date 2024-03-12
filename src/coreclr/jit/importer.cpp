@@ -12807,7 +12807,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 continue;
             case WellKnownArg::InstParam:
             {
-                InlArgInfo* ctxInfo = new (this, CMK_Inlining) InlArgInfo {};
+                InlArgInfo* ctxInfo              = new (this, CMK_Inlining) InlArgInfo{};
                 ctxInfo->arg                     = &arg;
                 ctxInfo->argIsInvariant          = true;
                 ctxInfo->argIsLclVar             = arg.GetNode()->OperIs(GT_LCL_VAR);

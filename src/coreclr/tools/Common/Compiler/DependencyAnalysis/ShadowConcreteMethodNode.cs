@@ -79,6 +79,7 @@ namespace ILCompiler.DependencyAnalysis
                     // ???
                     var canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
+#if !READYTORUN
                     if (runtimeDep is ReadyToRunGenericLookupFromDictionaryNode lookupFromMethod
                         && (!canonMethod.RequiresInstMethodDescArg() || lookupFromMethod.DictionaryOwner != canonMethod))
                         continue;
@@ -86,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (runtimeDep is ReadyToRunGenericLookupFromTypeNode lookupFromType
                         && (!canonMethod.RequiresInstMethodTableArg() || (TypeDesc)lookupFromType.DictionaryOwner != canonMethod.OwningType))
                         continue;
-
+#endif
 
                     if (runtimeDep != null)
                     {
