@@ -90,10 +90,10 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
-
-iOS/tvOS devices
-Build the whole product using Native AOT and run libraries tests
-
+#
+# iOS/tvOS devices
+# Build the whole product using Native AOT and run libraries tests
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -123,9 +123,9 @@ Build the whole product using Native AOT and run libraries tests
         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
         extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
-
-Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
-
+#
+# Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
