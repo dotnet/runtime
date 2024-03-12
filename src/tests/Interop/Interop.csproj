@@ -39,6 +39,7 @@
     <Compile Include="PInvoke/SizeParamIndex/**/*.cs" />
     <Compile Include="PInvoke/Varargs/**/*.cs" />
     <Compile Include="PInvoke/Vector2_3_4/**/*.cs" />
+    <Compile Include="Swift/SwiftAbiStress/*.cs" />
 
     <!-- Reference the CMake projects for the directly-compiled-in tests -->
     <CMakeProjectReference Include="SimpleStruct/**/CMakeLists.txt" />
@@ -47,6 +48,7 @@
     <CMakeProjectReference Include="ArrayMarshalling/**/CMakeLists.txt" />
     <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
     <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
+	<CMakeProjectReference Include="Swift/SwiftAbiStress/CMakeLists.txt" />
 
     <WindowsOnlyCMakeProjectReference Include="PInvoke/Attributes/LCID/**/CMakeLists.txt" />
     <WindowsOnlyCMakeProjectReference Include="PInvoke/BestFitMapping/**/CMakeLists.txt" />
