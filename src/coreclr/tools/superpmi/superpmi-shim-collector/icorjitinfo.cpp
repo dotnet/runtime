@@ -905,11 +905,11 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-// Returns true if a class handle represents a generic type.
-bool interceptor_ICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+// Returns whether a class handle represents a generic type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("isGenericType");
-    bool temp = original_ICorJitInfo->isGenericType(cls);
+    TypeCompareState temp = original_ICorJitInfo->isGenericType(cls);
     mc->recIsGenericType(cls, temp);
     return temp;
 }

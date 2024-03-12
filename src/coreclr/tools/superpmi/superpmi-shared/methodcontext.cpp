@@ -5926,26 +5926,26 @@ bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
     return value != 0;
 }
 
-void MethodContext::recIsGenericType(CORINFO_CLASS_HANDLE cls, bool result)
+void MethodContext::recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
 {
     if (IsGenericType == nullptr)
         IsGenericType = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = CastHandle(cls);
-    DWORD value = result ? 1 : 0;
+    DWORD value = (DWORD)result;
     IsGenericType->Add(key, value);
     DEBUG_REC(dmpIsGenericType(key, value));
 }
 void MethodContext::dmpIsGenericType(DWORDLONG key, DWORD value)
 {
-    printf("IsGenericType key cls-%016" PRIX64 ", value res-%u", key, value);
+    printf("IsGenericType key cls-%016" PRIX64 ", value res-%d", key, value);
 }
-bool MethodContext::repIsGenericType(CORINFO_CLASS_HANDLE cls)
+TypeCompareState MethodContext::repIsGenericType(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
     DWORD value = LookupByKeyOrMiss(IsGenericType, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpIsGenericType(key, value));
-    return value != 0;
+    return (TypeCompareState)value;
 }
 
 void MethodContext::recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)

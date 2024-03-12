@@ -664,7 +664,7 @@ bool interceptor_ICJI::isExactType(
     return original_ICorJitInfo->isExactType(cls);
 }
 
-bool interceptor_ICJI::isGenericType(
+TypeCompareState interceptor_ICJI::isGenericType(
           CORINFO_CLASS_HANDLE cls)
 {
     mcs->AddCall("isGenericType");

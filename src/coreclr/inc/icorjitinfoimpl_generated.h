@@ -345,7 +345,7 @@ bool isMoreSpecificType(
 bool isExactType(
           CORINFO_CLASS_HANDLE cls) override;
 
-bool isGenericType(
+TypeCompareState isGenericType(
           CORINFO_CLASS_HANDLE cls) override;
 
 TypeCompareState isNullableType(

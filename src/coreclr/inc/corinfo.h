@@ -2718,8 +2718,8 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // Returns true if a class handle represents a generic type.
-    virtual bool isGenericType(
+    // Returns whether a class handle represents a generic type, if that can be statically determined.
+    virtual TypeCompareState isGenericType(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

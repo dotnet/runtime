@@ -769,7 +769,7 @@ bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
 }
 
 // Returns true if a class handle represents a generic type.
-bool MyICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+TypeCompareState MyICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isGenericType");
     return jitInstance->mc->repIsGenericType(cls);
