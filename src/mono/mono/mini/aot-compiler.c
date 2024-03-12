@@ -5508,10 +5508,10 @@ MONO_RESTORE_WARNING
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
 						slen = mono_metadata_decode_value (named, &named);
-						
+
 						int prefix_len = (int)strlen (acfg->user_symbol_prefix);
 						g_assert (prefix_len < 2);
-						
+
 						export_name = (char *)g_malloc (prefix_len + slen + 1);
 						if (prefix_len == 1)
 							export_name[0] = *acfg->user_symbol_prefix;
@@ -11566,6 +11566,9 @@ emit_exception_info (MonoAotCompile *acfg)
 		char *aot_file = g_strdup_printf("%s%s", image_basename, SEQ_POINT_AOT_EXT);
 		char *aot_file_path = g_build_filename (dir, aot_file, (const char*)NULL);
 
+		g_assert (dir);
+		g_assert (aot_file_path);
+
 		if (g_ensure_directory_exists (aot_file_path) == FALSE) {
 			fprintf (stderr, "AOT : failed to create msym directory: %s\n", aot_file_path);
 			exit (1);
@@ -15348,6 +15351,8 @@ set_paths (MonoAotCompile *acfg)
 			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
 
+			g_assert (acfg->tmpbasename);
+
 			if (acfg->aot_opts.static_link)
 				acfg->llvm_ofile = g_strdup (acfg->aot_opts.llvm_outfile);
 			else
@@ -15380,6 +15385,8 @@ set_paths (MonoAotCompile *acfg)
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
 			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+
+			g_assert (acfg->tmpbasename);
 		}
 	}
 }
@@ -15624,6 +15631,7 @@ compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies
 
 #ifdef HOST_WIN32
 	response_fname = g_build_filename (aot_opts->temp_path, "temp.rsp", (const char*)NULL);
+	g_assert (response_fname);
 	response = fopen (response_fname, "w");
 	g_assert (response);
 #endif
