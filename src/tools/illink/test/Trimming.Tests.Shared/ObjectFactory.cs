@@ -6,7 +6,7 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ObjectFactory
+	internal class ObjectFactory
 	{
 		public virtual TestCaseSandbox CreateSandbox (TestCase testCase)
 		{

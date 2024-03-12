@@ -20,7 +20,7 @@ using NUnit.Framework;
 namespace Mono.Linker.Tests.TestCases
 {
 	[TestFixture]
-	public class IndividualTests
+	internal class IndividualTests
 	{
 		private static NPath TestsDirectory => TestDatabase.TestCasesRootDirectory.Parent.Combine ("Mono.Linker.Tests");
 

@@ -8,7 +8,7 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public partial class TrimmedTestCaseResult
+	internal partial class TrimmedTestCaseResult
 	{
 		public readonly TestCase TestCase;
 		public readonly NPath InputAssemblyPath;
