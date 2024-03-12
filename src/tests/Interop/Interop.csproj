@@ -48,7 +48,7 @@
     <CMakeProjectReference Include="ArrayMarshalling/**/CMakeLists.txt" />
     <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
     <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
-	<CMakeProjectReference Include="Swift/SwiftAbiStress/CMakeLists.txt" />
+    <CMakeProjectReference Include="Swift/SwiftAbiStress/CMakeLists.txt" />
 
     <WindowsOnlyCMakeProjectReference Include="PInvoke/Attributes/LCID/**/CMakeLists.txt" />
     <WindowsOnlyCMakeProjectReference Include="PInvoke/BestFitMapping/**/CMakeLists.txt" />
