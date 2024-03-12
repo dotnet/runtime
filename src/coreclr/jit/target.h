@@ -361,38 +361,38 @@ typedef struct _regMaskAll
     // Rename this to AddRegMask()
     void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
     {
-        if (varTypeRegister[type] == VTR_INT)
+        if (varTypeUsesIntReg(type))
         {
             gprRegs |= maskToAdd;
         }
 #ifdef HAS_PREDICATE_REGS
-        else if (varTypeRegister[type] == VTR_MASK)
+        else if (varTypeUsesMaskReg(type))
         {
             predicateRegs |= maskToAdd;
         }
 #endif
         else
         {
-            assert(varTypeRegister[type] == VTR_FLOAT);
+            assert(varTypeUsesFloatReg(type));
             floatRegs |= maskToAdd;
         }
     }
 
     regMaskOnlyOne GetRegTypeMask(var_types type)
     {
-        if (varTypeRegister[type] == VTR_INT)
+        if (varTypeUsesIntReg(type))
         {
             return gprRegs;
         }
 #ifdef HAS_PREDICATE_REGS
-        else if (varTypeRegister[type] == VTR_MASK)
+        else if (varTypeUsesMaskReg(type))
         {
             return predicateRegs;
         }
 #endif
         else
         {
-            assert(varTypeRegister[type] == VTR_FLOAT);
+            assert(varTypeUsesFloatReg(type));
             return floatRegs;
         }
     }

@@ -145,19 +145,19 @@ public:
 public:
     regMaskOnlyOne GetMaskVars(var_types type) const // 'get' property function for rsMaskVars property
     {
-        if (varTypeRegister[type] == VTR_INT)
+        if (varTypeUsesIntReg(type))
         {
             return _rsAllMaskVars.gprRegs;
         }
 #ifdef HAS_PREDICATE_REGS
-        else if (varTypeRegister[type] == VTR_MASK)
+        else if (varTypeUsesMaskReg(type))
         {
             return _rsAllMaskVars.predicateRegs;
         }
 #endif
         else
         {
-            assert(varTypeRegister[type] == VTR_FLOAT);
+            assert(varTypeUsesFloatReg(type));
             return _rsAllMaskVars.floatRegs;
         }
     }
@@ -172,19 +172,19 @@ public:
     void AddMaskVars(var_types type, regMaskOnlyOne addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
         AllRegsMask newMask = _rsAllMaskVars;
-        if (varTypeRegister[type] == VTR_INT)
+        if (varTypeUsesIntReg(type))
         {
             newMask.gprRegs |= addMaskVars;
         }
 #ifdef HAS_PREDICATE_REGS
-        else if (varTypeRegister[type] == VTR_MASK)
+        else if (varTypeUsesMaskReg(type))
         {
             newMask.predicateRegs |= addMaskVars;
         }
 #endif
         else
         {
-            assert(varTypeRegister[type] == VTR_FLOAT);
+            assert(varTypeUsesFloatReg(type));
             newMask.floatRegs |= addMaskVars;
         }
         SetMaskVars(newMask);
@@ -194,19 +194,19 @@ public:
     void RemoveMaskVars(var_types type, regMaskOnlyOne removeMaskVars)
     {
         AllRegsMask newMask = _rsAllMaskVars;
-        if (varTypeRegister[type] == VTR_INT)
+        if (varTypeUsesIntReg(type))
         {
             newMask.gprRegs &= ~removeMaskVars;
         }
 #ifdef HAS_PREDICATE_REGS
-        else if (varTypeRegister[type] == VTR_MASK)
+        else if (varTypeUsesMaskReg(type))
         {
             newMask.predicateRegs &= ~removeMaskVars;
         }
 #endif
         else
         {
-            assert(varTypeRegister[type] == VTR_FLOAT);
+            assert(varTypeUsesFloatReg(type));
             newMask.floatRegs &= ~removeMaskVars;
         }
         SetMaskVars(newMask);

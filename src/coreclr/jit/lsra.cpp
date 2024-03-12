@@ -493,17 +493,18 @@ regMaskOnlyOne LinearScan::getConstrainedRegMask(RefPosition*   refPosition,
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
         regMaskOnlyOne busyRegs = RBM_NONE;
-        if (regType == IntRegisterType)
+        if (varTypeUsesIntReg(regType))
         {
             busyRegs = regsBusyUntilKill.gprRegs | regsInUseThisLocation.gprRegs;
         }
-        else if (regType == FloatRegisterType)
+        else if (varTypeUsesFloatReg(regType))
         {
             busyRegs = regsBusyUntilKill.floatRegs | regsInUseThisLocation.floatRegs;
         }
         else
         {
 #ifdef HAS_PREDICATE_REGS
+            assert(varTypeUsesMaskReg(regType));
             busyRegs = regsBusyUntilKill.predicateRegs | regsInUseThisLocation.predicateRegs;
 #endif
         }
@@ -556,12 +557,12 @@ regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnly
                                                             : refPosition->getReg()->registerType;
         regMaskOnlyOne calleeSaved = RBM_NONE;
         regMaskOnlyOne calleeTrash = RBM_NONE;
-        if (regType == IntRegisterType)
+        if (varTypeUsesIntReg(regType))
         {
             calleeSaved = RBM_INT_CALLEE_SAVED;
             calleeTrash = RBM_INT_CALLEE_TRASH;
         }
-        else if (regType == FloatRegisterType)
+        else if (varTypeUsesFloatReg(regType))
         {
             calleeSaved = RBM_FLT_CALLEE_SAVED;
             calleeTrash = RBM_FLT_CALLEE_TRASH;
@@ -569,6 +570,7 @@ regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnly
         else
         {
 #ifdef HAS_PREDICATE_REGS
+            assert(varTypeUsesMaskReg(regType));
             calleeSaved = RBM_MSK_CALLEE_SAVED;
             calleeTrash = RBM_MSK_CALLEE_TRASH;
 #else
@@ -4155,18 +4157,20 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
         regMaskOnlyOne candidateRegs = RBM_NONE;
 
         regMaskOnlyOne allRegsMask = allRegs(interval->registerType);
+        RegisterType regType = interval->registerType;
 
-        if (interval->registerType == IntRegisterType)
+        if (varTypeUsesIntReg(regType))
         {
             candidateRegs = allRegsMask & availableRegs.gprRegs;
         }
-        else if (interval->registerType == FloatRegisterType)
+        else if (varTypeUsesFloatReg(regType))
         {
             candidateRegs = allRegsMask & availableRegs.floatRegs;
         }
         else
         {
 #ifdef HAS_PREDICATE_REGS
+            assert(varTypeUsesMaskReg(regType));
             candidateRegs = allRegsMask & availableRegs.predicateRegs;
 #else
             unreached();
@@ -8838,19 +8842,16 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     {
         regMaskOnlyOne calleeTrashMask = RBM_NONE;
 
-        if (varTypeRegister[type] == VTR_INT)
+        if (varTypeUsesIntReg(type))
         {
             calleeTrashMask = RBM_INT_CALLEE_TRASH;
             assert(compiler->IsGprRegMask(terminatorConsumedRegs));
         }
-        else if (varTypeRegister[type] == VTR_FLOAT)
-        {
-            calleeTrashMask = RBM_FLT_CALLEE_TRASH;
-            assert(compiler->IsFloatRegMask(terminatorConsumedRegs));
-        }
         else
         {
-            unreached();
+            assert(varTypeUsesFloatReg(type));
+            calleeTrashMask = RBM_FLT_CALLEE_TRASH;
+            assert(compiler->IsFloatRegMask(terminatorConsumedRegs));
         }
         // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
         if ((freeRegs & calleeTrashMask) != 0)
@@ -13962,17 +13963,18 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     // When we allocate for USE, we see that the register is busy at current location
     // and we end up with that candidate is no longer available.
     AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-    if (regType == IntRegisterType)
+    if (varTypeUsesIntReg(regType))
     {
         candidates &= ~busyRegs.gprRegs;
     }
-    else if (regType == FloatRegisterType)
+    else if (varTypeUsesFloatReg(regType))
     {
         candidates &= ~busyRegs.floatRegs;
     }
     else
     {
 #ifdef HAS_PREDICATE_REGS
+        assert(varTypeUsesMaskReg(regType));
         candidates &= ~busyRegs.predicateRegs;
 #else
         unreached();
