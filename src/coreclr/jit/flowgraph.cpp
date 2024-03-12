@@ -361,6 +361,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
         FlowEdge* const falseEdge = fgAddRefPred(poll, top);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
 
         FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
         poll->SetTargetEdge(newEdge);
