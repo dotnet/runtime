@@ -376,6 +376,8 @@ enum insScalableOpts : unsigned
 
     INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
 
+    INS_SCALABLE_OPTS_IMM_BITMASK,         // Variants with an immediate that is a bitmask
+
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 
     // Removable once REG_V0 and REG_P0 are distinct

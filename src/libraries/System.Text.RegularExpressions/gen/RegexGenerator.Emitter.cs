@@ -1789,16 +1789,6 @@ namespace System.Text.RegularExpressions.Generator
                                     sliceStaticPos++;
                                     break;
 
-                                case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
-                                case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
-                                    // First character of the loop was handled by the switch. Emit matching code for the remainder of the loop.
-                                    Debug.Assert(child == startingLiteralNode);
-                                    Debug.Assert(child.M > 0);
-                                    sliceStaticPos++;
-                                    EmitNode(child.CloneCharLoopWithOneLessIteration());
-                                    writer.WriteLine();
-                                    break;
-
                                 case RegexNodeKind.Multi:
                                     // First character was handled by the switch. Emit matching code for the remainder of the multi string.
                                     sliceStaticPos++;
@@ -1808,16 +1798,20 @@ namespace System.Text.RegularExpressions.Generator
                                     writer.WriteLine();
                                     break;
 
-                                case RegexNodeKind.Concatenate when child.Child(0) == startingLiteralNode && (startingLiteralNode.IsOneFamily || startingLiteralNode.IsSetFamily || startingLiteralNode.Kind is RegexNodeKind.Multi):
-                                    // This is a concatenation where its first node is the starting literal we found. This is a common
+                                case RegexNodeKind.Concatenate when child.Child(0) == startingLiteralNode && (startingLiteralNode.Kind is RegexNodeKind.One or RegexNodeKind.Set or RegexNodeKind.Multi):
+                                    // This is a concatenation where its first node is the starting literal we found and that starting literal
+                                    // is one of the nodes above that we know how to handle completely. This is a common
                                     // enough case that we want to special-case it to avoid duplicating the processing for that character
                                     // unnecessarily. So, we'll shave off that first node from the concatenation and then handle the remainder.
+                                    // Note that it's critical startingLiteralNode is something we can fully handle above: if it's not,
+                                    // we'll end up losing some of the pattern due to overwriting `remainder`.
                                     remainder = child;
                                     child = child.Child(0);
                                     remainder.ReplaceChild(0, new RegexNode(RegexNodeKind.Empty, remainder.Options));
                                     goto HandleChild; // reprocess just the first node that was saved; the remainder will then be processed below
 
                                 default:
+                                    Debug.Assert(remainder is null);
                                     remainder = child;
                                     break;
                             }
@@ -2712,6 +2706,12 @@ namespace System.Text.RegularExpressions.Generator
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 writer.WriteLine();
+                if (hasCaptures && isInLoop)
+                {
+                    // Pop the crawl position from the stack.
+                    writer.WriteLine("stackpos--;");
+                    EmitStackCookieValidate(stackCookie);
+                }
                 Goto(originalDoneLabel);
                 writer.WriteLine();
 
