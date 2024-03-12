@@ -12813,8 +12813,16 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 ctxInfo->arg            = &arg;
                 ctxInfo->argTmpNum      = BAD_VAR_NUM;
                 ctxInfo->argIsLclVar    = arg.GetNode()->OperIs(GT_LCL_VAR);
-                ctxInfo->argIsInvariant = arg.GetNode()->IsInvariant(); // TODO-CQ: consider other trivial cases
-
+                if (arg.GetNode()->IsCnsIntOrI())
+                {
+                    ctxInfo->argIsInvariant = true;
+                }
+                else
+                {
+                    // Conservative approach
+                    ctxInfo->argHasSideEff = true;
+                    ctxInfo->argHasGlobRef = true;
+                }
                 pInlineInfo->inlInstParamArgInfo = ctxInfo;
                 continue;
             }
