@@ -121,10 +121,10 @@ void ExInfo::Init()
 
     m_pTopMostHandlerDuringSO = NULL;
 
-#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
     m_InterceptionContext.Init();
     m_ValidInterceptionContext = FALSE;
-#endif //TARGET_X86 && DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
 }
 
 ExInfo::ExInfo()

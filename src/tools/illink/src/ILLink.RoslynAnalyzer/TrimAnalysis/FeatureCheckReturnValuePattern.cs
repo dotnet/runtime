@@ -36,8 +36,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (!context.EnableTrimAnalyzer)
 				return diagnosticContext.Diagnostics;
 
-			if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean) {
-				// Warn about invalid feature checks (non-static or non-bool properties)
+			if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean || OwningSymbol.SetMethod != null) {
+				// Warn about invalid feature checks (non-static or non-bool properties or properties with setter)
 				diagnosticContext.AddDiagnostic (
 					DiagnosticId.InvalidFeatureGuard);
 				return diagnosticContext.Diagnostics;

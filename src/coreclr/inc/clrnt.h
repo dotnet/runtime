@@ -223,10 +223,7 @@ RtlpGetFunctionEndAddress (
 #define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf, addr) do { (prf)->UnwindData = (addr); } while(0)
 
 #ifdef HOST_X86
-EXTERN_C
-NTSYSAPI
 PEXCEPTION_ROUTINE
-NTAPI
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,

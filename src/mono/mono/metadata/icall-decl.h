@@ -194,9 +194,6 @@ ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseIn
 ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void);
 ICALL_EXPORT void   ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timeout_cb, intptr_t user_data);
 
-ICALL_EXPORT MonoBoolean ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void);
-ICALL_EXPORT void ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void);
-ICALL_EXPORT void ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void);
 #endif
 
 #ifdef TARGET_AMD64

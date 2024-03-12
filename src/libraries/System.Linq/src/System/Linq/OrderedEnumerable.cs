@@ -339,12 +339,9 @@ namespace System.Linq
             private int[] ComputeMap(TElement[] elements, int count)
             {
                 ComputeKeys(elements, count);
-                int[] map = new int[count];
-                for (int i = 0; i < map.Length; i++)
-                {
-                    map[i] = i;
-                }
 
+                int[] map = new int[count];
+                FillIncrementing(map, 0);
                 return map;
             }
 

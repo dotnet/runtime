@@ -445,10 +445,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
 
-    <!-- https://github.com/dotnet/runtime/issues/98795 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\System.Globalization.Calendars.Tests.csproj"
-                      Condition="'$(TargetArchitecture)' == 'arm'" />
-
     <!-- https://github.com/dotnet/runtime/issues/94653 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj"
                        Condition="'$(TargetsLinuxMusl)' == 'true'" />

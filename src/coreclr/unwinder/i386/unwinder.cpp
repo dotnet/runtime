@@ -37,7 +37,7 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
                              dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
                              PTR_CBYTE(codeInfo.GetJitManager()->GetFuncletStartAddress(&codeInfo)),
                              codeInfo.IsFunclet(),
-                             UpdateAllRegs))
+                             true))
     {
         return FALSE;
     }
@@ -193,10 +193,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINT
 //     language specific exception handler is returned. Otherwise, NULL is
 //     returned.
 //
-EXTERN_C
-NTSYSAPI
 PEXCEPTION_ROUTINE
-NTAPI
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,

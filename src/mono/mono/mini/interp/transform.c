@@ -2867,6 +2867,14 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (td->prof_coverage)
 		return FALSE;
 
+	/*
+	 * doesnotreturn methods are not profitable to inline, since they almost certainly will not
+	 * actually run during normal execution, and if they do they will only run once, so the
+	 * upside to inlining them is effectively zero, and we'd waste time doing the inline
+	 */
+	if (has_doesnotreturn_attribute (method))
+		return FALSE;
+
 	if (!is_metadata_update_disabled () && mono_metadata_update_no_inline (td->method, method))
 		return FALSE;
 

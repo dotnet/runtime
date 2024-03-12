@@ -8894,11 +8894,9 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 #if defined(FEATURE_EH_FUNCLETS)
 PTR_ExceptionTrackerBase GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                           PTR_ExceptionTrackerBase pStartingEHTracker)
-#elif TARGET_X86
+#else
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                 PTR_ExInfo pStartingEHTracker)
-#else
-#error Unsupported platform
 #endif
 {
     CONTRACTL
@@ -8916,11 +8914,9 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     // Get the reference to the current exception tracker
 #if defined(FEATURE_EH_FUNCLETS)
     PTR_ExceptionTrackerBase pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#elif TARGET_X86
+#else
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else // !(HOST_64BIT || TARGET_X86)
-#error Unsupported platform
-#endif // HOST_64BIT
+#endif
 
     BOOL fFoundTracker = FALSE;
 
@@ -8995,13 +8991,10 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
  #if defined(FEATURE_EH_FUNCLETS)
         PTR_ExceptionTrackerBase pEHTracker = NULL;
         PTR_ExceptionTrackerBase pPreviousEHTracker = NULL;
-
-#elif TARGET_X86
+#else
         PTR_ExInfo pEHTracker = NULL;
         PTR_ExInfo pPreviousEHTracker = NULL;
-#else // !(HOST_64BIT || TARGET_X86)
-#error Unsupported platform
-#endif // HOST_64BIT
+#endif
 
         if (fStartSearchFromPreviousTracker)
         {

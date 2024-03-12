@@ -136,7 +136,7 @@ public:
     EHClauseInfo        m_EHClauseInfo;
     ExceptionFlags      m_ExceptionFlags;
 
-#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
     EHContext           m_InterceptionContext;
     BOOL                m_ValidInterceptionContext;
 #endif
@@ -155,9 +155,7 @@ private:
     ExInfo& operator=(const ExInfo &from);
 };
 
-#if defined(TARGET_X86)
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExInfo pStartingEHTracker);
-#endif // TARGET_X86
 
 #else // !FEATURE_EH_FUNCLETS
 

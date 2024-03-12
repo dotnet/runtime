@@ -305,7 +305,7 @@ namespace ILLink.RoslynAnalyzer
 		internal static bool IsAnnotatedFeatureGuard (IPropertySymbol propertySymbol, string featureName)
 		{
 			// Only respect FeatureGuardAttribute on static boolean properties.
-			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean)
+			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean || propertySymbol.SetMethod != null)
 				return false;
 
 			ValueSet<string> featureCheckAnnotations = propertySymbol.GetFeatureGuardAnnotations ();

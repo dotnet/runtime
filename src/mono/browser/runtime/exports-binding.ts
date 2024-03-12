@@ -27,7 +27,7 @@ import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
 import {
-    mono_wasm_eventloop_has_unsettled_interop_promises, mono_wasm_start_deputy_thread_async,
+    mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
     mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop
 } from "./pthreads";
@@ -44,8 +44,6 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_pthread_set_name,
     mono_wasm_start_deputy_thread_async,
 
-    // threads.c
-    mono_wasm_eventloop_has_unsettled_interop_promises,
     // mono-threads.c
     mono_wasm_dump_threads,
     // diagnostics_server.c

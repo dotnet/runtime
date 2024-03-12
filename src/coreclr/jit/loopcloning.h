@@ -814,6 +814,14 @@ struct NaturalLoopIterInfo;
  */
 struct LoopCloneContext
 {
+    // We assume that the fast path will run 99% of the time, and thus should get 99% of the block weights.
+    // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
+    // mark the slow path as "run rarely", since it really shouldn't execute (given the currently optimized loop
+    // conditions) except under exceptional circumstances.
+    //
+    static constexpr weight_t fastPathWeightScaleFactor = 0.99;
+    static constexpr weight_t slowPathWeightScaleFactor = 1.0 - fastPathWeightScaleFactor;
+
     CompAllocator alloc; // The allocator
 
     // The array of optimization opportunities found in each loop. (loop x optimization-opportunities)

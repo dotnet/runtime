@@ -19,8 +19,6 @@
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-hwcap.h>
 
-#if defined (MONO_ARCH_SIMD_INTRINSICS)
-
 #if defined(DISABLE_JIT)
 
 void
@@ -1100,8 +1098,6 @@ emit_vector_create_elementwise (
 	return ins;
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
-
 static int
 type_to_xinsert_op (MonoTypeEnum type)
 {
@@ -1423,6 +1419,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 
 	if (vector_size == 256 || vector_size == 512)
+		return NULL;
+
+	if (!(cfg->opt & MONO_OPT_SIMD))
 		return NULL;
 
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
@@ -2520,6 +2519,9 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return ins;
 	}
 
+	if (!(cfg->opt & MONO_OPT_SIMD))
+		return NULL;
+
 	/* Vector256/Vector512 */
 	if (size == 32 || size == 64)
 		return NULL;
@@ -2743,6 +2745,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	if (len != 4)
 		return NULL;
 #endif
+
+	if (!(cfg->opt & MONO_OPT_SIMD))
+		return NULL;
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
@@ -3088,8 +3093,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 	return NULL;
 }
-
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #ifdef TARGET_ARM64
 
@@ -5608,9 +5611,11 @@ emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile 
 {
 	MonoInst *ins;
 
-	ins = arch_emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
+	if (cfg->opt & MONO_OPT_SIMD) {
+		ins = arch_emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
+		if (ins)
+			return ins;
+	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector64") || !strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector256") || !strcmp (class_name, "Vector512"))
@@ -5749,8 +5754,17 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 	}
 }
 
+#else
+
+void
+mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
+{
+}
+
+#endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
+
 gboolean
-mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod)
+mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoCompile *cfg, MonoMethod *cmethod)
 {
 	/*
 	* If a method has been marked with aggressive inlining, check if we support
@@ -5761,65 +5775,17 @@ mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod)
 	if (!strcmp (m_class_get_name_space (cmethod->klass), "System.Runtime.Intrinsics")) {
 		if (!strncmp(m_class_get_name (cmethod->klass), "Vector", 6)) {
 			const char *vector_type = m_class_get_name (cmethod->klass) + 6;
-			if (!strcmp(vector_type, "256`1") || !strcmp(vector_type, "512`1"))
+			if (!strcmp(vector_type, "256`1") || !strcmp(vector_type, "512`1") || !strcmp(vector_type, "256") || !strcmp(vector_type, "512"))
+				return TRUE;
+			if (!(cfg->opt & MONO_OPT_SIMD) && (!strcmp (vector_type, "128`1") || !strcmp (vector_type, "128") || !strcmp (vector_type, "64`1") || !strcmp (vector_type, "64")))
 				return TRUE;
 		}
 	}
+
 	return FALSE;
 }
-#else
-void
-mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
-{
-}
-
-gboolean
-mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod* cmethod)
-{
-	return FALSE;
-}
-
-#endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
 
 #endif /* DISABLE_JIT */
-
-#else /* MONO_ARCH_SIMD_INTRINSICS */
-
-void
-mono_simd_intrinsics_init (void)
-{
-}
-
-MonoInst*
-mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr)
-{
-	return NULL;
-}
-
-MonoInst*
-mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	return NULL;
-}
-
-MonoInst*
-mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	return NULL;
-}
-
-void
-mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
-{
-}
-
-gboolean
-mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod* cmethod)
-{
-	return FALSE;
-}
-
-#endif /* MONO_ARCH_SIMD_INTRINSICS */
 
 #if defined(TARGET_AMD64)
 void

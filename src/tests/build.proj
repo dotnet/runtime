@@ -543,6 +543,7 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
+      <_ConfigurationProperties Condition="'$(UseLocalAppHostPack)' == 'true'">$(_ConfigurationProperties) -p:EnableAppHostPackDownload=false -p:EnableTargetingPackDownload=false -p:EnableRuntimePackDownload=false</_ConfigurationProperties>
       <DotnetRestoreCommand>"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>

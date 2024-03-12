@@ -206,12 +206,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
