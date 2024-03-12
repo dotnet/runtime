@@ -4299,25 +4299,21 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     {
         SwiftLoweringInterval interval = intervals[i];
 
-        if (interval.tag == SwiftPhysicalLoweringTag::Opaque)
+        if (i != 0 && interval.tag == SwiftPhysicalLoweringTag::Opaque)
         {
-            // If we're at the start of the intervals, or the previous interval is not opaque, we need to start a new interval.
-            if (i == 0 || intervals[i - 1].tag != SwiftPhysicalLoweringTag::Opaque)
-            {
-                mergedIntervals.Push(interval);
-            }
-            // Otherwise, if the previous interval ends in the same pointer-sized block, we'll merge this interval into the previous one.
-            else if ((intervals[i - 1].offset + intervals[i - 1].size) / TARGET_POINTER_SIZE == interval.offset / TARGET_POINTER_SIZE)
+            // Merge two opaque intervals when the previous interval ends in the same pointer-sized block
+            SwiftLoweringInterval prevInterval = intervals[i - 1];
+            if (prevInterval.tag == SwiftPhysicalLoweringTag::Opaque &&
+                (prevInterval.offset + prevInterval.size) / TARGET_POINTER_SIZE == interval.offset / TARGET_POINTER_SIZE)
             {
                 SwiftLoweringInterval& lastInterval = mergedIntervals[mergedIntervals.Size() - 1];
                 lastInterval.size = interval.offset + interval.size - lastInterval.offset;
+                continue;
             }
         }
-        else
-        {
-            // Non-opaque intervals are never merged at this point.
-            mergedIntervals.Push(interval);
-        }
+
+        // Otherwise keep all intervals
+        mergedIntervals.Push(interval);
     }
 
     // Now we have the intervals, we can calculate the lowering.
