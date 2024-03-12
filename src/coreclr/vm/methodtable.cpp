@@ -4414,7 +4414,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
         }
     }
 
-    memcpy(pSwiftLowering->loweredElements, loweredTypes, numLoweredTypes * sizeof(CorElementType));
+    memcpy(pSwiftLowering->loweredElements, loweredTypes, numLoweredTypes * sizeof(CorInfoType));
     memcpy(pSwiftLowering->offsets, offsets, numLoweredTypes * sizeof(uint32_t));
     pSwiftLowering->numLoweredElements = numLoweredTypes;
     pSwiftLowering->byReference = false;
