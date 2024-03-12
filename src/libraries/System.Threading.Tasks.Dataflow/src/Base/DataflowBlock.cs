@@ -1476,6 +1476,14 @@ namespace System.Threading.Tasks.Dataflow
                         static state => OutputAvailableAsyncTarget<TOutput>.CancelAndUnlink(state, default),
 #endif
                         target);
+
+                    if (target.Task.IsCompleted)
+                    {
+                        // If the source calls to the target to complete it before we register for cancellation,
+                        // we need to ensure that we unregister from the cancellation token. If the task hasn't
+                        // yet completed, then its completion will handle the unregistration.
+                        target._ctr.Dispose();
+                    }
                 }
 
                 return target.Task;
@@ -1503,18 +1511,6 @@ namespace System.Threading.Tasks.Dataflow
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
             }
-
-            /// <summary>
-            /// Cached continuation delegate that unregisters from cancellation and
-            /// marshals the antecedent's result to the return value.
-            /// </summary>
-            internal static readonly Func<Task<bool>, object?, bool> s_handleCompletion = (antecedent, state) =>
-            {
-                var target = state as OutputAvailableAsyncTarget<T>;
-                Debug.Assert(target != null, "Expected non-null target");
-                target._ctr.Dispose();
-                return antecedent.GetAwaiter().GetResult();
-            };
 
             /// <summary>Cancels the target and unlinks the target from the source.</summary>
             /// <param name="state">An OutputAvailableAsyncTarget.</param>
@@ -1551,6 +1547,8 @@ namespace System.Threading.Tasks.Dataflow
                 if (source == null) throw new ArgumentNullException(nameof(source));
 
                 TrySetResult(true);
+                _ctr.Dispose();
+
                 return DataflowMessageStatus.DecliningPermanently;
             }
 
@@ -1558,6 +1556,7 @@ namespace System.Threading.Tasks.Dataflow
             void IDataflowBlock.Complete()
             {
                 TrySetResult(false);
+                _ctr.Dispose();
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
@@ -1569,6 +1568,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 TrySetResult(false);
+                _ctr.Dispose();
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
