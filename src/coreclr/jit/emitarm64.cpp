@@ -1142,7 +1142,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_NONE);
             assert(isGeneralRegister(id->idReg1()));
             assert(elemsize == EA_8BYTE);
-            assert(isValidUimm4From1(emitGetInsSC(id)));
+            assert(isValidUimmFrom1<4>(emitGetInsSC(id)));
             break;
 
         case IF_SVE_BN_1A: // ............iiii ......pppppddddd -- SVE inc/dec vector by element count
@@ -1151,7 +1151,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isScalableVectorSize(elemsize));
-            assert(isValidUimm4From1(emitGetInsSC(id)));
+            assert(isValidUimmFrom1<4>(emitGetInsSC(id)));
             break;
 
         case IF_SVE_BS_1A: // ..............ii iiiiiiiiiiiddddd -- SVE bitwise logical with immediate (unpredicated)
@@ -1167,7 +1167,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_NONE);
             assert(isGeneralRegister(id->idReg1()));
             assert(isValidGeneralDatasize(elemsize));
-            assert(isValidUimm4From1(emitGetInsSC(id)));
+            assert(isValidUimmFrom1<4>(emitGetInsSC(id)));
             break;
 
         case IF_SVE_BQ_2A: // ...........iiiii ...iiinnnnnddddd -- SVE extract vector (immediate offset, destructive)
@@ -1873,19 +1873,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             switch (id->idInsOpt())
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3From1(imm)); // iii
+                    assert(isValidUimmFrom1<3>(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4From1(imm)); // xiii
+                    assert(isValidUimmFrom1<4>(imm)); // xiii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5From1(imm)); // xxiii
+                    assert(isValidUimmFrom1<5>(imm)); // xxiii
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidUimm6From1(imm)); // xx xiii
+                    assert(isValidUimmFrom1<6>(imm)); // xx xiii
                     break;
 
                 default:
@@ -1960,15 +1960,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             switch (id->idInsOpt())
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3From1(imm)); // iii
+                    assert(isValidUimmFrom1<3>(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4From1(imm)); // x iii
+                    assert(isValidUimmFrom1<4>(imm)); // x iii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5From1(imm)); // xx iii
+                    assert(isValidUimmFrom1<5>(imm)); // xx iii
                     break;
 
                 default:
@@ -10250,19 +10250,19 @@ void emitter::emitIns_R_R_I(instruction     ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3From1(imm)); // iii
+                    assert(isValidUimmFrom1<3>(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4From1(imm)); // xiii
+                    assert(isValidUimmFrom1<4>(imm)); // xiii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5From1(imm)); // xxiii
+                    assert(isValidUimmFrom1<5>(imm)); // xxiii
                     break;
 
                 case INS_OPTS_SCALABLE_D:
-                    assert(isValidUimm6From1(imm)); // x xxiii
+                    assert(isValidUimmFrom1<6>(imm)); // x xxiii
                     break;
 
                 default:
@@ -10469,15 +10469,15 @@ void emitter::emitIns_R_R_I(instruction     ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3From1(imm)); // iii
+                    assert(isValidUimmFrom1<3>(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4From1(imm)); // x iii
+                    assert(isValidUimmFrom1<4>(imm)); // x iii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5From1(imm)); // xx iii
+                    assert(isValidUimmFrom1<5>(imm)); // xx iii
                     break;
 
                 default:
@@ -16899,7 +16899,7 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_cntw:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1)); // ddddd
-            assert(isValidUimm4From1(imm));  // iiii
+            assert(isValidUimmFrom1<4>(imm));  // iiii
             assert(size == EA_8BYTE);
             fmt = IF_SVE_BL_1A;
             break;
@@ -16910,7 +16910,7 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_decd:
         case INS_sve_dech:
         case INS_sve_decw:
-            assert(isValidUimm4From1(imm)); // iiii
+            assert(isValidUimmFrom1<4>(imm)); // iiii
 
             if (insOptsNone(opt))
             {
@@ -16929,7 +16929,7 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_incb:
         case INS_sve_decb:
             assert(isGeneralRegister(reg1)); // ddddd
-            assert(isValidUimm4From1(imm));  // iiii
+            assert(isValidUimmFrom1<4>(imm));  // iiii
             assert(size == EA_8BYTE);
             fmt = IF_SVE_BM_1A;
             break;
@@ -16940,7 +16940,7 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_uqdecb:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1));      // ddddd
-            assert(isValidUimm4From1(imm));       // iiii
+            assert(isValidUimmFrom1<4>(imm));       // iiii
             assert(isValidGeneralDatasize(size)); // X
             fmt = IF_SVE_BO_1A;
             break;
@@ -16957,7 +16957,7 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
         case INS_sve_uqincd:
         case INS_sve_sqdecd:
         case INS_sve_uqdecd:
-            assert(isValidUimm4From1(imm)); // iiii
+            assert(isValidUimmFrom1<4>(imm)); // iiii
 
             if (insOptsNone(opt))
             {
@@ -22251,7 +22251,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm4From1_19_to_16(ssize_t imm)
 {
-    assert(isValidUimm4From1(imm));
+    assert(isValidUimmFrom1<4>(imm));
     return (code_t)(imm - 1) << 16;
 }
 
@@ -22336,19 +22336,19 @@ void emitter::emitIns_Call(EmitCallType          callType,
     switch (opt)
     {
         case INS_OPTS_SCALABLE_B:
-            assert(isValidUimm3From1(imm));
+            assert(isValidUimmFrom1<3>(imm));
             return (8 - imm);
 
         case INS_OPTS_SCALABLE_H:
-            assert(isValidUimm4From1(imm));
+            assert(isValidUimmFrom1<4>(imm));
             return (16 - imm);
 
         case INS_OPTS_SCALABLE_S:
-            assert(isValidUimm5From1(imm));
+            assert(isValidUimmFrom1<5>(imm));
             return (32 - imm);
 
         case INS_OPTS_SCALABLE_D:
-            assert(isValidUimm6From1(imm));
+            assert(isValidUimmFrom1<6>(imm));
             return (64 - imm);
 
         default:

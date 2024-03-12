@@ -866,29 +866,13 @@ static bool isValidUimm(ssize_t value)
     return (0 <= value) && (value < max);
 }
 
-// Returns true if 'value' is a legal unsigned immediate 3 bit encoding, starting from 1 (such as for SHRNB).
-static bool isValidUimm3From1(ssize_t value)
+// Returns true if 'value' is a legal unsigned immediate with 'bits' number of bits, starting from 1.
+template <const size_t bits>
+static bool isValidUimmFrom1(ssize_t value)
 {
-    return (1 <= value) && (value <= 8);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
-static bool isValidUimm4From1(ssize_t value)
-{
-    return (1 <= value) && (value <= 0x10);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 5 bit encoding, starting from 1 (such as for SHRNB).
-static bool isValidUimm5From1(ssize_t value)
-{
-    return (1 <= value) && (value <= 0x20);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 6 bit encoding, starting from 1 (such as for XAR).
-static bool isValidUimm6From1(ssize_t value)
-{
-    return (1 <= value) && (value <= 0x40);
-};
+    constexpr size_t max = 1 << bits;
+    return (1 <= value) && (value <= max);
+}
 
 // Returns true if 'value' is a legal unsigned multiple of 256 immediate 8 bit encoding (such as for ADD).
 static bool isValidUimm8_MultipleOf256(ssize_t value)
