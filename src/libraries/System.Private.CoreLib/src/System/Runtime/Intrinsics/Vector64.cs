@@ -2284,7 +2284,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return AdvSimd.VectorTableLookup(vector, indices);
+                return AdvSimd.VectorTableLookup(Vector128.Create(vector, Vector64<byte>.Zero), indices);
             }
 
             return Shuffle(vector, indices);
