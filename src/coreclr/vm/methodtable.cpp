@@ -4403,7 +4403,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                         opaqueIntervalStart += 2;
                         remainingIntervalSize -= 2;
                     }
-                    else if (remainingIntervalSize > 1)
+                    else
                     {
                         loweredTypes[numLoweredTypes] = CORINFO_TYPE_BYTE;
                         opaqueIntervalStart += 1;
