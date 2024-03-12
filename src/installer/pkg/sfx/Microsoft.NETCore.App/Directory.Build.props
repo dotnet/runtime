@@ -280,7 +280,7 @@
     <ExcludeFromClosure Include="@(NetFxReference)" />
  </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <!-- Add a reference to Microsoft.DiaSymReader.Native if one does not already exist. -->
     <PackageReference Include="Microsoft.DiaSymReader.Native"
                       Exclude="@(PackageReference)"

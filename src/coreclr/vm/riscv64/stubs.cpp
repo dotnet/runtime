@@ -344,7 +344,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->_isValid = TRUE;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -354,6 +354,14 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -534,8 +542,16 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Ra  = (PDWORD64)&pCalleeSaved->ra;
 }
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -557,7 +573,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -593,7 +609,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -613,6 +629,13 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
         return;
     }
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+    }
+#endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
@@ -659,7 +682,7 @@ TADDR ResumableFrame::GetReturnAddressPtr(void)
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -716,7 +739,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     RETURN;
 }
 
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1909,7 +1932,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 4;
         }
 
-        BYTE* pBLTCall = NULL;
+        BYTE* pBLECall = NULL;
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
@@ -1939,8 +1962,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 p += 4;
                 *(DWORD*)p = ITypeInstr(0x13, 0, RegT4, RegT4, slotOffset & 0xfff);// addi  t4, t4, (slotOffset&0xfff)
                 p += 4;
-                // blt  t4, t5, CALL HELPER
-                pBLTCall = p;       // Offset filled later
+                // bge  t4, t5, CALL HELPER
+                pBLECall = p;       // Offset filled later
                 p += 4;
             }
 
@@ -1982,8 +2005,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 4;
 
             // CALL HELPER:
-            if (pBLTCall != NULL)
-                *(DWORD*)pBLTCall = BTypeInstr(0x63, 0x4, RegT4, RegT5, (UINT32)(p - pBLTCall));
+            if (pBLECall != NULL)
+                *(DWORD*)pBLECall = BTypeInstr(0x63, 0x5, RegT4, RegT5, (UINT32)(p - pBLECall));
 
             *(DWORD*)p = ITypeInstr(0x13, 0, RegA0, RegT2, 0);// addi  a0, t2, 0
             p += 4;

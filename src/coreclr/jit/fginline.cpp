@@ -675,14 +675,14 @@ private:
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetTrueTarget(), block);
-                    block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
+                    m_compiler->fgRemoveRefPred(block->GetTrueEdge());
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
                     block->SetFlags(BBF_NONE_QUIRK);
                 }
                 else
                 {
-                    m_compiler->fgRemoveRefPred(block->GetFalseTarget(), block);
-                    block->SetKind(BBJ_ALWAYS);
+                    m_compiler->fgRemoveRefPred(block->GetFalseEdge());
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
                 }
             }
         }
@@ -1533,9 +1533,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
-                block->SetKindAndTarget(BBJ_ALWAYS, bottomBlock);
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
-                newEdge->setLikelihood(1.0);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                 if (block == InlineeCompiler->fgLastBB)
                 {
@@ -1551,11 +1550,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->TargetIs(bottomBlock));
+        fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
+
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetTarget(topBlock->Next());
         topBlock->SetFlags(BBF_NONE_QUIRK);
-        FlowEdge* const oldEdge = fgRemoveRefPred(bottomBlock, topBlock);
-        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock, oldEdge);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //

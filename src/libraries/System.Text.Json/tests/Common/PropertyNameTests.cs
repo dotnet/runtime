@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Tests
             await DeserializeAndAssert(JsonNamingPolicy.SnakeCaseLower, @"{""my_int16"":1}", 1);
             await DeserializeAndAssert(JsonNamingPolicy.SnakeCaseUpper, @"{""MY_INT16"":1}", 1);
             await DeserializeAndAssert(JsonNamingPolicy.KebabCaseLower, @"{""my-int16"":1}", 1);
-            await DeserializeAndAssert(JsonNamingPolicy.KebabCaseUpper, @"{""MY-INT16"":1}", 1);            
+            await DeserializeAndAssert(JsonNamingPolicy.KebabCaseUpper, @"{""MY-INT16"":1}", 1);
         }
 
         private async Task DeserializeAndAssert(JsonNamingPolicy policy, string json, short expected)
@@ -449,7 +449,8 @@ namespace System.Text.Json.Serialization.Tests
                 SmtpId = 3,
                 Emojies = 4,
                 \uA000 = 5,
-                YiIt_2 = 6
+                YiIt_2 = 6,
+                PropertyNameWithWhitespace = 7,
             };
 
             string json = await Serializer.SerializeWrapper(obj);
@@ -459,7 +460,8 @@ namespace System.Text.Json.Serialization.Tests
                 "\"smtp-id\":3," +
                 "\"\\uD83D\\uDE00\\uD83D\\uDE01\":4," +
                 "\"\\uA000\":5," +
-                "\"\\uA000_2\":6}", json);
+                "\"\\uA000_2\":6," +
+                "\"\\u0022ab \\n\\r\\t\\f\\bc\\u0022\":7}", json);
 
             obj = await Serializer.DeserializeWrapper<ClassWithSpecialCharacters>(json);
             Assert.Equal(1, obj.Baseline);
@@ -493,6 +495,10 @@ namespace System.Text.Json.Serialization.Tests
             [JsonPropertyOrder(6)]
             [JsonPropertyName("\uA000_2")] // Valid C# property name: \uA000_2
             public int YiIt_2 { get; set; }
+
+            [JsonPropertyOrder(7)]
+            [JsonPropertyName("\"ab \n\r\t\f\bc\"")] // Regression test for https://github.com/dotnet/runtime/issues/98638
+            public int PropertyNameWithWhitespace { get; set; }
         }
 
         [Theory]

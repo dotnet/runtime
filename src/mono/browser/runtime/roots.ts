@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
 import cwraps from "./cwraps";
-import { Module } from "./globals";
+import { Module, mono_assert } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { _zero_region, localHeapViewU32 } from "./memory";
+import { gc_locked } from "./gc-lock";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -34,25 +37,6 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
     _zero_region(offset, capacityBytes);
 
     return new WasmRootBufferImpl(offset, capacity, true, name);
-}
-
-/**
- * Creates a root buffer object representing an existing allocation in the native heap and registers
- *  the allocation with the GC. The caller is responsible for managing the lifetime of the allocation.
- */
-export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity: number, name?: string): WasmRootBuffer {
-    if (capacity <= 0)
-        throw new Error("capacity >= 1");
-
-    capacity = capacity | 0;
-
-    const capacityBytes = capacity * 4;
-    if ((<any>offset % 4) !== 0)
-        throw new Error("Unaligned offset");
-
-    _zero_region(offset, capacityBytes);
-
-    return new WasmRootBufferImpl(offset, capacity, false, name);
 }
 
 /**
@@ -188,6 +172,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         this.__offset32 = <number><any>offset >>> 2;
         this.__count = capacity;
         this.length = capacity;
+        mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
         this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
         this.__ownsAllocation = ownsAllocation;
     }
@@ -247,6 +232,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
 
     release(): void {
         if (this.__offset && this.__ownsAllocation) {
+            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(this.__offset);
             _zero_region(this.__offset, this.__count * 4);
             Module._free(this.__offset);

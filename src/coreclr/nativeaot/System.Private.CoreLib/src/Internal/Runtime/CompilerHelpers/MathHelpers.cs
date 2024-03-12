@@ -4,6 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -13,7 +14,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// Math helpers for generated code. The helpers marked with [RuntimeExport] and the type
     /// itself need to be public because they constitute a public contract with the .NET Native toolchain.
     /// </summary>
-    internal static class MathHelpers
+    internal static partial class MathHelpers
     {
 #if !TARGET_64BIT
         //
@@ -144,9 +145,9 @@ namespace Internal.Runtime.CompilerHelpers
             return ThrowULngOvf();
         }
 
-        [RuntimeImport(RuntimeLibrary, "RhpULMod")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern ulong RhpULMod(ulong i, ulong j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        private static partial ulong RhpULMod(ulong i, ulong j);
 
         public static ulong ULMod(ulong i, ulong j)
         {
@@ -156,21 +157,23 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpULMod(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, "RhpLMod")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern long RhpLMod(long i, long j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        private static partial long RhpLMod(long i, long j);
 
         public static long LMod(long i, long j)
         {
             if (j == 0)
                 return ThrowLngDivByZero();
+            else if (j == -1 && i == long.MinValue)
+                return ThrowLngOvf();
             else
                 return RhpLMod(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, "RhpULDiv")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern ulong RhpULDiv(ulong i, ulong j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        private static partial ulong RhpULDiv(ulong i, ulong j);
 
         public static ulong ULDiv(ulong i, ulong j)
         {
@@ -180,16 +183,16 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpULDiv(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, "RhpLDiv")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern long RhpLDiv(long i, long j);
+        [LibraryImport(RuntimeLibrary)]
+        [SuppressGCTransition]
+        private static partial long RhpLDiv(long i, long j);
 
         public static long LDiv(long i, long j)
         {
             if (j == 0)
                 return ThrowLngDivByZero();
             else if (j == -1 && i == long.MinValue)
-                return ThrowLngArithExc();
+                return ThrowLngOvf();
             else
                 return RhpLDiv(i, j);
         }
@@ -204,12 +207,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static ulong ThrowULngDivByZero()
         {
             throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngArithExc()
-        {
-            throw new ArithmeticException();
         }
 #endif // TARGET_64BIT
 
@@ -295,7 +292,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (j == 0)
                 return ThrowIntDivByZero();
             else if (j == -1 && i == int.MinValue)
-                return ThrowIntArithExc();
+                return ThrowIntOvf();
             else
                 return RhpIDiv(i, j);
         }
@@ -320,6 +317,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (j == 0)
                 return ThrowIntDivByZero();
+            else if (j == -1 && i == int.MinValue)
+                return ThrowIntOvf();
             else
                 return RhpIMod(i, j);
         }
@@ -377,12 +376,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static uint ThrowUIntDivByZero()
         {
             throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ThrowIntArithExc()
-        {
-            throw new ArithmeticException();
         }
 #endif // TARGET_ARM
     }

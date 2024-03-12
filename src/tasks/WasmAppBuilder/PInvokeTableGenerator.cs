@@ -269,10 +269,19 @@ internal sealed class PInvokeTableGenerator
             return null;
         }
 
+        var realReturnType = method.ReturnType;
+        var realParameterTypes = method.GetParameters().Select(p => MapType(p.ParameterType)).ToList();
+
+        SignatureMapper.TypeToChar(realReturnType, Log, out bool resultIsByRef);
+        if (resultIsByRef) {
+            realReturnType = typeof(void);
+            realParameterTypes.Insert(0, "void *");
+        }
+
         return
             $$"""
             {{(pinvoke.WasmLinkage ? $"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))" : "")}}
-            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))}});
+            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(realReturnType)}} {{CEntryPoint(pinvoke)}} ({{string.Join(", ", realParameterTypes)}});
             """;
     }
 

@@ -143,7 +143,15 @@ export type MonoConfig = {
     /**
      * initial number of workers to add to the emscripten pthread pool
      */
-    pthreadPoolSize?: number,
+    pthreadPoolInitialSize?: number,
+    /**
+     * number of unused workers kept in the emscripten pthread pool after startup
+     */
+    pthreadPoolUnusedSize?: number,
+    /**
+     * Delay in milliseconds before starting the finalizer thread
+     */
+    finalizerThreadStartDelayMs?: number,
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
@@ -407,6 +415,13 @@ export type APIType = {
      * @returns exit code of the Main() method.
      */
     runMainAndExit: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
+    /**
+     * Exits the runtime.
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * @param code "process" exit code.
+     * @param reason could be a string or an Error object.
+     */
+    exit: (code: number, reason?: any) => void;
     /**
      * Sets the environment variable for the "process"
      * @param name

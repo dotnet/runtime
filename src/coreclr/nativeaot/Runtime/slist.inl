@@ -8,6 +8,27 @@ MSVC_DISABLE_WARNING(4127)  // conditional expression is constant --
 //-------------------------------------------------------------------------------------------------
 namespace rh { namespace std
 {
+    template<class _InIt, class _Ty>
+    inline
+    uintptr_t count(_InIt _First, _InIt _Last, const _Ty& _Val)
+    {
+        uintptr_t _Ret = 0;
+        for (; _First != _Last; _First++)
+            if (*_First == _Val)
+                ++_Ret;
+        return _Ret;
+    }
+
+    template<class _InIt, class _Ty>
+    inline
+    _InIt find(_InIt _First, _InIt _Last, const _Ty& _Val)
+    {   // find first matching _Val
+        for (; _First != _Last; ++_First)
+            if (*_First == _Val)
+                break;
+        return (_First);
+    }
+
     // Specialize rh::std::find for SList iterators so that it will use _Traits::Equals.
     template<class _Tx, class _Traits, class _Ty>
     inline

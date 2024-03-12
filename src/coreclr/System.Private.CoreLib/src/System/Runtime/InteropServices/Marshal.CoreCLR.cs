@@ -266,7 +266,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
             }
         }
 
@@ -291,7 +291,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
+                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
         }
 

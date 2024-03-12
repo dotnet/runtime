@@ -68,13 +68,6 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
         public override CallingConventions CallingConvention => _method.CallingConvention;
-#if !MONO
-        public override MethodInfo GetGenericMethodDefinition() { return _method; }
-        public override bool IsGenericMethodDefinition => _method.IsGenericMethodDefinition;
-        public override Type[] GetGenericArguments()
-        {
-            return _method.GetGenericArguments();
-        }
         public override bool ContainsGenericParameters
         {
             get
@@ -101,6 +94,14 @@ namespace System.Reflection.Emit
                 return false;
             }
         }
+#if !MONO
+        public override MethodInfo GetGenericMethodDefinition() { return _method; }
+        public override bool IsGenericMethodDefinition => _method.IsGenericMethodDefinition;
+        public override Type[] GetGenericArguments()
+        {
+            return _method.GetGenericArguments();
+        }
+
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {

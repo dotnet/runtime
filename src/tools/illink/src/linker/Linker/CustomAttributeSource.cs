@@ -52,6 +52,14 @@ namespace Mono.Linker
 			return xmlInfo != null;
 		}
 
+		public IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider provider, string attributeNamespace, string attributeName)
+		{
+			foreach (var attr in GetCustomAttributes (provider)) {
+				if (attr.AttributeType.Namespace == attributeNamespace && attr.AttributeType.Name == attributeName)
+					yield return attr;
+			}
+		}
+
 		public IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider provider)
 		{
 			if (provider.HasCustomAttributes) {

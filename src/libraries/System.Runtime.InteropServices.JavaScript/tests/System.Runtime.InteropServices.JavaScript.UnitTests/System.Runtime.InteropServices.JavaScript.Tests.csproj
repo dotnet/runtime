@@ -13,22 +13,24 @@
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- to see timing and which test aborted the runtime -->
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportExportTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
-    <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSImportTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSExportTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSInteropTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\Utils.cs" />
+    <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
-    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
-    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
-    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\timers.mjs" />
+    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
+    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
+    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" />
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
@@ -39,19 +41,19 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureWasmManagedThreads)' == 'true'">
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.cs" />
-    <None Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
-    <None Include="System\Runtime\InteropServices\JavaScript\test.json" />
-    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
-    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\test.json" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.cs" />
+    <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
+    <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
+    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
+    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
   </ItemGroup>
 </Project>

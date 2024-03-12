@@ -4735,11 +4735,11 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
 }
 
 static gboolean
-aggressive_inline_method (MonoMethod *cmethod)
+aggressive_inline_method (MonoCompile *cfg, MonoMethod *cmethod)
 {
 	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
 	if (aggressive_inline)
-		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cmethod);
+		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cfg, cmethod);
 	return aggressive_inline;
 }
 
@@ -4868,7 +4868,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cmethod))) {
+	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cfg, cmethod))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -7548,6 +7548,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->compile_aot)
 						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
 
+					if (fsig->has_type_parameters) {
+						cfg->prefer_instances = TRUE;
+						GENERIC_SHARING_FAILURE (CEE_CALLI);
+					}
+
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
 
@@ -8930,6 +8935,11 @@ calli_end:
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
+
+			if (((sp [0]->type == STACK_R4 && sp [1]->type == STACK_R8) ||
+			     (sp [0]->type == STACK_R8 && sp [1]->type == STACK_R4)))
+				add_widen_op (cfg, ins, &sp [0], &sp [1]);
+
 			ins->dreg = alloc_dreg ((cfg), (MonoStackType)(ins)->type);
 
 			/* Use the immediate opcodes if possible */
