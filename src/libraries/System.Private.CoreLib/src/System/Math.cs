@@ -157,8 +157,8 @@ namespace System
             if (Bmi2.IsSupported)
             {
                 uint low;
-                uint hi = Bmi2.MultiplyNoFlags(a, b, &low);
-                return ((ulong)hi << 32) | low;
+                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
+                return ((ulong)high << 32) | low;
             }
 #endif
             return ((ulong)a) * b;
@@ -179,11 +179,10 @@ namespace System
         internal static ulong BigMul(ulong a, uint b, out ulong low)
         {
 #if TARGET_64BIT
-            return Math.BigMul(ulong)a, (ulong)b, out low);
+            return Math.BigMul((ulong)a, (ulong)b, out low);
 #else
-            ulong prodH = (((ulong)(uint)(a >> 32)) * b);
             ulong prodL = ((ulong)(uint)a) * b;
-            prodH += (prodL >> 32);
+            ulong prodH = (prodL >> 32) + (((ulong)(uint)(a >> 32)) * b);
 
             low = ((prodH << 32) | (uint)prodL);
             return (prodH >> 32);
@@ -193,7 +192,7 @@ namespace System
         /// <inheritdoc cref="BigMul(ulong, uint, out ulong)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ulong BigMul(uint a, ulong b, out ulong low)
-            => BigMul(a, b, out low);
+            => BigMul(b, a, out low);
 
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
