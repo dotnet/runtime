@@ -2061,22 +2061,22 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         {
             // This is a struct type. Check if it needs to be lowered.
             // TODO-Bug: SIMD types are not handled correctly by this.
-            CORINFO_SWIFT_LOWERING lowering;
-            info.compCompHnd->getSwiftLowering(argClass, &lowering);
-            if (lowering.byReference)
+            CORINFO_SWIFT_LOWERING* lowering = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING;
+            lowerings[argIndex]              = lowering;
+            info.compCompHnd->getSwiftLowering(argClass, lowering);
+            if (lowering->byReference)
             {
                 JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
                         typGetObjLayout(argClass)->GetClassName());
             }
             else
             {
-                lowerings[argIndex] = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING(lowering);
                 JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
-                        typGetObjLayout(argClass)->GetClassName(), lowering.numLoweredElements);
-                for (size_t i = 0; i < lowering.numLoweredElements; i++)
+                        typGetObjLayout(argClass)->GetClassName(), lowering->numLoweredElements);
+                for (size_t i = 0; i < lowering->numLoweredElements; i++)
                 {
-                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering.offsets[i],
-                            varTypeName(JitType2PreciseVarType(lowering.loweredElements[i])));
+                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                            varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
                 }
             }
         }
@@ -2145,8 +2145,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         else
         {
             CORINFO_SWIFT_LOWERING* lowering = lowerings[argIndex];
+            assert(lowering != nullptr);
 
-            if (lowering == nullptr)
+            if (lowering->byReference)
             {
                 GenTree* addrNode = gtNewLclAddrNode(structVal->GetLclNum(), structVal->GetLclOffs());
                 JITDUMP("    Passing by reference\n");
