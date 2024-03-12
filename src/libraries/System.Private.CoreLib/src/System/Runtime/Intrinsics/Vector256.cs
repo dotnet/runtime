@@ -2362,13 +2362,13 @@ namespace System.Runtime.Intrinsics
                 if (RuntimeHelpers.IsKnownConstant(indices))
                 {
                     // check for all in correct lane (or will result in 0)
-                    if (LessThanAll(Xor(BitwiseAnd(indices, Vector256.Create(0x9F)), Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
+                    if (LessThanAll(Xor(BitwiseAnd(indices, Vector256.Create((byte)0x9F)), Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
                         return Avx2.Shuffle(vector, indices);
                     }
 
                     // check for all indices in first lane (or will result in 0)
-                    if (LessThanAll(BitwiseAnd(indices, Vector256.Create(0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
+                    if (LessThanAll(BitwiseAnd(indices, Vector256.Create((byte)0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
                         var laneShuffle = Avx2.Permute2x128(vector, vector, 0b00000000);
                         return Avx2.Shuffle(laneShuffle, indices);
