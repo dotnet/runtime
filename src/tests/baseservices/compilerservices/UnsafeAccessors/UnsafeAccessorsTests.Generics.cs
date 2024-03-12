@@ -40,6 +40,8 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         private void Add(T t) => _list.Add(t);
 
+        private void AddWithIgnore<U>(T t, U _) => _list.Add(t);
+
         private bool CanCastToElementType<U>(U t) => t is T;
 
         private static bool CanUseElementType<U>(U t) => t is T;
@@ -61,7 +63,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_AccessStaticFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_AccessStaticFieldClass)}");
@@ -97,7 +99,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_AccessFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_AccessFieldClass)}");
@@ -120,21 +122,27 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
     class Base
     {
-        protected virtual string CreateMessage<T>(T t) => $"{nameof(Base)}:{t}";
+        protected virtual string CreateMessageGeneric<T>(T t) => $"{nameof(Base)}:{t}";
     }
 
-    class Derived1 : Base
+    class GenericBase<T> : Base
     {
-        protected override string CreateMessage<T>(T t) => $"{nameof(Derived1)}:{t}";
+        protected virtual string CreateMessage(T u) => $"{nameof(GenericBase<T>)}:{u}";
+        protected override string CreateMessageGeneric<U>(U t) => $"{nameof(GenericBase<T>)}:{t}";
     }
 
-    sealed class Derived2 : Derived1
+    sealed class Derived1 : GenericBase<string>
     {
-        protected override string CreateMessage<T>(T t) => $"{nameof(Derived2)}:{t}";
+        protected override string CreateMessage(string u) => $"{nameof(Derived1)}:{u}";
+        protected override string CreateMessageGeneric<U>(U t) => $"{nameof(Derived1)}:{t}";
+    }
+
+    sealed class Derived2 : GenericBase<string>
+    {
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_InheritanceMethodResolution()
     {
         string expect = "abc";
@@ -146,19 +154,38 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.Equal($"{nameof(Base)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
+            GenericBase<int> a = new();
+            Assert.Equal($"{nameof(GenericBase<int>)}:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<int>)}:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<int>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+        }
+        {
+            GenericBase<string> a = new();
+            Assert.Equal($"{nameof(GenericBase<string>)}:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<string>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+        }
+        {
+            GenericBase<Struct> a = new();
+            Assert.Equal($"{nameof(GenericBase<Struct>)}:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+        }
+        {
             Derived1 a = new();
             Assert.Equal($"{nameof(Derived1)}:1", CreateMessage<int>(a, 1));
             Assert.Equal($"{nameof(Derived1)}:{expect}", CreateMessage<string>(a, expect));
             Assert.Equal($"{nameof(Derived1)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
-            Derived2 a = new();
-            Assert.Equal($"{nameof(Derived2)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Derived2)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Derived2)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            // Verify resolution of generic override logic.
+            Derived1 a1 = new();
+            Derived2 a2 = new();
+            Assert.Equal($"{nameof(Derived1)}:{expect}", Accessors<string>.CreateMessage(a1, expect));
+            Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", Accessors<string>.CreateMessage(a2, expect));
         }
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessageGeneric")]
         extern static string CreateMessage<U>(Base b, U t);
     }
 
@@ -168,10 +195,10 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         public extern static MyList<T> Create(int a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        public extern static MyList<T> CreateWithList<U>(List<U> a);
+        public extern static MyList<T> CreateWithList(List<T> a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
-        public extern static void CallCtorAsMethod<U>(MyList<T> l, List<U> a);
+        public extern static void CallCtorAsMethod(MyList<T> l, List<T> a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
         public extern static void AddInt(MyList<T> l, int a);
@@ -186,10 +213,16 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         public extern static void Clear(MyList<T> l);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void Add<U>(MyList<T> l, U element);
+        public extern static void Add(MyList<T> l, T element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddWithIgnore")]
+        public extern static void AddWithIgnore<U>(MyList<T> l, T element, U ignore);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CanCastToElementType")]
         public extern static bool CanCastToElementType<U>(MyList<T> l, U element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
+        public extern static string CreateMessage(GenericBase<T> b, T t);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
         public extern static Type ElementType(MyList<T> l);
@@ -199,7 +232,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_CallCtor()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_CallCtor)}");
@@ -220,38 +253,38 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         // Call constructor using generic parameter
         {
-            MyList<int> a = Accessors<int>.CreateWithList<int>([ 1 ]);
+            MyList<int> a = Accessors<int>.CreateWithList([ 1 ]);
             Assert.Equal(1, a.Count);
         }
         {
-            MyList<string> a = Accessors<string>.CreateWithList<string>([ "1", "2" ]);
+            MyList<string> a = Accessors<string>.CreateWithList([ "1", "2" ]);
             Assert.Equal(2, a.Count);
         }
         {
-            MyList<Struct> a = Accessors<Struct>.CreateWithList<Struct>([new Struct(), new Struct(), new Struct()]);
+            MyList<Struct> a = Accessors<Struct>.CreateWithList([new Struct(), new Struct(), new Struct()]);
             Assert.Equal(3, a.Count);
         }
 
         // Call constructors as methods
         {
             MyList<int> a = (MyList<int>)RuntimeHelpers.GetUninitializedObject(typeof(MyList<int>));
-            Accessors<int>.CallCtorAsMethod<int>(a, [1]);
+            Accessors<int>.CallCtorAsMethod(a, [1]);
             Assert.Equal(1, a.Count);
         }
         {
             MyList<string> a = (MyList<string>)RuntimeHelpers.GetUninitializedObject(typeof(MyList<string>));
-            Accessors<string>.CallCtorAsMethod<string>(a, ["1", "2"]);
+            Accessors<string>.CallCtorAsMethod(a, ["1", "2"]);
             Assert.Equal(2, a.Count);
         }
         {
             MyList<Struct> a = (MyList<Struct>)RuntimeHelpers.GetUninitializedObject(typeof(MyList<Struct>));
-            Accessors<Struct>.CallCtorAsMethod<Struct>(a, [new Struct(), new Struct(), new Struct()]);
+            Accessors<Struct>.CallCtorAsMethod(a, [new Struct(), new Struct(), new Struct()]);
             Assert.Equal(3, a.Count);
         }
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeNonGenericInstanceMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericInstanceMethod)}");
@@ -282,7 +315,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeGenericInstanceMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeGenericInstanceMethod)}");
@@ -292,8 +325,11 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<int>.CanCastToElementType<string>(a, string.Empty));
             Assert.False(Accessors<int>.CanCastToElementType<Struct>(a, new Struct()));
             Assert.Equal(0, a.Count);
-            Accessors<int>.Add<int>(a, 1);
-            Assert.Equal(1, a.Count);
+            Accessors<int>.Add(a, 1);
+            Accessors<int>.AddWithIgnore<int>(a, 1, 1);
+            Accessors<int>.AddWithIgnore<string>(a, 1, string.Empty);
+            Accessors<int>.AddWithIgnore<Struct>(a, 1, new Struct());
+            Assert.Equal(4, a.Count);
         }
         {
             MyList<string> a = new();
@@ -301,8 +337,11 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.True(Accessors<string>.CanCastToElementType<string>(a, string.Empty));
             Assert.False(Accessors<string>.CanCastToElementType<Struct>(a, new Struct()));
             Assert.Equal(0, a.Count);
-            Accessors<string>.Add<string>(a, string.Empty);
-            Assert.Equal(1, a.Count);
+            Accessors<string>.Add(a, string.Empty);
+            Accessors<string>.AddWithIgnore<int>(a, string.Empty, 1);
+            Accessors<string>.AddWithIgnore<string>(a, string.Empty, string.Empty);
+            Accessors<string>.AddWithIgnore<Struct>(a, string.Empty, new Struct());
+            Assert.Equal(4, a.Count);
         }
         {
             MyList<Struct> a = new();
@@ -310,13 +349,16 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<Struct>.CanCastToElementType<string>(a, string.Empty));
             Assert.True(Accessors<Struct>.CanCastToElementType<Struct>(a, new Struct()));
             Assert.Equal(0, a.Count);
-            Accessors<Struct>.Add<Struct>(a, new Struct());
-            Assert.Equal(1, a.Count);
+            Accessors<Struct>.Add(a, new Struct());
+            Accessors<Struct>.AddWithIgnore<int>(a, new Struct(), 1);
+            Accessors<Struct>.AddWithIgnore<string>(a, new Struct(), string.Empty);
+            Accessors<Struct>.AddWithIgnore<Struct>(a, new Struct(), new Struct());
+            Assert.Equal(4, a.Count);
         }
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeNonGenericStaticMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeNonGenericStaticMethod)}");
@@ -328,7 +370,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeGenericStaticMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeGenericStaticMethod)}");
@@ -362,7 +404,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_InvalidUseUnsafeAccessor()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_InvalidUseUnsafeAccessor)}");

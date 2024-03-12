@@ -1156,7 +1156,6 @@ namespace
     bool DoesMethodMatchUnsafeAccessorDeclaration(
         GenerationContext& cxt,
         MethodDesc* method,
-        const Substitution* pMethodSubst,
         MetaSig::CompareState& state)
     {
         STANDARD_VM_CONTRACT;
@@ -1174,7 +1173,7 @@ namespace
         method->GetSig(&pSig2, &cSig2);
         PCCOR_SIGNATURE pEndSig2 = pSig2 + cSig2;
         ModuleBase* pModule2 = method->GetModule();
-        const Substitution* pSubst2 = pMethodSubst;
+        const Substitution* pSubst2 = NULL;
 
         //
         // Parsing the signature follows details defined in ECMA-335 - II.23.2.1
@@ -1287,28 +1286,6 @@ namespace
         _ASSERTE(!targetType.IsTypeDesc());
 
         MethodDesc* targetMaybe = NULL;
-        Substitution* pLookupSubst = NULL;
-
-        // Build up a Substitution to use when looking up methods involving generics.
-        Substitution substitution;
-        SigBuilder sigBuilder;
-        DWORD targetGenericParamCount = targetType.AsMethodTable()->GetNumGenericArgs();
-        if (targetGenericParamCount > 0)
-        {
-            // Create a temporary signature that translate VARs to MVARs.
-            for (DWORD i = 0; i < targetGenericParamCount; ++i)
-            {
-                sigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
-                sigBuilder.AppendData(i); // Represents the generic parameter index - II.23.2.12
-            }
-
-            DWORD tmpSigLen;
-            PVOID tmpSigRaw = sigBuilder.GetSignature(&tmpSigLen);
-
-            SigPointer tmpSig{ (PCCOR_SIGNATURE)tmpSigRaw, tmpSigLen };
-            substitution = Substitution{ cxt.Declaration->GetModule(), tmpSig, NULL };
-            pLookupSubst = &substitution;
-        }
 
         // Following a similar iteration pattern found in MemberLoader::FindMethod().
         // However, we are only operating on the current type not walking the type hierarchy.
@@ -1329,7 +1306,7 @@ namespace
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
-            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, pLookupSubst, state))
+            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
 
             // Check if there is some ambiguity.

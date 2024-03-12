@@ -367,21 +367,9 @@ namespace Internal.IL
             return true;
         }
 
-        private static unsafe bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
+        private static bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
         {
             TypeDesc targetType = context.TargetType;
-
-            // Build up a substitution Instantiation to use when looking up methods involving generics.
-            Instantiation substitutionForSig = default;
-            if (targetType.Instantiation.Length > 0)
-            {
-                TypeDesc[] types = new TypeDesc[targetType.Instantiation.Length];
-                for (int i = 0; i < types.Length; ++i)
-                {
-                    types[i] = targetType.Context.GetSignatureVariable(i, true);
-                }
-                substitutionForSig = new Instantiation(types);
-            }
 
             MethodDesc targetMaybe = null;
             foreach (MethodDesc md in targetType.GetMethods())
@@ -398,17 +386,10 @@ namespace Internal.IL
                     continue;
                 }
 
-                // Create a substitution signature for the current signature if appropriate.
-                MethodSignature sigToCompare = md.Signature;
-                if (!substitutionForSig.IsNull)
-                {
-                    sigToCompare = sigToCompare.ApplySubstitution(substitutionForSig);
-                }
-
                 // Check signature
                 if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context,
                     context.Declaration.Signature,
-                    sigToCompare,
+                    md.Signature,
                     ignoreCustomModifiers))
                 {
                     continue;
