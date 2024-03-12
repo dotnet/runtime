@@ -2156,8 +2156,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskFloat maskPopRegsFloat = regSet.rsGetModifiedFloatRegsMask();
-    regMaskGpr   maskPopRegsInt   = regSet.rsGetModifiedGprRegsMask();
+    regMaskFloat maskPopRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+    regMaskGpr   maskPopRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
 
     // First, pop float registers
 
