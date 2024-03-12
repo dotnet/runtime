@@ -8329,7 +8329,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         // Place by value class fields last
         // Update the number of GC pointer series
         // Calculate largest alignment requirement
-        unsigned int largestAlignmentRequirement = 1;
+        int largestAlignmentRequirement = 1;
         for (i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
         {
             if (pFieldDescList[i].IsByValue())
@@ -8340,14 +8340,14 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
                 {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)DATA_ALIGNMENT);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
                 }
                 else
 #elif defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
                 {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8u);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
                 }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -8356,13 +8356,13 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)TARGET_POINTER_SIZE);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
                     containsGCPointers = true;
                 }
                 else
                 {
                     int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)fieldAlignmentRequirement);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
                 }
 
@@ -8385,7 +8385,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 // non-value-type fields always require pointer alignment
                 // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
                 // but that is explicitly handled when we calculate the final alignment for the type.
-                largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)TARGET_POINTER_SIZE);
+                largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
 
                 if (!pFieldDescList[i].IsObjRef())
                 {
@@ -8419,7 +8419,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
-                minAlign = containsGCPointers ? TARGET_POINTER_SIZE : (unsigned)largestAlignmentRequirement;
+                minAlign = (unsigned)(containsGCPointers ? TARGET_POINTER_SIZE : largestAlignmentRequirement);
             }
             else {
                 minAlign = 1;
