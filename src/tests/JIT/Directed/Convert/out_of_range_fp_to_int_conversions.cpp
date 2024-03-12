@@ -17,7 +17,6 @@ typedef enum {
     CONVERT_SENTINEL,
     CONVERT_SATURATING,
     CONVERT_NATIVECOMPILERBEHAVIOR,
-    CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64,
     CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32,
 } FPtoIntegerConversionType;
 
@@ -35,7 +34,6 @@ extern "C" DLLEXPORT int32_t ConvertDoubleToInt32(double x, FPtoIntegerConversio
 
     case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
     case CONVERT_SATURATING:
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
         return (x != x) ? 0 : (x < INT32_MIN) ? INT32_MIN : (x > INT32_MAX) ? INT32_MAX : (int32_t)x;
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
         return 0;
@@ -61,7 +59,6 @@ extern "C" DLLEXPORT uint32_t ConvertDoubleToUInt32(double x, FPtoIntegerConvers
 
     case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
     case CONVERT_SATURATING:
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
         return ((x != x) || (x < 0)) ? 0 : (x > UINT32_MAX) ? UINT32_MAX : (uint32_t)x;
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
         return 0;
@@ -110,7 +107,6 @@ extern "C" DLLEXPORT int64_t ConvertDoubleToInt64(double x, FPtoIntegerConversio
         }
 
     case CONVERT_SATURATING:
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
         return (x != x) ? 0 : (x < INT64_MIN) ? INT64_MIN : (x >= int64_max_plus_1) ? INT64_MAX : (int64_t)x;
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
         return 0;
@@ -140,7 +136,6 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
         return ((x != x) || (x < 0) || (x >= uint64_max_plus_1)) ? UINT64_MAX : (uint64_t)x;
 
     case CONVERT_SATURATING:
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
         return ((x != x) || (x < 0)) ? 0 : (x >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)x;
 
     case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:

@@ -12786,11 +12786,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             castFromType = TYP_DOUBLE;
             break;
 
-        case CORINFO_HELP_FLT2UINT:
-            castToType   = TYP_UINT;
-            castFromType = TYP_FLOAT;
-            break;
-
         case CORINFO_HELP_DBL2UINT_OVF:
             castToType       = TYP_UINT;
             castFromType     = TYP_DOUBLE;
@@ -13101,7 +13096,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_DBL2LNG:
         case CORINFO_HELP_DBL2LNG_OVF:
         case CORINFO_HELP_DBL2UINT:
-        case CORINFO_HELP_FLT2UINT:
         case CORINFO_HELP_DBL2UINT_OVF:
         case CORINFO_HELP_DBL2ULNG:
         case CORINFO_HELP_DBL2ULNG_OVF:

@@ -12,7 +12,7 @@
 FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
-    const double uint64_max_plus_1 = -2.0 * (double)INT64_MIN;
+    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
     return (val != val || val < 0) ? 0 : (val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val;
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
@@ -31,47 +31,40 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 }
 FCIMPLEND
 
-EXTERN_C int64_t REDHAWK_CALLCONV RhpDbl2Lng(double val)
+FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
-    const double int64_min = (double)INT64_MIN;
-    const double int64_max = (double)INT64_MAX;
+    const double int64_min = -2147483648.0 * 4294967296.0;
+    const double int64_max = 2147483648.0 * 4294967296.0;
     return (val!= val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
 #else
     return (int64_t)val;
 #endif //HOST_X86 || HOST_AMD64
 }
+FCIMPLEND
 
-EXTERN_C int32_t REDHAWK_CALLCONV RhpDbl2Int(double val)
+FCIMPL1_D(int32_t, RhpDbl2Int, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
-    const double int32_min = (double)INT32_MIN - 1.0;
-    const double int32_max = -2.0 * (double)INT32_MIN;
-    return (val!= val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max) ? INT32_MAX : (int32_t)val;
+    const double int32_min = -2147483648.0;
+    const double int32_max_plus_1 = 2147483648.0;
+    return (val!= val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
 #else
     return (int32_t)val;
 #endif //HOST_X86 || HOST_AMD64
 }
+FCIMPLEND
 
-EXTERN_C uint32_t REDHAWK_CALLCONV RhpDbl2UInt(double val)
+FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
-    const double uint32_max_plus_1 = -2.0 * (double)INT32_MIN;
-    return (val < 0) ? 0 : (val != val || val >= uint32_max_plus_1) ? UINT32_MAX : (uint32_t)val;
+    const double uint_max = 4294967295.0;
+    return (val != val || val <= 0) ? 0 : (val >= uint_max) ? UINT32_MAX : (uint32_t)val;
 #else
     return (uint32_t)val;
 #endif //HOST_X86 || HOST_AMD64
 }
-
-EXTERN_C uint32_t REDHAWK_CALLCONV RhpFlt2UInt(float val)
-{
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    const float uint32_max_plus_1 = -2.0 * (float)INT32_MIN;
-    return (val != val || val < 0) ? 0 : (val >= uint32_max_plus_1) ? UINT32_MAX : (uint32_t)val;
-#else
-    return (uint32_t)val;
-#endif //HOST_X86 || HOST_AMD64
-}
+FCIMPLEND
 
 #undef min
 #undef max
@@ -152,24 +145,6 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
-
-FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
-{
-    return (int64_t)val;
-}
-FCIMPLEND
-
-FCIMPL1_D(int32_t, RhpDbl2Int, double val)
-{
-    return (int32_t)val;
-}
-FCIMPLEND
-
-FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
-{
-    return (uint32_t)val;
-}
-FCIMPLEND
 
 FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
 {

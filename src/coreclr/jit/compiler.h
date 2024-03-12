@@ -3173,6 +3173,20 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+#if defined(TARGET_XARCH)
+    GenTree* gtNewSimdCvtNode(var_types              type,
+                              GenTree*               op1,
+                              NamedIntrinsic         hwIntrinsicID,
+                              CorInfoType            simdTargetBaseJitType,
+                              CorInfoType            simdSourceBaseJitType,
+                              unsigned               simdSize);
+
+    GenTreeVecCon* gtCvtCtrlTbl(var_types   type,
+                                var_types   sourceType,
+                                var_types   targetType,
+                                unsigned    simdSize);
+#endif //TARGET_XARCH
+
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 

@@ -19,7 +19,6 @@ namespace FPBehaviorApp
         CONVERT_SENTINEL,
         CONVERT_SATURATING,
         CONVERT_NATIVECOMPILERBEHAVIOR,
-        CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64,
         CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32,
     }
 
@@ -91,7 +90,6 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
                     return (Double.IsNaN(x) || (x<int.MinValue) || (x > int.MaxValue)) ? int.MinValue: (int) x;
 
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     return Double.IsNaN(x) ? 0 : (x< int.MinValue) ? int.MinValue : (x > int.MaxValue) ? int.MaxValue : (int) x;
@@ -115,7 +113,6 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
                     return (Double.IsNaN(x) || (x < 0) || (x > uint.MaxValue)) ? uint.MaxValue : (uint)x;
 
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     return (Double.IsNaN(x) || (x < 0)) ? 0 : (x > uint.MaxValue) ? uint.MaxValue : (uint)x;
@@ -150,7 +147,6 @@ namespace FPBehaviorApp
                         return -(long)CppNativeArm32ConvertDoubleToUInt64(-x);
                     }
 
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                     return Double.IsNaN(x) ? 0 : (x < long.MinValue) ? long.MinValue : (x >= llong_max_plus_1) ? long.MaxValue : (long)x;
             }
@@ -185,7 +181,6 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
                     return (Double.IsNaN(x) || (x < 0) || (x >= ullong_max_plus_1)) ? ulong.MaxValue : (ulong)x;
 
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                     return (Double.IsNaN(x) || (x < 0)) ? 0 : (x >= ullong_max_plus_1) ? ulong.MaxValue : (ulong)x;
 
@@ -249,7 +244,7 @@ namespace FPBehaviorApp
     public class Program
     {
         static int failures = 0;
-        static FPtoIntegerConversionType ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64;
+        static FPtoIntegerConversionType ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
 
         static void TestBitValue(uint value, double? dblValNullable = null, FPtoIntegerConversionType? tValue = null)
         {
@@ -266,7 +261,6 @@ namespace FPBehaviorApp
 
             if (!tValue.HasValue)
             {
-                TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_SATURATING);
@@ -363,15 +357,12 @@ namespace FPBehaviorApp
         {
             switch (RuntimeInformation.ProcessArchitecture)
             {
-                case Architecture.X86:
-                case Architecture.X64:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64;
-                    break;
-
                 case Architecture.Arm:
                     Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32;
                     break;
 
+                case Architecture.X86:
+                case Architecture.X64:
                 case Architecture.Arm64:
                     Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
                     break;
