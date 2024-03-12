@@ -154,9 +154,8 @@ namespace System.Runtime.InteropServices
                 VarEnum.VT_DECIMAL => variant.As<decimal>(),
                 VarEnum.VT_CY => decimal.FromOACurrency(variant.GetRawDataRef<long>()),
                 VarEnum.VT_DATE => variant.As<DateTime>(),
-                VarEnum.VT_BSTR => Marshal.PtrToStringBSTR(variant.GetRawDataRef<nint>()),
-                VarEnum.VT_UNKNOWN => Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
-                VarEnum.VT_DISPATCH => Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
+                VarEnum.VT_BSTR => variant.GetRawDataRef<nint>() is 0 ? null : Marshal.PtrToStringBSTR(variant.GetRawDataRef<nint>()),
+                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => variant.GetRawDataRef<nint>() is 0 ? null : Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
                 _ => GetObjectFromNativeVariant(ref variant),
             };
         }
