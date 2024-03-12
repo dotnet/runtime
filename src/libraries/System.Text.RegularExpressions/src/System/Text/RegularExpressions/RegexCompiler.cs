@@ -2640,6 +2640,15 @@ namespace System.Text.RegularExpressions
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 // goto originalDoneLabel;
+                if (capturePos is not null && isInLoop)
+                {
+                    // Pop the crawl position from the stack.
+                    // stackpos--;
+                    Ldloc(stackpos);
+                    Ldc(1);
+                    Sub();
+                    Stloc(stackpos);
+                }
                 BrFar(originalDoneLabel);
 
                 // Failures (success for a negative lookaround) jump here.
