@@ -574,7 +574,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_MEMSET,                // Init block of memory
     CORINFO_HELP_MEMZERO,               // Init block of memory with zeroes
     CORINFO_HELP_MEMCPY,                // Copy block of memory
-    CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null, 
+    CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null,
                                         // not safe for unbounded size, does not trigger GC)
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
@@ -1982,6 +1982,16 @@ enum class GetTypeLayoutResult
     Failure,
 };
 
+#define MAX_SWIFT_LOWERED_ELEMENTS 4
+
+struct CORINFO_SWIFT_LOWERING
+{
+    bool byReference;
+    CorInfoType loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
+    uint32_t offsets[MAX_SWIFT_LOWERED_ELEMENTS];
+    size_t numLoweredElements;
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -2061,7 +2071,7 @@ public:
     // Example of a scenario addressed by notifyMethodInfoUsage:
     //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
     //     and realizes that the call always throws.
-    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
+    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is
     //     replaced with a breakpoint instruction that is expected to be unreachable.
     //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
     //     and the new version of the call no longer throws and does some work.

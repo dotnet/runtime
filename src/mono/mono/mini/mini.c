@@ -3038,6 +3038,9 @@ is_simd_supported (MonoCompile *cfg)
 #ifdef DISABLE_SIMD
     return FALSE;
 #endif
+#ifndef MONO_ARCH_SIMD_INTRINSICS
+	return FALSE;
+#endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
 	if ((mini_get_cpu_features (cfg) & MONO_CPU_WASM_SIMD) == 0)
