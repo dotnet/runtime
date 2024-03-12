@@ -7548,6 +7548,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->compile_aot)
 						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
 
+					if (fsig->has_type_parameters) {
+						cfg->prefer_instances = TRUE;
+						GENERIC_SHARING_FAILURE (CEE_CALLI);
+					}
+
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
 

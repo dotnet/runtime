@@ -458,7 +458,7 @@ mono_threads_platform_is_main_thread (void)
 #ifdef DISABLE_THREADS
 	return TRUE;
 #else
-	return emscripten_is_main_runtime_thread ();
+	return mono_threads_wasm_is_deputy_thread ();
 #endif
 }
 
@@ -541,6 +541,60 @@ mono_threads_wasm_on_thread_registered (void)
 }
 
 #ifndef DISABLE_THREADS
+static pthread_t deputy_thread_tid;
+extern void mono_wasm_start_deputy_thread_async (void);
+extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
+extern void mono_wasm_dump_threads (void);
+
+void mono_wasm_dump_threads_async (void)
+{
+	mono_threads_wasm_async_run_in_target_thread (mono_threads_wasm_ui_thread_tid (), mono_wasm_dump_threads);
+}
+
+gboolean
+mono_threads_wasm_is_deputy_thread (void)
+{
+	return pthread_self () == deputy_thread_tid;
+}
+
+MonoNativeThreadId
+mono_threads_wasm_deputy_thread_tid (void)
+{
+	return (MonoNativeThreadId) deputy_thread_tid;
+}
+
+// this is running in deputy thread
+static gsize
+deputy_thread_fn (void* unused_arg G_GNUC_UNUSED)
+{
+	deputy_thread_tid = pthread_self ();
+
+	// this will throw JS "unwind"
+	mono_wasm_start_deputy_thread_async();
+	
+	return 0;// never reached
+}
+
+EMSCRIPTEN_KEEPALIVE MonoNativeThreadId
+mono_wasm_create_deputy_thread (void)
+{
+	pthread_create (&deputy_thread_tid, NULL, (void *(*)(void *)) deputy_thread_fn, NULL);
+	return deputy_thread_tid;
+}
+
+// TODO ideally we should not need to have UI thread registered as managed
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_register_ui_thread (void)
+{
+	MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
+	mono_thread_set_state (thread, ThreadState_Background);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
+
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	g_assert (info);
+	info->runtime_thread = TRUE;
+	MONO_ENTER_GC_SAFE_UNBALANCED;
+}
 
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void))

@@ -21,6 +21,7 @@ namespace ILLink.RoslynAnalyzer
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
 		public const string attributeArgument = "attributeArgument";
 		public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
+		public const string FullyQualifiedFeatureGuardAttribute  = "System.Diagnostics.CodeAnalysis.FeatureGuardAttribute";
 		public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>> (GetRequiresAnalyzers);
 		static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers () =>
 			ImmutableArray.Create<RequiresAnalyzerBase> (
@@ -51,6 +52,8 @@ namespace ILLink.RoslynAnalyzer
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedTypeNameInTypeGetType));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedParameterInMethodCreateInstance));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ReturnValueDoesNotMatchFeatureGuards));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.InvalidFeatureGuard));
 
 			foreach (var requiresAnalyzer in RequiresAnalyzers.Value) {
 				foreach (var diagnosticDescriptor in requiresAnalyzer.SupportedDiagnostics)

@@ -319,6 +319,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     const bool  isTest       = IsConstantTestCondBlock(lastBlock, &blockIfTrue, &blockIfFalse, &isReversed);
     assert(isTest);
 
+    assert(firstBlock->TrueTargetIs(blockIfTrue));
+    FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
+    FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
+
     // Convert firstBlock to a switch block
     firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
@@ -338,8 +342,9 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     gtUpdateStmtSideEffects(firstBlock->lastStmt());
 
     // Unlink and remove the whole chain of conditional blocks
-    BasicBlock* blockToRemove = firstBlock->Next();
-    fgRemoveRefPred(blockToRemove, firstBlock);
+    fgRemoveRefPred(falseEdge);
+    BasicBlock* blockToRemove = falseEdge->getDestinationBlock();
+    assert(firstBlock->NextIs(blockToRemove));
     while (!lastBlock->NextIs(blockToRemove))
     {
         blockToRemove = fgRemoveBlock(blockToRemove, true);
@@ -361,18 +366,20 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         if (isReversed)
         {
             assert(lastBlock->FalseTargetIs(blockIfTrue));
-            fgRemoveRefPred(blockIfTrue, firstBlock);
+            fgRemoveRefPred(trueEdge);
             BasicBlock* targetBlock = blockIfTrue;
-            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
             FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfTrue);
             skipPredRemoval         = true;
+            blockIfTrue->SetTargetEdge(newEdge);
         }
         else
         {
             assert(lastBlock->FalseTargetIs(blockIfFalse));
             BasicBlock* targetBlock = blockIfFalse;
-            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, targetBlock);
+            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
             FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfFalse);
+            blockIfFalse->SetTargetEdge(newEdge);
         }
     }
 
@@ -397,7 +404,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
     if (!skipPredRemoval)
     {
-        fgRemoveRefPred(blockIfTrue, firstBlock);
+        fgRemoveRefPred(trueEdge);
     }
 
     for (unsigned i = 0; i < jumpCount; i++)

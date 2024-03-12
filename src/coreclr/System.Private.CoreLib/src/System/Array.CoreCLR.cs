@@ -74,7 +74,7 @@ namespace System
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
                 else
-                    Buffer.Memmove(ref dst, ref src, byteCount);
+                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
                 // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                 return;
@@ -184,7 +184,7 @@ namespace System
                 }
                 else
                 {
-                    Buffer.Memmove(ref dest, ref obj.GetRawData(), destSize);
+                    SpanHelpers.Memmove(ref dest, ref obj.GetRawData(), destSize);
                 }
             }
         }

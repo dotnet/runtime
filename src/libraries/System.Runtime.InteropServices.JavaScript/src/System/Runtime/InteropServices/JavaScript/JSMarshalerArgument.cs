@@ -65,6 +65,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(20)]
             internal bool ReceiverShouldFree;
+
+            [FieldOffset(24)]
+            internal IntPtr CallerNativeTID;
 #endif
         }
 

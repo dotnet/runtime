@@ -205,7 +205,9 @@ class MainApp {
     }
 
     removeFrame() {
-        this._frame.contentWindow.muteErrors();
+        if (this._frame.contentWindow.muteErrors !== undefined)
+            this._frame.contentWindow.muteErrors();
+
         document.body.removeChild(this._frame);
     }
 }
