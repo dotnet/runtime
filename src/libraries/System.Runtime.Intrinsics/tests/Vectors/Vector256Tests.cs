@@ -3456,12 +3456,12 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector256ByteShuffleUnsafeTooLargeTest()
         {
             Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector256<byte> result = Vector256.ShuffleUnsafe(vector, Vector256.Create((byte)8, 9, 10, 16, 17, 31, 32, 255, 254, 127, 128, 63, 64, 95, 96, 71, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28));
+            Vector256<byte> result = Vector256.ShuffleUnsafe(vector, Vector256.Create((byte)32, 33, 34, 35, 36, 37, 255, 254, 127, 128, 63, 64, 95, 96, 71, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 38, 39, 40, 41));
             Vector256<byte> expected = 
                 Avx512Vbmi.VL.IsSupported
-                ? Vector256.Create((byte)9, 10, 11, 17, 18, 32, 1, 32, 31, 32, 1, 32, 1, 32, 1, 8, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29)
+                ? Vector256.Create((byte)1, 2, 3, 4, 5, 6, 32, 31, 32, 1, 32, 1, 32, 1, 8, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 7, 8, 9, 10)
                 : Avx2.IsSupported
-                ? Vector256.Create((byte)9, 10, 11, 17, 18, 32, 1, 0, 0, 32, 0, 32, 1, 32, 1, 8, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29)
+                ? Vector256.Create((byte)1, 2, 3, 4, 5, 6, 0, 0, 32, 0, 32, 1, 32, 1, 8, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 7, 8, 9, 10)
                 : Vector256<byte>.Zero;
 
             for (int index = 0; index < Vector256<byte>.Count; index++)
