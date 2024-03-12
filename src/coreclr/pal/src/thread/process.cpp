@@ -1271,7 +1271,7 @@ RaiseFailFastException(
     ENTRY("RaiseFailFastException");
 
     TerminateCurrentProcessNoExit(TRUE);
-    PROCAbort();
+    for (;;) PROCAbort();
 
     LOGEXIT("RaiseFailFastException");
     PERF_EXIT(RaiseFailFastException);
