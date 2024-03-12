@@ -9994,7 +9994,6 @@ calli_end:
 			guint foffset;
 			gpointer addr = NULL;
 			gboolean is_instance;
-			gboolean is_static;
 			gboolean is_special_static;
 			MonoType *ftype;
 			MonoInst *store_val = NULL;
