@@ -248,22 +248,13 @@ namespace Internal.JitInterface
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                // Are we inlining a method that requires a runtime lookup?
-                if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                // Are we allowed to inline methods with runtime lookups?
+                if (!_compilation.CanInlineMethodWithRuntimeLookups && pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
                 {
-                    // REPRO: if it's not the problematic method - give up.
-                    if (MethodBeingCompiled.GetDisplayName() != "System.Buffers.SharedArrayPool`1<__Canon>.Rent(Int32)")
-                    {
-                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
-                        return;
-                    }
-
-                    Console.WriteLine("Root method: " + MethodBeingCompiled);
-                    Console.WriteLine("Inlinee with a runtime lookup: " + callerHandle);
-                    Console.WriteLine("Context kind: " + (CorInfoContextFlags)((nuint)pResolvedToken.tokenContext & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
-                    Console.WriteLine("Token type: " + pResolvedToken.tokenType);
-                    Console.WriteLine("-----");
+                    lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                    return;
                 }
+
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
 
                 if (genericLookup.UseHelper)
@@ -1440,9 +1431,18 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
                     pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(HandleToObject(callerHandle));
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+
+                    // Are we allowed to inline methods with runtime lookups?
+                    if (!_compilation.CanInlineMethodWithRuntimeLookups && pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                    {
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                    }
+                    else
+                    {
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(HandleToObject(callerHandle));
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    }
                 }
                 else
                 {

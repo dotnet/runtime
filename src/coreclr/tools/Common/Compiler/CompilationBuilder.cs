@@ -23,6 +23,7 @@ namespace ILCompiler
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
+        protected bool _canInlineMethodWithRuntimeLookups;
         protected int _parallelism = -1;
         protected bool _resilient;
 
@@ -70,6 +71,12 @@ namespace ILCompiler
         public CompilationBuilder UseOptimizationMode(OptimizationMode mode)
         {
             _optimizationMode = mode;
+            return this;
+        }
+
+        public CompilationBuilder UseInliningForMethodsWithRuntimeLookups(bool enable)
+        {
+            _canInlineMethodWithRuntimeLookups = enable;
             return this;
         }
 

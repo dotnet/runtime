@@ -30,9 +30,9 @@ namespace ILCompiler
         private readonly int _parallelism;
 
         public InstructionSetSupport InstructionSetSupport { get; }
+        public bool CanInlineMethodWithRuntimeLookups { get; }
 
-        internal RyuJitCompilation(
-            DependencyAnalyzerBase<NodeFactory> dependencyGraph,
+        internal RyuJitCompilation(DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
@@ -44,7 +44,8 @@ namespace ILCompiler
             MethodImportationErrorProvider errorProvider,
             ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
-            int parallelism)
+            int parallelism,
+            bool canInlineMethodWithRuntimeLookups)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -57,6 +58,8 @@ namespace ILCompiler
             _readOnlyFieldPolicy = readOnlyFieldPolicy;
 
             _parallelism = parallelism;
+
+            CanInlineMethodWithRuntimeLookups = canInlineMethodWithRuntimeLookups;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
