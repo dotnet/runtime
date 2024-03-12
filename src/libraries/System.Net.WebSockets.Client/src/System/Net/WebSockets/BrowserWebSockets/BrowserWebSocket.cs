@@ -519,7 +519,7 @@ namespace System.Net.WebSockets
                 }
                 if (previousState == WebSocketState.None || previousState == WebSocketState.Closed)
                 {
-                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Connecting, Open, CloseSent, Aborted"));
+                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Connecting, Open, CloseSent, CloseReceived, Aborted"));
                 }
                 AbortIfCancelationRequested(cancellationToken);
 
