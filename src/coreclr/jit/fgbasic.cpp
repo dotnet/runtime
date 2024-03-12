@@ -5924,12 +5924,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
                insertAfterBlk->Next()); // We insert at the end, not at the beginning, of the funclet region.
     }
 
-    // These asserts assume we aren't moving try regions (which we might need to do). Only
-    // try regions can have fall through into or out of the region.
-
-    noway_assert(!bPrev->bbFallsThrough()); // There can be no fall through into a filter or handler region
-    noway_assert(!bLast->bbFallsThrough()); // There can be no fall through out of a handler region
-
 #ifdef DEBUG
     if (verbose)
     {
