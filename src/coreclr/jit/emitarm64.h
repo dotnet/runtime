@@ -799,6 +799,7 @@ static bool isValidUimmFrom1(ssize_t value)
 template <const size_t bits, const size_t mod>
 static bool isValidUimm_MultipleOf(ssize_t value)
 {
+    static_assert(mod != 0);
     return isValidUimm<bits>(value / mod) && (value % mod == 0);
 }
 
@@ -814,6 +815,7 @@ static bool isValidSimm(ssize_t value)
 template <const size_t bits, const ssize_t mod>
 static bool isValidSimm_MultipleOf(ssize_t value)
 {
+    static_assert(mod != 0);
     return isValidSimm<bits>(value / mod) && (value % mod == 0);
 }
 
