@@ -1409,7 +1409,6 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98962")]
         [Theory]
         [MemberData(nameof(RecreationalRegex_Rectangle_MemberData))]
         [OuterLoop("May take several seconds")]

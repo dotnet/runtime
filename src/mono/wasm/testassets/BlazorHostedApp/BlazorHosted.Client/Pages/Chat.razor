@@ -84,12 +84,10 @@
 
     private async Task SendExitSignal()
     {
-        // exit the server
-        await _hubConnection.SendAsync("Exit", 0);
         await DisposeHubConnection();
-        Helper.TestOutputWriteLine($"Exit signal was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         // exit the client
-        await JSRuntime.InvokeVoidAsync("eval", "import('./dotnet.js').then(module => { module.dotnet; module.exit(0); });");
+        Helper.TestOutputWriteLine($"SendExitSignal by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+        await JSRuntime.InvokeVoidAsync("eval", "setTimeout(() => { getDotnetRuntime(0).exit(0); }, 50);");
     }
 
     private async Task DisposeHubConnection()

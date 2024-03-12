@@ -385,9 +385,8 @@
       <_MonoCPPFLAGS Include="-D_CRT_NONSTDC_NO_DEPRECATE" />
       <!--<_MonoCPPFLAGS Include="-DGC_NOT_DLL" />--> <!-- only used for Boehm -->
       <_MonoCPPFLAGS Include="-DWIN32_THREADS" />
-      <_MonoCPPFLAGS Include="-DWINVER=0x0601" />
-      <_MonoCPPFLAGS Include="-D_WIN32_WINNT=0x0601" />
-      <_MonoCPPFLAGS Include="-D_WIN32_IE=0x0501" />
+      <_MonoCPPFLAGS Include="-DWINVER=0x0602" />
+      <_MonoCPPFLAGS Include="-D_WIN32_WINNT=0x0602" />
       <_MonoCPPFLAGS Include="-D_UNICODE" />
       <_MonoCPPFLAGS Include="-DUNICODE" />
       <_MonoCPPFLAGS Include="-DFD_SETSIZE=1024" />
@@ -765,9 +764,8 @@
       <_MonoAOTCPPFLAGS Include="-D_CRT_NONSTDC_NO_DEPRECATE" />
       <!--<_MonoAOTCPPFLAGS Include="-DGC_NOT_DLL" />--> <!-- only used for Boehm -->
       <_MonoAOTCPPFLAGS Include="-DWIN32_THREADS" />
-      <_MonoAOTCPPFLAGS Include="-DWINVER=0x0601" />
-      <_MonoAOTCPPFLAGS Include="-D_WIN32_WINNT=0x0601" />
-      <_MonoAOTCPPFLAGS Include="-D_WIN32_IE=0x0501" />
+      <_MonoAOTCPPFLAGS Include="-DWINVER=0x0602" />
+      <_MonoAOTCPPFLAGS Include="-D_WIN32_WINNT=0x0602" />
       <_MonoAOTCPPFLAGS Include="-D_UNICODE" />
       <_MonoAOTCPPFLAGS Include="-DUNICODE" />
       <_MonoAOTCPPFLAGS Include="-DFD_SETSIZE=1024" />

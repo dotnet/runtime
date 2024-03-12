@@ -30,10 +30,6 @@
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
-
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
 
@@ -1065,10 +1061,11 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 #endif // _DEBUG
 }
 
-COOP_PINVOKE_HELPER(void, RhpValidateExInfoPop, (Thread * pThread, ExInfo * pExInfo, void * limitSP))
+FCIMPL3(void, RhpValidateExInfoPop, Thread * pThread, ExInfo * pExInfo, void * limitSP)
 {
     pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
+FCIMPLEND
 
 void Thread::SetDoNotTriggerGc()
 {
@@ -1132,7 +1129,7 @@ void Thread::ValidateExInfoStack()
 #ifndef DACCESS_COMPILE
 
 #ifndef TARGET_UNIX
-EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
+EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }
@@ -1206,22 +1203,24 @@ void Thread::SetThreadAbortException(Object *exception)
     m_threadAbortException = exception;
 }
 
-COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
+FCIMPL0(Object *, RhpGetThreadAbortException)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     return pCurThread->GetThreadAbortException();
 }
+FCIMPLEND
 
 Object** Thread::GetThreadStaticStorage()
 {
     return &m_pThreadLocalStatics;
 }
 
-COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
+FCIMPL0(Object**, RhGetThreadStaticStorage)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
 }
+FCIMPLEND
 
 InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
 {
@@ -1237,14 +1236,15 @@ void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, T
     newRoot->m_typeManager = typeManager;
 }
 
-COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root, TypeManager* typeManager))
+FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typeManager)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root, typeManager);
 }
+FCIMPLEND
 
 // This is function is used to quickly query a value that can uniquely identify a thread
-COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
+FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
 {
 #ifndef TARGET_UNIX
     return PalNtCurrentTeb();
@@ -1252,12 +1252,14 @@ COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
     return (uint8_t*)ThreadStore::RawGetCurrentThread();
 #endif // TARGET_UNIX
 }
+FCIMPLEND
 
 // This function is used to get the OS thread identifier for the current thread.
-COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
+FCIMPL0(uint64_t, RhCurrentOSThreadId)
 {
     return PalGetCurrentOSThreadId();
 }
+FCIMPLEND
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
@@ -1270,7 +1272,7 @@ EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInv
 // PInvoke
 //
 
-COOP_PINVOKE_HELPER(void, RhpReversePInvoke, (ReversePInvokeFrame * pFrame))
+FCIMPL1(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pFrame->m_savedThread = pCurThread;
@@ -1279,25 +1281,29 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvoke, (ReversePInvokeFrame * pFrame))
 
     RhpReversePInvokeAttachOrTrapThread2(pFrame);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame * pFrame))
+FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 {
     pFrame->m_savedThread->InlineReversePInvokeReturn(pFrame);
 }
+FCIMPLEND
 
 #ifdef USE_PORTABLE_HELPERS
 
-COOP_PINVOKE_HELPER(void, RhpPInvoke2, (PInvokeTransitionFrame* pFrame))
+FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpPInvokeReturn2, (PInvokeTransitionFrame* pFrame))
+FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
 }
+FCIMPLEND
 
 #endif //USE_PORTABLE_HELPERS
 

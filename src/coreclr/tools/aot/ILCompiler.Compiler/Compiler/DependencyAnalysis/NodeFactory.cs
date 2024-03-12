@@ -821,6 +821,12 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
+        public ISortableSymbolNode ExternVariable(string name)
+        {
+            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
+            return _externSymbols.GetOrAdd(mangledName);
+        }
+
         private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;
 
         public ISortableSymbolNode ExternIndirectSymbol(string name)

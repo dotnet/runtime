@@ -361,6 +361,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
         FlowEdge* const falseEdge = fgAddRefPred(poll, top);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
 
         FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
         poll->SetTargetEdge(newEdge);
@@ -1629,7 +1631,6 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
-    newEdge->setLikelihood(1.0);
     block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
 #ifdef DEBUG
@@ -2101,7 +2102,6 @@ private:
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
-                    newEdge->setLikelihood(1.0);
                     returnBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
@@ -6146,7 +6146,7 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 //   This algorithm consumes O(n^2) memory because we're using dense
 //   bitsets to represent reachability.
 //
-BlockReachabilitySets* BlockReachabilitySets::Build(FlowGraphDfsTree* dfsTree)
+BlockReachabilitySets* BlockReachabilitySets::Build(const FlowGraphDfsTree* dfsTree)
 {
     Compiler*    comp            = dfsTree->GetCompiler();
     BitVecTraits postOrderTraits = dfsTree->PostOrderTraits();

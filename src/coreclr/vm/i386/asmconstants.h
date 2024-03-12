@@ -231,8 +231,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
 #endif
 
-#define SIZEOF_FrameHandlerExRecordWithBarrier 0x5c
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecordWithBarrier == sizeof(FrameHandlerExRecordWithBarrier))
 #endif
 
 
