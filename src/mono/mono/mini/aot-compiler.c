@@ -5851,12 +5851,14 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		icomparable_inst = mono_class_inflate_generic_class_checked (icomparable, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (icomparable_inst);
 
 		if (mono_class_is_assignable_from_internal (icomparable_inst, tclass)) {
 			MonoClass *gcomparer_inst;
 			gcomparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericComparer`1");
 			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (gcomparer_inst);
 
 			add_generic_class (acfg, gcomparer_inst, FALSE, "Comparer<T>");
 		}
@@ -5878,6 +5880,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		iface_inst = mono_class_inflate_generic_class_checked (iface, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (iface_inst);
 
 		if (mono_class_is_assignable_from_internal (iface_inst, tclass)) {
 			MonoClass *gcomparer_inst;
@@ -5885,6 +5888,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			gcomparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericEqualityComparer`1");
 			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (gcomparer_inst);
 			add_generic_class (acfg, gcomparer_inst, FALSE, "EqualityComparer<T>");
 		}
 	}
@@ -5906,6 +5910,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			enum_comparer_inst = mono_class_inflate_generic_class_checked (enum_comparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (enum_comparer_inst);
 			add_generic_class (acfg, enum_comparer_inst, FALSE, "EqualityComparer<T>");
 		}
 	}
@@ -5927,6 +5932,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "ObjectComparer`1");
 			comparer_inst = mono_class_inflate_generic_class_checked (comparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (comparer_inst);
 			add_generic_class (acfg, comparer_inst, FALSE, "Comparer<T>");
 		}
 	}
@@ -5950,6 +5956,7 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 		generic_inst = mono_class_inflate_generic_class_checked (klass, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (generic_inst);
 		add_generic_class (acfg, generic_inst, force, "");
 	}
 }

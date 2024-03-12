@@ -1308,6 +1308,7 @@ get_wrapper_shared_vtype (MonoType *t)
 
 	MonoClass *tuple_inst = mono_class_inflate_generic_class_checked (tuple_class, &ctx, error);
 	mono_error_assert_ok (error);
+	g_assert (tuple_inst);
 
 	//printf ("T: %s\n", mono_class_full_name (tuple_inst));
 
@@ -1407,6 +1408,7 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		}
 		klass = mono_class_inflate_generic_class_checked (mono_class_get_generic_class (klass)->container_class, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (klass);
 
 		t = m_class_get_byval_arg (klass);
 		MonoType *shared_type = get_wrapper_shared_vtype (t);
@@ -4345,6 +4347,7 @@ get_shared_type (MonoType *t, MonoType *type)
 
 		k = mono_class_inflate_generic_class_checked (gclass->container_class, &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (k);
 
 		return mini_get_shared_gparam (t, m_class_get_byval_arg (k));
 	} else if (MONO_TYPE_ISSTRUCT (type)) {
