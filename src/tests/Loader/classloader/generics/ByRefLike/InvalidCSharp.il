@@ -344,6 +344,7 @@
         ret
     }
 
+    .field public static class InvalidCSharp.GenericClass_Over`1<!T> StaticField1
     .field public static !T StaticField
 }
 

@@ -10079,15 +10079,6 @@ calli_end:
 				is_instance = FALSE;
 			}
 
-			is_static = (il_op == MONO_CEE_LDSFLD || il_op == MONO_CEE_LDSFLDA || il_op == MONO_CEE_STSFLD);
-			if (is_static && mono_class_is_ginst (klass)) {
-				MonoGenericContext *context = &mono_class_get_generic_class (klass)->context;
-				if (context->class_inst) {
-					for (guint i = 0; i < context->class_inst->type_argc; ++i)
-						if (m_class_is_byreflike (mono_class_from_mono_type_internal (context->class_inst->type_argv [i])))
-							TYPE_LOAD_ERROR (klass);
-				}
-			}
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
