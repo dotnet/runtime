@@ -4,8 +4,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
 
-[PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS)]
-[ActiveIssue("https://github.com/dotnet/runtime/issues/94081", TestRuntimes.Mono)]
 public class SwiftAbiStress
 {
     private const string SwiftLib = "libSwiftAbiStress.dylib";
