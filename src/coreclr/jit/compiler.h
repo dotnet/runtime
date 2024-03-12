@@ -5233,14 +5233,6 @@ public:
     void fgCleanupContinuation(BasicBlock* continuation);
 
     PhaseStatus fgTailMergeThrows();
-    void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
-                                            BasicBlock* nonCanonicalBlock,
-                                            BasicBlock* canonicalBlock,
-                                            FlowEdge*   predEdge);
-    void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
-                                       BasicBlock* nonCanonicalBlock,
-                                       BasicBlock* canonicalBlock,
-                                       FlowEdge*   predEdge);
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -5919,6 +5911,10 @@ private:
 
 public:
     void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 
