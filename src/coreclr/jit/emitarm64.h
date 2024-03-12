@@ -780,36 +780,6 @@ static bool isStackRegister(regNumber reg)
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
-// Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
-static bool isValidSimm4_MultipleOf2(ssize_t value)
-{
-    return (-16 <= value) && (value <= 14) && (value % 2 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 3 immediate 4 bit encoding (such as for LD3Q).
-static bool isValidSimm4_MultipleOf3(ssize_t value)
-{
-    return (-24 <= value) && (value <= 21) && (value % 3 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 4 immediate 4 bit encoding (such as for LD4Q).
-static bool isValidSimm4_MultipleOf4(ssize_t value)
-{
-    return (-32 <= value) && (value <= 28) && (value % 4 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 16 immediate 4 bit encoding (such as for LD1RQB).
-static bool isValidSimm4_MultipleOf16(ssize_t value)
-{
-    return (-128 <= value) && (value <= 112) && (value % 16 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 32 immediate 4 bit encoding (such as for LD1ROB).
-static bool isValidSimm4_MultipleOf32(ssize_t value)
-{
-    return (-256 <= value) && (value <= 224) && (value % 32 == 0);
-};
-
 // Returns true if 'value' is a legal unsigned immediate with 'bits' number of bits.
 template <const size_t bits>
 static bool isValidUimm(ssize_t value)
@@ -842,11 +812,13 @@ static bool isValidSimm(ssize_t value)
     return (-max <= value) && (value < max);
 }
 
-// Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
-static bool isValidSimm8_MultipleOf256(ssize_t value)
+// Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
+template <const size_t bits, const ssize_t mod>
+static bool isValidSimm_MultipleOf(ssize_t value)
 {
-    return (-0x8000 <= value) && (value <= 0x7F00) && (value % 256 == 0);
-};
+    constexpr ssize_t max = (1 << (bits - 1)) * mod;
+    return (-max <= value) && (value <= (max - mod)) && (value % mod == 0);
+}
 
 // Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
 static bool isValidRot(ssize_t value)

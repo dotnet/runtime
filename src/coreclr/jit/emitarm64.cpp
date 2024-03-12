@@ -2231,7 +2231,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_st2w:
                 case INS_sve_st2d:
                 case INS_sve_st2q:
-                    assert(isValidSimm4_MultipleOf2(emitGetInsSC(id))); // iiii
+                    assert((isValidSimm_MultipleOf<4, 2>(emitGetInsSC(id)))); // iiii
                     break;
 
                 case INS_sve_ld3b:
@@ -2244,7 +2244,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_st3w:
                 case INS_sve_st3d:
                 case INS_sve_st3q:
-                    assert(isValidSimm4_MultipleOf3(emitGetInsSC(id))); // iiii
+                    assert((isValidSimm_MultipleOf<4, 3>(emitGetInsSC(id)))); // iiii
                     break;
 
                 case INS_sve_ld4b:
@@ -2257,21 +2257,21 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_st4w:
                 case INS_sve_st4d:
                 case INS_sve_st4q:
-                    assert(isValidSimm4_MultipleOf4(emitGetInsSC(id))); // iiii
+                    assert((isValidSimm_MultipleOf<4, 4>(emitGetInsSC(id)))); // iiii
                     break;
 
                 case INS_sve_ld1rqb:
                 case INS_sve_ld1rqd:
                 case INS_sve_ld1rqh:
                 case INS_sve_ld1rqw:
-                    assert(isValidSimm4_MultipleOf16(emitGetInsSC(id))); // iiii
+                    assert((isValidSimm_MultipleOf<4, 16>(emitGetInsSC(id)))); // iiii
                     break;
 
                 case INS_sve_ld1rob:
                 case INS_sve_ld1rod:
                 case INS_sve_ld1roh:
                 case INS_sve_ld1row:
-                    assert(isValidSimm4_MultipleOf32(emitGetInsSC(id))); // iiii
+                    assert((isValidSimm_MultipleOf<4, 32>(emitGetInsSC(id)))); // iiii
                     break;
 
                 default:
@@ -8052,7 +8052,7 @@ void emitter::emitIns_R_I(instruction     ins,
                 if (!isValidSimm<8>(imm))
                 {
                     // Size specifier must be able to fit a left-shifted immediate
-                    assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
+                    assert((isValidSimm_MultipleOf<8, 256>(imm))); // iiiiiiii
                     assert(insOptsScalableAtLeastHalf(opt));
                     hasShift = true;
                     imm >>= 8;
@@ -8071,7 +8071,7 @@ void emitter::emitIns_R_I(instruction     ins,
             if (!isValidSimm<8>(imm))
             {
                 // Size specifier must be able to fit a left-shifted immediate
-                assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
+                assert((isValidSimm_MultipleOf<8, 256>(imm))); // iiiiiiii
                 assert(insOptsScalableAtLeastHalf(opt));
                 hasShift = true;
                 imm >>= 8;
@@ -10312,7 +10312,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             if (!isValidSimm<8>(imm))
             {
                 // Size specifier must be able to fit a left-shifted immediate
-                assert(isValidSimm8_MultipleOf256(imm)); // iiiiiiii
+                assert((isValidSimm_MultipleOf<8, 256>(imm))); // iiiiiiii
                 assert(insOptsScalableAtLeastHalf(opt));
                 hasShift = true;
                 imm >>= 8;
@@ -14118,14 +14118,14 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 case INS_sve_ld1rqd:
                 case INS_sve_ld1rqh:
                 case INS_sve_ld1rqw:
-                    assert(isValidSimm4_MultipleOf16(imm));
+                    assert((isValidSimm_MultipleOf<4, 16>(imm)));
                     break;
 
                 case INS_sve_ld1rob:
                 case INS_sve_ld1rod:
                 case INS_sve_ld1roh:
                 case INS_sve_ld1row:
-                    assert(isValidSimm4_MultipleOf32(imm));
+                    assert((isValidSimm_MultipleOf<4, 32>(imm)));
                     break;
 
                 default:
@@ -14177,15 +14177,15 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             switch (ins)
             {
                 case INS_sve_ld2q:
-                    assert(isValidSimm4_MultipleOf2(imm));
+                    assert((isValidSimm_MultipleOf<4, 2>(imm)));
                     break;
 
                 case INS_sve_ld3q:
-                    assert(isValidSimm4_MultipleOf3(imm));
+                    assert((isValidSimm_MultipleOf<4, 3>(imm)));
                     break;
 
                 case INS_sve_ld4q:
-                    assert(isValidSimm4_MultipleOf4(imm));
+                    assert((isValidSimm_MultipleOf<4, 4>(imm)));
                     break;
 
                 default:
@@ -14222,21 +14222,21 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 case INS_sve_ld2h:
                 case INS_sve_ld2w:
                 case INS_sve_ld2d:
-                    assert(isValidSimm4_MultipleOf2(imm));
+                    assert((isValidSimm_MultipleOf<4, 2>(imm)));
                     break;
 
                 case INS_sve_ld3b:
                 case INS_sve_ld3h:
                 case INS_sve_ld3w:
                 case INS_sve_ld3d:
-                    assert(isValidSimm4_MultipleOf3(imm));
+                    assert((isValidSimm_MultipleOf<4, 3>(imm)));
                     break;
 
                 case INS_sve_ld4b:
                 case INS_sve_ld4h:
                 case INS_sve_ld4w:
                 case INS_sve_ld4d:
-                    assert(isValidSimm4_MultipleOf4(imm));
+                    assert((isValidSimm_MultipleOf<4, 4>(imm)));
                     break;
 
                 default:
@@ -14292,15 +14292,15 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             switch (ins)
             {
                 case INS_sve_st2q:
-                    assert(isValidSimm4_MultipleOf2(imm));
+                    assert((isValidSimm_MultipleOf<4, 2>(imm)));
                     break;
 
                 case INS_sve_st3q:
-                    assert(isValidSimm4_MultipleOf3(imm));
+                    assert((isValidSimm_MultipleOf<4, 3>(imm)));
                     break;
 
                 case INS_sve_st4q:
-                    assert(isValidSimm4_MultipleOf4(imm));
+                    assert((isValidSimm_MultipleOf<4, 4>(imm)));
                     break;
 
                 default:
@@ -14429,21 +14429,21 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 case INS_sve_st2h:
                 case INS_sve_st2w:
                 case INS_sve_st2d:
-                    assert(isValidSimm4_MultipleOf2(imm));
+                    assert((isValidSimm_MultipleOf<4, 2>(imm)));
                     break;
 
                 case INS_sve_st3b:
                 case INS_sve_st3h:
                 case INS_sve_st3w:
                 case INS_sve_st3d:
-                    assert(isValidSimm4_MultipleOf3(imm));
+                    assert((isValidSimm_MultipleOf<4, 3>(imm)));
                     break;
 
                 case INS_sve_st4b:
                 case INS_sve_st4h:
                 case INS_sve_st4w:
                 case INS_sve_st4d:
-                    assert(isValidSimm4_MultipleOf4(imm));
+                    assert((isValidSimm_MultipleOf<4, 4>(imm)));
                     break;
 
                 default:
@@ -21945,7 +21945,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm)
 {
-    assert(isValidSimm4_MultipleOf2(imm));
+    assert((isValidSimm_MultipleOf<4, 2>(imm)));
     return insEncodeSimm4_19_to_16(imm / 2);
 }
 
@@ -21956,7 +21956,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm)
 {
-    assert(isValidSimm4_MultipleOf3(imm));
+    assert((isValidSimm_MultipleOf<4, 3>(imm)));
     return insEncodeSimm4_19_to_16(imm / 3);
 }
 
@@ -21967,7 +21967,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm)
 {
-    assert(isValidSimm4_MultipleOf4(imm));
+    assert((isValidSimm_MultipleOf<4, 4>(imm)));
     return insEncodeSimm4_19_to_16(imm / 4);
 }
 
@@ -21978,7 +21978,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
 {
-    assert(isValidSimm4_MultipleOf16(imm));
+    assert((isValidSimm_MultipleOf<4, 16>(imm)));
     return insEncodeSimm4_19_to_16(imm / 16);
 }
 
@@ -21989,7 +21989,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm)
 {
-    assert(isValidSimm4_MultipleOf32(imm));
+    assert((isValidSimm_MultipleOf<4, 32>(imm)));
     return insEncodeSimm4_19_to_16(imm / 32);
 }
 
