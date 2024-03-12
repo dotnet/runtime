@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 	[SetupLinkerArgument ("-a", "test.exe", "library")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	[VerifyMetadataNames]
+	[SetupLinkerArgument ("--feature", "Mono.Linker.Tests.Cases.Libraries.RootLibrary.FeatureGuardSubstitutionsTest.FeatureSwitch", "false")]
 	public class RootLibrary
 	{
 		private int field;
@@ -159,6 +160,48 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			private void LocalMethod ()
 			{
 			}
+		}
+
+		[Kept]
+		public class FeatureGuardSubstitutionsTest
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (FeatureGuardAttribute))]
+			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
+			private static bool GuardUnreferencedCode {
+				[Kept]
+				get => throw null;
+			}
+
+			[Kept]
+			// Body is not modified because feature guard substitutions are disabled in library mode
+			private static void TestGuard () {
+				if (GuardUnreferencedCode)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureSwitchDefinition ("Mono.Linker.Tests.Cases.Libraries.RootLibrary.FeatureGuardSubstitutionsTest.FeatureSwitch")]
+			private static bool FeatureSwitch => throw null;
+
+			[Kept]
+			// Feature switches are still substituted in library mode if explicitly passed on the command-line
+			[ExpectBodyModified]
+			private static void TestFeatureSwitch () {
+				if (FeatureSwitch)
+					RequiresUnreferencedCode ();
+			}
+
+			[Kept]
+			public FeatureGuardSubstitutionsTest ()
+			{
+				TestGuard ();
+				TestFeatureSwitch ();
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
+			private static void RequiresUnreferencedCode () { }
 		}
 
 		[Kept]

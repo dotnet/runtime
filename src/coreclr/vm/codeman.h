@@ -2619,21 +2619,20 @@ public:
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet()     { WRAPPER_NO_CONTRACT; return GetJitManager()->IsFunclet(this); }
     EECodeInfo  GetMainFunctionInfo();
-    ULONG               GetFixedStackSize();
+#endif // FEATURE_EH_FUNCLETS
 
-#if defined(TARGET_AMD64)
-    BOOL        HasFrameRegister();
-#endif // TARGET_AMD64
-
-#else // FEATURE_EH_FUNCLETS
+#if defined(TARGET_X86)
     ULONG       GetFixedStackSize()
     {
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
-#endif // FEATURE_EH_FUNCLETS
+#endif // TARGET_X86
 
 #if defined(TARGET_AMD64)
+    BOOL        HasFrameRegister();
+    ULONG       GetFixedStackSize();
+
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
     ULONG        GetFrameOffsetFromUnwindInfo();
 #if defined(_DEBUG) && defined(HAVE_GCCOVER)

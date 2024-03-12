@@ -22,7 +22,6 @@ import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } fro
 import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
-import { addUnsettledPromise } from "./pthreads";
 import { gc_locked } from "./gc-lock";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
@@ -338,9 +337,6 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     if (BuildConfiguration === "Debug") {
         (holder as any)[proxy_debug_symbol] = `PromiseHolder with GCHandle ${gc_handle}`;
     }
-
-    if (WasmEnableThreads)
-        addUnsettledPromise();
 
     value.then(data => holder.resolve(data), reason => holder.reject(reason));
 }
