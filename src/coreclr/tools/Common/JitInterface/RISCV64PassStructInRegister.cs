@@ -153,7 +153,7 @@ namespace Internal.JitInterface
                             Debug.Assert(fieldIndex == 1);
                             if ((floatFieldFlags2 & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                             {
-                                floatFieldFlags |= (uint)StructFloatFieldInfoFlags.STRUCT_MERGE_FIRST_SECOND;
+                                floatFieldFlags |= (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND;
                             }
                             if (field.FieldType.GetElementSize().AsInt == 8)
                             {
