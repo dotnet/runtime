@@ -617,8 +617,8 @@ struct Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor
 struct Agnostic_GetSwiftLowering
 {
     DWORD byReference;
-    DWORD loweredElements[4];
-    DWORD offsets[4];
+    DWORD loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
+    DWORD offsets[MAX_SWIFT_LOWERED_ELEMENTS];
     DWORD numLoweredElements;
 };
 
