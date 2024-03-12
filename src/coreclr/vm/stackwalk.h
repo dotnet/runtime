@@ -417,6 +417,18 @@ public:
         return fShouldParentFrameUseUnwindTargetPCforGCReporting;
     }
 
+    bool ShouldParentToFuncletReportSavedSlots()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldParentToFuncletReportSavedSlots;
+    }
+
+    bool ShouldSaveReportedSlots()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldSaveReportedSlots;
+    }
+
     const EE_ILEXCEPTION_CLAUSE& GetEHClauseForCatch()
     {
         return ehClauseForCatch;
@@ -469,6 +481,8 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    bool              fShouldSaveReportedSlots;
+    bool              fShouldParentToFuncletReportSavedSlots;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
@@ -754,6 +768,9 @@ private:
     bool          m_movedPastFirstExInfo;
     // Indicates that no funclet was seen during the current stack walk yet
     bool          m_fFuncletNotSeen;
+
+    bool          m_fFoundFirstFunclet;
+
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
 #endif // RECORD_RESUMABLE_FRAME_SP

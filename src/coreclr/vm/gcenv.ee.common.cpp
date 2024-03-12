@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "gcenv.h"
+#include <exinfo.h>
 
 #if defined(FEATURE_EH_FUNCLETS)
 
@@ -148,6 +149,8 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
 
+    STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "GcEnumObject at slot %p, object %p, pinned=%d\n", pObj, *ppObj, (flags & GC_CALL_PINNED) ? 1 : 0);
+
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
     // any long operation
@@ -222,7 +225,52 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
 #endif // defined(FEATURE_EH_FUNCLETS)
 
-    if (fReportGCReferences)
+    Thread *pThread = pCF->GetThread();
+    ExInfo *pExInfo = (ExInfo *)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+    if (pCF->ShouldSaveReportedSlots())
+    {
+        STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Saving location in frame method at SP: %p, PC: %p, FP: %p\n",
+            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()), GetFP(pCF->GetRegisterSet()->pCurrentContext));
+
+        _ASSERTE(pExInfo);
+        REGDISPLAY *pRD = pCF->GetRegisterSet();
+        pExInfo->m_lastReportedFunclet.IP = GetControlPC(pRD);
+        pExInfo->m_lastReportedFunclet.FP = GetFP(pRD->pCurrentContext);
+        pExInfo->m_lastReportedFunclet.Flags = pCF->GetCodeManagerFlags();
+    }
+
+    if (pCF->ShouldParentToFuncletReportSavedSlots())
+    {
+        STRESS_LOG4(LF_GCROOTS, LL_INFO1000, "Reporting saved slots in frame method at SP: %p, PC: %p using original FP: %p, PC: %p\n",
+            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()), pExInfo->m_lastReportedFunclet.FP, pExInfo->m_lastReportedFunclet.IP);
+
+        _ASSERTE(!pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting());
+        _ASSERTE(pExInfo);
+
+        ICodeManager * pCM = pCF->GetCodeManager();
+        _ASSERTE(pCM != NULL);
+
+        CONTEXT context = {};
+        REGDISPLAY partialRD;
+        SetIP(&context, pExInfo->m_lastReportedFunclet.IP);
+        SetFP(&context, pExInfo->m_lastReportedFunclet.FP);
+        SetSP(&context, 0);
+
+        context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+        FillRegDisplay(&partialRD, &context);
+
+        EECodeInfo codeInfo(pExInfo->m_lastReportedFunclet.IP);
+        _ASSERTE(codeInfo.IsValid());
+
+        pCM->EnumGcRefs(&partialRD,
+                        &codeInfo,
+                        pExInfo->m_lastReportedFunclet.Flags | ReportFPBasedSlotsOnly,
+                        GcEnumObject,
+                        pData,
+                        NO_OVERRIDE_OFFSET);
+    }
+    else if (fReportGCReferences)
     {
         if (pCF->IsFrameless())
         {
@@ -297,7 +345,11 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
     }
-
+    else
+    {
+        STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Skipping GC scanning in frame method at SP: %p, PC: %p\n",
+            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()));
+    }
 
     // If we're executing a LCG dynamic method then we must promote the associated resolver to ensure it
     // doesn't get collected and yank the method code out from under us).

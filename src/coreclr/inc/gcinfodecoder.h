@@ -679,7 +679,7 @@ private:
         if(slotIndex < slotDecoder.GetNumRegisters())
         {
             UINT32 regNum = pSlot->Slot.RegisterNumber;
-            if( reportScratchSlots || !IsScratchRegister( regNum, pRD ) )
+            if( (reportScratchSlots || !IsScratchRegister( regNum, pRD )) )
             {
                 ReportRegisterToGC(
                             regNum,

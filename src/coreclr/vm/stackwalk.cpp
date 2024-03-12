@@ -1098,6 +1098,7 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_forceReportingWhileSkipping = ForceGCReportingStage::Off;
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
+    m_fFoundFirstFunclet = false;
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -1460,6 +1461,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFilterFuncletCached = false;
     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
     m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
+    m_crawl.fShouldParentToFuncletReportSavedSlots = false;
 #endif // FEATURE_EH_FUNCLETS
 
     m_crawl.pThread = this->m_pThread;
@@ -1631,10 +1633,11 @@ StackWalkAction StackFrameIterator::Filter(void)
         {
             if (!m_movedPastFirstExInfo)
             {
-                if ((pExInfo->m_passNumber == 2) && !pExInfo->m_csfEnclosingClause.IsNull() && m_sfFuncletParent.IsNull())
+                if ((pExInfo->m_passNumber == 2) && !pExInfo->m_csfEnclosingClause.IsNull() && m_sfFuncletParent.IsNull() && pExInfo->m_lastReportedFunclet.IP != 0)
                 {
                     // We are in the 2nd pass and we have already called an exceptionally called
-                    // a finally funclet, but we have not seen any funclet on the call stack yet.
+                    // a finally funclet and reported it to GC in a previous GC run. But we have
+                    // not seen any funclet on the call stack yet.
                     // Simulate that we have actualy seen a finally funclet during this pass and
                     // that it didn't report GC references to ensure that the references will be
                     // reported by the parent correctly.
@@ -1651,6 +1654,8 @@ StackWalkAction StackFrameIterator::Filter(void)
             }
         }
 
+        m_crawl.fShouldParentToFuncletReportSavedSlots = false;
+
         // by default, there is no funclet for the current frame
         // that reported GC references
         m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
@@ -1658,6 +1663,8 @@ StackWalkAction StackFrameIterator::Filter(void)
         // By default, assume that we are going to report GC references for this
         // CrawlFrame
         m_crawl.fShouldCrawlframeReportGCReferences = true;
+
+        m_crawl.fShouldSaveReportedSlots = false;
 
         // By default, assume that parent frame is going to report GC references from
         // the actual location reported by the stack walk.
@@ -1871,7 +1878,7 @@ ProcessFuncletsForGCReporting:
                             {
                                 // Get a reference to the funclet's parent frame.
                                 m_sfFuncletParent = ExceptionTracker::FindParentStackFrameForStackWalk(&m_crawl, true);
-                                _ASSERTE(!m_fFuncletNotSeen);
+                                //_ASSERTE(!m_fFuncletNotSeen);
 
                                 if (m_sfFuncletParent.IsNull())
                                 {
@@ -1899,6 +1906,14 @@ ProcessFuncletsForGCReporting:
 
                                         if (g_isNewExceptionHandlingEnabled)
                                         {
+                                            // TODO: need to do this for the first funclet of the current exception handling only
+                                            if (!m_fFoundFirstFunclet &&  pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet()))
+                                            {
+                                                _ASSERTE(pExInfo != NULL);
+                                                m_crawl.fShouldSaveReportedSlots = true;
+                                                m_fFoundFirstFunclet = true;
+                                            }
+
                                             if (!ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
                                             {
                                                 // Initiate force reporting of references in the new managed exception handling code frames. 
@@ -2117,29 +2132,31 @@ ProcessFuncletsForGCReporting:
                                                     m_crawl.ehClauseForCatch.HandlerEndPC);                                                
                                             }
                                         }
-                                        else if (!m_crawl.IsFunclet())
+                                        else 
                                         {
-                                            // we've reached the parent and it's not handling an exception, it's also not
-                                            // a funclet so reset our state.  note that we cannot reset the state when the
-                                            // parent is a funclet since the leaf funclet didn't report any references and
-                                            // we might have a catch handler below us that might contain GC roots.
-                                            m_fDidFuncletReportGCReferences = true;
-                                            STRESS_LOG0(LF_GCROOTS, LL_INFO100,
-                                                "STACKWALK: Reached parent of funclet which didn't report GC roots is not a funclet, resetting m_fDidFuncletReportGCReferences to true\n");
+                                            if (m_fFuncletNotSeen)
+                                            {
+                                                // We need to report this parent frame
+                                                //shouldSkipReporting = false;
+                                                m_crawl.fShouldParentToFuncletReportSavedSlots = true;
+                                                m_fDidFuncletReportGCReferences = true;
+                                                //m_fFuncletNotSeen = false;
+                                            }
+                                            if (!m_crawl.IsFunclet())
+                                            {
+                                                // we've reached the parent and it's not handling an exception, it's also not
+                                                // a funclet so reset our state.  note that we cannot reset the state when the
+                                                // parent is a funclet since the leaf funclet didn't report any references and
+                                                // we might have a catch handler below us that might contain GC roots.
+                                                m_fDidFuncletReportGCReferences = true;
+                                                STRESS_LOG0(LF_GCROOTS, LL_INFO100,
+                                                    "STACKWALK: Reached parent of funclet which didn't report GC roots is not a funclet, resetting m_fDidFuncletReportGCReferences to true\n");
+                                            }
                                         }
 
                                         if (g_isNewExceptionHandlingEnabled)
                                         {
                                             _ASSERTE(!ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(&m_crawl));
-                                            if (m_fFuncletNotSeen && m_crawl.IsFunclet())
-                                            {
-                                                _ASSERTE(!m_fProcessIntermediaryNonFilterFunclet);
-                                                _ASSERTE(m_crawl.fShouldCrawlframeReportGCReferences);
-                                                m_fDidFuncletReportGCReferences = true;
-                                                shouldSkipReporting = false;
-                                                m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = true;
-                                                m_crawl.ehClauseForCatch = pExInfo->m_ClauseForCatch;
-                                            }                                                
                                         }
                                         else
                                         {

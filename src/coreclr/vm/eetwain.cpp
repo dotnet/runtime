@@ -1349,6 +1349,13 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (flags & ParentOfFuncletStackFrame)
+    {
+        STRESS_LOG0((LF_GCROOTS, LL_INFO100, "Not reporting this frame because it was already reported via another funclet.\n"));
+        return true;
+    }
+#endif // FEATURE_EH_FUNCLETS
     PTR_CBYTE methodStart = PTR_CBYTE(pCodeInfo->GetSavedMethodCode());
     unsigned  curOffs = pCodeInfo->GetRelOffset();
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
