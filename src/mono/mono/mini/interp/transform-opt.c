@@ -3182,7 +3182,7 @@ retry_instruction:
 					td->var_values [ins->sregs [0]].ref_count--;
 					goto retry_instruction;
 				}
-			} else if (opcode == MINT_BOX) {
+			} else if (MINT_IS_BOX (opcode)) {
 				// TODO Add more relevant opcodes
 				td->var_values [dreg].type = VAR_VALUE_NON_NULL;
 			}
