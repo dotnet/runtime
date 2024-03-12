@@ -2371,7 +2371,7 @@ namespace System.Runtime.Intrinsics
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+        public static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)
             {

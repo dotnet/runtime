@@ -2338,6 +2338,67 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].
+        /// On hardware with <see cref="Avx2"/> support, but not <see cref="Avx512Vbmi.VL"/>, indices are treated as modulo 32, and if the high bit is set, the result will be set to 0 for that element.
+        /// On hardware with <see cref="Avx512Vbmi.VL"/> support, indices are treated as modulo 32.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
+        public static Vector256<byte> ShuffleUnsafe(Vector256<byte> vector, Vector256<byte> indices)
+        {
+            if (Avx512Vbmi.VL.IsSupported)
+            {
+                return Avx512Vbmi.VL.PermuteVar32x8(values, indices);
+            }
+
+            if (Avx2.IsSupported)
+            {
+                // check for constant value of indices where we can optimise further
+                if (RuntimeHelpers.IsKnownConstant(indices))
+                {
+                    // check for all in correct lane (or will result in 0)
+                    if (LessThanAll(Xor(BitwiseAnd(indices, Vector256.Create(0x9F)), Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
+                    {
+                        return Avx2.Shuffle(values, indices);
+                    }
+
+                    // check for all indices in first lane (or will result in 0)
+                    if (LessThanAll(BitwiseAnd(indices, Vector256.Create(0x9F))).AsSByte(), Vector256.Create((sbyte)0x10))
+                    {
+                        var laneShuffle = Avx2.Permute2x128(values, values, 0b00000000);
+                        return Avx2.Shuffle(laneShuffle, indices);
+                    }
+
+                    // can add other similar cases as required
+                }
+
+                // get the indices, but only keep the high bit and bits used for indexing, and xor the cross-lane bit on the high 128-bit lane part of indices
+                // we begin computing this early as it seems to take the longest to calculate (it can be done in parallel to other operations ideally)
+                var indicesXord = Avx2.And(Avx2.Xor(indices, Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))), Vector256.Create((byte)0x9F));
+
+                // swap the low and high 128-bit lanes
+                // calculate swap before shuf1 so they can be computed in parallel
+                var swap = Avx2.Permute2x128(values, values, 0b00000001);
+
+                // shuffle with both the normal and swapped values
+                var shuf1 = Avx2.Shuffle(values, indices);
+                var shuf2 = Avx2.Shuffle(swap, indices);
+
+                // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping lane and 0x00 otherwise
+                var selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), Vector256.Create((sbyte)0x0F)).AsByte();
+
+                // blend our two shuffles based on whether each element swaps lanes or not
+                return Avx2.BlendVariable(shuf1, shuf2, selection);
+            }
+
+            return Shuffle(vector, indices);
+        }
+
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
