@@ -10052,7 +10052,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // 16-byte alignment for __m256.
 
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
-    #elif defined(TARGET_RISC64)
+    #elif defined(TARGET_RISCV64)
                     // The alignment requirement for the fixed length vector shall be equivalent to
                     // the alignment requirement of its elemental type.
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
@@ -10073,7 +10073,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
 
-    #elif defined(TARGET_RISC64)
+    #elif defined(TARGET_RISCV64)
                     // The alignment requirement for the fixed length vector shall be equivalent to
                     // the alignment requirement of its elemental type.
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
