@@ -86,6 +86,32 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentNullException>("hash", () => ecdsa.VerifyHash(null, null));
             AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyHash(new byte[0], null));
         }
+
+        [Theory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_NullSignature_Fails(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(SHA256.HashSizeInBytes);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                ecdsa.SignHash(hash, (Span<byte>)null, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+
+            bool result = ecdsa.TrySignHash(hash, (Span<byte>)null, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int bytesWritten);
+            Assert.False(result);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignData_NullSignature_Fails(ECDsa ecdsa)
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                ecdsa.SignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+
+            bool result = ecdsa.TrySignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int bytesWritten);
+            Assert.False(result);
+            Assert.Equal(0, bytesWritten);
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]

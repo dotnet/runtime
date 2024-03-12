@@ -22,7 +22,7 @@ struct ScriptParamType
 
 struct ComplexStruct
 {
-    INT i;
+    int32_t i;
     CHAR b;
     LPCSTR str;
     //use this(padding), since in the Mac, it use 4bytes as struct pack(In windows, it is 8 bytes).
@@ -35,11 +35,11 @@ struct ComplexStruct
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructComplexStructByRef_Cdecl(ComplexStruct * pcs)
 {
     //Check the Input
-    if((321 != pcs->i)||(!pcs->b)||(0 != strcmp(pcs->str,"Managed"))||(123 != pcs->type.idata)||(0x120000 != (int)(LONG64)(pcs->type.udata.ptrdata)))
+    if((321 != pcs->i)||(!pcs->b)||(0 != strcmp(pcs->str,"Managed"))||(123 != pcs->type.idata)||(0x120000 != (int)(int64_t)(pcs->type.udata.ptrdata)))
     {
 
         printf("The parameter for MarshalRefStruct_Cdecl is wrong\n");
-        printf("ComplexStruct:%d:%d,%s,%d,%d\n",pcs->i,pcs->b,pcs->str,pcs->type.idata,(int)(LONG64)(pcs->type.udata.ptrdata));
+        printf("ComplexStruct:%d:%d,%s,%d,%d\n",pcs->i,pcs->b,pcs->str,pcs->type.idata,(int)(int64_t)(pcs->type.udata.ptrdata));
         return FALSE;
     }
     CoreClrFree((LPVOID)pcs->str);
@@ -64,7 +64,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructComplexStructByRef_Cdecl(ComplexS
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructComplexStructByRef_StdCall(ComplexStruct * pcs)
 {
     //Check the input
-    if((321 != pcs->i)||(!pcs->b)||(0 != strcmp(pcs->str,"Managed"))||(123 != pcs->type.idata)||(0x120000 != (int)(LONG64)(pcs->type.udata.ptrdata)))
+    if((321 != pcs->i)||(!pcs->b)||(0 != strcmp(pcs->str,"Managed"))||(123 != pcs->type.idata)||(0x120000 != (int)(int64_t)(pcs->type.udata.ptrdata)))
     {
         printf("The parameter for MarshalRefStruct_StdCall is wrong\n");
         return FALSE;
@@ -111,7 +111,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructComplexStructByRef_Cde
         return FALSE;
     }
 
-    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(LONG64)(cs.type.udata.ptrdata)))
+    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(int64_t)(cs.type.udata.ptrdata)))
     {
         printf("The parameter for DoCallBack_MarshalRefStruct_Cdecl is wrong\n");
         return FALSE;
@@ -144,7 +144,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructComplexStructByRef_
         return FALSE;
     }
 
-    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(LONG64)(cs.type.udata.ptrdata)))
+    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(int64_t)(cs.type.udata.ptrdata)))
     {
         printf("The parameter for DoCallBack_MarshalRefStruct_StdCall is wrong\n");
         return FALSE;
@@ -169,11 +169,11 @@ extern "C" DLL_EXPORT ComplexStructDelegatePInvokeByRefStdCallCaller __stdcall G
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructComplexStructByVal_Cdecl(ComplexStruct cs)
 {
     //Check the Input
-    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(LONG64)(cs.type.udata.ptrdata)))
+    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(int64_t)(cs.type.udata.ptrdata)))
     {
 
         printf("The parameter for MarshalStructComplexStructByVal_Cdecl is wrong\n");
-        printf("ComplexStruct:%d:%d,%s,%d,%d\n",cs.i,cs.b,cs.str,cs.type.idata,(int)(LONG64)(cs.type.udata.ptrdata));
+        printf("ComplexStruct:%d:%d,%s,%d,%d\n",cs.i,cs.b,cs.str,cs.type.idata,(int)(int64_t)(cs.type.udata.ptrdata));
         return FALSE;
     }
 
@@ -189,7 +189,7 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructComplexStructByVal_Cdecl(ComplexS
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructComplexStructByVal_StdCall(ComplexStruct cs)
 {
     //Check the input
-    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(LONG64)(cs.type.udata.ptrdata)))
+    if((321 != cs.i)||(!cs.b)||(0 != strcmp(cs.str,"Managed"))||(123 != cs.type.idata)||(0x120000 != (int)(int64_t)(cs.type.udata.ptrdata)))
     {
         printf("The parameter for MarshalStructComplexStructByVal_StdCall is wrong\n");
         return FALSE;
@@ -3086,23 +3086,23 @@ extern "C" DLL_EXPORT IncludeOuterIntegerStructSequentialDelegatePInvokeByValStd
 ///////////////////////////////////////////Methods for S11 struct////////////////////////////////////////////////////
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS11ByRef_Cdecl(S11* argstr)
 {
-    if(argstr->i32 != (LPINT)(32) || argstr->i != 32)
+    if(argstr->i32 != (int32_t*)(32) || argstr->i != 32)
     {
         printf("\tMarshalStructS11ByRef_Cdecl: S11 param not as expected\n");
         return FALSE;
     }
-    argstr->i32 = (LPINT)(64);
+    argstr->i32 = (int32_t*)(64);
     argstr->i = 64;
     return TRUE;
 }
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS11ByRef_StdCall(S11* argstr)
 {
-    if(argstr->i32 != (LPINT)(32) || argstr->i != 32)
+    if(argstr->i32 != (int32_t*)(32) || argstr->i != 32)
     {
         printf("\tMarshalStructS11ByRef_StdCall: S11 param not as expected\n");
         return FALSE;
     }
-    argstr->i32 = (LPINT)(64);
+    argstr->i32 = (int32_t*)(64);
     argstr->i = 64;
     return TRUE;
 }
@@ -3112,7 +3112,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructS11ByRef_Cdecl(S11ByRe
     //Init
     S11 argstr;
 
-    argstr.i32 = (LPINT)(64);
+    argstr.i32 = (int32_t*)(64);
     argstr.i = 64;
 
     if(!caller(&argstr))
@@ -3121,7 +3121,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructS11ByRef_Cdecl(S11ByRe
         return FALSE;
     }
     //Verify the value unchanged
-    if(argstr.i32 != (LPINT)32 || argstr.i != 32)
+    if(argstr.i32 != (int32_t*)32 || argstr.i != 32)
     {
         printf("The parameter for DoCallBack_MarshalStructS11ByRef_Cdecl is wrong\n");
         return FALSE;
@@ -3135,7 +3135,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS11ByRef_StdCall(S1
     //Init
     S11 argstr;
 
-    argstr.i32 = (LPINT)(64);
+    argstr.i32 = (int32_t*)(64);
     argstr.i = 64;
 
     if(!caller(&argstr))
@@ -3144,7 +3144,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS11ByRef_StdCall(S1
         return FALSE;
     }
     //Verify the value unchanged
-    if(argstr.i32 != (LPINT)(32) || argstr.i != 32)
+    if(argstr.i32 != (int32_t*)(32) || argstr.i != 32)
     {
         printf("The parameter for DoCallBack_MarshalStructS11ByRef_StdCall is wrong\n");
         return FALSE;
@@ -3169,13 +3169,13 @@ extern "C" DLL_EXPORT S11DelegatePInvokeByRefStdCallCaller __stdcall Get_Marshal
 extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS11ByVal_Cdecl(S11 argstr)
 {
     //Check the Input
-    if(argstr.i32 != (LPINT)(32) || argstr.i != 32)
+    if(argstr.i32 != (int32_t*)(32) || argstr.i != 32)
     {
         printf("\tMarshalStructS11ByVal_Cdecl: S11 param not as expected\n");
         return FALSE;
     }
 
-    argstr.i32 = (LPINT)(64);
+    argstr.i32 = (int32_t*)(64);
     argstr.i = 64;
 
     return TRUE;
@@ -3184,13 +3184,13 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructS11ByVal_Cdecl(S11 argstr)
 extern "C" DLL_EXPORT BOOL __stdcall MarshalStructS11ByVal_StdCall(S11 argstr)
 {
     //Check the Input
-    if(argstr.i32 != (LPINT)(32) || argstr.i != 32)
+    if(argstr.i32 != (int32_t*)(32) || argstr.i != 32)
     {
         printf("\tMarshalStructS11ByVal_StdCall: S11 param not as expected\n");
         return FALSE;
     }
 
-    argstr.i32 = (LPINT)(64);
+    argstr.i32 = (int32_t*)(64);
     argstr.i = 64;
 
     return TRUE;
@@ -3202,7 +3202,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructS11ByVal_Cdecl(S11ByVa
     //Init
     S11 argstr;
 
-    argstr.i32 = (LPINT)(64);
+    argstr.i32 = (int32_t*)(64);
     argstr.i = 64;
 
     if(!caller(argstr))
@@ -3212,7 +3212,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructS11ByVal_Cdecl(S11ByVa
     }
 
     //Verify the value unchanged
-    if(argstr.i32 != (LPINT)(64) || argstr.i != 64)
+    if(argstr.i32 != (int32_t*)(64) || argstr.i != 64)
         return false;
 
     return TRUE;
@@ -3224,7 +3224,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS11ByVal_StdCall(S1
     //Init
     S11 argstr;
 
-    argstr.i32 = (LPINT)(64);
+    argstr.i32 = (int32_t*)(64);
     argstr.i = 64;
 
     if(!caller(argstr))
@@ -3234,7 +3234,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructS11ByVal_StdCall(S1
     }
 
     //Verify the value unchanged
-    if(argstr.i32 != (LPINT)(64) || argstr.i != 64)
+    if(argstr.i32 != (int32_t*)(64) || argstr.i != 64)
         return false;
     return TRUE;
 }

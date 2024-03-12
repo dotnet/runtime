@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -24,6 +25,7 @@ namespace Microsoft.Extensions.Options.Generators
         private readonly Compilation _compilation;
         private readonly Action<Diagnostic> _reportDiagnostic;
         private readonly SymbolHolder _symbolHolder;
+        private readonly OptionsSourceGenContext _optionsSourceGenContext;
         private readonly Dictionary<ITypeSymbol, ValidatorType> _synthesizedValidators = new(SymbolEqualityComparer.Default);
         private readonly HashSet<ITypeSymbol> _visitedModelTypes = new(SymbolEqualityComparer.Default);
 
@@ -31,12 +33,14 @@ namespace Microsoft.Extensions.Options.Generators
             Compilation compilation,
             Action<Diagnostic> reportDiagnostic,
             SymbolHolder symbolHolder,
+            OptionsSourceGenContext optionsSourceGenContext,
             CancellationToken cancellationToken)
         {
             _compilation = compilation;
             _cancellationToken = cancellationToken;
             _reportDiagnostic = reportDiagnostic;
             _symbolHolder = symbolHolder;
+            _optionsSourceGenContext = optionsSourceGenContext;
         }
 
         public IReadOnlyList<ValidatorType> GetValidatorTypes(IEnumerable<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)> classes)
@@ -99,7 +103,8 @@ namespace Microsoft.Extensions.Options.Generators
                                 : syntax.GetLocation();
 
                             var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType);
-                            if (membersToValidate.Count == 0)
+                            bool selfValidate = ModelSelfValidates(modelType);
+                            if (membersToValidate.Count == 0 && !selfValidate)
                             {
                                 // this type lacks any eligible members
                                 Diag(DiagDescriptors.NoEligibleMembersFromValidator, syntax.GetLocation(), modelType.ToString(), validatorType.ToString());
@@ -109,7 +114,7 @@ namespace Microsoft.Extensions.Options.Generators
                             modelsValidatorTypeValidates.Add(new ValidatedModel(
                                 GetFQN(modelType),
                                 modelType.Name,
-                                ModelSelfValidates(modelType),
+                                selfValidate,
                                 membersToValidate));
                         }
 
@@ -271,7 +276,12 @@ namespace Microsoft.Extensions.Options.Generators
             var members = modelType.GetMembers().ToList();
             var addedMembers = new HashSet<string>(members.Select(m => m.Name));
             var baseType = modelType.BaseType;
-            while (baseType is not null && baseType.SpecialType != SpecialType.System_Object)
+            while (baseType is not null && baseType.SpecialType != SpecialType.System_Object
+                // We ascend the hierarchy only if the base type is a user-defined type, as validating properties of system types is unnecessary.
+                // This approach prevents generating warnings for properties defined in system types.
+                // For example, in the case of `MyModel : Dictionary<string, string>`, this avoids warnings for properties like Keys and Values,
+                // where a missing ValidateEnumeratedItemsAttribute might be incorrectly inferred.
+                && !baseType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).StartsWith("global::System.", StringComparison.Ordinal))
             {
                 var baseMembers = baseType.GetMembers().Where(m => !addedMembers.Contains(m.Name));
                 members.AddRange(baseMembers);
@@ -287,7 +297,7 @@ namespace Microsoft.Extensions.Options.Generators
                     ? memberLocation
                     : lowerLocationInCompilation;
 
-                var memberInfo = GetMemberInfo(member, speculate, location, validatorType);
+                var memberInfo = GetMemberInfo(member, speculate, location, modelType, validatorType);
                 if (memberInfo is not null)
                 {
                     if (member.DeclaredAccessibility != Accessibility.Public)
@@ -303,7 +313,7 @@ namespace Microsoft.Extensions.Options.Generators
             return membersToValidate;
         }
 
-        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location, ITypeSymbol validatorType)
+        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location, ITypeSymbol modelType, ITypeSymbol validatorType)
         {
             ITypeSymbol memberType;
             switch (member)
@@ -324,7 +334,7 @@ namespace Microsoft.Extensions.Options.Generators
                     break;
                 */
                 default:
-                    // we only care about properties and fields
+                    // we only care about properties
                     return null;
             }
 
@@ -466,17 +476,58 @@ namespace Microsoft.Extensions.Options.Generators
                         continue;
                     }
 
-                    var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                    string attributeFullQualifiedName = attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    if (SymbolEqualityComparer.Default.Equals(attributeType, _symbolHolder.MaxLengthAttributeSymbol) ||
+                        SymbolEqualityComparer.Default.Equals(attributeType, _symbolHolder.MinLengthAttributeSymbol) ||
+                        (_symbolHolder.LengthAttributeSymbol is not null && SymbolEqualityComparer.Default.Equals(attributeType, _symbolHolder.LengthAttributeSymbol)))
+                    {
+                        if (!LengthBasedAttributeIsTrackedForSubstitution(memberType, location, attributeType, ref attributeFullQualifiedName))
+                        {
+                            continue;
+                        }
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _symbolHolder.CompareAttributeSymbol))
+                    {
+                        TrackCompareAttributeForSubstitution(attribute, modelType, ref attributeFullQualifiedName);
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _symbolHolder.RangeAttributeSymbol))
+                    {
+                        TrackRangeAttributeForSubstitution(attribute, memberType, ref attributeFullQualifiedName);
+                    }
+
+                    var validationAttr = new ValidationAttributeInfo(attributeFullQualifiedName);
                     validationAttrs.Add(validationAttr);
 
-                    foreach (var constructorArgument in attribute.ConstructorArguments)
+                    ImmutableArray<IParameterSymbol> parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+                    bool lastParameterDeclaredWithParamsKeyword =  parameters.Length > 0 && parameters[parameters.Length - 1].IsParams;
+
+                    ImmutableArray<TypedConstant> arguments = attribute.ConstructorArguments;
+
+                    for (int i = 0; i < arguments.Length; i++)
                     {
-                        validationAttr.ConstructorArguments.Add(GetArgumentExpression(constructorArgument.Type!, constructorArgument.Value));
+                        TypedConstant argument = arguments[i];
+                        if (argument.Kind == TypedConstantKind.Array)
+                        {
+                            bool isParams = lastParameterDeclaredWithParamsKeyword && i == arguments.Length - 1;
+                            validationAttr.ConstructorArguments.Add(GetArrayArgumentExpression(argument.Values, isParams));
+                        }
+                        else
+                        {
+                            validationAttr.ConstructorArguments.Add(GetArgumentExpression(argument.Type!, argument.Value));
+                        }
                     }
 
                     foreach (var namedArgument in attribute.NamedArguments)
                     {
-                        validationAttr.Properties.Add(namedArgument.Key, GetArgumentExpression(namedArgument.Value.Type!, namedArgument.Value.Value));
+                        if (namedArgument.Value.Kind == TypedConstantKind.Array)
+                        {
+                            bool isParams = lastParameterDeclaredWithParamsKeyword && namedArgument.Key == parameters[parameters.Length - 1].Name;
+                            validationAttr.Properties.Add(namedArgument.Key, GetArrayArgumentExpression(namedArgument.Value.Values, isParams));
+                        }
+                        else
+                        {
+                            validationAttr.Properties.Add(namedArgument.Key, GetArgumentExpression(namedArgument.Value.Type!, namedArgument.Value.Value));
+                        }
                     }
                 }
             }
@@ -544,6 +595,92 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
+        private bool LengthBasedAttributeIsTrackedForSubstitution(ITypeSymbol memberType, Location location, ITypeSymbol attributeType, ref string attributeFullQualifiedName)
+        {
+            if (memberType.SpecialType == SpecialType.System_String || ConvertTo(memberType, _symbolHolder.ICollectionSymbol))
+            {
+                _optionsSourceGenContext.EnsureTrackingAttribute(attributeType.Name, createValue: false, out _);
+            }
+            else if (ParserUtilities.TypeHasProperty(memberType, "Count", SpecialType.System_Int32))
+            {
+                _optionsSourceGenContext.EnsureTrackingAttribute(attributeType.Name, createValue: true, out HashSet<object>? trackedTypeList);
+                trackedTypeList!.Add(memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+            }
+            else
+            {
+                Diag(DiagDescriptors.IncompatibleWithTypeForValidationAttribute, location, attributeType.Name, memberType.Name);
+                return false;
+            }
+
+            attributeFullQualifiedName = $"{Emitter.StaticGeneratedValidationAttributesClassesNamespace}.{Emitter.StaticAttributeClassNamePrefix}{_optionsSourceGenContext.Suffix}_{attributeType.Name}";
+            return true;
+        }
+
+        private void TrackCompareAttributeForSubstitution(AttributeData attribute, ITypeSymbol modelType, ref string attributeFullQualifiedName)
+        {
+            ImmutableArray<IParameterSymbol> constructorParameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+            if (constructorParameters.Length == 1 && constructorParameters[0].Name == "otherProperty" && constructorParameters[0].Type.SpecialType == SpecialType.System_String)
+            {
+                _optionsSourceGenContext.EnsureTrackingAttribute(attribute.AttributeClass!.Name, createValue: true, out HashSet<object>? trackedTypeList);
+                trackedTypeList!.Add((modelType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), (string)attribute.ConstructorArguments[0].Value!));
+                attributeFullQualifiedName = $"{Emitter.StaticGeneratedValidationAttributesClassesNamespace}.{Emitter.StaticAttributeClassNamePrefix}{_optionsSourceGenContext.Suffix}_{attribute.AttributeClass!.Name}";
+            }
+        }
+
+        private void TrackRangeAttributeForSubstitution(AttributeData attribute, ITypeSymbol memberType, ref string attributeFullQualifiedName)
+        {
+            ImmutableArray<IParameterSymbol> constructorParameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+            ITypeSymbol? argumentType = null;
+            bool hasTimeSpanType = false;
+
+            ITypeSymbol typeSymbol = memberType;
+            if (typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                typeSymbol = ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
+            }
+
+            if (constructorParameters.Length == 2)
+            {
+                if (OptionsSourceGenContext.IsConvertibleBasicType(typeSymbol))
+                {
+                    argumentType = constructorParameters[0].Type;
+                }
+            }
+            else if (constructorParameters.Length == 3)
+            {
+                object? argumentValue = null;
+                for (int i = 0; i < constructorParameters.Length; i++)
+                {
+                    if (constructorParameters[i].Name == "type")
+                    {
+                        argumentValue = attribute.ConstructorArguments[i].Value;
+                        break;
+                    }
+                }
+
+                if (argumentValue is INamedTypeSymbol namedTypeSymbol)
+                {
+                    // When type is provided as a parameter, it has to match the property type.
+                    if (OptionsSourceGenContext.IsConvertibleBasicType(namedTypeSymbol) && typeSymbol.SpecialType == namedTypeSymbol.SpecialType)
+                    {
+                        argumentType = namedTypeSymbol;
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(namedTypeSymbol, _symbolHolder.TimeSpanSymbol) &&
+                             (SymbolEqualityComparer.Default.Equals(typeSymbol, _symbolHolder.TimeSpanSymbol) || typeSymbol.SpecialType == SpecialType.System_String))
+                    {
+                        hasTimeSpanType = true;
+                        argumentType = _symbolHolder.TimeSpanSymbol;
+                    }
+                }
+            }
+
+            if (argumentType is not null)
+            {
+                _optionsSourceGenContext.EnsureTrackingAttribute(attribute.AttributeClass!.Name, createValue: hasTimeSpanType, out _);
+                attributeFullQualifiedName = $"{Emitter.StaticGeneratedValidationAttributesClassesNamespace}.{Emitter.StaticAttributeClassNamePrefix}{_optionsSourceGenContext.Suffix}_{attribute.AttributeClass!.Name}";
+            }
+        }
+
         private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location, ITypeSymbol validatorType)
         {
             var mt = modelType.WithNullableAnnotation(NullableAnnotation.None);
@@ -558,8 +695,9 @@ namespace Microsoft.Extensions.Options.Generators
                 return "global::" + validator.Namespace + "." + validator.Name;
             }
 
+            bool selfValidate = ModelSelfValidates(mt);
             var membersToValidate = GetMembersToValidate(mt, true, location, validatorType);
-            if (membersToValidate.Count == 0)
+            if (membersToValidate.Count == 0 && !selfValidate)
             {
                 // this type lacks any eligible members
                 Diag(DiagDescriptors.NoEligibleMember, location, mt.ToString(), member.ToString());
@@ -569,7 +707,7 @@ namespace Microsoft.Extensions.Options.Generators
             var model = new ValidatedModel(
                 GetFQN(mt),
                 mt.Name,
-                false,
+                selfValidate,
                 membersToValidate);
 
             var validatorTypeName = "__" + mt.Name + "Validator__";
@@ -635,6 +773,32 @@ namespace Microsoft.Extensions.Options.Generators
             }
 
             return false;
+        }
+
+        private string GetArrayArgumentExpression(ImmutableArray<Microsoft.CodeAnalysis.TypedConstant> value, bool isParams)
+        {
+            var sb = new StringBuilder();
+            if (!isParams)
+            {
+                sb.Append("new[] { ");
+            }
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                sb.Append(GetArgumentExpression(value[i].Type!, value[i].Value));
+
+                if (i < value.Length - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+
+            if (!isParams)
+            {
+                sb.Append(" }");
+            }
+
+            return sb.ToString();
         }
 
         private string GetArgumentExpression(ITypeSymbol type, object? value)

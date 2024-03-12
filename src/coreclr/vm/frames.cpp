@@ -464,6 +464,22 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+/* static */
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+{
+    _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
+    while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+    {
+#ifdef TARGET_UNIX
+        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+#else
+        Thread::VirtualUnwindCallFrame(pRD);
+#endif
+    }
+}
+#endif // !TARGET_X86 || TARGET_UNIX
+
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------
@@ -1348,10 +1364,10 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     {
         VASigCookie *varArgSig = GetVASigCookie();
 
-        //Note: no instantiations needed for varargs
+        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
         MetaSig msig(varArgSig->signature,
                      varArgSig->pModule,
-                     NULL);
+                     &typeContext);
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
 }
@@ -1482,10 +1498,10 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             {
                 VASigCookie *varArgSig = dac_cast<PTR_VASigCookie>(*ppObj);
 
-                //Note: no instantiations needed for varargs
+                SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
                 MetaSig msig(varArgSig->signature,
                                 varArgSig->pModule,
-                                NULL);
+                                &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
             }
             break;
@@ -1509,10 +1525,10 @@ void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    // no instantiations needed for varargs
+    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
     MetaSig msig(varArgSig->signature,
                  varArgSig->pModule,
-                 NULL);
+                 &typeContext);
     PromoteCallerStackHelper(fn, sc, NULL, &msig);
 }
 

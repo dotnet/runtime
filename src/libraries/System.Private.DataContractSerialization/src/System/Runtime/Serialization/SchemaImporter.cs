@@ -364,7 +364,7 @@ namespace System.Runtime.Serialization
         {
             if (SchemaHelper.GetSchemaType(SchemaObjects, typeQName) != null)
             {
-                for (int i = 1;; i++)
+                for (int i = 1; ; i++)
                 {
                     typeQName = new XmlQualifiedName(typeQName.Name + i.ToString(NumberFormatInfo.InvariantInfo), typeQName.Namespace);
                     if (SchemaHelper.GetSchemaType(SchemaObjects, typeQName) == null)

@@ -61,6 +61,14 @@
 #define G_EXTERN_C     /* nothing */
 #endif
 
+#if defined(__cplusplus) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
+#define G_ATTR_NORETURN [[noreturn]]
+#elif (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#define G_ATTR_NORETURN _Noreturn
+#else
+#error Mono requires _Noreturn (C11 or newer)
+#endif
+
 #ifdef __cplusplus
 
 #define g_cast monoeg_g_cast // in case not inlined (see eglib-remap.h)
@@ -301,11 +309,6 @@ typedef struct {
 void g_mem_set_vtable (GMemVTable* vtable);
 void g_mem_get_vtable (GMemVTable* vtable);
 
-struct _GMemChunk {
-	guint alloc_size;
-};
-
-typedef struct _GMemChunk GMemChunk;
 /*
  * Misc.
  */
@@ -356,8 +359,6 @@ gchar       *g_strreverse     (gchar *str);
 gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
 gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
 guint        g_strv_length    (gchar **str_array);
-gchar       *g_strjoin        (const gchar *separator, ...);
-gchar       *g_strjoinv       (const gchar *separator, gchar **str_array);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
@@ -376,7 +377,6 @@ gint         g_vasprintf       (gchar **ret, const gchar *fmt, va_list ap);
 #define g_vsnprintf vsnprintf
 
 gsize   g_strlcpy            (gchar *dest, const gchar *src, gsize dest_size);
-gchar  *g_stpcpy             (gchar *dest, const char *src);
 
 
 gchar   g_ascii_tolower      (gchar c);
@@ -391,34 +391,7 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isalpha(c)   (isalpha (c) != 0)
 #define g_ascii_isprint(c)   (isprint (c) != 0)
 #define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
-gboolean g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen);
-gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
-
-static inline
-gboolean g_ascii_equal (const char *s1, gsize len1, const char *s2, gsize len2)
-{
-    return len1 == len2 && (s1 == s2 || memcmp (s1, s2, len1) == 0);
-}
-
-static inline
-gboolean g_asciiz_equal (const char *s1, const char *s2)
-{
-    return s1 == s2 || strcmp (s1, s2) == 0;
-}
-
-static inline
-gboolean
-g_ascii_equal_caseinsensitive (const char *s1, gsize len1, const char *s2, gsize len2)
-{
-    return len1 == len2 && (s1 == s2 || g_ascii_strncasecmp (s1, s2, len1) == 0);
-}
-
-static inline
-gboolean
-g_asciiz_equal_caseinsensitive (const char *s1, const char *s2)
-{
-    return s1 == s2 || g_ascii_strcasecmp (s1, s2) == 0;
-}
+#define g_isascii(c)         (isascii (c) != 0)
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
@@ -427,11 +400,9 @@ g_asciiz_equal_caseinsensitive (const char *s1, const char *s2)
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #else
 #define g_strcasecmp strcasecmp
-#define g_ascii_strtoull strtoull
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #endif
-#define g_ascii_strdup strdup
 
 /*
  * String type
@@ -451,7 +422,6 @@ GString     *g_string_append        (GString *string, const gchar *val);
 void         g_string_printf        (GString *string, const gchar *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
 void         g_string_append_printf (GString *string, const gchar *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
 void         g_string_append_vprintf (GString *string, const gchar *format, va_list args);
-GString     *g_string_append_unichar (GString *string, gunichar c);
 GString     *g_string_append_c      (GString *string, gchar c);
 GString     *g_string_append        (GString *string, const gchar *val);
 GString     *g_string_append_len    (GString *string, const gchar *val, gssize len);
@@ -754,10 +724,14 @@ G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
 void           g_log_disabled         (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
-void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN;
-void           mono_assertion_message_disabled  (const char *file, int line) G_GNUC_NORETURN;
-void           mono_assertion_message  (const char *file, int line, const char *condition) G_GNUC_NORETURN;
-void           mono_assertion_message_unreachable (const char *file, int line) G_GNUC_NORETURN;
+G_ATTR_NORETURN void
+               g_assertion_message    (const gchar *format, ...);
+G_ATTR_NORETURN void
+               mono_assertion_message_disabled  (const char *file, int line);
+G_ATTR_NORETURN void
+               mono_assertion_message  (const char *file, int line, const char *condition);
+G_ATTR_NORETURN void
+               mono_assertion_message_unreachable (const char *file, int line);
 const char *   g_get_assertion_message (void);
 
 #ifndef DISABLE_ASSERT_MESSAGES
@@ -879,18 +853,14 @@ typedef enum {
 	G_CONVERT_ERROR_NO_MEMORY
 } GConvertError;
 
-gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
-gunichar  *g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
-gunichar  *g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 G_EXTERN_C // Used by libtest, at least.
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar2 *g_utf8_to_utf16le (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
-gunichar2 *eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
+gunichar2 *g_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 G_EXTERN_C // Used by libtest, at least.
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
 gchar     *g_utf16le_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar  *g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
-gchar     *g_ucs4_to_utf8  (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err);
 size_t     g_utf16_len     (const gunichar2 *);
 
@@ -924,47 +894,12 @@ gchar  *g_build_path           (const gchar *separator, const gchar *first_eleme
 #define g_build_filename(x, ...) g_build_path(G_DIR_SEPARATOR_S, x, __VA_ARGS__)
 gchar  *g_path_get_dirname     (const gchar *filename);
 gchar  *g_path_get_basename    (const char *filename);
-gchar  *g_find_program_in_path (const gchar *program);
 gchar  *g_get_current_dir      (void);
 gboolean g_path_is_absolute    (const char *filename);
 
 const gchar *g_get_tmp_dir     (void);
 
 gboolean g_ensure_directory_exists (const gchar *filename);
-
-#ifndef G_OS_WIN32 // Spawn could be implemented but is not.
-
-int eg_getdtablesize (void);
-
-#if !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
-
-#define HAVE_G_SPAWN 0
-
-#else
-
-#define HAVE_G_SPAWN 1
-
-
-/*
- * Spawn
- */
-typedef enum {
-	G_SPAWN_LEAVE_DESCRIPTORS_OPEN = 1,
-	G_SPAWN_DO_NOT_REAP_CHILD      = 1 << 1,
-	G_SPAWN_SEARCH_PATH            = 1 << 2,
-	G_SPAWN_STDOUT_TO_DEV_NULL     = 1 << 3,
-	G_SPAWN_STDERR_TO_DEV_NULL     = 1 << 4,
-	G_SPAWN_CHILD_INHERITS_STDIN   = 1 << 5,
-	G_SPAWN_FILE_AND_ARGV_ZERO     = 1 << 6
-} GSpawnFlags;
-
-typedef void (*GSpawnChildSetupFunc) (gpointer user_data);
-
-gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
-				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
-
-#endif
-#endif
 
 /*
  * Timer
@@ -980,12 +915,6 @@ void g_timer_start (GTimer *timer);
 /*
  * Date and time
  */
-typedef struct {
-	glong tv_sec;
-	glong tv_usec;
-} GTimeVal;
-
-void g_get_current_time (GTimeVal *result);
 void g_usleep (gulong microseconds);
 
 /*
@@ -1034,7 +963,9 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (GFileTest)
 
-gboolean   g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **gerror);
+FILE*      g_fopen (const gchar *path, const gchar *mode);
+int        g_rename (const gchar *src_path, const gchar *dst_path);
+int        g_unlink (const gchar *path);
 gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **gerror);
 GFileError g_file_error_from_errno (gint err_no);
 gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **gerror);
@@ -1044,23 +975,6 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_open _open
 #else
 #define g_open open
-#endif
-#define g_rename rename
-#define g_stat stat
-#ifdef G_OS_WIN32
-#define g_access _access
-#else
-#define g_access access
-#endif
-#ifdef G_OS_WIN32
-#define g_mktemp _mktemp
-#else
-#define g_mktemp mktemp
-#endif
-#ifdef G_OS_WIN32
-#define g_unlink _unlink
-#else
-#define g_unlink unlink
 #endif
 #ifdef G_OS_WIN32
 #define g_write _write
@@ -1072,14 +986,6 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #else
 #define g_read(fd, buffer, buffer_size) (int)read(fd, buffer, buffer_size)
 #endif
-
-#define g_fopen fopen
-#define g_lstat lstat
-#define g_rmdir rmdir
-#define g_mkstemp mkstemp
-#define g_ascii_isdigit isdigit
-#define g_ascii_strtod strtod
-#define g_ascii_isalnum isalnum
 
 gchar *g_mkdtemp (gchar *tmpl);
 
@@ -1152,36 +1058,25 @@ g_async_safe_printf (gchar const *format, ...)
 }
 
 /*
- * Directory
- */
-typedef struct _GDir GDir;
-GDir        *g_dir_open (const gchar *path, guint flags, GError **gerror);
-const gchar *g_dir_read_name (GDir *dir);
-void         g_dir_rewind (GDir *dir);
-void         g_dir_close (GDir *dir);
-
-int          g_mkdir_with_parents (const gchar *pathname, int mode);
-#define g_mkdir mkdir
-
-/*
  * Unicode manipulation
  */
 extern const guchar g_utf8_jump_table[256];
 
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
-gunichar  g_utf8_get_char_validated (const gchar *str, gssize max_len);
-#define   g_utf8_next_char(p)  ((p) + g_utf8_jump_table[(guchar)(*p)])
-gunichar  g_utf8_get_char      (const gchar *src);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
-gchar    *g_utf8_offset_to_pointer (const gchar *str, glong offset);
-glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 
 /*
- * priorities
+ * Clock Nanosleep
  */
-#define G_PRIORITY_DEFAULT 0
-#define G_PRIORITY_DEFAULT_IDLE 200
 
+#ifdef HAVE_CLOCK_NANOSLEEP
+gint
+g_clock_nanosleep (clockid_t clockid, gint flags, const struct timespec *request, struct timespec *remain);
+#endif
+
+/*
+ * Misc
+ */
 #define GUINT16_SWAP_LE_BE_CONSTANT(x) ((((guint16) x) >> 8) | ((((guint16) x) << 8)))
 
 #define GUINT16_SWAP_LE_BE(x) ((guint16) (((guint16) x) >> 8) | ((((guint16)(x)) & 0xff) << 8))
@@ -1248,28 +1143,6 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define G_HAVE_API_SUPPORT(x) (x)
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
 #define g_unsupported_api(name) G_STMT_START { g_debug (G_UNSUPPORTED_API, name); } G_STMT_END
-
-#if _WIN32
-// g_free the result
-// No MAX_PATH limit.
-gboolean
-mono_get_module_filename (gpointer mod, gunichar2 **pstr, guint32 *plength);
-
-// g_free the result
-// No MAX_PATH limit.
-gboolean
-mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength);
-
-// g_free the result
-// No MAX_PATH limit.
-gboolean
-mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength);
-
-// g_free the result
-// No MAX_PATH limit.
-gboolean
-mono_get_current_directory (gunichar2 **pstr, guint32 *plength);
-#endif
 
 G_END_DECLS // FIXME: There is more extern C than there should be.
 

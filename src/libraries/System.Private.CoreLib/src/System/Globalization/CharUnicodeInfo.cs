@@ -3,10 +3,10 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
-using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {

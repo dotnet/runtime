@@ -793,7 +793,14 @@ namespace System.Runtime.InteropServices.Tests
         public void IsNegative(float value)
         {
             bool result = NFloat.IsNegative(value);
-            Assert.Equal(float.IsNegative(value), result);
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(double.IsNegative(value), result);
+            }
+            else
+            {
+                Assert.Equal(float.IsNegative(value), result);
+            }
         }
 
         [Theory]

@@ -53,7 +53,7 @@ public interface IHostApplicationBuilder
     /// </summary>
     /// <param name="factory">The factory object that can create the <typeparamref name="TContainerBuilder"/> and <see cref="IServiceProvider"/>.</param>
     /// <param name="configure">
-    /// A delegate used to configure the <typeparamref T="TContainerBuilder" />. This can be used to configure services using
+    /// A delegate used to configure the <typeparamref name="TContainerBuilder" />. This can be used to configure services using
     /// APIS specific to the <see cref="IServiceProviderFactory{TContainerBuilder}" /> implementation.
     /// </param>
     /// <typeparam name="TContainerBuilder">The type of builder provided by the <see cref="IServiceProviderFactory{TContainerBuilder}" />.</typeparam>

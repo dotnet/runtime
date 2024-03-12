@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "t", "t" };
+            string[] expected = ["t", "t"];
             ICollection<Match> collection = CreateCollection();
 
             Match[] array = new Match[collection.Count];
@@ -170,7 +170,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void DebuggerAttributeTests_Null()
         {
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(MatchCollection), null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(MatchCollection)));
             Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
     }

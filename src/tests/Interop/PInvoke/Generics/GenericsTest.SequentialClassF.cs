@@ -26,9 +26,10 @@ unsafe partial class GenericsNative
     public static extern SequentialClass<float> AddSequentialClassFs(in SequentialClass<float> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestSequentialClassF()
+    [Fact]
+    public static void TestSequentialClassF()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetSequentialClassF(1.0f));
 

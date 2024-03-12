@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Net;
-using System.Security.Principal;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.DirectoryServices;
+using System.DirectoryServices.ActiveDirectory;
+using System.Globalization;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using MACLPrinc = System.Security.Principal;
-using System.Security.AccessControl;
-using System.DirectoryServices.ActiveDirectory;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -2417,9 +2417,13 @@ namespace System.DirectoryServices.AccountManagement
             // From that, we can build the DNS Domain Name
             this.dnsHostName = ADUtils.GetServerName(this.ctxBase);
 
+            // Pull the requested port number
+            Uri ldapUri = new Uri(this.ctxBase.Path);
+            int port = ldapUri.Port != -1 ? ldapUri.Port : (ldapUri.Scheme.ToUpperInvariant() == "LDAPS" ? 636 : 389);
+
             string dnsDomainName = "";
 
-            using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.dnsHostName + "/rootDse", "", "", AuthenticationTypes.Anonymous))
+            using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.dnsHostName + ":" + port + "/rootDse", "", "", AuthenticationTypes.Anonymous))
             {
                 this.defaultNamingContext = (string)rootDse.Properties["defaultNamingContext"][0];
                 this.contextBasePartitionDN = this.defaultNamingContext;

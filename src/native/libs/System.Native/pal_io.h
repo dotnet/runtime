@@ -601,6 +601,13 @@ PALEXPORT void* SystemNative_MMap(void* address,
 PALEXPORT int32_t SystemNative_MUnmap(void* address, uint64_t length);
 
 /**
+ * Change the access protections for the specified memory pages.
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection);
+
+/**
  * Give advice about use of memory. Implemented as shim to madvise(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.

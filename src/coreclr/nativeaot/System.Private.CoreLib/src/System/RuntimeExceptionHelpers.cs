@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.DeveloperExperience;
-using Internal.Runtime.Augments;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
+
+using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -23,7 +21,7 @@ namespace System
         }
     }
 
-    public class RuntimeExceptionHelpers
+    internal static class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
@@ -138,8 +136,8 @@ namespace System
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
-        [RuntimeExport("FailFast")]
-        public static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
+        [RuntimeExport("RuntimeFailFast")]
+        internal static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
         {
             if (!SafeToPerformRichExceptionSupport)
                 return;
@@ -230,6 +228,27 @@ namespace System
                         Internal.Console.Error.WriteLine();
                     }
 
+#if TARGET_WINDOWS
+                    if (EventReporter.ShouldLogInEventLog)
+                    {
+                        var reporter = new EventReporter(reason);
+                        if (exception != null && reason is not RhFailFastReason.AssertionFailure)
+                        {
+                            reporter.AddDescription($"{exception.GetType()}: {exception.Message}");
+                            reporter.AddStackTrace(exception.StackTrace);
+                        }
+                        else
+                        {
+                            if (message != null)
+                                reporter.AddDescription(message);
+                            reporter.BeginStackTrace();
+                            reporter.AddStackTrace(new StackTrace().ToString());
+                        }
+
+                        reporter.Report();
+                    }
+#endif
+
                     if (exception != null)
                     {
                         crashInfo.WriteException(exception);
@@ -245,7 +264,7 @@ namespace System
                 errorCode = exception != null ? exception.HResult : reason switch
                 {
                     RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
-                    RhFailFastReason.InternalError  => HResults.COR_E_EXECUTIONENGINE,
+                    RhFailFastReason.InternalError => HResults.COR_E_EXECUTIONENGINE,
                     // Error code for unhandled exceptions is expected to come from the exception object above
                     // RhFailFastReason.UnhandledException or
                     // RhFailFastReason.UnhandledExceptionFromPInvoke
@@ -297,9 +316,7 @@ namespace System
             get
             {
                 // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                if (RuntimeAugments.CallbacksIfAvailable == null)
-                    return false;
-                return true;
+                return ReflectionAugments.IsInitialized;
             }
         }
     }

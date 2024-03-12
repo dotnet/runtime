@@ -10,59 +10,12 @@
 # Script to install and run jit-format over jit source for all configurations.
 ################################################################################
 
-
 import argparse
 import jitutil
 import logging
 import os
-import shutil
 import subprocess
 import sys
-import tarfile
-import tempfile
-import zipfile
-
-class ChangeDir:
-    def __init__(self, dir):
-        self.dir = dir
-        self.cwd = None
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.dir)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-
-class TempDir:
-    def __init__(self, path=None):
-        self.dir = tempfile.mkdtemp() if path is None else path
-        self.cwd = None
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.dir)
-
-        return self.dir
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-
-def expandPath(path):
-    return os.path.abspath(os.path.expanduser(path))
-
-def del_rw(action, name, exc):
-    os.chmod(name, 0o651)
-    os.remove(name)
-
-def cleanup(jitUtilsPath, bootstrapPath):
-    if os.path.isdir(jitUtilsPath):
-        logging.info("Deleting " + jitUtilsPath)
-        shutil.rmtree(jitUtilsPath, onerror=del_rw)
-
-    if os.path.isfile(bootstrapPath):
-        logging.info("Deleting " + bootstrapPath)
-        os.remove(bootstrapPath)
 
 def main(argv):
     logging.basicConfig(format="[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
@@ -70,21 +23,28 @@ def main(argv):
     logger.setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
+
     required = parser.add_argument_group('required arguments')
     required.add_argument('-a', '--arch', type=str,
             default=None, help='architecture to run jit-format on')
     required.add_argument('-o', '--os', type=str,
             default=None, help='operating system')
-    required.add_argument('-c', '--coreclr', type=str,
-            default=None, help='full path to coreclr')
+    required.add_argument('-r', '--runtime', type=str,
+            default=None, help='full path to runtime repo root')
+
+    optional = parser.add_argument_group('optional arguments')
+    optional.add_argument('--cross', action="store_true",
+            default=None, help='do cross builds on Linux')
+    optional.add_argument('-j', '--jitutils', type=str,
+            default=None, help='full path to built jitutils repo root. Uses this instead of downloading bootstrap.sh/cmd and cloning/building jitutils.')
 
     args, unknown = parser.parse_known_args(argv)
 
     if unknown:
         logging.warning('Ignoring argument(s): {}'.format(','.join(unknown)))
 
-    if args.coreclr is None:
-        logging.error('Specify --coreclr')
+    if args.runtime is None:
+        logging.error('Specify --runtime')
         return -1
     if args.os is None:
         logging.error('Specify --os')
@@ -92,126 +52,141 @@ def main(argv):
     if args.arch is None:
         logging.error('Specify --arch')
         return -1
+    if args.cross:
+        if args.os != "linux":
+            logging.error('--cross is only valid with -os linux')
+            return -1
+    if args.jitutils is not None:
+        jitutilsRoot = os.path.abspath(os.path.expanduser(args.jitutils))
+        if not os.path.isdir(jitutilsRoot):
+            logging.error('Bad path to jitutils')
+            return -1
 
-    if not os.path.isdir(expandPath(args.coreclr)):
-        logging.error('Bad path to coreclr')
+    runtime = os.path.abspath(os.path.expanduser(args.runtime)).replace('/', os.sep)
+    if not os.path.isdir(runtime):
+        logging.error('Bad runtime path')
         return -1
-
-    coreclr = args.coreclr.replace('/', os.sep)
 
     platform = args.os
     arch = args.arch
 
     my_env = os.environ
 
-    # Download formatting tools
-    repoRoot = os.path.dirname(os.path.dirname(coreclr))
-    formattingScriptFolder = os.path.join(repoRoot, "eng", "formatting")
-    formattingDownloadScriptCommand = []
-    if platform == 'linux' or platform == 'osx':
-        formattingDownloadScriptCommand = [os.path.join(formattingScriptFolder, "download-tools.sh")]
-    elif platform == 'windows':
+    # Download formatting tools clang-format and clang-tidy and add them to PATH
+    formattingScriptFolder = os.path.join(runtime, "eng", "formatting")
+    if not os.path.isdir(formattingScriptFolder):
+        logging.error('Bad runtime path: eng/formatting directory not found')
+        return -1
+
+    if platform == 'windows':
         formattingDownloadScriptCommand = ["powershell", os.path.join(formattingScriptFolder, "download-tools.ps1")]
+    else:
+        formattingDownloadScriptCommand = [os.path.join(formattingScriptFolder, "download-tools.sh")]
 
     proc = subprocess.Popen(formattingDownloadScriptCommand)
-
     if proc.wait() != 0:
         logging.error("Formatting tool download failed")
         return -1
 
-    my_env["PATH"] = os.path.join(repoRoot, "artifacts", "tools") + os.pathsep + my_env["PATH"]
+    my_env["PATH"] = os.path.join(runtime, "artifacts", "tools") + os.pathsep + my_env["PATH"]
 
-    # Download bootstrap
+    with jitutil.TempDir() as temp_location:
+        assert len(os.listdir(temp_location)) == 0
 
-    bootstrapFilename = ""
+        if args.jitutils is not None:
+            logging.info('--jitutils passed: not downloading bootstrap.cmd/sh and cloning/building jitutils repo')
 
-    jitUtilsPath = os.path.join(coreclr, "jitutils")
+        else:
 
-    cleanup(jitUtilsPath, '')
+            # Download bootstrap
+            if platform == 'windows':
+                bootstrapFilename = "bootstrap.cmd"
+            else:
+                bootstrapFilename = "bootstrap.sh"
 
-    if platform == 'linux' or platform == 'osx':
-        bootstrapFilename = "bootstrap.sh"
-    elif platform == 'windows':
-        bootstrapFilename = "bootstrap.cmd"
+            bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
+            bootstrapPath = os.path.join(temp_location, bootstrapFilename)
+            if not jitutil.download_one_url(bootstrapUrl, bootstrapPath) or not os.path.isfile(bootstrapPath):
+                logging.error("Did not download bootstrap!")
+                return -1
 
-    bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
+            if platform == 'windows':
+                # Need to ensure we have Windows line endings on the downloaded script file,
+                # which is downloaded with Unix line endings.
+                logging.info('Convert {} to Windows line endings'.format(bootstrapPath))
 
-    with TempDir() as temp_location:
-        bootstrapPath = os.path.join(temp_location, bootstrapFilename)
+                content = None
+                with open(bootstrapPath, 'rb') as open_file:
+                    content = open_file.read()
 
-        assert len(os.listdir(os.path.dirname(bootstrapPath))) == 0
+                content = content.replace(b'\n', b'\r\n')
 
-        if not jitutil.download_one_url(bootstrapUrl, bootstrapPath):
-            logging.error("Did not download bootstrap!")
-            return -1
+                with open(bootstrapPath, 'wb') as open_file:
+                    open_file.write(content)
 
-        if platform == 'windows':
-            # Need to ensure we have Windows line endings on the downloaded script file,
-            # which is downloaded with Unix line endings.
-            logging.info('Convert {} to Windows line endings'.format(bootstrapPath))
+            # On *nix platforms, we need to make the bootstrap file executable
 
-            content = None
-            with open(bootstrapPath, 'rb') as open_file:
-                content = open_file.read()
+            if platform == 'linux' or platform == 'osx':
+                logging.info("Making bootstrap executable")
+                os.chmod(bootstrapPath, 0o751)
 
-            content = content.replace(b'\n', b'\r\n')
+            # Run bootstrap
+            if platform == 'windows':
+                command = [bootstrapPath]
+            else:
+                command = ['bash', bootstrapPath]
 
-            with open(bootstrapPath, 'wb') as open_file:
-                open_file.write(content)
-
-        # On *nix platforms, we need to make the bootstrap file executable
-
-        if platform == 'linux' or platform == 'osx':
-            logging.info("Making bootstrap executable")
-            os.chmod(bootstrapPath, 0o751)
-
-        # Run bootstrap
-        if platform == 'linux' or platform == 'osx':
-            logging.info('Running: bash {}'.format(bootstrapPath))
-            proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
+            command_string = " ".join(command)
+            logging.info('Running: {}'.format(command_string))
+            proc = subprocess.Popen(command, env=my_env)
             output,error = proc.communicate()
-        elif platform == 'windows':
-            logging.info('Running: {}'.format(bootstrapPath))
-            proc = subprocess.Popen([bootstrapPath], env=my_env)
-            output,error = proc.communicate()
+            if proc.returncode != 0:
+                logging.error("Bootstrap failed")
+                return -1
 
-        if proc.returncode != 0:
-            cleanup('', bootstrapPath)
-            logging.error("Bootstrap failed")
-            return -1
+            jitutilsRoot = os.path.join(temp_location, "jitutils")
+
+            # end of 'if args.jitutils is None'
 
         # Run jit-format
 
-        returncode = 0
-        jitutilsBin = os.path.join(os.path.dirname(bootstrapPath), "jitutils", "bin")
-        my_env["PATH"] = jitutilsBin + os.pathsep + my_env["PATH"]
-
+        jitutilsBin = os.path.join(jitutilsRoot, "bin")
         if not os.path.isdir(jitutilsBin):
-            logging.error("Jitutils not built!")
+            logging.error("jitutils not built!")
             return -1
 
-        jitformat = jitutilsBin
+        my_env["PATH"] = jitutilsBin + os.pathsep + my_env["PATH"]
 
-        if platform == 'linux' or platform == 'osx':
-            jitformat = os.path.join(jitformat, "jit-format")
-        elif platform == 'windows':
-            jitformat = os.path.join(jitformat,"jit-format.exe")
+        if platform == 'windows':
+            jitformat = os.path.join(jitutilsBin, "jit-format.exe")
+        else:
+            jitformat = os.path.join(jitutilsBin, "jit-format")
+
+        if not os.path.isfile(jitformat):
+            logging.error("jit-format not found")
+            return -1
+
         errorMessage = ""
 
         builds = ["Checked", "Debug", "Release"]
         projects = ["dll", "standalone", "crossgen"]
 
+        returncode = 0
         for build in builds:
             for project in projects:
-                command = jitformat + " -a " + arch + " -b " + build + " -o " + platform + " -c " + coreclr + " --verbose --projects " + project
-                logging.info('Running: {}'.format(command))
-                proc = subprocess.Popen([jitformat, "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
+                command = [jitformat, "-a", arch, "-b", build, "-o", platform, "-r", runtime, "--verbose", "--projects", project]
+                if args.cross:
+                    command += ["--cross"]
+
+                command_string = " ".join(command)
+                logging.info('Running: {}'.format(command_string))
+                proc = subprocess.Popen(command, env=my_env)
                 output,error = proc.communicate()
                 errorcode = proc.returncode
 
                 if errorcode != 0:
                     errorMessage += "\tjit-format -a " + arch + " -b " + build + " -o " + platform
-                    errorMessage += " -c <absolute-path-to-coreclr> --verbose --fix --projects " + project +"\n"
+                    errorMessage += " -r <absolute-path-to-runtime-root> --verbose --fix --projects " + project + "\n"
                     returncode = errorcode
 
                     # Fix mode doesn't return an error, so we have to run the build, then run with
@@ -219,24 +194,22 @@ def main(argv):
                     # of jit-format will return a formatting failure.
                     if errorcode == -2:
                         # If errorcode was -2, no need to run clang-tidy again
-                        proc = subprocess.Popen([jitformat, "--fix", "--untidy", "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
+                        proc = subprocess.Popen([jitformat, "--fix", "--untidy", "-a", arch, "-b", build, "-o", platform, "-r", runtime, "--verbose", "--projects", project], env=my_env)
                         output,error = proc.communicate()
                     else:
                         # Otherwise, must run both
-                        proc = subprocess.Popen([jitformat, "--fix", "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
+                        proc = subprocess.Popen([jitformat, "--fix", "-a", arch, "-b", build, "-o", platform, "-r", runtime, "--verbose", "--projects", project], env=my_env)
                         output,error = proc.communicate()
 
-    patchFilePath = os.path.join(coreclr, "format.patch")
+    patchFilePath = os.path.join(runtime, "format.patch")
 
     if returncode != 0:
         # Create a patch file
         logging.info("Creating patch file {}".format(patchFilePath))
-        jitSrcPath = os.path.join(coreclr, "jit")
+        jitSrcPath = os.path.join(runtime, "src", "coreclr", "jit")
         patchFile = open(patchFilePath, "w")
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
         output,error = proc.communicate()
-
-    cleanup(jitUtilsPath, bootstrapPath)
 
     if returncode != 0:
         logging.info("There were errors in formatting. Please run jit-format locally with: \n")

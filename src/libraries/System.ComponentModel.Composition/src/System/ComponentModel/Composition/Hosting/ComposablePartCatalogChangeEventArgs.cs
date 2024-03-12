@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
 

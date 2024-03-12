@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
         private static void Extract(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
         {
             Debug.Assert(HashLength(hashAlgorithmName) == hashLength);
-            int written = HashOneShotHelpers.MacData(hashAlgorithmName, salt, ikm, prk);
+            int written = CryptographicOperations.HmacData(hashAlgorithmName, salt, ikm, prk);
             Debug.Assert(written == prk.Length, $"Bytes written is {written} bytes which does not match output length ({prk.Length} bytes)");
         }
 

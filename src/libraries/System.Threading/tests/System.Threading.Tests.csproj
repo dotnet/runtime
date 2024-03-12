@@ -4,6 +4,8 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
@@ -14,9 +16,10 @@
     <Compile Include="CountdownEventTests.cs" />
     <Compile Include="EtwTests.cs" />
     <Compile Include="EventWaitHandleTests.cs" />
-    <Compile Include="InterlockedTests.cs" />
     <Compile Include="HostExecutionContextTests.cs" />
     <Compile Include="HostExecutionContextManagerTests.cs" />
+    <Compile Include="InterlockedTests.cs" />
+    <Compile Include="LockTests.cs" />
     <Compile Include="ManualResetEventTests.cs" />
     <Compile Include="ManualResetEventSlimCancellationTests.cs" />
     <Compile Include="ManualResetEventSlimTests.cs" />

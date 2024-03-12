@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -123,8 +123,8 @@ namespace System.Globalization
                     {
                         // well formed surrogates
                         SurrogateCasing.ToUpper(c, cl, out char h, out char l);
-                        destination[i]   = h;
-                        destination[i+1] = l;
+                        destination[i] = h;
+                        destination[i + 1] = l;
                         i++; // skip the low surrogate
                         continue;
                     }
@@ -142,15 +142,15 @@ namespace System.Globalization
             for (int i = 0; i < source.Length; i++)
             {
                 char c = source[i];
-                if (char.IsHighSurrogate(c) && i < source.Length - 1 )
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
                 {
                     char cl = source[i + 1];
                     if (char.IsLowSurrogate(cl))
                     {
                         // well formed surrogates
                         SurrogateCasing.ToLower(c, cl, out char h, out char l);
-                        destination[i]   = h;
-                        destination[i+1] = l;
+                        destination[i] = h;
+                        destination[i + 1] = l;
                         i++; // skip the low surrogate
                         continue;
                     }
@@ -273,7 +273,7 @@ namespace System.Globalization
                     if (pVal > pValueLimit)
                     {
                         // Found match.
-                        return (int) (pCurrentSource - pSource);
+                        return (int)(pCurrentSource - pSource);
                     }
 
                     pCurrentSource++;
@@ -334,7 +334,7 @@ namespace System.Globalization
                     if (pVal > pValueLimit)
                     {
                         // Found match.
-                        return (int) (pCurrentSource - pSource);
+                        return (int)(pCurrentSource - pSource);
                     }
 
                     pCurrentSource--;

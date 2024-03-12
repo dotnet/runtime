@@ -339,21 +339,19 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_CodeSizeEstimate(0)
     , m_Ordinal(0)
     , m_Success(true)
+#if defined(DEBUG)
+    , m_Policy(nullptr)
+    , m_TreeID(0)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
-#if defined(DEBUG) || defined(INLINE_DATA)
-    , m_Policy(nullptr)
-    , m_TreeID(0)
-#endif // defined(DEBUG) || defined(INLINE_DATA)
-#ifdef DEBUG
     , m_ILInstsSet(nullptr)
 #endif
 {
     // Empty
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Dump: Dump an InlineContext entry and all descendants to jitstdout
@@ -480,7 +478,7 @@ void InlineContext::DumpData(unsigned indent)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
         printf("%*s%u,\"%s\",\"%s\",", indent, "", GetOrdinal(), inlineReason, calleeName);
-        m_Policy->DumpData(jitstdout);
+        m_Policy->DumpData(jitstdout());
         printf("\n");
     }
 
@@ -623,7 +621,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 //------------------------------------------------------------------------
 // InlineResult: Construct an InlineResult to evaluate a particular call
@@ -662,11 +660,11 @@ InlineResult::InlineResult(
         m_InlineContext = stmt->GetDebugInfo().GetInlineContext();
         m_Policy->NoteContext(m_InlineContext);
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
         m_Policy->NoteOffset(call->gtRawILOffset);
 #else
         m_Policy->NoteOffset(stmt->GetDebugInfo().GetLocation().GetOffset());
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
     }
 
     // Get method handle for caller. Note we use the
@@ -845,10 +843,10 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InitialSizeEstimate(0)
     , m_CurrentSizeEstimate(0)
     , m_HasForceViaDiscretionary(false)
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     , m_MethodXmlFilePosition(0)
     , m_Random(nullptr)
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 {
     // Verify compiler is a root compiler instance
@@ -1135,7 +1133,7 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
     {
         m_InlineCount++;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
         // Keep track of the inline targeted for data collection or,
         // if we don't have one (yet), the last successful inline.
@@ -1153,7 +1151,7 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
             assert(!context->m_Policy->IsDataCollectionTarget());
         }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
         // Budget update.
         //
@@ -1302,10 +1300,8 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     }
     else
     {
-// Should only get here in debug builds/build with inline data
-#if defined(DEBUG) || defined(INLINE_DATA)
-        context->m_ActualCallOffset = call->gtRawILOffset;
-#endif
+        // Should only get here in debug builds
+        INDEBUG(context->m_ActualCallOffset = call->gtRawILOffset);
     }
 
     // We currently store both the statement location (used when reporting
@@ -1321,12 +1317,11 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     assert(call->gtCallType == CT_USER_FUNC);
     context->m_Callee = call->gtCallMethHnd;
 
+#if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-    context->m_TreeID = call->gtTreeID;
+    context->m_TreeID        = call->gtTreeID;
 #endif
 
     return context;
@@ -1339,7 +1334,7 @@ void InlineContext::SetSucceeded(const InlineInfo* info)
     m_ImportedILSize = info->inlineResult->GetImportedILSize();
     m_Success        = true;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     m_Policy           = info->inlineResult->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
 #endif
@@ -1356,7 +1351,7 @@ void InlineContext::SetFailed(const InlineResult* result)
     m_ImportedILSize = result->GetImportedILSize();
     m_Success        = false;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     m_Policy           = result->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
 #endif
@@ -1364,7 +1359,7 @@ void InlineContext::SetFailed(const InlineResult* result)
     m_InlineStrategy->NoteOutcome(this);
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Dump: dump description of inline behavior
@@ -1754,7 +1749,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
     return m_Random;
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 //------------------------------------------------------------------------
 // IsInliningDisabled: allow strategy to disable inlining in the method being jitted
@@ -1767,7 +1762,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
 bool InlineStrategy::IsInliningDisabled()
 {
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     static ConfigMethodRange range;
     const WCHAR*             noInlineRange = JitConfig.JitNoInlineRange();
@@ -1798,5 +1793,5 @@ bool InlineStrategy::IsInliningDisabled()
 
     return false;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }

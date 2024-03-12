@@ -53,10 +53,24 @@ OBJECTREF DupArrayForCloning(BASEARRAYREF pRef);
 // for NULL return value from them.
 
 OBJECTREF AllocateObject(MethodTable *pMT
+                         , GC_ALLOC_FLAGS flags
 #ifdef FEATURE_COMINTEROP
                          , bool fHandleCom = true
 #endif
     );
+
+inline OBJECTREF AllocateObject(MethodTable *pMT
+#ifdef FEATURE_COMINTEROP
+                                , bool fHandleCom = true
+#endif
+    )
+{
+    return AllocateObject(pMT, GC_ALLOC_NO_FLAGS
+#ifdef FEATURE_COMINTEROP
+                          , fHandleCom
+#endif
+        );
+}
 
 extern int StompWriteBarrierEphemeral(bool isRuntimeSuspended);
 extern int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);

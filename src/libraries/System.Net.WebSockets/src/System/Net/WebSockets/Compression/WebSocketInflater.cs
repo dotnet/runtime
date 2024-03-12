@@ -13,7 +13,7 @@ namespace System.Net.WebSockets.Compression
     internal sealed class WebSocketInflater : IDisposable
     {
         internal const int FlushMarkerLength = 4;
-        internal static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
+        internal static ReadOnlySpan<byte> FlushMarker => [0x00, 0x00, 0xFF, 0xFF];
 
         private readonly int _windowBits;
         private ZLibStreamHandle? _stream;

@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -27,7 +25,7 @@ namespace System.Linq
         /// The type of the elements of source.
         /// </typeparam>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> that contains the elements the input sequence split into chunks of size <paramref name="size"/>.
+        /// An <see cref="IEnumerable{T}"/> that contains the elements of the input sequence split into chunks of size <paramref name="size"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="source"/> is null.
@@ -37,7 +35,7 @@ namespace System.Linq
         /// </exception>
         public static IEnumerable<TSource[]> Chunk<TSource>(this IEnumerable<TSource> source, int size)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -47,10 +45,31 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.size);
             }
 
-            return ChunkIterator(source, size);
+            if (source is TSource[] array)
+            {
+                // Special-case arrays, which have an immutable length. This enables us to not only do an
+                // empty check and avoid allocating an iterator object when empty, it enables us to have a
+                // much more efficient (and simpler) implementation for chunking up the array.
+                return array.Length != 0 ?
+                    ArrayChunkIterator(array, size) :
+                    [];
+            }
+
+            return EnumerableChunkIterator(source, size);
         }
 
-        private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size)
+        private static IEnumerable<TSource[]> ArrayChunkIterator<TSource>(TSource[] source, int size)
+        {
+            int index = 0;
+            while (index < source.Length)
+            {
+                TSource[] chunk = new ReadOnlySpan<TSource>(source, index, Math.Min(size, source.Length - index)).ToArray();
+                index += chunk.Length;
+                yield return chunk;
+            }
+        }
+
+        private static IEnumerable<TSource[]> EnumerableChunkIterator<TSource>(IEnumerable<TSource> source, int size)
         {
             using IEnumerator<TSource> e = source.GetEnumerator();
 

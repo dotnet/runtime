@@ -50,7 +50,12 @@ namespace System.Net.NetworkInformation
             return false;
         }
 
-        public enum PingFragmentOptions { Default, Do, Dont };
+        public enum PingFragmentOptions
+        {
+            Default,
+            Do,
+            Dont
+        };
 
         /// <summary>
         /// The location of the IPv4 ping utility on the current machine.

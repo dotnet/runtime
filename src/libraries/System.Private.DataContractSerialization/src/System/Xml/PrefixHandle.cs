@@ -11,7 +11,9 @@ namespace System.Xml
     internal enum PrefixHandleType
     {
         Empty,
+#pragma warning disable SA1136 // Enum values should be on separate lines
         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+#pragma warning restore SA1136
         Buffer,
         Max,
     }

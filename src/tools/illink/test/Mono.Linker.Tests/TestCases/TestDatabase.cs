@@ -119,6 +119,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Inheritance.VirtualMethods");
 		}
 
+		public static IEnumerable<TestCaseData> InlineArrayTests ()
+		{
+			return NUnitCasesBySuiteName ("InlineArrays");
+		}
+
 		public static IEnumerable<TestCaseData> InteropTests ()
 		{
 			return NUnitCasesBySuiteName ("Interop");

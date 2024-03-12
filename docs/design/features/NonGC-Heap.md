@@ -9,8 +9,8 @@ flowchart
     nongcheap("NonGC Heap\n(Not managed by GC)")
     subgraph gcheap[GC Heaps]
         soh("Small Object Heap (SOH)")
-        poh("Pinned Object Heap (SOH)")
-        loh("Large Object Heap (SOH)")
+        poh("Pinned Object Heap (POH)")
+        loh("Large Object Heap (LOH)")
     end
     style nongcheap stroke:green
 ```
@@ -80,7 +80,7 @@ Although, we may need to emit memory barriers on platforms with a weak memory mo
 ## Limitations: which objects cannot be allocated on NonGC heaps
 The NonGC Heap, while powerful and beneficial, comes with certain inherent limitations, both obvious and specific to the current design used by CoreCLR and NativeAOT:
 * **Non-immortal objects:** Only immortal objects should be allocated on NonGC heap to avoid "dead weight" in that heap.
-* **Objects from unloadble contexts:** NonGC heap should never be used for objects belonging to unloadable contexts. Doing so could lead to potential memory leaks. As a consequence, all string literals associated with **unloadable** Assembly Load Contexts (ALCs) won't be placed in the NonGC Heap.
+* **Objects from unloadable contexts:** NonGC heap should never be used for objects belonging to unloadable contexts. Doing so could lead to potential memory leaks. As a consequence, all string literals associated with **unloadable** Assembly Load Contexts (ALCs) won't be placed in the NonGC Heap.
 * **No References to GC Heap's objects:** NonGC heap **must** never contain references to GC heaps' objects. However, it may contain references to other NonGC objects and GC heaps are allowed to reference NonGC objects.
 * The current design of CoreCLR's `FrozenObjectHeapManager` has certain design limitations such as:
   * Large objects are not supported.
@@ -118,4 +118,4 @@ but with the help of NonGC heap, it's now:
 * Certain kinds of `static readonly` fields which can be pre-initialized on NativeAOT or recognized by CoreCLR e.g., `Array<>.Empty`.
 
 ## Diagnostics and visible changes in .NET 8.0
-The most visible change that now `GC.GetGeneration(object)` API returns `int.MaxValue` for such objects. This change serves to emphasize that these objects are not managed by the garbage collector. Similiarly, corresponding `ICorProfiler` APIs may return the same value as a generation. A full inventory of new APIs and alterations related to diagnostic support for the NonGC Heap can be found in the ["Diagnostic support for NonGC heap"](https://github.com/dotnet/runtime/issues/75836) issue. An important detail to keep in mind is that these objects should never be considered as "dead" if no one references them since it's possible that they're actually kept alive by unmanaged data structures in VM itself.
+The most visible change that now `GC.GetGeneration(object)` API returns `int.MaxValue` for such objects. This change serves to emphasize that these objects are not managed by the garbage collector. Similarly, corresponding `ICorProfiler` APIs may return the same value as a generation. A full inventory of new APIs and alterations related to diagnostic support for the NonGC Heap can be found in the ["Diagnostic support for NonGC heap"](https://github.com/dotnet/runtime/issues/75836) issue. An important detail to keep in mind is that these objects should never be considered as "dead" if no one references them since it's possible that they're actually kept alive by unmanaged data structures in VM itself.

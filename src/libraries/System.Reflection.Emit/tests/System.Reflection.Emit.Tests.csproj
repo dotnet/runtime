@@ -62,8 +62,15 @@
     <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute.cs" />
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveAssemblyBuilder.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveCustomAttributeTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveConstructorBuilderTests.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveEnumBuilderTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveEventBuilderTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveILGeneratorTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveTypeBuilderAPIsTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveModuleBuilderTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySavePropertyBuilderTests.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveTools.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveTypeBuilderTests.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />

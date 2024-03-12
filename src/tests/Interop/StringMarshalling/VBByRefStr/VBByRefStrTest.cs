@@ -9,10 +9,14 @@ using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
-class Test
+public class Test
 {
 
-    public static int Main()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/65698", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/179", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static int TestEntryPoint()
     {
         try
         {

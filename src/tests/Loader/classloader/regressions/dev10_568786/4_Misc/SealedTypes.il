@@ -761,7 +761,7 @@
 
 } // end of class Conversion`2
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
@@ -850,7 +850,7 @@
     IL_0095:  ret
   } // end of method Program::Verification
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

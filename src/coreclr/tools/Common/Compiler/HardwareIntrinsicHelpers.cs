@@ -221,6 +221,7 @@ namespace ILCompiler
             public const int Rcpc = 0x0100;
             public const int VectorT128 = 0x0200;
             public const int Rcpc2 = 0x0400;
+            public const int Sve = 0x0800;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -244,6 +245,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("rcpc");
                 if ((flags & Rcpc2) != 0)
                     builder.AddSupportedInstructionSet("rcpc2");
+                if ((flags & Sve) != 0)
+                    builder.AddSupportedInstructionSet("sve");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -273,6 +276,8 @@ namespace ILCompiler
                     InstructionSet.ARM64_Atomics => Atomics,
                     InstructionSet.ARM64_Rcpc => Rcpc,
                     InstructionSet.ARM64_Rcpc2 => Rcpc2,
+                    InstructionSet.ARM64_Sve => Sve,
+                    InstructionSet.ARM64_Sve_Arm64 => Sve,
 
                     // Vector<T> Sizes
                     InstructionSet.ARM64_VectorT128 => VectorT128,

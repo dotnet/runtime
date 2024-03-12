@@ -443,7 +443,7 @@ namespace System.ComponentModel.Composition
                 var cat = new DirectoryCatalog(TemporaryFileCopier.GetNewTemporaryDirectory());
 
                 cat.Changed += new EventHandler<ComposablePartCatalogChangeEventArgs>((o, e) =>
-                    Assert.False(true));
+                    Assert.Fail());
 
                 cat.Refresh();
         }

@@ -137,7 +137,7 @@ namespace System.Net.Mail
 
         public void SendAsync(MailMessage message, object? userToken) => throw new PlatformNotSupportedException();
 
-        public void SendAsyncCancel()  => throw new PlatformNotSupportedException();
+        public void SendAsyncCancel() => throw new PlatformNotSupportedException();
 
         //************* Task-based async public methods *************************
         public Task SendMailAsync(string from, string recipients, string? subject, string? body) => throw new PlatformNotSupportedException();

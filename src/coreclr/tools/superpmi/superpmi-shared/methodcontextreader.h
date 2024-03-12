@@ -136,6 +136,9 @@ public:
     MethodContextBuffer GetNextMethodContext();
     // No C++ exceptions, so the constructor has to always succeed...
     bool   isValid();
+
+    double Progress();
+    double TotalWork();
     double PercentComplete();
 
     // Returns the index of the last MethodContext read by GetNextMethodContext
@@ -146,6 +149,9 @@ public:
 
     // Return should this method context be excluded from the replay or not.
     bool IsMethodExcluded(MethodContext* mc);
+
+    // Reset for reading a new sequence of method indices
+    void Reset(const int* newIndexes, int newIndexCount);
 };
 #pragma pack(pop)
 

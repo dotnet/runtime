@@ -33,14 +33,12 @@
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/coree.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>

@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 }
             }
 
-            Assert.False(true, "Subject Key Identifier not found");
+            Assert.Fail("Subject Key Identifier not found");
             return null;
         }
     }

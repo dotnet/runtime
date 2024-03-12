@@ -46,21 +46,14 @@
 .endm
 
 #ifdef TARGET_APPLE
-    // Create two segments in the Mach-O file:
-    // __THUNKS with executable permissions
-    // __THUNKS_DATA with read/write permissions
-
-    .section __THUNKS,__thunks,regular,pure_instructions
+// Thunk pool
+    .text
     .p2align PAGE_SIZE_LOG2
 PATCH_LABEL ThunkPool
     .rept (THUNKS_MAP_SIZE / PAGE_SIZE)
     .p2align PAGE_SIZE_LOG2
     THUNKS_PAGE_BLOCK
     .endr
-    .p2align PAGE_SIZE_LOG2
-    .section __THUNKS_DATA,__thunks,regular
-    .p2align PAGE_SIZE_LOG2
-    .space THUNKS_MAP_SIZE
     .p2align PAGE_SIZE_LOG2
 #else
 #error Unsupported OS

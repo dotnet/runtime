@@ -460,6 +460,23 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type);
     }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedRef, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller.RefPropagate))]
+    public static partial class ComVariantMarshaller
+    {
+        public static System.Runtime.InteropServices.Marshalling.ComVariant ConvertToUnmanaged(object? managed) { throw null; }
+        public static object? ConvertToManaged(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { throw null; }
+        public static void Free(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { }
+
+        public struct RefPropagate
+        {
+            public void FromUnmanaged(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { }
+            public void FromManaged(object? managed) { }
+            public System.Runtime.InteropServices.Marshalling.ComVariant ToUnmanaged() { throw null; }
+            public object? ToManaged() { throw null; }
+            public void Free() { }
+        }
+    }
     [System.CLSCompliantAttribute(false)]
     public partial class StrategyBasedComWrappers : System.Runtime.InteropServices.ComWrappers
     {
@@ -1711,6 +1728,11 @@ namespace System.Runtime.InteropServices
         public VariantWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    public sealed class WasmImportLinkageAttribute : Attribute
+    {
+        public WasmImportLinkageAttribute() { }
+    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {
@@ -2499,6 +2521,19 @@ namespace System.Runtime.InteropServices.Marshalling
         public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
         public static void Free(ushort* unmanaged) { throw null; }
         public static ref readonly char GetPinnableReference(string? str) { throw null; }
+    }
+    public struct ComVariant : System.IDisposable
+    {
+        private int _dummyPrimitive;
+
+        public void Dispose() { }
+        public static System.Runtime.InteropServices.Marshalling.ComVariant Create<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T value) { throw null; }
+        public static System.Runtime.InteropServices.Marshalling.ComVariant CreateRaw<T>(System.Runtime.InteropServices.VarEnum vt, T rawValue) where T : unmanaged { throw null; }
+        public static System.Runtime.InteropServices.Marshalling.ComVariant Null { get { throw null; } }
+        public readonly T? As<T>() { throw null; }
+        public readonly System.Runtime.InteropServices.VarEnum VarType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.UnscopedRefAttribute]
+        public ref T GetRawDataRef<T>() where T : unmanaged { throw null; }
     }
 }
 namespace System.Security

@@ -32,6 +32,6 @@ public class ConfigSrcTests : TestMainJsTestBase
         string bundleDir = Path.Combine(binDir, "AppBundle");
         string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "_framework", "blazor.boot.json"));
 
-        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src={configSrc}");
+        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src=\"{configSrc}\"");
     }
 }

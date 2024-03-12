@@ -467,11 +467,6 @@ struct _MonoImage {
 	 */
 	void *user_info;
 
-#ifndef DISABLE_DLLMAP
-	/* dll map entries */
-	MonoDllMap *dll_map;
-#endif
-
 	/* interfaces IDs from this image */
 	/* protected by the classes lock */
 	MonoBitSet *interface_bitset;
@@ -661,10 +656,16 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
-	unsigned int  suppress_gc_transition : 1;
 	unsigned int  marshalling_disabled : 1;
+	uint8_t       ext_callconv; // see MonoExtCallConv
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
+
+typedef enum {
+  MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION = 0x01,
+  MONO_EXT_CALLCONV_SWIFTCALL = 0x02,
+  /// see MonoMethodSignature:ext_callconv - only 8 bits
+} MonoExtCallConv;
 
 /*
  * AOT cache configuration loaded from config files.
@@ -1279,5 +1280,10 @@ mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, .
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
+
+static inline gboolean
+mono_method_signature_has_ext_callconv (MonoMethodSignature *sig, MonoExtCallConv flags) {
+	return (sig->ext_callconv & flags) != 0;
+}
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

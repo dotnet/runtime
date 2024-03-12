@@ -536,7 +536,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             Keyword = classDec.Keyword.ValueText,
                                             Namespace = nspace,
-                                            Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
+                                            Name = GenerateClassName(classDec),
                                             ParentClass = null,
                                         };
 
@@ -554,7 +554,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Keyword = parentLoggerClass.Keyword.ValueText,
                                                 Namespace = nspace,
-                                                Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
+                                                Name = GenerateClassName(parentLoggerClass),
                                                 ParentClass = null,
                                             };
 
@@ -599,6 +599,29 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return results;
+            }
+
+            private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
+            {
+                if (typeDeclaration.TypeParameterList != null &&
+                    typeDeclaration.TypeParameterList.Parameters.Count != 0)
+                {
+                    // The source generator produces a partial class that the compiler merges with the original
+                    // class definition in the user code. If the user applies attributes to the generic types
+                    // of the class, it is necessary to remove these attribute annotations from the generated
+                    // code. Failure to do so may result in a compilation error (CS0579: Duplicate attribute).
+                    for (int i = 0; i < typeDeclaration.TypeParameterList.Parameters.Count; i++)
+                    {
+                        TypeParameterSyntax parameter = typeDeclaration.TypeParameterList.Parameters[i];
+
+                        if (parameter.AttributeLists.Count > 0)
+                        {
+                            typeDeclaration = typeDeclaration.ReplaceNode(parameter, parameter.WithAttributeLists([]));
+                        }
+                    }
+                }
+
+                return typeDeclaration.Identifier.ToString() + typeDeclaration.TypeParameterList;
             }
 
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
@@ -654,7 +677,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// Finds the template arguments contained in the message string.
             /// </summary>
             /// <returns>A value indicating whether the extraction was successful.</returns>
-            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            private static bool ExtractTemplates(string? message, Dictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {

@@ -301,6 +301,31 @@ namespace ComInterfaceGenerator.Unit.Tests
             """;
 
         public string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
+
+        public string MarshalAsParameterAndModifiers(string typeName, UnmanagedType unmanagedType) =>
+            $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                {{VirtualMethodIndex(0)}}
+                [return: {|#10:MarshalAs(UnmanagedType.{{unmanagedType}})|}]
+                {{typeName}} {|#0:Method|}(
+                    [{|#11:MarshalAs(UnmanagedType.{{unmanagedType}})|}] {{typeName}} {|#1:value|},
+                    [{|#12:MarshalAs(UnmanagedType.{{unmanagedType}})|}] in {{typeName}} {|#2:inValue|},
+                    [{|#13:MarshalAs(UnmanagedType.{{unmanagedType}})|}] ref {{typeName}} {|#3:refValue|},
+                    [{|#14:MarshalAs(UnmanagedType.{{unmanagedType}})|}] out {{typeName}} {|#4:outValue|});
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
         public string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
         public string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $$"""
             using System.Runtime.CompilerServices;

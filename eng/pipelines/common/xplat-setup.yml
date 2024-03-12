@@ -45,6 +45,15 @@ jobs:
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
+        
+      - name: archType
+        value: ${{ parameters.archType }}
+
+      - name: osGroup
+        value: ${{ parameters.osGroup }}
+
+      - name: osSubgroup
+        value: ${{ parameters.osSubgroup }}
 
       - name: _runSmokeTestsOnlyArg
         value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
@@ -108,7 +117,7 @@ jobs:
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
@@ -168,12 +177,12 @@ jobs:
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64
+          demands: ImageOverride -equals windows.vs2022preview.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64.open
+          demands: ImageOverride -equals windows.vs2022preview.amd64.open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

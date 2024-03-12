@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using Xunit;
 
 
 [SecuritySafeCritical]
@@ -499,7 +500,8 @@ public class MarshalSizeOf1
     #endregion
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MarshalSizeOf1 test = new MarshalSizeOf1();
 

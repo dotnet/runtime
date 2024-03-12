@@ -439,7 +439,7 @@ namespace System.Security.Cryptography
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
-            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, new ReadOnlySpan<byte>(buffer, offset, count));
+            byte[] hashVal = CryptographicOperations.HashData(hashAlgorithmName, new ReadOnlySpan<byte>(buffer, offset, count));
             return SignHash(hashVal, calgHash);
         }
 
@@ -454,7 +454,7 @@ namespace System.Security.Cryptography
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
-            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
+            byte[] hashVal = CryptographicOperations.HashData(hashAlgorithmName, buffer);
             return SignHash(hashVal, calgHash);
         }
 
@@ -469,7 +469,7 @@ namespace System.Security.Cryptography
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
-            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, inputStream);
+            byte[] hashVal = CryptographicOperations.HashData(hashAlgorithmName, inputStream);
             return SignHash(hashVal, calgHash);
         }
 
@@ -522,7 +522,7 @@ namespace System.Security.Cryptography
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
-            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
+            byte[] hashVal = CryptographicOperations.HashData(hashAlgorithmName, buffer);
             return VerifyHash(hashVal, calgHash, signature);
         }
 

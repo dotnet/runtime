@@ -115,7 +115,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
-        [Event(4, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -135,7 +135,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue);
         }
 
-        [Event(6, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -249,7 +249,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
-        [Event(16, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -298,7 +298,7 @@ namespace System.Diagnostics.Metrics
                 Parent = parent;
             }
 
-            public MetricsEventSource Parent { get; private set;}
+            public MetricsEventSource Parent { get; private set; }
 
             public bool IsSharedSession(string commandSessionId)
             {
@@ -737,7 +737,11 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-                    sb.Append(quantiles[i].Quantile).Append('=').Append(quantiles[i].Value);
+#if NETCOREAPP
+                    sb.Append(CultureInfo.InvariantCulture, $"{quantiles[i].Quantile}={quantiles[i].Value}");
+#else
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);
+#endif
                     if (i != quantiles.Length - 1)
                     {
                         sb.Append(';');

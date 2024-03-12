@@ -8,7 +8,7 @@ namespace System.Reflection.Emit.Tests
 {
     public class PropertyBuilderTest11
     {
-        private enum Colors
+        internal enum Colors
         {
             Red = 0,
             Green = 1,

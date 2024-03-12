@@ -3,9 +3,9 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Net.Sockets;
 
 namespace System.Net.NetworkInformation
 {

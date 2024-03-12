@@ -223,6 +223,7 @@ Global
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems*{400a1561-b6b6-482d-9e4c-3ddaede5bd07}*SharedItemsImports = 5
 		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
 		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5
 		src\ILLink.Shared\ILLink.Shared.projitems*{ff598e93-8e9e-4091-9f50-61a7572663ae}*SharedItemsImports = 13

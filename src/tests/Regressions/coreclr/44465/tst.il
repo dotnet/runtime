@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly tst { }
+.assembly extern mscorlib { }
+.assembly extern xunit.core {}
  
 .method static void* GetValue()
 {
@@ -14,10 +16,15 @@
     ret
 }
 
-.method static int32 main()
+.class public auto ansi tst {
+.method public static int32 main()
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     call void* GetValue()
     conv.i4
     ret
+}
 }

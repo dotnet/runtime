@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
-using NTSTATUS = Interop.BCrypt.NTSTATUS;
-using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
+using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
+using NTSTATUS = Interop.BCrypt.NTSTATUS;
 
 namespace System.Security.Cryptography
 {
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
             // So keep hHash trapped in this scope to prevent (mis-)use of it.
             {
                 SafeBCryptHashHandle hHash;
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
                 if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
                 {
                     hHash.Dispose();

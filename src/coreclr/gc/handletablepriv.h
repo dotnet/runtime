@@ -942,3 +942,15 @@ void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBl
 PTR_TableSegment CALLBACK xxxAsyncSegmentIterator(PTR_HandleTable pTable, TableSegment *pPrevSegment, CrstHolderWithState *pCrstHolder);
 
 /*--------------------------------------------------------------------------*/
+
+#ifndef DACCESS_COMPILE
+
+/*
+ * GetConvertedGeneration
+ *
+ * Get the generation of an object, where a frozen object is regarded as max_generation
+ *
+ */
+int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj);
+
+#endif //DACCESS_COMPILE

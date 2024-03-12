@@ -4,7 +4,7 @@
 //
 
 //
-// File which contains a bunch of of array related things.
+// File which contains a bunch of array related things.
 //
 
 #include "common.h"
@@ -270,7 +270,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Parent class is the top level array
     // The vtable will have all of top level class's methods, plus any methods we have for array classes
     DWORD numVirtuals = pParentClass->GetNumVirtuals();
-    DWORD numNonVirtualSlots = numCtors + 3; // 3 for the proper rank Get, Set, Address
+    DWORD numNonVirtualSlots = (pCanonMT == NULL) ? numCtors + 3: 0; // 3 for the proper rank Get, Set, Address
 
     size_t cbMT = sizeof(MethodTable);
     cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(MethodTable::VTableIndir_t);
@@ -288,19 +288,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         }
     }
 
-    DWORD dwMultipurposeSlotsMask = 0;
-    dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
-    dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
-    if (pCanonMT == NULL)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasNonVirtualSlots;
-    if (this != elemTypeHnd.GetModule())
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasModuleOverride;
-
     // Allocate space for optional members
     // We always have a non-virtual slot array, see assert at end
-    cbMT += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                          FALSE,                           // GenericsStaticsInfo
-                                                          FALSE);                          // TokenOverflow
+    cbMT += MethodTable::GetOptionalMembersAllocationSize(true /* hasInterfaceMap */);
 
     // This is the offset of the beginning of the interface map
     size_t imapOffset = cbMT;
@@ -313,18 +303,13 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
 
-    // Canonical methodtable has an array of non virtual slots pointed to by the optional member
-    size_t offsetOfNonVirtualSlots = 0;
     size_t cbArrayClass = 0;
 
     if (pCanonMT == NULL)
     {
-        offsetOfNonVirtualSlots = cbMT;
-        cbMT += numNonVirtualSlots * sizeof(PCODE);
-
-        // Allocate ArrayClass (including space for packed fields), MethodTable, and class name in one alloc.
+        // Allocate ArrayClass, MethodTable, and class name in one alloc.
         // Remember to pad allocation size for ArrayClass portion to ensure MethodTable is pointer aligned.
-        cbArrayClass = ALIGN_UP(sizeof(ArrayClass) + sizeof(EEClassPackedFields), sizeof(void*));
+        cbArrayClass = ALIGN_UP(sizeof(ArrayClass), sizeof(void*));
     }
 
     // ArrayClass already includes one void*
@@ -348,16 +333,12 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     MethodTable* pMT = (MethodTable *) pMTHead;
 
-    pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
-
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    pMT->SetWriteableData(pMTWriteableData);
+    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
+    pMT->SetLoaderAllocator(pAllocator);
+    pMT->SetModule(elemTypeHnd.GetModule());
 
-    // This also disables IBC logging until the type is sufficiently initialized so
-    // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // Fill in pClass
     if (pClass != NULL)
@@ -412,9 +393,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     _ASSERTE(FitsIn<WORD>(dwComponentSize));
     pMT->SetComponentSize(static_cast<WORD>(dwComponentSize));
 
-    pMT->SetLoaderModule(this);
-    pMT->SetLoaderAllocator(pAllocator);
-
     pMT->SetModule(elemTypeHnd.GetModule());
 
     if (elemTypeHnd.ContainsGenericVariables())
@@ -460,8 +438,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
-    pMTWriteableData->SetIsRestoredForBuildArrayMethodTable();
+    // Mark the type as restored to avoid asserts.
+    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildArrayMethodTable();
 
     {
         // Fill out the vtable indirection slots
@@ -471,9 +449,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             // Share the parent chunk
             it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
         }
-
-        if (pClass != NULL)
-            pMT->SetNonVirtualSlotsArray((PTR_PCODE)(pMemory+cbArrayClass+offsetOfNonVirtualSlots));
     }
 
 #ifdef _DEBUG

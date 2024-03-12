@@ -1,11 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -58,7 +54,7 @@ namespace System.Text.RegularExpressions.Tests
 
             Regex r = RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase).GetAwaiter().GetResult();
             int count = 0;
-            string[] expectedMatches = new[] { "one", "ethics", "use", "ultimate" };
+            string[] expectedMatches = ["one", "ethics", "use", "ultimate"];
             ReadOnlySpan<char> span = Input.AsSpan();
             foreach (ValueMatch match in r.EnumerateMatches(span))
             {
@@ -82,7 +78,7 @@ namespace System.Text.RegularExpressions.Tests
 
             Regex r = RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase).GetAwaiter().GetResult();
             int count = 0;
-            string[] expectedMatches = new[] { "10", "09" };
+            string[] expectedMatches = ["10", "09"];
             ReadOnlySpan<char> span = Input.AsSpan();
             foreach (ValueMatch match in r.EnumerateMatches(span))
             {
@@ -100,8 +96,8 @@ namespace System.Text.RegularExpressions.Tests
 
             Regex r = RegexHelpers.GetRegexAsync(engine, Pattern).GetAwaiter().GetResult();
             int count = 0;
-            string[] expectedMatches = new[] { "eed" };
-            int[] expectedIndex = new[] { 11 };
+            string[] expectedMatches = ["eed"];
+            int[] expectedIndex = [11];
             ReadOnlySpan<char> span = Input.AsSpan();
             foreach (ValueMatch match in r.EnumerateMatches(span))
             {

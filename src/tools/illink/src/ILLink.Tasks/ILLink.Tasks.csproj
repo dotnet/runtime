@@ -4,26 +4,20 @@
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <TargetFramework />
     <Description>MSBuild tasks for running the IL Linker</Description>
-    <!-- Recommended by arcade for tools projects. generates an assembly version that includes patch number derived from date and build revision -->
-    <!-- Set AutoGenerateAssemblyVersion to false until runtime uses illink live bits and removes dependencies https://github.com/dotnet/runtime/issues/78076 -->
-    <AutoGenerateAssemblyVersion>false</AutoGenerateAssemblyVersion>
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <!-- To suppress warnings about resetting the assembly version.-->
+    <AssemblyVersion />
     <!-- Place illink and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Nullable>disable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.NET.ILLink.Tasks</PackageId>
-    <!-- Don't generate a package in runtime til preview 2 -->
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <!-- TODO: Enable when the package shipped stable with .NET 8. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- NU5128: This package doesn't contain any lib or ref assemblies because it's a tooling package.
          NU5129: Targets don't match the package id. This is intentional. -->
     <NoWarn>$(NoWarn);NU5128;NU5129</NoWarn>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
-    <!-- Disable analyzer to prevent a circular dependency due to PackageReference to the LKG Microsoft.NET.ILLink.Tasks. -->
-    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
 
   <!-- Include the illink.runtimeconfig.pack.json file (which depends on the runtimeversion being built)
@@ -55,11 +49,9 @@
     <ProjectReference Include="..\linker\Mono.Linker.csproj" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
-    <!-- We use private assets for the Microsoft.Build packages to prevent them from being published with the tasks dll, because
-         these are already a part of the SDK. -->
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
   <ItemGroup>

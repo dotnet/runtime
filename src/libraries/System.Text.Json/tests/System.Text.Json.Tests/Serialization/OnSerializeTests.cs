@@ -384,10 +384,10 @@ namespace System.Text.Json.Serialization.Tests
             IJsonOnSerializing,
             IJsonOnSerialized
         {
-            public void OnDeserialized() => Assert.True(false, "Not expected");
-            public void OnDeserializing() => Assert.True(false, "Not expected");
-            public void OnSerialized() => Assert.True(false, "Not expected");
-            public void OnSerializing() => Assert.True(false, "Not expected");
+            public void OnDeserialized() => Assert.Fail("Not expected");
+            public void OnDeserializing() => Assert.Fail("Not expected");
+            public void OnSerialized() => Assert.Fail("Not expected");
+            public void OnSerializing() => Assert.Fail("Not expected");
         }
 
         [JsonConverter(converterType: typeof(MyValueConverter))]
@@ -397,10 +397,10 @@ namespace System.Text.Json.Serialization.Tests
             IJsonOnSerializing,
             IJsonOnSerialized
         {
-            public void OnDeserialized() => Assert.True(false, "Not expected");
-            public void OnDeserializing() => Assert.True(false, "Not expected");
-            public void OnSerialized() => Assert.True(false, "Not expected");
-            public void OnSerializing() => Assert.True(false, "Not expected");
+            public void OnDeserialized() => Assert.Fail("Not expected");
+            public void OnDeserializing() => Assert.Fail("Not expected");
+            public void OnSerialized() => Assert.Fail("Not expected");
+            public void OnSerializing() => Assert.Fail("Not expected");
         }
 
         private class MyValueConverter : JsonConverter<MyValue>

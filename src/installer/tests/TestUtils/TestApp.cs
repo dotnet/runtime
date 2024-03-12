@@ -50,6 +50,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
+        /// <summary>
+        /// Create a test app from pre-built output of <paramref name="appName"/>.
+        /// </summary>
+        /// <param name="appName">Name of pre-built app</param>
+        /// <param name="assetRelativePath">Path to asset - relative to the directory containing all pre-built assets</param>
+        /// <returns>
+        /// If <paramref name="assetRelativePath"/> is <c>null</c>, <paramref name="appName"/> is used as the relative path.
+        /// </returns>
+        public static TestApp CreateFromBuiltAssets(string appName, string assetRelativePath = null)
+        {
+            assetRelativePath = assetRelativePath ?? appName;
+            TestApp app = CreateEmpty(appName);
+            TestArtifact.CopyRecursive(
+                Path.Combine(TestContext.TestAssetsOutput, assetRelativePath),
+                app.Location);
+            return app;
+        }
+
         public void PopulateFrameworkDependent(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
         {
             var builder = NetCoreAppBuilder.PortableForNETCoreApp(this);
@@ -72,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
             => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
 
-        public void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
+        private void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
@@ -92,17 +110,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void PopulateSelfContained(MockedComponent mock, Action<NetCoreAppBuilder> customizer = null)
         {
-            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, RepoDirectoriesProvider.Default.TargetRID);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.TargetRID);
 
-            // Update the .runtimeconfig.json
+            // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
-                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion));
+                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion)
+                    .RemoveFramework(Constants.MicrosoftNETCoreApp));
 
             // Add main project assembly
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));
 
             // Add runtime libraries and assets
-            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{RepoDirectoriesProvider.Default.TargetRID}", RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion, l =>
+            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.TargetRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
             {
                 if (mock == MockedComponent.None)
                 {

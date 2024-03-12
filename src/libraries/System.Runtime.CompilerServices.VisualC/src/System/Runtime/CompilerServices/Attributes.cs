@@ -4,7 +4,7 @@
 // We need to add an InternalsVisibleToAttribute here to mscorlib since we need to expose some of these types via type forwards in mscorlib
 // since tooling expects some types to live there and not in System.Runtime.CompilerServices.VisualC, but we don't want to expose
 // these types publicly.
-[assembly:System.Runtime.CompilerServices.InternalsVisibleTo("mscorlib, PublicKey=00000000000000000400000000000000")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("mscorlib, PublicKey=00000000000000000400000000000000")]
 
 #pragma warning disable IDE0060
 
@@ -105,10 +105,10 @@ namespace System.Runtime.CompilerServices
         public NativeCppClassAttribute() { }
     }
 
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class CppInlineNamespaceAttribute : Attribute
     {
-        public CppInlineNamespaceAttribute(string dottedName) {}
+        public CppInlineNamespaceAttribute(string dottedName) { }
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
@@ -129,7 +129,7 @@ namespace System.Runtime.CompilerServices
     internal sealed class SuppressMergeCheckAttribute : Attribute
     {
         public SuppressMergeCheckAttribute()
-        {}
+        { }
     }
 
     // The CLR data marshaler has some behaviors that are incompatible with

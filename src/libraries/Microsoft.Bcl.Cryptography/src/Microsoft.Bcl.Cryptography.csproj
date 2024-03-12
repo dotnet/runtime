@@ -3,13 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.
 
 Commonly Used Types:
 System.Security.Cryptography.SP800108HmacCounterKdf</PackageDescription>
-    <!-- This library uses IsPartialFacadeAssembly for which the compiler doesn't produce any XML documentation. -->
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

@@ -98,6 +98,13 @@ public:
     //               of the T value inside of the Nullable<T>
     void CopyStructToRegisters(void *src, int fieldBytes, int destOffset)
     {
+        static const INT64 NanBox =
+        #ifdef TARGET_RISCV64
+            0xffffffff00000000L;
+        #else
+            0L;
+        #endif // TARGET_RISCV64
+
         _ASSERTE(IsStructPassedInRegs());
         _ASSERTE(fieldBytes <= 16);
 
@@ -107,8 +114,8 @@ public:
         { // struct with two floats.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
-            *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
-            *(INT64*)((char*)m_base + argOfs + 8) = *((INT32*)src + 1);
+            *(INT64*)((char*)m_base + argOfs) = NanBox | *(INT32*)src;
+            *(INT64*)((char*)m_base + argOfs + 8) = NanBox | *((INT32*)src + 1);
         }
         else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
         { // the first field is float or double.
@@ -118,7 +125,7 @@ public:
 
             if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
             {
-                *(INT64*)((char*)m_base + argOfs) = *(INT32*)src; // the first field is float
+                *(INT64*)((char*)m_base + argOfs) = NanBox | *(INT32*)src; // the first field is float
             }
             else
             {
@@ -146,7 +153,7 @@ public:
             if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
             {
                 // the second field is float.
-                *(INT64*)((char*)m_base + argOfs) = destOffset == 0 ? *((INT32*)src + 1) : *(INT32*)src;
+                *(INT64*)((char*)m_base + argOfs) = NanBox | (destOffset == 0 ? *((INT32*)src + 1) : *(INT32*)src);
             }
             else
             {
@@ -163,7 +170,7 @@ public:
         }
         else
         {
-            _ASSERTE(!"---------UNReachable-------LoongArch64!!!");
+            _ASSERTE(!"---------UNReachable-------LoongArch64/RISC-V64!!!");
         }
     }
 #endif // !DACCESS_COMPILE

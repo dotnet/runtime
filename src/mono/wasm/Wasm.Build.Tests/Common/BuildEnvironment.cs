@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 #nullable enable
 
@@ -30,7 +32,7 @@ namespace Wasm.Build.Tests
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
-        public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt");
+        public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt artifacts");
 
         public static readonly string           DefaultRuntimeIdentifier =
 #if TARGET_WASI
@@ -74,11 +76,15 @@ namespace Wasm.Build.Tests
 
             sdkForWorkloadPath = Path.GetFullPath(sdkForWorkloadPath);
 
-            // FIXME:
-            foreach (string verStr in new[] { "8", "7", "6" })
+            Regex runtimePackRegex = new(@"^RUNTIME_PACK_VER(\d+)$");
+            foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
             {
-                string versionValue = Environment.GetEnvironmentVariable($"RUNTIME_PACK_VER{verStr}") ?? string.Empty;
-                s_runtimePackVersions[$"net{verStr}.0"] = versionValue;
+                Match m = runtimePackRegex.Match((string)de.Key);
+                if (!m.Success)
+                    continue;
+
+                int major = int.Parse(m.Groups[1].Value);
+                s_runtimePackVersions[$"net{major}.0"] = (string)(de.Value ?? string.Empty);
             }
 
             DefaultBuildArgs = string.Empty;
@@ -121,8 +127,6 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
-            if (IsWorkload)
-                EnvVars["WBTOverrideRuntimePack"] = "true";
 
             if (!UseWebcil)
             {
@@ -152,8 +156,11 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(TmpPath);
         }
 
-        // FIXME: error checks
-        public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework) => s_runtimePackVersions[tfm];
+        public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework)
+            => s_runtimePackVersions.TryGetValue(tfm, out string? version)
+                    ? version
+                    : throw new ArgumentException($"No runtime pack version found for tfm={tfm} .");
+
         public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(WorkloadPacksDir,
                     runtimeType is RuntimeVariant.SingleThreaded

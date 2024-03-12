@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <!-- Needed for IlasmRoundTripIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>

@@ -14,6 +14,7 @@
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\DiagDescriptorsBase.cs" Link="gen\DiagDescriptorsBase.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\DiagDescriptors.cs" Link="gen\DiagDescriptors.cs" />
+    <Compile Remove="Baselines\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
@@ -33,6 +34,12 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\Microsoft.Extensions.Options.SourceGeneration.csproj"
                               OutputItemType="Analyzer" ReferenceOutputAssembly="true" SetTargetFramework="TargetFramework=netstandard2.0"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Baselines\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

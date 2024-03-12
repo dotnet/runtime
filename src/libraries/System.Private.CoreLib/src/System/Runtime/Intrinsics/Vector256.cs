@@ -11,7 +11,7 @@ namespace System.Runtime.Intrinsics
 {
     // We mark certain methods with AggressiveInlining to ensure that the JIT will
     // inline them. The JIT would otherwise not inline the method since it, at the
-    // point it tries to determine inline profability, currently cannot determine
+    // point it tries to determine inline profitability, currently cannot determine
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
@@ -275,10 +275,9 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
-        /// <seealso cref="MathF.Ceiling(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> Ceiling(Vector256<float> vector)
+        internal static Vector256<T> Ceiling<T>(Vector256<T> vector)
         {
             return Create(
                 Vector128.Ceiling(vector._lower),
@@ -289,16 +288,18 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="MathF.Ceiling(float)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Ceiling(Vector256<float> vector) => Ceiling<float>(vector);
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="Math.Ceiling(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<double> Ceiling(Vector256<double> vector)
-        {
-            return Create(
-                Vector128.Ceiling(vector._lower),
-                Vector128.Ceiling(vector._upper)
-            );
-        }
+        public static Vector256<double> Ceiling(Vector256<double> vector) => Ceiling<double>(vector);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1323,6 +1324,15 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
 
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateSequence<T>(T start, T step) => (Vector256<T>.Indices * step) + Create(start);
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1401,6 +1411,40 @@ namespace System.Runtime.Intrinsics
                 || Vector128.EqualsAny(left._upper, right._upper);
         }
 
+        /// <inheritdoc cref="Vector128.Exp(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Exp(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Exp(vector._lower),
+                    Vector128.Exp(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Exp(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector256<float>, Vector256<uint>, Vector256<double>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Exp(vector._lower),
+                    Vector128.Exp(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
         /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1419,10 +1463,9 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
-        /// <seealso cref="MathF.Floor(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> Floor(Vector256<float> vector)
+        internal static Vector256<T> Floor<T>(Vector256<T> vector)
         {
             return Create(
                 Vector128.Floor(vector._lower),
@@ -1433,16 +1476,18 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="MathF.Floor(float)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Floor(Vector256<float> vector) => Floor<float>(vector);
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="Math.Floor(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<double> Floor(Vector256<double> vector)
-        {
-            return Create(
-                Vector128.Floor(vector._lower),
-                Vector128.Floor(vector._upper)
-            );
-        }
+        public static Vector256<double> Floor(Vector256<double> vector) => Floor<double>(vector);
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -1753,6 +1798,74 @@ namespace System.Runtime.Intrinsics
         internal static Vector256<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
+        /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Log(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log(vector._lower),
+                    Vector128.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Log(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector256<float>, Vector256<int>, Vector256<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log(vector._lower),
+                    Vector128.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Log2(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log2(vector._lower),
+                    Vector128.Log2(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Log2(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector256<float>, Vector256<int>, Vector256<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log2(vector._lower),
+                    Vector128.Log2(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1947,13 +2060,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> ShiftLeft(Vector256<byte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        internal static Vector256<T> ShiftLeft<T>(Vector256<T> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1961,13 +2068,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> ShiftLeft(Vector256<short> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<byte> ShiftLeft(Vector256<byte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1975,13 +2076,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> ShiftLeft(Vector256<int> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<short> ShiftLeft(Vector256<short> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1989,13 +2084,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> ShiftLeft(Vector256<long> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<int> ShiftLeft(Vector256<int> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2003,13 +2092,15 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> ShiftLeft(Vector256<nint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<long> ShiftLeft(Vector256<long> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShiftLeft(Vector256<nint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2018,13 +2109,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nuint> ShiftLeft(Vector256<nuint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<nuint> ShiftLeft(Vector256<nuint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2033,13 +2118,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> ShiftLeft(Vector256<sbyte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<sbyte> ShiftLeft(Vector256<sbyte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2048,13 +2127,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ushort> ShiftLeft(Vector256<ushort> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ushort> ShiftLeft(Vector256<ushort> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2063,13 +2136,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<uint> ShiftLeft(Vector256<uint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<uint> ShiftLeft(Vector256<uint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2078,13 +2145,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2092,13 +2153,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> ShiftRightArithmetic(Vector256<short> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        internal static Vector256<T> ShiftRightArithmetic<T>(Vector256<T> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2106,13 +2161,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> ShiftRightArithmetic(Vector256<int> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<short> ShiftRightArithmetic(Vector256<short> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2120,13 +2169,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> ShiftRightArithmetic(Vector256<long> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<int> ShiftRightArithmetic(Vector256<int> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2134,13 +2177,15 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> ShiftRightArithmetic(Vector256<nint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<long> ShiftRightArithmetic(Vector256<long> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShiftRightArithmetic(Vector256<nint> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2149,13 +2194,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> ShiftRightArithmetic(Vector256<sbyte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<sbyte> ShiftRightArithmetic(Vector256<sbyte> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2163,13 +2202,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> ShiftRightLogical(Vector256<byte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        internal static Vector256<T> ShiftRightLogical<T>(Vector256<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2177,13 +2210,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<byte> ShiftRightLogical(Vector256<byte> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2191,13 +2218,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> ShiftRightLogical(Vector256<int> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2205,13 +2226,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> ShiftRightLogical(Vector256<long> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<int> ShiftRightLogical(Vector256<int> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2219,13 +2234,15 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> ShiftRightLogical(Vector256<nint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<long> ShiftRightLogical(Vector256<long> vector, int shiftCount) => vector >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShiftRightLogical(Vector256<nint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2234,13 +2251,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nuint> ShiftRightLogical(Vector256<nuint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<nuint> ShiftRightLogical(Vector256<nuint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2249,13 +2260,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> ShiftRightLogical(Vector256<sbyte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<sbyte> ShiftRightLogical(Vector256<sbyte> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2264,13 +2269,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2279,13 +2278,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<uint> ShiftRightLogical(Vector256<uint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<uint> ShiftRightLogical(Vector256<uint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2294,13 +2287,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>

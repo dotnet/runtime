@@ -576,65 +576,6 @@ test_utf8_strlen (void)
 }
 
 static RESULT
-test_utf8_get_char (void)
-{
-	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid, len = 5
-
-	gunichar value = g_utf8_get_char (&word1 [0]);
-	if (value != 0x82UL)
-		return FAILED ("Expected value of 0x82, but was %x", value);
-	value = g_utf8_get_char (&word1 [2]);
-	if (value != 0x45UL)
-		return FAILED ("Expected value of 0x45, but was %x", value);
-	value = g_utf8_get_char (&word1 [3]);
-	if (value != 0x1043UL)
-		return FAILED ("Expected value of 0x1043, but was %x", value);
-	value = g_utf8_get_char (&word1 [6]);
-	if (value != 0x58UL)
-		return FAILED ("Expected value of 0x58, but was %x", value);
-	value = g_utf8_get_char (&word1 [7]);
-	if (value != 0x42082UL)
-		return FAILED ("Expected value of 0x42082, but was %x", value);
-
-	return OK;
-}
-
-static RESULT
-test_utf8_next_char (void)
-{
-	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid, len = 5
-	gchar word2 [] = {0xF1, 0x82, 0x82, 0x82,0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,'\0'}; //Valid, len = 5
-	gchar word1ExpectedValues [] = {0xC2, 0x45,0xE1, 0x58, 0xF1};
-	gchar word2ExpectedValues [] = {0xF1, 0xC2, 0x45, 0xE1, 0x58};
-
-	gchar* ptr = word1;
-	gint count = 0;
-	//Test word1
-	while (*ptr != 0) {
-		if (count > 4)
-			return FAILED ("Word1 has gone past its expected length");
-		if (*ptr != word1ExpectedValues[count])
-			return FAILED ("Word1 has an incorrect next_char at index %i", count);
-		ptr = g_utf8_next_char (ptr);
-		count++;
-	}
-
-	//Test word2
-	count = 0;
-	ptr = word2;
-	while (*ptr != 0) {
-		if (count > 4)
-			return FAILED ("Word2 has gone past its expected length");
-		if (*ptr != word2ExpectedValues[count])
-			return FAILED ("Word2 has an incorrect next_char at index %i", count);
-		ptr = g_utf8_next_char (ptr);
-		count++;
-	}
-
-	return OK;
-}
-
-static RESULT
 test_utf8_validate (void)
 {
 	gchar invalidWord1 [] = {0xC3, 0x82, 0xC1,0x90,'\0'}; //Invalid, 1nd oct Can't be 0xC0 or 0xC1
@@ -704,8 +645,6 @@ static Test utf8_tests [] = {
 	{"g_ucs4_to_utf16", test_ucs4_to_utf16 },
 	{"g_utf16_to_ucs4", test_utf16_to_ucs4 },
 	{"g_utf8_strlen", test_utf8_strlen },
-	{"g_utf8_get_char", test_utf8_get_char },
-	{"g_utf8_next_char", test_utf8_next_char },
 	{"g_utf8_validate", test_utf8_validate },
 	{NULL, NULL}
 };

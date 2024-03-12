@@ -24,6 +24,7 @@
     <ItemGroup>
       <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
       <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
+      <_DebugSymbolsIntermediatePath Remove="@(_DebugSymbolsIntermediatePath)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -50,8 +51,7 @@
       Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
     <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
     <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != '' and '$(CustomNativeMain)' != 'true'" Text="NativeLib requires OutputType=Library." />
-    <!-- See https://github.com/dotnet/runtime/issues/89346 for details -->
-    <Error Condition="'$(NativeLib)' != '' and '$(EventSourceSupport)' == 'true'" Text="EventSource is not supported when compiling to a native library. Set EventSourceSupport to false." />
+    <Warning Condition="'$(NativeLib)' != '' and '$(EventSourceSupport)' == 'true' and '$(_SuppressNativeLibEventSourceWarning)' != 'true'" Text="EventSource is not supported or recommended when compiling to a native library. Please go to https://github.com/dotnet/runtime/issues/91762 for more details." />
 
     <Error Condition="'$(PublishTrimmed)' == 'false'" Text="PublishTrimmed is implied by native compilation and cannot be disabled." />
 
@@ -62,11 +62,11 @@
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and '$(_targetOS)' == 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'arm64'"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'arm64' and '$(_targetArchitecture)' != 'arm'"
       Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
-      Text="Native compilation can run on x64 and arm64 hosts only." />
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64' or '$(_hostArchitecture)' == 'arm')"
+      Text="Native compilation can run on x64, arm64 and arm hosts only." />
 
     <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
@@ -94,7 +94,10 @@
     <!-- replace apphost with binary we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
+  </Target>
 
+  <Target Name="_CopyAotSymbols" AfterTargets="Publish"
+          Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
     <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
 
@@ -103,8 +106,8 @@
       <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
       <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
       <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
-      <!-- If the symbol is a dsym bundle, it's a folder not a file. -->
-      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dsym'">false</_symbolIsFile>
+      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
+      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
       <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
     </PropertyGroup>
 

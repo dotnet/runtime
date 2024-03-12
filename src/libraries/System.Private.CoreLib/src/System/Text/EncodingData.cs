@@ -65,8 +65,8 @@ namespace System.Text
         // EncodingNames. We infer the length of each string by looking at the start index
         // of the next string.
         //
-        private static ReadOnlySpan<int> EncodingNameIndices => new int[]
-        {
+        private static ReadOnlySpan<int> EncodingNameIndices =>
+        [
             0, // ansi_x3.4-1968 (20127)
             14, // ansi_x3.4-1986 (20127)
             28, // ascii (20127)
@@ -110,7 +110,7 @@ namespace System.Text
             391, // x-unicode-2-0-utf-7 (65000)
             410, // x-unicode-2-0-utf-8 (65001)
             429
-        };
+        ];
 
         //
         // CodePagesByName contains the list of supported codepages which match the encoding
@@ -119,8 +119,8 @@ namespace System.Text
         // The index of the entry in EncodingNamesIndices will be the index of codepage in
         // CodePagesByName.
         //
-        private static ReadOnlySpan<ushort> CodePagesByName => new ushort[]
-        {
+        private static ReadOnlySpan<ushort> CodePagesByName =>
+        [
             20127, // ansi_x3.4-1968
             20127, // ansi_x3.4-1986
             20127, // ascii
@@ -163,7 +163,7 @@ namespace System.Text
             65001, // x-unicode-1-1-utf-8
             65000, // x-unicode-2-0-utf-7
             65001 // x-unicode-2-0-utf-8
-        };
+        ];
 
         //
         // When retrieving the value for System.Text.Encoding.WebName or
@@ -175,8 +175,8 @@ namespace System.Text
         // EnglishNames. In addition, this arrays indices correspond to the indices
         // into UiFamilyCodePages and Flags.
         //
-        private static ReadOnlySpan<ushort> MappedCodePages => new ushort[]
-        {
+        private static ReadOnlySpan<ushort> MappedCodePages =>
+        [
             1200, // utf-16
             1201, // utf-16be
             12000, // utf-32
@@ -185,13 +185,13 @@ namespace System.Text
             28591, // iso-8859-1
             65000, // utf-7
             65001 // utf-8
-        };
+        ];
 
         //
         // UiFamilyCodePages is indexed by the corresponding index in MappedCodePages.
         //
-        private static ReadOnlySpan<int> UiFamilyCodePages => new int[]
-        {
+        private static ReadOnlySpan<int> UiFamilyCodePages =>
+        [
             1200,
             1200,
             1200,
@@ -200,7 +200,7 @@ namespace System.Text
             1252,
             1200,
             1200
-        };
+        ];
 
         //
         // WebNames is a concatenation of the default encoding names
@@ -224,8 +224,8 @@ namespace System.Text
         // web name in the string WebNames. It is indexed by an index into
         // MappedCodePages.
         //
-        private static ReadOnlySpan<int> WebNameIndices => new int[]
-        {
+        private static ReadOnlySpan<int> WebNameIndices =>
+        [
             0, // utf-16 (1200)
             6, // utf-16be (1201)
             14, // utf-32 (12000)
@@ -235,7 +235,7 @@ namespace System.Text
             46, // utf-7 (65000)
             51, // utf-8 (65001)
             56
-        };
+        ];
 
         // redeclaring these constants here for readability below
         private const uint MIMECONTF_MAILNEWS = Encoding.MIMECONTF_MAILNEWS;
@@ -244,8 +244,8 @@ namespace System.Text
         private const uint MIMECONTF_SAVABLE_BROWSER = Encoding.MIMECONTF_SAVABLE_BROWSER;
 
         // Flags is indexed by the corresponding index in MappedCodePages.
-        private static ReadOnlySpan<uint> Flags => new uint[]
-        {
+        private static ReadOnlySpan<uint> Flags =>
+        [
             MIMECONTF_SAVABLE_BROWSER,
             0,
             0,
@@ -254,6 +254,6 @@ namespace System.Text
             MIMECONTF_MAILNEWS | MIMECONTF_BROWSER | MIMECONTF_SAVABLE_MAILNEWS | MIMECONTF_SAVABLE_BROWSER,
             MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS,
             MIMECONTF_MAILNEWS | MIMECONTF_BROWSER | MIMECONTF_SAVABLE_MAILNEWS | MIMECONTF_SAVABLE_BROWSER
-        };
+        ];
     }
 }

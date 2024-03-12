@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="needs-review-translation">바인더 호출에 대한 바인딩 논리가 생성되지 않았습니다. 지원되지 않는 입력 패턴에는 제네릭 호출 및 boxed 개체 전달이 포함됩니다.</target>
+        <target state="translated">바인더 호출에 대한 바인딩 논리가 생성되지 않았습니다. 지원되지 않는 입력 패턴에는 제네릭 호출, boxed 개체 전달 및 'public' 또는 'internal'이 아닌 전달 형식이 포함됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
@@ -27,14 +27,14 @@
         <target state="translated">컬렉션 요소 유형이 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="needs-review-translation">프로젝트의 언어 버전은 'C# 11' 이상이어야 합니다.</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="needs-review-translation">언어 버전은 C# 11 이상이어야 합니다.</target>
+        <target state="translated">언어 버전은 C# 12 이상이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">

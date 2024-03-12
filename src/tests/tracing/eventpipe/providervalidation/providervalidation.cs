@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
+using Xunit;
 
 namespace Tracing.Tests.ProviderValidation
 {
@@ -23,7 +24,8 @@ namespace Tracing.Tests.ProviderValidation
 
     public class ProviderValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test validates that the rundown events are present
             // and that providers turned on that generate events are being written to

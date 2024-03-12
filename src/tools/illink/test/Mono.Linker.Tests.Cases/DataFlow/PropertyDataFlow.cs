@@ -481,7 +481,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			public Type GetOnlyProperty { get; }
 
-			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/linker/issues/2731
+			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
 			[ExpectedWarning ("IL2074", nameof (WriteToGetOnlyProperty), nameof (GetUnknownType),
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public WriteToGetOnlyProperty ()
@@ -505,6 +505,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void TestNullCoalesce ()
 			{
 				Property = GetUnknownType () ?? GetTypeWithPublicConstructors ();
+			}
+
+			static int? IntProperty { get; set; }
+
+			static int? GetMaybeNullInt () => null;
+
+			static int GetInt () => 1;
+
+			static void TestCompoundAssignmentNullCoalesce ()
+			{
+				IntProperty += (GetMaybeNullInt () ?? GetInt ());
 			}
 
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (Property))]
@@ -538,6 +549,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				TestNullCoalesce ();
+				TestCompoundAssignmentNullCoalesce ();
 				TestNullCoalescingAssignment ();
 				TestNullCoalescingAssignmentComplex ();
 				new WriteCapturedProperty ().TestNestedNullCoalescingAssignment ();
@@ -549,7 +561,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type GetOnlyProperty { get; }
 
-			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/linker/issues/2731
+			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
 			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetUnknownType),
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetTypeWithPublicConstructors),

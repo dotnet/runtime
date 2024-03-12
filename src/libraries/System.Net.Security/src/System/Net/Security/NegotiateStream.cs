@@ -398,7 +398,7 @@ namespace System.Net.Security
                         const int NtlmSignatureLength = 16;
 
                         if (readBytes < NtlmSignatureLength ||
-                            !_context.VerifyMIC(_readBuffer.AsSpan(NtlmSignatureLength, readBytes - NtlmSignatureLength), _readBuffer.AsSpan(0, NtlmSignatureLength)))
+                            !_context.VerifyIntegrityCheck(_readBuffer.AsSpan(NtlmSignatureLength, readBytes - NtlmSignatureLength), _readBuffer.AsSpan(0, NtlmSignatureLength)))
                         {
                             statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
                         }
@@ -526,7 +526,7 @@ namespace System.Net.Security
                     if (isNtlm && !isEncrypted)
                     {
                         // Non-encrypted NTLM uses an encoding quirk
-                        _context.GetMIC(bufferToWrap.Span, _writeBuffer);
+                        _context.ComputeIntegrityCheck(bufferToWrap.Span, _writeBuffer);
                         _writeBuffer.Write(bufferToWrap.Span);
                         statusCode = NegotiateAuthenticationStatusCode.Completed;
                     }

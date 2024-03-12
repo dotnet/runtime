@@ -29,9 +29,8 @@
           DependsOnTargets="BuildOnlySettings;ResolveReferences">
     <ItemGroup>
 
-      <!-- Exclude private assemblies and Microsoft.Bcl.* which are pure type forwards on .NETCoreApp. -->
-      <ProjectReferenceCopyLocalPathNonPrivate Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('IsPrivateAssembly', 'false'))"
-                                               Condition="!$([System.String]::new('%(Filename)').StartsWith('Microsoft.Bcl.'))" />
+      <!-- Exclude private assemblies -->
+      <ProjectReferenceCopyLocalPathNonPrivate Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('IsPrivateAssembly', 'false'))" />
 
       <ReferenceAssemblyFile Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithMetadataValue('Extension', '.dll')->Metadata('ReferenceAssembly'))" />
       <CompilerGeneratedXmlDocFile Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithMetadataValue('UseCompilerGeneratedDocXmlFile', 'true')->WithMetadataValue('Extension', '.xml'))" />

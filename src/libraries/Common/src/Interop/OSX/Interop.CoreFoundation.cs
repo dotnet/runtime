@@ -4,12 +4,10 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
-
-using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
 using CFIndex = System.IntPtr;
+using CFStringRef = System.IntPtr;
 
 internal static partial class Interop
 {

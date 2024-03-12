@@ -261,8 +261,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-          artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
-          artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
+          artifactFileName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
+          artifactName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
           displayName: 'CoreCLR product build (x64)'
 
 
@@ -389,7 +389,7 @@ jobs:
           - jitstress1_tiered
           - jitstress2
           - jitstress2_tiered
-          - zapdisable
+          - disabler2r
           - tailcallstress
         ${{ if in(parameters.testGroup, 'jitstress-random') }}:
           scenarios:
@@ -507,9 +507,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'gcstress-extra') }}:
           scenarios:
           - heapverify1
-          - gcstress0xc_zapdisable
-          - gcstress0xc_zapdisable_jitstress2
-          - gcstress0xc_zapdisable_heapverify1
+          - gcstress0xc_disabler2r
+          - gcstress0xc_disabler2r_jitstress2
+          - gcstress0xc_disabler2r_heapverify1
           - gcstress0xc_jitstress1
           - gcstress0xc_jitstress2
           - gcstress0xc_tailcallstress
@@ -585,7 +585,7 @@ jobs:
             - jitobjectstackallocation
             - jitphysicalpromotion_only
             - jitphysicalpromotion_full
-
+            - jitrlcse
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg

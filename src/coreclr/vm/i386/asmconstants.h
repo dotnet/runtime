@@ -204,7 +204,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable_m_wNumInterfaces == offsetof(MethodTable, m_wN
 ASMCONSTANTS_C_ASSERT(MethodTable_m_dwFlags == offsetof(MethodTable, m_dwFlags))
 
 #define MethodTable_m_pInterfaceMap     DBG_FRE(0x28, 0x24)
-ASMCONSTANTS_C_ASSERT(MethodTable_m_pInterfaceMap == offsetof(MethodTable, m_pMultipurposeSlot2))
+ASMCONSTANTS_C_ASSERT(MethodTable_m_pInterfaceMap == offsetof(MethodTable, m_pInterfaceMap))
 
 #define SIZEOF_MethodTable              DBG_FRE(0x2C, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF_MethodTable == sizeof(MethodTable))
@@ -231,8 +231,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
 #endif
 
-#define SIZEOF_FrameHandlerExRecordWithBarrier 0x5c
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecordWithBarrier == sizeof(FrameHandlerExRecordWithBarrier))
 #endif
 
 

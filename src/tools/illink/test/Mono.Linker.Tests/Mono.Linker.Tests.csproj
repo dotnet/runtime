@@ -7,14 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Used in testcase to check the cecil package version. -->
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
-      <_Parameter1>CecilPackageVersion</_Parameter1>
-      <_Parameter2>$(MicrosoftDotNetCecilVersion)</_Parameter2>
-    </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
@@ -41,14 +33,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RepoRoot">
-      <Value>$(RepoRoot)</Value>
-    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.Configuration">
       <Value>$(Configuration)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsDir">
-      <Value>$(ArtifactsDir)</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
       <Value>$(CoreCLRArtifactsPath)</Value>
@@ -58,6 +44,13 @@
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
+      <Value>$(TargetFramework)</Value>
+    </RuntimeHostConfigurationOption>
+    <!-- Used in testcase to check the cecil package version. -->
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.CecilPackageVersion">
+      <Value>$(MicrosoftDotNetCecilVersion)</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 

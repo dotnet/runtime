@@ -105,7 +105,7 @@
   } // end of method FooBarStruct::SetValue
 } // end of class FooBarStruct
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

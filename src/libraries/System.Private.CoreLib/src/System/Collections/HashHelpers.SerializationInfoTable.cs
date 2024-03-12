@@ -4,9 +4,9 @@
 // Used by Hashtable and Dictionary's SeralizationInfo .ctor's to store the SeralizationInfo
 // object until OnDeserialization is called.
 
-using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Collections
 {

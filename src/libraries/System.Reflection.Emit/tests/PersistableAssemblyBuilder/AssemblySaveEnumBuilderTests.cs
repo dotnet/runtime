@@ -64,22 +64,27 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod, out TypeBuilder _, underlyingType);
+                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out TypeBuilder type, underlyingType);
                 FieldBuilder literal = enumBuilder.DefineLiteral("FieldOne", literalValue);
-                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+                enumBuilder.CreateTypeInfo();
+                type.CreateTypeInfo();
+                assemblyBuilder.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
-                Type testEnum = moduleFromDisk.GetType("TestEnum");
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Module moduleFromDisk = assemblyFromDisk.Modules.First();
+                    Type testEnum = moduleFromDisk.GetType("TestEnum");
 
-                Assert.True(testEnum.IsEnum);
-                AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
-                Assert.Equal(underlyingType.FullName, testEnum.GetEnumUnderlyingType().FullName);
+                    Assert.True(testEnum.IsEnum);
+                    AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
+                    Assert.Equal(underlyingType.FullName, testEnum.GetEnumUnderlyingType().FullName);
 
-                FieldInfo testField = testEnum.GetField("FieldOne");
-                Assert.Equal(enumBuilder.Name, testField.DeclaringType.Name);
-                Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal, literal.Attributes);
-                Assert.Equal(enumBuilder.AsType().FullName, testField.FieldType.FullName);
+                    FieldInfo testField = testEnum.GetField("FieldOne");
+                    Assert.Equal(enumBuilder.Name, testField.DeclaringType.Name);
+                    Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault, literal.Attributes);
+                    Assert.Equal(enumBuilder.AsType().FullName, testField.FieldType.FullName);
+                }
             }
         }
 
@@ -92,26 +97,31 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder ab, out MethodInfo saveMethod, out TypeBuilder tb);
+                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder ab, out TypeBuilder tb);
                 Type arrayType = rank == 0 ? enumBuilder.MakeArrayType() : enumBuilder.MakeArrayType(rank);
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), arrayType });
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
+                enumBuilder.CreateType();
+                tb.CreateType();
+                ab.Save(file.Path);
 
-                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestInterface");
-                MethodInfo testMethod = testType.GetMethod("TestMethod");
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type testType = mlc.LoadFromAssemblyPath(file.Path).Modules.First().GetType("TestInterface");
+                    MethodInfo testMethod = testType.GetMethod("TestMethod");
 
-                AssertArrayTypeSignature(rank, name, testMethod.ReturnType);
-                AssertArrayTypeSignature(rank, name, testMethod.GetParameters()[1].ParameterType);
+                    AssertArrayTypeSignature(rank, name, testMethod.ReturnType);
+                    AssertArrayTypeSignature(rank, name, testMethod.GetParameters()[1].ParameterType);
+                }
             }
         }
 
         private EnumBuilder CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder,
-            out MethodInfo saveMethod, out TypeBuilder type, Type? underlyingType = null)
+            out TypeBuilder type, Type? underlyingType = null)
         {
-            assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
-                    PopulateAssemblyName(), null, typeof(string), out saveMethod);
+            assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
             type = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
             return mb.DefineEnum("TestEnum", TypeAttributes.Public, underlyingType == null ? typeof(int) : underlyingType);
@@ -130,19 +140,25 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder eb = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod, out TypeBuilder tb);
+                EnumBuilder eb = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out TypeBuilder tb);
                 Type byrefType = eb.MakeByRefType();
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), byrefType });
-                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
+                eb.CreateType();
+                tb.CreateType();
+                assemblyBuilder.Save(file.Path);
 
-                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestInterface");
-                MethodInfo testMethod = testType.GetMethod("TestMethod");
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type testType = mlc.LoadFromAssemblyPath(file.Path).Modules.First().GetType("TestInterface");
+                    MethodInfo testMethod = testType.GetMethod("TestMethod");
 
-                Assert.False(testMethod.GetParameters()[0].ParameterType.IsByRef);
-                AssertByRefType(testMethod.GetParameters()[1].ParameterType);
-                AssertByRefType(testMethod.ReturnType);
+                    Assert.False(testMethod.GetParameters()[0].ParameterType.IsByRef);
+                    AssertByRefType(testMethod.GetParameters()[1].ParameterType);
+                    AssertByRefType(testMethod.ReturnType);
+                }
             }
         }
 
@@ -157,19 +173,25 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder eb = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod, out TypeBuilder tb);
+                EnumBuilder eb = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out TypeBuilder tb);
                 Type pointerType = eb.MakePointerType();
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), pointerType });
-                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
+                eb.CreateType();
+                tb.CreateType();
+                assemblyBuilder.Save(file.Path);
 
-                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestInterface");
-                MethodInfo testMethod = testType.GetMethod("TestMethod");
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type testType = mlc.LoadFromAssemblyPath(file.Path).Modules.First().GetType("TestInterface");
+                    MethodInfo testMethod = testType.GetMethod("TestMethod");
 
-                Assert.False(testMethod.GetParameters()[0].ParameterType.IsPointer);
-                AssertPointerType(testMethod.GetParameters()[1].ParameterType);
-                AssertPointerType(testMethod.ReturnType);
+                    Assert.False(testMethod.GetParameters()[0].ParameterType.IsPointer);
+                    AssertPointerType(testMethod.GetParameters()[1].ParameterType);
+                    AssertPointerType(testMethod.ReturnType);
+                }
             }
         }
 
@@ -177,6 +199,54 @@ namespace System.Reflection.Emit.Tests
         {
             Assert.True(testType.IsPointer);
             Assert.Equal("TestEnum*", testType.Name);
+        }
+
+        public enum Test
+        {
+            First,
+            Second,
+            Third
+        }
+
+        [Fact]
+        public void EnumTypeField_DefaultValueShouldMatchUnderlyingType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("TestType", TypeAttributes.Class | TypeAttributes.Public);
+                EnumBuilder eb =  mb.DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
+                FieldBuilder literal = eb.DefineLiteral("FieldOne", 1);
+                FieldBuilder literal2 = eb.DefineLiteral("FieldTwo", 2);
+
+                FieldBuilder field  = tb.DefineField("EnumField1", eb, FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
+                field.SetConstant(2);
+
+                FieldBuilder field2 = tb.DefineField("EnumField2", typeof(Test), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
+                field2.SetConstant(Test.Third);
+
+                tb.CreateType();
+                eb.CreateType();
+
+                assemblyBuilder.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Module moduleFromDisk = mlc.LoadFromAssemblyPath(file.Path).Modules.First();
+                    Type testType = moduleFromDisk.GetType("TestType");
+                    Type enumType = moduleFromDisk.GetType("TestEnum");
+                    FieldInfo testField1 = testType.GetField("EnumField1");
+                    FieldInfo testField2 = testType.GetField("EnumField2");
+
+                    Assert.True(testField1.FieldType.IsEnum);
+                    Assert.True(testField2.FieldType.IsEnum);
+                    Assert.Equal(enumType.FullName, testField1.FieldType.FullName);
+                    Assert.Equal(typeof(Test).FullName, testField2.FieldType.FullName);
+                    Assert.Equal(2, testField1.GetRawConstantValue());
+                    Assert.Equal(Test.Third, (Test)testField2.GetRawConstantValue());
+                }
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Wed Aug 18 16:51:29 CEST 2004
+.\" Manual page created with latex2man on Tue Aug 29 10:53:42 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_STRERROR" "3" "18 August 2004" "Programming Library " "Programming Library "
+.TH "UNW\\_STRERROR" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_strerror
 \-\- get text corresponding to error code 
@@ -53,11 +55,11 @@ from a signal handler.
 
 .PP
 Thomas Hallgren
-.br 
+.br
 BEA Systems
-.br 
+.br
 Stockholm, Sweden
-.br 
+.br
 Email: \fBthallgre@bea.com\fP
 .br
 .\" NOTE: This file is generated, DO NOT EDIT.

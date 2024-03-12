@@ -136,7 +136,7 @@
     <value>The invoked member is not supported in a dynamic module.</value>
   </data>
   <data name="Argument_InvalidTypeCodeForTypeArgument" xml:space="preserve">
-    <value>The type code may not be used as a type argument of a custom attribute .</value>
+    <value>The type code may not be used as a type argument of a custom attribute.</value>
   </data>
   <data name="NotSupported_UnmanagedTypeOnlyForFields" xml:space="preserve">
     <value> 'UnmanagedType.{0}' named parameter is only valid for fields.</value>
@@ -182,5 +182,122 @@
   </data>
   <data name="InvalidOperation_NoUnderlyingTypeOnEnum" xml:space="preserve">
     <value>Underlying type information on enumeration is not specified.</value>
+  </data>
+  <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
+    <value>Method body should not exist.</value>
+  </data>
+  <data name="InvalidOperation_ConstructorNotAllowedOnInterface" xml:space="preserve">
+    <value>Interface cannot have constructors.</value>
+  </data>
+  <data name="Argument_UnmatchedMethodForLocal" xml:space="preserve">
+    <value>Local passed in does not belong to this ILGenerator.</value>
+  </data>
+  <data name="Argument_InvalidLabel" xml:space="preserve">
+    <value>Invalid Label.</value>
+  </data>
+  <data name="Argument_MustBeSwitchOpCode" xml:space="preserve">
+    <value>Only 'OpCode.Switch' can be used.</value>
+  </data>
+  <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
+    <value>The specified opcode cannot be passed to EmitCall.</value>
+  </data>
+  <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
+    <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
+  </data>
+  <data name="NotSupported_NoParentDefaultConstructor" xml:space="preserve">
+    <value>Parent does not have a default constructor. The default constructor must be explicitly defined.</value>
+  </data>
+  <data name="InvalidOperation_TypeHasBeenCreated" xml:space="preserve">
+    <value>Unable to change after type has been created.</value>
+  </data>
+  <data name="NotSupported_TypeNotYetCreated" xml:space="preserve">
+    <value>The invoked member is not supported before the type is created.</value>
+  </data>
+  <data name="Argument_NoStaticVirtual" xml:space="preserve">
+    <value>Method cannot be both static and virtual.</value>
+  </data>
+  <data name="Argument_BadExceptionCodeGen" xml:space="preserve">
+    <value>Incorrect code generation for exception block.</value>
+  </data>
+  <data name="Argument_NotInExceptionBlock" xml:space="preserve">
+    <value>Not currently in an exception block.</value>
+  </data>
+  <data name="Argument_ShouldNotSpecifyExceptionType" xml:space="preserve">
+    <value>Should not specify exception type for catch clause for filter block.</value>
+  </data>
+  <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
+    <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
+  <data name="InvalidOperation_NotAVarArgCallingConvention" xml:space="preserve">
+    <value>Calling convention must be VarArgs.</value>
+  </data>
+  <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
+    <value>MethodOverride's body must be from this type.</value>
+  </data>
+  <data name="Argument_GenericParameter" xml:space="preserve">
+    <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
+  </data>
+  <data name="Argument_InvalidMethodOverride" xml:space="preserve">
+    <value>Type '{0}' tried to override method '{1}' but does not implement or inherit that method.</value>
+  </data>
+  <data name="Argument_InterfaceNotFound" xml:space="preserve">
+    <value>Interface not found.</value>
+  </data>
+  <data name="Argument_MethodOverriden" xml:space="preserve">
+    <value>Method '{0}' on type '{1}' is overriding a method that has been overridden.</value>
+  </data>
+  <data name="Argument_MustBeInterface" xml:space="preserve">
+    <value>Type passed must be an interface.</value>
+  </data>
+  <data name="TypeLoad_MissingMethod" xml:space="preserve">
+    <value>Abstract method '{0}' in type '{1}' does not have an implementation.</value>
+  </data>
+  <data name="InvalidOperation_BadMethodBody" xml:space="preserve">
+    <value>Method '{0}' cannot have a method body</value>
+  </data>
+  <data name="InvalidOperation_BadTypeAttributesNotAbstract" xml:space="preserve">
+    <value>Type must be declared abstract if any of its methods are abstract.</value>
+  </data>
+  <data name="AmbiguousMatch_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'</value>
+  </data>
+  <data name="InvalidOperation_BadEmptyMethodBody" xml:space="preserve">
+    <value>Method '{0}' does not have a method body.</value>
+  </data>
+  <data name="Argument_RedefinedLabel" xml:space="preserve">
+    <value>Label defined multiple times.</value>
+  </data>
+  <data name="Argument_BadPInvokeMethod" xml:space="preserve">
+    <value>PInvoke methods must be static and native and cannot be abstract.</value>
+  </data>
+  <data name="Argument_BadPInvokeOnInterface" xml:space="preserve">
+    <value>PInvoke methods cannot exist on interfaces.</value>
+  </data>
+  <data name="Argument_MethodRedefined" xml:space="preserve">
+    <value>Method has been already defined.</value>
+  </data>
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
+    <value>Global members must be static.</value>
+  </data>
+  <data name="InvalidOperation_GlobalsHaveBeenCreated" xml:space="preserve">
+    <value>Type definition of the global function has been completed.</value>
+  </data>
+  <data name="Argument_BadSizeForData" xml:space="preserve">
+    <value>Data size must be &amp;gt; 1 and &amp;lt; 0x3f0000.</value>
+  </data>
+  <data name="InvalidOperation_TokenNotPopulated" xml:space="preserve">
+    <value>MetadataToken for the member is not generated until the assembly saved.</value>
+  </data>
+  <data name="Argument_BadSigFormat" xml:space="preserve">
+    <value>Incorrect signature format.</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="NotSupported_NonReflectedType" xml:space="preserve">
+    <value>Not supported in a non-reflected type.</value>
+  </data>
+  <data name="NotSupported_SymbolMethod" xml:space="preserve">
+    <value>Not supported in an array method of a type definition that is not complete.</value>
   </data>
 </root>

@@ -6,12 +6,14 @@ using System.Diagnostics.Tracing;
 using System.Collections.Generic;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
+using Xunit;
 
 namespace Tracing.Tests.ExceptionThrown_V1
 {
     public class ProviderValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var providers = new List<EventPipeProvider>()
             {

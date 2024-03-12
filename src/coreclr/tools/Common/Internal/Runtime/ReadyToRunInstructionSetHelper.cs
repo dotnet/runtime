@@ -46,6 +46,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Rcpc: return ReadyToRunInstructionSet.Rcpc;
                             case InstructionSet.ARM64_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.ARM64_Rcpc2: return ReadyToRunInstructionSet.Rcpc2;
+                            case InstructionSet.ARM64_Sve: return ReadyToRunInstructionSet.Sve;
+                            case InstructionSet.ARM64_Sve_Arm64: return ReadyToRunInstructionSet.Sve;
 
                             default: throw new Exception("Unknown instruction set");
                         }

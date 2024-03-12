@@ -46,7 +46,7 @@ namespace System.Reflection
             }
 
             // Push the arguments.
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
@@ -114,7 +114,7 @@ namespace System.Reflection
             }
 
             // Push the arguments.
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
@@ -171,7 +171,7 @@ namespace System.Reflection
             }
 
             // Push the arguments.
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
                 il.Emit(OpCodes.Ldarg_2);

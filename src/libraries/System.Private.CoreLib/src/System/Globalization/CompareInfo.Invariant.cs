@@ -126,5 +126,15 @@ namespace System.Globalization
 
             return byteLength;
         }
+
+        private static int InvariantGetHashCode(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            if ((options & CompareOptions.IgnoreCase) == 0)
+            {
+                return string.GetHashCode(source);
+            }
+
+            return string.GetHashCodeOrdinalIgnoreCase(source);
+        }
     }
 }

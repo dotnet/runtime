@@ -7,26 +7,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class TestArtifact : IDisposable
     {
-        private static readonly Lazy<RepoDirectoriesProvider> _repoDirectoriesProvider =
-            new Lazy<RepoDirectoriesProvider>(() => new RepoDirectoriesProvider());
-
         private static readonly Lazy<bool> _preserveTestRuns = new Lazy<bool>(() =>
-            _repoDirectoriesProvider.Value.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
-
-        private static readonly string TestArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
-        private static readonly Lazy<string> _testArtifactsPath = new Lazy<string>(() =>
-        {
-            return _repoDirectoriesProvider.Value.GetTestContextVariable(TestArtifactDirectoryEnvironmentVariable)
-                   ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
-        }, isThreadSafe: true);
+            TestContext.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
-        public static string TestArtifactsPath => _testArtifactsPath.Value;
+        public static string TestArtifactsPath => TestContext.TestArtifactsPath;
 
         public string Location { get; }
         public string Name { get; }
@@ -34,6 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         protected string DirectoryToDelete { get; init; }
 
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
+        private readonly Mutex _subdirMutex = new Mutex();
 
         public TestArtifact(string location)
         {
@@ -52,9 +44,51 @@ namespace Microsoft.DotNet.CoreSetup.Test
             source._copies.Add(this);
         }
 
-        protected void RegisterCopy(TestArtifact artifact)
+        /// <summary>
+        /// Create a new test artifact.
+        /// </summary>
+        /// <param name="name">Name of the test artifact</param>
+        /// <returns>Test artifact containing no files</returns>
+        public static TestArtifact Create(string name)
         {
-            _copies.Add(artifact);
+            var (location, parentPath) = GetNewTestArtifactPath(name);
+            return new TestArtifact(location)
+            {
+                DirectoryToDelete = parentPath
+            };
+        }
+
+        /// <summary>
+        /// Create a new test artifact populated with a copy of <paramref name="sourceDirectory"/>.
+        /// </summary>
+        /// <param name="name">Name of the test artifact</param>
+        /// <param name="sourceDirectory">Source directory to copy</param>
+        /// <returns>Test artifact containing a copy of <paramref name="sourceDirectory"/></returns>
+        public static TestArtifact CreateFromCopy(string name, string sourceDirectory)
+        {
+            var artifact = Create(name);
+            CopyRecursive(sourceDirectory, artifact.Location, overwrite: true);
+            return artifact;
+        }
+
+        /// <summary>
+        /// Locate the first non-existent subdirectory of the form <name>-<count>
+        /// </summary>
+        /// <param name="name">Name of the directory</param>
+        /// <returns>Path to the created directory</returns>
+        public string GetUniqueSubdirectory(string name)
+        {
+            _subdirMutex.WaitOne();
+            int count = 0;
+            string dir;
+            do
+            {
+                dir = Path.Combine(Location, $"{name}-{count}");
+                count++;
+            } while (Directory.Exists(dir));
+
+            _subdirMutex.ReleaseMutex();
+            return dir;
         }
 
         public virtual void Dispose()

@@ -213,7 +213,7 @@ inline TADDR FuncEvalFrame::GetReturnAddressPtr()
 //
 // This updates the register display for a FuncEvalFrame.
 //
-inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     SUPPORTS_DAC;
     DebuggerEval * pDE = GetDebuggerEval();
@@ -347,6 +347,46 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->volatileCurrContextPointers.X15 = &(pDE->m_context.X15);
     pRD->volatileCurrContextPointers.X16 = &(pDE->m_context.X16);
     pRD->volatileCurrContextPointers.X17 = &(pDE->m_context.X17);
+
+    SyncRegDisplayToCurrentContext(pRD);
+#elif defined(TARGET_RISCV64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->S1 = &(pDE->m_context.S1);
+    pRD->pCurrentContextPointers->S2 = &(pDE->m_context.S2);
+    pRD->pCurrentContextPointers->S3 = &(pDE->m_context.S3);
+    pRD->pCurrentContextPointers->S4 = &(pDE->m_context.S4);
+    pRD->pCurrentContextPointers->S5 = &(pDE->m_context.S5);
+    pRD->pCurrentContextPointers->S6 = &(pDE->m_context.S6);
+    pRD->pCurrentContextPointers->S7 = &(pDE->m_context.S7);
+    pRD->pCurrentContextPointers->S8 = &(pDE->m_context.S8);
+    pRD->pCurrentContextPointers->S9 = &(pDE->m_context.S9);
+    pRD->pCurrentContextPointers->S10 = &(pDE->m_context.S10);
+    pRD->pCurrentContextPointers->S11 = &(pDE->m_context.S11);
+    pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
+    pRD->pCurrentContextPointers->Gp = &(pDE->m_context.Gp);
+    pRD->pCurrentContextPointers->Tp = &(pDE->m_context.Tp);
+    pRD->pCurrentContextPointers->Ra = &(pDE->m_context.Ra);
+
+    pRD->volatileCurrContextPointers.R0 = &(pDE->m_context.R0);
+    pRD->volatileCurrContextPointers.A0 = &(pDE->m_context.A0);
+    pRD->volatileCurrContextPointers.A1 = &(pDE->m_context.A1);
+    pRD->volatileCurrContextPointers.A2 = &(pDE->m_context.A2);
+    pRD->volatileCurrContextPointers.A3 = &(pDE->m_context.A3);
+    pRD->volatileCurrContextPointers.A4 = &(pDE->m_context.A4);
+    pRD->volatileCurrContextPointers.A5 = &(pDE->m_context.A5);
+    pRD->volatileCurrContextPointers.A6 = &(pDE->m_context.A6);
+    pRD->volatileCurrContextPointers.A7 = &(pDE->m_context.A7);
+    pRD->volatileCurrContextPointers.T0 = &(pDE->m_context.T0);
+    pRD->volatileCurrContextPointers.T1 = &(pDE->m_context.T1);
+    pRD->volatileCurrContextPointers.T2 = &(pDE->m_context.T2);
+    pRD->volatileCurrContextPointers.T3 = &(pDE->m_context.T3);
+    pRD->volatileCurrContextPointers.T4 = &(pDE->m_context.T4);
+    pRD->volatileCurrContextPointers.T5 = &(pDE->m_context.T5);
+    pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
 
     SyncRegDisplayToCurrentContext(pRD);
 #else

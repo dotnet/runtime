@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
 
 using Internal.Reflection.Core.Execution;
 
@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (!map.TryGetValue(methodBase.MetadataDefinitionMethod, out CustomMethodInvokerAction? action))
                 return null;
 
-            ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
             Type[] parameterTypes = new Type[parameterInfos.Length];
             for (int i = 0; i < parameterInfos.Length; i++)
             {
@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
             else
             {
-                methodBase = declaringType.GetMethod(name, 0, bf, null, parameterTypes, null);
+                methodBase = declaringType.GetMethod(name, 0, bf, parameterTypes);
             }
 
             if (methodBase == null)

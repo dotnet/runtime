@@ -158,8 +158,10 @@ namespace ILCompiler.Dataflow
                                     break;
 
                                 case ILOpcode.stsfld:
+                                case ILOpcode.ldsfld:
                                     {
                                         // Same as above, but stsfld instead of a call to the constructor
+                                        // Ldsfld may also trigger a cctor that creates a closure environment
                                         FieldDesc? field = methodBody.GetObject(reader.ReadILToken()) as FieldDesc;
                                         if (field == null)
                                             continue;
@@ -417,6 +419,7 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case ILOpcode.stsfld:
+                            case ILOpcode.ldsfld:
                                 {
                                     if (body.GetObject(reader.ReadILToken()) is FieldDesc { OwningType: MetadataType owningType }
                                         && compilerGeneratedType == owningType.GetTypeDefinition())

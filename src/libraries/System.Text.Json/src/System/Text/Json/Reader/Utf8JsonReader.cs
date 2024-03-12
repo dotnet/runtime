@@ -47,11 +47,11 @@ namespace System.Text.Json
         private SequencePosition _currentPosition;
         private readonly ReadOnlySequence<byte> _sequence;
 
-        private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
+        private readonly bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
-        internal ReadOnlySequence<byte> OriginalSequence => _sequence;
+        internal readonly ReadOnlySequence<byte> OriginalSequence => _sequence;
 
-        internal ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
+        internal readonly ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
 
         internal readonly int ValueLength => HasValueSequence ? checked((int)ValueSequence.Length) : ValueSpan.Length;
 
@@ -106,7 +106,7 @@ namespace System.Text.Json
             get
             {
                 int readerDepth = _bitStack.CurrentDepth;
-                if (TokenType == JsonTokenType.StartArray || TokenType == JsonTokenType.StartObject)
+                if (TokenType is JsonTokenType.StartArray or JsonTokenType.StartObject)
                 {
                     Debug.Assert(readerDepth >= 1);
                     readerDepth--;
@@ -115,7 +115,7 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IsInArray => !_inObject;
+        internal readonly bool IsInArray => !_inObject;
 
         /// <summary>
         /// Gets the type of the last processed JSON token in the UTF-8 encoded JSON text.
@@ -184,18 +184,18 @@ namespace System.Text.Json
         /// in more data asynchronously before continuing with a new instance of the <see cref="Utf8JsonReader"/>.
         /// </summary>
         public readonly JsonReaderState CurrentState => new JsonReaderState
-        {
-            _lineNumber = _lineNumber,
-            _bytePositionInLine = _bytePositionInLine,
-            _inObject = _inObject,
-            _isNotPrimitive = _isNotPrimitive,
-            _valueIsEscaped = ValueIsEscaped,
-            _trailingCommaBeforeComment = _trailingCommaBeforeComment,
-            _tokenType = _tokenType,
-            _previousTokenType = _previousTokenType,
-            _readerOptions = _readerOptions,
-            _bitStack = _bitStack,
-        };
+        (
+            lineNumber: _lineNumber,
+            bytePositionInLine: _bytePositionInLine,
+            inObject: _inObject,
+            isNotPrimitive: _isNotPrimitive,
+            valueIsEscaped: ValueIsEscaped,
+            trailingCommaBeforeComment: _trailingCommaBeforeComment,
+            tokenType: _tokenType,
+            previousTokenType: _previousTokenType,
+            readerOptions: _readerOptions,
+            bitStack: _bitStack
+        );
 
         /// <summary>
         /// Constructs a new <see cref="Utf8JsonReader"/> instance.
@@ -322,7 +322,7 @@ namespace System.Text.Json
         {
             Debug.Assert(_isFinalBlock);
 
-            if (TokenType == JsonTokenType.PropertyName)
+            if (TokenType is JsonTokenType.PropertyName)
             {
                 bool result = Read();
                 // Since _isFinalBlock == true here, and the JSON token is not a primitive value or comment.
@@ -330,7 +330,7 @@ namespace System.Text.Json
                 Debug.Assert(result);
             }
 
-            if (TokenType == JsonTokenType.StartObject || TokenType == JsonTokenType.StartArray)
+            if (TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
             {
                 int depth = CurrentDepth;
                 do
@@ -375,41 +375,58 @@ namespace System.Text.Json
                 return true;
             }
 
-            return TrySkipHelper();
+            Utf8JsonReader restore = this;
+            bool success = TrySkipPartial(targetDepth: CurrentDepth);
+            if (!success)
+            {
+                // Roll back the reader if it contains partial data.
+                this = restore;
+            }
+
+            return success;
         }
 
-        private bool TrySkipHelper()
+        /// <summary>
+        /// Tries to skip the children of the current JSON token, advancing the reader even if there is not enough data.
+        /// The skip operation can be resumed later, provided that the same <paramref name="targetDepth" /> is passed.
+        /// </summary>
+        /// <param name="targetDepth">The target depth we want to eventually skip to.</param>
+        /// <returns>True if the entire JSON value has been skipped.</returns>
+        internal bool TrySkipPartial(int targetDepth)
         {
-            Debug.Assert(!_isFinalBlock);
+            Debug.Assert(0 <= targetDepth && targetDepth <= CurrentDepth);
 
-            Utf8JsonReader restore = this;
+            if (targetDepth == CurrentDepth)
+            {
+                // This is the first call to TrySkipHelper.
+                if (TokenType is JsonTokenType.PropertyName)
+                {
+                    // Skip any property name tokens preceding the value.
+                    if (!Read())
+                    {
+                        return false;
+                    }
+                }
 
-            if (TokenType == JsonTokenType.PropertyName)
+                if (TokenType is not (JsonTokenType.StartObject or JsonTokenType.StartArray))
+                {
+                    // The next value is not an object or array, so there is nothing to skip.
+                    return true;
+                }
+            }
+
+            // Start or resume iterating through the JSON object or array.
+            do
             {
                 if (!Read())
                 {
-                    goto Restore;
+                    return false;
                 }
             }
+            while (targetDepth < CurrentDepth);
 
-            if (TokenType == JsonTokenType.StartObject || TokenType == JsonTokenType.StartArray)
-            {
-                int depth = CurrentDepth;
-                do
-                {
-                    if (!Read())
-                    {
-                        goto Restore;
-                    }
-                }
-                while (depth < CurrentDepth);
-            }
-
+            Debug.Assert(targetDepth == CurrentDepth);
             return true;
-
-        Restore:
-            this = restore;
-            return false;
         }
 
         /// <summary>

@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
@@ -40,6 +41,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -255,6 +257,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Parameter modifiers
             yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "ref readonly") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -437,7 +440,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CollectionsOfCollectionsStress };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         [MemberData(nameof(CustomCollections))]
         public async Task ValidateSnippets(string id, string source)
@@ -458,7 +461,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), new string[] { "Foo" } };
             yield return new object[] { ID(), CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), Array.Empty<string>() };
         }
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
         public async Task ValidateSnippetsWithPreprocessorDefinitions(string id, string source, IEnumerable<string> preprocessorSymbols)
         {
@@ -527,7 +530,7 @@ namespace LibraryImportGenerator.UnitTests
             }
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task ValidateSnippetsFallbackForwarder(string id, string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
@@ -573,7 +576,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParameterByValue("int") };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(FullyBlittableSnippetsToCompile))]
         public async Task ValidateSnippetsWithBlittableAutoForwarding(string id, string source)
         {
@@ -613,7 +616,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.SetLastErrorTrue<int>() };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(SnippetsWithBlittableTypesButNonBlittableDataToCompile))]
         public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string id, string source)
         {
@@ -686,7 +689,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), new[] { CodeSnippets.BasicParameterByValue("int[]", CodeSnippets.DisableRuntimeMarshalling), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToCompileMultipleSources))]
         public async Task ValidateSnippetsWithMultipleSources(string id, string[] sources)
         {
@@ -714,7 +717,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), source, TestTargetFramework.Net };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
         public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
         {

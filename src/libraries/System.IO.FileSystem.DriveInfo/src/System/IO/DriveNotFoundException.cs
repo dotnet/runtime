@@ -18,13 +18,13 @@ namespace System.IO
         }
 
         public DriveNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.IO_DriveNotFound)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         public DriveNotFoundException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.IO_DriveNotFound, innerException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }

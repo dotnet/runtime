@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 
@@ -94,7 +95,8 @@ public class Test_Base02b_seq
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		new Gen<int>().VerifyLayout();
 		new Gen<double>().VerifyLayout();

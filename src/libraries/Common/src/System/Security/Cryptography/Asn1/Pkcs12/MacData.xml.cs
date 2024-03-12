@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct MacData
     {
-        private static ReadOnlySpan<byte> DefaultIterationCount => new byte[] { 0x02, 0x01, 0x01 };
+        private static ReadOnlySpan<byte> DefaultIterationCount => [0x02, 0x01, 0x01];
 
         internal System.Security.Cryptography.Asn1.DigestInfoAsn Mac;
         internal ReadOnlyMemory<byte> MacSalt;
@@ -34,12 +34,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

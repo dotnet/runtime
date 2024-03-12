@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
+using Xunit;
 
 namespace Tracing.Tests.GCEvents
 {
     public class ProviderValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var providers = new List<EventPipeProvider>()
             {

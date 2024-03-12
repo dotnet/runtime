@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -27,6 +28,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestReadFromRefParameter_MismatchOnOutput_PassedTwice ();
 			TestReadFromRefParameter_MismatchOnInput ();
 			TestReadFromRefParameter_MismatchOnInput_PassedTwice ();
+			TestReadFromOutParameter ();
+			TestReadFromOutParameter_DeclaredBefore ();
+			TestReadFromOutParameter_Ovewrite ();
 			Type nullType1 = null;
 			TestPassingRefParameter (ref nullType1);
 			Type nullType2 = null;
@@ -36,6 +40,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type nullType4 = null;
 			TestAssigningToRefParameter_Mismatch (nullType4, ref nullType4);
 			TestPassingRefsWithImplicitThis ();
+			TestPassingCapturedOutParameter ();
+			TestPassingRefProperty ();
+			TestPassingRefProperty_OutParameter ();
+			TestPassingRefProperty_Mismatch ();
+			TestPassingRefProperty_OutParameter_Mismatch ();
+			TestPassingRefIndexer ();
+			TestPassingRefIndexer_OutParameter ();
+			TestPassingRefIndexer_Mismatch ();
+			TestPassingRefIndexer_OutParameter_Mismatch ();
 			LocalMethodsAndLambdas.Test ();
 		}
 
@@ -131,6 +144,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeWithMethods.RequiresPublicMethods ();
 		}
 
+		static void TestReadFromOutParameter ()
+		{
+			TryGetAnnotatedValueOut (out Type typeWithMethods);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
+		static void TestReadFromOutParameter_DeclaredBefore ()
+		{
+			Type typeWithMethods;
+			TryGetAnnotatedValueOut (out typeWithMethods);
+			typeWithMethods.GetMethods (); // Should not warn
+		}
+
+		static void TestReadFromOutParameter_Ovewrite ()
+		{
+			Type typeWithMethods = typeof (int);
+			TryGetAnnotatedValueOut (out typeWithMethods);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
 		static void TestPassingRefParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type typeWithMethods)
 		{
 			TryGetAnnotatedValue (ref typeWithMethods);
@@ -164,6 +197,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return false;
 		}
 
+		static bool TryGetAnnotatedValueOut ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
+		{
+			typeWithMethods = null;
+			return false;
+		}
+
 		static bool TryGetAnnotatedValueFromValue (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type inValue,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type typeWithMethods)
@@ -183,11 +222,114 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			param3.RequiresPublicFields ();
 		}
 
+		static bool TryGetAnnotatedValueWithExtraUnusedParameter (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods,
+			int unused)
+		{
+			typeWithMethods = null;
+			return false;
+		}
+
+		static void TestPassingCapturedOutParameter (bool b = true)
+		{
+			Type typeWithMethods;
+			// The ternary operator for the second argument causes _both_ arguments to
+			// become flow-capture references. The ternary operator introduces two separate
+			// branches, where a capture is created for typeWithMethods before the branch
+			// out. This capture is then passed as the first argument.
+			TryGetAnnotatedValueWithExtraUnusedParameter (out typeWithMethods, b ? 0 : 1);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
 		[return: DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.PublicFields)]
 		static Type GetTypeWithFields () => null;
 
 		class TestType
 		{
+		}
+
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static Type typeWithMethodsField;
+
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static ref Type TypeWithMethodsProperty => ref typeWithMethodsField;
+
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+		static Type typeWithFieldsField;
+
+		static ref Type TypeWithFieldsProperty => ref typeWithFieldsField;
+
+		static void TestPassingRefProperty ()
+		{
+			TryGetAnnotatedValue (ref TypeWithMethodsProperty);
+		}
+
+		static void TestPassingRefProperty_OutParameter ()
+		{
+			TryGetAnnotatedValueOut (out TypeWithMethodsProperty);
+		}
+
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		static void TestPassingRefProperty_Mismatch ()
+		{
+			TryGetAnnotatedValue (ref TypeWithFieldsProperty);
+		}
+
+		// TODO: Missing warning.
+		static void TestPassingRefProperty_OutParameter_Mismatch ()
+		{
+			TryGetAnnotatedValueOut (out TypeWithFieldsProperty);
+		}
+
+		class RefIndexer_PublicMethods
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			Type typeWithMethodsField;
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			public ref Type this[int index] => ref typeWithMethodsField;
+
+			public int Length => 1;
+		}
+
+		class RefIndexer_PublicFields
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			Type typeWithFieldsField;
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			public ref Type this[int index] => ref typeWithFieldsField;
+
+			public int Length => 1;
+		}
+
+		static void TestPassingRefIndexer ()
+		{
+			var indexer = new RefIndexer_PublicMethods ();
+			TryGetAnnotatedValue (ref indexer[new Index(0)]);
+		}
+
+		static void TestPassingRefIndexer_OutParameter ()
+		{
+			var indexer = new RefIndexer_PublicMethods ();
+			TryGetAnnotatedValueOut (out indexer[new Index(0)]);
+		}
+
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		static void TestPassingRefIndexer_Mismatch ()
+		{
+			var indexer = new RefIndexer_PublicFields ();
+			TryGetAnnotatedValue (ref indexer[0]);
+		}
+
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		static void TestPassingRefIndexer_OutParameter_Mismatch ()
+		{
+			var indexer = new RefIndexer_PublicFields ();
+			TryGetAnnotatedValueOut (out indexer[0]);
 		}
 
 		static class LocalMethodsAndLambdas

@@ -30,6 +30,12 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern string InternalIntern(string str);
 
+#if TARGET_64BIT
+        internal const int OFFSET_TO_STRING = 20;
+#else
+        internal const int OFFSET_TO_STRING = 12;
+#endif
+
         // TODO: Should be pointing to Buffer instead
         #region Runtime method-to-ir dependencies
 
@@ -110,7 +116,7 @@ namespace System
 
         private static unsafe void memcpy(byte* dest, byte* src, int size)
         {
-            Buffer.Memmove(ref *dest, ref *src, (nuint)size);
+            SpanHelpers.Memmove(ref *dest, ref *src, (nuint)size);
         }
 
         /* Used by the runtime */

@@ -108,38 +108,42 @@
 
 // entry point location: GlobalManaged
 
-.method public static int32 Main()
+.class public auto ansi abstract sealed beforefieldinit nesting7
+    extends [mscorlib]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-  .locals init (class [mscorlib]System.Exception V_0,
-                int32 V_1)
-
-  .try
+  .method public static int32 Main()
   {
-    newobj instance void class Client::.ctor()
-    call   instance void class Client::method2()
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+    .locals init (class [mscorlib]System.Exception V_0,
+                  int32 V_1)
 
-    ldstr      "PASS"
-    call       void [System.Console]System.Console::WriteLine(string)
-    ldc.i4.s   100
-    stloc.1
-    leave.s    end
+    .try
+    {
+      newobj instance void class Client::.ctor()
+      call   instance void class Client::method2()
+
+      ldstr      "PASS"
+      call       void [System.Console]System.Console::WriteLine(string)
+      ldc.i4.s   100
+      stloc.1
+      leave.s    end
+    }
+    catch [mscorlib]System.Exception
+    {
+      stloc.0
+      ldstr      "{0}Caught unexpected exception."
+      ldloc.0
+      call void [System.Console]System.Console::WriteLine(string,object)
+      ldstr      "FAIL"
+      call       void [System.Console]System.Console::WriteLine(string)
+      ldc.i4.s   101
+      stloc.1
+      leave.s    end
+    }
+    end: ldloc.1
+    ret
   }
-  catch [mscorlib]System.Exception
-  {
-    stloc.0
-    ldstr      "{0}Caught unexpected exception."
-    ldloc.0
-    call void [System.Console]System.Console::WriteLine(string,object)
-    ldstr      "FAIL"
-    call       void [System.Console]System.Console::WriteLine(string)
-    ldc.i4.s   101
-    stloc.1
-    leave.s    end
-  }
-  end: ldloc.1
-  ret
 }

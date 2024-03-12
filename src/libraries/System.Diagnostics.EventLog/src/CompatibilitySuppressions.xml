@@ -2,48 +2,8 @@
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Eventing.Reader.EventBookmark.#ctor(System.String)</Target>
-    <Left>lib/net6.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Eventing.Reader.EventBookmark.get_BookmarkXml</Target>
-    <Left>lib/net6.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Eventing.Reader.EventBookmark.#ctor(System.String)</Target>
-    <Left>lib/net7.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Eventing.Reader.EventBookmark.get_BookmarkXml</Target>
-    <Left>lib/net7.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0004</DiagnosticId>
-    <Target>System.Diagnostics.EventLog.Messages, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0004</DiagnosticId>
     <Target>System.Diagnostics.EventLog.Messages, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
-    <Left>left</Left>
-    <Right>runtimes/win/lib/net8.0/System.Diagnostics.EventLog.Messages.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0004</DiagnosticId>
-    <Target>System.Diagnostics.EventLog.Messages, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
-    <Left>left</Left>
-    <Right>runtimes/win/lib/net9.0/System.Diagnostics.EventLog.Messages.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
@@ -62,33 +22,5 @@
     <Target>P:System.Diagnostics.EventLogEntry.EventID:[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Left>
     <Right>lib/net462/System.Diagnostics.EventLog.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net6.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net6.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net7.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net7.0/System.Diagnostics.EventLog.dll</Left>
-    <Right>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

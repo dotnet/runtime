@@ -8,6 +8,16 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        // invariant culture has empty CultureInfo.ToString() and
+        // m_name == CultureInfo._name == CultureInfo.ToString()
+        private bool _isInvariantCulture => string.IsNullOrEmpty(m_name);
+
+        private TextInfo? _thisTextInfo;
+
+        private TextInfo thisTextInfo => _thisTextInfo ??= new CultureInfo(m_name).TextInfo;
+
+        private static bool LocalizedHashCodeSupportsCompareOptions(CompareOptions options) =>
+            options == CompareOptions.IgnoreCase || options == CompareOptions.None;
         private static void AssertHybridOnWasm(CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -117,6 +127,63 @@ namespace System.Globalization
             }
 
             return idx;
+        }
+
+        // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
+        // Control: 1105 (out of 1105)
+        // Format: 697 (out of 731)
+        // OtherPunctuation: 6919 (out of 7004)
+        // SpaceSeparator: 289 (out of 289)
+        // OpenPunctuation: 1275 (out of 1343)
+        // ClosePunctuation: 1241 (out of 1309)
+        // DashPunctuation: 408 (out of 425)
+        // ConnectorPunctuation: 170 (out of 170)
+        // InitialQuotePunctuation: 204 (out of 204)
+        // FinalQuotePunctuation: 170 (out of 170)
+        // LineSeparator: 17 (out of 17)
+        // ParagraphSeparator: 17 (out of 17)
+        // OtherLetter: 34 (out of 784142)
+        // SpacingCombiningMark: 68 (out of 4420)
+        // ModifierLetter: 51 (out of 4012)
+        // EnclosingMark: 85 (out of 221)
+        // NonSpacingMark: 3281 (out of 18105)
+        // we can skip them all (~1027k chars) by checking for the remaining UnicodeCategories (~291k chars)
+        // skipping more characters than ICU would lead to hashes with smaller distribution and more collisions in hash tables
+        // but it makes the behavior correct and consistent with locale-aware equals, which is acceptable tradeoff
+        private static bool ShouldNotBeSkipped(UnicodeCategory category) =>
+            category == UnicodeCategory.LowercaseLetter ||
+            category == UnicodeCategory.UppercaseLetter ||
+            category == UnicodeCategory.TitlecaseLetter ||
+            category == UnicodeCategory.LetterNumber ||
+            category == UnicodeCategory.OtherNumber ||
+            category == UnicodeCategory.Surrogate ||
+            category == UnicodeCategory.PrivateUse ||
+            category == UnicodeCategory.MathSymbol ||
+            category == UnicodeCategory.CurrencySymbol ||
+            category == UnicodeCategory.ModifierSymbol ||
+            category == UnicodeCategory.OtherSymbol ||
+            category == UnicodeCategory.OtherNotAssigned;
+
+        private ReadOnlySpan<char> SanitizeForInvariantHash(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            char[] result = new char[source.Length];
+            int resultIndex = 0;
+            foreach (char c in source)
+            {
+                UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (ShouldNotBeSkipped(category))
+                {
+                    result[resultIndex++] = c;
+                }
+            }
+            if ((options & CompareOptions.IgnoreCase) != 0)
+            {
+                string resultStr = new string(result, 0, resultIndex);
+                // JS-based ToUpper, to keep cases like Turkish I working
+                resultStr = thisTextInfo.ToUpper(resultStr);
+                return resultStr.AsSpan();
+            }
+            return result.AsSpan(0, resultIndex);
         }
 
         private static bool IndexingOptionsNotSupported(CompareOptions options) =>

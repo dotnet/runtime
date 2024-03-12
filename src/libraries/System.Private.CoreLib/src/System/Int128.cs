@@ -742,12 +742,17 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static Int128 LeadingZeroCount(Int128 value)
+            => LeadingZeroCountAsInt32(value);
+
+        /// <summary>Computes the number of leading zero bits in this value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LeadingZeroCountAsInt32(Int128 value)
         {
             if (value._upper == 0)
             {
-                return 64 + ulong.LeadingZeroCount(value._lower);
+                return 64 + BitOperations.LeadingZeroCount(value._lower);
             }
-            return ulong.LeadingZeroCount(value._upper);
+            return BitOperations.LeadingZeroCount(value._upper);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -946,11 +951,11 @@ namespace System
 
             if (IsPositive(value))
             {
-                return (Size * 8) - BitOperations.LeadingZeroCount(value);
+                return (Size * 8) - LeadingZeroCountAsInt32(value);
             }
             else
             {
-                return (Size * 8) + 1 - BitOperations.LeadingZeroCount(~value);
+                return (Size * 8) + 1 - LeadingZeroCountAsInt32(~value);
             }
         }
 
@@ -1899,7 +1904,8 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualResult = (value <= 0) ? ulong.MinValue : (ulong)value;
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= ulong.MinValue) ? ulong.MinValue : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

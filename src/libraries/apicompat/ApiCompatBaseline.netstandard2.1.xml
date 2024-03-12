@@ -855,6 +855,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.AsyncMethodBuilderAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>

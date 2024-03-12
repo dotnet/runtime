@@ -1,12 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
@@ -144,7 +144,7 @@ namespace System.Reflection
             {
                 ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
 
-           }
+            }
 
             CopyBack(parameters, copyOfArgs, shouldCopyBack);
             return ret;
@@ -167,7 +167,7 @@ namespace System.Reflection
             for (int i = 0; i < _argCount; i++)
             {
 #pragma warning disable CS8500
-                *(ByReference*)(pByRefFixedStorage + i) =  (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+                *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
 #pragma warning restore CS8500
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
                     ByReference.Create(ref copyOfArgs[i]);
@@ -365,7 +365,7 @@ namespace System.Reflection
                 // Convert a Type.Missing to the default value.
                 if (ReferenceEquals(arg, Type.Missing))
                 {
-                    arg = HandleTypeMissing(_method.GetParametersNoCopy()[i], sigType);
+                    arg = HandleTypeMissing(_method.GetParametersAsSpan()[i], sigType);
                     shouldCopyBack[i] = true;
                 }
 

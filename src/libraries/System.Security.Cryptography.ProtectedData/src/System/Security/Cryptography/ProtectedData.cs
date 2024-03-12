@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
-
 using Internal.Cryptography;
-
-using DATA_BLOB = Interop.Crypt32.DATA_BLOB;
 using CryptProtectDataFlags = Interop.Crypt32.CryptProtectDataFlags;
+using DATA_BLOB = Interop.Crypt32.DATA_BLOB;
 
 namespace System.Security.Cryptography
 {

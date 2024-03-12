@@ -1,0 +1,29 @@
+<!--
+  As of 1/8/2024, the dotnet/runtime infrastructure will run the TensorPrimitives tests on .NET Framework and .NET 9,
+  but it doesn't support validating the .NET 8 build as well, and the code in the .NET 8 and .NET 9 builds are diverging.
+  To ensure it can be tested, this test project simply references the .NET 8 build directly so that the tests can be run
+  separately against that asset (still running on NetCoreAppCurrent but using the net8.0 build of S.N.Tensors.csproj).
+-->
+
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Helpers.cs" />
+    <Compile Include="..\TensorPrimitives.NonGeneric.Single.cs" />
+    <Compile Include="..\TensorPrimitivesTests.cs" />
+    <Compile Include="..\TensorPrimitives.ConvertTo.cs" />
+    <Compile Include="..\TensorPrimitives.Generic.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Numerics.Tensors.csproj" SkipUseReferenceAssembly="true">
+      <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

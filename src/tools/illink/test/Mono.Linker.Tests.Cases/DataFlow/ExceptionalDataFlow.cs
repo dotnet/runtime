@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			NestedWithCatch ();
 			CatchInTry ();
 			CatchInTryWithFinally ();
+			CatchInFinally ();
 			TestCatchesHaveSeparateState ();
 			FinallyWithBranchToFirstBlock ();
 			FinallyWithBranchToFirstBlockAndEnclosingTryCatchState ();
@@ -36,6 +37,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			FinallyWithNonSimplePredecessor ();
 			FinallyInTryWithPredecessor ();
 			NestedFinally ();
+			ChangeInFinallyNestedInFinally ();
 			NestedFinallyWithPredecessor ();
 			ExceptionFilter ();
 			ExceptionFilterStateChange ();
@@ -538,6 +540,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicConstructors) + "()",
+			ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()")]
+		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicFields) + "()")]
+		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()",
+			ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()")]
+		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
+		static void CatchInFinally () {
+			Type t = GetWithPublicConstructors ();
+			try {
+				t = GetWithPublicMethods ();
+			} finally {
+				try {
+					t = GetWithPublicFields ();
+				} catch {
+					RequireAll1 (t);
+				}
+				RequireAll2(t);
+			}
+		}
+
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 
 		// Trimmer merges branches going forward.
@@ -728,6 +752,32 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 				RequireAll3 (t);
 			}
+		}
+
+		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()")]
+		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()")]
+		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()")]
+		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicFields) + "()")]
+
+		// Trimmer merges branches going forward.
+		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicMethods) + "()",
+			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicMethods) + "()",
+			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		public static void ChangeInFinallyNestedInFinally ()
+		{
+			Type t = GetWithPublicMethods ();
+			try {
+				RequireAll1 (t);
+			} finally {
+				try {
+					RequireAll2 (t);
+				} finally {
+					t = GetWithPublicFields ();
+				}
+				RequireAll3 (t); // fields only
+			}
+			RequireAll4 (t); // fields only
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",

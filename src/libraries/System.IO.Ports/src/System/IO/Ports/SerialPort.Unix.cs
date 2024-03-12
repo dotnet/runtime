@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -15,11 +15,15 @@ namespace System.IO.Ports
         {
 #if NETCOREAPP
             return OperatingSystem.IsLinux() ? GetPortNames_Linux()
+                : OperatingSystem.IsAndroid() ? GetPortNames_Linux()
                 : OperatingSystem.IsMacOS() ? GetPortNames_OSX()
+                : OperatingSystem.IsMacCatalyst() ? GetPortNames_OSX()
                 : OperatingSystem.IsFreeBSD() ? GetPortNames_FreeBSD()
 #else
             return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID")) ? GetPortNames_Linux()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST") ? GetPortNames_OSX()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
 #endif
                 : throw new PlatformNotSupportedException(SR.PlatformNotSupported_SerialPort_GetPortNames);

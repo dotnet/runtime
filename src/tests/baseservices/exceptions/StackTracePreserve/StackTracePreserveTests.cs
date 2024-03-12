@@ -5,8 +5,9 @@ using System.Threading;
 using System.Runtime.ExceptionServices;
 using System.IO;
 using System.Security;
+using Xunit;
 
-class InactiveForeignException
+public class InactiveForeignException
 {
     private static ExceptionDispatchInfo s_EDI = null;
     private static int iPassed = 0, iFailed = 0;
@@ -501,7 +502,8 @@ exit:
     }
 
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         iPassed = iFailed = 0;
 

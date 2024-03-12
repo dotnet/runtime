@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using System.Runtime.InteropServices.JavaScript;
 using System.Buffers;
+using System.Runtime.InteropServices.JavaScript;
+using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
 {
@@ -11,16 +11,54 @@ namespace System.Net.WebSockets
     {
         public static string? GetProtocol(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) return null;
+            if (webSocket == null || webSocket.IsDisposed)
+            {
+                return null;
+            }
+
             string? protocol = webSocket.GetPropertyAsString("protocol");
             return protocol;
         }
 
+        public static WebSocketCloseStatus? GetCloseStatus(JSObject? webSocket)
+        {
+            if (webSocket == null || webSocket.IsDisposed)
+            {
+                return null;
+            }
+            if (!webSocket.HasProperty("close_status"))
+            {
+                return null;
+            }
+
+            int status = webSocket.GetPropertyAsInt32("close_status");
+            return (WebSocketCloseStatus)status;
+        }
+
+        public static string? GetCloseStatusDescription(JSObject? webSocket)
+        {
+            if (webSocket == null || webSocket.IsDisposed)
+            {
+                return null;
+            }
+
+            string? description = webSocket.GetPropertyAsString("close_status_description");
+            return description;
+        }
+
         public static int GetReadyState(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) return -1;
+            if (webSocket == null || webSocket.IsDisposed)
+            {
+                return -1;
+            }
+
             int? readyState = webSocket.GetPropertyAsInt32("readyState");
-            if (!readyState.HasValue) return -1;
+            if (!readyState.HasValue)
+            {
+                return -1;
+            }
+
             return readyState.Value;
         }
 
@@ -28,16 +66,14 @@ namespace System.Net.WebSockets
         public static partial JSObject WebSocketCreate(
             string uri,
             string?[]? subProtocols,
-            IntPtr responseStatusPtr,
-            [JSMarshalAs<JSType.Function<JSType.Number, JSType.String>>] Action<int, string> onClosed);
+            IntPtr responseStatusPtr);
 
         public static unsafe JSObject UnsafeCreate(
             string uri,
             string?[]? subProtocols,
-            MemoryHandle responseHandle,
-            [JSMarshalAs<JSType.Function<JSType.Number, JSType.String>>] Action<int, string> onClosed)
+            MemoryHandle responseHandle)
         {
-            return WebSocketCreate(uri, subProtocols, (IntPtr)responseHandle.Pointer, onClosed);
+            return WebSocketCreate(uri, subProtocols, (IntPtr)responseHandle.Pointer);
         }
 
         [JSImport("INTERNAL.ws_wasm_open")]
@@ -52,19 +88,9 @@ namespace System.Net.WebSockets
             int messageType,
             bool endOfMessage);
 
-        public static unsafe Task? UnsafeSendSync(JSObject jsWs, ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage)
+        public static unsafe Task? UnsafeSend(JSObject jsWs, MemoryHandle pinBuffer, int length, WebSocketMessageType messageType, bool endOfMessage)
         {
-            if (buffer.Count == 0)
-            {
-                return WebSocketSend(jsWs, IntPtr.Zero, 0, (int)messageType, endOfMessage);
-            }
-
-            var span = buffer.AsSpan();
-            // we can do this because the bytes in the buffer are always consumed synchronously (not later with Task resolution)
-            fixed (void* spanPtr = span)
-            {
-                return WebSocketSend(jsWs, (IntPtr)spanPtr, buffer.Count, (int)messageType, endOfMessage);
-            }
+            return WebSocketSend(jsWs, (IntPtr)pinBuffer.Pointer, length, (int)messageType, endOfMessage);
         }
 
         [JSImport("INTERNAL.ws_wasm_receive")]
@@ -73,7 +99,7 @@ namespace System.Net.WebSockets
             IntPtr bufferPtr,
             int bufferLength);
 
-        public static unsafe Task? ReceiveUnsafeSync(JSObject jsWs, MemoryHandle pinBuffer, int length)
+        public static unsafe Task? ReceiveUnsafe(JSObject jsWs, MemoryHandle pinBuffer, int length)
         {
             return WebSocketReceive(jsWs, (IntPtr)pinBuffer.Pointer, length);
         }

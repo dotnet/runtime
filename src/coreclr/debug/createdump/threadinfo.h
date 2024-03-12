@@ -39,7 +39,7 @@ class CrashInfo;
 struct user_fpregs_struct
 {
   unsigned long long  fpregs[32];
-  unsigned long       fpscr;
+  unsigned long       fcsr;
 } __attribute__((__packed__));
 #endif
 

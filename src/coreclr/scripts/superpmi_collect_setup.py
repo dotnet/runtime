@@ -47,7 +47,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (crossgen2, pmi, run, run_tiered, run_pgo)")
+parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo)")
 parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
@@ -60,7 +60,7 @@ parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi
 
 is_windows = platform.system() == "Windows"
 
-legal_collection_types = [ "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
+legal_collection_types = [ "nativeaot", "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
 
 directories_to_ignore = [
     "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
@@ -261,7 +261,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "max_size",
-                        lambda max_size: coreclr_args.collection_type not in [ "pmi", "crossgen2" ] or max_size > 0,
+                        lambda max_size: coreclr_args.collection_type not in [ "pmi", "crossgen2", "nativeaot" ] or max_size > 0,
                         "Please enter valid positive numeric max_size",
                         modify_arg=lambda max_size: int(
                             max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
@@ -302,7 +302,7 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
             if not os.path.isfile(curr_file_path):
                 continue
-            if not name.endswith(".dll") and not name.endswith(".exe"):
+            if not name.endswith(".dll") and not name.endswith(".exe") and not name.endswith(".ilc.rsp") and not name.endswith(".xml") and not name.endswith(".exports"):
                 continue
 
             size = os.path.getsize(curr_file_path)
@@ -405,7 +405,7 @@ def setup_benchmark(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "8.0-preview", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
@@ -439,13 +439,15 @@ def main(main_args):
 
     superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
 
+    tests_directory = os.path.join(source_directory, 'src', 'tests')
+
     # Correlation payload directories (sent to every Helix machine).
     # Currently, all the Core_Root files, superpmi script files, and pmi.dll go in the same place.
     superpmi_dst_directory = os.path.join(correlation_payload_directory, "superpmi")
     core_root_dst_directory = superpmi_dst_directory
 
     # Workitem directories
-    # input_artifacts is only used for pmi/crossgen2 collections.
+    # input_artifacts is only used for pmi/crossgen2/nativeaot collections.
     input_artifacts = ""
 
     arch = coreclr_args.arch
@@ -475,10 +477,12 @@ def main(main_args):
     # Copy Core_Root
 
     if platform_name == "windows":
-        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
+        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json", ".txt", ".xml", ".exports"])
     else:
-        acceptable_extensions = [".py", ".dll", ".json"]
+        acceptable_extensions = [".py", ".dll", ".json", ".txt", ".xml", ".exports"]
         acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
+        if platform_name == "linux":
+            acceptable_extensions.append(".so.1")
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
@@ -489,7 +493,7 @@ def main(main_args):
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
     else:
-        # Setup for pmi/crossgen2 runs
+        # Setup for pmi/crossgen2/nativeaot runs
 
         # For libraries tests, copy all the test files to the single 
         # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
@@ -555,6 +559,13 @@ def main(main_args):
                 # Details: https://bugs.python.org/issue26660
                 print('Ignoring PermissionError: {0}'.format(pe_error))
 
+        # Build nativeaot tests
+        if coreclr_args.collection_type == "nativeaot":
+            build_file = "build.cmd" if is_windows else "build.sh"
+            tests_build_file = "build.cmd" if is_windows else "build.sh"
+            run_command([os.path.join(source_directory, build_file), "Tools.ILLink", "-arch", arch, "-c", coreclr_args.build_type])
+            run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", arch, coreclr_args.build_type, "tree", "nativeaot/SmokeTests"], source_directory)
+
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
         # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
         # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
@@ -583,6 +594,10 @@ def main(main_args):
             core_root_dir = coreclr_args.core_root_directory
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
+
+        if coreclr_args.collection_name == "smoke_tests":
+            if coreclr_args.collection_type != "nativeaot":
+                raise RuntimeError("Collection 'smoke_tests' is only available for 'nativeaot' collections.")
 
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)

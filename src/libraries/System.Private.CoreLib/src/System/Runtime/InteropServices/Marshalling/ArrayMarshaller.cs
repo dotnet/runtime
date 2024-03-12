@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <remarks>
             /// This property represents a potential optimization for the marshaller.
             /// </remarks>
-            // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
+            // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
             public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
 
             private T[]? _managedArray;
@@ -173,7 +173,11 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Returns the unmanaged value representing the array.
             /// </summary>
             /// <returns>A pointer to the beginning of the unmanaged value.</returns>
-            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            public TUnmanagedElement* ToUnmanaged()
+            {
+                // Unsafe.AsPointer is safe since buffer must be pinned
+                return (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            }
 
             /// <summary>
             /// Frees resources.

@@ -42,7 +42,6 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/coree.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -1387,6 +1386,7 @@ typedef struct
 	char **argv;
 	guint32 opts;
 	char *aot_options;
+	GPtrArray *runtime_args;
 } MainThreadArgs;
 
 static void
@@ -1422,7 +1422,7 @@ main_thread_handler (gpointer user_data)
 			assemblies [i] = assembly;
 		}
 
-		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options);
+		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->runtime_args, main_args->aot_options);
 		if (res)
 			exit (1);
 		return;
@@ -1612,9 +1612,6 @@ mini_usage (void)
 #ifdef TARGET_OSX
 		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
 #endif
-#ifdef HOST_WIN32
-	        "    --mixed-mode           Enable mixed-mode image support.\n"
-#endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
 		"    --path=DIR             Add DIR to the list of directories to search for assemblies.\n"
@@ -1771,7 +1768,7 @@ mono_jit_parse_options (int argc, char * argv[])
 	memcpy (copy_argv, argv, sizeof (char*) * argc);
 	argv = copy_argv;
 
-	mono_options_parse_options ((const char**)argv, argc, &argc, error);
+	mono_options_parse_options ((const char**)argv, argc, &argc, NULL, error);
 	if (!is_ok (error)) {
 		g_printerr ("%s", mono_error_get_message (error));
 		mono_error_cleanup (error);
@@ -2071,11 +2068,9 @@ mono_main (int argc, char* argv[])
 	GPtrArray *agents = NULL;
 	char *extra_bindings_config_file = NULL;
 	GList *paths = NULL;
+	GPtrArray *args;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
-#endif
-#ifdef HOST_WIN32
-	int mixed_mode = FALSE;
 #endif
 	ERROR_DECL (error);
 
@@ -2102,7 +2097,9 @@ mono_main (int argc, char* argv[])
 
 	enable_debugging = TRUE;
 
-	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, error);
+	args = g_ptr_array_new ();
+
+	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, args, error);
 	argc ++;
 	if (!is_ok (error)) {
 		g_printerr ("%s", mono_error_get_message (error));
@@ -2110,9 +2107,11 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
+	g_ptr_array_add (args, argv [0]);
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
 			break;
+		g_ptr_array_add (args, argv [i]);
 		if (strcmp (argv [i], "--regression") == 0) {
 			action = DO_REGRESSION;
 		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
@@ -2197,10 +2196,6 @@ mono_main (int argc, char* argv[])
 				return 1;
 			}
 			++i;
-#ifdef HOST_WIN32
-		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
-			mixed_mode = TRUE;
-#endif
 #ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
@@ -2475,7 +2470,7 @@ mono_main (int argc, char* argv[])
 
 			/* Parse newly added options */
 			int n = argc;
-			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, error);
+			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, args, error);
 			if (!is_ok (error)) {
 				g_printerr ("%s", mono_error_get_message (error));
 				mono_error_cleanup (error);
@@ -2557,11 +2552,6 @@ mono_main (int argc, char* argv[])
 		return 1;
 	} else if (enable_debugging)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-
-#ifdef HOST_WIN32
-	if (mixed_mode)
-		mono_load_coree (argv [i]);
-#endif
 
 	mono_set_defaults (mini_verbose_level, opt);
 
@@ -2665,6 +2655,7 @@ mono_main (int argc, char* argv[])
 		main_args.argv = argv + i;
 		main_args.opts = opt;
 		main_args.aot_options = aot_options;
+		main_args.runtime_args = args;
 		main_thread_handler (&main_args);
 		mono_thread_manage_internal ();
 

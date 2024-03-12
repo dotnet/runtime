@@ -1,0 +1,475 @@
+{
+    "runtimes": {
+      "android": {
+        "#import": [
+          "linux-bionic"
+        ]
+      },
+      "android-arm": {
+        "#import": [
+          "android",
+          "linux-bionic-arm"
+        ]
+      },
+      "android-arm64": {
+        "#import": [
+          "android",
+          "linux-bionic-arm64"
+        ]
+      },
+      "android-x64": {
+        "#import": [
+          "android",
+          "linux-bionic-x64"
+        ]
+      },
+      "android-x86": {
+        "#import": [
+          "android",
+          "linux-bionic-x86"
+        ]
+      },
+      "any": {
+        "#import": [
+          "base"
+        ]
+      },
+      "base": {
+        "#import": []
+      },
+      "browser": {
+        "#import": [
+          "any"
+        ]
+      },
+      "browser-wasm": {
+        "#import": [
+          "browser"
+        ]
+      },
+      "freebsd": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "freebsd-arm64": {
+        "#import": [
+          "freebsd",
+          "unix-arm64"
+        ]
+      },
+      "freebsd-x64": {
+        "#import": [
+          "freebsd",
+          "unix-x64"
+        ]
+      },
+      "haiku": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "haiku-x64": {
+        "#import": [
+          "haiku",
+          "unix-x64"
+        ]
+      },
+      "illumos": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "illumos-x64": {
+        "#import": [
+          "illumos",
+          "unix-x64"
+        ]
+      },
+      "ios": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "ios-arm": {
+        "#import": [
+          "ios",
+          "unix-arm"
+        ]
+      },
+      "ios-arm64": {
+        "#import": [
+          "ios",
+          "unix-arm64"
+        ]
+      },
+      "ios-x64": {
+        "#import": [
+          "ios",
+          "unix-x64"
+        ]
+      },
+      "ios-x86": {
+        "#import": [
+          "ios",
+          "unix-x86"
+        ]
+      },
+      "iossimulator": {
+        "#import": [
+          "ios"
+        ]
+      },
+      "iossimulator-arm64": {
+        "#import": [
+          "iossimulator",
+          "ios-arm64"
+        ]
+      },
+      "iossimulator-x64": {
+        "#import": [
+          "iossimulator",
+          "ios-x64"
+        ]
+      },
+      "iossimulator-x86": {
+        "#import": [
+          "iossimulator",
+          "ios-x86"
+        ]
+      },
+      "linux": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "linux-arm": {
+        "#import": [
+          "linux",
+          "unix-arm"
+        ]
+      },
+      "linux-arm64": {
+        "#import": [
+          "linux",
+          "unix-arm64"
+        ]
+      },
+      "linux-armel": {
+        "#import": [
+          "linux",
+          "unix-armel"
+        ]
+      },
+      "linux-armv6": {
+        "#import": [
+          "linux",
+          "unix-armv6"
+        ]
+      },
+      "linux-bionic": {
+        "#import": [
+          "linux"
+        ]
+      },
+      "linux-bionic-arm": {
+        "#import": [
+          "linux-bionic",
+          "linux-arm"
+        ]
+      },
+      "linux-bionic-arm64": {
+        "#import": [
+          "linux-bionic",
+          "linux-arm64"
+        ]
+      },
+      "linux-bionic-x64": {
+        "#import": [
+          "linux-bionic",
+          "linux-x64"
+        ]
+      },
+      "linux-bionic-x86": {
+        "#import": [
+          "linux-bionic",
+          "linux-x86"
+        ]
+      },
+      "linux-loongarch64": {
+        "#import": [
+          "linux",
+          "unix-loongarch64"
+        ]
+      },
+      "linux-mips64": {
+        "#import": [
+          "linux",
+          "unix-mips64"
+        ]
+      },
+      "linux-musl": {
+        "#import": [
+          "linux"
+        ]
+      },
+      "linux-musl-arm": {
+        "#import": [
+          "linux-musl",
+          "linux-arm"
+        ]
+      },
+      "linux-musl-arm64": {
+        "#import": [
+          "linux-musl",
+          "linux-arm64"
+        ]
+      },
+      "linux-musl-armel": {
+        "#import": [
+          "linux-musl",
+          "linux-armel"
+        ]
+      },
+      "linux-musl-armv6": {
+        "#import": [
+          "linux-musl",
+          "linux-armv6"
+        ]
+      },
+      "linux-musl-ppc64le": {
+        "#import": [
+          "linux-musl",
+          "linux-ppc64le"
+        ]
+      },
+      "linux-musl-riscv64": {
+        "#import": [
+          "linux-musl",
+          "linux-riscv64"
+        ]
+      },
+      "linux-musl-s390x": {
+        "#import": [
+          "linux-musl",
+          "linux-s390x"
+        ]
+      },
+      "linux-musl-x64": {
+        "#import": [
+          "linux-musl",
+          "linux-x64"
+        ]
+      },
+      "linux-musl-x86": {
+        "#import": [
+          "linux-musl",
+          "linux-x86"
+        ]
+      },
+      "linux-ppc64le": {
+        "#import": [
+          "linux",
+          "unix-ppc64le"
+        ]
+      },
+      "linux-riscv64": {
+        "#import": [
+          "linux",
+          "unix-riscv64"
+        ]
+      },
+      "linux-s390x": {
+        "#import": [
+          "linux",
+          "unix-s390x"
+        ]
+      },
+      "linux-x64": {
+        "#import": [
+          "linux",
+          "unix-x64"
+        ]
+      },
+      "linux-x86": {
+        "#import": [
+          "linux",
+          "unix-x86"
+        ]
+      },
+      "maccatalyst": {
+        "#import": [
+          "ios"
+        ]
+      },
+      "maccatalyst-arm64": {
+        "#import": [
+          "maccatalyst",
+          "ios-arm64"
+        ]
+      },
+      "maccatalyst-x64": {
+        "#import": [
+          "maccatalyst",
+          "ios-x64"
+        ]
+      },
+      "osx": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "osx-arm64": {
+        "#import": [
+          "osx",
+          "unix-arm64"
+        ]
+      },
+      "osx-x64": {
+        "#import": [
+          "osx",
+          "unix-x64"
+        ]
+      },
+      "solaris": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "solaris-x64": {
+        "#import": [
+          "solaris",
+          "unix-x64"
+        ]
+      },
+      "tvos": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "tvos-arm64": {
+        "#import": [
+          "tvos",
+          "unix-arm64"
+        ]
+      },
+      "tvos-x64": {
+        "#import": [
+          "tvos",
+          "unix-x64"
+        ]
+      },
+      "tvossimulator": {
+        "#import": [
+          "tvos"
+        ]
+      },
+      "tvossimulator-arm64": {
+        "#import": [
+          "tvossimulator",
+          "tvos-arm64"
+        ]
+      },
+      "tvossimulator-x64": {
+        "#import": [
+          "tvossimulator",
+          "tvos-x64"
+        ]
+      },
+      "unix": {
+        "#import": [
+          "any"
+        ]
+      },
+      "unix-arm": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-arm64": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-armel": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-armv6": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-loongarch64": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-mips64": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-ppc64le": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-riscv64": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-s390x": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-x64": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "unix-x86": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "wasi": {
+        "#import": [
+          "any"
+        ]
+      },
+      "wasi-wasm": {
+        "#import": [
+          "wasi"
+        ]
+      },
+      "win": {
+        "#import": [
+          "any"
+        ]
+      },
+      "win-arm": {
+        "#import": [
+          "win"
+        ]
+      },
+      "win-arm64": {
+        "#import": [
+          "win"
+        ]
+      },
+      "win-x64": {
+        "#import": [
+          "win"
+        ]
+      },
+      "win-x86": {
+        "#import": [
+          "win"
+        ]
+      }
+    }
+  }

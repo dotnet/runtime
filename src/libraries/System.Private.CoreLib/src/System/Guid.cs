@@ -221,7 +221,7 @@ namespace System
                     ParseFailure.Format_GuidBrace => SR.Format_GuidBrace,
                     ParseFailure.Format_GuidComma => SR.Format_GuidComma,
                     ParseFailure.Format_GuidDashes => SR.Format_GuidDashes,
-                    ParseFailure.Format_GuidEndBrace=> SR.Format_GuidEndBrace,
+                    ParseFailure.Format_GuidEndBrace => SR.Format_GuidEndBrace,
                     ParseFailure.Format_GuidHexPrefix => SR.Format_GuidHexPrefix,
                     ParseFailure.Format_GuidInvalidChar => SR.Format_GuidInvalidChar,
                     ParseFailure.Format_GuidInvLen => SR.Format_GuidInvLen,
@@ -634,7 +634,7 @@ namespace System
             // Read in the number
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._b, ref overflow) || overflow)
             {
-                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32: ParseFailure.Format_GuidInvalidChar);
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32 : ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
@@ -841,10 +841,6 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe ReadOnlySpan<byte> AsBytes(in Guid source) =>
-            new ReadOnlySpan<byte>(Unsafe.AsPointer(ref Unsafe.AsRef(in source)), sizeof(Guid));
-
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
@@ -856,7 +852,7 @@ namespace System
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(AsBytes(this), false);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
                 MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
@@ -874,7 +870,7 @@ namespace System
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(AsBytes(this), bigEndian);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
                 MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
@@ -893,7 +889,7 @@ namespace System
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(AsBytes(this), false);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
                 MemoryMarshal.TryWrite(destination, in guid);
             }
             return true;
@@ -915,7 +911,7 @@ namespace System
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(AsBytes(this), bigEndian);
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
                 MemoryMarshal.TryWrite(destination, in guid);
             }
             bytesWritten = 16;

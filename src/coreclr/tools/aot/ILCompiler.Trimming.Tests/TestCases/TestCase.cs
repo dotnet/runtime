@@ -23,6 +23,8 @@ namespace Mono.Linker.Tests.TestCases
 			DisplayName = sourceFile.FileNameWithoutExtension == "Program" && sourceFile.Parent.FileName == originalTestCaseAssemblyPath.FileNameWithoutExtension
 				? displayNameBase
 				: $"{displayNameBase}.{sourceFile.FileNameWithoutExtension}";
+			if (DisplayName.StartsWith("."))
+				DisplayName = DisplayName.Substring(1);
 
 			// A little hacky, but good enough for name.  No reason why namespace & type names
 			// should not follow the directory structure

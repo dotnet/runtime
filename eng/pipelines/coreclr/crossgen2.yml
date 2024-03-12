@@ -8,6 +8,9 @@ schedules:
     - main
   always: true
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -56,6 +59,29 @@ extends:
             readyToRun: true
             displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+            - linux_x64
+            - osx_x64
+            - windows_x64
+          jobParameters:
+            testGroup: innerloop
+            buildArgs: -s clr+libs+libs.tests
+                       -c $(_BuildConfig)
+                       /p:TestReadyToRun=true
+                       /p:ArchiveTests=true
+            nameSuffix: TestReadyToRun_Libraries
+            timeoutInMinutes: 360
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: TestReadyToRun_$(_BuildConfig)
 
       # Run pri0 tests with hot/cold splitting enabled (only supported on x64 at the moment)
       # TODO: test on arm64 once supported

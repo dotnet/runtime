@@ -37,6 +37,7 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -53,19 +54,10 @@ GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , GenTreeOp          ,0,0,GTK_UNOP)
-GTNODE(NOP              , GenTree            ,0,0,GTK_UNOP|DBK_NOCONTAIN)
+GTNODE(NOP              , GenTree            ,0,1,GTK_LEAF|DBK_NOCONTAIN)
 GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
-
-GTNODE(LOCKADD          , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)
-GTNODE(MEMORYBARRIER    , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE)
-
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
 
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
@@ -79,11 +71,18 @@ GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // all
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
+GTNODE(MEMORYBARRIER    , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE)
+GTNODE(LOCKADD          , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)            // atomic CAS, small types need the comparand to be zero extended
+
 GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                                 // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
 GTNODE(BLK              , GenTreeBlk         ,0,1,GTK_UNOP|GTK_EXOP)                        // Struct load
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Struct store
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,1,GTK_SPECIAL|GTK_NOVALUE)                  // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,1,GTK_UNOP|GTK_NOVALUE)                     // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
@@ -300,7 +299,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //  Nodes used only within the code generator:
 //-----------------------------------------------------------------------------
 
-GTNODE(CLS_VAR_ADDR     , GenTreeClsVar      ,0,0,GTK_LEAF|DBK_NOTHIR)              // static data member address
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
 GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // emitter-placed nop
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq

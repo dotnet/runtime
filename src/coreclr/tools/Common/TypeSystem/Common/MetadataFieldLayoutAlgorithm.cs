@@ -498,8 +498,8 @@ namespace Internal.TypeSystem
                 long size = instanceByteSizeAndAlignment.Size.AsInt;
                 size *= repeat;
 
-                // limit the max size of array instance to 1MiB
-                const int maxSize = 1024 * 1024;
+                // limit the max size of array instance to FIELD_OFFSET_LAST_REAL_OFFSET for compatibility with coreclr
+                const int maxSize = ((1 << 27) - 1) - 6;
                 if (size > maxSize)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
@@ -645,7 +645,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4 && context.Target.PointerSize == 4;
+            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4;
 
             // For types inheriting from another type, field offsets continue on from where they left off
             // Base alignment is not always required, it's only applied when there's a version bubble boundary

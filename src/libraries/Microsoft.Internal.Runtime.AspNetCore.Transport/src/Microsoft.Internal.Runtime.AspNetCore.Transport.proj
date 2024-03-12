@@ -13,12 +13,6 @@
     <NoWarn>$(NoWarn);NU5131</NoWarn>
   </PropertyGroup>
 
-  <!-- Always generate this package during servicing to flow the dependency to AspNetCore. -->
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>$(PatchVersion)</ServicingVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. -->
     <ProjectReference Include="@(AspNetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj')"

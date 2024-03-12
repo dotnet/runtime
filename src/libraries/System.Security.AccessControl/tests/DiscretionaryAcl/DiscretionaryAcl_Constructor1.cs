@@ -27,7 +27,7 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(DiscretionaryACL_Constructor1))]
-        public static bool Constructor1(bool isContainer, bool isDS, int capacity)
+        public static void Constructor1(bool isContainer, bool isDS, int capacity)
         {
             bool result = true;
             byte[] dAclBinaryForm = null;
@@ -68,8 +68,8 @@ namespace System.Security.AccessControl.Tests
             {
                 result = false;
             }
+
             Assert.True(result);
-            return result;
         }
 
 

@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="constrained3.il" />
   </ItemGroup>

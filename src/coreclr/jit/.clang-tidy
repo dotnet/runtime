@@ -1,0 +1,3 @@
+---
+Checks: '-*,readability-braces*,modernize-use-nullptr'
+HeaderFilterRegex: 'jit/.*'

@@ -38,6 +38,10 @@ else(CLR_CMAKE_HOST_WIN32)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(corerun "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()
+
 install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)
 
 # If there's a dynamic ASAN runtime, then install it in the directory where we put our executable.

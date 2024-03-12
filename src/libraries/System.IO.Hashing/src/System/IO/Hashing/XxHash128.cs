@@ -79,7 +79,7 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed 128-bit hash code.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
         /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
-        /// <exception cref="ArgumentException"><paramref name="destination"/> is shorter than <see cref="HashLengthInBytes"/> (8 bytes).</exception>
+        /// <exception cref="ArgumentException"><paramref name="destination"/> is shorter than <see cref="HashLengthInBytes"/> (16 bytes).</exception>
         public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination, long seed = 0)
         {
             if (!TryHash(source, destination, out int bytesWritten, seed))
@@ -95,7 +95,7 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed 128-bit hash code.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination"/>.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
-        /// <returns><see langword="true"/> if <paramref name="destination"/> is long enough to receive the computed hash value (8 bytes); otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> is long enough to receive the computed hash value (16 bytes); otherwise, <see langword="false"/>.</returns>
         public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, long seed = 0)
         {
             if (destination.Length >= sizeof(ulong) * 2)
@@ -403,7 +403,7 @@ namespace System.IO.Hashing
                 HashInternalLoop(accumulators, source, length, secret);
 
                 return new Hash128(
-                    low64:  MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1),
+                    low64: MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1),
                     high64: MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(length * Prime64_2)));
             }
         }

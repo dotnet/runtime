@@ -399,9 +399,11 @@ ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
 #ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
+    static __thread uint64_t tid;
+    if (!tid)
+        tid = PalGetCurrentOSThreadId();
+    return static_cast<ep_rt_thread_id_t>(tid);
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif
@@ -429,6 +431,13 @@ ep_rt_aot_system_timestamp_get (void)
     FILETIME value;
     GetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+}
+
+int32_t
+ep_rt_aot_get_os_page_size (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    return (int32_t)OS_PAGE_SIZE;
 }
 
 ep_rt_file_handle_t
@@ -502,7 +511,7 @@ uint8_t *
 ep_rt_aot_valloc0 (size_t buffer_size)
 {
     STATIC_CONTRACT_NOTHROW;
-    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (buffer_size, PAGE_READWRITE));
 }
 
 void
@@ -513,7 +522,7 @@ ep_rt_aot_vfree (
     STATIC_CONTRACT_NOTHROW;
 
     if (buffer)
-        PalVirtualFree (buffer, 0, MEM_RELEASE);
+        PalVirtualFree (buffer, buffer_size);
 }
 
 void
@@ -826,7 +835,7 @@ ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-    return thread_handle->GetPalThreadIdForLogging();
+    return (ep_rt_thread_id_t)thread_handle->GetPalThreadIdForLogging();
 }
 
 #ifdef EP_CHECKED_BUILD

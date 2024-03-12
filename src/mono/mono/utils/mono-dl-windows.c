@@ -16,7 +16,6 @@
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-dl-windows-internals.h>
-#include <mono/utils/mono-embed.h>
 #include <mono/utils/mono-path.h>
 
 #include <stdlib.h>

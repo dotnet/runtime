@@ -317,7 +317,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         /// <summary>
         /// These are regression tests for https://github.com/dotnet/runtime/issues/90909.
         /// Ensure that we don't emit root interceptors to handle types/members that
-        /// are inaccessible to the generated helpers. Tests for inaccessbile transitive members
+        /// are inaccessible to the generated helpers. Tests for inaccessible transitive members
         /// are covered in the shared (reflection/src-gen) <see cref="ConfigurationBinderTests"/>,
         /// e.g. <see cref="NonPublicModeGetStillIgnoresReadonly"/>.
         /// </summary>

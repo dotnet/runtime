@@ -105,7 +105,8 @@ public class Reflection
     }
 
     [System.Security.SecuritySafeCritical]
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int failures = 0;
         if (!ReflectionLoad())

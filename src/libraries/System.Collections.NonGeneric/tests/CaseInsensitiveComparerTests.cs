@@ -66,6 +66,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void Ctor_CultureInfo_Compare_TurkishI()
         {
             var cultureNames = Helpers.TestCultureNames;

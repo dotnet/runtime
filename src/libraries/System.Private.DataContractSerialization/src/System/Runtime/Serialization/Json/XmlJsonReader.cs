@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Runtime.Serialization;
-using System.Collections.Generic;
+using System.Text;
 using System.Xml;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -16,8 +16,8 @@ namespace System.Runtime.Serialization.Json
     {
         private const int MaxTextChunk = 2048;
 
-        private static ReadOnlySpan<byte> CharTypes => new byte[256] // rely on C# compiler optimization to eliminate allocation
-            {
+        private static ReadOnlySpan<byte> CharTypes =>
+            [
                 CharType.None, //   0 (.)
                 CharType.None, //   1 (.)
                 CharType.None, //   2 (.)
@@ -274,7 +274,7 @@ namespace System.Runtime.Serialization.Json
                 CharType.None | CharType.FirstName | CharType.Name, //  FD (?)
                 CharType.None | CharType.FirstName | CharType.Name, //  FE (?)
                 CharType.None | CharType.FirstName | CharType.Name, //  FF (?)
-            };
+            ];
         private bool _buffered;
         private byte[]? _charactersToSkipOnNextRead;
         private JsonComplexTextMode _complexTextMode = JsonComplexTextMode.None;

@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_Decompression_Test(ITestOutputHelper output) : base(output) { }
 
         public static IEnumerable<object[]> DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData() =>
-            from compressionName in new[] { "gzip", "zlib", "deflate", "br" }
+            from compressionName in new[] { "gzip", "GZIP", "zlib", "ZLIB", "deflate", "DEFLATE", "br", "BR" }
             from all in new[] { false, true }
             from copyTo in new[] { false, true }
             from contentLength in new[] { 0, 1, 12345 }
@@ -40,7 +40,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string compressionName, bool all, bool useCopyTo, int contentLength)
         {
             if (IsWinHttpHandler &&
-                (compressionName == "br" || compressionName == "zlib"))
+                (compressionName is "br" or "BR" or "zlib" or "ZLIB"))
             {
                 // brotli and zlib not supported on WinHttpHandler
                 return;
@@ -52,17 +52,20 @@ namespace System.Net.Http.Functional.Tests
             switch (compressionName)
             {
                 case "gzip":
+                case "GZIP":
                     compress = s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.GZip : _all;
                     break;
 
 #if !NETFRAMEWORK
                 case "br":
+                case "BR":
                     compress = s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Brotli : _all;
                     break;
 
                 case "zlib":
+                case "ZLIB":
                     compress = s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Deflate : _all;
                     encodingName = "deflate";
@@ -70,6 +73,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
                 case "deflate":
+                case "DEFLATE":
                     compress = s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Deflate : _all;
                     break;

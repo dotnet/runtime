@@ -545,7 +545,7 @@ namespace System.IO.Tests
 
             if (error != null)
             {
-                Assert.False(true, $"Filewatcher error event triggered: { error.GetException()?.Message ?? "Unknow error" }");
+                Assert.Fail($"Filewatcher error event triggered: { error.GetException()?.Message ?? "Unknow error" }");
             }
 
             return events;

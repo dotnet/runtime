@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection
 {
@@ -108,13 +110,12 @@ namespace System.Reflection
         }
         #endregion
 
-        #region Private Static Methods
-        private static CustomAttributeEncoding TypeToCustomAttributeEncoding(RuntimeType type)
+        internal static CustomAttributeEncoding TypeToCustomAttributeEncoding(RuntimeType type)
         {
             if (type == typeof(int))
                 return CustomAttributeEncoding.Int32;
 
-            if (type.IsEnum)
+            if (type.IsActualEnum)
                 return CustomAttributeEncoding.Enum;
 
             if (type == typeof(string))
@@ -172,32 +173,13 @@ namespace System.Reflection
             if (type.IsInterface)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsValueType)
+            if (type.IsActualValueType)
                 return CustomAttributeEncoding.Undefined;
 
             throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA, nameof(type));
         }
-        private static CustomAttributeType InitCustomAttributeType(RuntimeType parameterType)
-        {
-            CustomAttributeEncoding encodedType = TypeToCustomAttributeEncoding(parameterType);
-            CustomAttributeEncoding encodedArrayType = CustomAttributeEncoding.Undefined;
-            CustomAttributeEncoding encodedEnumType = CustomAttributeEncoding.Undefined;
-            string? enumName = null;
 
-            if (encodedType == CustomAttributeEncoding.Array)
-            {
-                parameterType = (RuntimeType)parameterType.GetElementType();
-                encodedArrayType = TypeToCustomAttributeEncoding(parameterType);
-            }
-
-            if (encodedType == CustomAttributeEncoding.Enum || encodedArrayType == CustomAttributeEncoding.Enum)
-            {
-                encodedEnumType = TypeToCustomAttributeEncoding((RuntimeType)Enum.GetUnderlyingType(parameterType));
-                enumName = parameterType.AssemblyQualifiedName;
-            }
-
-            return new CustomAttributeType(encodedType, encodedArrayType, encodedEnumType, enumName);
-        }
+        #region Private Static Methods
         private static IList<CustomAttributeData> GetCustomAttributes(RuntimeModule module, int tkTarget)
         {
             CustomAttributeRecord[] records = GetCustomAttributeRecords(module, tkTarget);
@@ -253,7 +235,6 @@ namespace System.Reflection
 
         private ConstructorInfo m_ctor = null!;
         private readonly RuntimeModule m_scope = null!;
-        private readonly MemberInfo[] m_members = null!;
         private readonly CustomAttributeCtorParameter[] m_ctorParams = null!;
         private readonly CustomAttributeNamedParameter[] m_namedParams = null!;
         private IList<CustomAttributeTypedArgument> m_typedCtorArgs = null!;
@@ -274,16 +255,16 @@ namespace System.Reflection
             if (m_ctor!.DeclaringType!.IsGenericType)
             {
                 MetadataImport metadataScope = scope.MetadataImport;
-                var attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                Type attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
                 m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
-            ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
             if (parameters.Length != 0)
             {
                 m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
-                    m_ctorParams[i] = new CustomAttributeCtorParameter(InitCustomAttributeType((RuntimeType)parameters[i].ParameterType));
+                    m_ctorParams[i] = new CustomAttributeCtorParameter(new CustomAttributeType((RuntimeType)parameters[i].ParameterType));
             }
             else
             {
@@ -292,35 +273,44 @@ namespace System.Reflection
 
             FieldInfo[] fields = m_ctor.DeclaringType!.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             PropertyInfo[] properties = m_ctor.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            // Allocate collections for members and names params.
             m_namedParams = new CustomAttributeNamedParameter[properties.Length + fields.Length];
-            for (int i = 0; i < fields.Length; i++)
-                m_namedParams[i] = new CustomAttributeNamedParameter(
-                    fields[i].Name, CustomAttributeEncoding.Field, InitCustomAttributeType((RuntimeType)fields[i].FieldType));
-            for (int i = 0; i < properties.Length; i++)
-                m_namedParams[i + fields.Length] = new CustomAttributeNamedParameter(
-                    properties[i].Name, CustomAttributeEncoding.Property, InitCustomAttributeType((RuntimeType)properties[i].PropertyType));
 
-            m_members = new MemberInfo[fields.Length + properties.Length];
-            fields.CopyTo(m_members, 0);
-            properties.CopyTo(m_members, fields.Length);
+            int idx = 0;
+            foreach (FieldInfo fi in fields)
+            {
+                m_namedParams[idx++] = new CustomAttributeNamedParameter(
+                    fi,
+                    CustomAttributeEncoding.Field,
+                    new CustomAttributeType((RuntimeType)fi.FieldType));
+            }
 
-            CustomAttributeEncodedArgument.ParseAttributeArguments(blob, ref m_ctorParams, ref m_namedParams, m_scope);
+            foreach (PropertyInfo pi in properties)
+            {
+                m_namedParams[idx++] = new CustomAttributeNamedParameter(
+                    pi,
+                    CustomAttributeEncoding.Property,
+                    new CustomAttributeType((RuntimeType)pi.PropertyType));
+            }
+
+            CustomAttributeEncodedArgument.ParseAttributeArguments(blob, m_ctorParams, m_namedParams, m_scope);
         }
         #endregion
 
         #region Pseudo Custom Attribute Constructor
         internal RuntimeCustomAttributeData(Attribute attribute)
         {
-            if (attribute is DllImportAttribute dllImportAttribute)
-                Init(dllImportAttribute);
-            else if (attribute is FieldOffsetAttribute fieldOffsetAttribute)
-                Init(fieldOffsetAttribute);
-            else if (attribute is MarshalAsAttribute marshalAsAttribute)
-                Init(marshalAsAttribute);
-            else if (attribute is TypeForwardedToAttribute typeForwardedToAttribute)
-                Init(typeForwardedToAttribute);
-            else
-                Init(attribute);
+           if (attribute is DllImportAttribute dllImportAttribute)
+               Init(dllImportAttribute);
+           else if (attribute is FieldOffsetAttribute fieldOffsetAttribute)
+               Init(fieldOffsetAttribute);
+           else if (attribute is MarshalAsAttribute marshalAsAttribute)
+               Init(marshalAsAttribute);
+           else if (attribute is TypeForwardedToAttribute typeForwardedToAttribute)
+               Init(typeForwardedToAttribute);
+           else
+               Init(attribute);
         }
         private void Init(DllImportAttribute dllImport)
         {
@@ -412,7 +402,7 @@ namespace System.Reflection
             // Ensure there is only a single constructor for 'pca', so it is safe to suppress IL2075
             ConstructorInfo[] allCtors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Debug.Assert(allCtors.Length == 1);
-            Debug.Assert(allCtors[0].GetParameters().Length == 0);
+            Debug.Assert(allCtors[0].GetParametersAsSpan().Length == 0);
 #endif
 
             m_ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
@@ -436,7 +426,7 @@ namespace System.Reflection
 
                         for (int i = 0; i < typedCtorArgs.Length; i++)
                         {
-                            CustomAttributeEncodedArgument encodedArg = m_ctorParams[i].CustomAttributeEncodedArgument;
+                            CustomAttributeEncodedArgument encodedArg = m_ctorParams[i].EncodedArgument!;
 
                             typedCtorArgs[i] = new CustomAttributeTypedArgument(m_scope, encodedArg);
                         }
@@ -462,10 +452,13 @@ namespace System.Reflection
                     int cNamedArgs = 0;
                     if (m_namedParams is not null)
                     {
-                        for (int i = 0; i < m_namedParams.Length; i++)
+                        foreach (CustomAttributeNamedParameter p in m_namedParams)
                         {
-                            if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                            if (p.EncodedArgument is not null
+                                && p.EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                            {
                                 cNamedArgs++;
+                            }
                         }
                     }
 
@@ -473,11 +466,16 @@ namespace System.Reflection
                     {
                         CustomAttributeNamedArgument[] namedArgs = new CustomAttributeNamedArgument[cNamedArgs];
 
-                        for (int i = 0, j = 0; i < m_namedParams!.Length; i++)
+                        int j = 0;
+                        foreach (CustomAttributeNamedParameter p in m_namedParams!)
                         {
-                            if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                            if (p.EncodedArgument is not null
+                                && p.EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                            {
                                 namedArgs[j++] = new CustomAttributeNamedArgument(
-                                    m_members[i], new CustomAttributeTypedArgument(m_scope, m_namedParams[i].EncodedArgument));
+                                    p.MemberInfo,
+                                    new CustomAttributeTypedArgument(m_scope, p.EncodedArgument));
+                            }
                         }
 
                         m_namedArgs = Array.AsReadOnly(namedArgs);
@@ -522,49 +520,24 @@ namespace System.Reflection
             };
         }
 
-        private static object EncodedValueToRawValue(long val, CustomAttributeEncoding encodedType)
+        private static object EncodedValueToRawValue(PrimitiveValue val, CustomAttributeEncoding encodedType)
         {
-            switch (encodedType)
+            return encodedType switch
             {
-                case CustomAttributeEncoding.Boolean:
-                    return (byte)val != 0;
-
-                case CustomAttributeEncoding.Char:
-                    return (char)val;
-
-                case CustomAttributeEncoding.Byte:
-                    return (byte)val;
-
-                case CustomAttributeEncoding.SByte:
-                    return (sbyte)val;
-
-                case CustomAttributeEncoding.Int16:
-                    return (short)val;
-
-                case CustomAttributeEncoding.UInt16:
-                    return (ushort)val;
-
-                case CustomAttributeEncoding.Int32:
-                    return (int)val;
-
-                case CustomAttributeEncoding.UInt32:
-                    return (uint)val;
-
-                case CustomAttributeEncoding.Int64:
-                    return (long)val;
-
-                case CustomAttributeEncoding.UInt64:
-                    return (ulong)val;
-
-                case CustomAttributeEncoding.Float:
-                    unsafe { return *(float*)&val; }
-
-                case CustomAttributeEncoding.Double:
-                    unsafe { return *(double*)&val; }
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)val), nameof(val));
-            }
+                CustomAttributeEncoding.Boolean => (byte)val.Byte4 != 0,
+                CustomAttributeEncoding.Char => (char)val.Byte4,
+                CustomAttributeEncoding.Byte => (byte)val.Byte4,
+                CustomAttributeEncoding.SByte => (sbyte)val.Byte4,
+                CustomAttributeEncoding.Int16 => (short)val.Byte4,
+                CustomAttributeEncoding.UInt16 => (ushort)val.Byte4,
+                CustomAttributeEncoding.Int32 => val.Byte4,
+                CustomAttributeEncoding.UInt32 => (uint)val.Byte4,
+                CustomAttributeEncoding.Int64 => val.Byte8,
+                CustomAttributeEncoding.UInt64 => (ulong)val.Byte8,
+                CustomAttributeEncoding.Float => BitConverter.Int32BitsToSingle(val.Byte4),
+                CustomAttributeEncoding.Double => BitConverter.Int64BitsToDouble(val.Byte8),
+                _ => throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, val.Byte8), nameof(val))
+            };
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
@@ -583,7 +556,7 @@ namespace System.Reflection
 
             if (encodedType == CustomAttributeEncoding.Enum)
             {
-                _argumentType = ResolveType(scope, encodedArg.CustomAttributeType.EnumName!);
+                _argumentType = encodedArg.CustomAttributeType.EnumType!;
                 _value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedArg.CustomAttributeType.EncodedEnumType);
             }
             else if (encodedType == CustomAttributeEncoding.String)
@@ -607,7 +580,7 @@ namespace System.Reflection
 
                 if (encodedType == CustomAttributeEncoding.Enum)
                 {
-                    elementType = ResolveType(scope, encodedArg.CustomAttributeType.EnumName!);
+                    elementType = encodedArg.CustomAttributeType.EnumType!;
                 }
                 else
                 {
@@ -637,7 +610,6 @@ namespace System.Reflection
         }
     }
 
-    [StructLayout(LayoutKind.Auto)]
     internal struct CustomAttributeRecord
     {
         internal ConstArray blob;
@@ -650,6 +622,7 @@ namespace System.Reflection
         }
     }
 
+    // See CorSerializationType in corhdr.h
     internal enum CustomAttributeEncoding : int
     {
         Undefined = 0,
@@ -674,25 +647,22 @@ namespace System.Reflection
         Enum = 0x55
     }
 
-    [StructLayout(LayoutKind.Auto)]
-    internal readonly struct CustomAttributeEncodedArgument
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct PrimitiveValue
     {
-        private readonly long m_primitiveValue;
-        private readonly CustomAttributeEncodedArgument[] m_arrayValue;
-        private readonly string m_stringValue;
-        private readonly CustomAttributeType m_type;
+        [FieldOffset(0)]
+        public int Byte4;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ParseAttributeArguments(
-            IntPtr pCa,
-            int cCa,
-            ref CustomAttributeCtorParameter[] CustomAttributeCtorParameters,
-            ref CustomAttributeNamedParameter[] CustomAttributeTypedArgument,
-            RuntimeAssembly assembly);
+        [FieldOffset(0)]
+        public long Byte8;
+    }
 
-        internal static void ParseAttributeArguments(ConstArray attributeBlob,
-            ref CustomAttributeCtorParameter[] customAttributeCtorParameters,
-            ref CustomAttributeNamedParameter[] customAttributeNamedParameters,
+    internal sealed class CustomAttributeEncodedArgument
+    {
+        internal static void ParseAttributeArguments(
+            ConstArray attributeBlob,
+            CustomAttributeCtorParameter[] customAttributeCtorParameters,
+            CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule customAttributeModule)
         {
             ArgumentNullException.ThrowIfNull(customAttributeModule);
@@ -702,83 +672,446 @@ namespace System.Reflection
 
             if (customAttributeCtorParameters.Length != 0 || customAttributeNamedParameters.Length != 0)
             {
-                ParseAttributeArguments(
-                    attributeBlob.Signature,
-                    (int)attributeBlob.Length,
-                    ref customAttributeCtorParameters,
-                    ref customAttributeNamedParameters,
-                    (RuntimeAssembly)customAttributeModule.Assembly);
+                CustomAttributeDataParser parser = new CustomAttributeDataParser(attributeBlob);
+                try
+                {
+                    if (!parser.ValidateProlog())
+                    {
+                        throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
+                    }
+
+                    ParseCtorArgs(ref parser, customAttributeCtorParameters, customAttributeModule);
+                    ParseNamedArgs(ref parser, customAttributeNamedParameters, customAttributeModule);
+                }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    throw new CustomAttributeFormatException(ex.Message, ex);
+                }
             }
         }
 
-        public CustomAttributeType CustomAttributeType => m_type;
-        public long PrimitiveValue => m_primitiveValue;
-        public CustomAttributeEncodedArgument[] ArrayValue => m_arrayValue;
-        public string StringValue => m_stringValue;
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    internal readonly struct CustomAttributeNamedParameter
-    {
-        private readonly string m_argumentName;
-        private readonly CustomAttributeEncoding m_fieldOrProperty;
-        private readonly CustomAttributeEncoding m_padding;
-        private readonly CustomAttributeType m_type;
-        private readonly CustomAttributeEncodedArgument m_encodedArgument;
-
-        public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        internal CustomAttributeEncodedArgument(CustomAttributeType type)
         {
-            ArgumentNullException.ThrowIfNull(argumentName);
-
-            m_argumentName = argumentName;
-            m_fieldOrProperty = fieldOrProperty;
-            m_padding = fieldOrProperty;
-            m_type = type;
-            m_encodedArgument = default;
+            CustomAttributeType = type;
         }
 
-        public CustomAttributeEncodedArgument EncodedArgument => m_encodedArgument;
-    }
+        public CustomAttributeType CustomAttributeType { get; }
+        public PrimitiveValue PrimitiveValue { get; set; }
+        public CustomAttributeEncodedArgument[]? ArrayValue { get; set; }
+        public string? StringValue { get; set; }
 
-    [StructLayout(LayoutKind.Auto)]
-    internal readonly struct CustomAttributeCtorParameter
-    {
-        private readonly CustomAttributeType m_type;
-        private readonly CustomAttributeEncodedArgument m_encodedArgument;
-
-        public CustomAttributeCtorParameter(CustomAttributeType type)
+        private static void ParseCtorArgs(
+            ref CustomAttributeDataParser parser,
+            CustomAttributeCtorParameter[] customAttributeCtorParameters,
+            RuntimeModule module)
         {
-            m_type = type;
-            m_encodedArgument = default;
+            foreach (CustomAttributeCtorParameter p in customAttributeCtorParameters)
+            {
+                p.EncodedArgument = ParseCustomAttributeValue(
+                    ref parser,
+                    p.CustomAttributeType,
+                    module);
+            }
         }
 
-        public CustomAttributeEncodedArgument CustomAttributeEncodedArgument => m_encodedArgument;
+        private static void ParseNamedArgs(
+            ref CustomAttributeDataParser parser,
+            CustomAttributeNamedParameter[] customAttributeNamedParameters,
+            RuntimeModule module)
+        {
+            // Parse the named arguments in the custom attribute.
+            int argCount = parser.GetI2();
+
+            for (int i = 0; i < argCount; ++i)
+            {
+                // Determine if a field or property.
+                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
+                if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
+                    && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
+                {
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
+                }
+
+                // Parse the encoded type for the named argument.
+                CustomAttributeType argType = ParseCustomAttributeType(ref parser, module);
+
+                string? argName = parser.GetString();
+
+                // Argument name must be non-null and non-empty.
+                if (string.IsNullOrEmpty(argName))
+                {
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
+                }
+
+                // Update the appropriate named argument element.
+                CustomAttributeNamedParameter? parameterToUpdate = null;
+                foreach (CustomAttributeNamedParameter namedParam in customAttributeNamedParameters)
+                {
+                    CustomAttributeType namedArgType = namedParam.CustomAttributeType;
+                    if (namedArgType.EncodedType != CustomAttributeEncoding.Object)
+                    {
+                        if (namedArgType.EncodedType != argType.EncodedType)
+                        {
+                            continue;
+                        }
+
+                        // Match array type
+                        if (argType.EncodedType is CustomAttributeEncoding.Array
+                            && namedArgType.EncodedArrayType is not CustomAttributeEncoding.Object
+                            && argType.EncodedArrayType != namedArgType.EncodedArrayType)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // Match name
+                    if (!namedParam.MemberInfo.Name.Equals(argName))
+                    {
+                        continue;
+                    }
+
+                    // If enum, match enum name.
+                    if (namedArgType.EncodedType is CustomAttributeEncoding.Enum
+                        || (namedArgType.EncodedType is CustomAttributeEncoding.Array
+                            && namedArgType.EncodedArrayType is CustomAttributeEncoding.Enum))
+                    {
+                        if (!ReferenceEquals(argType.EnumType, namedArgType.EnumType))
+                        {
+                            continue;
+                        }
+
+                        Debug.Assert(namedArgType.EncodedEnumType == argType.EncodedEnumType);
+                    }
+
+                    // Found a match
+                    parameterToUpdate = namedParam;
+                    break;
+                }
+
+                if (parameterToUpdate is null)
+                {
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeUnknownNamedArgument);
+                }
+
+                if (parameterToUpdate.EncodedArgument is not null)
+                {
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
+                }
+
+                parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
+            }
+        }
+
+        private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
+            ref CustomAttributeDataParser parser,
+            CustomAttributeType type,
+            RuntimeModule module)
+        {
+            CustomAttributeType attributeType = type.EncodedType == CustomAttributeEncoding.Object
+                ? ParseCustomAttributeType(ref parser, module)
+                : type;
+
+            CustomAttributeEncodedArgument arg = new(attributeType);
+
+            CustomAttributeEncoding underlyingType = attributeType.EncodedType == CustomAttributeEncoding.Enum
+                ? attributeType.EncodedEnumType
+                : attributeType.EncodedType;
+
+            switch (underlyingType)
+            {
+                case CustomAttributeEncoding.Boolean:
+                case CustomAttributeEncoding.Byte:
+                case CustomAttributeEncoding.SByte:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU1() };
+                    break;
+                case CustomAttributeEncoding.Char:
+                case CustomAttributeEncoding.Int16:
+                case CustomAttributeEncoding.UInt16:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU2() };
+                    break;
+                case CustomAttributeEncoding.Int32:
+                case CustomAttributeEncoding.UInt32:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetI4() };
+                    break;
+                case CustomAttributeEncoding.Int64:
+                case CustomAttributeEncoding.UInt64:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = parser.GetI8() };
+                    break;
+                case CustomAttributeEncoding.Float:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(parser.GetR4()) };
+                    break;
+                case CustomAttributeEncoding.Double:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(parser.GetR8()) };
+                    break;
+                case CustomAttributeEncoding.String:
+                case CustomAttributeEncoding.Type:
+                    arg.StringValue = parser.GetString();
+                    break;
+                case CustomAttributeEncoding.Array:
+                {
+                    arg.ArrayValue = null;
+                    int len = parser.GetI4();
+                    if (len != -1) // indicates array is null - ECMA-335 II.23.3.
+                    {
+                        attributeType = new CustomAttributeType(
+                            attributeType.EncodedArrayType,
+                            CustomAttributeEncoding.Undefined, // Array type
+                            attributeType.EncodedEnumType,
+                            attributeType.EnumType);
+                        arg.ArrayValue = new CustomAttributeEncodedArgument[len];
+                        for (int i = 0; i < len; ++i)
+                        {
+                            arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
+                        }
+                    }
+                    break;
+                }
+                default:
+                    throw new BadImageFormatException();
+            }
+
+            return arg;
+        }
+
+        private static CustomAttributeType ParseCustomAttributeType(ref CustomAttributeDataParser parser, RuntimeModule module)
+        {
+            CustomAttributeEncoding arrayTag = CustomAttributeEncoding.Undefined;
+            CustomAttributeEncoding enumTag = CustomAttributeEncoding.Undefined;
+            Type? enumType = null;
+
+            CustomAttributeEncoding tag = parser.GetTag();
+            if (tag is CustomAttributeEncoding.Array)
+            {
+                arrayTag = parser.GetTag();
+            }
+
+            // Load the enum type if needed.
+            if (tag is CustomAttributeEncoding.Enum
+                || (tag is CustomAttributeEncoding.Array
+                    && arrayTag is CustomAttributeEncoding.Enum))
+            {
+                // We cannot determine the underlying type without loading the enum.
+                string? enumTypeMaybe = parser.GetString();
+                if (enumTypeMaybe is null)
+                {
+                    throw new BadImageFormatException();
+                }
+
+                enumType = TypeNameParser.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+                if (!enumType.IsEnum)
+                {
+                    throw new BadImageFormatException();
+                }
+
+                enumTag = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding((RuntimeType)enumType.GetEnumUnderlyingType());
+            }
+
+            return new CustomAttributeType(tag, arrayTag, enumTag, enumType);
+        }
+
+        /// <summary>
+        /// Used to parse CustomAttribute data. See ECMA-335 II.23.3.
+        /// </summary>
+        private ref struct CustomAttributeDataParser
+        {
+            private int _curr;
+            private ReadOnlySpan<byte> _blob;
+
+            public CustomAttributeDataParser(ConstArray attributeBlob)
+            {
+                unsafe
+                {
+                    _blob = new ReadOnlySpan<byte>((void*)attributeBlob.Signature, attributeBlob.Length);
+                }
+                _curr = 0;
+            }
+
+            private ReadOnlySpan<byte> PeekData(int size) => _blob.Slice(_curr, size);
+
+            private ReadOnlySpan<byte> ReadData(int size)
+            {
+                ReadOnlySpan<byte> tmp = PeekData(size);
+                Debug.Assert(size <= (_blob.Length - _curr));
+                _curr += size;
+                return tmp;
+            }
+
+            public byte GetU1()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(byte));
+                return tmp[0];
+            }
+
+            public sbyte GetI1() => (sbyte)GetU1();
+
+            public ushort GetU2()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(ushort));
+                return BinaryPrimitives.ReadUInt16LittleEndian(tmp);
+            }
+
+            public short GetI2() => (short)GetU2();
+
+            public uint GetU4()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(uint));
+                return BinaryPrimitives.ReadUInt32LittleEndian(tmp);
+            }
+
+            public int GetI4() => (int)GetU4();
+
+            public ulong GetU8()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(ulong));
+                return BinaryPrimitives.ReadUInt64LittleEndian(tmp);
+            }
+
+            public long GetI8() => (long)GetU8();
+
+            public float GetR4()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(float));
+                return BinaryPrimitives.ReadSingleLittleEndian(tmp);
+            }
+
+            public CustomAttributeEncoding GetTag()
+            {
+                return (CustomAttributeEncoding)GetI1();
+            }
+
+            public double GetR8()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(double));
+                return BinaryPrimitives.ReadDoubleLittleEndian(tmp);
+            }
+
+            public ushort GetProlog() => GetU2();
+
+            public bool ValidateProlog()
+            {
+                ushort val = GetProlog();
+                return val == 0x0001;
+            }
+
+            public string? GetString()
+            {
+                byte packedLengthBegin = PeekData(sizeof(byte))[0];
+
+                // Check if the embedded string indicates a 'null' string (0xff).
+                if (packedLengthBegin == 0xff) // ECMA 335- II.23.3
+                {
+                    // Consume the indicator.
+                    ReadData(1);
+                    return null;
+                }
+
+                // Not a null string, return a non-null string value.
+                // The embedded string a UTF-8 prefixed by an ECMA-335 packed integer.
+                int length = GetPackedLength(packedLengthBegin);
+                if (length == 0)
+                {
+                    return string.Empty;
+                }
+
+                ReadOnlySpan<byte> utf8ByteSpan = ReadData(length);
+                return Encoding.UTF8.GetString(utf8ByteSpan);
+            }
+
+            private int GetPackedLength(byte firstByte)
+            {
+                if ((firstByte & 0x80) == 0)
+                {
+                    // Consume one byte.
+                    ReadData(1);
+                    return firstByte & 0x7f;
+                }
+
+                int len;
+                ReadOnlySpan<byte> data;
+                if ((firstByte & 0xC0) == 0x80)
+                {
+                    // Consume the bytes.
+                    data = ReadData(2);
+                    len = (data[0] & 0x3f) << 8;
+                    return len + data[1];
+                }
+
+                if ((firstByte & 0xE0) == 0xC0)
+                {
+                    // Consume the bytes.
+                    data = ReadData(4);
+                    len = (data[0] & 0x1f) << 24;
+                    len += data[1] << 16;
+                    len += data[2] << 8;
+                    return len + data[3];
+                }
+
+                throw new OverflowException();
+            }
+        }
     }
 
-    [StructLayout(LayoutKind.Auto)]
-    internal readonly struct CustomAttributeType
+    internal sealed class CustomAttributeCtorParameter(CustomAttributeType type)
     {
+        public CustomAttributeType CustomAttributeType => type;
+        public CustomAttributeEncodedArgument? EncodedArgument { get; set; }
+    }
+
+    internal sealed class CustomAttributeNamedParameter(MemberInfo memberInfo, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+    {
+        public MemberInfo MemberInfo => memberInfo;
+        public CustomAttributeType CustomAttributeType => type;
+        public CustomAttributeEncoding FieldOrProperty => fieldOrProperty;
+        public CustomAttributeEncodedArgument? EncodedArgument { get; set; }
+    }
+
+    internal sealed class CustomAttributeType
+    {
+        public CustomAttributeType(
+            CustomAttributeEncoding encodedType,
+            CustomAttributeEncoding encodedArrayType,
+            CustomAttributeEncoding encodedEnumType,
+            Type? enumType)
+        {
+            EncodedType = encodedType;
+            EncodedArrayType = encodedArrayType;
+            EncodedEnumType = encodedEnumType;
+            EnumType = enumType;
+        }
+
+        public CustomAttributeType(RuntimeType parameterType)
+        {
+            Debug.Assert(parameterType is not null);
+            CustomAttributeEncoding encodedType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
+            CustomAttributeEncoding encodedArrayType = CustomAttributeEncoding.Undefined;
+            CustomAttributeEncoding encodedEnumType = CustomAttributeEncoding.Undefined;
+            Type? enumType = null;
+
+            if (encodedType == CustomAttributeEncoding.Array)
+            {
+                parameterType = (RuntimeType)parameterType.GetElementType();
+                encodedArrayType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
+            }
+
+            if (encodedType == CustomAttributeEncoding.Enum
+                || encodedArrayType == CustomAttributeEncoding.Enum)
+            {
+                enumType = parameterType;
+                encodedEnumType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding((RuntimeType)Enum.GetUnderlyingType(parameterType));
+            }
+
+            EncodedType = encodedType;
+            EncodedArrayType = encodedArrayType;
+            EncodedEnumType = encodedEnumType;
+            EnumType = enumType;
+        }
+
+        public CustomAttributeEncoding EncodedType { get; }
+        public CustomAttributeEncoding EncodedEnumType { get; }
+        public CustomAttributeEncoding EncodedArrayType { get; }
+
         /// The most complicated type is an enum[] in which case...
-        private readonly string? m_enumName; // ...enum name
-        private readonly CustomAttributeEncoding m_encodedType; // ...array
-        private readonly CustomAttributeEncoding m_encodedEnumType; // ...enum
-        private readonly CustomAttributeEncoding m_encodedArrayType; // ...enum type
-        private readonly CustomAttributeEncoding m_padding;
-
-        public CustomAttributeType(CustomAttributeEncoding encodedType, CustomAttributeEncoding encodedArrayType,
-            CustomAttributeEncoding encodedEnumType, string? enumName)
-        {
-            m_encodedType = encodedType;
-            m_encodedArrayType = encodedArrayType;
-            m_encodedEnumType = encodedEnumType;
-            m_enumName = enumName;
-            m_padding = m_encodedType;
-        }
-
-        public CustomAttributeEncoding EncodedType => m_encodedType;
-        public CustomAttributeEncoding EncodedEnumType => m_encodedEnumType;
-        public CustomAttributeEncoding EncodedArrayType => m_encodedArrayType;
-        public string? EnumName => m_enumName;
+        public Type? EnumType { get; }
     }
 
     internal static unsafe class CustomAttribute
@@ -1477,7 +1810,7 @@ namespace System.Reflection
             {
                 useAttributeArray = true;
             }
-            else if (caType.IsValueType)
+            else if (caType.IsActualValueType)
             {
                 useObjectArray = true;
             }

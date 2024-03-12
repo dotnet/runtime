@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace NativeFormatGen;
+
 //
 // This class generates most of the implementation of the MetadataReader for the NativeAOT format,
 // ensuring that the contract defined by CsPublicGen2 is implemented.The generated file is
@@ -8,7 +10,7 @@
 // source counterpart 'NativeFormatReader.cs'.
 //
 
-class ReaderGen : CsWriter
+internal sealed class ReaderGen : CsWriter
 {
     public ReaderGen(string fileName)
         : base(fileName)
@@ -28,9 +30,9 @@ class ReaderGen : CsWriter
         WriteLine();
 
         WriteLine("using System;");
+        WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Diagnostics;");
         WriteLine("using System.Reflection;");
-        WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Runtime.CompilerServices;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine();
@@ -42,7 +44,7 @@ class ReaderGen : CsWriter
             EmitRecord(record);
             EmitHandle(record);
         }
-        
+
         foreach (var typeName in SchemaDef.TypeNamesWithCollectionTypes)
         {
             EmitCollection(typeName + "HandleCollection", typeName + "Handle");
@@ -144,7 +146,7 @@ class ReaderGen : CsWriter
         WriteLine("_Validate();");
         CloseScope();
 
-        OpenScope($"public static implicit operator  Handle({handleName} handle)");
+        OpenScope($"public static implicit operator Handle({handleName} handle)");
         WriteLine("return new Handle(handle._value);");
         CloseScope("Handle");
 

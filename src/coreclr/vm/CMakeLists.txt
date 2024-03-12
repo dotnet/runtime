@@ -300,7 +300,6 @@ set(VM_SOURCES_WKS
     comdependenthandle.cpp
     comdynamic.cpp
     commodule.cpp
-    compatibilityswitch.cpp
     comsynchronizable.cpp
     comthreadpool.cpp
     comutilnative.cpp
@@ -324,7 +323,7 @@ set(VM_SOURCES_WKS
     finalizerthread.cpp
     frozenobjectheap.cpp
     gccover.cpp
-    gcenv.ee.static.cpp
+    gcenv.ee.cpp
     gcenv.ee.common.cpp
     gchelpers.cpp
     genanalysis.cpp
@@ -402,7 +401,6 @@ set(VM_HEADERS_WKS
     comdependenthandle.h
     comdynamic.h
     commodule.h
-    compatibilityswitch.h
     comsynchronizable.h
     comthreadpool.h
     comutilnative.h
@@ -429,7 +427,6 @@ set(VM_HEADERS_WKS
     finalizerthread.h
     frozenobjectheap.h
     gcenv.h
-    gcenv.ee.h
     gcenv.os.h
     gchelpers.h
     ilmarshalers.h
@@ -524,12 +521,6 @@ if(FEATURE_EVENT_TRACE)
         eventtracepriv.h
         )
 endif(FEATURE_EVENT_TRACE)
-
-if(FEATURE_STANDALONE_GC)
-    list(APPEND VM_SOURCES_WKS
-        gcenv.ee.standalone.cpp
-        )
-endif(FEATURE_STANDALONE_GC)
 
 #
 # Targeted interop scenarios
@@ -643,7 +634,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
         ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
-        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
         ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
         ${ARCH_SOURCES_DIR}/GenericComPlusCallStubs.asm
         ${ARCH_SOURCES_DIR}/getstate.asm
@@ -652,6 +642,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
+        ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
@@ -682,7 +673,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
-        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
+        ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )
@@ -698,13 +689,13 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
-            ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
             ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
+            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
@@ -727,7 +718,6 @@ else(CLR_CMAKE_TARGET_WIN32)
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
@@ -737,7 +727,7 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
-            ${ARCH_SOURCES_DIR}/crthelpers.S
+            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
@@ -745,7 +735,6 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
-            ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
@@ -753,7 +742,6 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerriscv64.S
-            ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
@@ -885,6 +873,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
 endif()

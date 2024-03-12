@@ -79,6 +79,7 @@ namespace System.Numerics.Tests
             RunSimpleProviderToStringTests(s_random, "N", nfi, nfi.NumberDecimalDigits, NumberFormatter);
             RunSimpleProviderToStringTests(s_random, "P", nfi, nfi.PercentDecimalDigits, PercentFormatter);
             RunSimpleProviderToStringTests(s_random, "X", nfi, 0, HexFormatter);
+            RunSimpleProviderToStringTests(s_random, "B", nfi, 0, BinaryFormatter);
             RunSimpleProviderToStringTests(s_random, "R", nfi, 0, DecimalFormatter);
         }
 
@@ -185,6 +186,17 @@ namespace System.Numerics.Tests
             RunStandardFormatToStringTests_Helper(s_random, "x99", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, -99, HexFormatter);
             RunStandardFormatToStringTests_Helper(s_random, "x100", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, -100, HexFormatter);
             RunStandardFormatToStringTests_Helper(s_random, "x" + intMaxPlus1String, CultureInfo.CurrentCulture.NumberFormat.NegativeSign, -101, HexFormatter, true);
+
+            // Binary
+            RunStandardFormatToStringTests_Helper(s_random, "B", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "B0", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "b1", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 1, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "B2", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 2, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "b5", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 5, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "B33", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 33, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "b99", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 99, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "b100", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 100, BinaryFormatter);
+            RunStandardFormatToStringTests_Helper(s_random, "b" + intMaxPlus1String, CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 101, BinaryFormatter, true);
 
             // RoundTrip
             RunStandardFormatToStringTests_Helper(s_random, "R", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
@@ -307,6 +319,17 @@ namespace System.Numerics.Tests
                     RunStandardFormatToStringTests_Helper(s_random, "x99", culture.NumberFormat.NegativeSign, -99, HexFormatter);
                     RunStandardFormatToStringTests_Helper(s_random, "x100", culture.NumberFormat.NegativeSign, -100, HexFormatter);
                     RunStandardFormatToStringTests_Helper(s_random, "x" + intMaxPlus1String, culture.NumberFormat.NegativeSign, -101, HexFormatter, true);
+
+                    // Binary
+                    RunStandardFormatToStringTests_Helper(s_random, "B", culture.NumberFormat.NegativeSign, 0, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "B0", culture.NumberFormat.NegativeSign, 0, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "b1", culture.NumberFormat.NegativeSign, 1, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "B2", culture.NumberFormat.NegativeSign, 2, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "b5", culture.NumberFormat.NegativeSign, 5, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "B33", culture.NumberFormat.NegativeSign, 33, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "b99", culture.NumberFormat.NegativeSign, 99, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "b100", culture.NumberFormat.NegativeSign, 100, BinaryFormatter);
+                    RunStandardFormatToStringTests_Helper(s_random, "b" + intMaxPlus1String, culture.NumberFormat.NegativeSign, 101, BinaryFormatter, true);
 
                     // RoundTrip
                     RunStandardFormatToStringTests_Helper(s_random, "R", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
@@ -490,7 +513,7 @@ namespace System.Numerics.Tests
             Assert.Throws<FormatException>(() => b.ToString("E1000000000"));
             Assert.Throws<FormatException>(() => b.ToString("E000001000000000"));
 
-            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
             Assert.Throws<FormatException>(() => b.ToString("G" + int.MaxValue.ToString()));
             Assert.Throws<FormatException>(() => b.ToString("G" + intMaxPlus1String));
             Assert.Throws<FormatException>(() => b.ToString("G4772185890"));
@@ -511,7 +534,7 @@ namespace System.Numerics.Tests
             b.ToString("E999999999"); // Should not throw
             b.ToString("E00000999999999"); // Should not throw
 
-            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
             b.ToString("G999999999"); // Should not throw
             b.ToString("G00000999999999"); // Should not throw
         }
@@ -1025,6 +1048,23 @@ namespace System.Numerics.Tests
                 input += "00";
             }
             return pre + GroupFormatDigits(input, nfi.PercentGroupSeparator, nfi.PercentGroupSizes, nfi.PercentDecimalSeparator, precision) + post;
+        }
+
+        private static string BinaryFormatter(string input, int precision, NumberFormatInfo nfi)
+        {
+            string output = ConvertDecimalToBinary(input, nfi);
+
+            if (output[0] == '1')
+            {
+                output = OneString(precision - output.Length) + output;
+            }
+            else
+            {
+                Debug.Assert(output[0] == '0');
+                output = ZeroString(precision - output.Length) + output;
+            }
+
+            return output;
         }
 
         private static string HexFormatter(string input, int precision, NumberFormatInfo nfi)
@@ -1638,7 +1678,7 @@ namespace System.Numerics.Tests
         }
         private static string GetRandomInvalidFormatChar(Random random)
         {
-            char[] digits = new char[] { 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f', 'G', 'g', 'N', 'n', 'P', 'p', 'X', 'x', 'R', 'r' };
+            char[] digits = new char[] { 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f', 'G', 'g', 'N', 'n', 'P', 'p', 'X', 'x', 'B', 'b', 'R', 'r' };
             char result = 'C';
             while (result == 'C')
             {
@@ -1762,6 +1802,34 @@ namespace System.Numerics.Tests
                 {
                     output = $"{output}{chars[start]:x}";
                 }
+            }
+
+            return output;
+        }
+
+        private static string ConvertDecimalToBinary(string input, NumberFormatInfo nfi)
+        {
+            string output = string.Empty;
+            BigInteger bi = BigInteger.Parse(input, nfi);
+            byte[] bytes = bi.ToByteArray();
+            int[] chars = new int[bytes.Length * 8];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                chars[i * 8] = bytes[i] % 2;
+                chars[i * 8 + 1] = (bytes[i] / 2) % 2;
+                chars[i * 8 + 2] = (bytes[i] / 4) % 2;
+                chars[i * 8 + 3] = (bytes[i] / 8) % 2;
+                chars[i * 8 + 4] = (bytes[i] / 16) % 2;
+                chars[i * 8 + 5] = (bytes[i] / 32) % 2;
+                chars[i * 8 + 6] = (bytes[i] / 64) % 2;
+                chars[i * 8 + 7] = (bytes[i] / 128) % 2;
+            }
+
+            ReadOnlySpan<int> trimmedChars = chars.AsSpan(0, chars.AsSpan().LastIndexOf(chars[^1] == 0 ? 1 : 0) + 2);
+
+            for (int i = trimmedChars.Length - 1; i >= 0; i--)
+            {
+                output = $"{output}{trimmedChars[i]}";
             }
 
             return output;
@@ -1940,6 +2008,11 @@ namespace System.Numerics.Tests
         private static string ZeroString(int size)
         {
             return size >= 1 ? new string('0', size) : string.Empty;
+        }
+
+        private static string OneString(int size)
+        {
+            return size >= 1 ? new string('1', size) : string.Empty;
         }
 
         private static string FString(int size, bool upper)

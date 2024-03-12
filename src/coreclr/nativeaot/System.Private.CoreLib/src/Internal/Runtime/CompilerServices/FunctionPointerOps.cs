@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
@@ -147,6 +148,17 @@ namespace Internal.Runtime.CompilerServices
             }
 
             return pointerDefA->MethodFunctionPointer == pointerDefB->MethodFunctionPointer;
+        }
+
+        public static unsafe int GetHashCode(IntPtr functionPointer)
+        {
+            if (!IsGenericMethodPointer(functionPointer))
+            {
+                return functionPointer.GetHashCode();
+            }
+
+            GenericMethodDescriptor* pointerDef = ConvertToGenericDescriptor(functionPointer);
+            return pointerDef->GetHashCode();
         }
     }
 }

@@ -192,15 +192,9 @@ private:
 
     ThreadStaticHandleTable * m_pThreadStaticHandleTable;
 
-    // Need to keep a list of the pinning handles we've created
-    // so they can be cleaned up when the thread dies
-    ObjectHandleList          m_PinningHandleList;
-
 public:
 
 #ifndef DACCESS_COMPILE
-    void AddPinningHandleToList(OBJECTHANDLE oh);
-    void FreePinningHandles();
     void AllocateThreadStaticHandles(Module * pModule, ThreadLocalModule * pThreadLocalModule);
     OBJECTHANDLE AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTHANDLE* ppLazyAllocate = NULL);
     void InitThreadStaticHandleTable();
@@ -257,6 +251,9 @@ struct TailCallArgBuffer
 #endif
 #if (defined(TARGET_ARM64) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "arm64singlestepper.h"
+#endif
+#if (defined(TARGET_RISCV64) && defined(FEATURE_EMULATE_SINGLESTEP))
+#include "riscv64singlestepper.h"
 #endif
 
 #if !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
@@ -2572,6 +2569,8 @@ public:
 private:
 #if defined(TARGET_ARM)
     ArmSingleStepper m_singleStepper;
+#elif defined(TARGET_RISCV64)
+    RiscV64SingleStepper m_singleStepper;
 #else
     Arm64SingleStepper m_singleStepper;
 #endif
@@ -2587,7 +2586,7 @@ public:
         m_singleStepper.Enable();
     }
 
-    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode))
+    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode) RISCV64_ARG(uint32_t opcode))
     {
 #if defined(TARGET_ARM)
         m_singleStepper.Bypass((DWORD)ip, opcode1, opcode2);
@@ -2688,7 +2687,7 @@ public:
 private:
     void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                           DWORD millis, WaitMode mode);
+                                           DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
     DWORD          DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
                                            DWORD millis, WaitMode mode);
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
@@ -2710,14 +2709,16 @@ public:
 
     #define POPFRAMES                       0x0004
 
-    /* use the following  flag only if you REALLY know what you are doing !!! */
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
     #define HANDLESKIPPEDFRAMES             0x0010 // temporary to handle skipped frames for appdomain unload
                                                    // stack crawl. Eventually need to always do this but it
                                                    // breaks the debugger right now.
 
-    #define LIGHTUNWIND                     0x0020 // allow using cache schema (see StackwalkCache class)
+    #define LIGHTUNWIND                     0x0020 // Unwind PC+SP+FP only.
+                                                   // - Implemented on x64 only.
+                                                   // - Expects the initial context to be outside prolog/epilog.
+                                                   // - Cannot unwind through methods with stackalloc
 
     #define NOTIFY_ON_U2M_TRANSITIONS       0x0040 // Provide a callback for native transitions.
                                                    // This is only useful to a debugger trying to find native code
@@ -2769,6 +2770,8 @@ public:
     // may still execute GS cookie tracking/checking code paths.
     #define SKIP_GSCOOKIE_CHECK 0x10000
 
+    #define UNWIND_FLOATS 0x20000
+
     StackWalkAction StackWalkFramesEx(
                         PREGDISPLAY pRD,        // virtual register set at crawl start
                         PSTACKWALKFRAMESCALLBACK pCallback,
@@ -2793,7 +2796,7 @@ public:
                         PTR_Frame pStartFrame = PTR_NULL);
 
     bool InitRegDisplay(const PREGDISPLAY, const PT_CONTEXT, bool validContext);
-    void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx);
+    void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind = false);
 
 #ifdef FEATURE_EH_FUNCLETS
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
@@ -2830,6 +2833,29 @@ public:
 
     typedef StateHolder<Thread::IncPreventAsync, Thread::DecPreventAsync> ThreadPreventAsyncHolder;
 
+    // While executing the new exception handling managed code,
+    // this thread must not be aborted.
+    static void        IncPreventAbort()
+    {
+        WRAPPER_NO_CONTRACT;
+        Thread *pThread = GetThread();
+        InterlockedIncrement((LONG*)&pThread->m_PreventAbort);
+    }
+    static void        DecPreventAbort()
+    {
+        WRAPPER_NO_CONTRACT;
+        Thread *pThread = GetThread();
+#ifdef _DEBUG
+        LONG c =
+#endif // _DEBUG
+        InterlockedDecrement((LONG*)&pThread->m_PreventAbort);
+        _ASSERTE(c >= 0);
+    }
+
+    BOOL IsAbortPrevented()
+    {
+        return m_PreventAbort != 0;
+    }
     // The ThreadStore manages a list of all the threads in the system.  I
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
@@ -3644,6 +3670,8 @@ private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
     int         m_PreventAsync;
+    // Don't allow a thread to be aborted while running the new exception handling managed code
+    int         m_PreventAbort;
 
     static LONG m_DebugWillSyncCount;
 
@@ -4955,6 +4983,7 @@ inline void Thread::DecrementTraceCallCount()
 // state to be correct.  So we carry it around in case we need to restore it.
 struct PendingSync
 {
+    void*           m_Object;
     LONG            m_EnterCount;
     WaitEventLink  *m_WaitEventLink;
 #ifdef _DEBUG
@@ -6193,9 +6222,7 @@ private:
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
-#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
-#endif
 #endif // DACCESS_COMPILE
 
 #endif //__threads_h__

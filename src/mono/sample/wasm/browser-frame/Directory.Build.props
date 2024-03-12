@@ -1,0 +1,2 @@
+<!-- suppress loading of upper dirs Directory.Build.props -->
+<Project/>

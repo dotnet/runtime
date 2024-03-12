@@ -845,7 +845,7 @@ namespace System
         public static uint ToUInt32(decimal d)
         {
             Truncate(ref d);
-            if ((d.High| d.Mid) == 0)
+            if ((d.High | d.Mid) == 0)
             {
                 uint i = d.Low;
                 if (!IsNegative(d) || i == 0)

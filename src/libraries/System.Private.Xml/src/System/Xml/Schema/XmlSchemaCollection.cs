@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Collections;
-using System.Xml.Schema;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Xml.Schema;
 
 namespace System.Xml.Schema
 {

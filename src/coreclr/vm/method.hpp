@@ -477,8 +477,6 @@ public:
 
     InstantiatedMethodDesc* AsInstantiatedMethodDesc() const;
 
-    BaseDomain *GetDomain();
-
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* GetCodeVersionManager();
 #endif
@@ -2696,22 +2694,6 @@ public:
 typedef DPTR(NDirectImportThunkGlue)      PTR_NDirectImportThunkGlue;
 
 
-//
-// This struct consolidates the writeable parts of the NDirectMethodDesc
-// so that we can eventually layout a read-only NDirectMethodDesc with a pointer
-// to the writeable parts in an ngen image
-//
-class NDirectWriteableData
-{
-public:
-    // The JIT generates an indirect call through this location in some cases.
-    // Initialized to NDirectImportThunkGlue. Patched to the true target or
-    // host interceptor stub or alignment thunk after linking.
-    LPVOID      m_pNDirectTarget;
-};
-
-typedef DPTR(NDirectWriteableData)      PTR_NDirectWriteableData;
-
 //-----------------------------------------------------------------------
 // Operations specific to NDirect methods. We use a derived class to get
 // the compiler involved in enforcing proper method type usage.
@@ -2731,8 +2713,10 @@ public:
             DWORD       m_dwECallID;    // ECallID for QCalls
         };
 
-        // The writeable part of the methoddesc.
-        PTR_NDirectWriteableData    m_pWriteableData;
+        // The JIT generates an indirect call through this location in some cases.
+        // Initialized to NDirectImportThunkGlue. Patched to the true target or
+        // host interceptor stub or alignment thunk after linking.
+        LPVOID      m_pNDirectTarget;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
         PTR_NDirectImportThunkGlue  m_pImportThunkGlue;
@@ -2929,13 +2913,6 @@ public:
         return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
-    PTR_NDirectWriteableData GetWriteableData() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return ndirect.m_pWriteableData;
-    }
-
     PTR_NDirectImportThunkGlue GetNDirectImportThunkGlue()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2948,7 +2925,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsNDirect());
-        return GetWriteableData()->m_pNDirectTarget;
+        return ndirect.m_pNDirectTarget;
     }
 
     VOID SetNDirectTarget(LPVOID pTarget);

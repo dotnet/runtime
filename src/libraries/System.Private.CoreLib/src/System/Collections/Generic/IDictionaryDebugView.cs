@@ -5,11 +5,11 @@ using System.Diagnostics;
 
 namespace System.Collections.Generic
 {
-    internal sealed class IDictionaryDebugView<K, V> where K : notnull
+    internal sealed class IDictionaryDebugView<TKey, TValue> where TKey : notnull
     {
-        private readonly IDictionary<K, V> _dict;
+        private readonly IDictionary<TKey, TValue> _dict;
 
-        public IDictionaryDebugView(IDictionary<K, V> dictionary)
+        public IDictionaryDebugView(IDictionary<TKey, TValue> dictionary)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -17,12 +17,17 @@ namespace System.Collections.Generic
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<K, V>[] Items
+        public DebugViewDictionaryItem<TKey, TValue>[] Items
         {
             get
             {
-                KeyValuePair<K, V>[] items = new KeyValuePair<K, V>[_dict.Count];
-                _dict.CopyTo(items, 0);
+                var keyValuePairs = new KeyValuePair<TKey, TValue>[_dict.Count];
+                _dict.CopyTo(keyValuePairs, 0);
+                var items = new DebugViewDictionaryItem<TKey, TValue>[keyValuePairs.Length];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    items[i] = new DebugViewDictionaryItem<TKey, TValue>(keyValuePairs[i]);
+                }
                 return items;
             }
         }

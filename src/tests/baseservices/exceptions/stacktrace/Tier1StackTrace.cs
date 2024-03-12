@@ -5,17 +5,20 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
-internal static class Program
+public static class Program
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        const int Pass = 100, Fail = 1;
-
         string tier0StackTrace = Capture(true);
         PromoteToTier1(() => Capture(false));
         string tier1StackTrace = Capture(true);
-        return tier0StackTrace == tier1StackTrace ? Pass : Fail;
+        if (tier0StackTrace != tier1StackTrace)
+        {
+            throw new Exception($"Stack trace mismatch:\n------\nTier 0:\n------\n{tier0StackTrace}\n------\nTier 1:\n------\n{tier1StackTrace}");
+        }
     }
 
     private static void PromoteToTier1(Action action)
@@ -46,12 +49,16 @@ internal static class Program
 
         string stackTrace = new StackTrace(true).ToString().Trim();
 
-        // Remove the last line of the stack trace, which would correspond with Main()
-        int lastNewLineIndex = stackTrace.LastIndexOf('\n');
-        if (lastNewLineIndex == -1)
+        // Remove everything past the test entrypoint line
+        int entrypointIndex = stackTrace.IndexOf("TestEntryPoint");
+        if (entrypointIndex == -1)
         {
             return null;
         }
-        return stackTrace.Substring(0, lastNewLineIndex).Trim();
+        while (entrypointIndex > 0 && stackTrace[entrypointIndex - 1] != '\n')
+        {
+            entrypointIndex--;
+        }
+        return stackTrace.Substring(0, entrypointIndex);
     }
 }

@@ -162,8 +162,8 @@ namespace System.Runtime.Serialization
 
         private static int GetPrime(int min)
         {
-            ReadOnlySpan<int> primes = new int[]
-            {
+            ReadOnlySpan<int> primes =
+            [
                 3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,
                 75431, 156437, 324449, 672827, 1395263, 2893249, 5999471,
                 11998949, 23997907, 47995853, 95991737, 191983481, 383966977, 767933981, 1535867969,
@@ -171,7 +171,7 @@ namespace System.Runtime.Serialization
                 // 0x7FFFFFC7 == Array.MaxLength is not prime, but it is the largest possible array size.
                 // There's nowhere to go from here. Using a const rather than the MaxLength property
                 // so that the array contains only const values.
-            };
+            ];
 
             foreach (int prime in primes)
             {

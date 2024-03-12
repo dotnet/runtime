@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <XunitShowProgress>true</XunitShowProgress>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Task\TaskArgumentValidationTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="UnwrapTests.cs" />
+    <Compile Include="AggregateExceptionTests.cs" />
+    <Compile Include="OperationCanceledExceptionTests.cs" />
+    <Compile Include="CancellationTokenTests.cs" />
+    <Compile Include="MethodCoverage.cs" />
+    <Compile Include="CESchedulerPairTests.cs" />
+    <Compile Include="TaskToAsyncResultTests.cs" />
+    <!-- Task -->
+    <Compile Include="Task\AsyncEnumerableToBlockingEnumerableTests.cs" />
+    <Compile Include="Task\ExecutionContextFlowTest.cs" />
+    <Compile Include="Task\RunContinuationsAsynchronouslyTests.cs" />
+    <Compile Include="Task\TPLTestException.cs" />
+    <Compile Include="Task\TaskRunSyncTests.cs" />
+    <Compile Include="Task\TaskStatusTest.cs" />
+    <Compile Include="Task\TaskPropertiesTests.cs" />
+    <Compile Include="Task\TaskCreateTest.cs" />
+    <Compile Include="Task\TaskWaitAllAnyTest.cs" />
+    <Compile Include="Task\TaskCompletionSourceTests.cs" />
+    <Compile Include="Task\TaskCompletionSourceTResultTests.cs" />
+    <Compile Include="Task\TaskContinueWithTests.cs" />
+    <Compile Include="Task\TaskContinueWithAllAnyTests.cs" />
+    <Compile Include="Task\TaskContinueWith_ContFuncAndActionWithArgsTests.cs" />
+    <Compile Include="Task\TaskContinueWith_ContFuncAndActionTests.cs" />
+    <Compile Include="Task\TaskContinueWhenAnyTests.cs" />
+    <Compile Include="Task\TaskContinueWhenAllTests.cs" />
+    <Compile Include="Task\TaskFromAsyncWork.cs" />
+    <Compile Include="Task\TaskFromAsyncTest.cs" />
+    <Compile Include="Task\TaskFromAsyncTest2.cs" />
+    <Compile Include="Task\TaskCancelWaitTests.cs" />
+    <Compile Include="Task\TaskCancelWaitTest.cs" />
+    <Compile Include="Task\TaskRtTests.cs" />
+    <Compile Include="Task\TaskRtTests_Core.cs" />
+    <Compile Include="Task\TaskAPMTest.cs" />
+    <Compile Include="Task\TaskCanceledExceptionTests.cs" />
+    <!-- TaskFactory -->
+    <Compile Include="TaskFactory\TaskFactory_FromAsyncTests.cs" />
+    <Compile Include="TaskFactory\TaskFactoryTests.cs" />
+    <!-- TaskScheduler -->
+    <Compile Include="TaskScheduler\TaskSchedulerTests.cs" />
+    <!-- System.Runtime.CompilerServices -->
+    <Compile Include="System.Runtime.CompilerServices\AsyncIteratorMethodBuilderTests.cs" />
+    <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
+    <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs" />
+    <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />
+    <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
+    <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs" Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="Task\TaskDisposeTests.cs" />
+  </ItemGroup>
+</Project>

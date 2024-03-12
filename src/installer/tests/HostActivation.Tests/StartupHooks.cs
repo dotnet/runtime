@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Linq;
 using Xunit;
-using Microsoft.Extensions.DependencyModel;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
@@ -24,19 +21,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_activation_of_RuntimeConfig_StartupHook_Succeeds()
         {
-            var fixture = sharedTestState.PortableAppFixture.Copy();
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
+            var app = sharedTestState.App.Copy();
+            var startupHookDll = sharedTestState.StartupHook.AppDll;
 
-            var startupHookFixture = sharedTestState.StartupHookFixture;
-            var startupHookDll = startupHookFixture.TestProject.AppDll;
-
-            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+            RuntimeConfig.FromFile(app.RuntimeConfigJson)
                 .WithProperty(startupHookRuntimeConfigName, startupHookDll)
                 .Save();
 
             // RuntimeConfig defined startup hook
-            dotnet.Exec(appDll)
+            TestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -48,31 +41,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_activation_of_RuntimeConfig_And_Environment_StartupHooks_SucceedsInExpectedOrder()
         {
-            var fixture = sharedTestState.PortableAppFixture.Copy();
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
+            var app = sharedTestState.App.Copy();
+            var startupHookDll = sharedTestState.StartupHook.AppDll;
 
-            var startupHookFixture = sharedTestState.StartupHookFixture;
-            var startupHookDll = startupHookFixture.TestProject.AppDll;
-
-            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+            RuntimeConfig.FromFile(app.RuntimeConfigJson)
                 .WithProperty(startupHookRuntimeConfigName, startupHookDll)
                 .Save();
 
-            var startupHook2Fixture = sharedTestState.StartupHookWithAssemblyResolver;
-            var startupHook2Dll = startupHook2Fixture.TestProject.AppDll;
+            var startupHook2 = sharedTestState.StartupHookWithAssemblyResolver;
+            var startupHook2Dll = startupHook2.AppDll;
 
             // include any char to counter output from other threads such as in #57243
             const string wildcardPattern = @"[\r\n\s.]*";
 
             // RuntimeConfig and Environment startup hooks in expected order
-            dotnet.Exec(appDll)
+            TestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHook2Dll)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutMatching($"Hello from startup hook in {startupHook2Fixture.TestProject.AssemblyName}!" +
+                .And.HaveStdOutMatching($"Hello from startup hook in {startupHook2.AssemblyName}!" +
                                         wildcardPattern +
                                         $"Hello from startup hook!" +
                                         wildcardPattern +
@@ -83,12 +72,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_activation_of_Empty_StartupHook_Variable_Succeeds()
         {
-            var fixture = sharedTestState.PortableAppFixture;
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
             var startupHookVar = "";
-            dotnet.Exec(appDll)
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -102,15 +87,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_activation_of_StartupHook_With_Missing_Dependencies_Fails()
         {
-            var fixture = sharedTestState.PortableAppFixture;
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            var startupHookFixture = sharedTestState.StartupHookWithAssemblyResolver;
-            var startupHookDll = startupHookFixture.TestProject.AppDll;
+            var startupHookDll = sharedTestState.StartupHookWithAssemblyResolver.AppDll;
 
             // Startup hook has a dependency not on the TPA list
-            dotnet.Exec(appDll)
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 // Indicate that the startup hook should try to use a dependency
                 .EnvironmentVariable("TEST_STARTUPHOOK_USE_DEPENDENCY", true.ToString())
@@ -125,15 +105,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_activation_of_StartupHook_With_Assembly_Resolver()
         {
-            var fixture = sharedTestState.PortableAppFixture;
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            var startupHookFixture = sharedTestState.StartupHookWithAssemblyResolver;
-            var startupHookDll = startupHookFixture.TestProject.AppDll;
+            var startupHookDll = sharedTestState.StartupHookWithAssemblyResolver.AppDll;
 
             // Startup hook with assembly resolver results in use of injected dependency
-            dotnet.Exec(appDll, "load_shared_library")
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "load_shared_library")
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 // Indicate that the startup hook should add an assembly resolver
                 .EnvironmentVariable("TEST_STARTUPHOOK_ADD_RESOLVER", true.ToString())
@@ -142,26 +117,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Resolving SharedLibrary in startup hook")
-                .And.HaveStdOutContaining("SharedLibrary.SharedType.Value=2");
+                .And.HaveStdOutContaining("SharedLibrary.SharedType.Value = SharedLibrary");
         }
 
         [Fact]
         public void Muxer_activation_of_StartupHook_With_IsSupported_False()
         {
-            var fixture = sharedTestState.PortableAppFixture.Copy();
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
+            var app = sharedTestState.App.Copy();
+            var startupHookDll = sharedTestState.StartupHook.AppDll;
 
-            var startupHookFixture = sharedTestState.StartupHookFixture;
-            var startupHookDll = startupHookFixture.TestProject.AppDll;
-
-            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+            RuntimeConfig.FromFile(app.RuntimeConfigJson)
                 .WithProperty(startupHookSupport, "false")
                 .Save();
 
             // Startup hooks are not executed when the StartupHookSupport
             // feature switch is set to false.
-            dotnet.Exec(appDll)
+            TestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -173,42 +144,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            // Entry point project
-            public TestProjectFixture PortableAppFixture { get; }
+            // Entry point application
+            public TestApp App { get; }
 
             // Correct startup hook
-            public TestProjectFixture StartupHookFixture { get; }
+            public TestApp StartupHook { get; }
 
             // Startup hook that can be configured to add an assembly resolver or use a dependency
-            public TestProjectFixture StartupHookWithAssemblyResolver { get; }
-
-            public RepoDirectoriesProvider RepoDirectories { get; }
+            public TestApp StartupHookWithAssemblyResolver { get; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
-                // Entry point project
-                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
-
-                // Correct startup hook
-                StartupHookFixture = new TestProjectFixture("StartupHook", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
-
-                // Startup hook that can be configured to add an assembly resolver or use a dependency
-                StartupHookWithAssemblyResolver = new TestProjectFixture("StartupHookWithAssemblyResolver", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
+                App = TestApp.CreateFromBuiltAssets("HelloWorld");
+                StartupHook = TestApp.CreateFromBuiltAssets("StartupHook");
+                StartupHookWithAssemblyResolver = TestApp.CreateFromBuiltAssets("StartupHookWithAssemblyResolver");
             }
 
             public void Dispose()
             {
-                PortableAppFixture.Dispose();
-                StartupHookFixture.Dispose();
-                StartupHookWithAssemblyResolver.Dispose();
+                App?.Dispose();
+                StartupHook?.Dispose();
+                StartupHookWithAssemblyResolver?.Dispose();
             }
         }
     }

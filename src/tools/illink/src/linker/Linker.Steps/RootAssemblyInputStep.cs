@@ -78,7 +78,8 @@ namespace Mono.Linker.Steps
 					CodeOptimizations.RemoveLinkAttributes |
 					CodeOptimizations.RemoveSubstitutions |
 					CodeOptimizations.RemoveDynamicDependencyAttribute |
-					CodeOptimizations.OptimizeTypeHierarchyAnnotations, assembly.Name.Name);
+					CodeOptimizations.OptimizeTypeHierarchyAnnotations |
+					CodeOptimizations.SubstituteFeatureGuards, assembly.Name.Name);
 
 				// Enable EventSource special handling
 				Context.DisableEventSourceSpecialHandling = false;
@@ -87,7 +88,8 @@ namespace Mono.Linker.Steps
 				Context.MetadataTrimming = MetadataTrimming.None;
 				break;
 			case AssemblyRootMode.AllMembers:
-				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);
+				Annotations.SetRootAssembly (assembly);
+				Annotations.Mark (assembly.MainModule, di, origin);
 				return;
 			}
 		}

@@ -234,7 +234,7 @@ namespace
                     fx_ref.get_fx_version().c_str());
 
                 append_path(&fx_dir, fx_ref.get_fx_version().c_str());
-                if (library_exists_in_dir(fx_dir, deps_file_name, nullptr))
+                if (file_exists_in_dir(fx_dir, deps_file_name.c_str(), nullptr))
                 {
                     selected_fx_dir = fx_dir;
                     selected_fx_version = fx_ref.get_fx_version();
@@ -266,7 +266,7 @@ namespace
                     // Check that the framework's .deps.json exists. To minimize the file checks done in the most common
                     // scenario (.deps.json exists), only check after resolving the version and if the .deps.json doesn't
                     // exist, attempt resolving again without that version.
-                    if (!library_exists_in_dir(resolved_fx_dir, deps_file_name, nullptr))
+                    if (!file_exists_in_dir(resolved_fx_dir, deps_file_name.c_str(), nullptr))
                     {
                         // Remove the version and try resolving again
                         trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), resolved_ver_str.c_str());

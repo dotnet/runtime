@@ -213,6 +213,16 @@ event_pipe_stub_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
+static bool
+event_pipe_stub_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+static bool
+event_pipe_stub_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id);
+
 MonoComponentEventPipe *
 component_event_pipe_stub_init (void);
 
@@ -251,6 +261,8 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_write_event_contention_lock_created,
 	&event_pipe_stub_write_event_contention_start,
 	&event_pipe_stub_write_event_contention_stop,
+	&event_pipe_stub_write_event_wait_handle_wait_start,
+	&event_pipe_stub_write_event_wait_handle_wait_stop,
 	&event_pipe_stub_signal_session,
 	&event_pipe_stub_wait_for_session_signal
 };
@@ -550,6 +562,22 @@ static bool
 event_pipe_stub_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id)
 {
 	return true;
 }

@@ -22,13 +22,13 @@ namespace System
         }
 
         public NotSupportedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_NotSupportedException)
         {
             HResult = HResults.COR_E_NOTSUPPORTED;
         }
 
         public NotSupportedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_NotSupportedException, innerException)
         {
             HResult = HResults.COR_E_NOTSUPPORTED;
         }

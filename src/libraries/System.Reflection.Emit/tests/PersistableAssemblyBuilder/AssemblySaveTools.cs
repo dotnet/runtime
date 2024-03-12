@@ -4,22 +4,39 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    class TestAssemblyLoadContext : AssemblyLoadContext
+    {
+        public TestAssemblyLoadContext() : base(isCollectible: true)
+        {
+        }
+
+        protected override Assembly? Load(AssemblyName name)
+        {
+            return null;
+        }
+    }
+
+
     internal static class AssemblySaveTools
     {
+        private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
+        {
+            Version = new Version("1.2.3.4"),
+        };
+
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
-            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilderAndSaveMethod(
-                assemblyName, null, typeof(string), out MethodInfo saveMethod);
+            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilder(assemblyName);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types);
 
-            saveMethod.Invoke(assemblyBuilder, new object[] { fileLocation });
+            assemblyBuilder.Save(fileLocation);
         }
 
         private static void PopulateMembersForModule(ModuleBuilder mb, Type[] types)
@@ -43,39 +60,30 @@ namespace System.Reflection.Emit.Tests
                 {
                     tb.DefineField(field.Name, field.FieldType, field.Attributes);
                 }
+
+                tb.CreateType();
             }
         }
 
         internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream)
         {
-            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilderAndSaveMethod(
-                assemblyName, null, typeof(Stream), out MethodInfo saveMethod);
+            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilder(assemblyName);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types);
 
-            saveMethod.Invoke(assemblyBuilder, new object[] { stream });
+            assemblyBuilder.Save(stream);
         }
 
-        internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(AssemblyName assemblyName,
-            List<CustomAttributeBuilder>? assemblyAttributes, Type parameterType, out MethodInfo saveMethod)
+        internal static AssemblyBuilder PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder)
         {
-            Type assemblyType = Type.GetType("System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit", throwOnError: true)!;
-
-            saveMethod = assemblyType.GetMethod("Save", BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { parameterType });
-
-            MethodInfo defineDynamicAssemblyMethod = assemblyType.GetMethod("DefinePersistedAssembly", BindingFlags.NonPublic | BindingFlags.Static,
-                new Type[] { typeof(AssemblyName), typeof(Assembly), typeof(List<CustomAttributeBuilder>) });
-
-            return (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
-                new object[] { assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes });
+            AssemblyBuilder ab = PopulateAssemblyBuilder(s_assemblyName, null);
+            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            return ab;
         }
 
-        internal static Assembly LoadAssemblyFromPath(string filePath) =>
-            new MetadataLoadContext(new CoreMetadataAssemblyResolver()).LoadFromAssemblyPath(filePath);
-
-        internal static Assembly LoadAssemblyFromStream(Stream stream) =>
-            new MetadataLoadContext(new CoreMetadataAssemblyResolver()).LoadFromStream(stream);
+        internal static AssemblyBuilder PopulateAssemblyBuilder(AssemblyName assemblyName, List<CustomAttributeBuilder>? assemblyAttributes = null) =>
+            AssemblyBuilder.DefinePersistedAssembly(assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes);
 
         internal static void AssertAssemblyNameAndModule(AssemblyName sourceAName, AssemblyName aNameFromDisk, Module moduleFromDisk)
         {

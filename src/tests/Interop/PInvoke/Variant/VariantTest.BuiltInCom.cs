@@ -7,9 +7,12 @@ using Xunit;
 using static VariantNative;
 
 #pragma warning disable CS0612, CS0618
-partial class Test_VariantTest
+public partial class Test_VariantTest
 {
-    public static int Main()
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static int TestEntryPoint()
     {
         bool builtInComDisabled=false;
         var comConfig = AppContext.GetData("System.Runtime.InteropServices.BuiltInComInterop.IsSupported");

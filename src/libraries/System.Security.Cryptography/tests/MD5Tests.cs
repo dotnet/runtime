@@ -17,10 +17,8 @@ namespace System.Security.Cryptography.Tests
             public static int HashSizeInBytes => MD5.HashSizeInBytes;
         }
 
-        protected override HashAlgorithm Create()
-        {
-            return MD5.Create();
-        }
+        protected override HashAlgorithm Create() => MD5.Create();
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.MD5;
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {

@@ -100,8 +100,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		private class DerivedWithoutRequires : ClassWithRequires
 		{
 			// This method contains implicit call to ClassWithRequires.ctor()
-			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public DerivedWithoutRequires () { }
 
 			public static void StaticMethodInInheritedClass () { }
@@ -309,8 +309,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public class DerivedNestedClass : ClassWithRequires
 			{
 				// This method contains implicit call to ClassWithRequires.ctor()
-				[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-				[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2026")]
+				[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public DerivedNestedClass () { }
 
 				public static void NestedStaticMethod () { }
@@ -494,8 +494,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// These should not be reported https://github.com/mono/linker/issues/2218
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			public static event EventHandler Event;
 		}
@@ -613,8 +611,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor.DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires")]
 			class DerivedWithoutRequires : BaseWithRequires
 			{
-				[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // The body has direct call to the base.ctor()
-				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2026", "--BaseWithRequires--")] // The body has direct call to the base.ctor()
+				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public DerivedWithoutRequires () { }
 			}
 
@@ -811,8 +809,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int NonGenericField;
 			}
 
-			// https://github.com/dotnet/runtime/issues/86633 - analyzer doesn't report this warning
-			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
 			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
 			static void TestDAMAccessOnOpenGeneric ()
 			{
@@ -851,10 +848,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// These should be reported only in TestDirectReflectionAccess
 				// https://github.com/mono/linker/issues/2218
 				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				public static event EventHandler StaticEvent;
 			}
@@ -1181,7 +1174,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2091")]
 				public class ClassWithWarning : RequiresAll<T>
 				{
-					[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2091")]
 					public ClassWithWarning ()
 					{
 					}

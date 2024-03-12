@@ -9,23 +9,35 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public static class PropertyTests
     {
-        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
-        [InlineData("ECDH_P256", 256)]
-        [InlineData("ECDH_P384", 384)]
-        [InlineData("ECDSA_P256", 256)]
-        [InlineData("ECDSA_P384", 384)]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
+        [InlineData("ECDH_P256")]
+        [InlineData("ECDSA_P256")]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
-        public static void CreatePersisted_PlatformEccKeyHasKeySize(string algorithm, int expectedKeySize)
+        public static void CreatePersisted_PlatformEccKeyHasKeySize_P256(string algorithm)
         {
             CngAlgorithm cngAlgorithm = new CngAlgorithm(algorithm);
 
             using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(cngAlgorithm))
             {
-                Assert.Equal(expectedKeySize, platformKey.Key.KeySize);
+                Assert.Equal(256, platformKey.Key.KeySize);
             }
         }
 
-        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP384))]
+        [InlineData("ECDH_P384")]
+        [InlineData("ECDSA_P384")]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void CreatePersisted_PlatformEccKeyHasKeySize_P384(string algorithm)
+        {
+            CngAlgorithm cngAlgorithm = new CngAlgorithm(algorithm);
+
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(cngAlgorithm))
+            {
+                Assert.Equal(384, platformKey.Key.KeySize);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
         [InlineData(1024)]
         [InlineData(2048)]
         [OuterLoop("Hardware backed key generation takes several seconds.")]

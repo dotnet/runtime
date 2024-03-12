@@ -10,7 +10,7 @@ namespace System.Net.Sockets
     {
         public static IPAddress GetIPAddress(ReadOnlySpan<byte> socketAddressBuffer)
         {
-            AddressFamily  family = SocketAddressPal.GetAddressFamily(socketAddressBuffer);
+            AddressFamily family = SocketAddressPal.GetAddressFamily(socketAddressBuffer);
 
             if (family == AddressFamily.InterNetworkV6)
             {
@@ -50,7 +50,7 @@ namespace System.Net.Sockets
 
         public static IPEndPoint CreateIPEndPoint(ReadOnlySpan<byte> socketAddressBuffer)
         {
-           return new IPEndPoint(GetIPAddress(socketAddressBuffer), SocketAddressPal.GetPort(socketAddressBuffer));
+            return new IPEndPoint(GetIPAddress(socketAddressBuffer), SocketAddressPal.GetPort(socketAddressBuffer));
         }
 
         // suggestion from https://github.com/dotnet/runtime/issues/78993

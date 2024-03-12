@@ -22,6 +22,10 @@ if(HOST_SOLARIS)
   set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2")
 endif()
 
+if(HOST_HAIKU)
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_REENTRANT -D_GNU_SOURCE -D_BSD_SOURCE -D_POSIX_PTHREAD_SEMANTICS")
+endif()
+
 if(HOST_WASI)
   set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
 endif()
@@ -64,44 +68,33 @@ function(ac_check_type type suffix includes)
   set(CMAKE_EXTRA_INCLUDE_FILES)
 endfunction()
 
+if (NOT HOST_WIN32)
 ac_check_headers (
-  sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h
+  sys/types.h sys/stat.h sys/sockio.h sys/un.h sys/syscall.h sys/uio.h sys/param.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/poll.h sys/wait.h sys/resource.h
-  sys/ioctl.h sys/errno.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
-  strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h alloca.h ucontext.h pwd.h elf.h
+  sys/ioctl.h sys/errno.h sys/mman.h sys/mount.h sys/time.h sys/random.h
+  strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h semaphore.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h
   android/legacy_signal_inlines.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
   /usr/include/malloc.h)
 
 ac_check_funcs (
-  sigaction kill clock_nanosleep backtrace_symbols mkstemp mmap
-  getrusage dladdr sysconf getrlimit prctl nl_langinfo
-  sched_getaffinity sched_setaffinity chmod lstat getdtablesize ftruncate msync
-  getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
-  poll getfsstat mremap posix_fadvise vsnprintf statfs statvfs setpgid system
-  fork execv execve waitpid localtime_r mkdtemp getrandom getentropy execvp strlcpy stpcpy strtok_r rewinddir
-  vasprintf strndup getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
-  gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
-  access inet_ntop Qp2getifaddrs getpid mktemp)
+  sigaction clock_nanosleep backtrace_symbols mkstemp mmap
+  dladdr sysconf getrlimit prctl
+  sched_getaffinity sched_setaffinity lstat ftruncate
+  openlog closelog atexit popen strerror_r
+  poll mremap vsnprintf setpgid system
+  fork localtime_r mkdtemp getrandom getentropy execvp strlcpy strtok_r
+  vasprintf strndup getaddrinfo mach_absolute_time
+  gethrtime read_real_time gethostbyname gethostbyname2
+  getpid mktemp)
 
 if (HOST_LINUX OR HOST_BROWSER OR HOST_WASI)
   # sysctl is deprecated on Linux and doesn't work on Browser
   set(HAVE_SYS_SYSCTL_H 0)
 else ()
   check_include_files("sys/types.h;sys/sysctl.h" HAVE_SYS_SYSCTL_H)
-endif()
-
-if (HOST_WASI)
-  # sysctl is deprecated on Linux and doesn't work on WASI
-  set(HAVE_GETRUSAGE 0)
-endif()
-
-check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
-
-if(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
-  # getentropy isn't allowed in the AppStore: https://github.com/rust-lang/rust/issues/102643
-  set(HAVE_GETENTROPY 0)
 endif()
 
 if(NOT DISABLE_THREADS)
@@ -127,7 +120,6 @@ check_symbol_exists(pthread_jit_write_protect_np "pthread.h" HAVE_PTHREAD_JIT_WR
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
-ac_check_type("struct timeval" timeval "sys/time.h;sys/types.h;utime.h")
 ac_check_type("socklen_t" socklen_t "sys/types.h;sys/socket.h")
 ac_check_type("struct ip_mreqn" ip_mreqn "netinet/in.h")
 ac_check_type("struct ip_mreq" ip_mreq "netinet/in.h")
@@ -135,18 +127,10 @@ ac_check_type("clockid_t" clockid_t "sys/types.h")
 
 check_struct_has_member("struct sockaddr_in" sin_len "netinet/in.h" HAVE_SOCKADDR_IN_SIN_LEN)
 check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKADDR_IN6_SIN_LEN)
-check_struct_has_member("struct stat" st_atim "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIM)
-check_struct_has_member("struct stat" st_atimespec "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIMESPEC)
 
 if (HOST_DARWIN)
   check_struct_has_member("struct objc_super" super_class "objc/runtime.h;objc/message.h" HAVE_OBJC_SUPER_SUPER_CLASS)
 endif()
-
-check_type_size("int" SIZEOF_INT)
-check_type_size("void*" SIZEOF_VOID_P)
-check_type_size("long" SIZEOF_LONG)
-check_type_size("long long" SIZEOF_LONG_LONG)
-check_type_size("size_t" SIZEOF_SIZE_T)
 
 if (HOST_LINUX)
   set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
@@ -234,37 +218,52 @@ if (TARGET_RISCV32 OR TARGET_RISCV64)
         set(RISCV_FPABI_DOUBLE 1)
     endif()
 endif()
+endif()
+
+check_type_size("int" SIZEOF_INT)
+check_type_size("void*" SIZEOF_VOID_P)
+check_type_size("long" SIZEOF_LONG)
+check_type_size("long long" SIZEOF_LONG_LONG)
+check_type_size("size_t" SIZEOF_SIZE_T)
+
+#
+# Override checks
+#
 
 if(HOST_WIN32)
-  # checking for this doesn't work for some reason, hardcode result
-  set(HAVE_WINTERNL_H 1)
-  set(HAVE_CRYPT_RNG 1)
+  # Dynamic lookup using ac_check_headers/ac_check_functions is extremly slow on Windows, espacially on msbuild.
+  # Since majority of the checks above will fail on Windows host, we can just directly define the available static
+  # API surface.
+  set(HAVE_ATEXIT 1)
   set(HAVE_GETADDRINFO 1)
-  set(HAVE_GETNAMEINFO 1)
-  set(HAVE_GETPROTOBYNAME 1)
-  set(HAVE_INET_NTOP 1)
-  set(HAVE_INET_PTON 1)
-  set(HAVE_STRUCT_SOCKADDR_IN6 1)
+  set(HAVE_GETPEERNAME 1)
+  set(HAVE_GETHOSTBYNAME 1)
+  set(HAVE_SETJMP_H 1)
+  set(HAVE_SIGNAL_H 1)
+  set(HAVE_STDINT_H 1)
   set(HAVE_STRTOK_R 1)
-  set(HAVE_EXECVP 0)
-elseif(HOST_IOS OR HOST_TVOS)
+  set(HAVE_STRUCT_SOCKADDR_IN6 1)
+  set(HAVE_SYS_STAT_H 1)
+  set(HAVE_SYS_TYPES_H 1)
+  set(HAVE_SYS_UTIME_H 1)
+  set(HAVE_SYSTEM 1)
+  set(HAVE_WCHAR_H 1)
+  set(HAVE_WINTERNL_H 1)
+elseif(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   set(HAVE_SYSTEM 0)
-  set(HAVE_SYS_USER_H 0)
+  # getentropy isn't allowed in the AppStore: https://github.com/rust-lang/rust/issues/102643
+  set(HAVE_GETENTROPY 0)
   if(HOST_TVOS)
     set(HAVE_PTHREAD_KILL 0)
-    set(HAVE_KILL 0)
     set(HAVE_SIGACTION 0)
     set(HAVE_FORK 0)
-    set(HAVE_EXECV 0)
-    set(HAVE_EXECVE 0)
     set(HAVE_EXECVP 0)
   endif()
-elseif(HOST_MACCAT)
-  set(HAVE_SYSTEM 0)
 elseif(HOST_BROWSER)
   set(HAVE_FORK 0)
+  # wasm does have strtok_r even though cmake fails to find it
+  set(HAVE_STRTOK_R 1)
 elseif(HOST_SOLARIS)
-  set(HAVE_GETPROTOBYNAME 1)
   set(HAVE_NETINET_TCP_H 1)
   set(HAVE_GETADDRINFO 1)
 elseif(HOST_WASI)
@@ -276,10 +275,10 @@ elseif(HOST_WASI)
   set(HAVE_NETINET_TCP_H 0)
   set(HAVE_ARPA_INET_H 0)
   set(HAVE_MKDTEMP 0)
-  set(HAVE_EXECVE 0)
   set(HAVE_FORK 0)
+  # wasm does have strtok_r even though cmake fails to find it
+  set(HAVE_STRTOK_R 1)
   set(HAVE_GETRLIMIT 0)
-  set(HAVE_GETDTABLESIZE 0)
   set(HAVE_MKSTEMP 0)
   set(HAVE_BACKTRACE_SYMBOLS 0)
   set(HAVE_GETPID 0)
@@ -288,16 +287,9 @@ elseif(HOST_WASI)
   set(HAVE_READ_REAL_TIME 0)
   set(HAVE_SCHED_GETAFFINITY 0)
   set(HAVE_SCHED_SETAFFINITY 0)
-  set(HAVE_GETIFADDRS 0)
   set(HAVE_GETADDRINFO 0)
   set(HAVE_GETHOSTBYNAME 0)
   set(HAVE_GETHOSTBYNAME2 0)
-  set(HAVE_GETPROTOBYNAME 0)
-  set(HAVE_GETNAMEINFO 0)
-  set(HAVE_INET_NTOP 0)
-  set(HAVE_SYS_ICU 0)
   set(HAVE_EXECVP 0)
   set(HAVE_MMAP 1)
-  set(DISABLE_PROFILER 1)
-  set(ENABLE_INTERP_LIB 1)
 endif()

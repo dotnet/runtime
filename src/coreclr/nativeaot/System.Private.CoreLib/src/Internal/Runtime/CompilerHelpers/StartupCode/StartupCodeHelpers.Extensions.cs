@@ -11,7 +11,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    public partial class StartupCodeHelpers
+    internal partial class StartupCodeHelpers
     {
         /// <summary>
         /// Return the registered logical modules; optionally copy them into an array.

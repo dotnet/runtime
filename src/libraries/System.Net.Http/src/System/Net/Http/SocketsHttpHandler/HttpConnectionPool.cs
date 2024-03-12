@@ -655,6 +655,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Discarding downgraded HTTP/1.1 connection because HTTP/1.1 connection limit is exceeded");
                 stream.Dispose();
+                return;
             }
 
             HttpConnection http11Connection;
@@ -937,14 +938,12 @@ namespace System.Net.Http
                     throw;
                 }
 
-                //TODO: NegotiatedApplicationProtocol not yet implemented.
-#if false
                 if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                 {
                     BlocklistAuthority(authority);
-                    throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                 }
-#endif
+
                 // if the authority was sent as an option through alt-svc then include alt-used header
                 http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
