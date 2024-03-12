@@ -248,23 +248,6 @@ namespace Internal.JitInterface
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                // Are we inlining a method that requires a runtime lookup?
-                if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
-                {
-                    // REPRO: if it's not the problematic method - give up.
-                    if (MethodBeingCompiled.GetDisplayName() != "System.Buffers.SharedArrayPool`1<__Canon>.Rent(Int32)" ||
-                        pResolvedToken.tokenType != CorInfoTokenKind.CORINFO_TOKENKIND_Method)
-                    {
-                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
-                        return;
-                    }
-
-                    Console.WriteLine("Root method: " + MethodBeingCompiled);
-                    Console.WriteLine("Inlinee with a runtime lookup: " + callerHandle);
-                    Console.WriteLine("Context kind: " + (CorInfoContextFlags)((nuint)pResolvedToken.tokenContext & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
-                    Console.WriteLine("Token type: " + pResolvedToken.tokenType);
-                    Console.WriteLine("-----");
-                }
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
 
                 if (genericLookup.UseHelper)
