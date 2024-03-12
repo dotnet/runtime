@@ -5857,7 +5857,7 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
 // true if this 'imm' can be encoded as a input operand to an add instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_add(INT64 imm, emitAttr size)
 {
-    if (unsigned_abs(imm) <= 0x0fff)
+    if (unsigned_abs(imm) <= 0x0fffULL)
         return true;
     else if (canEncodeWithShiftImmBy12(imm)) // Try the shifted by 12 encoding
         return true;
@@ -7889,7 +7889,7 @@ void emitter::emitIns_R_I(instruction ins,
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg));
 
-            if (unsigned_abs(imm) <= 0x0fff)
+            if (unsigned_abs(imm) <= 0x0fffULL)
             {
                 if (imm < 0)
                 {
@@ -10533,7 +10533,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             reg2 = encodingSPtoZR(reg2);
         }
 
-        if (unsigned_abs(imm) <= 0x0fff)
+        if (unsigned_abs(imm) <= 0x0fffULL)
         {
             if (imm < 0)
             {
