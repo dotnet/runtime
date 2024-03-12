@@ -252,7 +252,8 @@ namespace Internal.JitInterface
                 if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
                 {
                     // REPRO: if it's not the problematic method - give up.
-                    if (MethodBeingCompiled.GetDisplayName() != "System.Buffers.SharedArrayPool`1<__Canon>.Rent(Int32)")
+                    if (MethodBeingCompiled.GetDisplayName() != "System.Buffers.SharedArrayPool`1<__Canon>.Rent(Int32)" ||
+                        pResolvedToken.tokenType != CorInfoTokenKind.CORINFO_TOKENKIND_Method)
                     {
                         lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                         return;
