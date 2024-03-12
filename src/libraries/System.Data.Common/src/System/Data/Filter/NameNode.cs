@@ -160,6 +160,24 @@ namespace System.Data
             return this;
         }
 
+        internal int? CompareValueTo(DataRow? row, DataRowVersion version, object? value)
+        {
+            if (!_found)
+            {
+                throw ExprException.UnboundName(_name);
+            }
+
+            if (row == null)
+            {
+                if (IsTableConstant())
+                    return null; // this column is TableConstant Aggregate Function and we cannot compare directly
+
+                throw ExprException.UnboundName(_name);
+            }
+
+            return _column!.CompareValueTo(row.GetRecordFromVersion(version), value);
+        }
+
         /// <summary>
         ///     Parses given name and checks it validity
         /// </summary>
