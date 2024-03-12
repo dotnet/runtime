@@ -1558,10 +1558,11 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // Always use generic context from the callsite if we're inlining and it's available.
     if (compIsForInlining() && (impInlineInfo->inlInstParamArgInfo != nullptr))
     {
+        // Create a dummy lclInfo node, we know that nobody's going to do stloc or take address
+        // of the generic context, so we don't need to scan IL for it.
         InlLclVarInfo lclInfo = {};
         lclInfo.lclTypeInfo   = TYP_I_IMPL;
-
-        ctxTree = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
+        ctxTree               = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
         assert(ctxTree != nullptr);
         assert(ctxTree->TypeIs(TYP_I_IMPL));
         // We don't need to worry about GTF_VAR_CONTEXT here, it should be set on the callsite anyway.
@@ -1668,6 +1669,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* slotPtrTree = ctxTree;
     GenTree* indOffTree  = nullptr;
 
+    // TODO-CQ: consider relaxing where it's safe to do so
     const bool ctxTreeIsInvariant = !compIsForInlining();
 
     // Applied repeated indirections
@@ -12807,13 +12809,13 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 continue;
             case WellKnownArg::InstParam:
             {
-                InlArgInfo* ctxInfo              = new (this, CMK_Inlining) InlArgInfo{};
-                ctxInfo->arg                     = &arg;
-                ctxInfo->argIsInvariant          = true;
-                ctxInfo->argIsLclVar             = arg.GetNode()->OperIs(GT_LCL_VAR);
-                pInlineInfo->inlInstParamArgInfo = ctxInfo;
+                InlArgInfo* ctxInfo     = new (this, CMK_Inlining) InlArgInfo{};
+                ctxInfo->arg            = &arg;
+                ctxInfo->argTmpNum      = BAD_VAR_NUM;
+                ctxInfo->argIsLclVar    = arg.GetNode()->OperIs(GT_LCL_VAR);
+                ctxInfo->argIsInvariant = arg.GetNode()->IsInvariant(); // TODO-CQ: consider other trivial cases
 
-                // This one does not appear in the table of inline arg info too.
+                pInlineInfo->inlInstParamArgInfo = ctxInfo;
                 continue;
             }
             default:
