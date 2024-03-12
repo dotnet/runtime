@@ -252,6 +252,17 @@ namespace Internal.JitInterface
 
                 if (genericLookup.UseHelper)
                 {
+                    // If this is from a different context and we need a ReadyToRun helper, abort.
+                    // The ReadyToRun helpers need to be able to declare the dependencies and we can't
+                    // currently do it for an inline. This is not a big issue because ReadyToRun helpers
+                    // in optimized code only happen in special build configurations (such as
+                    // `-O --noscan` or multimodule build).
+                    if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                    {
+                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                        return;
+                    }
+
                     lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
                     lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
                     lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
