@@ -1421,8 +1421,8 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 		return NULL;
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 	int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 	MonoInst *pairwise_multiply = emit_simd_ins (cfg, klass, OP_XBINOP, sreg1, sreg2);
 	pairwise_multiply->inst_c0 = instc0;
 	pairwise_multiply->inst_c1 = arg0_type;
