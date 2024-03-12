@@ -6,6 +6,8 @@
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <EnableTrimAnalyzer Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">false</EnableTrimAnalyzer>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides Classes that allow you to decouple code logging rich (unserializable) diagnostics/telemetry (e.g. framework) from code that consumes it (e.g. tools)
 
 Commonly Used Types:
