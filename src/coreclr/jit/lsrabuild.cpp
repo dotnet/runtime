@@ -3211,23 +3211,25 @@ void LinearScan::BuildKills(GenTree* tree, AllRegsMask killMask)
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildDefWithKills(GenTree* tree, regMaskGpr dstCandidates, AllRegsMask killMask)
+void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask)
 {
+    assert(compiler->IsOnlyOneRegMask(dstCandidates));
+
     // Build the kill RefPositions
     BuildKills(tree, killMask);
 
 #ifdef TARGET_64BIT
     // For 64 bits,
-    assert((int)genCountBits(dstCandidates) <= 1);
+    assert(dstCount == 1);
     BuildDef(tree, dstCandidates);
 #else
-    if ((int)genCountBits(dstCandidates) <= 1)
+    if (dstCount == 1)
     {
         BuildDef(tree, dstCandidates);
     }
     else
     {
-        assert((int)genCountBits(dstCandidates) == 2);
+        assert(dstCount == 2);
         BuildDefs(tree, 2, dstCandidates);
     }
 #endif // TARGET_64BIT

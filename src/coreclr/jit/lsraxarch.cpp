@@ -1383,7 +1383,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         else
         {
             assert(dstCount == 1);
-            BuildDefWithKills(call, dstCandidates, killMask);
+            BuildDefWithKills(call, dstCount, dstCandidates, killMask);
         }
     }
     else
@@ -1975,7 +1975,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     buildInternalRegisterUses();
 
     AllRegsMask killMask(getKillSetForModDiv(tree->AsOp()), RBM_NONE);
-    BuildDefWithKills(tree, dstCandidates, killMask);
+    BuildDefWithKills(tree, 1, dstCandidates, killMask);
     return srcCount;
 }
 
@@ -3096,7 +3096,7 @@ int LinearScan::BuildMul(GenTree* tree)
     assert(compiler->IsGprRegMask(dstCandidates));
 
     AllRegsMask killMask(getKillSetForMul(tree->AsOp()), RBM_NONE);
-    BuildDefWithKills(tree, dstCandidates, killMask);
+    BuildDefWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;
 }
 

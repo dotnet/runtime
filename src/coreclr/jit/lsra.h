@@ -2128,7 +2128,9 @@ private:
 #ifdef TARGET_ARMARCH
     void BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
 #else
-    void BuildDefWithKills(GenTree* tree, regMaskGpr dstCandidates, AllRegsMask killMask);
+    void BuildDefWithKills(GenTree*                   tree,
+                           int dstCount, regMaskOnlyOne dstCandidates,
+                           AllRegsMask killMask);
 #endif
     void BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
 
