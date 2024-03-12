@@ -5,7 +5,7 @@
     <!-- Reference the outputs for the dependency nodes calculation. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>8</ServicingVersion>
     <!-- This is a meta package and doesn't contain any libs. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>

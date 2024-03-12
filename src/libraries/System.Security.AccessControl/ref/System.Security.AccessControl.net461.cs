@@ -50,3 +50,5 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(System.Security.AccessControl.ResourceType))]
 [assembly: TypeForwardedTo(typeof(System.Security.AccessControl.SecurityInfos))]
 [assembly: TypeForwardedTo(typeof(System.Security.AccessControl.SystemAcl))]
+[assembly: TypeForwardedTo(typeof(System.Security.Policy.Evidence))]
+[assembly: TypeForwardedTo(typeof(System.Security.Policy.EvidenceBase))]
