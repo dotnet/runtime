@@ -52,10 +52,16 @@ namespace ILCompiler
                     // to the same alignment as __m128, which is supported by the ABI.
                     alignment = new LayoutInt(8);
                 }
-                else if (defType.Context.Target.Architecture == TargetArchitecture.ARM64 || defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                else if (defType.Context.Target.Architecture == TargetArchitecture.ARM64)
                 {
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                {
+                    // The alignment requirement for the fixed length vector shall be equivalent to
+                    // the alignment requirement of its elemental type.
                     alignment = new LayoutInt(16);
                 }
                 else
@@ -73,10 +79,16 @@ namespace ILCompiler
                     // to the same alignment as __m128, which is supported by the ABI.
                     alignment = new LayoutInt(8);
                 }
-                else if (defType.Context.Target.Architecture == TargetArchitecture.ARM64 || defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                else if (defType.Context.Target.Architecture == TargetArchitecture.ARM64)
                 {
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                {
+                    // The alignment requirement for the fixed length vector shall be equivalent to
+                    // the alignment requirement of its elemental type.
                     alignment = new LayoutInt(16);
                 }
                 else
