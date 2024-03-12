@@ -100,7 +100,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
-    GenTree* swiftErrorArg = nullptr;
+    CallArg* swiftErrorArg = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -1837,7 +1837,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 /*****************************************************************************/
 
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorArg)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
@@ -1943,7 +1943,17 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 }
 
 #ifdef SWIFT_SUPPORT
-void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorArg)
+
+//------------------------------------------------------------------------
+// impPopArgsForSwiftCall: Pop arguments from IL stack to a Swift pinvoke node.
+//
+// Arguments:
+//    call - The Swift call
+//    sig  - The signature of the call site
+//    swiftErrorArg - [out] An argument that represents the SwiftError*
+//                    argument, or nullptr if the call has no such argument.
+//
+void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg)
 {
     JITDUMP("Creating args for Swift call [%06u]\n", dspTreeID(call));
 
@@ -2073,11 +2083,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     DISPTREE(call);
     JITDUMP("\n");
 
-    CallArg* swiftErrorCallArg = nullptr;
     if (swiftErrorIndex != sig->numArgs)
     {
-        swiftErrorCallArg = call->gtArgs.GetArgByIndex(swiftErrorIndex);
-        *swiftErrorArg    = swiftErrorCallArg->GetNode();
+        *swiftErrorArg = call->gtArgs.GetArgByIndex(swiftErrorIndex);
     }
 
     // Now expand struct args that must be lowered into primitives
@@ -2088,6 +2096,11 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         {
             arg = arg->GetNext();
             continue;
+        }
+
+        if (varTypeIsSIMD(arg->GetSignatureType()))
+        {
+            IMPL_LIMITATION("SIMD types are currently not supported in Swift calls");
         }
 
         JITDUMP("  Argument %u is a struct [%06u]\n", argIndex, dspTreeID(arg->GetNode()));
@@ -2127,6 +2140,14 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     unsigned  offset      = lowering->offsets[i];
 
                     GenTree* loweredNode = nullptr;
+
+                    // It's possible for the lowering to require us to pass the
+                    // tail of the sequence as a 64-bit value, even if the tail
+                    // of the struct is smaller than 8 bytes. In that case we
+                    // reconstruct the value using bitwise operations.
+                    // Alternatively we could create IND(LCL_ADDR), assuming
+                    // that the upper bits are undefined. This would result in
+                    // address exposure instead.
                     unsigned sizeToRead = min(structVal->GetLayout(this)->GetSize() - offset, genTypeSize(loweredType));
                     assert(sizeToRead > 0);
 
@@ -2195,11 +2216,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         arg = insertAfter->GetNext();
     }
 
-    if (swiftErrorCallArg != nullptr)
-    {
-        call->gtArgs.Remove(swiftErrorCallArg);
-    }
-
     JITDUMP("Final result after Swift call lowering:\n");
     DISPTREE(call);
     JITDUMP("\n");
@@ -2213,7 +2229,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 //    call - the Swift call
 //    swiftErrorArg - the SwiftError* argument passed to call
 //
-void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, GenTree* const swiftErrorArg)
+void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
 {
     assert(call != nullptr);
     assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
@@ -2224,8 +2240,19 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, GenTree* const swiftE
     errorRegNode->SetHasOrderingSideEffect();
     errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
 
-    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(swiftErrorArg->TypeGet(), swiftErrorArg, errorRegNode);
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
     impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
+
+    // Before calling a Swift method that may throw, the error register must be cleared for the error check to work.
+    // By adding a well-known "sentinel" argument that uses the error register,
+    // the JIT will emit code for clearing the error register before the call, and will mark the error register as busy
+    // so that it isn't used to hold the function call's address.
+    GenTree* errorSentinelValueNode = gtNewIconNode(0);
+    call->gtArgs.InsertAfter(this, swiftErrorArg,
+                             NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
+
+    // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
+    call->gtArgs.Remove(swiftErrorArg);
 }
 #endif // SWIFT_SUPPORT
 
