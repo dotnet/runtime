@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Logging.Console
                 }
 #if NETCOREAPP
                 var messageBytes = output.WrittenMemory.Span;
-                var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetCharCount(messageBytes));
+                var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(messageBytes.Length));
                 try
                 {
                     var charsWritten = Encoding.UTF8.GetChars(messageBytes, logMessageBuffer);
