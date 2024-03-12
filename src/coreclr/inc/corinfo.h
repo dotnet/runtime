@@ -796,14 +796,6 @@ inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)
     return callConv == CorInfoCallConvExtension::Thiscall || callConv == CorInfoCallConvExtension::CMemberFunction || callConv == CorInfoCallConvExtension::StdcallMemberFunction || callConv == CorInfoCallConvExtension::FastcallMemberFunction;
 }
 
-struct CORINFO_SWIFT_LOWERING
-{
-    bool byReference;
-    CorInfoType loweredElements[4];
-    uint32_t offsets[4];
-    size_t numLoweredElements;
-};
-
 // These are returned from getMethodOptions
 enum CorInfoOptions
 {
