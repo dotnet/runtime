@@ -353,7 +353,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
 
-        <PropertyGroup>
+    <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
     </PropertyGroup>
 
@@ -446,9 +446,22 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebCilPath)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssets" />
+      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebCil>
+
+    <!-- _NewWebCilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
+         Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
+    -->
+    <ItemGroup>    
+      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata 
+        Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
+        RemoveMetadata="Integrity;Fingerprint" />
+    </ItemGroup>
+
+    <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata)">
+      <Output TaskParameter="Assets" ItemName="_NewWebCilPublishStaticWebAssets" />
+    </DefineStaticWebAssets>
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
