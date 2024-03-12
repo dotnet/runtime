@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 using Xunit.Sdk;
 
@@ -349,6 +351,9 @@ namespace System.Numerics.Tensors.Tests
         #region Span -> Destination
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
+            // The current trigonometric algorithm depends on hardware FMA support for best precision.
+            T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f);
+
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
             yield return Create(TensorPrimitives.Acos, T.Acos);
@@ -361,11 +366,11 @@ namespace System.Numerics.Tensors.Tests
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Cbrt, T.Cbrt, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13));
             yield return Create(TensorPrimitives.Ceiling, T.Ceiling);
-            yield return Create(TensorPrimitives.Cos, T.Cos);
+            yield return Create(TensorPrimitives.Cos, T.Cos, trigTolerance);
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Cosh, T.Cosh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.CosPi, T.CosPi, Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
+            yield return Create(TensorPrimitives.CosPi, T.CosPi, trigTolerance ?? Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.DegreesToRadians, T.DegreesToRadians);
             yield return Create(TensorPrimitives.Exp, T.Exp);
             // TODO https://github.com/dotnet/runtime/issues/98861
@@ -391,13 +396,13 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.ReciprocalSqrt, f => T.One / T.Sqrt(f));
             yield return Create(TensorPrimitives.ReciprocalSqrtEstimate, T.ReciprocalSqrtEstimate, T.CreateTruncating(Helpers.DefaultToleranceForEstimates));
             yield return Create(TensorPrimitives.Round, T.Round);
-            yield return Create(TensorPrimitives.Sin, T.Sin);
+            yield return Create(TensorPrimitives.Sin, T.Sin, trigTolerance);
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Sinh, T.Sinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));
             // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.SinPi, T.SinPi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f));
             yield return Create(TensorPrimitives.Sqrt, T.Sqrt);
-            yield return Create(TensorPrimitives.Tan, T.Tan);
+            yield return Create(TensorPrimitives.Tan, T.Tan, trigTolerance);
             yield return Create(TensorPrimitives.Tanh, T.Tanh);
             yield return Create(TensorPrimitives.TanPi, T.TanPi);
             yield return Create(TensorPrimitives.Truncate, T.Truncate);
@@ -2063,6 +2068,7 @@ namespace System.Numerics.Tensors.Tests
     public unsafe abstract class GenericNumberTensorPrimitivesTests<T> : TensorPrimitivesTests<T>
         where T : unmanaged, INumber<T>, IMinMaxValue<T>
     {
+        protected static bool IsFmaSupported => Fma.IsSupported || AdvSimd.Arm64.IsSupported || (AdvSimd.IsSupported && typeof(T) == typeof(float));
         protected override void Abs(ReadOnlySpan<T> x, Span<T> destination) => TensorPrimitives.Abs(x, destination);
         protected override T Abs(T x) => T.Abs(x);
         protected override void Add(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination) => TensorPrimitives.Add(x, y, destination);
