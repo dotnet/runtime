@@ -2630,8 +2630,8 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
 {
     CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
