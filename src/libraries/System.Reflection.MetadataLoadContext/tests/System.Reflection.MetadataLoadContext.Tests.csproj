@@ -91,9 +91,6 @@
     <WasmFilesToIncludeFromPublishDir Include="System.Reflection.MetadataLoadContext.Tests.dll" />
     <WasmFilesToIncludeFromPublishDir Include="mscorlib.dll" />
 
-    <TrimmerRootAssembly Include="System.Private.CoreLib" />
-    <TrimmerRootAssembly Include="mscorlib" />
-
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 

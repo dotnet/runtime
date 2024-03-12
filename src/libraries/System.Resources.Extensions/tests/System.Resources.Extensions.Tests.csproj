@@ -15,10 +15,6 @@
     <Compile Include="TypeNameComparerTests.cs" />
     <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" LogicalName="$(RootNamespace).%(FileName)%(Extension)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
-    <TrimmerRootAssembly Include="System.Drawing" />
-    <TrimmerRootAssembly Include="System.Resources.Extensions" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <ProjectReference Include="..\src\System.Resources.Extensions.csproj" />
@@ -29,6 +25,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
   <!-- Use the following target to regenerate the test resources file.

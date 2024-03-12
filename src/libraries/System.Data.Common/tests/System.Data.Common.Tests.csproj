@@ -124,6 +124,6 @@
     <PackageReference Include="System.Data.Common.TestData" Version="$(SystemDataCommonTestDataVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
 
-    <TrimmerRootAssembly Include="System.Data" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

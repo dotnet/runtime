@@ -305,14 +305,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
-    <TrimmerRootAssembly Include="System" />
-    <TrimmerRootAssembly Include="System.Private.CoreLib" />
-    <TrimmerRootAssembly Include="System.Reflection" />
-    <TrimmerRootAssembly Include="System.Collections" />
-    <TrimmerRootAssembly Include="System.Runtime.Serialization" />
-    <TrimmerRootAssembly Include="System.Runtime.Serialization.Json" />
-    <TrimmerRootAssembly Include="System.Text.Json" />
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
 </Project>
