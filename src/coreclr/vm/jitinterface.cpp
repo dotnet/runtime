@@ -4662,8 +4662,8 @@ bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-// Returns true if a class handle represents a generic type.
-bool CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
+// Returns whether a class handle represents a generic type, if that can be statically determined.
+TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         THROWS;
@@ -4671,11 +4671,16 @@ bool CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool result = false;
+    TypeHandle typeHandle = TypeHandle();
 
-    JIT_TO_EE_TRANSITION();
+    TypeCompareState result = TypeCompareState::May;
 
-    result = TypeHandle(cls).HasInstantiation();
+    JIT_TO_EE_TRANSITION();    
+
+    if (!typeHandle.IsCanonicalSubtype())
+    {
+        result = typeHandle.HasInstantiation() ? TypeCompareState::Must : TypeCompareState::MustNot;
+    }
 
     EE_TO_JIT_TRANSITION();
     return result;

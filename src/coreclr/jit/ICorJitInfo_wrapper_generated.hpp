@@ -804,11 +804,11 @@ bool WrapICorJitInfo::isExactType(
     return temp;
 }
 
-bool WrapICorJitInfo::isGenericType(
+TypeCompareState WrapICorJitInfo::isGenericType(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(isGenericType);
-    bool temp = wrapHnd->isGenericType(cls);
+    TypeCompareState temp = wrapHnd->isGenericType(cls);
     API_LEAVE(isGenericType);
     return temp;
 }

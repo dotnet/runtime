@@ -3748,9 +3748,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             }
                             break;
                         case NI_System_Type_get_IsGenericType:
-                            retNode = info.compCompHnd->isGenericType(hClass) ? gtNewTrue() : gtNewFalse();
+                        {
+                            TypeCompareState state = info.compCompHnd->isGenericType(hClass);
+                            if (state == TypeCompareState::May)
+                            {
+                                retNode = nullptr;
+                                break;
+                            }
+                            retNode = state == TypeCompareState::Must ? gtNewTrue() : gtNewFalse();
                             break;
-
+                        }
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }

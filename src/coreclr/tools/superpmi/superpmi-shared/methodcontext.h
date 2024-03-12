@@ -723,9 +723,9 @@ public:
     void dmpIsExactType(DWORDLONG key, DWORD value);
     bool repIsExactType(CORINFO_CLASS_HANDLE cls);
 
-    void recIsGenericType(CORINFO_CLASS_HANDLE cls, bool result);
+    void recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
     void dmpIsGenericType(DWORDLONG key, DWORD value);
-    bool repIsGenericType(CORINFO_CLASS_HANDLE cls);
+    TypeCompareState repIsGenericType(CORINFO_CLASS_HANDLE cls);
 
     void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);

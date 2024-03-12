@@ -229,6 +229,12 @@ public partial class Program
         IsFalse(typeof(int*).IsGenericType);
         IsFalse(typeof(void*).IsGenericType);
         IsFalse(typeof(delegate*<int>).IsGenericType);
+        IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericType()));
+        IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericType()));
+        IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericType()));
+        IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericType()));
+        IsFalse(new ClassUsingIsGenericTypeOnT<RuntimeArgumentHandle>().IsGenericType()));
+        IsFalse(new ClassUsingIsGenericTypeOnT<Action>().IsGenericType()));
 
         IsTrue(typeof(GenericSimpleClass<int>).IsGenericType);
         IsTrue(typeof(GenericSimpleClass<>).IsGenericType);
@@ -252,6 +258,11 @@ public partial class Program
         IsTrue(typeof(Action<string>).IsGenericType);
         IsTrue(typeof(Func<string, int>).IsGenericType);
         IsTrue(typeof(Func<,>).IsGenericType);
+        IsTrue(new ClassUsingIsGenericTypeOnT<List<string>>().IsGenericType()));
+        IsTrue(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericType()));
+        IsTrue(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericType()));
+        IsTrue(new ClassUsingIsGenericTypeOnT<int?>().IsGenericType()));
+        IsTrue(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericType()));
     }
 
     private static int _varInt = 42;
@@ -324,6 +335,11 @@ public partial class Program
         Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
         _errors++;
     }
+}
+
+public class ClassUsingIsGenericTypeOnT<T>
+{
+    public bool IsGenericType() => typeof(T).IsGenericType;
 }
 
 public class GenericSimpleClass<T>
