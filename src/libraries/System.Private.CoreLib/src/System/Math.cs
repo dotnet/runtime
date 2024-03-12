@@ -151,8 +151,16 @@ namespace System
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
-        internal static ulong BigMul(uint a, uint b)
+        internal static unsafe ulong BigMul(uint a, uint b)
         {
+#if TARGET_32BIT
+            if (Bmi2.IsSupported)
+            {
+                uint low;
+                uint hi = Bmi2.MultiplyNoFlags(a, b, &low);
+                return ((ulong)hi << 32) | low;
+            }
+#endif
             return ((ulong)a) * b;
         }
 
