@@ -389,7 +389,8 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 void LinearScan::updateRegsFreeBusyState(RefPosition&   refPosition,
                                          regMaskOnlyOne regsBusy,
                                          AllRegsMask*   regsToFree,
-                                         AllRegsMask* delayRegsToFree, RegisterType regType DEBUG_ARG(Interval* interval)
+                                         AllRegsMask*   delayRegsToFree,
+                                         RegisterType regType DEBUG_ARG(Interval* interval)
                                              DEBUG_ARG(regNumber assignedReg))
 {
     assert(compiler->IsOnlyOneRegMask(regsBusy));
@@ -4157,7 +4158,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
         regMaskOnlyOne candidateRegs = RBM_NONE;
 
         regMaskOnlyOne allRegsMask = allRegs(interval->registerType);
-        RegisterType regType = interval->registerType;
+        RegisterType   regType     = interval->registerType;
 
         if (varTypeUsesIntReg(regType))
         {
@@ -5378,7 +5379,7 @@ void LinearScan::allocateRegistersMinimal()
                     // we will copy the entire vector value from it to the `copyReg`.
                     updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
                                             &delayRegsToFree, currentInterval->registerType DEBUG_ARG(currentInterval)
-                                                DEBUG_ARG(assignedRegister));
+                                                                  DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
                         copyRegsToFree.AddRegNumInMask(copyReg, currentInterval->registerType);
@@ -6423,9 +6424,8 @@ void LinearScan::allocateRegisters()
                             // we will copy the entire vector value from it to the `copyReg`.
 
                             updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                                    &delayRegsToFree,
-                                                    currentInterval->registerType DEBUG_ARG(currentInterval)
-                                                        DEBUG_ARG(assignedRegister));
+                                                    &delayRegsToFree, currentInterval->registerType DEBUG_ARG(
+                                                                          currentInterval) DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
                             {
                                 copyRegsToFree.AddRegNumInMask(copyReg, currentInterval->registerType);
@@ -6533,9 +6533,8 @@ void LinearScan::allocateRegisters()
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
                     updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree,
-                                            currentInterval->registerType DEBUG_ARG(currentInterval)
-                                                DEBUG_ARG(assignedRegister));
+                                            &delayRegsToFree, currentInterval->registerType DEBUG_ARG(currentInterval)
+                                                                  DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
                         copyRegsToFree.AddRegNumInMask(copyReg, currentInterval->registerType);

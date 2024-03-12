@@ -4948,9 +4948,10 @@ void CodeGen::genPushCalleeSavedRegisters()
                compiler->compCalleeRegsPushed, pushRegsCnt);
         dspRegMask(AllRegsMask(rsPushGprRegs, rsPushFloatRegs
 #ifdef HAS_PREDICATE_REGS
-                                                    ,RBM_NONE
+                               ,
+                               RBM_NONE
 #endif
-        ));
+                               ));
         printf("\n");
         assert(compiler->compCalleeRegsPushed == pushRegsCnt);
     }

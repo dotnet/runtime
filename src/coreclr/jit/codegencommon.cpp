@@ -5501,9 +5501,10 @@ void CodeGen::genFinalizeFrame()
         printf("Callee-saved registers pushed: %d ", compiler->compCalleeRegsPushed);
         dspRegMask(AllRegsMask(maskPushRegsInt, maskPushRegsFloat
 #ifdef HAS_PREDICATE_REGS
-                                                    ,maskPushRegsPredicate
+                               ,
+                               maskPushRegsPredicate
 #endif
-        ));
+                               ));
         printf("\n");
     }
 #endif // DEBUG

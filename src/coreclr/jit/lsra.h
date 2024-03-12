@@ -1944,7 +1944,7 @@ private:
                                              regMaskOnlyOne regsBusy,
                                              AllRegsMask*   regsToFree,
                                              AllRegsMask*   delayRegsToFree,
-                                             RegisterType   regType DEBUG_ARG(Interval* interval)
+                                             RegisterType regType DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
 #ifdef HAS_PREDICATE_REGS
@@ -2128,9 +2128,7 @@ private:
 #ifdef TARGET_ARMARCH
     void BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
 #else
-    void BuildDefWithKills(GenTree*                   tree,
-                           int dstCount, regMaskOnlyOne dstCandidates,
-                           AllRegsMask killMask);
+    void BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
 #endif
     void BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
 
