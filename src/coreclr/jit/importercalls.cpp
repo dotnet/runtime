@@ -1835,8 +1835,15 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     return call;
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------
+// impPopArgsForUnmanagedCall: Pop arguments from IL stack to a pinvoke call.
+//
+// Arguments:
+//    call - The unmanaged call
+//    sig  - The signature of the call site
+//    swiftErrorArg - [out] If this is a Swift call with a SwiftError* argument, then the argument is returned here.
+//                    Otherwise left at its existing value.
+//
 void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
@@ -1845,78 +1852,94 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
         impPopArgsForSwiftCall(call, sig, swiftErrorArg);
+        return;
     }
-    else
 #endif
+
+    /* Since we push the arguments in reverse order (i.e. right -> left)
+     * spill any side effects from the stack
+     *
+     * OBS: If there is only one side effect we do not need to spill it
+     *      thus we have to spill all side-effects except last one
+     */
+
+    unsigned lastLevelWithSideEffects = UINT_MAX;
+
+    unsigned argsToReverse = sig->numArgs;
+
+    // For "thiscall", the first argument goes in a register. Since its
+    // order does not need to be changed, we do not need to spill it
+
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
-        /* Since we push the arguments in reverse order (i.e. right -> left)
-         * spill any side effects from the stack
-         *
-         * OBS: If there is only one side effect we do not need to spill it
-         *      thus we have to spill all side-effects except last one
-         */
-
-        unsigned lastLevelWithSideEffects = UINT_MAX;
-
-        unsigned argsToReverse = sig->numArgs;
-
-        // For "thiscall", the first argument goes in a register. Since its
-        // order does not need to be changed, we do not need to spill it
-
-        if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
-        {
-            assert(argsToReverse != 0);
-            argsToReverse--;
-        }
+        assert(argsToReverse != 0);
+        argsToReverse--;
+    }
 
 #ifndef TARGET_X86
-        // Don't reverse args on ARM or x64 - first four args always placed in regs in order
-        argsToReverse = 0;
+    // Don't reverse args on ARM or x64 - first four args always placed in regs in order
+    argsToReverse = 0;
 #endif
 
-        for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth;
-             level++)
+    for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth;
+         level++)
+    {
+        if (verCurrentState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
         {
-            if (verCurrentState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
-            {
-                assert(lastLevelWithSideEffects == UINT_MAX);
+            assert(lastLevelWithSideEffects == UINT_MAX);
 
-                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
-                                              DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
-            }
-            else if (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
-            {
-                if (lastLevelWithSideEffects != UINT_MAX)
-                {
-                    /* We had a previous side effect - must spill it */
-                    impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(
-                                                                     "impPopArgsForUnmanagedCall - side effect"));
-
-                    /* Record the level for the current side effect in case we will spill it */
-                    lastLevelWithSideEffects = level;
-                }
-                else
-                {
-                    /* This is the first side effect encountered - record its level */
-
-                    lastLevelWithSideEffects = level;
-                }
-            }
+            impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
+                                          DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
         }
-
-        /* The argument list is now "clean" - no out-of-order side effects
-         * Pop the argument list in reverse order */
-
-        impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
-
-        if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+        else if (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
         {
-            GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
-            impBashVarAddrsToI(thisPtr);
-            assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
+            if (lastLevelWithSideEffects != UINT_MAX)
+            {
+                /* We had a previous side effect - must spill it */
+                impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(
+                                                                 "impPopArgsForUnmanagedCall - side effect"));
+
+                /* Record the level for the current side effect in case we will spill it */
+                lastLevelWithSideEffects = level;
+            }
+            else
+            {
+                /* This is the first side effect encountered - record its level */
+
+                lastLevelWithSideEffects = level;
+            }
         }
     }
 
+    /* The argument list is now "clean" - no out-of-order side effects
+     * Pop the argument list in reverse order */
+
+    impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
+
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+    {
+        GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
+        impBashVarAddrsToI(thisPtr);
+        assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
+    }
+
+    impRetypeUnmanagedCallArgs(call);
+}
+
+//------------------------------------------------------------------------
+// impRetypeUnmanagedCallArgs: Retype unmanaged call arguments from managed
+// pointers to unmanaged ones.
+//
+// Arguments:
+//    call - The call
+//
+// Remarks:
+//   This makes use of the fact that TYP_I_IMPL <-> TYP_BYREF casts are
+//   implicit in JIT IR, allowing us to change the types directly without
+//   inserting a cast node.
+//
+void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
+{
     for (CallArg& arg : call->gtArgs.Args())
     {
         GenTree* argNode = arg.GetEarlyNode();
@@ -1948,10 +1971,10 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 // impPopArgsForSwiftCall: Pop arguments from IL stack to a Swift pinvoke node.
 //
 // Arguments:
-//    call - The Swift call
-//    sig  - The signature of the call site
+//    call          - The Swift call
+//    sig           - The signature of the call site
 //    swiftErrorArg - [out] An argument that represents the SwiftError*
-//                    argument, or nullptr if the call has no such argument.
+//                    argument. Left at its existing value if no such argument exists.
 //
 void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg)
 {
@@ -2100,7 +2123,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
         if (varTypeIsSIMD(arg->GetSignatureType()))
         {
-            IMPL_LIMITATION("SIMD types are currently not supported in Swift calls");
+            IMPL_LIMITATION("SIMD types are currently unsupported in Swift calls");
         }
 
         JITDUMP("  Argument %u is a struct [%06u]\n", argIndex, dspTreeID(arg->GetNode()));
@@ -2121,8 +2144,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            // TODO-Bug: This does not handle SIMDs correctly.
-
             CORINFO_SWIFT_LOWERING* lowering = lowerings[argIndex];
 
             if (lowering == nullptr)
@@ -2219,6 +2240,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     JITDUMP("Final result after Swift call lowering:\n");
     DISPTREE(call);
     JITDUMP("\n");
+
+    impRetypeUnmanagedCallArgs(call);
 }
 
 //------------------------------------------------------------------------
@@ -2234,6 +2257,9 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     assert(call != nullptr);
     assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
     assert(swiftErrorArg != nullptr);
+
+    GenTree* const argNode = swiftErrorArg->GetNode();
+    assert(argNode != nullptr);
 
     // Store the error register value to where the SwiftError* points to
     GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
