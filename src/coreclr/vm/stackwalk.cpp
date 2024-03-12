@@ -1906,7 +1906,6 @@ ProcessFuncletsForGCReporting:
 
                                         if (g_isNewExceptionHandlingEnabled)
                                         {
-                                            // TODO: need to do this for the first funclet of the current exception handling only
                                             if (!m_fFoundFirstFunclet &&  pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet()))
                                             {
                                                 _ASSERTE(pExInfo != NULL);
@@ -1914,7 +1913,7 @@ ProcessFuncletsForGCReporting:
                                                 m_fFoundFirstFunclet = true;
                                             }
 
-                                            if (!ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
+                                            if (!ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)) && !m_movedPastFirstExInfo)
                                             {
                                                 // Initiate force reporting of references in the new managed exception handling code frames. 
                                                 // These frames are still alive when we are in a finally funclet.
@@ -2134,16 +2133,15 @@ ProcessFuncletsForGCReporting:
                                         }
                                         else 
                                         {
-                                            if (m_fFuncletNotSeen)
-                                            {
-                                                // We need to report this parent frame
-                                                //shouldSkipReporting = false;
-                                                m_crawl.fShouldParentToFuncletReportSavedSlots = true;
-                                                m_fDidFuncletReportGCReferences = true;
-                                                //m_fFuncletNotSeen = false;
-                                            }
                                             if (!m_crawl.IsFunclet())
                                             {
+                                                if (m_fFuncletNotSeen)
+                                                {
+                                                    // We need to report this parent frame
+                                                    //shouldSkipReporting = false;
+                                                    m_crawl.fShouldParentToFuncletReportSavedSlots = true;
+                                                    m_fFuncletNotSeen = false;
+                                                }
                                                 // we've reached the parent and it's not handling an exception, it's also not
                                                 // a funclet so reset our state.  note that we cannot reset the state when the
                                                 // parent is a funclet since the leaf funclet didn't report any references and

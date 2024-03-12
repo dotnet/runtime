@@ -715,7 +715,7 @@ private:
 
         if (!ResetOnlyIntermediaryState)
         {
-            m_fFuncletNotSeen = false;
+            //m_fFuncletNotSeen = false;
             m_sfFuncletParent = StackFrame();
             m_fProcessNonFilterFunclet = false;
         }
