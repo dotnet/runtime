@@ -83,12 +83,14 @@ namespace System.ComponentModel
         /// The GetDefaultEvent method returns the event descriptor for the default
         /// event on the object this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public virtual EventDescriptor? GetDefaultEvent() => _parent?.GetDefaultEvent();
 
         /// <summary>
         /// The GetDefaultProperty method returns the property descriptor for the
         /// default property on the object this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptor? GetDefaultProperty() => _parent?.GetDefaultProperty();
 
         /// <summary>
@@ -122,6 +124,7 @@ namespace System.ComponentModel
         /// returned. If no parent is provided,this will return an empty
         /// event collection.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual EventDescriptorCollection GetEvents(Attribute[]? attributes)
         {
             if (_parent != null)
@@ -139,6 +142,7 @@ namespace System.ComponentModel
         /// If no parent is provided,this will return an empty
         /// property collection.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptorCollection GetProperties()
         {
             if (_parent != null)
@@ -156,6 +160,7 @@ namespace System.ComponentModel
         /// If no parent is provided,this will return an empty
         /// property collection.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             if (_parent != null)

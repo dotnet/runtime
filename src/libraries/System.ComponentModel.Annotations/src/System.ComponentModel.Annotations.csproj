@@ -8,7 +8,6 @@
     -->
     <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <NoWarn>$(NoWarn);SA1028</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

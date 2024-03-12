@@ -19,11 +19,6 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-#pragma warning disable IL4000
-        public static bool SupportsInstanceTypeDescriptor => false;
-#pragma warning restore IL4000
-
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
