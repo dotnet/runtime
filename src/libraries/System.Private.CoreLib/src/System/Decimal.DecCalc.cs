@@ -553,13 +553,13 @@ PosRem:
                 bufNum.U2 = (uint)hi64;
                 return (uint)(hi64 >> 32);
 #else
-                ulong tmp = Math.BigMul(bufNum.U0, power);
+                ulong tmp = (ulong)bufNum.U0 * power;
                 bufNum.U0 = (uint)tmp;
                 tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U1, power);
+                tmp += (ulong)bufNum.U1 * power;
                 bufNum.U1 = (uint)tmp;
                 tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U2, power);
+                tmp += (ulong)bufNum.U2 * power;
                 bufNum.U2 = (uint)tmp;
                 return (uint)(tmp >> 32);
 #endif
@@ -571,20 +571,20 @@ PosRem:
             /// <param name="bufNum">buffer</param>
             /// <param name="power">Scale factor to multiply by</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private unsafe static void IncreaseScale(ref Buf16 bufNum, uint power)
+            private static void IncreaseScale(ref Buf16 bufNum, uint power)
             {
 #if TARGET_64BIT
                 ulong hi64 = Math.BigMul(bufNum.Low64, power, out ulong low64);
                 bufNum.Low64 = low64;
                 bufNum.High64 = Math.BigMul(bufNum.U2, power) + (nuint)hi64;
 #else
-                ulong tmp = Math.BigMul(bufNum.U0, power);
+                ulong tmp = (ulong)bufNum.U0 * power;
                 bufNum.U0 = (uint)tmp;
                 tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U1, power);
+                tmp += (ulong)bufNum.U1 * power;
                 bufNum.U1 = (uint)tmp;
                 tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U2, power);
+                tmp += (ulong)bufNum.U2 * power;
                 bufNum.High64 = tmp;
 #endif
             }
