@@ -6738,7 +6738,8 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	GArray* intervals = g_array_new(FALSE, TRUE, sizeof(struct _SwiftInterval));
 
 	// Now we'll build the intervals from the lowered_bytes array
-	for (int i = 0; i < lowered_bytes->len; ++i) {
+	int instance_size = m_class_get_instance_size(klass);
+	for (int i = 0; i < instance_size; ++i) {
         	// Don't create an interval for empty bytes
 		if (lowered_bytes[i] == SWIFT_EMPTY) {
 			continue;
