@@ -1421,10 +1421,9 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 		return NULL;
 #endif
 
-	int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
 	MonoInst *pairwise_multiply = emit_simd_ins (cfg, klass, OP_XBINOP, sreg1, sreg2);
-	pairwise_multiply->inst_c0 = instc0;
+	pairwise_multiply->inst_c0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 	pairwise_multiply->inst_c1 = arg0_type;
 	return emit_sum_vector (cfg, vector_type, arg0_type, pairwise_multiply);
 #elif defined(TARGET_AMD64)
@@ -1471,7 +1470,7 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 		instc = OP_IMUL;
 	}
 	MonoInst *pairwise_multiply = emit_simd_ins (cfg, klass, OP_XBINOP, sreg1, sreg2);
-	pairwise_multiply->inst_c0 = instc0;
+	pairwise_multiply->inst_c0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 	pairwise_multiply->inst_c1 = arg0_type;
 
 	return emit_sum_vector (cfg, vector_type, arg0_type, pairwise_multiply);
@@ -3165,10 +3164,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
 			sqrt->inst_c1 = MONO_TYPE_R4;
 			
-			MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sqrt->dreg, -1);
-			ins->inst_c0 = 0;
-			ins->inst_c1 = MONO_TYPE_R4;
-			return ins;
+			MonoInst *distance = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sqrt->dreg, -1);
+			distance->inst_c0 = 0;
+			distance->inst_c1 = MONO_TYPE_R4;
+			return distance;
 		}
 		case SN_DistanceSquared:
 			return dot;
@@ -3193,10 +3192,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
 			sqrt->inst_c1 = MONO_TYPE_R4;
 			
-			MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sqrt->dreg, -1);
-			ins->inst_c0 = 0;
-			ins->inst_c1 = MONO_TYPE_R4;
-			return ins;
+			MonoInst *length = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sqrt->dreg, -1);
+			length->inst_c0 = 0;
+			length->inst_c1 = MONO_TYPE_R4;
+			return length;
 		}
 		case SN_LengthSquared:
 			return dot;
