@@ -24888,7 +24888,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
-            
+
         case IF_SVE_BW_2A: // ........ii.xxxxx ......nnnnnddddd -- SVE broadcast indexed element
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
