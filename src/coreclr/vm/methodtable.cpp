@@ -4372,7 +4372,8 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 // If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
                 // If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
                 uint32_t opaqueIntervalStart = interval.offset;
-                uint32_t remainingIntervalSize = interval.size;
+                // The remaining size here may become negative, so use a signed type.
+                int32_t remainingIntervalSize = static_cast<int32_t>(interval.size);
                 for (;remainingIntervalSize > 0; numLoweredTypes++)
                 {
                     if (numLoweredTypes == ARRAY_SIZE(loweredTypes))
