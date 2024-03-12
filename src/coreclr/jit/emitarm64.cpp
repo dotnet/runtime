@@ -2808,7 +2808,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
-            assert(isValidUimm5_MultipleOf8(emitGetInsSC(id)));
+            assert((isValidUimm_MultipleOf<5, 8>(emitGetInsSC(id))));
             break;
 
         case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
@@ -8097,7 +8097,7 @@ void emitter::emitIns_R_I(instruction     ins,
             if (!isValidUimm<8>(imm))
             {
                 // Size specifier must be able to fit left-shifted immediate
-                assert(isValidUimm8_MultipleOf256(imm)); // iiiiiiii
+                assert((isValidUimm_MultipleOf<8, 256>(imm))); // iiiiiiii
                 assert(insOptsScalableAtLeastHalf(opt));
                 hasShift = true;
                 imm >>= 8;
@@ -13840,7 +13840,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             {
                 assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5_MultipleOf8(imm));
+                assert((isValidUimm_MultipleOf<5, 8>(imm)));
                 fmt = IF_SVE_IV_3A;
             }
             break;
@@ -13851,7 +13851,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(isValidUimm5_MultipleOf8(imm));
+            assert((isValidUimm_MultipleOf<5, 8>(imm)));
             fmt = IF_SVE_IV_3A;
             break;
 
@@ -13870,7 +13870,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             {
                 assert(insOptsScalableWords(opt));
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5_MultipleOf4(imm));
+                assert((isValidUimm_MultipleOf<5, 4>(imm)));
                 fmt = IF_SVE_HX_3A_E;
             }
             break;
@@ -13889,7 +13889,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             else
             {
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5_MultipleOf4(imm));
+                assert((isValidUimm_MultipleOf<5, 4>(imm)));
                 fmt = IF_SVE_IV_3A;
             }
             break;
@@ -13900,7 +13900,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(isValidUimm5_MultipleOf4(imm));
+            assert((isValidUimm_MultipleOf<5, 4>(imm)));
             fmt = IF_SVE_IV_3A;
             break;
 
@@ -13970,7 +13970,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             else
             {
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5_MultipleOf2(imm));
+                assert((isValidUimm_MultipleOf<5, 2>(imm)));
                 fmt = IF_SVE_HX_3A_E;
             }
             break;
@@ -13989,7 +13989,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             else
             {
                 assert(isVectorRegister(reg3));
-                assert(isValidUimm5_MultipleOf2(imm));
+                assert((isValidUimm_MultipleOf<5, 2>(imm)));
                 fmt = IF_SVE_HX_3A_E;
             }
             break;
@@ -14001,7 +14001,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(isValidUimm5_MultipleOf2(imm));
+            assert((isValidUimm_MultipleOf<5, 2>(imm)));
             fmt = IF_SVE_HX_3A_E;
             break;
 
@@ -14011,7 +14011,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(isValidUimm5_MultipleOf4(imm));
+            assert((isValidUimm_MultipleOf<5, 4>(imm)));
             fmt = IF_SVE_HX_3A_E;
             break;
 
@@ -14392,13 +14392,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                 assert(isVectorRegister(reg3));
                 if ((ins == INS_sve_st1w) && insOptsScalableWords(opt))
                 {
-                    assert(isValidUimm5_MultipleOf4(imm));
+                    assert((isValidUimm_MultipleOf<5, 4>(imm)));
                     fmt = IF_SVE_JI_3A_A;
                 }
                 else
                 {
                     assert(ins == INS_sve_st1d);
-                    assert(isValidUimm5_MultipleOf8(imm));
+                    assert((isValidUimm_MultipleOf<5, 8>(imm)));
                     fmt = IF_SVE_JL_3A;
                 }
             }
@@ -14512,7 +14512,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                         break;
 
                     case INS_sve_st1h:
-                        assert(isValidUimm5_MultipleOf2(imm));
+                        assert((isValidUimm_MultipleOf<5, 2>(imm)));
                         break;
 
                     default:
@@ -14823,7 +14823,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6_MultipleOf8(imm));
+            assert((isValidUimm_MultipleOf<6, 8>(imm)));
             fmt = IF_SVE_IC_3A;
             break;
 
@@ -14833,7 +14833,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6_MultipleOf4(imm));
+            assert((isValidUimm_MultipleOf<6, 4>(imm)));
             fmt = IF_SVE_IC_3A;
             break;
 
@@ -14843,7 +14843,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6_MultipleOf2(imm));
+            assert((isValidUimm_MultipleOf<6, 2>(imm)));
             fmt = IF_SVE_IC_3A_A;
             break;
 
@@ -14853,7 +14853,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6_MultipleOf4(imm));
+            assert((isValidUimm_MultipleOf<6, 4>(imm)));
             fmt = IF_SVE_IC_3A_A;
             break;
 
@@ -14863,7 +14863,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
-            assert(isValidUimm6_MultipleOf2(imm));
+            assert((isValidUimm_MultipleOf<6, 2>(imm)));
             fmt = IF_SVE_IC_3A_B;
             break;
 
@@ -17144,15 +17144,15 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
                         break;
 
                     case INS_sve_prfh:
-                        assert(isValidUimm5_MultipleOf2(imm));
+                        assert((isValidUimm_MultipleOf<5, 2>(imm)));
                         break;
 
                     case INS_sve_prfw:
-                        assert(isValidUimm5_MultipleOf4(imm));
+                        assert((isValidUimm_MultipleOf<5, 4>(imm)));
                         break;
 
                     case INS_sve_prfd:
-                        assert(isValidUimm5_MultipleOf8(imm));
+                        assert((isValidUimm_MultipleOf<5, 8>(imm)));
                         break;
 
                     default:
@@ -22000,7 +22000,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
 {
-    assert(isValidUimm5_MultipleOf2(imm));
+    assert((isValidUimm_MultipleOf<5, 2>(imm)));
     return insEncodeUimm5_20_to_16(imm / 2);
 }
 
@@ -22011,7 +22011,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
 {
-    assert(isValidUimm5_MultipleOf4(imm));
+    assert((isValidUimm_MultipleOf<5, 4>(imm)));
     return insEncodeUimm5_20_to_16(imm / 4);
 }
 
@@ -22022,7 +22022,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
 {
-    assert(isValidUimm5_MultipleOf8(imm));
+    assert((isValidUimm_MultipleOf<5, 8>(imm)));
     return insEncodeUimm5_20_to_16(imm / 8);
 }
 
@@ -22033,7 +22033,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
 {
-    assert(isValidUimm6_MultipleOf2(imm));
+    assert((isValidUimm_MultipleOf<6, 2>(imm)));
     return insEncodeUimm6_21_to_16(imm / 2);
 }
 
@@ -22044,7 +22044,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
 {
-    assert(isValidUimm6_MultipleOf4(imm));
+    assert((isValidUimm_MultipleOf<6, 4>(imm)));
     return insEncodeUimm6_21_to_16(imm / 4);
 }
 
@@ -22055,7 +22055,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
 {
-    assert(isValidUimm6_MultipleOf8(imm));
+    assert((isValidUimm_MultipleOf<6, 8>(imm)));
     return insEncodeUimm6_21_to_16(imm / 8);
 }
 

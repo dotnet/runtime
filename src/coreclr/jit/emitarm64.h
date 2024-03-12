@@ -810,42 +810,6 @@ static bool isValidSimm4_MultipleOf32(ssize_t value)
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
 };
 
-// Returns true if 'value' is a legal unsigned multiple of 2 immediate 5 bit encoding (such as for LD1H).
-static bool isValidUimm5_MultipleOf2(ssize_t value)
-{
-    return (0 <= value) && (value <= 62) && (value % 2 == 0);
-};
-
-// Returns true if 'value' is a legal unsigned multiple of 4 immediate 5 bit encoding (such as for LD1W).
-static bool isValidUimm5_MultipleOf4(ssize_t value)
-{
-    return (0 <= value) && (value <= 124) && (value % 4 == 0);
-};
-
-// Returns true if 'value' is a legal unsigned multiple of 8 immediate 5 bit encoding (such as for LD1D).
-static bool isValidUimm5_MultipleOf8(ssize_t value)
-{
-    return (0 <= value) && (value <= 248) && (value % 8 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 2 immediate 6 bit encoding (such as for LD1RH).
-static bool isValidUimm6_MultipleOf2(ssize_t value)
-{
-    return (0 <= value) && (value <= 126) && (value % 2 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 4 immediate 6 bit encoding (such as for LD1RSW).
-static bool isValidUimm6_MultipleOf4(ssize_t value)
-{
-    return (0 <= value) && (value <= 252) && (value % 4 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 8 immediate 6 bit encoding (such as for LD1RD).
-static bool isValidUimm6_MultipleOf8(ssize_t value)
-{
-    return (0 <= value) && (value <= 504) && (value % 8 == 0);
-};
-
 // Returns true if 'value' is a legal unsigned immediate with 'bits' number of bits.
 template <const size_t bits>
 static bool isValidUimm(ssize_t value)
@@ -862,6 +826,14 @@ static bool isValidUimmFrom1(ssize_t value)
     return (1 <= value) && (value <= max);
 }
 
+// Returns true if 'value' is a legal unsigned multiple of 'mod' immediate with 'bits' number of bits.
+template <const size_t bits, const size_t mod>
+static bool isValidUimm_MultipleOf(ssize_t value)
+{
+    constexpr size_t max = ((1 << bits) * mod) - mod;
+    return (0 <= value) && (value <= max) && (value % mod == 0);
+}
+
 // Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
 template <const size_t bits>
 static bool isValidSimm(ssize_t value)
@@ -869,12 +841,6 @@ static bool isValidSimm(ssize_t value)
     constexpr ssize_t max = 1 << (bits - 1);
     return (-max <= value) && (value < max);
 }
-
-// Returns true if 'value' is a legal unsigned multiple of 256 immediate 8 bit encoding (such as for ADD).
-static bool isValidUimm8_MultipleOf256(ssize_t value)
-{
-    return (0 <= value) && (value <= 0xFF00) && (value % 256 == 0);
-};
 
 // Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
 static bool isValidSimm8_MultipleOf256(ssize_t value)
