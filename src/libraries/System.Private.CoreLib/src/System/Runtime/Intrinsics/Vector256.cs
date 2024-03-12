@@ -2368,7 +2368,7 @@ namespace System.Runtime.Intrinsics
                     }
 
                     // check for all indices in first lane (or will result in 0)
-                    if (LessThanAll(BitwiseAnd(indices, Vector256.Create(0x9F))).AsSByte(), Vector256.Create((sbyte)0x10))
+                    if (LessThanAll(BitwiseAnd(indices, Vector256.Create(0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
                         var laneShuffle = Avx2.Permute2x128(values, values, 0b00000000);
                         return Avx2.Shuffle(laneShuffle, indices);
