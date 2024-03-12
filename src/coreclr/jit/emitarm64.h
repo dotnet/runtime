@@ -468,6 +468,9 @@ static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
 // Returns the encoding to select 'index2' for an Arm64 'ins' elem instruction
 static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 
+// Returns the encoding for an immediate in the SVE variant of dup (indexed)
+static code_t insEncodeSveBroadcastIndex(emitAttr elemsize, ssize_t index);
+
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
@@ -643,7 +646,16 @@ static code_t insEncodeSplitUimm(size_t imm)
     size_t immhi = (imm >> lo_bits) & (hi_max - 1);
     size_t immlo = imm & (lo_max - 1);
 
-    return insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
+    code_t result = insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
+
+    // Calculate and generate a mask for the number of bits between hi2-lo1, and assert that these bits
+    // are not set in the result. Note if between_bits == 0 then the mask will always be 0 and this will
+    // pass.
+    size_t between_bits = lo1 - hi2 - 1;
+    code_t between_mask = ((1 << between_bits) - 1) << (hi2 + 1);
+    assert((result & between_mask) == 0);
+
+    return result;
 }
 
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
@@ -997,6 +1009,36 @@ static bool isValidSimm6(ssize_t value)
     return (-32 <= value) && (value <= 31);
 };
 
+// Returns true if 'imm' is a valid broadcast immediate for some SVE DUP variants
+static bool isValidBroadcastImm(ssize_t imm, emitAttr laneSize)
+{
+    // imm fits within 0 <= imm < 2**(7 - (log2(bytes_in_lane) + 1))
+    // e.g. for B => imm < 2**6, H => imm < 2**5, ...
+    ssize_t max = 0;
+    switch (laneSize)
+    {
+        case EA_16BYTE:
+            max = 4;
+            break;
+        case EA_8BYTE:
+            max = 8;
+            break;
+        case EA_4BYTE:
+            max = 16;
+            break;
+        case EA_2BYTE:
+            max = 32;
+            break;
+        case EA_1BYTE:
+            max = 64;
+            break;
+        default:
+            unreached();
+    };
+
+    return (imm >= 0) && (imm < max);
+}
+
 // Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
 static bool isValidRot(ssize_t value)
 {
@@ -1137,6 +1179,9 @@ static emitAttr optGetDatasize(insOpts arrangement);
 
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
+
+//  For the given 'elemsize' returns the 'arrangement' when used in a SVE vector register arrangement.
+static insOpts optGetSveInsOpt(emitAttr elemsize);
 
 //  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
 static emitAttr optGetSveElemsize(insOpts arrangement);
