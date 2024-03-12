@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices
             return ref Unsafe.AsRef<T>((void*)variant.GetRawDataRef<nint>());
         }
 
-        public static unsafe void CopyFromIndirect(this ref ComVariant variant, object value)
+        public static unsafe void CopyFromIndirect(this ref ComVariant variant, object? value)
         {
             VarEnum vt = (VarEnum)(((int)variant.VarType) & ~((int)VarEnum.VT_BYREF));
 
