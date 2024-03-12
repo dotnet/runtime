@@ -6782,7 +6782,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	guint32 offsets[4];
 	guint32 num_lowered_types = 0;
 	
-	for (int i = 0; i < intervals->len; ++i, ++num_lowered_types) {
+	for (int i = 0; i < intervals->len; ++i) {
 		if (num_lowered_types == 4) {
 			// We can't handle more than 4 fields
 			lowering.by_reference = TRUE;
@@ -6796,13 +6796,13 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 
 		switch (interval.kind) {
 			case SWIFT_INT64:
-				lowered_types[num_lowered_types] = MONO_TYPE_I8;
+				lowered_types[num_lowered_types++] = MONO_TYPE_I8;
 				break;
 			case SWIFT_FLOAT:
-				lowered_types[num_lowered_types] = MONO_TYPE_R4;
+				lowered_types[num_lowered_types++] = MONO_TYPE_R4;
 				break;
 			case SWIFT_DOUBLE:
-				lowered_types[num_lowered_types] = MONO_TYPE_R8;
+				lowered_types[num_lowered_types++] = MONO_TYPE_R8;
 				break;
 			case SWIFT_OPAQUE:
 			{
@@ -6823,8 +6823,9 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 				// If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
 				// If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
 				guint32 opaque_interval_start = interval.start;
-				guint32 remaining_interval_size = interval.size;
-				for (;remaining_interval_size > 0; num_lowered_types++) {
+				// The remaining size here may become negative, so use a signed type.
+				gint32 remaining_interval_size = (gint32)interval.size;
+				while (remaining_interval_size > 0) {
 					if (num_lowered_types == 4) {
 						// We can't handle more than 4 fields
 						lowering.by_reference = TRUE;
@@ -6851,6 +6852,8 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 						remaining_interval_size -= 1;
 						opaque_interval_start += 1;
 					}
+
+					num_lowered_types++;
 				}
 			}
 		}
