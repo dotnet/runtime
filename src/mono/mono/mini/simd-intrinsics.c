@@ -689,27 +689,6 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 		return ins;
 	}
 }
-
-static MonoInst*
-emit_sum_sqrt_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg) {
-	MonoInst *sum = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, arg->dreg, -1);
-	sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
-	sum->inst_c1 = MONO_TYPE_R4;
-
-	if (COMPILE_LLVM (cfg)) {
-		sum = emit_simd_ins (cfg, klass, OP_EXPAND_R4, sum->dreg, -1);
-		sum->inst_c1 = MONO_TYPE_R4;
-	}
-
-	MonoInst* sum_sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
-	sum_sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
-	sum_sqrt->inst_c1 = MONO_TYPE_R4;
-
-	MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sum_sqrt->dreg, -1);
-	ins->inst_c0 = 0;
-	ins->inst_c1 = MONO_TYPE_R4;
-	return ins;
-}
 #endif
 #ifdef TARGET_WASM
 static MonoInst* emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg);
@@ -1109,46 +1088,6 @@ emit_vector_insert_element (
 	return ins;
 }
 
-#if defined(TARGET_ARM64)
-static MonoInst*
-emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg){
-	MonoInst *vec_squared = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, arg->dreg);
-	vec_squared->inst_c0 = OP_FMUL;
-	vec_squared->inst_c1 = MONO_TYPE_R4;
-
-	const char *class_name = m_class_get_name (klass);
-	if (!strcmp ("Plane", class_name)) {
-		static float r4_0 = 0;
-		MonoInst *zero;
-		int zero_dreg = alloc_freg (cfg);
-		MONO_INST_NEW (cfg, zero, OP_R4CONST);
-		zero->inst_p0 = (void*)&r4_0;
-		zero->dreg = zero_dreg;
-		MONO_ADD_INS (cfg->cbb, zero);
-		vec_squared = emit_vector_insert_element (cfg, klass, vec_squared, MONO_TYPE_R4, zero, 3, FALSE);
-	}
-
-	MonoInst *sum = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, vec_squared->dreg, -1);
-	sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
-	sum->inst_c1 = MONO_TYPE_R4;
-
-	if (COMPILE_LLVM (cfg)) {
-		sum = emit_simd_ins (cfg, klass, OP_EXPAND_R4, sum->dreg, -1);
-		sum->inst_c1 = MONO_TYPE_R4;
-	}
-
-	MonoInst *sqrt_vec = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
-	sqrt_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
-	sqrt_vec->inst_c1 = MONO_TYPE_R4;
-
-	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, sqrt_vec->dreg);
-	normalized_vec->inst_c0 = OP_FDIV;
-	normalized_vec->inst_c1 = MONO_TYPE_R4;
-	
-	return normalized_vec;
-}
-#endif
-
 static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
@@ -1471,8 +1410,8 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 #endif
 
 static MonoInst*
-emit_dot (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum arg0_type, MonoInst **args) {
-	if (!is_element_type_primitive (fsig->params [0]))
+emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnum arg0_type, int sreg1, int sreg2) {
+	if (!is_element_type_primitive (vector_type))
 		return NULL;
 #if defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8))
@@ -1484,8 +1423,10 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTyp
 
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
 	int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
-	MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
-	return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+	MonoInst *pairwise_multiply = emit_simd_ins (cfg, klass, OP_XBINOP, sreg1, sreg2);
+	pairwise_multiply->inst_c0 = instc0;
+	pairwise_multiply->inst_c1 = arg0_type;
+	return emit_sum_vector (cfg, vector_type, arg0_type, pairwise_multiply);
 #elif defined(TARGET_AMD64)
 	int instc =-1;
 	if (type_enum_is_float (arg0_type)) {
@@ -1509,10 +1450,10 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTyp
 				int mask_reg = alloc_ireg (cfg);
 				MONO_EMIT_NEW_ICONST (cfg, mask_reg, mask_val);
 
-				dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+				dot = emit_simd_ins (cfg, klass, instc, sreg1, sreg2);
 				dot->sreg3 = mask_reg;
 			} else {
-				dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+				dot = emit_simd_ins (cfg, klass, instc, sreg1, sreg2);
 				dot->inst_c0 = mask_val;
 			}
 			return extract_first_element (cfg, klass, arg0_type, dot->dreg);
@@ -1529,13 +1470,47 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTyp
 
 		instc = OP_IMUL;
 	}
-	MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc, arg0_type, fsig, args);
+	MonoInst *pairwise_multiply = emit_simd_ins (cfg, klass, OP_XBINOP, sreg1, sreg2);
+	pairwise_multiply->inst_c0 = instc0;
+	pairwise_multiply->inst_c1 = arg0_type;
 
-	return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+	return emit_sum_vector (cfg, vector_type, arg0_type, pairwise_multiply);
 #else
 	return NULL;
 #endif
 }
+
+#if defined(TARGET_ARM64)
+static MonoInst*
+emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoInst *arg){
+	MonoInst* vec = arg;
+	const char *class_name = m_class_get_name (klass);
+	if (!strcmp ("Plane", class_name)) {
+		static float r4_0 = 0;
+		MonoInst *zero;
+		int zero_dreg = alloc_freg (cfg);
+		MONO_INST_NEW (cfg, zero, OP_R4CONST);
+		zero->inst_p0 = (void*)&r4_0;
+		zero->dreg = zero_dreg;
+		MONO_ADD_INS (cfg->cbb, zero);
+		vec = emit_vector_insert_element (cfg, klass, vec, MONO_TYPE_R4, zero, 3, FALSE);
+	}
+
+	MonoInst *dot = emit_dot(cfg, klass, vector_type, MONO_TYPE_R4, vec->dreg, vec->dreg);
+	dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
+	dot->inst_c1 = MONO_TYPE_R4;
+	
+	MonoInst *sqrt_vec = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, dot->dreg, -1);
+	sqrt_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
+	sqrt_vec->inst_c1 = MONO_TYPE_R4;
+
+	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, sqrt_vec->dreg);
+	normalized_vec->inst_c0 = OP_FDIV;
+	normalized_vec->inst_c1 = MONO_TYPE_R4;
+	
+	return normalized_vec;
+}
+#endif
 
 /*
  * Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512.
@@ -1912,7 +1887,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_Dot: {
-		return emit_dot (cfg, klass, fsig, arg0_type, args);
+		return emit_dot (cfg, klass, fsig->params [0], arg0_type, args [0]->dreg, args [1]->dreg);
 	}
 	case SN_Equals:
 	case SN_EqualsAll:
@@ -3072,7 +3047,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
 	case SN_Dot: {
-		return emit_dot (cfg, klass, fsig, MONO_TYPE_R4, args);
+		return emit_dot (cfg, klass, fsig->params [0], MONO_TYPE_R4, args [0]->dreg, args [1]->dreg);
 	}
 	case SN_Negate:
 	case SN_op_UnaryNegation: {
@@ -3179,15 +3154,24 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_DistanceSquared: {
 #if defined(TARGET_ARM64)
 		MonoInst *diffs = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FSUB, MONO_TYPE_R4, fsig, args);
-		MonoInst *diffs_squared = emit_simd_ins (cfg, klass, OP_XBINOP, diffs->dreg, diffs->dreg);
-		diffs_squared->inst_c0 = OP_FMUL;
-		diffs_squared->inst_c1 = MONO_TYPE_R4;
+		MonoInst *dot = emit_dot(cfg, klass, fsig->params [0], MONO_TYPE_R4, diffs->dreg, diffs->dreg);
 
 		switch (id) {
-		case SN_Distance:
-			return emit_sum_sqrt_vector_2_3_4 (cfg, klass, diffs_squared);
+		case SN_Distance: {
+			dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
+			dot->inst_c1 = MONO_TYPE_R4;
+
+			MonoInst *sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, dot->dreg, -1);
+			sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
+			sqrt->inst_c1 = MONO_TYPE_R4;
+			
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sqrt->dreg, -1);
+			ins->inst_c0 = 0;
+			ins->inst_c1 = MONO_TYPE_R4;
+			return ins;
+		}
 		case SN_DistanceSquared:
-			return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, diffs_squared);
+			return dot;
 		default:
 			g_assert_not_reached ();
 		}
@@ -3198,16 +3182,24 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_LengthSquared: {
 #if defined (TARGET_ARM64)
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-
-		MonoInst *vec_squared = emit_simd_ins (cfg, klass, OP_XBINOP, src1, src1);
-		vec_squared->inst_c0 = OP_FMUL;
-		vec_squared->inst_c1 = MONO_TYPE_R4;
+		MonoInst *dot = emit_dot(cfg, klass, type, MONO_TYPE_R4, src1, src1);
 
 		switch (id) {
-		case SN_Length:
-			return emit_sum_sqrt_vector_2_3_4 (cfg, klass, vec_squared);
+		case SN_Length: {
+			dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
+			dot->inst_c1 = MONO_TYPE_R4;
+
+			MonoInst *sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, dot->dreg, -1);
+			sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
+			sqrt->inst_c1 = MONO_TYPE_R4;
+			
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sqrt->dreg, -1);
+			ins->inst_c0 = 0;
+			ins->inst_c1 = MONO_TYPE_R4;
+			return ins;
+		}
 		case SN_LengthSquared:
-			return emit_sum_vector (cfg, type, MONO_TYPE_R4, vec_squared);
+			return dot;
 		default:
 			g_assert_not_reached ();
 		}
@@ -3218,16 +3210,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #if defined (TARGET_ARM64)
 		MonoInst* v1 = args [1];
 		if (!strcmp ("Quaternion", m_class_get_name (klass))) {
-			MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FMUL, MONO_TYPE_R4, fsig, args);
-			pairwise_multiply->sreg3 = -1;
-			MonoInst *dot = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, pairwise_multiply->dreg, -1);
-			dot->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
-			dot->inst_c1 = MONO_TYPE_R4;
+			MonoInst *dot = emit_dot(cfg, klass, fsig->params [0], MONO_TYPE_R4, args [0]->dreg, args [1]->dreg);
 
-			if (COMPILE_LLVM (cfg)) {
-				dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
-				dot->inst_c1 = MONO_TYPE_R4;
-			}
+			dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
+			dot->inst_c0 = 0;
+			dot->inst_c1 = MONO_TYPE_R4;
 
 			MonoInst* zeros = emit_xzero (cfg, klass);
 
@@ -3254,7 +3241,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		result->inst_c1 = MONO_TYPE_R4;
 
 		if (!strcmp ("Quaternion", m_class_get_name (klass))) {
-			return emit_normalize_vector_2_3_4 (cfg, klass, result);
+			return emit_normalize_vector_2_3_4 (cfg, klass, type, result);
 		}
 
 		return result;
@@ -3263,7 +3250,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	break;
 	case SN_Normalize: {
 #if defined (TARGET_ARM64)
-	return emit_normalize_vector_2_3_4 (cfg, klass, args[0]);
+	return emit_normalize_vector_2_3_4 (cfg, klass, type, args[0]);
 #endif
 	}
 	break;
