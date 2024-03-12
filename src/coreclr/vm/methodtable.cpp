@@ -4325,7 +4325,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     uint32_t offsets[MAX_SWIFT_LOWERED_ELEMENTS];
     uint32_t numLoweredTypes = 0;
 
-    for (uint32_t i = 0; i < mergedIntervals.Size(); i++, numLoweredTypes++)
+    for (uint32_t i = 0; i < mergedIntervals.Size(); i++)
     {
         SwiftLoweringInterval interval = mergedIntervals[i];
 
@@ -4345,13 +4345,13 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 break;
 
             case SwiftPhysicalLoweringTag::Int64:
-                loweredTypes[numLoweredTypes] = CORINFO_TYPE_LONG;
+                loweredTypes[numLoweredTypes++] = CORINFO_TYPE_LONG;
                 break;
             case SwiftPhysicalLoweringTag::Float:
-                loweredTypes[numLoweredTypes] = CORINFO_TYPE_FLOAT;
+                loweredTypes[numLoweredTypes++] = CORINFO_TYPE_FLOAT;
                 break;
             case SwiftPhysicalLoweringTag::Double:
-                loweredTypes[numLoweredTypes] = CORINFO_TYPE_DOUBLE;
+                loweredTypes[numLoweredTypes++] = CORINFO_TYPE_DOUBLE;
                 break;
             case SwiftPhysicalLoweringTag::Opaque:
             {
@@ -4374,7 +4374,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 uint32_t opaqueIntervalStart = interval.offset;
                 // The remaining size here may become negative, so use a signed type.
                 int32_t remainingIntervalSize = static_cast<int32_t>(interval.size);
-                for (;remainingIntervalSize > 0; numLoweredTypes++)
+                while (remainingIntervalSize > 0)
                 {
                     if (numLoweredTypes == ARRAY_SIZE(loweredTypes))
                     {
@@ -4409,6 +4409,8 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                         opaqueIntervalStart += 1;
                         remainingIntervalSize -= 1;
                     }
+
+                    numLoweredTypes++;
                 }
             }
         }
