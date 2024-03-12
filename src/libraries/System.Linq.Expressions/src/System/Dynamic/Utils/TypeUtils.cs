@@ -41,7 +41,6 @@ namespace System.Dynamic.Utils
         {
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
-                // Analyzer doesn't yet understand feature switches
                 return GetNullableType(type);
             }
             if (!type.IsValueType || IsNullableType(type))
