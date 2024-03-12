@@ -1196,8 +1196,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 }
                 Interval*      interval     = getIntervalForLocalVar(varIndex);
                 regMaskOnlyOne regsKillMask = killMask.GetRegTypeMask(interval->registerType);
-
-                const bool isCallKill = ((regsKillMask == RBM_INT_CALLEE_TRASH) || (regsKillMask == RBM_CALLEE_TRASH));
+                const bool     isCallKill =
+                    (killMask.gprRegs == RBM_INT_CALLEE_TRASH) || (killMask == AllRegsMask_CALLEE_TRASH);
 
                 if (isCallKill)
                 {
