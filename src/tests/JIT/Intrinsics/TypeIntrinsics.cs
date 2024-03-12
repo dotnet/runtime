@@ -229,12 +229,15 @@ public partial class Program
         IsFalse(typeof(int*).IsGenericType);
         IsFalse(typeof(void*).IsGenericType);
         IsFalse(typeof(delegate*<int>).IsGenericType);
-        IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericType()));
-        IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericType()));
-        IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericType()));
-        IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericType()));
-        IsFalse(new ClassUsingIsGenericTypeOnT<RuntimeArgumentHandle>().IsGenericType()));
-        IsFalse(new ClassUsingIsGenericTypeOnT<Action>().IsGenericType()));
+        IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<RuntimeArgumentHandle>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericTypeFromArray());
 
         IsTrue(typeof(GenericSimpleClass<int>).IsGenericType);
         IsTrue(typeof(GenericSimpleClass<>).IsGenericType);
@@ -258,11 +261,19 @@ public partial class Program
         IsTrue(typeof(Action<string>).IsGenericType);
         IsTrue(typeof(Func<string, int>).IsGenericType);
         IsTrue(typeof(Func<,>).IsGenericType);
-        IsTrue(new ClassUsingIsGenericTypeOnT<List<string>>().IsGenericType()));
-        IsTrue(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericType()));
-        IsTrue(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericType()));
-        IsTrue(new ClassUsingIsGenericTypeOnT<int?>().IsGenericType()));
-        IsTrue(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericType()));
+        IsTrue(new ClassUsingIsGenericTypeOnT<List<string>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<int?>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<IGenericInterface<string>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericTypeFromArray());
+        IsTrue(new ClassUsingIsGenericTypeOnT<char>().IsGenericTypeFromOtherGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromOtherGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromOtherGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericTypeFromOtherGenericType());
     }
 
     private static int _varInt = 42;
@@ -340,6 +351,10 @@ public partial class Program
 public class ClassUsingIsGenericTypeOnT<T>
 {
     public bool IsGenericType() => typeof(T).IsGenericType;
+
+    public bool IsGenericTypeFromArray() => typeof(T[]).IsGenericType;
+
+    public bool IsGenericTypeFromOtherGenericType() => typeof(GenericSimpleClass<T>).IsGenericType;
 }
 
 public class GenericSimpleClass<T>
