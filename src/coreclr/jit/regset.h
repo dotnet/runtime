@@ -179,9 +179,6 @@ public:
 #ifdef HAS_PREDICATE_REGS
         else if (varTypeRegister[type] == VTR_MASK)
         {
-            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
-            // to regMaskGpr
-            assert(false);
             newMask.predicateRegs |= addMaskVars;
         }
 #endif
@@ -204,9 +201,6 @@ public:
 #ifdef HAS_PREDICATE_REGS
         else if (varTypeRegister[type] == VTR_MASK)
         {
-            // TODO: If we never hit this assert, then just convert _rsAllMaskVars
-            // to regMaskGpr
-            assert(false);
             newMask.predicateRegs &= ~removeMaskVars;
         }
 #endif
