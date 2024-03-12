@@ -2541,7 +2541,9 @@ Parameters:
 
   Does not return
 --*/
+#if !defined(HOST_ARM)
 PAL_NORETURN
+#endif
 VOID
 PROCAbort(int signal, siginfo_t* siginfo)
 {
