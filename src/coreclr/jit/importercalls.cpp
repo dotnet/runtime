@@ -1881,23 +1881,22 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     argsToReverse = 0;
 #endif
 
-    for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth;
-         level++)
+    for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth; level++)
     {
         if (verCurrentState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
         {
             assert(lastLevelWithSideEffects == UINT_MAX);
 
-            impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
-                                          DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
+            impSpillStackEntry(level,
+                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
         }
         else if (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
         {
             if (lastLevelWithSideEffects != UINT_MAX)
             {
                 /* We had a previous side effect - must spill it */
-                impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(
-                                                                 "impPopArgsForUnmanagedCall - side effect"));
+                impSpillStackEntry(lastLevelWithSideEffects,
+                                   BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - side effect"));
 
                 /* Record the level for the current side effect in case we will spill it */
                 lastLevelWithSideEffects = level;
@@ -1989,7 +1988,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     // Check the signature of the Swift call for the special types
     CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
 
-    CORINFO_SWIFT_LOWERING** lowerings = sig->numArgs == 0 ? nullptr : (new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING* [sig->numArgs] {});
+    CORINFO_SWIFT_LOWERING** lowerings =
+        sig->numArgs == 0 ? nullptr : (new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING*[sig->numArgs]{});
 
     for (unsigned short argIndex = 0; argIndex < sig->numArgs;
          sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
