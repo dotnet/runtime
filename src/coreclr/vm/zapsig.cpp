@@ -1350,6 +1350,9 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
+
+            pSigBuilder->AppendData(inst.GetNumArgs());
+
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];
