@@ -381,9 +381,9 @@ namespace System.Net.Http
                     DataPointer = (IntPtr)arg7Ptr,
                     Size = (arg7.Length + 1) * sizeof(char)
                 };
-            }
 
-            WriteEventCore(eventId, NumEventDatas, descrs);
+                WriteEventCore(eventId, NumEventDatas, descrs);
+            }
         }
     }
 }
