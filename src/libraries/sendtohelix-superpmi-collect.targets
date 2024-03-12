@@ -58,7 +58,7 @@
 
   <ItemGroup>
     <!-- Include the SuperPMI tools as a separate correlation payload -->
-    <HelixCorrleationPayload Include="$(TestArchiveRoot)coreclr.zip" Destination="coreclr" />
+    <HelixCorrelationPayload Include="$(TestArchiveRoot)coreclr.zip" Destination="coreclr" AsArchive="true" />
   </ItemGroup>
 
 </Project>
