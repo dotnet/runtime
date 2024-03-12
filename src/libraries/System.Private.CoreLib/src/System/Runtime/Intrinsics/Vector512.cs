@@ -2398,7 +2398,7 @@ namespace System.Runtime.Intrinsics
         {
             if (Avx512Vbmi.IsSupported)
             {
-                return Avx512Vbmi.PermuteVar64x8(values, indices);
+                return Avx512Vbmi.PermuteVar64x8(vector, indices);
             }
 
             return Shuffle(vector, indices);

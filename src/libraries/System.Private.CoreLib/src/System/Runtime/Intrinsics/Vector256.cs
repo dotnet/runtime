@@ -2353,7 +2353,7 @@ namespace System.Runtime.Intrinsics
         {
             if (Avx512Vbmi.VL.IsSupported)
             {
-                return Avx512Vbmi.VL.PermuteVar32x8(values, indices);
+                return Avx512Vbmi.VL.PermuteVar32x8(vector, indices);
             }
 
             if (Avx2.IsSupported)
@@ -2364,13 +2364,13 @@ namespace System.Runtime.Intrinsics
                     // check for all in correct lane (or will result in 0)
                     if (LessThanAll(Xor(BitwiseAnd(indices, Vector256.Create(0x9F)), Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
-                        return Avx2.Shuffle(values, indices);
+                        return Avx2.Shuffle(vector, indices);
                     }
 
                     // check for all indices in first lane (or will result in 0)
                     if (LessThanAll(BitwiseAnd(indices, Vector256.Create(0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
                     {
-                        var laneShuffle = Avx2.Permute2x128(values, values, 0b00000000);
+                        var laneShuffle = Avx2.Permute2x128(vector, vector, 0b00000000);
                         return Avx2.Shuffle(laneShuffle, indices);
                     }
 
@@ -2383,10 +2383,10 @@ namespace System.Runtime.Intrinsics
 
                 // swap the low and high 128-bit lanes
                 // calculate swap before shuf1 so they can be computed in parallel
-                var swap = Avx2.Permute2x128(values, values, 0b00000001);
+                var swap = Avx2.Permute2x128(vector, vector, 0b00000001);
 
                 // shuffle with both the normal and swapped values
-                var shuf1 = Avx2.Shuffle(values, indices);
+                var shuf1 = Avx2.Shuffle(vector, indices);
                 var shuf2 = Avx2.Shuffle(swap, indices);
 
                 // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping lane and 0x00 otherwise
