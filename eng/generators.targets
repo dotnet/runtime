@@ -3,9 +3,6 @@
   <PropertyGroup>
     <EnableLibraryImportGenerator Condition="'$(EnableLibraryImportGenerator)' == '' and
                                              '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableLibraryImportGenerator>
-    <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
-         Explicitly setting it to false ensures the generator projects are built in the corresponding configuration both in VS and on the command line. -->
-    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
   </PropertyGroup>
 
   <ItemGroup>
