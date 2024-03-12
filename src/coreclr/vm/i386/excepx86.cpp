@@ -415,6 +415,7 @@ CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
 #endif // FEATURE_HIJACK
 
 uint32_t            g_exceptionCount;
+bool                g_chainFatalError;
 
 //******************************************************************************
 EXCEPTION_DISPOSITION COMPlusAfterUnwind(
@@ -1041,6 +1042,14 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
         if (IsProcessCorruptedStateException(exceptionCode, throwable))
         {
+            // Allow other handlers installed in the process to handle this exception.
+            // Remove once we have proper support for crash handling via embedding interface.
+            if (g_chainFatalError)
+            {
+                retval = ExceptionContinueSearch;
+                goto exit;
+            }
+
             // Failfast if exception indicates corrupted process state
             EEPOLICY_HANDLE_FATAL_ERROR(exceptionCode);
         }

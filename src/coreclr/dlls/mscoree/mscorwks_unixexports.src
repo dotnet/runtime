@@ -58,3 +58,4 @@ mono_unity_backtrace_from_context
 mono_unity_class_has_failure
 mono_unity_g_free
 unity_coreclr_create_delegate
+coreclr_unity_gc_set_chain_fatal_error
