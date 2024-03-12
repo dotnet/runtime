@@ -12807,8 +12807,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 continue;
             case WellKnownArg::InstParam:
             {
-                InlArgInfo* ctxInfo = getAllocator(CMK_Unknown).allocate<InlArgInfo>(1);
-                memset(ctxInfo, 0, sizeof(*ctxInfo));
+                InlArgInfo* ctxInfo = new (this, CMK_Inlining) InlArgInfo {};
                 ctxInfo->arg                     = &arg;
                 ctxInfo->argIsInvariant          = true;
                 ctxInfo->argIsLclVar             = arg.GetNode()->OperIs(GT_LCL_VAR);
