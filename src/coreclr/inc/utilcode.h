@@ -14,9 +14,6 @@
 #include "winwrap.h"
 #include <wchar.h>
 #include <stdio.h>
-#if !defined(HOST_APPLE)
-#include <malloc.h>
-#endif
 #include <ole2.h>
 #include <oleauto.h>
 #include <limits.h>

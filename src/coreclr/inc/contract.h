@@ -233,9 +233,6 @@
 
 #include "specstrings.h"
 #include "clrtypes.h"
-#if !defined(HOST_APPLE)
-#include <malloc.h>
-#endif
 #include "check.h"
 #include "debugreturn.h"
 #include "staticcontract.h"

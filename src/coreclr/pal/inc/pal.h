@@ -49,9 +49,6 @@ Abstract:
 #include <sys/types.h>
 #include <unistd.h>
 #include <wctype.h>
-#if !defined(HOST_APPLE)
-#include <malloc.h>
-#endif
 
 #ifdef __cplusplus
 extern "C++"

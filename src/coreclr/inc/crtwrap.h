@@ -16,9 +16,6 @@
 #include <objbase.h>
 #include "debugmacros.h"
 #include <stdlib.h>
-#if !defined(HOST_APPLE)
-#include <malloc.h>
-#endif
 #include <wchar.h>
 #include <stdio.h>
 
