@@ -792,16 +792,14 @@ static bool isValidUimm(ssize_t value)
 template <const size_t bits>
 static bool isValidUimmFrom1(ssize_t value)
 {
-    constexpr size_t max = 1 << bits;
-    return (1 <= value) && (value <= max);
+    return isValidUimm<bits>(value - 1);
 }
 
 // Returns true if 'value' is a legal unsigned multiple of 'mod' immediate with 'bits' number of bits.
 template <const size_t bits, const size_t mod>
 static bool isValidUimm_MultipleOf(ssize_t value)
 {
-    constexpr size_t max = ((1 << bits) * mod) - mod;
-    return (0 <= value) && (value <= max) && (value % mod == 0);
+    return isValidUimm<bits>(value / mod) && (value % mod == 0);
 }
 
 // Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
@@ -816,8 +814,7 @@ static bool isValidSimm(ssize_t value)
 template <const size_t bits, const ssize_t mod>
 static bool isValidSimm_MultipleOf(ssize_t value)
 {
-    constexpr ssize_t max = (1 << (bits - 1)) * mod;
-    return (-max <= value) && (value <= (max - mod)) && (value % mod == 0);
+    return isValidSimm<bits>(value / mod) && (value % mod == 0);
 }
 
 // Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
