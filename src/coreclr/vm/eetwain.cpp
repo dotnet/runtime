@@ -1650,7 +1650,6 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     hdrInfo     info;
     unsigned    stackDepth;
     TADDR       taArgBase;
-    unsigned    count;
 
     /* Extract the necessary information from the info block header */
 
@@ -1709,7 +1708,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     /* The 'this' pointer can never be located in the untracked table */
     /* as we only allow pinned and byrefs in the untracked table      */
 
-    count = info.untrackedCnt;
+    unsigned count = info.untrackedCnt;
     while (count-- > 0)
     {
         fastSkipSigned(table);
