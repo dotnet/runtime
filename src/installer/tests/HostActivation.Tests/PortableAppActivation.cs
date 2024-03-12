@@ -29,9 +29,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appDll = app.AppDll;
             var testDir = Directory.GetParent(app.Location).ToString();
 
-            var exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
-
-            using var symlink = new SymLink(Path.Combine(testDir, "dotnet" + exeSuffix), dotnetLoc);
+            using var symlink = new SymLink(Path.Combine(testDir, Binaries.GetExeName("dotnet")), dotnetLoc);
 
             var cmd = Command.Create(symlink.SrcPath, new[] { appDll })
                 .CaptureStdOut()
