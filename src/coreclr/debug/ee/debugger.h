@@ -546,6 +546,7 @@ class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTr
         typedef OBJECTHANDLE key_t;
         static const bool s_supports_autoremove = true;
         static const bool s_NoThrow = false;
+        static const bool s_RemovePerEntryCleanupAction = true;
 
         static BOOL Equals(const OBJECTHANDLE &e, const OBJECTHANDLE &f)
         {
@@ -581,7 +582,10 @@ class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTr
         {
             return e == (OBJECTHANDLE)(TADDR)-1;
         }
-        //implement a delete function to free the object handle, object handles take space outside of the dictionary
+        static void OnRemovePerEntryCleanupAction(const OBJECTHANDLE &e)
+        {
+            DestroyLongWeakHandle(e);
+        }
 };
 typedef SHash<ForceCatchHandlerFoundSHashTraits> ReturnCatchHandlerFoundTable;
 #endif
@@ -1968,7 +1972,7 @@ public:
                                          Module *classModule,
                                          BOOL fIsLoadEvent);
 
-    BOOL ForceSendCatchHandlerFound(ThreadExceptionState* pExState);
+    BOOL ForceSendCatchHandlerFound(Thread* pThread); //ThreadExceptionState* pExState
 
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
