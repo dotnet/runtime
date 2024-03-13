@@ -6709,9 +6709,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
 		lowering.by_reference = TRUE;
 		return lowering;
-	}
-
-	if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
+	} else if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
 		lowering.by_reference = TRUE;
 		return lowering;
 	}
