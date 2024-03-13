@@ -4202,6 +4202,8 @@ private:
     bool m_inited;
 #endif
 
+    void InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
 public:
     ReturnTypeDesc()
     {
@@ -4323,10 +4325,10 @@ public:
     }
 
     // Get i'th ABI return register
-    regNumber GetABIReturnReg(unsigned idx) const;
+    regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs() const;
+    regMaskTP GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
 };
 
 class TailCallSiteInfo
