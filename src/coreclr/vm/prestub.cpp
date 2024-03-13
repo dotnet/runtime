@@ -1393,7 +1393,7 @@ namespace
                 COMPlusThrow(kInvalidProgramException, W("Argument_GenTypeConstraintsNotEqual"));
         }
 
-        if (targetMaybe->HasMethodInstantiation())
+        if (targetMaybe != NULL && targetMaybe->HasMethodInstantiation())
         {
             Instantiation decl = cxt.Declaration->LoadTypicalMethodDefinition()->GetMethodInstantiation();
             Instantiation target = targetMaybe->LoadTypicalMethodDefinition()->GetMethodInstantiation();
