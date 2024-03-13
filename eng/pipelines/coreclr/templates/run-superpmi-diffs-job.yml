@@ -21,7 +21,7 @@ parameters:
   diffJitOptions: ''
 
 jobs:
-- template: /eng/pipelines/common/templates/xplat-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}

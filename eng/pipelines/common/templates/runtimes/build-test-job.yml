@@ -19,7 +19,7 @@ parameters:
 ### of the product build job).
 
 jobs:
-- template: /eng/pipelines/common/templates/xplat-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}

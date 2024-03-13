@@ -15,7 +15,7 @@ parameters:
   variables: {}
 
 jobs:
-- template: /eng/pipelines/common/templates/xplat-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     archType: ${{ parameters.archType }}
     buildConfig: ${{ parameters.buildConfig }}
