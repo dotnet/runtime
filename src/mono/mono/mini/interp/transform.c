@@ -6954,8 +6954,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* already boxed, do nothing. */
 				td->ip += 5;
 			} else {
-				if (G_UNLIKELY (m_class_is_byreflike (klass))) {
-					mono_error_set_invalid_program (error, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+				if (G_UNLIKELY (m_class_is_byreflike (klass)) && !td->optimized) {
+					if (td->verbose_level)
+						g_print ("Box byreflike detected. Retry compilation with full optimization.\n");
+					td->retry_compilation = TRUE;
+					td->retry_with_inlining = TRUE;
 					goto exit;
 				}
 
@@ -8965,9 +8968,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 {
 	TransformData transform_data;
 	TransformData *td;
-	gboolean retry_compilation = FALSE;
 	static gboolean verbose_method_inited;
 	static char* verbose_method_name;
+	gboolean retry_compilation = FALSE;
+	gboolean retry_with_inlining = FALSE;
 
 	if (!verbose_method_inited) {
 		verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");
@@ -9005,7 +9009,8 @@ retry:
 		// Optimizing the method can lead to deadce and better var offset allocation
 		// reducing the likelihood of local space overflow.
 		td->optimized = rtm->optimized = TRUE;
-		td->disable_inlining = TRUE;
+		if (!retry_with_inlining)
+			td->disable_inlining = TRUE;
 	} else {
 		td->optimized = rtm->optimized;
 		td->disable_inlining = !td->optimized;
@@ -9042,7 +9047,8 @@ retry:
 	td->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	td->current_il_offset = -1;
 
-	generate_code (td, method, header, generic_context, error);
+	if (!generate_code (td, method, header, generic_context, error))
+		goto exit;
 	goto_if_nok (error, exit);
 
 	// Any newly created instructions will have undefined il_offset
@@ -9088,17 +9094,18 @@ retry:
 			g_free (name);
 			mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
 			g_free (msg);
-			retry_compilation = FALSE;
+			td->retry_compilation = FALSE;
 			goto exit;
 		} else {
 			// We give the method another chance to compile with inlining disabled and optimization enabled
 			if (td->verbose_level)
 				g_print ("Local space overflow. Retrying compilation\n");
-			retry_compilation = TRUE;
+			td->retry_compilation = TRUE;
+			td->retry_with_inlining = FALSE;
 			goto exit;
 		}
 	} else {
-		retry_compilation = FALSE;
+		td->retry_compilation = FALSE;
 	}
 
 	if (td->verbose_level) {
@@ -9200,8 +9207,11 @@ exit:
 	g_slist_free (td->imethod_items);
 	mono_mempool_destroy (td->mempool);
 	mono_interp_pgo_generate_end ();
-	if (retry_compilation)
+	if (td->retry_compilation) {
+		retry_compilation = TRUE;
+		retry_with_inlining = td->retry_with_inlining;
 		goto retry;
+	}
 }
 
 gboolean
