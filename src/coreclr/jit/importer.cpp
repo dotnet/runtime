@@ -430,7 +430,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         {
             GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
 
-            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg(this))
+            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg())
             {
                 GenTree* retBuf;
                 if (call->AsCall()->ShouldHaveRetBufArg())
@@ -836,7 +836,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     if (src->IsCall())
     {
         GenTreeCall* srcCall = src->AsCall();
-        if (srcCall->TreatAsShouldHaveRetBufArg(this))
+        if (srcCall->TreatAsShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
             // Some calls have an "out buffer" that is not actually a ret buff
@@ -4226,7 +4226,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg(this))
+    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg())
     {
         // This must be one of those 'special' helpers that don't really have a return buffer, but instead
         // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
@@ -7873,16 +7873,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\n ... CEE_POP struct ...\n");
                         DISPTREE(op1);
-#ifdef UNIX_AMD64_ABI
                         // Non-calls, such as obj or ret_expr, have to go through this.
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
-                        if (!op1->IsCall() ||
-                            !IsMultiRegReturnedType(op1->AsCall()->gtRetClsHnd,
-                                                    op1->AsCall()->GetUnmanagedCallConv()) ||
-                            op1->IsHelperCall())
-#endif // UNIX_AMD64_ABI
+                        if (!op1->IsCall() || !op1->AsCall()->HasMultiRegRetVal() || op1->IsHelperCall())
                         {
                             // If the value being produced comes from loading
                             // via an underlying address, just null check the address.
