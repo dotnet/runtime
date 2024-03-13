@@ -208,9 +208,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 return max;
             }
-#endif
 
-#if NETCOREAPP
             static void InitializeCtorArgValues(ref Span<object?> ctorArgs, int _)
             {
                 ctorArgs.Clear();
