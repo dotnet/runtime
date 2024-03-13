@@ -9,11 +9,19 @@ function wasm_common() {
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        ./build.sh mono+libs -os browser -c Release
+        echo "[DEBUG] restoring for wasm..."
+        ./build.sh mono+libs -os browser -c Release --restore
+        echo "[DEBUG] building for wasm..."
+        ./build.sh mono+libs -os browser -c Release --build
+        echo "[DEBUG] building succeeded"
         ;;
     wasm-multithreaded)
         # Put your common commands for wasm-multithread here
-        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true
+        echo "[DEBUG] restoring for wasm-multithreaded..."
+        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true --restore
+        echo "[DEBUG] building for wasm-multithreaded..."
+        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true --build
+        echo "[DEBUG] building succeeded"
         ;;
     *)
         # install dotnet-serve for running wasm samples
@@ -21,6 +29,19 @@ function wasm_common() {
     ;;
     esac
 }
+
+# Start background jobs that run df -i, free -h, and df -h every second
+while true; do echo -e "$(date)\n$(df -i)"; sleep 5; done >> inodes.txt &
+inode_pid=$!
+
+while true; do echo -e "$(date)\n$(free -h)"; sleep 5; done >> ram.txt &
+ram_pid=$!
+
+while true; do echo -e "$(date)\n$(df -h)"; sleep 5; done >> disk.txt &
+disk_pid=$!
+
+# Set traps to kill the background jobs when the script exits
+trap "kill $inode_pid $ram_pid $disk_pid" EXIT
 
 opt=$1
 case "$opt" in
