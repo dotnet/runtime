@@ -3452,7 +3452,6 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
         MethodTable* pMethodTable = th.AsNativeValueType();
 
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
@@ -3691,7 +3690,6 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
         MethodTable* pMethodTable = th.AsNativeValueType();
 
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
