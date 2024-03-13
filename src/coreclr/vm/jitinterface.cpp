@@ -5980,8 +5980,10 @@ CorInfoHelpFunc CEEInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (VMClsHnd.GetMethodTable()->GetClass()->GetNonGCRegularStaticFieldBytes() > 0)
             result = CORINFO_HELP_GET_NONGCSTATIC_BASE;
-        else
+        else if (VMClsHnd.GetMethodTable()->GetClass()->GetNumHandleRegularStatics() > 0)
             result = CORINFO_HELP_GET_GCSTATIC_BASE;
+        else
+            result = CORINFO_HELP_INITCLASS;
     }
     else
         result = CORINFO_HELP_INITCLASS;
