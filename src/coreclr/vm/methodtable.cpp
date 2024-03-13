@@ -4299,25 +4299,21 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     {
         SwiftLoweringInterval interval = intervals[i];
 
-        if (interval.tag == SwiftPhysicalLoweringTag::Opaque)
+        if (i != 0 && interval.tag == SwiftPhysicalLoweringTag::Opaque)
         {
-            // If we're at the start of the intervals, or the previous interval is not opaque, we need to start a new interval.
-            if (i == 0 || intervals[i - 1].tag != SwiftPhysicalLoweringTag::Opaque)
-            {
-                mergedIntervals.Push(interval);
-            }
-            // Otherwise, if the previous interval ends in the same pointer-sized block, we'll merge this interval into the previous one.
-            else if ((intervals[i - 1].offset + intervals[i - 1].size) / TARGET_POINTER_SIZE == interval.offset / TARGET_POINTER_SIZE)
+            // Merge two opaque intervals when the previous interval ends in the same pointer-sized block
+            SwiftLoweringInterval prevInterval = intervals[i - 1];
+            if (prevInterval.tag == SwiftPhysicalLoweringTag::Opaque &&
+                (prevInterval.offset + prevInterval.size) / TARGET_POINTER_SIZE == interval.offset / TARGET_POINTER_SIZE)
             {
                 SwiftLoweringInterval& lastInterval = mergedIntervals[mergedIntervals.Size() - 1];
                 lastInterval.size = interval.offset + interval.size - lastInterval.offset;
+                continue;
             }
         }
-        else
-        {
-            // Non-opaque intervals are never merged at this point.
-            mergedIntervals.Push(interval);
-        }
+
+        // Otherwise keep all intervals
+        mergedIntervals.Push(interval);
     }
 
     // Now we have the intervals, we can calculate the lowering.
@@ -4325,7 +4321,7 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
     uint32_t offsets[MAX_SWIFT_LOWERED_ELEMENTS];
     uint32_t numLoweredTypes = 0;
 
-    for (uint32_t i = 0; i < mergedIntervals.Size(); i++, numLoweredTypes++)
+    for (uint32_t i = 0; i < mergedIntervals.Size(); i++)
     {
         SwiftLoweringInterval interval = mergedIntervals[i];
 
@@ -4345,13 +4341,13 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 break;
 
             case SwiftPhysicalLoweringTag::Int64:
-                loweredTypes[numLoweredTypes] = CORINFO_TYPE_LONG;
+                loweredTypes[numLoweredTypes++] = CORINFO_TYPE_LONG;
                 break;
             case SwiftPhysicalLoweringTag::Float:
-                loweredTypes[numLoweredTypes] = CORINFO_TYPE_FLOAT;
+                loweredTypes[numLoweredTypes++] = CORINFO_TYPE_FLOAT;
                 break;
             case SwiftPhysicalLoweringTag::Double:
-                loweredTypes[numLoweredTypes] = CORINFO_TYPE_DOUBLE;
+                loweredTypes[numLoweredTypes++] = CORINFO_TYPE_DOUBLE;
                 break;
             case SwiftPhysicalLoweringTag::Opaque:
             {
@@ -4372,8 +4368,9 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                 // If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
                 // If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
                 uint32_t opaqueIntervalStart = interval.offset;
-                uint32_t remainingIntervalSize = interval.size;
-                for (;remainingIntervalSize > 0; numLoweredTypes++)
+                // The remaining size here may become negative, so use a signed type.
+                int32_t remainingIntervalSize = static_cast<int32_t>(interval.size);
+                while (remainingIntervalSize > 0)
                 {
                     if (numLoweredTypes == ARRAY_SIZE(loweredTypes))
                     {
@@ -4402,18 +4399,20 @@ void MethodTable::GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftL
                         opaqueIntervalStart += 2;
                         remainingIntervalSize -= 2;
                     }
-                    else if (remainingIntervalSize > 1)
+                    else
                     {
                         loweredTypes[numLoweredTypes] = CORINFO_TYPE_BYTE;
                         opaqueIntervalStart += 1;
                         remainingIntervalSize -= 1;
                     }
+
+                    numLoweredTypes++;
                 }
             }
         }
     }
 
-    memcpy(pSwiftLowering->loweredElements, loweredTypes, numLoweredTypes * sizeof(CorElementType));
+    memcpy(pSwiftLowering->loweredElements, loweredTypes, numLoweredTypes * sizeof(CorInfoType));
     memcpy(pSwiftLowering->offsets, offsets, numLoweredTypes * sizeof(uint32_t));
     pSwiftLowering->numLoweredElements = numLoweredTypes;
     pSwiftLowering->byReference = false;

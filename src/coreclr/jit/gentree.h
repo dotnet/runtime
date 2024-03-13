@@ -4726,7 +4726,6 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
-    void SetWellKnownArg(const WellKnownArg argType) { m_wellKnownArg = argType; }
     bool IsTemp() { return m_isTmp; }
     // clang-format on
 

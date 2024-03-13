@@ -4403,10 +4403,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step == DUMMY_INIT(NULL));
                 callBlock = block;
 
+                // callBlock calls the finally handler
                 assert(callBlock->HasInitializedTarget());
-                fgRemoveRefPred(callBlock->GetTargetEdge());
-
-                // callBlock will call the finally handler. This will be set up later.
+                fgRedirectTargetEdge(callBlock, HBtab->ebdHndBeg);
+                callBlock->SetKind(BBJ_CALLFINALLY);
 
                 if (endCatches)
                 {
@@ -4428,15 +4428,22 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // Calling the finally block.
 
-                // callBlock will call the finally handler. This will be set up later.
+                // callBlock calls the finally handler
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
+
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                    callBlock->SetTargetEdge(newEdge);
+                }
 
                 // step's jump target shouldn't be set yet
                 assert(!step->HasInitializedTarget());
 
-                // the previous call to a finally returns to this call (to the next finally in the chain)
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                step->SetTargetEdge(newEdge);
+                {
+                    // the previous call to a finally returns to this call (to the next finally in the chain)
+                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                    step->SetTargetEdge(newEdge);
+                }
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4466,6 +4473,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 impEndTreeList(callBlock, endLFinStmt, lastStmt);
             }
 
+            // callBlock should be set up at this point
+            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
+
             // Note: we don't know the jump target yet
             step = fgNewBBafter(BBJ_CALLFINALLYRET, callBlock, true);
             // The new block will inherit this block's weight.
@@ -4483,9 +4493,6 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
             assert(finallyNesting <= compHndBBtabCount);
-
-            FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-            callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
             endLFinStmt      = gtNewStmt(endLFin);
@@ -4739,6 +4746,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock->inheritWeight(block);
                 callBlock->SetFlags(BBF_IMPORTED);
 
+                // callBlock calls the finally handler
+                FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
+
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -4752,10 +4763,10 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 callBlock = block;
 
+                // callBlock calls the finally handler
                 assert(callBlock->HasInitializedTarget());
-                fgRemoveRefPred(callBlock->GetTargetEdge());
-
-// callBlock will call the finally handler. This will be set up later.
+                fgRedirectTargetEdge(callBlock, HBtab->ebdHndBeg);
+                callBlock->SetKind(BBJ_CALLFINALLY);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4854,6 +4865,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock->inheritWeight(block);
                 callBlock->SetFlags(BBF_IMPORTED);
 
+                // callBlock calls the finally handler
+                FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
+
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -4863,6 +4878,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
 #endif
             }
+
+            // callBlock should be set up at this point
+            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
 
             // Note: we don't know the jump target yet
             step     = fgNewBBafter(BBJ_CALLFINALLYRET, callBlock, true);
@@ -4881,9 +4899,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                        XTnum, step->bbNum);
             }
 #endif
-
-            FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-            callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
                  !jitIsBetween(jmpAddr, tryBeg, tryEnd))
