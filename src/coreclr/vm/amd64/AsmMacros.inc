@@ -239,11 +239,13 @@ Name label proc
 ; Appropriate instructions for certain specific scenarios:
 ;  - REPRET: should be used as the return instruction when the return is a branch
 ;            target or immediately follows a conditional branch
-;  - TAILJMP_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction
-;            sequence which is recognized by the unwinder as a valid epilogue terminator
+;  - TAILJMP_RAX/TAILJMP_R10: ("jmp rax/r10") should be used for tailcalls, this emits an instruction
+;            sequence which is recognized by the unwinder as a valid epilogue
+;            terminator. See `RtlVirtualUnwind_Worker` in excepamd64.cpp.
 ;
 REPRET      TEXTEQU <DB 0F3h, 0C3h>
 TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
+TAILJMP_R10 TEXTEQU <DB 04Ah, 0FFh, 0E2h>
 
 NOP_2_BYTE macro
 

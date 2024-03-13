@@ -71,9 +71,11 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         // Save integer parameter registers.
         // Make sure to preserve r11 as well as it is used to pass the stack argument size from JIT
+        // Make sure to preserve rax as well as it is used for the return buffer for Swift calls
         //
         PUSH_ARGUMENT_REGISTERS
         push_register r11
+        push_register rax
 
         //
         // Allocate space for XMM parameter registers
@@ -89,6 +91,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         mov             rdi, METHODDESC_REGISTER
         call            C_FUNC(NDirectImportWorker)
+        mov             r10, rax
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
@@ -98,12 +101,13 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         free_stack      0x80
 
         //
-        // Restore integer parameter registers and r11
+        // Restore integer parameter registers, r11 and rax
         //
+        pop_register rax
         pop_register r11
         POP_ARGUMENT_REGISTERS
 
-    TAILJMP_RAX
+    TAILJMP_R10
 NESTED_END NDirectImportThunk, _TEXT
 
 //------------------------------------------------
