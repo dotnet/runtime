@@ -1684,6 +1684,31 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
+            // When using profile weights, fgComputeCalledCount expects the first non-internal block to have profile
+            // weight.
+            // Make sure we don't break that invariant.
+            if (fgIsUsingProfileWeights() && block->hasProfileWeight() && !block->HasFlag(BBF_INTERNAL))
+            {
+                BasicBlock* bNext = block->Next();
+
+                // Check if the next block can't maintain the invariant.
+                if ((bNext == nullptr) || bNext->HasFlag(BBF_INTERNAL) || !bNext->hasProfileWeight())
+                {
+                    // Check if the current block is the first non-internal block.
+                    BasicBlock* curBB = bPrev;
+                    while ((curBB != nullptr) && curBB->HasFlag(BBF_INTERNAL))
+                    {
+                        curBB = curBB->Prev();
+                    }
+                    if (curBB == nullptr)
+                    {
+                        // This block is the first non-internal block and it has profile weight.
+                        // Don't delete it.
+                        break;
+                    }
+                }
+            }
+
             /* Remove the block */
             compCurBB = block;
             fgRemoveBlock(block, /* unreachable */ false);
