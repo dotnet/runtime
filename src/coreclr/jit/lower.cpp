@@ -1081,7 +1081,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             weight_t const caseLikelihood          = edgeLikelihood / oldEdge->getDupCount();
             bool const     unlikelyToReachThisCase = Compiler::fgProfileWeightsEqual(totalTestLikelihood, 1.0, 0.001);
             weight_t const adjustedCaseLikelihood =
-                unlikelyToReachThisCase ? 0.5 : caseLikelihood / (1.0 - totalTestLikelihood);
+                unlikelyToReachThisCase ? 0.5 : min(1.0, caseLikelihood / (1.0 - totalTestLikelihood));
             comp->fgRemoveRefPred(oldEdge);
 
             // Decrement the likelihood on the old edge, so if other cases are sharing it,
@@ -1134,6 +1134,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                     newBlock->SetFlags(BBF_NONE_QUIRK);
                     FlowEdge* const newEdge = comp->fgAddRefPred(newBlock, currentBlock);
                     currentBlock            = newBlock;
+                    currentBBRange          = &LIR::AsRange(currentBlock);
                     afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
 
