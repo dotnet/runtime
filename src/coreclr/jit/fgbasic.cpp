@@ -650,57 +650,30 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_COND:
             if (block->TrueTargetIs(oldTarget))
             {
-                FlowEdge* const oldEdge = block->GetTrueEdge();
-
-                if (block->FalseEdgeIs(oldEdge))
+                if (block->FalseEdgeIs(block->GetTrueEdge()))
                 {
                     // Branch was degenerate, simplify it first
                     //
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     assert(block->TargetIs(oldTarget));
-                }
-
-                // fgRemoveRefPred should have removed the flow edge
-                fgRemoveRefPred(oldEdge);
-                assert(oldEdge->getDupCount() == 0);
-                FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
-
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    block->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(block, newTarget);
                 }
                 else
                 {
-                    assert(block->KindIs(BBJ_COND));
-                    block->SetTrueEdge(newEdge);
+                    fgRedirectTrueEdge(block, newTarget);
                 }
             }
             else
             {
+                // Already degenerate cases should have taken the true path above
+                //
                 assert(block->FalseTargetIs(oldTarget));
-                FlowEdge* const oldEdge = block->GetFalseEdge();
-
-                // Already degenerate cases should have taken the true path above.
-                assert(!block->TrueEdgeIs(oldEdge));
-
-                // fgRemoveRefPred should have removed the flow edge
-                fgRemoveRefPred(oldEdge);
-                assert(oldEdge->getDupCount() == 0);
-                FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
-
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    block->SetTargetEdge(newEdge);
-                }
-                else
-                {
-                    assert(block->KindIs(BBJ_COND));
-                    block->SetFalseEdge(newEdge);
-                }
+                assert(!block->TrueEdgeIs(block->GetFalseEdge()));
+                fgRedirectFalseEdge(block, newTarget);
             }
 
-            if (block->KindIs(BBJ_COND) && (block->GetFalseEdge() == block->GetTrueEdge()))
+            if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
             {
                 // Block became degenerate, simplify
                 //

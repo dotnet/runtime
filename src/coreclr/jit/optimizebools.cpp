@@ -1298,8 +1298,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         FlowEdge* const origB2TrueEdge  = m_b2->GetTrueEdge();
         FlowEdge* const origB2FalseEdge = m_b2->GetFalseEdge();
 
-        FlowEdge* newB1TrueEdge = origB1TrueEdge;
-
         weight_t const origB1TrueLikelihood = origB1TrueEdge->getLikelihood();
         weight_t       newB1TrueLikelihood  = 0;
 
@@ -1318,9 +1316,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             // We will now reach via B1 true.
             // Modify flow for true side of B1
             //
-            m_comp->fgRemoveRefPred(origB1TrueEdge);
-            newB1TrueEdge = m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
-            m_b1->SetTrueEdge(newB1TrueEdge);
+            m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
 
             newB1TrueLikelihood =
                 (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
@@ -1328,9 +1324,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
         // Fix B1 true edge likelihood and min/max weights
         //
-        newB1TrueEdge->setLikelihood(newB1TrueLikelihood);
+        origB1TrueEdge->setLikelihood(newB1TrueLikelihood);
         weight_t const newB1TrueWeight = m_b1->bbWeight * newB1TrueLikelihood;
-        newB1TrueEdge->setEdgeWeights(newB1TrueWeight, newB1TrueWeight, m_b1->GetTrueTarget());
+        origB1TrueEdge->setEdgeWeights(newB1TrueWeight, newB1TrueWeight, m_b1->GetTrueTarget());
 
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
