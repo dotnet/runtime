@@ -747,6 +747,7 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #endif
 
 #if defined(TARGET_AMD64)
+    rbmAllFloat = emitComp->rbmAllFloat;
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
 

@@ -2476,7 +2476,13 @@ public:
 
 private:
 #if defined(TARGET_AMD64)
-    regMaskFloat rbmFltCalleeTrash;
+    regMaskFloat rbmAllFloat;
+    regMaskFloat             rbmFltCalleeTrash;
+
+    FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
+    {
+        return this->rbmAllFloat;
+    }
 
     FORCEINLINE regMaskFloat get_RBM_FLT_CALLEE_TRASH() const
     {
