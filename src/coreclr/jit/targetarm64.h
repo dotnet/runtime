@@ -240,7 +240,7 @@
   #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R11
 
   // The registers trashed by profiler enter/leave/tailcall hook
-  #define AllRegsMask_PROFILER_ENTER_TRASH     (AllRegsMask_CALLEE_TRASH | AllRegsMask(~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FP), ~RBM_FLTARG_REGS))
+  #define AllRegsMask_PROFILER_ENTER_TRASH     (AllRegsMask_CALLEE_TRASH & Create_AllRegsMask(~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FP), ~RBM_FLTARG_REGS))
   #define AllRegsMask_PROFILER_LEAVE_TRASH  AllRegsMask_PROFILER_ENTER_TRASH
   #define AllRegsMask_PROFILER_TAILCALL_TRASH  AllRegsMask_PROFILER_ENTER_TRASH
 

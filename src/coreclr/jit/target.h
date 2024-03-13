@@ -425,7 +425,9 @@ typedef struct _regMaskAll
 } AllRegsMask;
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
-#define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs)
+#define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs)3
+
+#define Create_AllRegsMask(gprRegs, floatRegs) AllRegsMask((gprRegs & ~RBM_ALLFLOAT), (floatRegs & RBM_ALLFLOAT))
 
 #if REGMASK_BITS == 32
 typedef unsigned regMaskSmall;
