@@ -26965,6 +26965,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 void ReturnTypeDesc::InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd)
 {
     const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(clsHnd);
+    assert(!lowering->byReference);
     assert(lowering->numLoweredElements <= MAX_RET_REG_COUNT);
     for (size_t i = 0; i < lowering->numLoweredElements; i++)
     {

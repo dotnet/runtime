@@ -2258,6 +2258,27 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         arg = insertAfter->GetNext();
     }
 
+#ifdef DEBUG
+    if (verbose && (call->gtRetClsHnd != NO_CLASS_HANDLE))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(call->gtRetClsHnd);
+        if (lowering->byReference)
+        {
+            printf("  Call returns %s by reference\n", typGetObjLayout(call->gtRetClsHnd)->GetClassName());
+        }
+        else
+        {
+            printf("  Call returns %s as %d primitive(s) in registers\n",
+                   typGetObjLayout(call->gtRetClsHnd)->GetClassName(), lowering->numLoweredElements);
+            for (size_t i = 0; i < lowering->numLoweredElements; i++)
+            {
+                printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                       varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+            }
+        }
+    }
+#endif
+
     JITDUMP("Final result after Swift call lowering:\n");
     DISPTREE(call);
     JITDUMP("\n");
