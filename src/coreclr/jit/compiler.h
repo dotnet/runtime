@@ -5176,10 +5176,10 @@ public:
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading;
     bool          fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
-    bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
-    bool          fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
-    bool          fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
+    bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights TODO: remove
+    bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights TODO: remove
+    bool          fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights TODO: remove
+    bool          fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form TODO: remove
     weight_t      fgCalledCount;            // count of the number of times this method was called
                                             // This is derived from the profile data
                                             // or is BB_UNITY_WEIGHT when we don't have profile data
@@ -6015,7 +6015,6 @@ public:
     PhaseStatus fgComputeBlockAndEdgeWeights();
     bool fgComputeMissingBlockWeights(weight_t* returnWeight);
     bool fgComputeCalledCount(weight_t returnWeight);
-    PhaseStatus fgComputeEdgeWeights();
 
     bool fgReorderBlocks(bool useProfile);
 
