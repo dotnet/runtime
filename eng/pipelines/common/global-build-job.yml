@@ -17,7 +17,6 @@ parameters:
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
-  dependOnEvaluatePaths: false
   isOfficialBuild: false
   isSourceBuild: false
   isNonPortableSourceBuild: false
@@ -62,14 +61,8 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
+    ${{ if and(ne(parameters.dependsOn,'')) }}:
       dependsOn: ${{ parameters.dependsOn }}
-
-    ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      dependsOn:
-      - evaluate_paths
-      - ${{ if ne(parameters.dependsOn,'') }}:
-        - ${{ parameters.dependsOn }}
 
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
