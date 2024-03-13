@@ -10,6 +10,7 @@ namespace System.Reflection.Emit
         private readonly Type _localType;
         private readonly MethodInfo _method;
         private readonly bool _isPinned;
+        private string? _name;
         #endregion
 
         #region Constructor
@@ -24,6 +25,11 @@ namespace System.Reflection.Emit
 
         #region Internal Members
         internal MethodInfo GetMethodBuilder() => _method;
+        internal string? Name => _name;
+        #endregion
+
+        #region LocalVariableInfo Override
+        public override void SetLocalSymInfo(string name) => _name = name;
         #endregion
 
         #region LocalVariableInfo Override

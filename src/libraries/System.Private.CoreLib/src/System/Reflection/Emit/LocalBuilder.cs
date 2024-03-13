@@ -12,5 +12,7 @@ namespace System.Reflection.Emit
         /// This constructor is invoked by derived classes.
         /// </remarks>
         protected LocalBuilder() { }
+
+        public virtual void SetLocalSymInfo(string name) => throw new NotSupportedException();
     }
 }

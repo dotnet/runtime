@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -23,6 +24,8 @@ namespace System.Reflection.Emit
 
             return DefineEnumCore(name, visibility, underlyingType);
         }
+
+        public virtual ISymbolDocumentWriter DefineDocument(string url, Guid language = default) => throw new NotSupportedException();
 
         protected abstract EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType);
 

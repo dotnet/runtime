@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Diagnostics.SymbolStore;
 
 namespace System.Reflection.Emit
 {
@@ -199,6 +200,9 @@ namespace System.Reflection.Emit
 
         [CLSCompliant(false)]
         public void Emit(OpCode opcode, sbyte arg) => Emit(opcode, (byte)arg);
+
+        public virtual void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
+            => throw new NotSupportedException();
 
         #endregion
 

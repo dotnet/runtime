@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.SymbolStore;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -28,6 +29,7 @@ namespace System.Reflection.Emit
         private Dictionary<Label, LabelInfo> _labelTable = new(2);
         private List<KeyValuePair<object, BlobWriter>> _memberReferences = new();
         private List<ExceptionBlock> _exceptionStack = new();
+        private Dictionary<SymbolDocumentWriter, List<SequencePoint>> _sequencePoints = new();
 
         internal ILGeneratorImpl(MethodBuilderImpl methodBuilder, int size)
         {
@@ -44,6 +46,7 @@ namespace System.Reflection.Emit
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
         internal List<LocalBuilder> Locals => _locals;
+        internal Dictionary<SymbolDocumentWriter, List<SequencePoint>> SequencePoints => _sequencePoints;
 
         public override int ILOffset => _il.Offset;
 
@@ -774,6 +777,26 @@ namespace System.Reflection.Emit
             else
             {
                 throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
+        public override void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
+        {
+            if (document is SymbolDocumentWriter symbolDoc)
+            {
+                if (_sequencePoints.TryGetValue(symbolDoc, out List<SequencePoint>? sequencePoints))
+                {
+                    sequencePoints.Add(new SequencePoint(_il.Offset, startLine, startColumn, endLine, endColumn));
+                }
+                else
+                {
+                    sequencePoints = new List<SequencePoint> { new SequencePoint(_il.Offset, startLine, startColumn, endLine, endColumn) };
+                    _sequencePoints.Add(symbolDoc, sequencePoints);
+                }
+            }
+            else
+            {
+                throw new ArgumentException(nameof(document)); // TODO: SR
             }
         }
 

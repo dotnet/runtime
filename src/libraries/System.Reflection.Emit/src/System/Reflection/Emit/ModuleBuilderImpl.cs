@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.SymbolStore;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -25,6 +26,7 @@ namespace System.Reflection.Emit
         private readonly Guid _moduleVersionId;
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private List<CustomAttributeWrapper>? _customAttributes;
+        private Dictionary<SymbolDocumentWriter, DocumentHandle> _docHandles = new();
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
@@ -108,7 +110,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder)
+        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder, bool addPdb)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
@@ -134,7 +136,7 @@ namespace System.Reflection.Emit
 
             // Add global members
             WriteFields(_globalTypeBuilder, fieldDataBuilder);
-            WriteMethods(_globalTypeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
+            WriteMethods(_globalTypeBuilder._methodDefinitions, genericParams, methodBodyEncoder, addPdb);
 
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
@@ -173,7 +175,7 @@ namespace System.Reflection.Emit
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
                 WriteProperties(typeBuilder);
                 WriteFields(typeBuilder, fieldDataBuilder);
-                WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
+                WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder, addPdb);
                 WriteEvents(typeBuilder);
             }
 
@@ -339,7 +341,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
+        private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams,
+            MethodBodyStreamEncoder methodBodyEncoder, bool addPdb)
         {
             foreach (MethodBuilderImpl method in methods)
             {
@@ -351,6 +354,10 @@ namespace System.Reflection.Emit
                     StandaloneSignatureHandle signature = il.Locals.Count == 0 ? default :
                         _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetLocalSignature(il.Locals, this)));
                     offset = AddMethodBody(method, il, signature, methodBodyEncoder);
+                    if (addPdb)
+                    {
+                        AddPdb(il, signature);
+                    }
                 }
 
                 MethodDefinitionHandle handle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), offset, _nextParameterRowId);
@@ -398,6 +405,134 @@ namespace System.Reflection.Emit
                 }
             }
         }
+
+        private void AddPdb(ILGeneratorImpl il, StandaloneSignatureHandle localSignatureHandle)
+        {
+            if (il.SequencePoints.Count > 0)
+            {
+                Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator = il.SequencePoints.GetEnumerator();
+                if (il.SequencePoints.Count == 1)
+                {
+                    enumerator.MoveNext();
+                    DocumentHandle docHandle = GetDocument(enumerator.Current.Key);
+                    BlobBuilder spBlobBuilder = new BlobBuilder();
+                    spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
+                    PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value);
+                    _metadataBuilder.AddMethodDebugInformation(docHandle, _metadataBuilder.GetOrAddBlob(spBlobBuilder));
+                }
+                else
+                {
+                    // sequence points spans multiple docs
+                    _metadataBuilder.AddMethodDebugInformation(default, PopulateMultiDocSequencePointsBlob(enumerator, localSignatureHandle));
+                }
+            }
+            else
+            {
+                // add empty sequence point
+                _metadataBuilder.AddMethodDebugInformation(default, default);
+            }
+        }
+
+        private BlobHandle PopulateMultiDocSequencePointsBlob(Dictionary<SymbolDocumentWriter,
+            List<SequencePoint>>.Enumerator enumerator, StandaloneSignatureHandle localSignatureHandle)
+        {
+            BlobBuilder spBlobBuilder = new BlobBuilder();
+            // header:
+            spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
+
+            while (enumerator.MoveNext())
+            {
+                KeyValuePair<SymbolDocumentWriter, List<SequencePoint>> pair = enumerator.Current;
+                DocumentHandle documentHandle = GetDocument(pair.Key);
+                spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(documentHandle));
+                PopulateSequencePointsBlob(spBlobBuilder, pair.Value);
+            }
+
+            return _metadataBuilder.GetOrAddBlob(spBlobBuilder);
+        }
+
+        private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints)
+        {
+            int previousNonHiddenStartLine = -1;
+            int previousNonHiddenStartColumn = -1;
+
+            for (int i = 0; i < sequencePoints.Count; i++)
+            {
+                // IL offset delta:
+                if (i > 0)
+                {
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].Offset - sequencePoints[i - 1].Offset);
+                }
+                else
+                {
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].Offset);
+                }
+
+                if (sequencePoints[i].IsHidden)
+                {
+                    spBlobBuilder.WriteUInt16(0);
+                    // spBuilder.WriteUInt16(0); 1 for column?
+                    continue;
+                }
+
+                // Delta Lines & Columns:
+                SerializeDeltaLinesAndColumns(spBlobBuilder, sequencePoints[i]);
+
+                // delta Start Lines & Columns:
+                if (previousNonHiddenStartLine < 0)
+                {
+                    Debug.Assert(previousNonHiddenStartColumn < 0);
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].StartLine);
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].StartColumn);
+                }
+                else
+                {
+                    spBlobBuilder.WriteCompressedSignedInteger(sequencePoints[i].StartLine - previousNonHiddenStartLine);
+                    spBlobBuilder.WriteCompressedSignedInteger(sequencePoints[i].StartColumn - previousNonHiddenStartColumn);
+                }
+
+                previousNonHiddenStartLine = sequencePoints[i].StartLine;
+                previousNonHiddenStartColumn = sequencePoints[i].StartColumn;
+            }
+        }
+
+        private static void SerializeDeltaLinesAndColumns(BlobBuilder spBuilder, SequencePoint sequencePoint)
+        {
+            int deltaLines = sequencePoint.EndLine - sequencePoint.StartLine;
+            int deltaColumns = sequencePoint.EndColumn - sequencePoint.StartColumn;
+
+            // only hidden sequence points have zero width
+            Debug.Assert(deltaLines != 0 || deltaColumns != 0 || sequencePoint.IsHidden);
+
+            spBuilder.WriteCompressedInteger(deltaLines);
+
+            if (deltaLines == 0)
+            {
+                spBuilder.WriteCompressedInteger(deltaColumns);
+            }
+            else
+            {
+                spBuilder.WriteCompressedSignedInteger(deltaColumns);
+            }
+        }
+
+        private DocumentHandle GetDocument(SymbolDocumentWriter docWriter)
+        {
+            if (!_docHandles.TryGetValue(docWriter, out DocumentHandle handle))
+            {
+                handle = AddDocument(docWriter.URL, docWriter.Language, docWriter.HashAlgorithm, docWriter.Hash);
+                _docHandles.Add(docWriter, handle);
+            }
+
+            return handle;
+        }
+
+        private DocumentHandle AddDocument(string url, Guid language, Guid hashAlgorithm, byte[]? hash) =>
+            _metadataBuilder.AddDocument(
+                name: _metadataBuilder.GetOrAddDocumentName(url),
+                hashAlgorithm: hashAlgorithm == default ? default : _metadataBuilder.GetOrAddGuid(hashAlgorithm),
+                hash: hash == null ? default : _metadataBuilder.GetOrAddBlob(hash),
+                language: language == default ? default : _metadataBuilder.GetOrAddGuid(language));
 
         private void FillMemberReferences(ILGeneratorImpl il)
         {
@@ -1158,5 +1293,12 @@ namespace System.Reflection.Emit
                 CallingConvention.FastCall => SignatureCallingConvention.FastCall,
                 _ => SignatureCallingConvention.Default,
             };
+
+        public override ISymbolDocumentWriter DefineDocument(string url, Guid language = default)
+        {
+            ArgumentNullException.ThrowIfNull(url);
+
+            return new SymbolDocumentWriter(url, language);
+        }
     }
 }

@@ -102,17 +102,17 @@ namespace System.Reflection.Emit
             WritePEImage(stream, ilStream, fieldData);
         }
 
-
         /// <summary>
         /// Generates the metadata for the <see cref="PersistedAssemblyBuilder"/>.
         /// </summary>
         /// <param name="ilStream">Outputs <see cref="BlobBuilder"/> bytes that includes all method's IL (body) emitted.</param>
         /// <param name="mappedFieldData">Outputs <see cref="BlobBuilder"/> bytes that includes all field RVA data defined in the assembly.</param>
+        /// <param name="addPdb">A boolean value that indicates whether to include PDB information.</param>
         /// <returns>A <see cref="MetadataBuilder"/> that includes all members defined in the Assembly.</returns>
         /// <exception cref="InvalidOperationException">A module not defined for the assembly.</exception>
         /// <exception cref="InvalidOperationException">The metadata already populated for the assembly before.</exception>
         [CLSCompliant(false)]
-        public MetadataBuilder GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData)
+        public MetadataBuilder GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData, bool addPdb = false)
         {
             PopulateAssemblyMetadata(out ilStream, out mappedFieldData);
 

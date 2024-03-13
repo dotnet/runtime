@@ -54,6 +54,7 @@ namespace System.Reflection.Emit
         public abstract void EndExceptionBlock();
         public abstract void EndScope();
         public abstract void MarkLabel(System.Reflection.Emit.Label loc);
+        public virtual void MarkSequencePoint(System.Diagnostics.SymbolStore.ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) { }
         public virtual void ThrowException([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type excType) { }
         public abstract void UsingNamespace(string usingNamespace);
     }
@@ -73,6 +74,7 @@ namespace System.Reflection.Emit
         public override bool IsPinned { get { throw null; } }
         public override int LocalIndex { get { throw null; } }
         public override System.Type LocalType { get { throw null; } }
+        public virtual void SetLocalSymInfo(string name) { }
     }
     public abstract partial class ParameterBuilder
     {

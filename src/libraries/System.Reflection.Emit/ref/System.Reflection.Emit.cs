@@ -398,6 +398,7 @@ namespace System.Reflection.Emit
         public override string ScopeName { get { throw null; } }
         public void CreateGlobalFunctions() { }
         protected abstract void CreateGlobalFunctionsCore();
+        public virtual System.Diagnostics.SymbolStore.ISymbolDocumentWriter DefineDocument(string url, System.Guid language = default) { throw null; }
         public System.Reflection.Emit.EnumBuilder DefineEnum(string name, System.Reflection.TypeAttributes visibility, System.Type underlyingType) { throw null; }
         protected abstract System.Reflection.Emit.EnumBuilder DefineEnumCore(string name, System.Reflection.TypeAttributes visibility, System.Type underlyingType);
         public System.Reflection.Emit.MethodBuilder DefineGlobalMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
@@ -479,9 +480,9 @@ namespace System.Reflection.Emit
         public override System.Reflection.Module ManifestModule { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         protected override System.Reflection.Emit.ModuleBuilder DefineDynamicModuleCore(string name) { throw null; }
-        protected override System.Reflection.Emit.ModuleBuilder? GetDynamicModuleCore(string name) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public System.Reflection.Metadata.Ecma335.MetadataBuilder GenerateMetadata(out System.Reflection.Metadata.BlobBuilder ilStream, out System.Reflection.Metadata.BlobBuilder mappedFieldData) { throw null; }
+        public System.Reflection.Metadata.Ecma335.MetadataBuilder GenerateMetadata(out System.Reflection.Metadata.BlobBuilder ilStream, out System.Reflection.Metadata.BlobBuilder mappedFieldData, bool addPdb = false) { throw null; }
+        protected override System.Reflection.Emit.ModuleBuilder? GetDynamicModuleCore(string name) { throw null; }
         public override System.Reflection.AssemblyName GetName(bool copiedName) { throw null; }
         public void Save(string assemblyFileName) { throw null; }
         public void Save(System.IO.Stream stream) { throw null; }
