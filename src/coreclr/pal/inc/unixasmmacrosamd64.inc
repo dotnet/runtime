@@ -87,7 +87,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro TAILJMP_R10
-        .byte 0x4A
+        .byte 0x49
         .byte 0xFF
         .byte 0xE2
 .endm
