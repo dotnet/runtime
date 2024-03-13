@@ -1765,12 +1765,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     assert(returnType == TYP_STRUCT);
     assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
 
-#ifdef UNIX_AMD64_ABI
-    // must be a struct returned in two registers
-    assert(retRegCount == 2);
-#else  // not UNIX_AMD64_ABI
     assert(retRegCount >= 2);
-#endif // not UNIX_AMD64_ABI
 
     if (!call->CanTailCall() && !call->IsInlineCandidate())
     {
