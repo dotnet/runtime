@@ -1879,6 +1879,7 @@ export type JiterpreterOptions = {
     enableWasmEh: boolean;
     enableSimd: boolean;
     zeroPageOptimization: boolean;
+    cprop: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
@@ -1924,6 +1925,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
     "zeroPageOptimization": "jiterpreter-zero-page-optimization",
+    "cprop": "jiterpreter-constant-propagation",
     "enableStats": "jiterpreter-stats-enabled",
     "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",
