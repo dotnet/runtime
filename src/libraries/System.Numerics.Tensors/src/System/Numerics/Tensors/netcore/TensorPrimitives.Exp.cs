@@ -196,18 +196,25 @@ namespace System.Numerics.Tensors
 
                 // r = x - (dn * (ln(2) / 64))
                 // where ln(2) / 64 is split into Head and Tail values
-                Vector128<double> r = x - (dn * Vector128.Create(V_LN2_HEAD)) - (dn * Vector128.Create(V_LN2_TAIL));
+                Vector128<double> r;
+                r = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-V_LN2_HEAD), x);
+                r = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-V_LN2_TAIL), r);
 
+                // POLY_EVAL_ODD_9
                 Vector128<double> r2 = r * r;
                 Vector128<double> r4 = r2 * r2;
                 Vector128<double> r8 = r4 * r4;
-
-                // Compute polynomial
-                Vector128<double> poly = ((Vector128.Create(C12) * r + Vector128.Create(C11)) * r2 +
-                                           Vector128.Create(C10) * r + Vector128.Create(C9)) * r8 +
-                                         ((Vector128.Create(C8) * r + Vector128.Create(C7)) * r2 +
-                                          (Vector128.Create(C6) * r + Vector128.Create(C5))) * r4 +
-                                         ((Vector128.Create(C4) * r + Vector128.Create(C3)) * r2 + (r + Vector128<double>.One));
+                Vector128<double> a0 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C12), r, Vector128.Create(C11));
+                Vector128<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C10), r, Vector128.Create(C9));
+                Vector128<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C8), r, Vector128.Create(C7));
+                Vector128<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C6), r, Vector128.Create(C5));
+                Vector128<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C4), r, Vector128.Create(C3));
+                Vector128<double> a5 = MultiplyAddEstimateOperator<double>.Invoke(a0, r2, a1);
+                Vector128<double> a6 = MultiplyAddEstimateOperator<double>.Invoke(a2, r2, a3);
+                Vector128<double> a7 = MultiplyAddEstimateOperator<double>.Invoke(a4, r2, r + Vector128<double>.One);
+                //poly = a5 * r8 + a6 * r4 + a7;
+                Vector128<double> poly = MultiplyAddEstimateOperator<double>.Invoke(a6, r4, a7);
+                poly = MultiplyAddEstimateOperator<double>.Invoke(a5, r8, poly);
 
                 // m = (n - j) / 64
                 // result = polynomial * 2^m
@@ -247,18 +254,25 @@ namespace System.Numerics.Tensors
 
                 // r = x - (dn * (ln(2) / 64))
                 // where ln(2) / 64 is split into Head and Tail values
-                Vector256<double> r = x - (dn * Vector256.Create(V_LN2_HEAD)) - (dn * Vector256.Create(V_LN2_TAIL));
+                Vector256<double> r;
+                r = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-V_LN2_HEAD), x);
+                r = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-V_LN2_TAIL), r);
 
+                // POLY_EVAL_ODD_9
                 Vector256<double> r2 = r * r;
                 Vector256<double> r4 = r2 * r2;
                 Vector256<double> r8 = r4 * r4;
-
-                // Compute polynomial
-                Vector256<double> poly = ((Vector256.Create(C12) * r + Vector256.Create(C11)) * r2 +
-                                           Vector256.Create(C10) * r + Vector256.Create(C9)) * r8 +
-                                         ((Vector256.Create(C8) * r + Vector256.Create(C7)) * r2 +
-                                          (Vector256.Create(C6) * r + Vector256.Create(C5))) * r4 +
-                                         ((Vector256.Create(C4) * r + Vector256.Create(C3)) * r2 + (r + Vector256<double>.One));
+                Vector256<double> a0 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C12), r, Vector256.Create(C11));
+                Vector256<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C10), r, Vector256.Create(C9));
+                Vector256<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C8), r, Vector256.Create(C7));
+                Vector256<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C6), r, Vector256.Create(C5));
+                Vector256<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C4), r, Vector256.Create(C3));
+                Vector256<double> a5 = MultiplyAddEstimateOperator<double>.Invoke(a0, r2, a1);
+                Vector256<double> a6 = MultiplyAddEstimateOperator<double>.Invoke(a2, r2, a3);
+                Vector256<double> a7 = MultiplyAddEstimateOperator<double>.Invoke(a4, r2, r + Vector256<double>.One);
+                //poly = a5 * r8 + a6 * r4 + a7;
+                Vector256<double> poly = MultiplyAddEstimateOperator<double>.Invoke(a6, r4, a7);
+                poly = MultiplyAddEstimateOperator<double>.Invoke(a5, r8, poly);
 
                 // m = (n - j) / 64
                 // result = polynomial * 2^m
@@ -298,18 +312,25 @@ namespace System.Numerics.Tensors
 
                 // r = x - (dn * (ln(2) / 64))
                 // where ln(2) / 64 is split into Head and Tail values
-                Vector512<double> r = x - (dn * Vector512.Create(V_LN2_HEAD)) - (dn * Vector512.Create(V_LN2_TAIL));
+                Vector512<double> r;
+                r = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-V_LN2_HEAD), x);
+                r = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-V_LN2_TAIL), r);
 
+                // POLY_EVAL_ODD_9
                 Vector512<double> r2 = r * r;
                 Vector512<double> r4 = r2 * r2;
                 Vector512<double> r8 = r4 * r4;
-
-                // Compute polynomial
-                Vector512<double> poly = ((Vector512.Create(C12) * r + Vector512.Create(C11)) * r2 +
-                                           Vector512.Create(C10) * r + Vector512.Create(C9)) * r8 +
-                                         ((Vector512.Create(C8) * r + Vector512.Create(C7)) * r2 +
-                                          (Vector512.Create(C6) * r + Vector512.Create(C5))) * r4 +
-                                         ((Vector512.Create(C4) * r + Vector512.Create(C3)) * r2 + (r + Vector512<double>.One));
+                Vector512<double> a0 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C12), r, Vector512.Create(C11));
+                Vector512<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C10), r, Vector512.Create(C9));
+                Vector512<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C8), r, Vector512.Create(C7));
+                Vector512<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C6), r, Vector512.Create(C5));
+                Vector512<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C4), r, Vector512.Create(C3));
+                Vector512<double> a5 = MultiplyAddEstimateOperator<double>.Invoke(a0, r2, a1);
+                Vector512<double> a6 = MultiplyAddEstimateOperator<double>.Invoke(a2, r2, a3);
+                Vector512<double> a7 = MultiplyAddEstimateOperator<double>.Invoke(a4, r2, r + Vector512<double>.One);
+                //poly = a5 * r8 + a6 * r4 + a7;
+                Vector512<double> poly = MultiplyAddEstimateOperator<double>.Invoke(a6, r4, a7);
+                poly = MultiplyAddEstimateOperator<double>.Invoke(a5, r8, poly);
 
                 // m = (n - j) / 64
                 // result = polynomial * 2^m
@@ -411,6 +432,10 @@ namespace System.Numerics.Tensors
                 dnu -= v_expf_huge;
 
                 // r = z - dn
+                Vector128<double> rl = zl - dnl;
+                Vector128<double> ru = zu - dnu;
+
+                // POLY_EVAL_6
                 Vector128<double> c1 = Vector128.Create(C1);
                 Vector128<double> c2 = Vector128.Create(C2);
                 Vector128<double> c3 = Vector128.Create(C3);
@@ -418,24 +443,21 @@ namespace System.Numerics.Tensors
                 Vector128<double> c5 = Vector128.Create(C5);
                 Vector128<double> c6 = Vector128.Create(C6);
 
-                Vector128<double> rl = zl - dnl;
-
                 Vector128<double> rl2 = rl * rl;
                 Vector128<double> rl4 = rl2 * rl2;
-
-                Vector128<double> polyl = (c4 * rl + c3) * rl2
-                                       + ((c6 * rl + c5) * rl4
-                                        + (c2 * rl + c1));
-
-
-                Vector128<double> ru = zu - dnu;
+                Vector128<double> al0 = MultiplyAddEstimateOperator<double>.Invoke(c4, rl, c3);
+                Vector128<double> al1 = MultiplyAddEstimateOperator<double>.Invoke(c6, rl, c5);
+                Vector128<double> al2 = MultiplyAddEstimateOperator<double>.Invoke(c2, rl, c1);
+                Vector128<double> polyl = MultiplyAddEstimateOperator<double>.Invoke(al1, rl4, al2);
+                polyl = MultiplyAddEstimateOperator<double>.Invoke(al0, rl2, polyl);
 
                 Vector128<double> ru2 = ru * ru;
                 Vector128<double> ru4 = ru2 * ru2;
-
-                Vector128<double> polyu = (c4 * ru + c3) * ru2
-                                       + ((c6 * ru + c5) * ru4
-                                        + (c2 * ru + c1));
+                Vector128<double> au0 = MultiplyAddEstimateOperator<double>.Invoke(c4, ru, c3);
+                Vector128<double> au1 = MultiplyAddEstimateOperator<double>.Invoke(c6, ru, c5);
+                Vector128<double> au2 = MultiplyAddEstimateOperator<double>.Invoke(c2, ru, c1);
+                Vector128<double> polyu = MultiplyAddEstimateOperator<double>.Invoke(au1, ru4, au2);
+                polyu = MultiplyAddEstimateOperator<double>.Invoke(au0, ru2, polyu);
 
                 // result = (float)(poly + (n << 52))
                 Vector128<float> ret = Vector128.Narrow(
@@ -487,6 +509,10 @@ namespace System.Numerics.Tensors
                 dnu -= v_expf_huge;
 
                 // r = z - dn
+                Vector256<double> rl = zl - dnl;
+                Vector256<double> ru = zu - dnu;
+
+                // POLY_EVAL_6
                 Vector256<double> c1 = Vector256.Create(C1);
                 Vector256<double> c2 = Vector256.Create(C2);
                 Vector256<double> c3 = Vector256.Create(C3);
@@ -494,24 +520,21 @@ namespace System.Numerics.Tensors
                 Vector256<double> c5 = Vector256.Create(C5);
                 Vector256<double> c6 = Vector256.Create(C6);
 
-                Vector256<double> rl = zl - dnl;
-
                 Vector256<double> rl2 = rl * rl;
                 Vector256<double> rl4 = rl2 * rl2;
-
-                Vector256<double> polyl = (c4 * rl + c3) * rl2
-                                       + ((c6 * rl + c5) * rl4
-                                        + (c2 * rl + c1));
-
-
-                Vector256<double> ru = zu - dnu;
+                Vector256<double> al0 = MultiplyAddEstimateOperator<double>.Invoke(c4, rl, c3);
+                Vector256<double> al1 = MultiplyAddEstimateOperator<double>.Invoke(c6, rl, c5);
+                Vector256<double> al2 = MultiplyAddEstimateOperator<double>.Invoke(c2, rl, c1);
+                Vector256<double> polyl = MultiplyAddEstimateOperator<double>.Invoke(al1, rl4, al2);
+                polyl = MultiplyAddEstimateOperator<double>.Invoke(al0, rl2, polyl);
 
                 Vector256<double> ru2 = ru * ru;
                 Vector256<double> ru4 = ru2 * ru2;
-
-                Vector256<double> polyu = (c4 * ru + c3) * ru2
-                                       + ((c6 * ru + c5) * ru4
-                                        + (c2 * ru + c1));
+                Vector256<double> au0 = MultiplyAddEstimateOperator<double>.Invoke(c4, ru, c3);
+                Vector256<double> au1 = MultiplyAddEstimateOperator<double>.Invoke(c6, ru, c5);
+                Vector256<double> au2 = MultiplyAddEstimateOperator<double>.Invoke(c2, ru, c1);
+                Vector256<double> polyu = MultiplyAddEstimateOperator<double>.Invoke(au1, ru4, au2);
+                polyu = MultiplyAddEstimateOperator<double>.Invoke(au0, ru2, polyu);
 
                 // result = (float)(poly + (n << 52))
                 Vector256<float> ret = Vector256.Narrow(
@@ -563,6 +586,10 @@ namespace System.Numerics.Tensors
                 dnu -= v_expf_huge;
 
                 // r = z - dn
+                Vector512<double> rl = zl - dnl;
+                Vector512<double> ru = zu - dnu;
+
+                // POLY_EVAL_6
                 Vector512<double> c1 = Vector512.Create(C1);
                 Vector512<double> c2 = Vector512.Create(C2);
                 Vector512<double> c3 = Vector512.Create(C3);
@@ -570,24 +597,21 @@ namespace System.Numerics.Tensors
                 Vector512<double> c5 = Vector512.Create(C5);
                 Vector512<double> c6 = Vector512.Create(C6);
 
-                Vector512<double> rl = zl - dnl;
-
                 Vector512<double> rl2 = rl * rl;
                 Vector512<double> rl4 = rl2 * rl2;
-
-                Vector512<double> polyl = (c4 * rl + c3) * rl2
-                                       + ((c6 * rl + c5) * rl4
-                                        + (c2 * rl + c1));
-
-
-                Vector512<double> ru = zu - dnu;
+                Vector512<double> al0 = MultiplyAddEstimateOperator<double>.Invoke(c4, rl, c3);
+                Vector512<double> al1 = MultiplyAddEstimateOperator<double>.Invoke(c6, rl, c5);
+                Vector512<double> al2 = MultiplyAddEstimateOperator<double>.Invoke(c2, rl, c1);
+                Vector512<double> polyl = MultiplyAddEstimateOperator<double>.Invoke(al1, rl4, al2);
+                polyl = MultiplyAddEstimateOperator<double>.Invoke(al0, rl2, polyl);
 
                 Vector512<double> ru2 = ru * ru;
                 Vector512<double> ru4 = ru2 * ru2;
-
-                Vector512<double> polyu = (c4 * ru + c3) * ru2
-                                       + ((c6 * ru + c5) * ru4
-                                        + (c2 * ru + c1));
+                Vector512<double> au0 = MultiplyAddEstimateOperator<double>.Invoke(c4, ru, c3);
+                Vector512<double> au1 = MultiplyAddEstimateOperator<double>.Invoke(c6, ru, c5);
+                Vector512<double> au2 = MultiplyAddEstimateOperator<double>.Invoke(c2, ru, c1);
+                Vector512<double> polyu = MultiplyAddEstimateOperator<double>.Invoke(au1, ru4, au2);
+                polyu = MultiplyAddEstimateOperator<double>.Invoke(au0, ru2, polyu);
 
                 // result = (float)(poly + (n << 52))
                 Vector512<float> ret = Vector512.Narrow(
