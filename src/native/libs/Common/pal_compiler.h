@@ -77,10 +77,6 @@ do_abort_unless (bool condition, const char* fmt, ...)
 #ifdef __cplusplus
 #define TYPEOF decltype
 #else
-#ifdef _MSC_VER
-#define TYPEOF __typeof__
-#else
 #define TYPEOF __typeof
-#endif // _MSVC_VER
 #endif // __cplusplus
 #endif // TYPEOF
