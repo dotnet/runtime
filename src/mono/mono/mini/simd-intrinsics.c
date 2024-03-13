@@ -1479,38 +1479,6 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 #endif
 }
 
-#if defined(TARGET_ARM64)
-static MonoInst*
-emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoInst *arg){
-	MonoInst* vec = arg;
-	const char *class_name = m_class_get_name (klass);
-	if (!strcmp ("Plane", class_name)) {
-		static float r4_0 = 0;
-		MonoInst *zero;
-		int zero_dreg = alloc_freg (cfg);
-		MONO_INST_NEW (cfg, zero, OP_R4CONST);
-		zero->inst_p0 = (void*)&r4_0;
-		zero->dreg = zero_dreg;
-		MONO_ADD_INS (cfg->cbb, zero);
-		vec = emit_vector_insert_element (cfg, klass, vec, MONO_TYPE_R4, zero, 3, FALSE);
-	}
-
-	MonoInst *dot = emit_dot(cfg, klass, vector_type, MONO_TYPE_R4, vec->dreg, vec->dreg);
-	dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
-	dot->inst_c1 = MONO_TYPE_R4;
-	
-	MonoInst *sqrt_vec = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, dot->dreg, -1);
-	sqrt_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
-	sqrt_vec->inst_c1 = MONO_TYPE_R4;
-
-	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, arg->dreg, sqrt_vec->dreg);
-	normalized_vec->inst_c0 = OP_FDIV;
-	normalized_vec->inst_c1 = MONO_TYPE_R4;
-	
-	return normalized_vec;
-}
-#endif
-
 /*
  * Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512.
  * If the intrinsic is not supported for some reasons, return NULL, and fall back to the c#
@@ -3193,7 +3161,32 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	break;
 	case SN_Normalize: {
 #if defined (TARGET_ARM64)
-	return emit_normalize_vector_2_3_4 (cfg, klass, type, args[0]);
+	MonoInst* vec = args[0];
+	const char *class_name = m_class_get_name (klass);
+	if (!strcmp ("Plane", class_name)) {
+		static float r4_0 = 0;
+		MonoInst *zero;
+		int zero_dreg = alloc_freg (cfg);
+		MONO_INST_NEW (cfg, zero, OP_R4CONST);
+		zero->inst_p0 = (void*)&r4_0;
+		zero->dreg = zero_dreg;
+		MONO_ADD_INS (cfg->cbb, zero);
+		vec = emit_vector_insert_element (cfg, klass, vec, MONO_TYPE_R4, zero, 3, FALSE);
+	}
+
+	MonoInst *dot = emit_dot(cfg, klass, type, MONO_TYPE_R4, vec->dreg, vec->dreg);
+	dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
+	dot->inst_c1 = MONO_TYPE_R4;
+	
+	MonoInst *sqrt_vec = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, dot->dreg, -1);
+	sqrt_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
+	sqrt_vec->inst_c1 = MONO_TYPE_R4;
+
+	MonoInst *normalized_vec = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, sqrt_vec->dreg);
+	normalized_vec->inst_c0 = OP_FDIV;
+	normalized_vec->inst_c1 = MONO_TYPE_R4;
+	
+	return normalized_vec;
 #endif
 	}
 	break;
