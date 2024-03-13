@@ -54,6 +54,7 @@ jobs:
     - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
       parameters:
         runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
         liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
 
     - ${{ each variable in parameters.variables }}:
