@@ -658,8 +658,29 @@ static code_t insEncodeSplitUimm(size_t imm)
     return result;
 }
 
-// Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_19_to_16(ssize_t imm);
+template <const size_t hi, const size_t lo>
+static code_t insEncodeSimm(ssize_t imm)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+
+    const size_t imm_bits = hi - lo + 1;
+    static_assert(imm_bits < sizeof(code_t) * BITS_PER_BYTE);
+
+    const ssize_t imm_max = 1 << (imm_bits - 1);
+    const ssize_t imm_min = -imm_max;
+    assert(imm_min <= imm && imm < imm_max);
+
+    union {
+        ssize_t simm;
+        size_t  uimm;
+    } conv;
+
+    conv.simm     = imm;
+    code_t result = conv.uimm & ((1 << imm_bits) - 1);
+
+    return result << lo;
+}
 
 // Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
 static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
@@ -688,12 +709,6 @@ static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
 
-// Returns the encoding for the immediate value as 6-bits at bit locations '10-5'.
-static code_t insEncodeSimm6_10_to_5(ssize_t imm);
-
-// Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
-static code_t insEncodeSimm6_21_to_16(ssize_t imm);
-
 // Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
 static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
 
@@ -703,62 +718,17 @@ static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
 static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
 
-// Returns the encoding for the immediate value as 5-bits at bit locations '9-5'.
-static code_t insEncodeSimm5_9_to_5(ssize_t imm);
-
-// Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
-static code_t insEncodeSimm5_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
-static code_t insEncodeUimm2_9_to_8(ssize_t imm);
-
-// Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
-static code_t insEncodeUimm2_11_to_10(ssize_t imm);
-
-// Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
-static code_t insEncodeUimm2_20_to_19(ssize_t imm);
-
-// Returns the encoding for the immediate value as 2-bits at bit locations '23-22'.
-static code_t insEncodeUimm2_23_to_22(ssize_t imm);
-
 // Returns the encoding for the immediate value as 1-bit at bit locations '23'.
 static code_t insEncodeUimm1_23(ssize_t imm);
 
 // Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
 static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
 
-// Returns the encoding for the immediate value as 1 bit at bit location '10'.
-static code_t insEncodeImm1_10(ssize_t imm);
-
-// Returns the encoding for the immediate value as 1 bit at bit location '11'.
-static code_t insEncodeImm1_11(ssize_t imm);
-
-// Returns the encoding for the immediate value as 1 bit at bit location '22'.
-static code_t insEncodeImm1_22(ssize_t imm);
-
-// Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
-static code_t insEncodeUimm7_20_to_14(ssize_t imm);
-
-// Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
-static code_t insEncodeUimm4_19_to_16(ssize_t imm);
-
 // Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
 static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
-// Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_21_to_16(ssize_t imm);
-
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
-
-// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
-static code_t insEncodeUimm3_12_to_10(ssize_t imm);
-
-// Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
-static code_t insEncodeUimm3_18_to_16(ssize_t imm);
 
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.

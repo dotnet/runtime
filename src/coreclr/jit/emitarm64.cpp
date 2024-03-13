@@ -21973,21 +21973,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_19_to_16(ssize_t imm)
-{
-    assert(isValidSimm<4>(imm));
-    if (imm < 0)
-    {
-        imm = (imm & 0xF);
-    }
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
  */
 
@@ -22014,7 +21999,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm)
 {
     assert((isValidSimm_MultipleOf<4, 2>(imm)));
-    return insEncodeSimm4_19_to_16(imm / 2);
+    return insEncodeSimm<19, 16>(imm / 2);
 }
 
 /*****************************************************************************
@@ -22025,7 +22010,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm)
 {
     assert((isValidSimm_MultipleOf<4, 3>(imm)));
-    return insEncodeSimm4_19_to_16(imm / 3);
+    return insEncodeSimm<19, 16>(imm / 3);
 }
 
 /*****************************************************************************
@@ -22036,7 +22021,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm)
 {
     assert((isValidSimm_MultipleOf<4, 4>(imm)));
-    return insEncodeSimm4_19_to_16(imm / 4);
+    return insEncodeSimm<19, 16>(imm / 4);
 }
 
 /*****************************************************************************
@@ -22047,7 +22032,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
 {
     assert((isValidSimm_MultipleOf<4, 16>(imm)));
-    return insEncodeSimm4_19_to_16(imm / 16);
+    return insEncodeSimm<19, 16>(imm / 16);
 }
 
 /*****************************************************************************
@@ -22058,7 +22043,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm)
 {
     assert((isValidSimm_MultipleOf<4, 32>(imm)));
-    return insEncodeSimm4_19_to_16(imm / 32);
+    return insEncodeSimm<19, 16>(imm / 32);
 }
 
 /*****************************************************************************
@@ -22069,7 +22054,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
 {
     assert((isValidUimm_MultipleOf<5, 2>(imm)));
-    return insEncodeUimm5_20_to_16(imm / 2);
+    return insEncodeUimm<20, 16>(imm / 2);
 }
 
 /*****************************************************************************
@@ -22080,7 +22065,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
 {
     assert((isValidUimm_MultipleOf<5, 4>(imm)));
-    return insEncodeUimm5_20_to_16(imm / 4);
+    return insEncodeUimm<20, 16>(imm / 4);
 }
 
 /*****************************************************************************
@@ -22091,7 +22076,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
 {
     assert((isValidUimm_MultipleOf<5, 8>(imm)));
-    return insEncodeUimm5_20_to_16(imm / 8);
+    return insEncodeUimm<20, 16>(imm / 8);
 }
 
 /*****************************************************************************
@@ -22102,7 +22087,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
 {
     assert((isValidUimm_MultipleOf<6, 2>(imm)));
-    return insEncodeUimm6_21_to_16(imm / 2);
+    return insEncodeUimm<21, 16>(imm / 2);
 }
 
 /*****************************************************************************
@@ -22113,7 +22098,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
 {
     assert((isValidUimm_MultipleOf<6, 4>(imm)));
-    return insEncodeUimm6_21_to_16(imm / 4);
+    return insEncodeUimm<21, 16>(imm / 4);
 }
 
 /*****************************************************************************
@@ -22124,111 +22109,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
 {
     assert((isValidUimm_MultipleOf<6, 8>(imm)));
-    return insEncodeUimm6_21_to_16(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 5-bits at bit locations '9-5'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm5_9_to_5(ssize_t imm)
-{
-    assert(isValidSimm<5>(imm));
-    if (imm < 0)
-    {
-        imm = (imm & 0x1F);
-    }
-    return (code_t)imm << 5;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm5_20_to_16(ssize_t imm)
-{
-    assert(isValidSimm<5>(imm));
-    if (imm < 0)
-    {
-        imm = (imm & 0x1F);
-    }
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 6-bits at bit locations '10-5'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm6_10_to_5(ssize_t imm)
-{
-    assert(isValidSimm<6>(imm));
-    if (imm < 0)
-    {
-        imm = (imm & 0x3F);
-    }
-    return (code_t)imm << 5;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 6-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm6_21_to_16(ssize_t imm)
-{
-    assert(isValidSimm<6>(imm));
-    if (imm < 0)
-    {
-        imm = (imm & 0x3F);
-    }
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm2_9_to_8(ssize_t imm)
-{
-    assert(isValidUimm<2>(imm));
-    return (code_t)imm << 8;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm2_11_to_10(ssize_t imm)
-{
-    assert(isValidUimm<2>(imm));
-    return (code_t)imm << 10;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm2_20_to_19(ssize_t imm)
-{
-    assert(isValidUimm<2>(imm));
-    return (code_t)imm << 19;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 2-bits at bit locations '23-22'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm2_23_to_22(ssize_t imm)
-{
-    assert(isValidUimm<2>(imm));
-    return (code_t)imm << 22;
+    return insEncodeUimm<21, 16>(imm / 8);
 }
 
 /*****************************************************************************
@@ -22259,61 +22140,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value as 1 bit at bit location '10'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeImm1_10(ssize_t imm)
-{
-    assert(isValidUimm<1>(imm));
-    return (code_t)imm << 10;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 1 bit at bit location '11'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeImm1_11(ssize_t imm)
-{
-    assert(isValidUimm<1>(imm));
-    return (code_t)imm << 11;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 1 bit at bit location '22'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeImm1_22(ssize_t imm)
-{
-    assert(isValidUimm<1>(imm));
-    return (code_t)imm << 22;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm7_20_to_14(ssize_t imm)
-{
-    assert(isValidUimm<7>(imm));
-    return (code_t)imm << 14;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm4_19_to_16(ssize_t imm)
-{
-    assert(isValidUimm<4>(imm));
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
  */
 
@@ -22325,28 +22151,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_20_to_16(ssize_t imm)
-{
-    assert(isValidUimm<5>(imm));
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_21_to_16(ssize_t imm)
-{
-    assert(isValidUimm<6>(imm));
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
  */
 
@@ -22354,28 +22158,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isValidSimm<8>(imm) || isValidUimm<8>(imm));
     return (code_t)((imm & 0xFF) << 5);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the unsigned immediate value as 3-bits at bit locations '12-10'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm3_12_to_10(ssize_t imm)
-{
-    assert(isValidUimm<3>(imm));
-    return (code_t)imm << 10;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm3_18_to_16(ssize_t imm)
-{
-    assert(isValidUimm<3>(imm));
-    return (code_t)imm << 16;
 }
 
 /*****************************************************************************
@@ -24820,21 +24602,21 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_BH_3A: // .........x.mmmmm ....hhnnnnnddddd -- SVE address generation
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
-            code |= insEncodeReg_V_20_to_16(id->idReg3());     // mmmmm
-            code |= insEncodeUimm2_11_to_10(emitGetInsSC(id)); // hh
-            code |= insEncodeImm1_22(id->idInsOpt() == INS_OPTS_SCALABLE_D ? 1 : 0);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());     // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());   // mmmmm
+            code |= insEncodeUimm<11, 10>(emitGetInsSC(id)); // hh
+            code |= insEncodeUimm<22, 22>(id->idInsOpt() == INS_OPTS_SCALABLE_D ? 1 : 0);
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_BH_3B:   // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
         case IF_SVE_BH_3B_A: // ...........mmmmm ....hhnnnnnddddd -- SVE address generation
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
-            code |= insEncodeReg_V_20_to_16(id->idReg3());     // mmmmm
-            code |= insEncodeUimm2_11_to_10(emitGetInsSC(id)); // hh
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());     // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());   // mmmmm
+            code |= insEncodeUimm<11, 10>(emitGetInsSC(id)); // hh
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -24863,10 +24645,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_BQ_2B: // ...........iiiii ...iiimmmmmddddd -- SVE extract vector (immediate offset, destructive)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());  // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());  // nnnnn/mmmmm
-            code |= insEncodeUimm3_12_to_10(imm & 0b111); // iii
-            code |= insEncodeUimm5_20_to_16(imm >> 3);    // iiiii
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn/mmmmm
+            code |= insEncodeUimm<12, 10>(imm & 0b111);  // iii
+            code |= insEncodeUimm<20, 16>(imm >> 3);     // iiiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25123,7 +24905,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
             code |= insEncodeReg_P_12_to_10(id->idReg2());                // ggg
             code |= insEncodeReg_V_9_to_5(id->idReg3());                  // nnnnn
-            code |= insEncodeSimm5_20_to_16(imm);                         // iiiii
+            code |= insEncodeSimm<20, 16>(imm);                           // iiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25134,7 +24916,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
             code |= insEncodeReg_P_12_to_10(id->idReg2());                // ggg
             code |= insEncodeReg_V_9_to_5(id->idReg3());                  // nnnnn
-            code |= insEncodeUimm7_20_to_14(imm);                         // iiiii
+            code |= insEncodeUimm<20, 14>(imm);                           // iiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25179,8 +24961,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // mmmmm
-            code |= insEncodeUimm5_20_to_16(imm & 0b11111);                                        // xxiii
-            code |= insEncodeImm1_22(imm >> 5);                                                    // x
+            code |= insEncodeUimm<20, 16>(imm & 0b11111);                                          // xxiii
+            code |= insEncodeUimm<22, 22>(imm >> 5);                                               // x
             code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25193,8 +24975,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                 insDecodeTwoSimm5(emitGetInsSC(id), &imm1, &imm2);
                 code = emitInsCodeSve(ins, fmt);
                 code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
-                code |= insEncodeSimm5_9_to_5(imm1);                          // iiiii
-                code |= insEncodeSimm5_20_to_16(imm2);                        // iiiii
+                code |= insEncodeSimm<9, 5>(imm1);                            // iiiii
+                code |= insEncodeSimm<20, 16>(imm2);                          // iiiii
                 code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
                 dst += emitOutput_Instr(dst, code);
                 break;
@@ -25204,7 +24986,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // increment)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
-            code |= insEncodeSimm5_9_to_5(emitGetInsSC(id));              // iiiii
+            code |= insEncodeSimm<9, 5>(emitGetInsSC(id));                // iiiii
             code |= insEncodeReg_R_20_to_16(id->idReg2());                // mmmmm
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -25215,23 +24997,23 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeReg_R_9_to_5(id->idReg2());                  // mmmmm
-            code |= insEncodeSimm5_20_to_16(emitGetInsSC(id));            // iiiii
+            code |= insEncodeSimm<20, 16>(emitGetInsSC(id));              // iiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_BB_2A: // ...........nnnnn .....iiiiiiddddd -- SVE stack frame adjustment
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R_4_to_0(id->idReg1());      // ddddd
-            code |= insEncodeSimm6_10_to_5(emitGetInsSC(id)); // iiiiii
-            code |= insEncodeReg_R_20_to_16(id->idReg2());    // nnnnn
+            code |= insEncodeReg_R_4_to_0(id->idReg1());    // ddddd
+            code |= insEncodeSimm<10, 5>(emitGetInsSC(id)); // iiiiii
+            code |= insEncodeReg_R_20_to_16(id->idReg2());  // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_BC_1A: // ................ .....iiiiiiddddd -- SVE stack frame size
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R_4_to_0(id->idReg1());      // ddddd
-            code |= insEncodeSimm6_10_to_5(emitGetInsSC(id)); // iiiiii
+            code |= insEncodeReg_R_4_to_0(id->idReg1());    // ddddd
+            code |= insEncodeSimm<10, 5>(emitGetInsSC(id)); // iiiiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25255,10 +25037,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_GY_3B_D: // ...........iimmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product (indexed)
         case IF_SVE_FK_3B:   // ...........iimmm ......nnnnnddddd -- SVE2 saturating multiply-add high (indexed)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
-            code |= insEncodeReg_V_18_to_16(id->idReg3());     // mmm
-            code |= insEncodeUimm2_20_to_19(emitGetInsSC(id)); // ii
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());     // nnnnn
+            code |= insEncodeReg_V_18_to_16(id->idReg3());   // mmm
+            code |= insEncodeUimm<20, 19>(emitGetInsSC(id)); // ii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25273,8 +25055,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
-            code |= insEncodeUimm2_20_to_19(imm & 0b11);   // ii
-            code |= insEncodeImm1_22(imm >> 2);            // i
+            code |= insEncodeUimm<20, 19>(imm & 0b11);     // ii
+            code |= insEncodeUimm<22, 22>(imm >> 2);       // i
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25288,9 +25070,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
-            code |= insEncodeImm1_11(imm & 1);             // i
+            code |= insEncodeUimm<11, 11>(imm & 1);        // i
             code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
-            code |= insEncodeUimm2_20_to_19(imm >> 1);     // ii
+            code |= insEncodeUimm<20, 19>(imm >> 1);       // ii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25302,9 +25084,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
-            code |= insEncodeImm1_11(imm & 1);             // i
+            code |= insEncodeUimm<11, 11>(imm & 1);        // i
             code |= insEncodeReg_V_19_to_16(id->idReg3()); // mmmm
-            code |= insEncodeUimm2_20_to_19(imm & 0b10);   // i
+            code |= insEncodeUimm<20, 19>(imm & 0b10);     // i
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25321,8 +25103,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_19_to_16(id->idReg3()); // mmmm
 
             // index is encoded at bit location 20;
-            // left-shift by one bit so we can reuse insEncodeUimm2_20_to_19 without modifying bit location 19
-            code |= insEncodeUimm2_20_to_19(emitGetInsSC(id) << 1); // i
+            // left-shift by one bit so we can reuse insEncodeUimm<20, 19> without modifying bit location 19
+            code |= insEncodeUimm<20, 19>(emitGetInsSC(id) << 1); // i
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -25527,9 +25309,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
-            code |= insEncodeUimm5_20_to_16(emitGetInsSC(id)); // iii
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());     // nnnnn
+            code |= insEncodeUimm<20, 16>(emitGetInsSC(id)); // iii
             // Bit 23 should not be set by below call
             assert(insOptsScalableWide(id->idInsOpt()));
             code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
@@ -25544,7 +25326,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
-            code |= insEncodeUimm5_20_to_16(insGetImmDiff(emitGetInsSC(id), id->idInsOpt()));      // iii
+            code |= insEncodeUimm<20, 16>(insGetImmDiff(emitGetInsSC(id), id->idInsOpt()));        // iii
             code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
@@ -25554,7 +25336,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                  // mmmmm
-            code |= insEncodeImm1_10(emitGetInsSC(id));                   // r
+            code |= insEncodeUimm<10, 10>(emitGetInsSC(id));              // r
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25567,7 +25349,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
-            code |= insEncodeImm1_22(sizeEncoding);        // x
+            code |= insEncodeUimm<22, 22>(sizeEncoding);   // x
             dst += emitOutput_Instr(dst, code);
             break;
         }
@@ -25600,7 +25382,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
             code |= insEncodeReg_P_7_to_5(id->idReg2());                  // NNN
-            code |= insEncodeUimm2_9_to_8(emitGetInsSC(id));              // ii (or i)
+            code |= insEncodeUimm<9, 8>(emitGetInsSC(id));                // ii (or i)
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -25656,9 +25438,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code                = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
-            code |= insEncodeUimm2_11_to_10(rot);          // rr
+            code |= insEncodeUimm<11, 10>(rot);            // rr
             code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
-            code |= insEncodeUimm2_20_to_19(index);        // ii
+            code |= insEncodeUimm<20, 19>(index);          // ii
             dst += emitOutput_Instr(dst, code);
             break;
         }
@@ -25668,7 +25450,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                  // nnnnn
-            code |= insEncodeUimm2_11_to_10(emitGetInsSC(id));            // rr
+            code |= insEncodeUimm<11, 10>(emitGetInsSC(id));              // rr
             code |= insEncodeReg_V_20_to_16(id->idReg3());                // mmmmm
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -25686,11 +25468,11 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V_19_to_16(id->idReg3()); // mmmm
-            code |= insEncodeUimm2_11_to_10(rot);          // rr
+            code |= insEncodeUimm<11, 10>(rot);            // rr
 
             // index is encoded at bit location 20;
-            // left-shift by one bit so we can reuse insEncodeUimm2_20_to_19 without modifying bit location 19
-            code |= insEncodeUimm2_20_to_19(index << 1); // i
+            // left-shift by one bit so we can reuse insEncodeUimm<20, 19> without modifying bit location 19
+            code |= insEncodeUimm<20, 19>(index << 1); // i
             dst += emitOutput_Instr(dst, code);
             break;
         }
@@ -25947,7 +25729,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                     break;
 
                 default:
-                    code |= insEncodeSimm4_19_to_16(imm); // iiii
+                    code |= insEncodeSimm<19, 16>(imm); // iiii
                     break;
             }
 
@@ -26024,7 +25806,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());                              // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());                              // nnnnn
-            code |= insEncodeSimm4_19_to_16(imm);                                     // iiii
+            code |= insEncodeSimm<19, 16>(imm);                                       // iiii
             code |= insEncodeSveElemsize_22_to_21(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -26035,7 +25817,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2());                         // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());                           // nnnnn
-            code |= insEncodeSimm4_19_to_16(imm);                                  // iiii
+            code |= insEncodeSimm<19, 16>(imm);                                    // iiii
             code |= insEncodeSveElemsize_sz_21(optGetSveElemsize(id->idInsOpt())); // x
             dst += emitOutput_Instr(dst, code);
             break;
@@ -26238,7 +26020,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // mmmmm
-            code |= insEncodeUimm3_18_to_16(imm);                            // iii
+            code |= insEncodeUimm<18, 16>(imm);                              // iii
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -26305,7 +26087,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
-            code |= insEncodeUimm2_23_to_22(imm);          // ii
+            code |= insEncodeUimm<23, 22>(imm);            // ii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -26413,7 +26195,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
             code |= insEncodeReg_V_9_to_5(id->idReg3());   // nnnnn
-            code |= insEncodeUimm5_20_to_16(imm);          // iiiii
+            code |= insEncodeUimm<20, 16>(imm);            // iiiii
             code |= insEncodeSveElemsize_30_or_21(fmt, optGetSveElemsize(id->idInsOpt()));
             dst += emitOutput_Instr(dst, code);
             break;
@@ -26479,7 +26261,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
                 default:
                     assert(ins == INS_sve_st1b);
-                    code |= insEncodeUimm5_20_to_16(imm); // iiiii
+                    code |= insEncodeUimm<20, 16>(imm); // iiiii
                     break;
             }
 
@@ -26492,7 +26274,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
             code |= id->idSvePrfop();                      // oooo
-            code |= insEncodeSimm6_21_to_16(imm);          // iiiiii
+            code |= insEncodeSimm<21, 16>(imm);            // iiiiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -26540,7 +26322,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                     break;
 
                 default:
-                    code |= insEncodeUimm6_21_to_16(imm); // iiiiii
+                    code |= insEncodeUimm<21, 16>(imm); // iiiiii
                     break;
             }
 
@@ -26600,7 +26382,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2()); // mmmmm
-            code |= insEncodeUimm4_19_to_16(imm);        // iiii
+            code |= insEncodeUimm<19, 16>(imm);          // iiii
             dst += emitOutput_Instr(dst, code);
             break;
 
