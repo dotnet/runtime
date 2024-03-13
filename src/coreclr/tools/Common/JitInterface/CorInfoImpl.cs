@@ -2942,7 +2942,7 @@ namespace Internal.JitInterface
         {
             TypeDesc type = HandleToObject(cls);
 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
             {
                 return TypeCompareState.May;
             }
