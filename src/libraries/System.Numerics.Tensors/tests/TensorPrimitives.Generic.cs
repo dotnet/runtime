@@ -374,15 +374,14 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.DegreesToRadians, T.DegreesToRadians);
             yield return Create(TensorPrimitives.Exp, T.Exp);
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Exp2, T.Exp2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-6, floatTolerance: 1e-5f));
+            yield return Create(TensorPrimitives.Exp2, T.Exp2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f));
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Exp10, T.Exp10, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-6, floatTolerance: 1e-5f));
+            yield return Create(TensorPrimitives.Exp10, T.Exp10, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
+            yield return Create(TensorPrimitives.ExpM1, T.ExpM1);
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.ExpM1, T.ExpM1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-6));
+            yield return Create(TensorPrimitives.Exp2M1, T.Exp2M1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f));
             // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Exp2M1, T.Exp2M1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-6, floatTolerance: 1e-5f));
-            // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Exp10M1, T.Exp10M1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-6, floatTolerance: 1e-5f));
+            yield return Create(TensorPrimitives.Exp10M1, T.Exp10M1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Floor, T.Floor);
             yield return Create(TensorPrimitives.Log, T.Log);
             yield return Create(TensorPrimitives.Log2, T.Log2);
