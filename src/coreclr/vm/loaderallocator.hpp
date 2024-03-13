@@ -349,6 +349,8 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+    SArray<TLSIndex> m_tlsIndices;
+
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
@@ -388,6 +390,12 @@ protected:
 #endif
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
+
+public:
+    SArray<TLSIndex>& GetTLSIndexList()
+    {
+        return m_tlsIndices;
+    }
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -631,6 +639,7 @@ public:
     }
 
     LOADERALLOCATORREF GetExposedObject();
+    bool IsExposedObjectLive();
 
 #ifndef DACCESS_COMPILE
     LOADERHANDLE AllocateHandle(OBJECTREF value);

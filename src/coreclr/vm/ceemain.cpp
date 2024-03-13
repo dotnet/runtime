@@ -1757,7 +1757,6 @@ struct TlsDestructionMonitor
                 thread->DetachThread(TRUE);
             }
 
-            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1770,14 +1769,6 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
-}
-
-// Delete the thread local memory only if we the current thread
-// is the one executing this code. If we do not guard it, it will
-// end up deleting the thread local memory of the calling thread.
-void DeleteThreadLocalMemory()
-{
-    FreeCurrentThreadStaticData();
 }
 
 #ifdef DEBUGGING_SUPPORTED

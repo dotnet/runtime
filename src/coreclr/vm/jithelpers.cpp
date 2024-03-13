@@ -1645,7 +1645,7 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
     TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
-    MethodTable *pMT = LookupMethodTableForThreadStatic(tlsIndex);
+    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
     pMT->CheckRunClassInitThrowing();
 
     // Lookup the non-GC statics base pointer
@@ -1711,7 +1711,7 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 
     TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
-    MethodTable *pMT = LookupMethodTableForThreadStatic(tlsIndex);
+    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
     pMT->CheckRunClassInitThrowing();
 
     // Lookup the non-GC statics base pointer

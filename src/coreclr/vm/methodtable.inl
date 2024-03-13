@@ -1151,7 +1151,7 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread
     if (!tlsIndex.IsAllocated())
         return NULL;
 
-    PTR_ThreadLocalData pThreadLocalData = pThread->GetThreadLocalDataPtr();
+    ThreadLocalData* pThreadLocalData = pThread->GetThreadLocalDataPtr();
     if (pThreadLocalData == NULL)
         return NULL;
 
@@ -1167,7 +1167,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
     if (!tlsIndex.IsAllocated())
         return NULL;
 
-    PTR_ThreadLocalData pThreadLocalData = pThread->GetThreadLocalDataPtr();
+    ThreadLocalData* pThreadLocalData = pThread->GetThreadLocalDataPtr();
     if (pThreadLocalData == NULL)
         return NULL;
 

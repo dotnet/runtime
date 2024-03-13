@@ -161,6 +161,8 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING
 
+#include "threadstatics.h"
+
 class Module;
 
 // TailCallArgBuffer states
@@ -3777,14 +3779,15 @@ public:
     }
 #endif //DACCESS_COMPILE
 
-    PTR_ThreadLocalData m_pThreadLocalData;
-    PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_pThreadLocalData; }
+    ThreadLocalData m_ThreadLocalDataThreadObjectCopy;
+    SpinLock m_TlsSpinLock;
+    ThreadLocalData* GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return &m_ThreadLocalDataThreadObjectCopy; }
 
 private:
 
     // Called during Thread death to clean up all structures
     // associated with thread statics
-    void DeleteThreadStaticData(bool forCurrentThread);
+    void DeleteThreadStaticData();
 
 private:
     TailCallTls m_tailCallTls;

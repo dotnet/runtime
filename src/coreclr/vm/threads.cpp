@@ -1379,8 +1379,6 @@ Thread::Thread()
 
     m_fPreemptiveGCDisabled = 0;
 
-    m_pThreadLocalData = NULL;
-
 #ifdef _DEBUG
     m_ulForbidTypeLoad      = 0;
     m_GCOnTransitionsOK     = TRUE;
@@ -2939,7 +2937,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         SafeSetThrowables(NULL);
 
         // Free all structures related to thread statics for this thread
-        DeleteThreadStaticData(this == GetThreadNULLOk());
+        DeleteThreadStaticData();
 
     }
 
@@ -7728,7 +7726,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
 //
 //+----------------------------------------------------------------------------
 
-void Thread::DeleteThreadStaticData(bool forCurrentThread)
+void Thread::DeleteThreadStaticData()
 {
     CONTRACTL {
         NOTHROW;
@@ -7737,12 +7735,7 @@ void Thread::DeleteThreadStaticData(bool forCurrentThread)
     }
     CONTRACTL_END;
 
-    if (m_pThreadLocalData != NULL)
-    {
-        if (forCurrentThread)
-            FreeCurrentThreadStaticData();
-        m_pThreadLocalData = NULL;
-    }
+    FreeThreadStaticData(&m_ThreadLocalDataThreadObjectCopy);
 }
 
 OBJECTREF Thread::GetCulture(BOOL bUICulture)

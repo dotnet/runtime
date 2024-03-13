@@ -1891,6 +1891,7 @@ void AssemblyLoaderAllocator::CleanupHandles()
     {
         GCX_COOP();
         g_pMoveableGCPointerTracker->RemoveEntriesAssociatedWithGCHandle(m_hLoaderAllocatorObjectHandle);
+        FreeTLSIndicesForLoaderAllocator(this);
     }
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
