@@ -78,9 +78,9 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         push_register rax
 
         //
-        // Allocate space for XMM parameter registers
+        // Allocate space for XMM parameter registers and alignment
         //
-        alloc_stack     0x80
+        alloc_stack     0x88
 
         SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
@@ -96,9 +96,9 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
         //
-        // epilogue, rax contains the native target address
+        // epilogue, r10 contains the native target address
         //
-        free_stack      0x80
+        free_stack      0x88
 
         //
         // Restore integer parameter registers, r11 and rax
