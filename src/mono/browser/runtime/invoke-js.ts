@@ -53,6 +53,7 @@ export function mono_wasm_invoke_jsimport(signature: JSFunctionSignature, args: 
 
 export function mono_wasm_invoke_jsimport_ST(function_handle: JSFnHandle, args: JSMarshalerArguments): void {
     if (WasmEnableThreads) return;
+    loaderHelpers.assert_runtime_running();
     const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
     bound_fn(args);
@@ -142,7 +143,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         try {
             forceThreadMemoryViewRefresh();
             const caller_tid = get_caller_native_tid(args);
-            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.currentThreadTID === caller_tid;
+            runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.managedThreadTID === caller_tid;
             bound_fn(args);
         }
         finally {
@@ -336,6 +337,7 @@ type BindingClosure = {
 }
 
 export function mono_wasm_invoke_js_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+    loaderHelpers.assert_runtime_running();
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
     bound_fn(args);

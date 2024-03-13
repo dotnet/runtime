@@ -69,7 +69,7 @@ unsigned SsaStressHashHelper()
 #endif
 
 //------------------------------------------------------------------------
-// setLikelihood: set the likelihood of aflow edge
+// setLikelihood: set the likelihood of a flow edge
 //
 // Arguments:
 //   likelihood -- value in range [0.0, 1.0] indicating how likely
@@ -83,6 +83,40 @@ void FlowEdge::setLikelihood(weight_t likelihood)
     m_likelihood    = likelihood;
 
     JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum, m_destBlock->bbNum,
+            m_likelihood);
+}
+
+//------------------------------------------------------------------------
+// addLikelihood: adjust the likelihood of a flow edge
+//
+// Arguments:
+//   addedLikelihood -- value in range [-likelihood, 1.0 - likelihood]
+//     to add to current likelihood.
+//
+void FlowEdge::addLikelihood(weight_t addedLikelihood)
+{
+    assert(m_likelihoodSet);
+
+    weight_t newLikelihood = m_likelihood + addedLikelihood;
+
+    // Tolerate slight overflow or underflow
+    //
+    const weight_t eps = 0.0001;
+
+    if ((newLikelihood < 0) && (newLikelihood > -eps))
+    {
+        newLikelihood = 0.0;
+    }
+    else if ((newLikelihood > 1) && (newLikelihood < 1 + eps))
+    {
+        newLikelihood = 1.0;
+    }
+
+    assert(newLikelihood >= 0.0);
+    assert(newLikelihood <= 1.0);
+    m_likelihood = newLikelihood;
+
+    JITDUMP("updating likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum, m_destBlock->bbNum,
             m_likelihood);
 }
 

@@ -23,6 +23,7 @@ import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } fr
 import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
 import { gc_locked } from "./gc-lock";
+import { mono_log_debug } from "./logging";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -337,6 +338,10 @@ function create_task_holder(res_converter?: MarshalerToJs) {
 }
 
 export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments): void {
+    if (!loaderHelpers.is_runtime_running()) {
+        mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
+        return;
+    }
     const exc = get_arg(args, 0);
     const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {

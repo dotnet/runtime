@@ -43,8 +43,10 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 
 //------------------------------------------------------------------------
 // optSetBlockWeights: adjust block weights, as follows:
-// 1. A block that is not reachable from the entry block is marked "run rarely".
-// 2. If we're not using profile weights, then any block with a non-zero weight
+// 1. Lexical block ranges where the bottom reaches the top are scaled as a loop.
+//    This is a more general definition of "loop" than natural loops.
+// 2. A block that is not reachable from the entry block is marked "run rarely".
+// 3. If we're not using profile weights, then any block with a non-zero weight
 //    that doesn't dominate all the return blocks has its weight dropped in half
 //    (but only if the first block *does* dominate all the returns).
 //
@@ -57,12 +59,28 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    assert(m_domTree != nullptr);
-    assert(fgReturnBlocksComputed);
+
+    assert(m_dfsTree != nullptr);
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+
+    if (m_dfsTree->HasCycle())
+    {
+        optMarkLoopHeads();
+        optFindAndScaleGeneralLoopBlocks();
+    }
 
     bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
+
+    fgComputeReturnBlocks();
 
     // TODO-Quirk: Previously, this code ran on a dominator tree based only on
     // regular flow. This meant that all handlers were not considered to be
@@ -631,8 +649,10 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
                 falseTarget = blk->GetFalseTarget();
             }
 
-            FlowEdge* const trueEdge  = fgAddRefPred(trueTarget, newBlk);
-            FlowEdge* const falseEdge = fgAddRefPred(falseTarget, newBlk);
+            FlowEdge* const oldTrueEdge  = blk->GetTrueEdge();
+            FlowEdge* const trueEdge     = fgAddRefPred(trueTarget, newBlk, oldTrueEdge);
+            FlowEdge* const oldFalseEdge = blk->GetFalseEdge();
+            FlowEdge* const falseEdge    = fgAddRefPred(falseTarget, newBlk, oldFalseEdge);
             newBlk->SetCond(trueEdge, falseEdge);
             break;
         }
@@ -682,13 +702,19 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
                 // Determine if newBlk should target switchTarget, or be redirected
                 if (redirectMap->Lookup(switchTarget, &newTarget))
                 {
-                    // TODO: Set likelihood using inspiringEdge
                     newEdge = fgAddRefPred(newTarget, newBlk);
                 }
                 else
                 {
-                    // TODO: Set likelihood using inspiringEdge
                     newEdge = fgAddRefPred(switchTarget, newBlk);
+                }
+
+                // Transfer likelihood... instead of doing this gradually
+                // for dup'd edges, we set it once, when we add the last dup.
+                //
+                if (newEdge->getDupCount() == inspiringEdge->getDupCount())
+                {
+                    newEdge->setLikelihood(inspiringEdge->getLikelihood());
                 }
 
                 newSwtDesc->bbsDstTab[i] = newEdge;
@@ -1716,12 +1742,10 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             testCopyStmt->SetRootNode(sideEffList);
         }
 
-        fgRemoveRefPred(prevTestBlock->GetTrueEdge());
-        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
-
         // Redirect exit edge from previous iteration to new entry.
-        FlowEdge* const newEdge = fgAddRefPred(target, prevTestBlock);
-        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
+        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
         JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
                 target->bbNum);
@@ -1861,32 +1885,36 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 //
 //   Specifically, we're looking for the following case:
 //
+//  block:
 //          ...
 //          jmp test                // `block` argument
-//   loop:
+//    top:
 //          ...
 //          ...
 //   test:
 //          ..stmts..
 //          cond
-//          jtrue loop
+//          jtrue top
 //
 //   If we find this, and the condition is simple enough, we change
 //   the loop to the following:
 //
+//  block:
 //          ...
+//          jmp bNewCond
+//  bNewCond:
 //          ..stmts..               // duplicated cond block statements
 //          cond                    // duplicated cond
-//          jfalse done
+//          jfalse join
 //          // else fall-through
-//   loop:
+//    top:
 //          ...
 //          ...
 //   test:
 //          ..stmts..
 //          cond
-//          jtrue loop
-//   done:
+//          jtrue top
+//   join:
 //
 //  Makes no changes if the flow pattern match fails.
 //
@@ -2142,7 +2170,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
+    //
+    BasicBlock* const bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
 
     // Clone each statement in bTest and append to bNewCond.
     for (Statement* const stmt : bTest->Statements())
@@ -2201,15 +2230,25 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Update pred info
     //
-    FlowEdge* const trueEdge  = fgAddRefPred(bJoin, bNewCond);
-    FlowEdge* const falseEdge = fgAddRefPred(bTop, bNewCond);
-    bNewCond->SetTrueEdge(trueEdge);
-    bNewCond->SetFalseEdge(falseEdge);
+    // For now we set the likelihood of the newCond branch to match
+    // the likelihood of the test branch (though swapped, since we're
+    // currently reversing the condition). This may or may not match
+    // the block weight adjustments we're making. All this becomes
+    // easier to reconcile once we rely on edge likelihoods more and
+    // have synthesis running (so block weights ==> frequencies).
+    //
+    // Until then we won't worry that edges and blocks are potentially
+    // out of sync.
+    //
+    FlowEdge* const testTopEdge     = bTest->GetTrueEdge();
+    FlowEdge* const testJoinEdge    = bTest->GetFalseEdge();
+    FlowEdge* const newCondJoinEdge = fgAddRefPred(bJoin, bNewCond, testJoinEdge);
+    FlowEdge* const newCondTopEdge  = fgAddRefPred(bTop, bNewCond, testTopEdge);
 
-    fgRemoveRefPred(block->GetTargetEdge());
-    FlowEdge* const newEdge = fgAddRefPred(bNewCond, block);
+    bNewCond->SetTrueEdge(newCondJoinEdge);
+    bNewCond->SetFalseEdge(newCondTopEdge);
 
-    block->SetTargetEdge(newEdge);
+    fgRedirectTargetEdge(block, bNewCond);
     block->SetFlags(BBF_NONE_QUIRK);
     assert(block->JumpsToNext());
 
@@ -2222,10 +2261,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // is maintained no matter which condition block we point to, but we'll lose optimization potential
     // (and create spaghetti code) if we get it wrong.
     //
-
     unsigned const loopFirstNum  = bTop->bbNum;
     unsigned const loopBottomNum = bTest->bbNum;
-    for (BasicBlock* const predBlock : bTest->PredBlocks())
+    for (BasicBlock* const predBlock : bTest->PredBlocksEditing())
     {
         unsigned const bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
@@ -2323,18 +2361,21 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTrueTarget());
 
 #ifdef DEBUG
-        // If we're checkig profile data, see if profile for the two target blocks is consistent.
+        // If we're checking profile data, see if profile for the two target blocks is consistent.
         //
         if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
         {
-            const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
-            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTrueTarget(), checks);
-
-            if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
+            if (JitConfig.JitProfileChecks() > 0)
             {
-                assert(nextProfileOk);
-                assert(jumpProfileOk);
+                const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
+                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
+                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTrueTarget(), checks);
+
+                if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
+                {
+                    assert(nextProfileOk);
+                    assert(jumpProfileOk);
+                }
             }
         }
 #endif // DEBUG
@@ -2482,12 +2523,12 @@ void Compiler::optMarkLoopHeads()
     {
         printf("*************** In optMarkLoopHeads()\n");
     }
-
-    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
 #endif
+
+    assert((m_dfsTree != nullptr) && (m_reachabilitySets != nullptr));
 
     bool hasLoops = false;
 
@@ -2564,15 +2605,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
-    assert(m_dfsTree != nullptr);
-    if (m_reachabilitySets == nullptr)
-    {
-        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
-    }
-    if (m_domTree == nullptr)
-    {
-        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-    }
+    assert((m_dfsTree != nullptr) && (m_domTree != nullptr) && (m_reachabilitySets != nullptr));
 
     unsigned generalLoopCount = 0;
 
@@ -2669,15 +2702,10 @@ PhaseStatus Compiler::optFindLoopsPhase()
     }
 #endif
 
-    optMarkLoopHeads();
+    fgRenumberBlocks();
 
     assert(m_dfsTree != nullptr);
     optFindLoops();
-
-    if (fgHasLoops)
-    {
-        optFindAndScaleGeneralLoopBlocks();
-    }
 
     Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 
@@ -3129,7 +3157,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
             loop->GetIndex());
 
-    for (BasicBlock* pred : exit->PredBlocks())
+    for (BasicBlock* pred : exit->PredBlocksEditing())
     {
         if (loop->ContainsBlock(pred))
         {
