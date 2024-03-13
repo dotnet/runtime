@@ -1354,7 +1354,7 @@ namespace System
         int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+        int IFloatingPoint<Half>.GetSignificandBitLength() => SignificandLength;
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
@@ -2330,7 +2330,7 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
-        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => PositiveInfinityBits;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
         static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
@@ -2342,15 +2342,15 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
-        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => BiasedExponentLength;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
-        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => MaxBiasedExponent;
 
         static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -26;
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;

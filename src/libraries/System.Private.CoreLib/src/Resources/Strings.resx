@@ -3346,7 +3346,7 @@
   </data>
   <data name="RFLCT_Targ_ITargMismatch_WithType" xml:space="preserve">
     <value>Object type {0} does not match target type {1}.</value>
-  </data>	  
+  </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
   </data>
@@ -4309,5 +4309,8 @@
   </data>
   <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
     <value>Blocking wait is not supported on the JS interop threads.</value>
+  </data>
+  <data name="Arg_MustBeBFloat16" xml:space="preserve">
+    <value>Object must be of type BFloat16.</value>
   </data>
 </root>
