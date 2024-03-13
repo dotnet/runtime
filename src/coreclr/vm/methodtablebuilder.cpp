@@ -3345,6 +3345,8 @@ MethodTableBuilder::EnumerateClassMethods()
         if (!IsMdAbstract(dwMemberAttrs))
         {
             bmtMethod->dwNumDeclaredNonAbstractMethods++;
+            if (hasGenericMethodArgs)
+                bmtMethod->dwNumDeclaredGenericNonAbstractMethods++;
         }
     }
 
@@ -7231,12 +7233,29 @@ MethodTableBuilder::AllocAndInitDictionary()
         //  - Classes with more generic parameters tend to use more slots.
         //      = multiply by 1.5 for 2 params or more
 
+        DWORD dwMethodsThatMightContributeToDictionary = bmtMethod->dwNumDeclaredNonAbstractMethods - bmtMethod->dwNumDeclaredGenericNonAbstractMethods;
+
         DWORD numMethodsAdjusted =
-            (bmtMethod->dwNumDeclaredNonAbstractMethods == 0)
+            (dwMethodsThatMightContributeToDictionary == 0)
             ? 0
-            : (bmtMethod->dwNumDeclaredNonAbstractMethods < 3)
+            : (dwMethodsThatMightContributeToDictionary < 3)
             ? 3
-            : bmtMethod->dwNumDeclaredNonAbstractMethods;
+            : dwMethodsThatMightContributeToDictionary;
+
+        uint32_t maxMethodsToContributeToGenericDictionary = g_pConfig->GetMaxMethodsToContributeToGenericDictionary();
+
+        // Place a cap on the max number of methods in used in calculation overall, types with *many* different methods often don't have their full set of methods used
+        if (numMethodsAdjusted > maxMethodsToContributeToGenericDictionary)
+        {
+            numMethodsAdjusted = maxMethodsToContributeToGenericDictionary;
+        }
+
+        // Past some number methods we start to see diminishing returns on the number of slots, as they are more likely to be reused
+        uint32_t methodsWhichContributeFullyToGenericDictionary = g_pConfig->GetMethodsWhichContributeFullyToGenericDictionary();
+        if (numMethodsAdjusted > methodsWhichContributeFullyToGenericDictionary)
+        {
+            numMethodsAdjusted = methodsWhichContributeFullyToGenericDictionary + (numMethodsAdjusted - methodsWhichContributeFullyToGenericDictionary) / 2;
+        }
 
         _ASSERTE(bmtGenerics->GetNumGenericArgs() != 0);
         DWORD nTypeFactorBy2 = (bmtGenerics->GetNumGenericArgs() == 1)
@@ -10342,7 +10361,18 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         }
     }
 
-    BYTE *pData = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbTotalSize));
+    // Types with instantiations containing generic variables, or interfaces are less likely to be highly active.
+    LoaderHeap *pLoaderHeapToUse;
+    if (isInterface || bmtGenerics->fContainsGenericVariables || bmtGenerics->fSharedByGenericInstantiations)
+    {
+        pLoaderHeapToUse = pAllocator->GetHighFrequencyHeap();
+    }
+    else
+    {
+        pLoaderHeapToUse = pAllocator->GetHighFrequencyMethodTableHeap();
+    }
+
+    BYTE *pData = (BYTE *)pamTracker->Track(pLoaderHeapToUse->AllocMem(cbTotalSize));
 
     _ASSERTE(IS_ALIGNED(pData, TARGET_POINTER_SIZE));
 
@@ -10356,7 +10386,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
     }
 
-    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
+    pMT->AllocateAuxiliaryData(pLoaderHeapToUse, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 

@@ -674,12 +674,19 @@ private:
 //
 
 #define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * GetOsPageSize())
+#define LOW_FREQUENCY_HEAP_INITIAL_RESERVE_SIZE (512 * GetOsPageSize())
 #define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * GetOsPageSize())
 
 #define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (10 * GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_INITIAL_RESERVE_SIZE (768 * GetOsPageSize())
 #define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * GetOsPageSize())
 
+#define HIGH_FREQUENCY_METHODTABLE_HEAP_RESERVE_SIZE (10 * GetOsPageSize())
+#define HIGH_FREQUENCY_METHODTABLE_HEAP_INITIAL_RESERVE_SIZE (253 * GetOsPageSize())
+#define HIGH_FREQUENCY_METHODTABLE_HEAP_COMMIT_SIZE (1 * GetOsPageSize())
+
 #define STUB_HEAP_RESERVE_SIZE                 (3 * GetOsPageSize())
+#define STUB_HEAP_INITIAL_RESERVE_SIZE         (3 * GetOsPageSize())
 #define STUB_HEAP_COMMIT_SIZE                  (1 * GetOsPageSize())
 
 // --------------------------------------------------------------------------------

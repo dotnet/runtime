@@ -448,9 +448,16 @@ public:
 
 #endif
 
+    uint32_t GetMaxMethodsToContributeToGenericDictionary() const { LIMITED_METHOD_CONTRACT; return maxMethodsToContributeToGenericDictionary; }
+    uint32_t GetMethodsWhichContributeFullyToGenericDictionary() const { LIMITED_METHOD_CONTRACT; return methodsWhichContributeFullyToGenericDictionary; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
+
+    // Type system config
+    uint32_t maxMethodsToContributeToGenericDictionary;
+    uint32_t methodsWhichContributeFullyToGenericDictionary;
 
     // Jit-config
 

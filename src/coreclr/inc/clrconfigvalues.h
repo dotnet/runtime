@@ -792,6 +792,13 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sv
 #endif
 
 ///
+/// TypeSystem
+///
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MaxMethodsToContributeToGenericDictionary,               W("MaxMethodsToContributeToGenericDictionary"),            20, "Allows adjusting the heuristic for generic dictionary growth")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MethodsWhichContributeFullyToGenericDictionary,          W("MethodsWhichContributeFullyToGenericDictionary"),       10, "Allows adjusting the heuristic for generic dictionary growth")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseHighFrequencyMethodTableHeap,                         W("UseHighFrequencyMethodTableHeap"),             1,  "Control whether or not there is a special high frequency method table heap")
+
+///
 /// Uncategorized
 ///
 //

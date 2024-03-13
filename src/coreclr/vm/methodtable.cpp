@@ -671,7 +671,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
-void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
+void MethodTable::AllocateAuxiliaryData(LoaderHeap *pHeap, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
 {
     S_SIZE_T cbAuxiliaryData = S_SIZE_T(sizeof(MethodTableAuxiliaryData));
 
@@ -687,7 +687,7 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
         ThrowHR(COR_E_OVERFLOW);
 
     BYTE* pAuxiliaryDataRegion = (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbAuxiliaryData));
+        pamTracker->Track(pHeap->AllocMem(cbAuxiliaryData));
 
     MethodTableAuxiliaryData * pMTAuxiliaryData;
     pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
@@ -724,7 +724,7 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     // memset(pMT, 0, sizeof(MethodTable));
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateAuxiliaryData(pLoaderAllocator, pContainingModule, pamTracker);
+    pMT->AllocateAuxiliaryData(pLoaderAllocator->GetHighFrequencyHeap(), pContainingModule, pamTracker);
     pMT->SetModule(pContainingModule);
     pMT->SetLoaderAllocator(pLoaderAllocator);
 

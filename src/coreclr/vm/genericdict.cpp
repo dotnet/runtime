@@ -107,6 +107,10 @@ DictionaryLayout::GetDictionarySizeFromLayout(
 }
 
 #ifndef DACCESS_COMPILE
+
+static int s_GenericDictMTExpandedSlotsUsed = 0;
+static int s_GenericDictMDExpandedSlotsUsed = 0;
+
 //---------------------------------------------------------------------------------------
 //
 // Find a token in the dictionary layout and return the offsets of indirections
@@ -131,8 +135,9 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
                                        CORINFO_RUNTIME_LOOKUP*          pResult,
                                        WORD*                            pSlotOut,
                                        DWORD                            scanFromSlot /* = 0 */,
-                                       BOOL                             useEmptySlotIfFound /* = FALSE */)
-
+                                       BOOL                             useEmptySlotIfFound /* = FALSE */,
+                                       MethodTable*                     pMT,
+                                       MethodDesc*                      pMD)
 {
     CONTRACTL
     {
@@ -235,6 +240,21 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
             // A lock should be taken by FindToken before being allowed to use an empty slot in the layout
             _ASSERT(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
 
+            if (iSlot >= pDictLayout->GetNumInitialSlots())
+            {
+                // Expanded slot used, report this to the log, and gather some statistics
+                if (pMT != NULL)
+                {
+                    s_GenericDictMTExpandedSlotsUsed++;
+                    LOG((LF_CLASSLOADER, LL_INFO100, "GENERICDICT: Used expanded slot %d for type %s, overall expanded slots %d\n", (int)iSlot, pMT->GetDebugClassName(), s_GenericDictMTExpandedSlotsUsed));
+                }
+                else
+                {
+                    s_GenericDictMDExpandedSlotsUsed++;
+                    LOG((LF_CLASSLOADER, LL_INFO100, "GENERICDICT: Used expanded slot %d for method %s::%s, overall expanded slots %d\n", (int)iSlot, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, s_GenericDictMDExpandedSlotsUsed));
+                }
+            }
+
             PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
             pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
             pDictLayout->m_slots[iSlot].m_signatureSource = signatureSource;
@@ -334,13 +354,13 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
 
     DWORD cbSig = -1;
     pSig = pSigBuilder != NULL ? (BYTE*)pSigBuilder->GetSignature(&cbSig) : pSig;
-    if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
+    if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE, pMT, NULL))
         return TRUE;
 
     CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
-        if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
+        if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE, pMT, NULL))
             return TRUE;
 
         DictionaryLayout* pOldLayout = pMT->GetClass()->GetDictionaryLayout();
@@ -381,13 +401,13 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
 
     DWORD cbSig = -1;
     pSig = pSigBuilder != NULL ? (BYTE*)pSigBuilder->GetSignature(&cbSig) : pSig;
-    if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
+    if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE, NULL, pMD))
         return TRUE;
 
     CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
-        if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
+        if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE, NULL, pMD))
             return TRUE;
 
         DictionaryLayout* pOldLayout = pMD->GetDictionaryLayout();

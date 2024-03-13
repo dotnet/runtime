@@ -1880,6 +1880,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         DWORD           dwNumDeclaredNonAbstractMethods; // For calculating approx generic dictionary size
+        DWORD           dwNumDeclaredGenericNonAbstractMethods; // For calculating approx generic dictionary size
         DWORD           dwNumberMethodImpls;    // Number of method impls defined for this type
         DWORD           dwNumberInexactMethodImplCandidates; // Number of inexact method impl candidates (used for type equivalent interfaces)
 

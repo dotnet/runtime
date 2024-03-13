@@ -2685,7 +2685,7 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    void AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics = false, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
+    void AllocateAuxiliaryData(LoaderHeap *pHeap, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics = false, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
 #endif
 
     inline PTR_Const_MethodTableAuxiliaryData GetAuxiliaryData() const

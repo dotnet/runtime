@@ -251,6 +251,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // will expand the dictionary at that point.
     DWORD cbInstAndDictSlotSize;
     DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictSize(&cbInstAndDictSlotSize);
+    printf("InstAndDictSize %d\n", cbInstAndDictAllocSize);
 
     // Allocate from the high frequence heap of the correct domain
     S_SIZE_T allocSize = safe_cbMT;
@@ -269,7 +270,22 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         ThrowHR(COR_E_OVERFLOW);
     }
 
-    BYTE* pMemory = (BYTE *) pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem( allocSize ));
+    // Types with instantiations containing generic variables, or interfaces are less likely to be highly active.
+    LoaderHeap *pLoaderHeapToUse;
+    if (fContainsGenericVariables)
+    {
+        pLoaderHeapToUse = pAllocator->GetLowFrequencyHeap();
+    }
+    else if (pOldMT->IsInterface())
+    {
+        pLoaderHeapToUse = pAllocator->GetHighFrequencyHeap();
+    }
+    else
+    {
+        pLoaderHeapToUse = pAllocator->GetHighFrequencyMethodTableHeap();
+    }
+
+    BYTE* pMemory = (BYTE *) pamTracker->Track(pLoaderHeapToUse->AllocMem( allocSize ));
 
     // Head of MethodTable memory
     MethodTable *pMT = (MethodTable*) (pMemory + cbGC);
@@ -278,7 +294,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     memcpy((BYTE*)pMT - cbGC, (BYTE*) pOldMT - cbGC, cbGC);
 
     // Allocate the private data block
-    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
+    pMT->AllocateAuxiliaryData(pLoaderHeapToUse, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
     pMT->SetModule(pOldMT->GetModule());
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
