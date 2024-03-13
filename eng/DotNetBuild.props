@@ -54,6 +54,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)warnAsError $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)usemonoruntime</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <!-- TODO: This parameter is only available on the Unix script. Intentional? -->
       <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
       <!-- PackageOS and ToolsOS control the rids of prebuilts consumed by the build.
