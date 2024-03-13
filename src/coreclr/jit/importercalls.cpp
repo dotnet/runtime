@@ -2259,7 +2259,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     }
 
 #ifdef DEBUG
-    if (verbose && (call->gtRetClsHnd != NO_CLASS_HANDLE))
+    if (verbose && call->TypeIs(TYP_STRUCT) && (sig->retTypeClass != NO_CLASS_HANDLE))
     {
         const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(call->gtRetClsHnd);
         if (lowering->byReference)
