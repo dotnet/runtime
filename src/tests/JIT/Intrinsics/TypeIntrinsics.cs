@@ -238,6 +238,10 @@ public partial class Program
         IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromArray());
         IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromArray());
         IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<IGenericInterface<string>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericTypeFromArray());
 
         IsTrue(typeof(GenericSimpleClass<int>).IsGenericType);
         IsTrue(typeof(GenericSimpleClass<>).IsGenericType);
@@ -266,10 +270,6 @@ public partial class Program
         IsTrue(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericType());
         IsTrue(new ClassUsingIsGenericTypeOnT<int?>().IsGenericType());
         IsTrue(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericType());
-        IsFalse(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericTypeFromArray());
-        IsFalse(new ClassUsingIsGenericTypeOnT<IGenericInterface<string>>().IsGenericTypeFromArray());
-        IsFalse(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericTypeFromArray());
-        IsFalse(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericTypeFromArray());
         IsTrue(new ClassUsingIsGenericTypeOnT<char>().IsGenericTypeFromOtherGenericType());
         IsTrue(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromOtherGenericType());
         IsTrue(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromOtherGenericType());
@@ -350,10 +350,13 @@ public partial class Program
 
 public class ClassUsingIsGenericTypeOnT<T>
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public bool IsGenericType() => typeof(T).IsGenericType;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public bool IsGenericTypeFromArray() => typeof(T[]).IsGenericType;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public bool IsGenericTypeFromOtherGenericType() => typeof(GenericSimpleClass<T>).IsGenericType;
 }
 
