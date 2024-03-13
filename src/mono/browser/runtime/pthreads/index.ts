@@ -6,11 +6,10 @@ export {
     mono_wasm_pthread_ptr, update_thread_info, isMonoThreadMessage, monoThreadInfo,
 } from "./shared";
 export {
-    dumpThreads, thread_available, cancelThreads, is_thread_available,
+    mono_wasm_dump_threads, thread_available, cancelThreads, is_thread_available,
     populateEmscriptenPool, mono_wasm_init_threads, init_finalizer_thread,
     waitForThread, replaceEmscriptenPThreadUI
 } from "./ui-thread";
-export { addUnsettledPromise, settleUnsettledPromise, mono_wasm_eventloop_has_unsettled_interop_promises } from "./worker-eventloop";
 export {
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
     mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, currentWorkerThreadEvents,

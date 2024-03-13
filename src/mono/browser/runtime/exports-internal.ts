@@ -23,14 +23,14 @@ import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 
-import { dumpThreads, thread_available } from "./pthreads";
+import { mono_wasm_dump_threads, thread_available } from "./pthreads";
 
 export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => { Module.err("early exit " + exit_code); },
         forceDisposeProxies,
-        dumpThreads: WasmEnableThreads ? dumpThreads : undefined,
+        mono_wasm_dump_threads: WasmEnableThreads ? mono_wasm_dump_threads : undefined,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,

@@ -4610,11 +4610,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
 
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
     // Remove empty try regions
     //
     DoPhase(this, PHASE_EMPTY_TRY, &Compiler::fgRemoveEmptyTry);
@@ -4829,18 +4824,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
-        // Compute reachability sets and dominators.
+        // Compute DFS tree and remove all unreachable blocks.
         //
-        DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
-
-        // Scale block weights and mark run rarely blocks.
-        //
-        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+        DoPhase(this, PHASE_DFS_BLOCKS2, &Compiler::fgDfsBlocksAndRemove);
 
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
+
+        // Scale block weights and mark run rarely blocks.
+        //
+        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
@@ -4893,6 +4888,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doValueNum                = true;
         bool doLoopHoisting            = true;
         bool doCopyProp                = true;
+        bool doOptimizeIVs             = true;
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
@@ -4905,6 +4901,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doSsa                     = (JitConfig.JitDoSsa() != 0);
         doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
+        doOptimizeIVs             = doSsa && (JitConfig.JitDoOptimizeIVs() != 0);
         doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
@@ -5003,6 +5000,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Bounds check elimination via range analysis
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
+            }
+
+            if (doOptimizeIVs)
+            {
+                // Simplify and optimize induction variables used in natural loops
+                //
+                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
             }
 
             if (doVNBasedDeadStoreRemoval)
@@ -5126,6 +5130,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+
     // Assign registers to variables, etc.
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
@@ -5241,7 +5250,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #elif FEATURE_SIMD
         fprintf(compJitFuncInfoFile, " %s\n", eeGetMethodFullName(info.compMethodHnd));
 #endif
-        fprintf(compJitFuncInfoFile, ""); // in our logic this causes a flush
+        fflush(compJitFuncInfoFile);
     }
 #endif // FUNC_INFO_LOGGING
 }
@@ -5842,19 +5851,16 @@ void Compiler::RecomputeFlowGraphAnnotations()
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
 
-    fgComputeReachability();
+    fgRenumberBlocks();
+    fgInvalidateDfsTree();
+    fgDfsBlocksAndRemove();
+    optFindLoops();
     optSetBlockWeights();
 
-    fgInvalidateDfsTree();
-    m_dfsTree = fgComputeDfs();
-    optFindLoops();
-
-    if (fgHasLoops)
+    if (m_domTree == nullptr)
     {
-        optFindAndScaleGeneralLoopBlocks();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     }
-
-    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 }
 
 /*****************************************************************************/
@@ -9409,6 +9415,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cLoops")
 #pragma comment(linker, "/include:cLoopsA")
 #pragma comment(linker, "/include:cLoop")
+#pragma comment(linker, "/include:cScev")
 #pragma comment(linker, "/include:cTreeFlags")
 #pragma comment(linker, "/include:cVN")
 
@@ -9434,6 +9441,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dCVarSet")
 #pragma comment(linker, "/include:dLoop")
 #pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dScev")
 #pragma comment(linker, "/include:dTreeFlags")
 #pragma comment(linker, "/include:dVN")
 
@@ -9677,22 +9685,37 @@ JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 JITDBGAPI void __cdecl cLoops(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(comp->m_loops);
 }
 
 JITDBGAPI void __cdecl cLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    printf("===================================================================== *LoopsA %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(loops);
 }
 
 JITDBGAPI void __cdecl cLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
     FlowGraphNaturalLoop::Dump(loop);
+}
+
+JITDBGAPI void __cdecl cScev(Compiler* comp, Scev* scev)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Scev %u\n", sequenceNumber++);
+    if (scev == nullptr)
+    {
+        printf("  NULL\n");
+    }
+    else
+    {
+        scev->Dump(comp);
+        printf("\n");
+    }
 }
 
 JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
@@ -9920,7 +9943,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
 
             case GT_BLK:
             case GT_STORE_BLK:
-            case GT_STORE_DYN_BLK:
 
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
@@ -10283,6 +10305,11 @@ JITDBGAPI void __cdecl dLoopsA(FlowGraphNaturalLoops* loops)
 JITDBGAPI void __cdecl dLoop(FlowGraphNaturalLoop* loop)
 {
     cLoop(JitTls::GetCompiler(), loop);
+}
+
+JITDBGAPI void __cdecl dScev(Scev* scev)
+{
+    cScev(JitTls::GetCompiler(), scev);
 }
 
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
