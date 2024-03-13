@@ -913,7 +913,7 @@ namespace Internal.JitInterface
                             helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
                         }
 
-                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
+                        var methodContext = new GenericContext(HandleToObject(callerHandle));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
@@ -958,6 +958,7 @@ namespace Internal.JitInterface
                 unboxing: false,
                 context: typeOrMethodContext);
 
+            // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
