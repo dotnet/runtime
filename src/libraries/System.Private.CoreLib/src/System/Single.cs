@@ -439,7 +439,7 @@ namespace System
         // Helpers, those methods are referenced from the JIT
         //
 
-        private static float Reminder(float dividend, float divisor)
+        private static float Remainder(float dividend, float divisor)
         {
             // From the ECMA standard:
             //

@@ -178,7 +178,7 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt32Overflow", null);
                     break;
                 case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt64gOverflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt64Overflow", null);
                     break;
                 case ReadyToRunHelper.Dbl2ULngOvf:
                     methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt64Overflow", null);
@@ -192,10 +192,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("Reminder", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("Remainder", null);
                     break;
                 case ReadyToRunHelper.FltRem:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Single").GetKnownMethod("Reminder", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Single").GetKnownMethod("Remainder", null);
                     break;
 
                 case ReadyToRunHelper.LMulOfv:

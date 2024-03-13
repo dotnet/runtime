@@ -268,10 +268,10 @@ DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_INT64_OVERFLOW,ConvertToInt64Over
 DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_UINT64_OVERFLOW,ConvertToUInt64Overflow, NoSig)
 DEFINE_METHOD(DOUBLE_SPC,           CONVERT_FROM_INT64,     ConvertFromInt64,           NoSig)
 DEFINE_METHOD(DOUBLE_SPC,           CONVERT_FROM_UINT64,    ConvertFromUInt64,          NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           REMINDER,               Reminder,                   NoSig)
+DEFINE_METHOD(DOUBLE_SPC,           REMAINDER,              Remainder,                  NoSig)
 
 DEFINE_CLASS(SINGLE_SPC,            System,                 Single)
-DEFINE_METHOD(SINGLE_SPC,           REMINDER,               Reminder,                   NoSig)
+DEFINE_METHOD(SINGLE_SPC,           REMAINDER,              Remainder,                  NoSig)
 
 DEFINE_CLASS(INT64_SPC,             System,                 Int64)
 DEFINE_METHOD(INT64_SPC,            MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)

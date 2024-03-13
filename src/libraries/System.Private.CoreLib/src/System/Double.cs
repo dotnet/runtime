@@ -573,7 +573,7 @@ namespace System
             return a * UIntMaxValueOffset + b;
         }
 
-        private static double Reminder(double dividend, double divisor)
+        private static double Remainder(double dividend, double divisor)
         {
             // From the ECMA standard:
             //
