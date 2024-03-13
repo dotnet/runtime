@@ -1817,6 +1817,15 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
                 }
             }
 
+#if defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+            // TODO-Cleanup: Unify this with hasFixedRetBuffReg. That will
+            // likely be necessary for the reverse pinvoke support regardless.
+            if (cc == CorInfoCallConvExtension::Swift)
+            {
+                return REG_SWIFT_ARG_RET_BUFF;
+            }
+#endif
+
             break;
 
         case WellKnownArg::VirtualStubCell:
