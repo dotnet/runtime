@@ -2261,15 +2261,15 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 #ifdef DEBUG
     if (verbose && call->TypeIs(TYP_STRUCT) && (sig->retTypeClass != NO_CLASS_HANDLE))
     {
-        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(call->gtRetClsHnd);
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(sig->retTypeClass);
         if (lowering->byReference)
         {
-            printf("  Call returns %s by reference\n", typGetObjLayout(call->gtRetClsHnd)->GetClassName());
+            printf("  Call returns %s by reference\n", typGetObjLayout(sig->retTypeClass)->GetClassName());
         }
         else
         {
             printf("  Call returns %s as %d primitive(s) in registers\n",
-                   typGetObjLayout(call->gtRetClsHnd)->GetClassName(), lowering->numLoweredElements);
+                   typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
                 printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
