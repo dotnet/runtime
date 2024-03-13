@@ -6220,6 +6220,56 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     return value.result ? true : false;
 }
 
+void MethodContext::recGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    if (GetSwiftLowering == nullptr)
+        GetSwiftLowering = new LightWeightMap<DWORDLONG, Agnostic_GetSwiftLowering>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    Agnostic_GetSwiftLowering value;
+    ZeroMemory(&value, sizeof(value));
+    value.byReference = pLowering->byReference ? 1 : 0;
+    if (!pLowering->byReference)
+    {
+        value.numLoweredElements = static_cast<DWORD>(pLowering->numLoweredElements);
+        for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+        {
+            value.loweredElements[i] = static_cast<DWORD>(pLowering->loweredElements[i]);
+            value.offsets[i] = pLowering->offsets[i];
+        }
+    }
+
+    GetSwiftLowering->Add(key, value);
+    DEBUG_REC(dmpGetSwiftLowering(key, value));
+}
+void MethodContext::dmpGetSwiftLowering(
+    DWORDLONG key, const Agnostic_GetSwiftLowering& value)
+{
+    printf("GetSwiftLowering key structHnd-%016" PRIX64 ", value byReference-%u numLoweredElements-%u", key,
+        value.byReference, value.numLoweredElements);
+    for (size_t i = 0; i < value.numLoweredElements; i++)
+    {
+        printf(" [%zu] %u", i, value.loweredElements[i]);
+    }
+}
+void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    DWORDLONG key = CastHandle(structHnd);
+    Agnostic_GetSwiftLowering value = LookupByKeyOrMiss(GetSwiftLowering, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetSwiftLowering(key, value));
+
+    pLowering->byReference = value.byReference != 0;
+    pLowering->numLoweredElements = value.numLoweredElements;
+
+    for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+    {
+        pLowering->loweredElements[i] = static_cast<CorInfoType>(value.loweredElements[i]);
+        pLowering->offsets[i] = value.offsets[i];
+    }
+}
+
 void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
 {
     if (GetLoongArch64PassStructInRegisterFlags == nullptr)

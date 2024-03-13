@@ -10,7 +10,7 @@ import { http_wasm_supports_streaming_request, http_wasm_supports_streaming_resp
 import { exportedRuntimeAPI, Module, runtimeHelpers } from "./globals";
 import { get_property, set_property, has_property, get_typeof_property, get_global_this, dynamic_import } from "./invoke-js";
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";
-import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";
+import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort, ws_get_state } from "./web-socket";
 import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
@@ -71,6 +71,7 @@ export function export_internal(): any {
         ws_wasm_receive,
         ws_wasm_close,
         ws_wasm_abort,
+        ws_get_state,
 
         // BrowserHttpHandler
         http_wasm_supports_streaming_request,

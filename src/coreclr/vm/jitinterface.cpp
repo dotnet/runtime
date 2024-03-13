@@ -2627,6 +2627,37 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #endif // !defined(UNIX_AMD64_ABI_ITF)
 }
 
+void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(structHnd);
+
+    bool useNativeLayout = false;
+    MethodTable* methodTablePtr = nullptr;
+    if (!th.IsTypeDesc())
+    {
+        methodTablePtr = th.AsMethodTable();
+    }
+    else
+    {
+        _ASSERTE(th.IsNativeValueType());
+
+        useNativeLayout = true;
+        methodTablePtr = th.AsNativeValueType();
+    }
+
+    methodTablePtr->GetNativeSwiftPhysicalLowering(pLowering, useNativeLayout);
+
+    EE_TO_JIT_TRANSITION();
+}
+
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
