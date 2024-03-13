@@ -353,5 +353,5 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         EXTERN $gCurrentThreadInfo
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, $gCurrentThreadInfo
-        ldr $destReg, [$destReg] ; return gCurrentThreadInfo.m_pThread
+        ldr $destReg, [$destReg]                            ;; return gCurrentThreadInfo.m_pThread
     MEND
