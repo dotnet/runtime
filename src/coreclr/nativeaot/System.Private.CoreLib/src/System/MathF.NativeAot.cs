@@ -155,7 +155,7 @@ namespace System
         }
 
         [Intrinsic]
-        private static float FMod(float x, float y)
+        internal static float FMod(float x, float y)
         {
             return RuntimeImports.fmodf(x, y);
         }

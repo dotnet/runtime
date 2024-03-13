@@ -80,7 +80,7 @@ namespace System
         public static extern double Log2(double x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern double FMod(double x, double y);
+        internal static extern double FMod(double x, double y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe double ModF(double x, double* intptr);

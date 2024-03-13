@@ -155,7 +155,7 @@ namespace System
         }
 
         [Intrinsic]
-        private static double FMod(double x, double y)
+        internal static double FMod(double x, double y)
         {
             return RuntimeImports.fmod(x, y);
         }
