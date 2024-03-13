@@ -6419,7 +6419,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Spill before store to pinned local"));
                 }
 
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_SIMD)
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
                 // Masks must be converted to vectors before being stored to memory.
                 // But, for local stores we can optimise away the conversion
                 if (op1->OperIsHWIntrinsic() && op1->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector)
@@ -6428,7 +6428,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lvaTable[lclNum].lvType = TYP_MASK;
                     lclTyp                  = lvaGetActualType(lclNum);
                 }
-#endif // TARGET_ARM64 && FEATURE_MASKED_SIMD
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
 
                 op1 = gtNewStoreLclVarNode(lclNum, op1);
 

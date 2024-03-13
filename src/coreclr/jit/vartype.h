@@ -85,9 +85,9 @@ inline bool varTypeIsSIMD(T vt)
 template <class T>
 inline bool varTypeIsMask(T vt)
 {
-#if defined(FEATURE_MASKED_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     return (TypeGet(vt) == TYP_MASK);
-#else // FEATURE_MASKED_SIMD
+#else // FEATURE_MASKED_HW_INTRINSICS
     return false;
 #endif
 }
