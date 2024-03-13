@@ -3420,18 +3420,12 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
 {
     TypeHandle th(pMT);
 
-    bool useNativeLayout      = false;
-    bool ret                  = false;
-    MethodTable* pMethodTable = nullptr;
+    bool ret = false;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -3454,20 +3448,13 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
                     }
                 }
             }
-            goto _End_arg;
         }
     }
     else
     {
         _ASSERTE(th.IsNativeValueType());
+        MethodTable* pMethodTable = th.AsNativeValueType();
 
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
@@ -3526,18 +3513,12 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
-    bool useNativeLayout           = false;
     int size = STRUCT_NO_FLOAT_FIELD;
-    MethodTable* pMethodTable      = nullptr;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -3580,6 +3561,11 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 assert(pFieldFirst->GetOffset() == 0);
 
                 if (pFieldFirst->GetSize() > 8)
+                {
+                    goto _End_arg;
+                }
+
+                if (pFieldFirst->GetSize() > pFieldSecond->GetOffset())
                 {
                     goto _End_arg;
                 }
@@ -3701,21 +3687,13 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
             }
-
-            goto _End_arg;
         }
     }
     else
     {
         _ASSERTE(th.IsNativeValueType());
+        MethodTable* pMethodTable = th.AsNativeValueType();
 
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
