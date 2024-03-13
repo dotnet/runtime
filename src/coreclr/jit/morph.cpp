@@ -377,9 +377,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #if defined(TARGET_ARM) || defined(TARGET_AMD64)
                         return nullptr;
 #else  // TARGET_X86
-                        oper = gtNewCastNode(TYP_LONG, oper, false, TYP_LONG);
-                        tree = gtNewCastNode(TYP_INT, oper, false, TYP_UINT);
-                        return fgMorphTree(tree);
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
 #endif // TARGET_X86
 
                     case TYP_LONG:

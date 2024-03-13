@@ -387,11 +387,11 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ULMOD,
     CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
     CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-    CORINFO_HELP_DBL2INT,               // unused
+    CORINFO_HELP_DBL2INT,
     CORINFO_HELP_DBL2INT_OVF,
     CORINFO_HELP_DBL2LNG,
     CORINFO_HELP_DBL2LNG_OVF,
-    CORINFO_HELP_DBL2UINT,              // unused
+    CORINFO_HELP_DBL2UINT,
     CORINFO_HELP_DBL2UINT_OVF,
     CORINFO_HELP_DBL2ULNG,
     CORINFO_HELP_DBL2ULNG_OVF,

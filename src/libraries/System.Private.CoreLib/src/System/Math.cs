@@ -1493,29 +1493,29 @@ namespace System
             return y * u;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint High32Bits(ulong a)
+        {
+            return (uint)(a >> 32);
+        }
+
         [StackTraceHidden]
         private static long LongMultiplyOverflow(long i, long j)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static uint Hi32Bits(ulong a)
-            {
-                return (uint)(a >> 32);
-            }
-
 #if DEBUG
             long result = i * j;
 #endif
 
             // Remember the sign of the result
-            int sign = (int)(Hi32Bits((ulong)i) ^ Hi32Bits((ulong)j));
+            int sign = (int)(High32Bits((ulong)i) ^ High32Bits((ulong)j));
 
             // Convert to unsigned multiplication
             if (i < 0) i = -i;
             if (j < 0) j = -j;
 
             // Get the upper 32 bits of the numbers
-            uint val1High = Hi32Bits((ulong)i);
-            uint val2High = Hi32Bits((ulong)j);
+            uint val1High = High32Bits((ulong)i);
+            uint val2High = High32Bits((ulong)j);
 
             ulong valMid;
 
@@ -1533,13 +1533,13 @@ namespace System
             }
 
             // See if any bits after bit 32 are set
-            if (Hi32Bits(valMid) != 0)
+            if (High32Bits(valMid) != 0)
                 goto Overflow;
 
             long ret = (long)(BigMul((uint)i, (uint)j) + (valMid << 32));
 
             // check for overflow
-            if (Hi32Bits((ulong)ret) < (uint)valMid)
+            if (High32Bits((ulong)ret) < (uint)valMid)
                 goto Overflow;
 
             if (sign >= 0)
@@ -1569,15 +1569,9 @@ namespace System
         [StackTraceHidden]
         private static ulong ULongMultiplyOverflow(ulong i, ulong j)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static uint Hi32Bits(ulong a)
-            {
-                return (uint)(a >> 32);
-            }
-
             // Get the upper 32 bits of the numbers
-            uint val1High = Hi32Bits(i);
-            uint val2High = Hi32Bits(j);
+            uint val1High = High32Bits(i);
+            uint val2High = High32Bits(j);
 
             ulong valMid;
 
@@ -1597,13 +1591,13 @@ namespace System
             }
 
             // See if any bits after bit 32 are set
-            if (Hi32Bits(valMid) != 0)
+            if (High32Bits(valMid) != 0)
                 goto Overflow;
 
             ulong ret = BigMul((uint)i, (uint)j) + (valMid << 32);
 
             // check for overflow
-            if (Hi32Bits(ret) < (uint)valMid)
+            if (High32Bits(ret) < (uint)valMid)
                 goto Overflow;
 
             Debug.Assert(ret == i * j, $"Multiply overflow got: {ret}, expected: {i * j}");
@@ -1614,34 +1608,45 @@ namespace System
             return 0;
         }
 
-        private static ref double DoubleConversionTable => ref MemoryMarshal.GetReference([0.0, 4294967296.0]);
+        private const double IntMaxValueOffset = 2147483648.0; // 2^31, int.MaxValue + 1
+        private const double UIntMaxValueOffset = 4294967296.0; // 2^32, uint.MaxValue + 1
+        private static ref double DoubleConversionTable => ref MemoryMarshal.GetReference([0.0, UIntMaxValueOffset]);
 
         private static double LongToDouble(long val)
         {
             uint upper = (uint)(val >>> 32);
             uint lower = (uint)val;
             double a = (int)upper;
+            // X86 has no uint -> double casts, we need to do this to avoid recursion here
+#if TARGET_X86
             double b = (int)lower;
             b += Unsafe.Add(ref DoubleConversionTable, lower >> 31);
-            // todo: check if https://github.com/dotnet/runtime/issues/98053 will be useful here
-            return a * Unsafe.Add(ref DoubleConversionTable, 1U) + b;
+#else
+            double b = lower;
+#endif
+            return a * UIntMaxValueOffset + b;
         }
 
         private static double ULongToDouble(ulong val)
         {
             uint upper = (uint)(val >> 32);
             uint lower = (uint)val;
+            // X86 has no uint -> double casts, we need to do this to avoid recursion here
+#if TARGET_X86
             double a = (int)upper;
             double b = (int)lower;
             a += Unsafe.Add(ref DoubleConversionTable, upper >> 31);
             b += Unsafe.Add(ref DoubleConversionTable, lower >> 31);
-            // todo: check if https://github.com/dotnet/runtime/issues/98053 will be useful here
-            return a * Unsafe.Add(ref DoubleConversionTable, 1U) + b;
+#else
+            double a = upper;
+            double b = lower;
+#endif
+            return a * UIntMaxValueOffset + b;
         }
 
         private static ulong DoubleToULong(double val)
         {
-            const double two63 = 2147483648.0 * 4294967296.0;
+            const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
             ulong ret;
             // don't remove the double casts, the runtime would call this method recursively without them
             if (val < two63)
@@ -1656,13 +1661,18 @@ namespace System
             return ret;
         }
 
+        private static uint DoubleToUInt(double val)
+        {
+            int a = (int)val;
+            int b = (int)(val - IntMaxValueOffset);
+            return (uint)(a | (b & (a >> 31)));
+        }
+
         [StackTraceHidden]
         private static int DoubleToIntOverflow(double val)
         {
-            const double two31 = 2147483648.0;
-
             // Note that this expression also works properly for val = NaN case
-            if (val is > -two31 - 1 and < two31)
+            if (val is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
             {
                 int ret = (int)val;
                 // since no overflow can occur, the value always has to be within 1
@@ -1679,7 +1689,7 @@ namespace System
         private static uint DoubleToUIntOverflow(double val)
         {
             // Note that this expression also works properly for val = NaN case
-            if (val is > -1.0 and < 4294967296.0)
+            if (val is > -1.0 and < UIntMaxValueOffset)
             {
                 uint ret = (uint)val;
                 // since no overflow can occur, the value always has to be within 1
@@ -1695,7 +1705,7 @@ namespace System
         [StackTraceHidden]
         private static long DoubleToLongOverflow(double val)
         {
-            const double two63 = 2147483648.0 * 4294967296.0;
+            const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
 
             // Note that this expression also works properly for val = NaN case
             // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
@@ -1715,7 +1725,7 @@ namespace System
         [StackTraceHidden]
         private static ulong DoubleToULongOverflow(double val)
         {
-            const double two64 = 4294967296.0 * 4294967296.0;
+            const double two64 = UIntMaxValueOffset * UIntMaxValueOffset;
             // Note that this expression also works properly for val = NaN case
             if (val is > -1.0 and < two64)
             {
@@ -1753,9 +1763,8 @@ namespace System
             return FMod(dividend, divisor);
         }
 
-        // those helpers are currently unused, they're only kept for R2R compatibility for now
-        // don't remove the double casts, the runtime would call the methods recursively without them
+        // this helper is currently unused, it's only kept for R2R compatibility for now
+        // don't remove the double cast, the runtime would call the method recursively without it
         private static int DoubleToInt(double val) => (int)(long)val;
-        private static uint DoubleToUInt(double val) => (uint)(long)val;
     }
 }
