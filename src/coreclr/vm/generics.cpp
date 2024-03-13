@@ -251,7 +251,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // will expand the dictionary at that point.
     DWORD cbInstAndDictSlotSize;
     DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictSize(&cbInstAndDictSlotSize);
-    printf("InstAndDictSize %d\n", cbInstAndDictAllocSize);
 
     // Allocate from the high frequence heap of the correct domain
     S_SIZE_T allocSize = safe_cbMT;
