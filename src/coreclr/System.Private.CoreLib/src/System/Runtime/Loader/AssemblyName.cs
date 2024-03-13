@@ -238,19 +238,6 @@ namespace System.Runtime.Loader
                 dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE;
             }
 
-            static uint HashCaseInsensitive(string str)
-            {
-                // ported from SString::HashCaseInsensitive
-                uint hash = 5381;
-
-                foreach (char ch in str)
-                {
-                    hash = ((hash << 5) + hash) ^ char.ToUpperInvariant(ch);
-                }
-
-                return hash;
-            }
-
             static uint HashBytes(ReadOnlySpan<byte> bytes)
             {
                 // ported from coreclr/inc/utilcode.h
@@ -264,7 +251,7 @@ namespace System.Runtime.Loader
                 return hash;
             }
 
-            dwHash ^= HashCaseInsensitive(SimpleName);
+            dwHash ^= (uint)SimpleName.GetNonRandomizedHashCodeOrdinalIgnoreCase();
             dwHash = BitOperations.RotateLeft(dwHash, 4);
 
             if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0 ||
@@ -289,7 +276,7 @@ namespace System.Runtime.Loader
 
             if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
             {
-                dwHash ^= HashCaseInsensitive(NormalizedCulture);
+                dwHash ^= (uint)NormalizedCulture.GetNonRandomizedHashCodeOrdinalIgnoreCase();
                 dwHash = BitOperations.RotateLeft(dwHash, 4);
             }
 
@@ -330,14 +317,14 @@ namespace System.Runtime.Loader
                 return ContentType == other.ContentType;
             }
 
-            if (string.Equals(SimpleName, other.SimpleName, StringComparison.InvariantCultureIgnoreCase) &&
+            if (string.Equals(SimpleName, other.SimpleName, StringComparison.OrdinalIgnoreCase) &&
                 ContentType == other.ContentType)
             {
                 fEquals = true;
 
                 if ((dwIncludeFlags & AssemblyNameIncludeFlags.EXCLUDE_CULTURE) == 0)
                 {
-                    fEquals = string.Equals(NormalizedCulture, other.NormalizedCulture, StringComparison.InvariantCultureIgnoreCase);
+                    fEquals = string.Equals(NormalizedCulture, other.NormalizedCulture, StringComparison.OrdinalIgnoreCase);
                 }
 
                 if (fEquals && (dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN) != 0)

@@ -196,7 +196,7 @@ namespace System.Runtime.Loader
                 // Parse TrustedPlatformAssemblies
                 //
 
-                TrustedPlatformAssemblyMap = new Dictionary<string, TPAEntry>(StringComparer.InvariantCultureIgnoreCase);
+                TrustedPlatformAssemblyMap = new Dictionary<string, TPAEntry>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < trustedPlatformAssemblies.Length;)
                 {
                     if (!GetNextTPAPath(trustedPlatformAssemblies, ref i, dllOnly: false, out string fileName, out string simpleName, out bool isNativeImage))
