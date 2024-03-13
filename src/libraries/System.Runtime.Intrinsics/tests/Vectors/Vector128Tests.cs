@@ -2812,7 +2812,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector128<byte> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((byte)16, 17, 31, 32, 33, 34, 35, 255, 254, 127, 128, 63, 64, 95, 96, 71));
-            Vector128<byte> expected = Ssse3.IsSupported ? Vector128.Create((byte)1, 2, 16, 1, 2, 3, 4, 0, 0, 16, 0, 16, 1, 16, 1, 16) : Vector128<byte>.Zero;
+            Vector128<byte> expected = Ssse3.IsSupported ? Vector128.Create((byte)1, 2, 16, 1, 2, 3, 4, 0, 0, 16, 0, 16, 1, 16, 1, 8) : Vector128<byte>.Zero;
 
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
