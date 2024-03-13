@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "WASM singlethreaded development (prebuilt)",
+	"name": "WASM multithreaded development (prebuilt)",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
@@ -37,7 +37,7 @@
 	},
 
 	// Use 'onCreateCommand' to run pre-build commands inside the codespace
-	"onCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/onCreateCommand.sh wasm",
+	"onCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/onCreateCommand.sh wasm-multithreaded",
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh",

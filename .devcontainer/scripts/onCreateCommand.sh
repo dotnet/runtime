@@ -2,6 +2,26 @@
 
 set -e
 
+function wasm_common() {
+    # prebuild for WASM, so it is ready for wasm development
+    make -C src/mono/browser provision-wasm
+    export EMSDK_PATH=$PWD/src/mono/browser/emsdk
+    case "$1" in
+    wasm)
+        # Put your common commands for wasm here
+        ./build.sh mono+libs -os browser -c Release
+        ;;
+    wasm-multithread)
+        # Put your common commands for wasm-multithread here
+        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true
+        ;;
+    *)
+        # install dotnet-serve for running wasm samples
+    ./dotnet.sh tool install dotnet-serve --version 1.10.172 --tool-path ./.dotnet-tools-global
+    ;;
+    esac
+}
+
 opt=$1
 case "$opt" in
 
@@ -27,26 +47,6 @@ case "$opt" in
         wasm_common $opt
     ;;
 esac
-
-function wasm_common() {
-    # prebuild for WASM, so it is ready for wasm development
-    make -C src/mono/browser provision-wasm
-    export EMSDK_PATH=$PWD/src/mono/browser/emsdk
-    case "$1" in
-    wasm)
-        # Put your common commands for wasm here
-        ./build.sh mono+libs -os browser -c Release
-        ;;
-    wasm-multithread)
-        # Put your common commands for wasm-multithread here
-        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true
-        ;;
-    *)
-        # install dotnet-serve for running wasm samples
-    ./dotnet.sh tool install dotnet-serve --version 1.10.172 --tool-path ./.dotnet-tools-global
-    ;;
-    esac
-}
 
 # save the commit hash of the currently built assemblies, so developers know which version was built
 git rev-parse HEAD > ./artifacts/prebuild.sha
