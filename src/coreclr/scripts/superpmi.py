@@ -1506,9 +1506,6 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
         location where they are saved (and not in a "temp" directory) for easy use by the user.
     """
 
-    if not coreclr_args.produce_repro:
-        return
-
     # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
     mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
     if len(mc_files) > 0:
