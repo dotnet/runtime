@@ -22,9 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
-#ifdef HOST_WINDOWS
-#include <malloc.h>
-#endif
 
 extern ICorJitHost* g_jitHost;
 
