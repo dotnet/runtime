@@ -106,6 +106,9 @@
   <data name="NullableConverterBadCtorArg" xml:space="preserve">
     <value>The specified type is not a nullable type.</value>
   </data>
+  <data name="NullableConverterNotSupported" xml:space="preserve">
+    <value>NullableConverter support has been disabled in the app configuration, but requested a converter for a nullable type.</value>
+  </data>
   <data name="Text" xml:space="preserve">
     <value>(Text)</value>
   </data>
