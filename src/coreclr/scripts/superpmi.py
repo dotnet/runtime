@@ -1507,7 +1507,7 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
     """
 
     if not coreclr_args.produce_repro:
-        pass
+        return
 
     # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
     mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
@@ -2164,7 +2164,6 @@ class SuperPMIReplayAsmDiffs:
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
                     "-details", detailed_info_file,  # Detailed information about each context
-                    "-r", os.path.join(temp_location, "repro"),  # Repro name prefix, create .mc repro files
                 ]
                 if self.coreclr_args.produce_repro:
                     flags += [
