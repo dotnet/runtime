@@ -2,7 +2,7 @@ parameters:
   dependsOn: []
   PublishRidAgnosticPackagesFromPlatform: ''
   isOfficialBuild: false
-  logArtifactName: 'Logs-PrepareSignedArtifacts'
+  logArtifactName: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
 
 jobs:
 - job: PrepareSignedArtifacts
@@ -26,7 +26,7 @@ jobs:
     fetchDepth: 20
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
-    - task: NuGetAuthenticate@1
+    - task: NuGetAuthenticate@0
 
   - task: MicroBuildSigningPlugin@2
     displayName: Install MicroBuild plugin for Signing
