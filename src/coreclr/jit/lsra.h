@@ -835,7 +835,7 @@ private:
                                          regMaskOnlyOne regMaskActual,
                                          regMaskOnlyOne regMaskConstrain,
                                          unsigned       minRegCount);
-    regMaskOnlyOne stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask);
+    regMaskOnlyOne stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask, RegisterType regType);
 
     // This controls the heuristics used to select registers
     // These can be combined.
