@@ -3097,43 +3097,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return NULL;
 #endif
 	}
-	case SN_CopyTo: {
-#if defined(TARGET_ARM64)
-		if ((fsig->param_count == 1 || fsig->param_count == 2) && (fsig->params [0]->type == MONO_TYPE_SZARRAY)) {
-			MonoInst *index_ins;
-			int val_vreg, end_index_reg;
-			val_vreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
-
-			if (fsig->param_count == 2) {
-				index_ins = args [2];
-			} else {
-				EMIT_NEW_ICONST (cfg, index_ins, 0);
-			}
-
-			MonoInst *ldelema_ins;
-			MonoInst *array_ins = args [1];
-
-			/* CopyTo () does complicated argument checks */
-			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException", FALSE);
-			end_index_reg = alloc_ireg (cfg);
-			int len_reg = alloc_ireg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, len_reg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), MONO_INST_INVARIANT_LOAD);
-			EMIT_NEW_BIALU (cfg, ins, OP_ISUB, end_index_reg, len_reg, index_ins->dreg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, end_index_reg, len);
-			MONO_EMIT_NEW_COND_EXC (cfg, LT, "ArgumentException");
-
-			/* Load the array slice into the simd reg */
-			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, FALSE, FALSE);
-			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, val_vreg);
-			ins->klass = cmethod->klass;
-			return ins;
-		} else {
-			// CopyTo(Span<Single>)
-			// Not intrinsified on coreclr
-			return NULL;
-		}
-#endif
-	}
+	case SN_CopyTo:
+		return NULL;
 	break;
 	case SN_Clamp: {
 		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
@@ -3208,26 +3173,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Lerp: {
 #if defined (TARGET_ARM64)
 		MonoInst* v1 = args [1];
-		if (!strcmp ("Quaternion", m_class_get_name (klass))) {
-			MonoInst *dot = emit_dot(cfg, klass, fsig->params [0], MONO_TYPE_R4, args [0]->dreg, args [1]->dreg);
-
-			dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
-			dot->inst_c0 = 0;
-			dot->inst_c1 = MONO_TYPE_R4;
-
-			MonoInst* zeros = emit_xzero (cfg, klass);
-
-			MonoInst* ge_0 = emit_simd_ins (cfg, klass, OP_XCOMPARE_FP, dot->dreg, zeros->dreg);
-			ge_0->inst_c0 = CMP_GE;
-			ge_0->inst_c1 = MONO_TYPE_R4;
-
-			MonoInst* negated_v1 = emit_simd_ins (cfg, klass, OP_NEGATION, args [1]->dreg, -1);
-			negated_v1->inst_c1 = MONO_TYPE_R4;
-
-			v1 = emit_simd_ins (cfg, klass, OP_BSL, ge_0->dreg, args [1]->dreg);
-			v1->sreg3 = negated_v1->dreg;
-			v1->inst_c1 = MONO_TYPE_R4;
-		}
+		if (!strcmp ("Quaternion", m_class_get_name (klass))) 
+			return NULL;
+		
 
 		MonoInst *diffs = emit_simd_ins (cfg, klass, OP_XBINOP, v1->dreg, args [0]->dreg);
 		diffs->inst_c0 = OP_FSUB;
@@ -3238,10 +3186,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		MonoInst *result = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, scaled_diffs->dreg);
 		result->inst_c0 = OP_FADD;
 		result->inst_c1 = MONO_TYPE_R4;
-
-		if (!strcmp ("Quaternion", m_class_get_name (klass))) {
-			return emit_normalize_vector_2_3_4 (cfg, klass, type, result);
-		}
 
 		return result;
 #endif
