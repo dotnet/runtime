@@ -4611,14 +4611,13 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //   and/or
     // new likelihood based weights.
     //
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
     const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
     const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
+    if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
         JITDUMP("[profile weight checks disabled]\n");
         return;
@@ -4734,7 +4733,7 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
     // Verify overall input-output balance.
     //
-    if (verifyClassicWeights || verifyLikelyWeights)
+    if (verifyLikelyWeights)
     {
         if (entryProfiled && exitProfiled)
         {
@@ -4760,7 +4759,7 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         {
             JITDUMP("No blocks were profiled, so nothing to check\n");
         }
-        else if (verifyClassicWeights || verifyLikelyWeights)
+        else if (verifyLikelyWeights)
         {
             JITDUMP("Profile is self-consistent (%d profiled blocks, %d unprofiled)\n", profiledBlocks,
                     unprofiledBlocks);
