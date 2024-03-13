@@ -507,6 +507,10 @@ bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
 
+void getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering) override;
+
 uint32_t getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd) override;
 

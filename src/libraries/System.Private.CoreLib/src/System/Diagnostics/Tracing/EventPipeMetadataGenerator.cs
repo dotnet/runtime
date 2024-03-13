@@ -5,7 +5,6 @@ using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
 namespace System.Diagnostics.Tracing
 {
-#if FEATURE_PERFTRACING
     internal sealed class EventPipeMetadataGenerator
     {
         private enum MetadataTag
@@ -761,6 +760,4 @@ namespace System.Diagnostics.Tracing
             return true;
         }
     }
-
-#endif // FEATURE_PERFTRACING
 }

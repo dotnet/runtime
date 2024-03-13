@@ -1227,6 +1227,12 @@ bool MyICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return jitInstance->mc->repGetSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
 }
 
+void MyICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    jitInstance->mc->cr->AddCall("getSwiftLowering");
+    jitInstance->mc->repGetSwiftLowering(structHnd, pLowering);
+}
+
 uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
 {
     jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");

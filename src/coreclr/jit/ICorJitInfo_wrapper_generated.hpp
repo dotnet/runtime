@@ -1196,6 +1196,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     return temp;
 }
 
+void WrapICorJitInfo::getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering)
+{
+    API_ENTER(getSwiftLowering);
+    wrapHnd->getSwiftLowering(structHnd, pLowering);
+    API_LEAVE(getSwiftLowering);
+}
+
 uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd)
 {

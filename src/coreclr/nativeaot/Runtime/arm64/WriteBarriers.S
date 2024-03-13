@@ -192,6 +192,9 @@
 //   x15  : trashed
 //   x12, x17  : trashed
 //
+//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//         if you add more trashed registers.
+//
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
