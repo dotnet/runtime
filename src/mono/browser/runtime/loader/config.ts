@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
-import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
+import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -177,8 +177,6 @@ export function normalizeConfig() {
             deep_merge_resources(config.resources, toMerge);
         }
     }
-
-    loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;

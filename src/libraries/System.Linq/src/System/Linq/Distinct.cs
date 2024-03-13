@@ -12,7 +12,7 @@ namespace System.Linq
 
         public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -101,12 +101,12 @@ namespace System.Linq
 
             public DistinctIterator(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 _source = source;
                 _comparer = comparer;
             }
 
-            public override Iterator<TSource> Clone() => new DistinctIterator<TSource>(_source, _comparer);
+            private protected override Iterator<TSource> Clone() => new DistinctIterator<TSource>(_source, _comparer);
 
             public override bool MoveNext()
             {
@@ -127,8 +127,8 @@ namespace System.Linq
                         _state = 2;
                         return true;
                     case 2:
-                        Debug.Assert(_enumerator != null);
-                        Debug.Assert(_set != null);
+                        Debug.Assert(_enumerator is not null);
+                        Debug.Assert(_set is not null);
                         while (_enumerator.MoveNext())
                         {
                             element = _enumerator.Current;
@@ -148,7 +148,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;

@@ -56,6 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             var proxyContext = ctx.ProxyContext;
+            proxyContext.AsyncTaskScheduler = new JSAsyncTaskScheduler(ctx);
             JSProxyContext.CurrentThreadContext = proxyContext;
             JSProxyContext.ExecutionContext = proxyContext;
             if (isMainThread)
@@ -256,6 +257,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             try
             {
+                if (SynchronizationContext.Current == null)
+                {
+                    SetSynchronizationContext(this);
+                }
                 while (Queue.Reader.TryRead(out var item))
                 {
                     try

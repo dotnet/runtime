@@ -394,10 +394,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
 #ifdef SWIFT_SUPPORT
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    if (call->HasSwiftErrorHandling())
     {
         // Tree is a Swift call with error handling; error register should have been killed
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
         assert((killMask & RBM_SWIFT_ERROR) != 0);
 
         // After a Swift call that might throw returns, we expect the error register to be consumed
@@ -696,6 +695,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // We will use ldp/stp to reduce code size and improve performance
                     // so we need to reserve an extra internal register
                     buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+                }
+
+                if (size >= 4 * REGSIZE_BYTES && compiler->IsBaselineSimdIsaSupported())
+                {
+                    // We can use 128-bit SIMD ldp/stp for larger block sizes
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                 }
 
                 // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.

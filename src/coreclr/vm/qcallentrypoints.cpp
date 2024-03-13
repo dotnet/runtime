@@ -24,7 +24,6 @@
 #include "floatdouble.h"
 #include "floatsingle.h"
 #include "comdatetime.h"
-#include "compatibilityswitch.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
@@ -94,6 +93,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_FindMethodHandle)
     DllImportEntry(Delegate_InternalEqualMethodHandles)
     DllImportEntry(Environment_Exit)
+    DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
@@ -351,22 +351,23 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
     DllImportEntry(IsEventSourceLoggingEnabled)
     DllImportEntry(LogEventSource)
+    DllImportEntry(EventSource_GetClrConfig)
 #endif
 #if defined(FEATURE_PERFTRACING)
-    DllImportEntry(LogThreadPoolWorkerThreadStart)
-    DllImportEntry(LogThreadPoolWorkerThreadStop)
-    DllImportEntry(LogThreadPoolWorkerThreadWait)
-    DllImportEntry(LogThreadPoolMinMaxThreads)
-    DllImportEntry(LogThreadPoolWorkerThreadAdjustmentSample)
-    DllImportEntry(LogThreadPoolWorkerThreadAdjustmentAdjustment)
-    DllImportEntry(LogThreadPoolWorkerThreadAdjustmentStats)
-    DllImportEntry(LogThreadPoolIOEnqueue)
-    DllImportEntry(LogThreadPoolIODequeue)
-    DllImportEntry(LogThreadPoolIOPack)
-    DllImportEntry(LogThreadPoolWorkingThreadCount)
-    DllImportEntry(LogContentionLockCreated)
-    DllImportEntry(LogContentionStart)
-    DllImportEntry(LogContentionStop)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolMinMaxThreads)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolIOEnqueue)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolIODequeue)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolIOPack)
+    DllImportEntry(NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount)
+    DllImportEntry(NativeRuntimeEventSource_LogContentionLockCreated)
+    DllImportEntry(NativeRuntimeEventSource_LogContentionStart)
+    DllImportEntry(NativeRuntimeEventSource_LogContentionStop)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
