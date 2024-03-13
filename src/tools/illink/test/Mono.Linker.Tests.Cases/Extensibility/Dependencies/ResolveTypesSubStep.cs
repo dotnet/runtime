@@ -5,12 +5,10 @@ using Mono.Linker.Steps;
 class ResolveTypesSubStep : BaseStep
 {
 
-	protected override void Process ()
+	protected override void ProcessAssembly (AssemblyDefinition assembly)
 	{
-		foreach (var assembly in Context.GetAssemblies ()) {
-			foreach (var type in assembly.MainModule.Types)
-				ProcessType (type);
-		}
+		foreach (var type in assembly.MainModule.Types)
+			ProcessType (type);
 	}
 
 	void ProcessType (TypeDefinition type)
