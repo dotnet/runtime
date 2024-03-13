@@ -20,8 +20,11 @@ namespace System
         public static System.NativeIndex FromStart(nint value) { throw null; }
         public override int GetHashCode() { throw null; }
         public nint GetOffset(nint length) { throw null; }
-        public static implicit operator System.NativeIndex(System.Index index) { throw null; }
-        public static implicit operator System.NativeIndex(int value) { throw null; }
+        public static implicit operator System.NativeIndex (System.Index index) { throw null; }
+        public static implicit operator System.NativeIndex (int value) { throw null; }
+        public static implicit operator System.NativeIndex (nint value) { throw null; }
+        public static implicit operator int (System.NativeIndex index) { throw null; }
+        public static implicit operator nint (System.NativeIndex index) { throw null; }
         public override string ToString() { throw null; }
     }
     public readonly partial struct NativeRange : System.IEquatable<System.NativeRange>
@@ -36,10 +39,14 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public (nint Offset, nint Length) GetOffsetAndLength(nint length) { throw null; }
-        public static implicit operator System.NativeRange(System.Range range) { throw null; }
+        public static implicit operator System.NativeRange (System.Range range) { throw null; }
         public static System.NativeRange StartAt(System.NativeIndex start) { throw null; }
         public override string ToString() { throw null; }
     }
+}
+
+namespace System.Numerics.Tensors
+{
     public readonly ref partial struct ReadOnlySpanND<T>
     {
         private readonly object _dummy;
@@ -49,18 +56,18 @@ namespace System
         public ReadOnlySpanND(ref T reference) { throw null; }
         public ReadOnlySpanND(T[]? array) { throw null; }
         public ReadOnlySpanND(T[]? array, nint start, nint length) { throw null; }
-        public static System.ReadOnlySpanND<T> Empty { get { throw null; } }
+        public static System.Numerics.Tensors.ReadOnlySpanND<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[nint index] { get { throw null; } }
         public nint Length { get { throw null; } }
-        public static System.ReadOnlySpanND<T> CastUp<TDerived>(System.ReadOnlySpanND<TDerived> items) where TDerived : class?, T? { throw null; }
-        public void CopyTo(System.SpanND<T> destination) { }
+        public static System.Numerics.Tensors.ReadOnlySpanND<T> CastUp<TDerived>(System.Numerics.Tensors.ReadOnlySpanND<TDerived> items) where TDerived : class?, T? { throw null; }
+        public void CopyTo(System.Numerics.Tensors.SpanND<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on ReadOnlySpanND will always throw an exception. Use the equality operator instead.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
         public override bool Equals(object? obj) { throw null; }
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
-        public System.ReadOnlySpanND<T>.Enumerator GetEnumerator() { throw null; }
+        public System.Numerics.Tensors.ReadOnlySpanND<T>.Enumerator GetEnumerator() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("GetHashCode() on ReadOnlySpanND will always throw an exception.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
@@ -68,15 +75,15 @@ namespace System
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference() { throw null; }
-        public static bool operator ==(System.ReadOnlySpanND<T> left, System.ReadOnlySpanND<T> right) { throw null; }
-        public static implicit operator System.ReadOnlySpanND<T> (System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlySpanND<T> (T[]? array) { throw null; }
-        public static bool operator !=(System.ReadOnlySpanND<T> left, System.ReadOnlySpanND<T> right) { throw null; }
-        public System.ReadOnlySpanND<T> Slice(int start) { throw null; }
-        public System.ReadOnlySpanND<T> Slice(int start, int length) { throw null; }
+        public static bool operator ==(System.Numerics.Tensors.ReadOnlySpanND<T> left, System.Numerics.Tensors.ReadOnlySpanND<T> right) { throw null; }
+        public static implicit operator System.Numerics.Tensors.ReadOnlySpanND<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.Numerics.Tensors.ReadOnlySpanND<T> (T[]? array) { throw null; }
+        public static bool operator !=(System.Numerics.Tensors.ReadOnlySpanND<T> left, System.Numerics.Tensors.ReadOnlySpanND<T> right) { throw null; }
+        public System.Numerics.Tensors.ReadOnlySpanND<T> Slice(int start) { throw null; }
+        public System.Numerics.Tensors.ReadOnlySpanND<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
         public override string ToString() { throw null; }
-        public bool TryCopyTo(System.SpanND<T> destination) { throw null; }
+        public bool TryCopyTo(System.Numerics.Tensors.SpanND<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
             private object _dummy;
@@ -94,19 +101,19 @@ namespace System
         public SpanND(ref T reference) { throw null; }
         public SpanND(T[]? array) { throw null; }
         public SpanND(T[]? array, nint start, nint length) { throw null; }
-        public static System.SpanND<T> Empty { get { throw null; } }
+        public static System.Numerics.Tensors.SpanND<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref T this[nint index] { get { throw null; } }
         public nint Length { get { throw null; } }
         public void Clear() { }
-        public void CopyTo(System.SpanND<T> destination) { }
+        public void CopyTo(System.Numerics.Tensors.SpanND<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on SpanND will always throw an exception. Use the equality operator instead.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
         public override bool Equals(object? obj) { throw null; }
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         public void Fill(T value) { }
-        public System.SpanND<T>.Enumerator GetEnumerator() { throw null; }
+        public System.Numerics.Tensors.SpanND<T>.Enumerator GetEnumerator() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("GetHashCode() on SpanND will always throw an exception.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
@@ -114,16 +121,16 @@ namespace System
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T GetPinnableReference() { throw null; }
-        public static bool operator ==(System.SpanND<T> left, System.SpanND<T> right) { throw null; }
-        public static implicit operator System.SpanND<T> (System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlySpanND<T> (System.SpanND<T> span) { throw null; }
-        public static implicit operator System.SpanND<T> (T[]? array) { throw null; }
-        public static bool operator !=(System.SpanND<T> left, System.SpanND<T> right) { throw null; }
-        public System.SpanND<T> Slice(nint start) { throw null; }
-        public System.SpanND<T> Slice(nint start, nint length) { throw null; }
+        public static bool operator ==(System.Numerics.Tensors.SpanND<T> left, System.Numerics.Tensors.SpanND<T> right) { throw null; }
+        public static implicit operator System.Numerics.Tensors.SpanND<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.Numerics.Tensors.ReadOnlySpanND<T> (System.Numerics.Tensors.SpanND<T> span) { throw null; }
+        public static implicit operator System.Numerics.Tensors.SpanND<T> (T[]? array) { throw null; }
+        public static bool operator !=(System.Numerics.Tensors.SpanND<T> left, System.Numerics.Tensors.SpanND<T> right) { throw null; }
+        public System.Numerics.Tensors.SpanND<T> Slice(nint start) { throw null; }
+        public System.Numerics.Tensors.SpanND<T> Slice(nint start, nint length) { throw null; }
         public T[] ToArray() { throw null; }
         public override string ToString() { throw null; }
-        public bool TryCopyTo(System.SpanND<T> destination) { throw null; }
+        public bool TryCopyTo(System.Numerics.Tensors.SpanND<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
             private object _dummy;
@@ -132,10 +139,6 @@ namespace System
             public bool MoveNext() { throw null; }
         }
     }
-}
-
-namespace System.Numerics.Tensors
-{
     public static partial class TensorPrimitives
     {
         public static void Abs<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.INumberBase<T> { }

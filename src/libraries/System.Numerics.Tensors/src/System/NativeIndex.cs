@@ -124,12 +124,15 @@ namespace System
         /// <param name="other">An object to compare with this object</param>
         public bool Equals(NativeIndex other) => _value == other._value;
 
-        // TODO: FIX THIS. THE CONVERSION IS JUST TO FIX ERROR FOR NOW.
+        // BUGBUG: FIX THIS. THE CONVERSION IS JUST TO FIX ERROR FOR NOW.
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() => (int)_value;
 
-        /// <summary>Converts integer number to an NativeIndex.</summary>
+        /// <summary>Converts integer number to a NativeIndex.</summary>
         public static implicit operator NativeIndex(int value) => FromStart(value);
+
+        /// <summary>Converts native integer number to a NativeIndex.</summary>
+        public static implicit operator NativeIndex(nint value) => FromStart(value);
 
         /// <summary>Converts the value of the current NativeIndex object to its equivalent string representation.</summary>
         public override string ToString()
@@ -154,9 +157,27 @@ namespace System
             return new string(span.Slice(0, charsWritten + 1));
         }
 
+        /// <summary>
+        /// Converts Index to a NativeIndex.
+        /// </summary>
+        /// <param name="index">The Index to convert.</param>
         public static implicit operator NativeIndex(Index index)
         {
-            return new NativeIndex(index.Value);
+            return new NativeIndex(index.Value, index.IsFromEnd);
+        }
+
+        public static implicit operator int(NativeIndex index)
+        {
+            if (index.Value > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), "can't implicitly convert NativeIndex to int when NativeIndex.Value is larger than int.MaxValue");
+            }
+            return (int)index.Value;
+        }
+
+        public static implicit operator nint(NativeIndex index)
+        {
+            return index.Value;
         }
     }
 }

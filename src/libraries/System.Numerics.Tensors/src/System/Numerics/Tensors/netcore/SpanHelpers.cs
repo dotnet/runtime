@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable 8500 // sizeof of managed types
 
-namespace System
+namespace System.Numerics.Tensors
 {
     internal static partial class SpanHelpers
     {

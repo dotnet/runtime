@@ -17,6 +17,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="NativeRangeTests.cs" />
+    <Compile Include="NativeIndexTests.cs" />
     <Compile Include="TensorPrimitives.ConvertTo.cs" />
     <Compile Include="TensorPrimitives.Generic.cs" />
   </ItemGroup>

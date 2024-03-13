@@ -20,8 +20,8 @@
     <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.T.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanND.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\NativeIndex.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\NativeRange.cs" />
+    <Compile Include="System\NativeIndex.cs" />
+    <Compile Include="System\NativeRange.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IAggregationOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBinaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IIndexOfOperator.cs" />

@@ -12,7 +12,7 @@ using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'SpanND<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 #pragma warning disable 8500 // address / sizeof of managed types
 
-namespace System
+namespace System.Numerics.Tensors
 {
     /// <summary>
     /// SpanND represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed

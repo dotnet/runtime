@@ -11,7 +11,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace System
+namespace System.Numerics.Tensors
 {
     internal static partial class SpanHelpers // .ByteMemOps
     {
