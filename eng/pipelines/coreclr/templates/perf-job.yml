@@ -139,6 +139,15 @@ jobs:
     - ${{ if eq(parameters.crossBuild, true) }}:
       - _crossBuildPropertyArg: '-cross'
 
+    - name: librariesDownloadDir
+      value: '$(Build.SourcesDirectory)/artifacts'
+
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+
     frameworks:
       - ${{ parameters.framework }}
     steps:

@@ -13,7 +13,7 @@ parameters:
 
 ### Format job
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -41,7 +41,7 @@ jobs:
       - name: LinuxCrossArg
         value: ''
 
-    condition: ${{ parameters.condition }}
+    condition: and(succeeded(), ${{ parameters.condition }})
 
     steps:
 

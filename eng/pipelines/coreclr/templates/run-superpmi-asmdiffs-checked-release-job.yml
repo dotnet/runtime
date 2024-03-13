@@ -18,7 +18,7 @@ parameters:
   dependOnEvaluatePaths: false
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -48,6 +48,12 @@ jobs:
       value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
     - name: HelixResultLocation
       value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}

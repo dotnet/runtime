@@ -27,7 +27,7 @@ variables:
 
   - name: nativeTestArtifactConfig
     value: $(_BuildConfig)
-  
+
   - ${{ if ne(parameters.configOverride, '') }}:
     - name: nativeTestArtifactConfig
       value: ${{ parameters.configOverride }}
@@ -44,20 +44,12 @@ variables:
   - name: microsoftNetSdkIlArtifactName
     value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'
 
-  - name: librariesBuildArtifactName
-    value : ''
   - name: librariesOverrideArg
-    value : ''
-  - name: librariesDownloadDir
     value : ''
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - name: librariesBuildArtifactName
-      value : ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
     - name: librariesOverrideArg
       value : ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
-    - name: librariesDownloadDir
-      value : $(Build.SourcesDirectory)/artifacts
 
   - name: priorityArg
     value: ''

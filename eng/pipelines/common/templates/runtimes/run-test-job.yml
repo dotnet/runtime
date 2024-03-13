@@ -34,7 +34,7 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -47,7 +47,7 @@ jobs:
     helixType: 'build/tests/'
     runtimeVariant: ${{ parameters.runtimeVariant }}
     pool: ${{ parameters.pool }}
-    condition: ${{ parameters.condition }}
+    condition: and(succeeded(), ${{ parameters.condition }})
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Test jobs should continue on error for internal builds
@@ -127,6 +127,12 @@ jobs:
     - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
       - name: testTreeFilterArg
         value: 'tree GC/Scenarios/GCSimulator'
+
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
 
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
