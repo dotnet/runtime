@@ -361,6 +361,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
         FlowEdge* const falseEdge = fgAddRefPred(poll, top);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
 
         FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
         poll->SetTargetEdge(newEdge);
@@ -2772,7 +2774,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (BasicBlock* const predBlock : block->PredBlocks())
+    for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
@@ -2784,9 +2786,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRemoveRefPred(predBlock->GetTargetEdge());
-                    FlowEdge* const newEdge = fgAddRefPred(newHead, predBlock);
-                    predBlock->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(predBlock, newHead);
                     break;
                 }
 
