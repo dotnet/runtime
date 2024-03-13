@@ -324,7 +324,6 @@ __tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
         INLINE_GET_TLS_VAR $destReg, $trashReg, $variable
 
         EXTERN _tls_index
-        EXTERN $variable
 
         ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
         ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
@@ -353,6 +352,6 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 
         EXTERN $gCurrentThreadInfo
 
-        INLINE_GET_TLS_VAR $destReg, $trashReg, gCurrentThreadInfo
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $gCurrentThreadInfo
         ldr $destReg, [$destReg] ; return gCurrentThreadInfo.m_pThread
     MEND
