@@ -973,7 +973,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Turn originalSwitchBB into a BBJ_COND.
     FlowEdge* const falseEdge        = originalSwitchBB->GetTargetEdge();
     weight_t const  switchLikelihood = 1.0 - defaultLikelihood;
-    falseEdge->setLikelihood(1.0 - defaultLikelihood);
+    falseEdge->setLikelihood(switchLikelihood);
     originalSwitchBB->SetCond(trueEdge, falseEdge);
     afterDefaultCondBlock->inheritWeight(originalSwitchBB);
     afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
@@ -1059,7 +1059,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // unconditional branch.
         bool fAnyTargetFollows = false;
 
-        // We need to track how much of hte original switch's likelihood has already been
+        // We need to track how much of the original switch's likelihood has already been
         // tested for.  We'll use this to adjust the likelihood of the branches we're adding.
         // So far we've tested for the default case, so we'll start with that.
         weight_t totalTestLikelihood = defaultLikelihood;
@@ -1108,7 +1108,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // We set the true edge likelihood earlier, use that to figure out the false edge likelihood
                 // and the block weight.
                 //
-                FlowEdge* const trueEdge        = newBlock->GetTrueEdge();
+                FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
                 weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
                 falseEdge->setLikelihood(falseLikelihood);
                 currentBlock->SetFalseEdge(falseEdge);
@@ -1120,6 +1120,23 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             else
             {
                 assert(currentBlock == afterDefaultCondBlock);
+
+                // If the first switch case we peel off has the same target as
+                // other cases (that is, it has nonzero dup count, it's simpler to
+                // just make a new here block, so that as we peel off cases,
+                // we're not sharing edges with the original switch.
+                //
+                // That is, the call to fgAddRefPred below always creates a new edge.
+                //
+                if (oldEdge->getDupCount() > 0)
+                {
+                    BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
+                    newBlock->SetFlags(BBF_NONE_QUIRK);
+                    FlowEdge* const newEdge = comp->fgAddRefPred(newBlock, currentBlock);
+                    currentBlock            = newBlock;
+                    afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
+
                 fUsedAfterDefaultCondBlock = true;
             }
 
@@ -1128,6 +1145,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // Wire up the predecessor list for the "branch" case.
             FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
+            // This should truly be a new edge.
+            assert(newEdge->getDupCount() == 1);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
