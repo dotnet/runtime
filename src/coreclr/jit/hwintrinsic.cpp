@@ -778,11 +778,11 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
             {
                 arg = impSIMDPopStack();
             }
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             assert(varTypeIsSIMD(arg) || varTypeIsMask(arg));
 #else
             assert(varTypeIsSIMD(arg));
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_MASKED_HW_INTRINSICS
         }
         else
         {

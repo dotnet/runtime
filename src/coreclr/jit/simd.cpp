@@ -457,11 +457,11 @@ GenTree* Compiler::impSIMDPopStack()
     StackEntry se   = impPopStack();
     GenTree*   tree = se.val;
 
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     assert(varTypeIsSIMD(tree) || varTypeIsMask(tree));
 #else
     assert(varTypeIsSIMD(tree));
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Handle calls that may return the struct via a return buffer.
     if (tree->OperIs(GT_CALL, GT_RET_EXPR))
