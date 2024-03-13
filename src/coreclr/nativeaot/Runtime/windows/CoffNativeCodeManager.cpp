@@ -573,9 +573,30 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
         upperBound = dac_cast<TADDR>(context.Sp);
 #else
-        PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
-        upperBound = NULL;
-        RhFailFast();
+        PTR_uint8_t gcInfo;
+        uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+
+        hdrInfo infoBuf;
+        size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+        PTR_CBYTE table = gcInfo + infoSize;
+
+        REGDISPLAY registerSet = *pRegisterSet;
+
+        if (::UnwindStackFrameX86(&registerSet,
+                                  (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress),
+                                  codeOffset,
+                                  &infoBuf,
+                                  table,
+                                  (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+                                  (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+                                  true))
+        {
+            upperBound = dac_cast<TADDR>(registerSet.PCTAddr - sizeof(TADDR));
+        }
+        else
+        {
+            upperBound = registerSet.GetSP();
+        }
 #endif
     }
     return upperBound;
