@@ -238,14 +238,14 @@ namespace System.Linq
             {
                 Debug.Assert(start < end);
                 Debug.Assert((uint)(end - start) <= (uint)int.MaxValue);
-                Debug.Assert(selector != null);
+                Debug.Assert(selector is not null);
 
                 _start = start;
                 _end = end;
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new RangeSelectIterator<TResult>(_start, _end, _selector);
 
             public override bool MoveNext()
@@ -569,17 +569,17 @@ namespace System.Linq
         {
             private readonly Iterator<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
-            private IEnumerator<TSource>? _enumerator;
+            private Iterator<TSource>? _enumerator;
 
             public IteratorSelectIterator(Iterator<TSource> source, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new IteratorSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
@@ -591,7 +591,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = _selector(_enumerator.Current);
@@ -607,7 +607,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -771,8 +771,8 @@ namespace System.Linq
 
             public IListSkipTakeSelectIterator(IList<TSource> source, Func<TSource, TResult> selector, int minIndexInclusive, int maxIndexInclusive)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
                 Debug.Assert(minIndexInclusive >= 0);
                 Debug.Assert(minIndexInclusive <= maxIndexInclusive);
                 _source = source;
@@ -781,7 +781,7 @@ namespace System.Linq
                 _maxIndexInclusive = maxIndexInclusive;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new IListSkipTakeSelectIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()

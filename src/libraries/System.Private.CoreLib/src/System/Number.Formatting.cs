@@ -407,7 +407,7 @@ namespace System
 
         internal static unsafe void DecimalToNumber(scoped ref decimal d, ref NumberBuffer number)
         {
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             number.DigitsCount = DecimalPrecision;
             number.IsNegative = decimal.IsNegative(d);
 
@@ -423,7 +423,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i - d.Scale;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -1627,7 +1627,7 @@ namespace System
                 value = -value;
             }
 
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             byte* p = UInt32ToDecChars(buffer + Int32Precision, (uint)value, 0);
 
             int i = (int)(buffer + Int32Precision - p);
@@ -1635,7 +1635,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -1824,7 +1824,7 @@ namespace System
             number.DigitsCount = UInt32Precision;
             number.IsNegative = false;
 
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             byte* p = UInt32ToDecChars(buffer + UInt32Precision, value, 0);
 
             int i = (int)(buffer + UInt32Precision - p);
@@ -1832,7 +1832,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -2058,7 +2058,7 @@ namespace System
                 value = -value;
             }
 
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             byte* p = UInt64ToDecChars(buffer + Int64Precision, (ulong)value, 0);
 
             int i = (int)(buffer + Int64Precision - p);
@@ -2066,7 +2066,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -2289,7 +2289,7 @@ namespace System
             number.DigitsCount = UInt64Precision;
             number.IsNegative = false;
 
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             byte* p = UInt64ToDecChars(buffer + UInt64Precision, value, 0);
 
             int i = (int)(buffer + UInt64Precision - p);
@@ -2297,7 +2297,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -2484,7 +2484,7 @@ namespace System
                 value = -value;
             }
 
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             byte* p = UInt128ToDecChars(buffer + Int128Precision, (UInt128)value, 0);
 
             int i = (int)(buffer + Int128Precision - p);
@@ -2492,7 +2492,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -2701,7 +2701,7 @@ namespace System
             number.DigitsCount = UInt128Precision;
             number.IsNegative = false;
 
-            byte* buffer = number.GetDigitsPointer();
+            byte* buffer = number.DigitsPtr;
             byte* p = UInt128ToDecChars(buffer + UInt128Precision, value, 0);
 
             int i = (int)(buffer + UInt128Precision - p);
@@ -2709,7 +2709,7 @@ namespace System
             number.DigitsCount = i;
             number.Scale = i;
 
-            byte* dst = number.GetDigitsPointer();
+            byte* dst = number.DigitsPtr;
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -3050,7 +3050,7 @@ namespace System
 
             int section;
             int src;
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
             char ch;
 
             section = FindSection(format, dig[0] == 0 ? 2 : number.IsNegative ? 1 : 0);
@@ -3492,7 +3492,7 @@ namespace System
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             int digPos = number.Scale;
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             if (digPos > 0)
             {
@@ -3657,7 +3657,7 @@ namespace System
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
 
@@ -3716,7 +3716,7 @@ namespace System
                 }
             }
 
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             if (digPos > 0)
             {
@@ -3786,7 +3786,7 @@ namespace System
 
         internal static unsafe void RoundNumber(ref NumberBuffer number, int pos, bool isCorrectlyRounded)
         {
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             int i = 0;
             while (i < pos && dig[i] != '\0')

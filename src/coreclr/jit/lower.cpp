@@ -6003,7 +6003,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
     // that consumes the error register is the call node's successor.
     // This is to simplify logic for marking the error register as busy in LSRA.
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    if (call->HasSwiftErrorHandling())
     {
         GenTree* swiftErrorNode = call->gtNext;
         assert(swiftErrorNode != nullptr);
@@ -9096,6 +9096,36 @@ void Lowering::UnmarkTree(GenTree* node)
 }
 
 #endif // TARGET_ARM64
+
+//------------------------------------------------------------------------
+// IsContainableLclAddr: Can a given local address be contained?
+//
+// Most local addresses can be contained, however, there are two edge cases
+// where this is not true:
+// 1. When the resulting memory access will go beyond the local's location.
+// 2. When the resulting access may go past a UINT16_MAX.
+// Both of these requirements are imposed by the emitter.
+//
+// Arguments:
+//    lclAddr    - The local address node
+//    accessSize - The access size (of an indirection)
+//
+// Return Value:
+//    Whether an indirection of "accessSize" may contain "lclAddr".
+//
+bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const
+{
+    if (CheckedOps::AddOverflows<int32_t>(lclAddr->GetLclOffs(), accessSize, CheckedOps::Unsigned) ||
+        !comp->IsValidLclAddr(lclAddr->GetLclNum(), lclAddr->GetLclOffs() + accessSize - 1))
+    {
+        // We depend on containment for correctness of liveness updates in codegen. Therefore, all
+        // locals that may "return false" here MUST be address-exposed. Local morph ensures this.
+        assert(comp->lvaGetDesc(lclAddr)->IsAddressExposed());
+        return false;
+    }
+
+    return true;
+}
 
 //------------------------------------------------------------------------
 // TransformUnusedIndirection: change the opcode and the type of the unused indirection.

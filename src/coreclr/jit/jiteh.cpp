@@ -1987,7 +1987,6 @@ bool Compiler::fgNormalizeEHCase1()
             BasicBlock* newHndStart = BasicBlock::New(this);
             fgInsertBBbefore(handlerStart, newHndStart);
             FlowEdge* newEdge = fgAddRefPred(handlerStart, newHndStart);
-            newEdge->setLikelihood(1.0);
             newHndStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
             // Handler begins have an extra implicit ref count.
@@ -2159,7 +2158,6 @@ bool Compiler::fgNormalizeEHCase2()
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
                         FlowEdge* const newEdge = fgAddRefPred(insertBeforeBlk, newTryStart);
-                        newEdge->setLikelihood(1.0);
                         newTryStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                         // It's possible for a try to start at the beginning of a method. If so, we need
@@ -2377,7 +2375,6 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);
             FlowEdge* const newEdge = fgAddRefPred(handlerBb, filterBb);
-            newEdge->setLikelihood(1.0);
             filterBb->SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
@@ -2685,7 +2682,6 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->inheritWeight(insertAfterBlk);
                     newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
                     FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
-                    newEdge->setLikelihood(1.0);
                     insertAfterBlk->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
@@ -4346,10 +4342,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif // DEBUG
                 // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->GetTargetEdge());
-                FlowEdge* const newEdge = fgAddRefPred(bPrev, bFilterLast);
-                newEdge->setLikelihood(1.0);
-                bFilterLast->SetTargetEdge(newEdge);
+                fgRedirectTargetEdge(bFilterLast, bPrev);
             }
         }
 

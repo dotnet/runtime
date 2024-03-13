@@ -1458,16 +1458,6 @@ protected:
             assert(!idIsSmallDsc());
             idAddr()->_idRegBit = val ? 1 : 0;
         }
-        bool idOptionalShift() const
-        {
-            assert(!idIsSmallDsc());
-            return (idAddr()->_idRegBit == 1);
-        }
-        void idOptionalShift(bool val)
-        {
-            assert(!idIsSmallDsc());
-            idAddr()->_idRegBit = val ? 1 : 0;
-        }
         insSvePattern idSvePattern() const
         {
             assert(!idIsSmallDsc());
@@ -1487,6 +1477,17 @@ protected:
         {
             assert(!idIsSmallDsc());
             idAddr()->_idReg4 = (regNumber)idSvePrfop;
+        }
+        bool idHasShift() const
+        {
+            return !idIsSmallDsc() && (idAddr()->_idRegBit == 1);
+        }
+        void idHasShift(bool val)
+        {
+            if (!idIsSmallDsc())
+            {
+                idAddr()->_idRegBit = val ? 1 : 0;
+            }
         }
 #endif // TARGET_ARM64
 

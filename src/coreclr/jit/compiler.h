@@ -2323,6 +2323,11 @@ class FlowGraphDominatorTree
 
     static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
@@ -2357,23 +2362,28 @@ public:
 // exceptional flow, then CanReach returns false.
 class BlockReachabilitySets
 {
-    FlowGraphDfsTree* m_dfsTree;
+    const FlowGraphDfsTree* m_dfsTree;
     BitVec* m_reachabilitySets;
 
-    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+    BlockReachabilitySets(const FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
         : m_dfsTree(dfsTree)
         , m_reachabilitySets(reachabilitySets)
     {
     }
 
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfsTree;
+    }
+
     bool CanReach(BasicBlock* from, BasicBlock* to);
 
 #ifdef DEBUG
     void Dump();
 #endif
 
-    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
+    static BlockReachabilitySets* Build(const FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -4367,7 +4377,9 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg);
+    void impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg);
+    void impRetypeUnmanagedCallArgs(GenTreeCall* call);
 
 #ifdef SWIFT_SUPPORT
     void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
@@ -4543,6 +4555,11 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
+#if defined(TARGET_ARM64)
+    GenTree* convertHWIntrinsicToMask(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type);
+#endif
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -5119,7 +5136,6 @@ public:
 
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
-    bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
     bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
@@ -5219,14 +5235,6 @@ public:
     void fgCleanupContinuation(BasicBlock* continuation);
 
     PhaseStatus fgTailMergeThrows();
-    void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
-                                            BasicBlock* nonCanonicalBlock,
-                                            BasicBlock* canonicalBlock,
-                                            FlowEdge*   predEdge);
-    void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
-                                       BasicBlock* nonCanonicalBlock,
-                                       BasicBlock* canonicalBlock,
-                                       FlowEdge*   predEdge);
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -5777,8 +5785,6 @@ protected:
     template <typename CanRemoveBlockBody>
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
-    PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
-
     PhaseStatus fgComputeDominators(); // Compute dominators
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
@@ -5901,6 +5907,16 @@ public:
     // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
     template <bool initializingPreds = false>
     FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
+
+private:
+    FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
+
+public:
+    void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 
@@ -6095,7 +6111,7 @@ public:
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
-    void fgDebugCheckDfsTree();
+    void fgDebugCheckFlowGraphAnnotations();
 
 #endif // DEBUG
 
@@ -6675,6 +6691,8 @@ private:
 public:
     bool fgIsBigOffset(size_t offset);
 
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+
 private:
     bool fgNeedReturnSpillTemp();
 
@@ -6792,7 +6810,7 @@ private:
 public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optSwitchRecognition();
-    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest);
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
     bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
@@ -9219,6 +9237,7 @@ public:
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
+        // | riscv64     |    64  |    32  | no SIMD support
         //
         // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //

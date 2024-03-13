@@ -171,12 +171,8 @@ jobs:
           demands: ImageOverride -equals Build.Ubuntu.2204.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool).
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           vmImage: 'macos-12'
-
-        # Official build OSX pool
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-13-arm64'
 
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
