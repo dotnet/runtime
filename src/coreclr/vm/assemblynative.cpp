@@ -135,7 +135,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     CONTRACT_END;
 
     Assembly *pLoadedAssembly = NULL;
-    ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
@@ -149,7 +148,30 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+
+    GCX_COOP();
+
+    struct {
+        OBJECTREF pBinder;
+        BINDERASSEMBLYREF pAssembly;
+    } gc;
+
+    gc.pBinder = ObjectFromHandle((OBJECTHANDLE)(pBinder->GetManagedAssemblyLoadContext()));
+    gc.pAssembly = NULL;
+
+    GCPROTECT_BEGIN(gc);
+
+    MethodDescCallSite methBind(METHOD__ASSEMBLYLOADCONTEXT__BIND_USING_PEIMAGE, &gc.pBinder);
+    ARG_SLOT args[4] =
+    {
+        ObjToArgSlot(gc.pBinder),
+        PtrToArgSlot(pImage),
+        BoolToArgSlot(excludeAppPaths),
+        PtrToArgSlot(&gc.pAssembly)
+    };
+    hr = methBind.Call_RetHR(args);
+
+    GCPROTECT_END();
 
     if (hr != S_OK)
     {
@@ -171,7 +193,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(gc.pAssembly->m_peImage, gc.pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
@@ -1379,13 +1401,33 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvo
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr)
+extern "C" void QCALLTYPE AssemblyNative_TracePathProbed(LPCWSTR filePath, uint16_t source, HRESULT hr)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
+    BinderTracing::PathProbed(filePath, static_cast<BinderTracing::PathSource>(source), hr);
+
+    END_QCALL;
+}
+
+// static
+extern "C" void QCALLTYPE AssemblyNative_TraceResolutionAttempted(LPCWSTR assemblyName, uint16_t stage, LPCWSTR assemblyLoadContextName, uint16_t result, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath, LPCWSTR errorMsg)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    FireEtwResolutionAttempted(
+        GetClrInstanceId(),
+        assemblyName,
+        stage,
+        assemblyLoadContextName,
+        result,
+        resultAssemblyName,
+        resultAssemblyPath,
+        errorMsg);
 
     END_QCALL;
 }
@@ -1452,4 +1494,258 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
     END_QCALL;
 
     return result;
+}
+
+extern "C" IMDInternalImport * QCALLTYPE AssemblyNative_GetMDImport(Assembly * pAssembly)
+{
+    QCALL_CONTRACT;
+
+    IMDInternalImport* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pAssembly->GetMDImport();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" LPCUTF8 QCALLTYPE AssemblyNative_GetSimpleNameNative(Assembly * pAssembly)
+{
+    QCALL_CONTRACT;
+
+    LPCUTF8 result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pAssembly->GetSimpleName();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE AssemblyNative_GetExposedObject(Assembly * pAssembly, QCall::ObjectHandleOnStack rtAssembly)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    rtAssembly.Set(pAssembly->GetExposedObject());
+
+    END_QCALL;
+}
+
+extern "C" PEImage * QCALLTYPE AssemblyNative_GetPEImage(Assembly * pAssembly)
+{
+    QCALL_CONTRACT;
+
+    PEImage* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pAssembly->GetPEAssembly()->GetPEImage();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE AssemblyNative_SetSymbolBytes(Assembly * pAssembly, BYTE* ptrSymbolArray, int32_t cbSymbolArrayLength)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    pAssembly->GetModule()->SetSymbolBytes(ptrSymbolArray, (DWORD)cbSymbolArrayLength);
+
+    END_QCALL;
+}
+
+extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags)
+{
+    QCALL_CONTRACT;
+
+    IMDInternalImport* ret = NULL;
+
+    BEGIN_QCALL;
+    
+    // The same logic of BinderAcquireImport
+    
+    PEImageLayout* pLayout = pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
+
+    // CheckCorHeader includes check of NT headers too
+    if (!pLayout->CheckCorHeader())
+        ThrowHR(COR_E_ASSEMBLYEXPECTED);
+
+    if (!pLayout->CheckFormat())
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
+
+    ret = pPEImage->GetMDImport();
+    if (!ret)
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // No AddRef
+
+    END_QCALL;
+
+    return ret;
+}
+
+extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPath, PEImage * *ppPEImage, BundleFileLocation bundleFileLocation)
+{
+    QCALL_CONTRACT;
+
+    HRESULT hr = S_OK;
+
+    BEGIN_QCALL;
+
+    *ppPEImage = NULL;
+
+    EX_TRY
+    {
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
+
+        // Make sure that the IL image can be opened.
+        hr = pImage->TryOpenFile();
+        if (SUCCEEDED(hr))
+        {
+            *ppPEImage = pImage.Extract();
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    END_QCALL;
+
+    return hr;
+}
+
+extern "C" void QCALLTYPE PEImage_Release(PEImage * pPEImage)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    pPEImage->Release();
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    pPEImage->GetMVID(pMVID);
+
+    END_QCALL;
+}
+
+extern "C" LPCWSTR QCALLTYPE PEImage_GetPath(PEImage * pPEImage)
+{
+    QCALL_CONTRACT;
+
+    LPCWSTR result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pPEImage->GetPath().GetUnicode();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly)
+{
+    QCALL_CONTRACT;
+
+    PEAssembly* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pDomainAssembly->GetPEAssembly();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE DomainAssembly_EnsureReferenceBinder(DomainAssembly * pDomainAssembly, AssemblyBinder * pBinder)
+{
+    QCALL_CONTRACT;
+    
+    BEGIN_QCALL;
+
+    LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
+    LoaderAllocator *pParentLoaderAllocator = pBinder->GetLoaderAllocator();
+    if (pParentLoaderAllocator == NULL)
+    {
+        // The AssemblyLoadContext for which we are resolving the Assembly is not collectible.
+        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
+    }
+
+    _ASSERTE(pResultAssemblyLoaderAllocator);
+    pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
+
+    END_QCALL;
+}
+
+extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly)
+{
+    QCALL_CONTRACT;
+
+    INT_PTR result = NULL;
+
+    BEGIN_QCALL;
+
+    result = (INT_PTR)pPEAssembly->GetHostAssembly();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" BOOL QCALLTYPE Bundle_AppIsBundle()
+{
+    QCALL_CONTRACT;
+
+    BOOL result = FALSE;
+
+    BEGIN_QCALL;
+
+    result = Bundle::AppIsBundle();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative, BundleFileLocation* result)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    *result = Bundle::ProbeAppBundle(SString(path), pathIsBundleRelative);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE Bundle_GetAppBundleBasePath(QCall::StringHandleOnStack path)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    path.Set(Bundle::AppBundle->BasePath().GetUnicode());
+
+    END_QCALL;
 }

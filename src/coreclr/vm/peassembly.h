@@ -301,10 +301,17 @@ public:
     }
 
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
-    PTR_BINDER_SPACE_Assembly GetHostAssembly()
+    OBJECTHANDLE GetHostAssembly()
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         return m_pHostAssembly;
+    }
+
+    // Set host assembly after PEAssembly was created.
+    // Adhoc for CoreLib
+    void SetHostAssemblyAdHoc(OBJECTHANDLE pHostAssembly)
+    {
+        m_pHostAssembly = pHostAssembly;
     }
 
     // Returns the AssemblyBinder* instance associated with the PEAssembly
@@ -334,12 +341,12 @@ public:
 
     static PEAssembly* Open(
         PEImage* pPEImageIL,
-        BINDER_SPACE::Assembly* pHostAssembly);
+        BINDERASSEMBLYREF pHostAssembly);
 
     // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly* OpenSystem();
 
-    static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
+    static PEAssembly* Open(BINDERASSEMBLYREF pBindResult);
 
     static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit);
 
@@ -368,12 +375,13 @@ private:
     ~PEAssembly() {};
     PEAssembly() = default;
 #else
+    
     PEAssembly(
-        BINDER_SPACE::Assembly* pBindResultInfo,
+        BINDERASSEMBLYREF pBindResultInfo,
         IMetaDataEmit* pEmit,
         BOOL isSystem,
         PEImage* pPEImageIL = NULL,
-        BINDER_SPACE::Assembly* pHostAssembly = NULL
+        BINDERASSEMBLYREF pHostAssembly = NULL
     );
 
     ~PEAssembly();
@@ -424,7 +432,7 @@ private:
     Volatile<LONG>           m_refCount;
     bool                     m_isSystem;
 
-    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
+    OBJECTHANDLE m_pHostAssembly;
 
     // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,

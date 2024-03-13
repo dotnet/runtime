@@ -4,24 +4,15 @@ include_directories(BEFORE "../vm")
 include_directories(BEFORE "inc")
 
 set(BINDER_COMMON_SOURCES
-    applicationcontext.cpp
-    assembly.cpp
     assemblybindercommon.cpp
     assemblyname.cpp
     bindertracing.cpp
-    defaultassemblybinder.cpp
-    failurecache.cpp
     textualidentityparser.cpp
     utils.cpp
 )
 
 set(BINDER_COMMON_HEADERS
-    inc/applicationcontext.hpp
-    inc/applicationcontext.inl
-    inc/assembly.hpp
-    inc/assembly.inl
     inc/assemblybindercommon.hpp
-    inc/assemblyhashtraits.hpp
     inc/assemblyidentity.hpp
     inc/assemblyname.hpp
     inc/assemblyname.inl
@@ -29,11 +20,7 @@ set(BINDER_COMMON_HEADERS
     inc/assemblyversion.inl
     inc/bindertypes.hpp
     inc/bindertracing.h
-    inc/bindresult.hpp
-    inc/bindresult.inl
     inc/defaultassemblybinder.h
-    inc/failurecache.hpp
-    inc/failurecachehashtraits.hpp
     inc/textualidentityparser.hpp
     inc/utils.hpp
 )

@@ -627,16 +627,17 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     pDomain->SetNativeDllSearchDirectories(pwzNativeDllSearchDirectories);
 
     {
-        SString sTrustedPlatformAssemblies(pwzTrustedPlatformAssemblies);
-        SString sPlatformResourceRoots(pwzPlatformResourceRoots);
-        SString sAppPaths(pwzAppPaths);
+        GCX_COOP();
 
-        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
-        _ASSERTE(pBinder != NULL);
-        IfFailThrow(pBinder->SetupBindingPaths(
-            sTrustedPlatformAssemblies,
-            sPlatformResourceRoots,
-            sAppPaths));
+        MethodDescCallSite methSetupBindingPaths(METHOD__ASSEMBLYLOADCONTEXT__SETUP_BINDING_PATHS);
+        ARG_SLOT args[3] =
+        {
+            PtrToArgSlot(pwzTrustedPlatformAssemblies),
+            PtrToArgSlot(pwzPlatformResourceRoots),
+            PtrToArgSlot(pwzAppPaths)
+        };
+
+        methSetupBindingPaths.Call(args);
     }
 
 #if defined(TARGET_UNIX)

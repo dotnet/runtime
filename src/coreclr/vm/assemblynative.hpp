@@ -139,8 +139,9 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCW
 
 extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath);
 
-extern "C" void QCALLTYPE AssemblyNative_TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr);
+extern "C" void QCALLTYPE AssemblyNative_TracePathProbed(LPCWSTR filePath, uint16_t source, HRESULT hr);
 
+extern "C" void QCALLTYPE AssemblyNative_TraceResolutionAttempted(LPCWSTR assemblyName, uint16_t stage, LPCWSTR assemblyLoadContextName, uint16_t result, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath, LPCWSTR errorMsg);
 
 extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(QCall::AssemblyHandle assembly, UINT8* metadataDelta, INT32 metadataDeltaLength, UINT8* ilDelta, INT32 ilDeltaLength, UINT8* pdbDelta, INT32 pdbDeltaLength);
 
@@ -148,4 +149,35 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported();
 
 extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec);
 
+extern "C" IMDInternalImport * QCALLTYPE AssemblyNative_GetMDImport(Assembly * pAssembly);
+
+extern "C" LPCUTF8 QCALLTYPE AssemblyNative_GetSimpleNameNative(Assembly * pAssembly);
+
+extern "C" void QCALLTYPE AssemblyNative_GetExposedObject(Assembly * pAssembly, QCall::ObjectHandleOnStack rtAssembly);
+
+extern "C" PEImage * QCALLTYPE AssemblyNative_GetPEImage(Assembly * pAssembly);
+
+extern "C" void QCALLTYPE AssemblyNative_SetSymbolBytes(Assembly * pAssembly, BYTE* ptrSymbolArray, int32_t cbSymbolArrayLength);
+
+extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags);
+
+extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPath, PEImage * *ppPEImage, BundleFileLocation bundleFileLocation);
+
+extern "C" void QCALLTYPE PEImage_Release(PEImage * pPEImage);
+
+extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID);
+
+extern "C" LPCWSTR QCALLTYPE PEImage_GetPath(PEImage * pPEImage);
+
+extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly);
+
+extern "C" void QCALLTYPE DomainAssembly_EnsureReferenceBinder(DomainAssembly * pDomainAssembly, AssemblyBinder * pBinder);
+
+extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly);
+
+extern "C" BOOL QCALLTYPE Bundle_AppIsBundle();
+
+extern "C" void QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative, BundleFileLocation* result);
+
+extern "C" void QCALLTYPE Bundle_GetAppBundleBasePath(QCall::StringHandleOnStack path);
 #endif

@@ -2360,6 +2360,7 @@ public:
     void operator delete(void *pMem);
 #endif
     void Init();
+    void PostStartInit();
     void Stop();
     static void LazyInitGlobalStringLiteralMap();
     static void LazyInitFrozenObjectsHeap();

@@ -45,20 +45,21 @@ namespace System.Runtime.Loader
         internal static extern bool IsTracingEnabled();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial void TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial void TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
+        internal static partial void TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
+        internal static void TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult) => TracePathProbed(filePath, PathSource.SatelliteSubdirectory, hResult);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TracePathProbed", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void TracePathProbed(string filePath, PathSource source, int hResult);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolutionAttempted", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void TraceResolutionAttempted(string assemblyName, Tracing.Stage stage, string assemblyLoadContextName, Tracing.Result result, string resultAssemblyName, string resultAssemblyPath, string errorMsg);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
@@ -107,17 +108,6 @@ namespace System.Runtime.Loader
             }
         }
 #endif
-
-        // This method is invoked by the VM to resolve a satellite assembly reference
-        // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the ResolveSatelliteAssembly method
-            return context.ResolveSatelliteAssembly(assemblyName);
-        }
-
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
@@ -132,15 +122,6 @@ namespace System.Runtime.Loader
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
-        }
-
-        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
-        // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-            // Invoke the AssemblyResolve event callbacks if wired up
-            return context.ResolveUsingEvent(assemblyName);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
@@ -218,13 +199,16 @@ namespace System.Runtime.Loader
             // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
             ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
         }
-
-        /// <summary>
-        /// Called by the runtime to make sure the default ALC is initialized
-        /// </summary>
-        private static void InitializeDefaultContext()
-        {
-            _ = Default;
-        }
     }
+
+    // This must match the BindingPathSource value map in ClrEtwAll.man
+    internal enum PathSource : ushort
+    {
+        ApplicationAssemblies,
+        Unused,
+        AppPaths,
+        PlatformResourceRoots,
+        SatelliteSubdirectory,
+        Bundle
+    };
 }

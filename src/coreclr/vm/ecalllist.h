@@ -184,6 +184,9 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("_GetPInvokeMap", MetaDataImport::GetPinvokeMap)
     FCFuncElement("_IsValidToken", MetaDataImport::IsValidToken)
     FCFuncElement("_GetMarshalAs", MetaDataImport::GetMarshalAs)
+
+    FCFuncElement("_GetAssemblyFromScope", MetaDataImport::GetAssemblyFromScope)
+    FCFuncElement("_GetAssemblyProps", MetaDataImport::GetAssemblyProps)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)

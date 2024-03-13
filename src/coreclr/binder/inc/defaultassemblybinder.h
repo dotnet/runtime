@@ -5,7 +5,6 @@
 #ifndef __DEFAULT_ASSEMBLY_BINDER_H__
 #define __DEFAULT_ASSEMBLY_BINDER_H__
 
-#include "applicationcontext.hpp"
 #include "assemblybinder.h"
 
 class PEAssembly;
@@ -14,13 +13,6 @@ class PEImage;
 class DefaultAssemblyBinder final : public AssemblyBinder
 {
 public:
-
-    HRESULT BindUsingPEImage(PEImage* pPEImage,
-        bool excludeAppPaths,
-        BINDER_SPACE::Assembly** ppAssembly) override;
-
-    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly) override;
 
     AssemblyLoaderAllocator* GetLoaderAllocator() override
     {
@@ -32,21 +24,6 @@ public:
     {
         return true;
     }
-
-public:
-
-    HRESULT SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
-                              SString  &sPlatformResourceRoots,
-                              SString  &sAppPaths);
-
-    HRESULT BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly);
-
-private:
-
-    HRESULT BindAssemblyByNameWorker(
-            BINDER_SPACE::AssemblyName *pAssemblyName,
-            BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
-            bool excludeAppPaths);
 };
 
 #endif // __DEFAULT_ASSEMBLY_BINDER_H__

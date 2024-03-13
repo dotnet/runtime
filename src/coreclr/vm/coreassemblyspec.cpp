@@ -21,18 +21,18 @@
 #include "strongnameinternal.h"
 
 #include "../binder/inc/assemblyidentity.hpp"
-#include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
 
 #include "../binder/inc/assemblybindercommon.hpp"
-#include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(ppAssembly));
         PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
@@ -41,11 +41,21 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 
     HRESULT hr=S_OK;
 
-    // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
+    GCX_COOP();
 
-    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
-    _ASSERTE(pBinder != NULL);
+    struct
+    {
+        OBJECTREF pBinder;
+        BINDERASSEMBLYREF pPrivAsm;
+    } gc;
+
+    // Have a default binding context setup
+    gc.pBinder = ObjectFromHandle((OBJECTHANDLE)GetBinderFromParentAssembly(pAppDomain)->GetManagedAssemblyLoadContext());
+    gc.pPrivAsm = NULL;
+
+    _ASSERTE(gc.pBinder != NULL);
+
+    GCPROTECT_BEGIN(gc);
 
     if (IsCoreLibSatellite())
     {
@@ -57,20 +67,40 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
         if (m_context.szLocale != NULL)
             SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
 
-        hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
+        MethodDescCallSite methSatellite(METHOD__ASSEMBLYBINDERCOMMON__BIND_TO_SYSTEM_SATELLITE);
+        ARG_SLOT args[4] =
+        {
+            PtrToArgSlot(sSystemDirectory.GetUnicode()),
+            PtrToArgSlot(sSimpleName.GetUnicode()),
+            PtrToArgSlot(sCultureName.GetUnicode()),
+            PtrToArgSlot(&gc.pPrivAsm)
+        };
+
+        hr = methSatellite.Call_RetHR(args);
     }
     else
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
-        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
+
+        MethodDescCallSite methBindAssemblyByName(METHOD__ASSEMBLYLOADCONTEXT__BIND_ASSEMBLY_BY_NAME, &gc.pBinder);
+        ARG_SLOT args[3] =
+        {
+            ObjToArgSlot(gc.pBinder),
+            PtrToArgSlot(&assemblyNameData),
+            PtrToArgSlot(&gc.pPrivAsm)
+        };
+
+        hr = methBindAssemblyByName.Call_RetHR(args);
     }
 
     if (SUCCEEDED(hr))
     {
-        _ASSERTE(pPrivAsm != nullptr);
-        *ppAssembly = pPrivAsm.Extract();
+        _ASSERTE(gc.pPrivAsm != NULL);
+        *ppAssembly = gc.pPrivAsm;
     }
+
+    GCPROTECT_END();
 
     return hr;
 }

@@ -1797,16 +1797,12 @@ int GetRandomInt(int maxVal)
 // These wrap the SString:L:CompareCaseInsensitive function in a way that makes it
 // easy to fix code that uses _stricmp. _stricmp should be avoided as it uses the current
 // C-runtime locale rather than the invariance culture.
-//
-// Note that unlike the real _stricmp, these functions unavoidably have a throws/gc_triggers/inject_fault
-// contract. So if need a case-insensitive comparison in a place where you can't tolerate this contract,
-// you've got a problem.
 int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END

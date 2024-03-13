@@ -551,6 +551,38 @@ namespace System.Reflection
         {
             return _IsValidToken(m_metadataImport2, token);
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void _GetAssemblyFromScope(IntPtr scope, out uint tkAssembly);
+        public uint GetAssemblyFromScope()
+        {
+            _GetAssemblyFromScope(m_metadataImport2, out uint tkAssembly);
+            return tkAssembly;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void _GetAssemblyProps(
+            IntPtr scope,
+            uint mda,
+            out byte* ppbPublicKey,
+            out uint pcbPublicKey,
+            out uint pulHashAlgId,
+            void** pszName,
+            void* pMetadata,
+            out uint pdwAsselblyFlags);
+        public unsafe void GetAssemblyProps(
+            uint assemblyToken,
+            out byte* publicKey,
+            out uint publicKeyLength,
+            out uint hashAlgId,
+            out string assemblyName,
+            void* pMetadata,
+            out uint asselblyFlags)
+        {
+            void* _name;
+            _GetAssemblyProps(m_metadataImport2, assemblyToken, out publicKey, out publicKeyLength, out hashAlgId, &_name, pMetadata, out asselblyFlags);
+            assemblyName = new MdUtf8String(_name).ToString();
+        }
         #endregion
     }
 

@@ -1453,6 +1453,9 @@ class AssemblyLoadContextBaseObject : public Object
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
 #ifdef TARGET_64BIT
+    OBJECTREF     _appContext;
+    OBJECTREF     _assemblySimpleNameMvidCheckHash;
+    OBJECTREF     _loadedAssemblies;
     OBJECTREF     _unloadLock;
     OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
@@ -1464,6 +1467,9 @@ class AssemblyLoadContextBaseObject : public Object
     CLR_BOOL      _isCollectible;
 #else // TARGET_64BIT
     int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
+    OBJECTREF     _appContext;
+    OBJECTREF     _assemblySimpleNameMvidCheckHash;
+    OBJECTREF     _loadedAssemblies;
     OBJECTREF     _unloadLock;
     OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
@@ -1523,6 +1529,8 @@ typedef REF<ThreadBaseObject> THREADBASEREF;
 
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 
+typedef REF<BinderAssemblyObject> BINDERASSEMBLYREF;
+
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
@@ -1567,6 +1575,7 @@ typedef PTR_ReflectMethodObject REFLECTMETHODREF;
 typedef PTR_ReflectFieldObject REFLECTFIELDREF;
 typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
+typedef PTR_BinderAssemblyObject BINDERASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 
@@ -1577,6 +1586,27 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 #define ArgSlotToString(s)    ((STRINGREF)(SIZE_T)(s))
 
 #endif //USE_CHECKED_OBJECTREFS
+
+class PEImage;
+
+#include <pshpack4.h>
+// managed System.Runtime.Loader.BinderAssembly
+class BinderAssemblyObject : public Object
+{
+public:
+    OBJECTREF m_assemblyName;
+    AssemblyBinder* m_binder;
+    PEImage* m_peImage;
+    DomainAssembly* m_pDomainAssembly;
+    CLR_BOOL m_isInTPA;
+    CLR_BOOL m_isCoreLib;
+
+    PTR_AssemblyBinder GetBinder()
+    {
+        return PTR_AssemblyBinder(m_binder);
+    }
+};
+#include <poppack.h>
 
 #define PtrToArgSlot(ptr) ((ARG_SLOT)(SIZE_T)(ptr))
 #define ArgSlotToPtr(s)   ((LPVOID)(SIZE_T)(s))

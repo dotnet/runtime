@@ -758,7 +758,28 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                     LPCSTR assemblyName;
                     IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
 
-                    binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL, pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName());
+                    {
+                        GCX_COOP();
+
+                        OBJECTREF alc = ObjectFromHandle((OBJECTHANDLE)binder->GetManagedAssemblyLoadContext());
+
+                        GCPROTECT_BEGIN(alc);
+
+                        MethodDescCallSite methDeclareDependencyOnMvid(METHOD__ASSEMBLYLOADCONTEXT__DECLARE_DEPENDENCY_ON_MVID);
+                        ARG_SLOT args[5] =
+                        {
+                            ObjToArgSlot(alc),
+                            PtrToArgSlot(componentMvid),
+                            PtrToArgSlot(assemblyName),
+                            BoolToArgSlot(pNativeImage != NULL),
+                            PtrToArgSlot(pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName())
+                        };
+
+                        methDeclareDependencyOnMvid.Call(args);
+
+                        GCPROTECT_END();
+                    }
+
                     manifestAssemblyCount++;
                 }
             }

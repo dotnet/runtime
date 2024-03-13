@@ -730,7 +730,8 @@ void DomainAssembly::RegisterWithHostAssembly()
 
     if (GetPEAssembly()->HasHostAssembly())
     {
-        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(this);
+        GCX_COOP();
+        ((BINDERASSEMBLYREF)ObjectFromHandle(GetPEAssembly()->GetHostAssembly()))->m_pDomainAssembly = this;
     }
 }
 
@@ -746,7 +747,8 @@ void DomainAssembly::UnregisterFromHostAssembly()
 
     if (GetPEAssembly()->HasHostAssembly())
     {
-        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(nullptr);
+        GCX_COOP();
+        ((BINDERASSEMBLYREF)ObjectFromHandle(GetPEAssembly()->GetHostAssembly()))->m_pDomainAssembly = nullptr;
     }
 }
 

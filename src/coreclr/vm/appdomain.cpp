@@ -1170,6 +1170,43 @@ void SystemDomain::Init()
 #endif // _DEBUG
 }
 
+void SystemDomain::PostStartInit()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    GCX_COOP();
+
+    // AdHoc setting logic for CoreLib, since managed code isn't available during CoreLib bootstrap
+
+    // Initialize managed default binder and set binder assembly for CoreLib
+    MethodDescCallSite initializeDefault(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT);
+    ARG_SLOT arg = PtrToArgSlot(m_pSystemAssembly);
+    OBJECTREF coreLibHostAssembly = initializeDefault.Call_RetOBJECTREF(&arg);
+
+    // Default binder should be initialized
+    _ASSERTE(GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext() != NULL);
+
+    m_pSystemPEAssembly->SetHostAssemblyAdHoc(CreateHandle(coreLibHostAssembly));
+
+    m_pSystemAssembly->GetDomainAssembly()->RegisterWithHostAssembly();
+
+    // Managed and unmanaged representations of CoreLib should be correctly linked
+    _ASSERTE(((BINDERASSEMBLYREF)coreLibHostAssembly)->m_pDomainAssembly == m_pSystemAssembly->GetDomainAssembly());
+    _ASSERTE(ObjectFromHandle(m_pSystemPEAssembly->GetHostAssembly()) == coreLibHostAssembly);
+
+    // Add CoreLib to AssemblyBindingCache
+    AssemblySpec spec;
+    spec.InitializeSpec(m_pSystemPEAssembly);
+    GetAppDomain()->AddAssemblyToCache(&spec, m_pSystemAssembly->GetDomainAssembly());
+}
+
 void SystemDomain::LazyInitGlobalStringLiteralMap()
 {
     CONTRACTL
@@ -2730,10 +2767,15 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         LoaderAllocator *pLoaderAllocator = NULL;
 
-        AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
-        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-        // marked as collectible
-        pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+        // AssemblyBinder isn't set for CoreLib during bootstrap
+        if (!pPEAssembly->IsSystem())
+        {
+            AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
+            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+            // marked as collectible
+            pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+        }
+
         if (pLoaderAllocator == NULL)
         {
             pLoaderAllocator = this->GetLoaderAllocator();
@@ -2787,24 +2829,45 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
             result->EnsureLoadLevel(targetLevel);
         }
 
-        if (registerNewAssembly)
+        if (registerNewAssembly && !pDomainAssembly->GetAssembly()->IsSystem()) // CoreLib bootstrap
         {
-            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetAssembly());
+            // Ensure to call AddLoadedAssembly under load lock
+            BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+
+            GCX_COOP();
+
+            ASSEMBLYLOADCONTEXTREF managedALC = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)(pPEAssembly->GetAssemblyBinder()->GetManagedAssemblyLoadContext()));
+
+            GCPROTECT_BEGIN(managedALC);
+
+            MethodDescCallSite methAddLoadedAssem(METHOD__ASSEMBLYLOADCONTEXT__ADD_LOADED_EDASSEMBLY);
+            ARG_SLOT args[2] =
+            {
+                ObjToArgSlot(managedALC),
+                PtrToArgSlot(pDomainAssembly->GetAssembly())
+            };
+            methAddLoadedAssem.Call(args);
+
+            GCPROTECT_END();
         }
     }
     else
         result->EnsureLoadLevel(targetLevel);
 
     // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
-    if (pIdentity == NULL)
+    if (!result->IsSystem())
     {
-        AssemblySpec spec;
-        spec.InitializeSpec(result->GetPEAssembly());
-        GetAppDomain()->AddAssemblyToCache(&spec, result);
-    }
-    else
-    {
-        GetAppDomain()->AddAssemblyToCache(pIdentity, result);
+        // CoreLib bootstrap: this method is called before managed binder available
+        if (pIdentity == NULL)
+        {
+            AssemblySpec spec;
+            spec.InitializeSpec(result->GetPEAssembly());
+            GetAppDomain()->AddAssemblyToCache(&spec, result);
+        }
+        else
+        {
+            GetAppDomain()->AddAssemblyToCache(pIdentity, result);
+        }
     }
 
     RETURN result;
@@ -3078,7 +3141,9 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyO
 
     if (pPEAssembly->HasHostAssembly())
     {
-        DomainAssembly * pDA = pPEAssembly->GetHostAssembly()->GetDomainAssembly();
+        GCX_COOP();
+
+        DomainAssembly * pDA = ((BINDERASSEMBLYREF)ObjectFromHandle(pPEAssembly->GetHostAssembly()))->m_pDomainAssembly;
         if (pDA != nullptr && (pDA->IsLoaded() || (includeFailedToLoad && pDA->IsError())))
         {
             return pDA;
@@ -3511,7 +3576,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     PRECONDITION(pSpec->GetAppDomain() == this);
     PRECONDITION(this==::GetAppDomain());
 
-    GCX_PREEMP();
+    GCX_COOP();
 
     BOOL fForceReThrow = FALSE;
 
@@ -3528,12 +3593,14 @@ PEAssembly * AppDomain::BindAssemblySpec(
         {
 
             {
-                ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
+                BINDERASSEMBLYREF boundAssembly = NULL;
+                GCPROTECT_BEGIN(boundAssembly);
+
                 hrBindResult = pSpec->Bind(this, &boundAssembly);
 
-                if (boundAssembly)
+                if (boundAssembly != NULL)
                 {
-                    if (SystemDomain::SystemPEAssembly() && boundAssembly->GetAssemblyName()->IsCoreLib())
+                    if (SystemDomain::SystemPEAssembly() && boundAssembly->m_isCoreLib)
                     {
                         // Avoid rebinding to another copy of CoreLib
                         result = SystemDomain::SystemPEAssembly();
@@ -3577,6 +3644,8 @@ PEAssembly * AppDomain::BindAssemblySpec(
                         }
                     }
                 }
+
+                GCPROTECT_END();
             }
         }
     }
@@ -4862,234 +4931,6 @@ AppDomain::AssemblyIterator::Next_Unlocked(
     *pDomainAssemblyHolder = NULL;
     return FALSE;
 } // AppDomain::AssemblyIterator::Next_Unlocked
-
-#if !defined(DACCESS_COMPILE)
-
-// Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, AssemblyBinder *pBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pAssemblyName != NULL);
-        PRECONDITION(ppLoadedAssembly != NULL);
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = E_FAIL;
-
-    // Switch to COOP mode since we are going to work with managed references
-    GCX_COOP();
-
-    struct
-    {
-        ASSEMBLYNAMEREF oRefAssemblyName;
-        ASSEMBLYREF oRefLoadedAssembly;
-    } _gcRefs;
-
-    ZeroMemory(&_gcRefs, sizeof(_gcRefs));
-
-    GCPROTECT_BEGIN(_gcRefs);
-
-    BINDER_SPACE::Assembly *pResolvedAssembly = NULL;
-
-    bool fResolvedAssembly = false;
-    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pManagedAssemblyLoadContextToBindWithin, hr};
-
-    // Allocate an AssemblyName managed object
-    _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
-
-    // Initialize the AssemblyName object
-    AssemblySpec::InitializeAssemblyNameRef(pAssemblyName, &_gcRefs.oRefAssemblyName);
-
-    bool isSatelliteAssemblyRequest = !pAssemblyName->IsNeutralCulture();
-
-    EX_TRY
-    {
-        if (pDefaultBinder != NULL)
-        {
-            // Step 2 (of CustomAssemblyBinder::BindAssemblyByName) - Invoke Load method
-            // This is not invoked for TPA Binder since it always returns NULL.
-            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextLoad);
-
-            // Finally, setup arguments for invocation
-            MethodDescCallSite methLoadAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVE);
-
-            // Setup the arguments for the call
-            ARG_SLOT args[2] =
-            {
-                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
-                ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
-            };
-
-            // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methLoadAssembly.Call_RetOBJECTREF(args);
-            if (_gcRefs.oRefLoadedAssembly != NULL)
-            {
-                fResolvedAssembly = true;
-            }
-
-            hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
-
-            // Step 3 (of CustomAssemblyBinder::BindAssemblyByName)
-            if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
-            {
-                tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::DefaultAssemblyLoadContextFallback);
-
-                // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
-                // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
-                //
-                // Switch to pre-emp mode before calling into the binder
-                GCX_PREEMP();
-                BINDER_SPACE::Assembly *pCoreCLRFoundAssembly = NULL;
-                hr = pDefaultBinder->BindUsingAssemblyName(pAssemblyName, &pCoreCLRFoundAssembly);
-                if (SUCCEEDED(hr))
-                {
-                    _ASSERTE(pCoreCLRFoundAssembly != NULL);
-                    pResolvedAssembly = pCoreCLRFoundAssembly;
-                    fResolvedAssembly = true;
-                }
-            }
-        }
-
-        if (!fResolvedAssembly && isSatelliteAssemblyRequest)
-        {
-            // Step 4 (of CustomAssemblyBinder::BindAssemblyByName)
-            //
-            // Attempt to resolve it using the ResolveSatelliteAssembly method.
-            // Finally, setup arguments for invocation
-            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::ResolveSatelliteAssembly);
-
-            MethodDescCallSite methResolveSateliteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
-
-            // Setup the arguments for the call
-            ARG_SLOT args[2] =
-            {
-                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
-                ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
-            };
-
-            // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveSateliteAssembly.Call_RetOBJECTREF(args);
-            if (_gcRefs.oRefLoadedAssembly != NULL)
-            {
-                // Set the flag indicating we found the assembly
-                fResolvedAssembly = true;
-            }
-
-            hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
-        }
-
-        if (!fResolvedAssembly)
-        {
-            // Step 5 (of CustomAssemblyBinder::BindAssemblyByName)
-            //
-            // If we couldn't resolve the assembly using TPA LoadContext as well, then
-            // attempt to resolve it using the Resolving event.
-            // Finally, setup arguments for invocation
-            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextResolvingEvent);
-
-            MethodDescCallSite methResolveUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUSINGEVENT);
-
-            // Setup the arguments for the call
-            ARG_SLOT args[2] =
-            {
-                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
-                ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
-            };
-
-            // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveUsingEvent.Call_RetOBJECTREF(args);
-            if (_gcRefs.oRefLoadedAssembly != NULL)
-            {
-                // Set the flag indicating we found the assembly
-                fResolvedAssembly = true;
-            }
-
-            hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
-        }
-
-        if (fResolvedAssembly && pResolvedAssembly == NULL)
-        {
-            // If we are here, assembly was successfully resolved via Load or Resolving events.
-            _ASSERTE(_gcRefs.oRefLoadedAssembly != NULL);
-
-            // We were able to get the assembly loaded. Now, get its name since the host could have
-            // performed the resolution using an assembly with different name.
-            DomainAssembly *pDomainAssembly = _gcRefs.oRefLoadedAssembly->GetDomainAssembly();
-            PEAssembly *pLoadedPEAssembly = NULL;
-            bool fFailLoad = false;
-            if (!pDomainAssembly)
-            {
-                // Reflection emitted assemblies will not have a domain assembly.
-                fFailLoad = true;
-            }
-            else
-            {
-                pLoadedPEAssembly = pDomainAssembly->GetPEAssembly();
-                if (!pLoadedPEAssembly->HasHostAssembly())
-                {
-                    // Reflection emitted assemblies will not have a domain assembly.
-                    fFailLoad = true;
-                }
-            }
-
-            // The loaded assembly's BINDER_SPACE::Assembly* is saved as HostAssembly in PEAssembly
-            if (fFailLoad)
-            {
-                PathString name;
-                pAssemblyName->GetDisplayName(name, BINDER_SPACE::AssemblyName::INCLUDE_ALL);
-                COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED, name);
-            }
-
-            // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator
-            // alive for all its lifetime.
-            if (pDomainAssembly->IsCollectible())
-            {
-                LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
-                LoaderAllocator *pParentLoaderAllocator = pBinder->GetLoaderAllocator();
-                if (pParentLoaderAllocator == NULL)
-                {
-                    // The AssemblyLoadContext for which we are resolving the Assembly is not collectible.
-                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
-                }
-
-                _ASSERTE(pResultAssemblyLoaderAllocator);
-                pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
-            }
-
-            pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
-        }
-
-        if (fResolvedAssembly)
-        {
-            _ASSERTE(pResolvedAssembly != NULL);
-
-            // Get the BINDER_SPACE::Assembly reference to return back to.
-            *ppLoadedAssembly = clr::SafeAddRef(pResolvedAssembly);
-            hr = S_OK;
-
-            tracer.SetFoundAssembly(static_cast<BINDER_SPACE::Assembly *>(pResolvedAssembly));
-        }
-        else
-        {
-            hr = COR_E_FILENOTFOUND;
-        }
-    }
-    EX_HOOK
-    {
-        Exception* ex = GET_EXCEPTION();
-        tracer.SetException(ex);
-    }
-    EX_END_HOOK
-
-    GCPROTECT_END();
-
-    return hr;
-}
-#endif // !defined(DACCESS_COMPILE)
 
 //approximate size of loader data
 //maintained for each assembly

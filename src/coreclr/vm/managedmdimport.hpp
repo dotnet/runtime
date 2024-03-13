@@ -113,6 +113,19 @@ public:
         STRINGREF*      marshalType,
         STRINGREF*      marshalCookie,
         INT32*          iidParamIndex);
+
+    ////
+    //// Assembly
+    ////
+    MDDecl1(void, GetAssemblyFromScope, mdAssembly* ptkAssembly);
+    MDDecl7(void, GetAssemblyProps,
+        mdAssembly mda,
+        const void** ppbPublicKey,
+        ULONG* pcbPublicKey,
+        ULONG* pulHashAlgId,
+        LPCSTR* pszName,
+        AssemblyMetaDataInternal* pMetaData,
+        DWORD* pdwAsselblyFlags);
 };
 
 #endif

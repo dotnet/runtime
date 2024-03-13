@@ -16,8 +16,8 @@
 #include "peimagelayout.inl"
 #include "invokeutil.h"
 #include "strongnameinternal.h"
+#include "object.h"
 
-#include "../binder/inc/applicationcontext.hpp"
 #include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
@@ -125,10 +125,12 @@ BOOL PEAssembly::Equals(PEAssembly *pPEAssembly)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pPEAssembly->HasHostAssembly() && this->HasHostAssembly())
     {
-        AssemblyBinder* otherBinder = pPEAssembly->GetHostAssembly()->GetBinder();
-        AssemblyBinder* thisBinder = this->GetHostAssembly()->GetBinder();
+        GCX_COOP();
 
-        if (otherBinder != thisBinder || otherBinder == NULL)
+        BINDERASSEMBLYREF otherAssembly = (BINDERASSEMBLYREF)ObjectFromHandle(pPEAssembly->GetHostAssembly());
+        BINDERASSEMBLYREF thisAssembly = (BINDERASSEMBLYREF)ObjectFromHandle(this->GetHostAssembly());
+
+        if (otherAssembly->m_binder != thisAssembly->m_binder || otherAssembly->m_binder == NULL)
             return FALSE;
     }
 
@@ -653,18 +655,20 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 #ifndef DACCESS_COMPILE
 
 PEAssembly::PEAssembly(
-                BINDER_SPACE::Assembly* pBindResultInfo,
+                BINDERASSEMBLYREF pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 BOOL isSystem,
                 PEImage * pPEImage /*= NULL*/,
-                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
+                BINDERASSEMBLYREF pHostAssembly /*= NULL*/)
 {
     CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
-        STANDARD_VM_CHECK;
+        // PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL); // disabled for corelib
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -681,7 +685,7 @@ PEAssembly::PEAssembly(
     m_pHostAssembly = nullptr;
     m_pFallbackBinder = nullptr;
 
-    pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
+    pPEImage = (pBindResultInfo != NULL) ? pBindResultInfo->m_peImage : pPEImage;
     if (pPEImage)
     {
         _ASSERTE(pPEImage->CheckUniqueInstance());
@@ -718,17 +722,16 @@ PEAssembly::PEAssembly(
 
     // Set the host assembly and binding context as the AssemblySpec initialization
     // for CoreCLR will expect to have it set.
-    if (pHostAssembly != nullptr)
+    if (pHostAssembly != NULL)
     {
-        m_pHostAssembly = clr::SafeAddRef(pHostAssembly);
+        m_pHostAssembly = GetAppDomain()->CreateHandle(pHostAssembly);
     }
 
-    if(pBindResultInfo != nullptr)
+    if (pBindResultInfo != NULL)
     {
         // Cannot have both pHostAssembly and a coreclr based bind
-        _ASSERTE(pHostAssembly == nullptr);
-        pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
-        m_pHostAssembly = pBindResultInfo;
+        _ASSERTE(m_pHostAssembly == NULL);
+        m_pHostAssembly = GetAppDomain()->CreateHandle(pBindResultInfo);
     }
 
 #ifdef LOGGING
@@ -741,16 +744,22 @@ PEAssembly::PEAssembly(
 
 PEAssembly *PEAssembly::Open(
     PEImage *          pPEImageIL,
-    BINDER_SPACE::Assembly * pHostAssembly)
+    BINDERASSEMBLYREF pManagedHostAssembly)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     PEAssembly * pPEAssembly = new PEAssembly(
-        nullptr,        // BindResult
+        NULL,        // BindResult
         nullptr,        // IMetaDataEmit
         FALSE,          // isSystem
         pPEImageIL,
-        pHostAssembly);
+        pManagedHostAssembly);
 
     return pPEAssembly;
 }
@@ -791,7 +800,10 @@ PEAssembly::~PEAssembly()
         m_PEImage->Release();
 
     if (m_pHostAssembly != NULL)
-        m_pHostAssembly->Release();
+    {
+        DestroyHandle(m_pHostAssembly);
+        m_pHostAssembly = NULL;
+    }
 }
 
 /* static */
@@ -830,15 +842,22 @@ PEAssembly *PEAssembly::DoOpenSystem()
     CONTRACT_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-    ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
-    IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
+    ReleaseHolder<PEImage> pBoundAssembly;
+    
+    StackSString systemPath(SystemDomain::System()->SystemDirectory());
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(systemPath, &pBoundAssembly));
 
-    RETURN new PEAssembly(pBoundAssembly, NULL, TRUE);
+    {
+        GCX_COOP();
+
+        // HostAssembly is set afterwards for CoreLib
+        RETURN new PEAssembly(NULL, NULL, TRUE, pBoundAssembly);
+    }
 }
 
-PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
+PEAssembly* PEAssembly::Open(BINDERASSEMBLYREF pManagedBindResult)
 {
-    return new PEAssembly(pBindResult,NULL,/*isSystem*/ false);
+    return new PEAssembly(pManagedBindResult,NULL,/*isSystem*/ false);
 };
 
 /* static */
@@ -856,7 +875,11 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    RETURN new PEAssembly(NULL, pEmit, FALSE);
+
+    {
+        GCX_COOP();
+        RETURN new PEAssembly(NULL, pEmit, FALSE);
+    }
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1096,10 +1119,11 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 
     PTR_AssemblyBinder pBinder = NULL;
 
-    PTR_BINDER_SPACE_Assembly pHostAssembly = GetHostAssembly();
+    OBJECTHANDLE pHostAssembly = GetHostAssembly();
     if (pHostAssembly)
     {
-        pBinder = pHostAssembly->GetBinder();
+        GCX_COOP();
+        pBinder = ((BINDERASSEMBLYREF)ObjectFromHandle(pHostAssembly))->GetBinder();
     }
     else
     {
