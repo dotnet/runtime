@@ -6676,9 +6676,13 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 		// We currently don't support vector types, so we'll only handle the first three.
 		if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8) {
 			kind = SWIFT_INT64;
-		} else if (TARGET_SIZEOF_VOID_P == 8 && (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)) {
+		}
+#if TARGET_SIZEOF_VOID_P == 8
+		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 			kind = SWIFT_INT64;
-		} else if (type->type == MONO_TYPE_R4) {
+		} 
+#endif
+		else if (type->type == MONO_TYPE_R4) {
 			kind = SWIFT_FLOAT;
 		} else if (type->type == MONO_TYPE_R8) {
 			kind = SWIFT_DOUBLE;
