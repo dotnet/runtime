@@ -2312,54 +2312,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 weightTop);
         bTest->inheritWeight(bTop);
 
-        // Determine the new edge weights.
-        //
-        // We project the next/jump ratio for block and bTest by using
-        // the original likelihoods out of bTest.
-        //
-        // Note "next" is the loop top block, not bTest's bbNext,
-        // we'll call this latter block "after".
-        //
-        weight_t const testToNextLikelihood  = min(1.0, weightTop / weightTest);
-        weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
-
-        // Adjust edges out of bTest (which now has weight weightTop)
-        //
-        weight_t const testToNextWeight  = weightTop * testToNextLikelihood;
-        weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
-
-        FlowEdge* const edgeTestToNext  = bTest->GetTrueEdge();
-        FlowEdge* const edgeTestToAfter = bTest->GetFalseEdge();
-
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
-                testToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (exit loop)\n", bTest->bbNum,
-                bTest->Next()->bbNum, testToAfterWeight);
-
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->GetFalseTarget());
-
-        // Adjust edges out of block, using the same distribution.
-        //
-        JITDUMP("Profile weight of " FMT_BB " remains unchanged at " FMT_WT "\n", block->bbNum, weightBlock);
-
-        weight_t const blockToNextLikelihood  = testToNextLikelihood;
-        weight_t const blockToAfterLikelihood = testToAfterLikelihood;
-
-        weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
-        weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
-
-        FlowEdge* const edgeBlockToNext  = bNewCond->GetFalseEdge();
-        FlowEdge* const edgeBlockToAfter = bNewCond->GetTrueEdge();
-
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
-                bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
-                bNewCond->GetTrueTarget()->bbNum, blockToAfterWeight);
-
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetFalseTarget());
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTrueTarget());
-
 #ifdef DEBUG
         // If we're checking profile data, see if profile for the two target blocks is consistent.
         //
@@ -3170,91 +3122,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 }
 
 //-----------------------------------------------------------------------------
-// optEstimateEdgeLikelihood: Given a block "from" that may transfer control to
-// "to", estimate the likelihood that this will happen taking profile into
-// account if available.
-//
-// Parameters:
-//   from        - From block
-//   to          - To block
-//   fromProfile - [out] Whether or not the estimate is based on profile data
-//
-// Returns:
-//   Estimated likelihood of the edge being taken.
-//
-weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile)
-{
-    *fromProfile = (from->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY) && (to->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY);
-    if (!fgIsUsingProfileWeights() || !from->HasFlag(BBF_PROF_WEIGHT) || !to->HasFlag(BBF_PROF_WEIGHT) ||
-        from->KindIs(BBJ_ALWAYS))
-    {
-        return 1.0 / from->NumSucc(this);
-    }
-
-    bool useEdgeWeights = fgHaveValidEdgeWeights;
-
-    weight_t takenCount    = 0;
-    weight_t notTakenCount = 0;
-
-    if (useEdgeWeights)
-    {
-        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
-            *fromProfile &= succ->hasProfileWeight();
-            FlowEdge* edge       = fgGetPredForBlock(succ, from);
-            weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
-
-            if (succ == to)
-            {
-                takenCount += edgeWeight;
-            }
-            else
-            {
-                notTakenCount += edgeWeight;
-            }
-            return BasicBlockVisit::Continue;
-        });
-
-        // Watch out for cases where edge weights were not properly maintained
-        // so that it appears no profile flow goes to 'to'.
-        //
-        useEdgeWeights = !fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT);
-    }
-
-    if (!useEdgeWeights)
-    {
-        takenCount    = 0;
-        notTakenCount = 0;
-
-        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
-            *fromProfile &= succ->hasProfileWeight();
-            if (succ == to)
-            {
-                takenCount += succ->bbWeight;
-            }
-            else
-            {
-                notTakenCount += succ->bbWeight;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-    }
-
-    if (!*fromProfile)
-    {
-        return 1.0 / from->NumSucc(this);
-    }
-
-    if (fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT))
-    {
-        return 0;
-    }
-
-    weight_t likelihood = takenCount / (takenCount + notTakenCount);
-    return likelihood;
-}
-
-//-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
 //
@@ -3264,37 +3131,18 @@ weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, b
 //
 void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
 {
+    assert(!block->HasAnyFlag(BBF_RUN_RARELY | BBF_PROF_WEIGHT));
     bool hasProfWeight = true;
-
-    assert(block->GetUniqueSucc() != nullptr);
-    // Inherit first estimate from the target target; optEstimateEdgeLikelihood
-    // may use it in its estimate if we do not have edge weights to estimate
-    // from (we also assume the edges into 'block' already inherited their edge
-    // weights from the previous edge).
-    block->inheritWeight(block->GetTarget());
-
     weight_t newWeight = BB_ZERO_WEIGHT;
-    for (FlowEdge* edge : block->PredEdges())
+
+    for (FlowEdge* const edge : block->PredEdges())
     {
-        BasicBlock* predBlock = edge->getSourceBlock();
-
-        bool     fromProfile = false;
-        weight_t likelihood  = optEstimateEdgeLikelihood(predBlock, block, &fromProfile);
-        hasProfWeight &= fromProfile;
-
-        weight_t contribution = predBlock->bbWeight * likelihood;
-        JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
-                predBlock->bbNum, block->bbNum, likelihood, contribution);
-
-        newWeight += contribution;
-
-        // Normalize pred -> new block weight
-        edge->setEdgeWeights(contribution, contribution, block);
+        newWeight += edge->getLikelyWeight();
+        hasProfWeight &= edge->getSourceBlock()->hasProfileWeight();
     }
 
-    block->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
-
     block->bbWeight = newWeight;
+    
     if (hasProfWeight)
     {
         block->SetFlags(BBF_PROF_WEIGHT);
@@ -3305,11 +3153,6 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
         block->SetFlags(BBF_RUN_RARELY);
         return;
     }
-
-    // Normalize block -> target weight
-    FlowEdge* const edgeFromBlock = block->GetTargetEdge();
-    assert(edgeFromBlock != nullptr);
-    edgeFromBlock->setEdgeWeights(block->bbWeight, block->bbWeight, block->GetTarget());
 }
 
 /*****************************************************************************

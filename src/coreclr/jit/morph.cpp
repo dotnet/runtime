@@ -13226,80 +13226,28 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 block->SetFlags(BBF_NONE_QUIRK);
             }
 
-            if (fgHaveValidEdgeWeights)
+            // We examine the taken edge (block -> bTaken)
+            // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
+            // else if bTaken has valid profile weight and block does not we try to adjust block's weight
+            // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
+            //
+            if (block->hasProfileWeight())
             {
-                // We are removing an edge from block to bNotTaken
-                // and we have already computed the edge weights, so
-                // we will try to adjust some of the weights
-                //
-                BasicBlock* bUpdated = nullptr; // non-NULL if we updated the weight of an internal block
-
-                // We examine the taken edge (block -> bTaken)
-                // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
-                // else if bTaken has valid profile weight and block does not we try to adjust block's weight
-                // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
-                //
-                if (block->hasProfileWeight())
+                if (!bTaken->hasProfileWeight())
                 {
-                    // The edge weights for (block -> bTaken) are 100% of block's weight
-
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
-
-                    if (!bTaken->hasProfileWeight())
+                    if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
                     {
-                        if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
-                        {
-                            // Update the weight of bTaken
-                            bTaken->inheritWeight(block);
-                            bUpdated = bTaken;
-                        }
+                        // Update the weight of bTaken
+                        bTaken->inheritWeight(block);
                     }
                 }
-                else if (bTaken->hasProfileWeight())
+            }
+            else if (bTaken->hasProfileWeight())
+            {
+                if (bTaken->countOfInEdges() == 1)
                 {
-                    if (bTaken->countOfInEdges() == 1)
-                    {
-                        // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
-
-                        // Update the weight of block
-                        block->inheritWeight(bTaken);
-                        bUpdated = block;
-                    }
-                }
-
-                if (bUpdated != nullptr)
-                {
-                    weight_t newMinWeight;
-                    weight_t newMaxWeight;
-
-                    FlowEdge* edge;
-                    // Now fix the weights of the edges out of 'bUpdated'
-                    switch (bUpdated->GetKind())
-                    {
-                        case BBJ_COND:
-                            edge         = bUpdated->GetFalseEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-
-                            edge         = bUpdated->GetTrueEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-                            break;
-
-                        case BBJ_ALWAYS:
-                            edge         = bUpdated->GetTargetEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            break;
-
-                        default:
-                            // We don't handle BBJ_SWITCH
-                            break;
-                    }
+                    // Update the weight of block
+                    block->inheritWeight(bTaken);
                 }
             }
 

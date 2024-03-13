@@ -1464,75 +1464,27 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         // When we optimize a branch to branch we need to update the profile weight
         // of bDest by subtracting out the block/edge weight of the path that is being optimized.
         //
-        if (fgHaveValidEdgeWeights && bDest->hasProfileWeight())
-        {
-            FlowEdge* edge1 = fgGetPredForBlock(bDest, block);
-            noway_assert(edge1 != nullptr);
+        // TODO: Update block weight using likely weight
+        // if (bDest->hasProfileWeight())
+        // {
+        //     FlowEdge* const edge = fgGetPredForBlock(bDest, block);
+        //     noway_assert(edge != nullptr);
 
-            weight_t edgeWeight;
+        //     const weight_t edgeWeight = edge->getLikelyWeight();
 
-            if (edge1->edgeWeightMin() != edge1->edgeWeightMax())
-            {
-                //
-                // We only have an estimate for the edge weight
-                //
-                edgeWeight = (edge1->edgeWeightMin() + edge1->edgeWeightMax()) / 2;
-                //
-                //  Clear the profile weight flag
-                //
-                bDest->RemoveFlags(BBF_PROF_WEIGHT);
-            }
-            else
-            {
-                //
-                // We only have the exact edge weight
-                //
-                edgeWeight = edge1->edgeWeightMin();
-            }
-
-            //
-            // Update the bDest->bbWeight
-            //
-            if (bDest->bbWeight > edgeWeight)
-            {
-                bDest->bbWeight -= edgeWeight;
-            }
-            else
-            {
-                bDest->bbWeight = BB_ZERO_WEIGHT;
-                bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
-            }
-
-            FlowEdge* edge2 = bDest->GetTargetEdge();
-
-            if (edge2 != nullptr)
-            {
-                //
-                // Update the edge2 min/max weights
-                //
-                weight_t newEdge2Min;
-                weight_t newEdge2Max;
-
-                if (edge2->edgeWeightMin() > edge1->edgeWeightMin())
-                {
-                    newEdge2Min = edge2->edgeWeightMin() - edge1->edgeWeightMin();
-                }
-                else
-                {
-                    newEdge2Min = BB_ZERO_WEIGHT;
-                }
-
-                if (edge2->edgeWeightMax() > edge1->edgeWeightMin())
-                {
-                    newEdge2Max = edge2->edgeWeightMax() - edge1->edgeWeightMin();
-                }
-                else
-                {
-                    newEdge2Max = BB_ZERO_WEIGHT;
-                }
-                edge2->setEdgeWeights(newEdge2Min, newEdge2Max, bDest);
-            }
-        }
+        //     //
+        //     // Update the bDest->bbWeight
+        //     //
+        //     if (bDest->bbWeight > edgeWeight)
+        //     {
+        //         bDest->bbWeight -= edgeWeight;
+        //     }
+        //     else
+        //     {
+        //         bDest->bbWeight = BB_ZERO_WEIGHT;
+        //         bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
+        //     }
+        // }
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
         switch (block->GetKind())
@@ -3070,46 +3022,8 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         newBlock->setBBProfileWeight(blockToNewBlockWeight);
 
-        blockToTargetEdge->setEdgeWeights(blockToTargetWeight, blockToTargetWeight, dominantTarget);
         blockToTargetEdge->setLikelihood(fraction);
-        blockToNewBlockEdge->setEdgeWeights(blockToNewBlockWeight, blockToNewBlockWeight, block);
         blockToNewBlockEdge->setLikelihood(max(0, 1.0 - fraction));
-
-        // There may be other switch cases that lead to this same block, but there's just
-        // one edge in the flowgraph. So we need to subtract off the profile data that now flows
-        // along the peeled edge.
-        //
-        for (FlowEdge* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->getNextPredEdge())
-        {
-            if (pred->getSourceBlock() == newBlock)
-            {
-                if (pred->getDupCount() == 1)
-                {
-                    // The only switch case leading to the dominant target was the one we peeled.
-                    // So the edge from the switch now has zero weight.
-                    //
-                    pred->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT, dominantTarget);
-                }
-                else
-                {
-                    // Other switch cases also lead to the dominant target.
-                    // Subtract off the weight we transferred to the peel.
-                    //
-                    weight_t newMinWeight = pred->edgeWeightMin() - blockToTargetWeight;
-                    weight_t newMaxWeight = pred->edgeWeightMax() - blockToTargetWeight;
-
-                    if (newMinWeight < BB_ZERO_WEIGHT)
-                    {
-                        newMinWeight = BB_ZERO_WEIGHT;
-                    }
-                    if (newMaxWeight < BB_ZERO_WEIGHT)
-                    {
-                        newMaxWeight = BB_ZERO_WEIGHT;
-                    }
-                    pred->setEdgeWeights(newMinWeight, newMaxWeight, dominantTarget);
-                }
-            }
-        }
 
         // For now we leave the switch as is, since there's no way
         // to indicate that one of the cases is now unreachable.

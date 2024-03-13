@@ -4248,29 +4248,6 @@ bool Compiler::fgIncorporateEdgeCounts()
     return e.IsGood();
 }
 
-//------------------------------------------------------------------------
-// setEdgeWeights: Sets the minimum lower (m_edgeWeightMin) value
-//                  and the maximum upper (m_edgeWeightMax) value
-//                 Asserts that the max value is greater or equal to the min value
-//
-// Arguments:
-//    theMinWeight - the new minimum lower (m_edgeWeightMin)
-//    theMaxWeight - the new maximum upper (m_edgeWeightMin)
-//    bDst         - the destination block for the edge
-//
-void FlowEdge::setEdgeWeights(weight_t theMinWeight, weight_t theMaxWeight, BasicBlock* bDst)
-{
-    assert(theMinWeight <= theMaxWeight);
-    assert(theMinWeight >= 0.0);
-    assert(theMaxWeight >= 0.0);
-
-    JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n",
-            getSourceBlock()->bbNum, bDst->bbNum, theMinWeight, theMaxWeight);
-
-    m_edgeWeightMin = theMinWeight;
-    m_edgeWeightMax = theMaxWeight;
-}
-
 //-------------------------------------------------------------
 // fgComputeBlockAndEdgeWeights: determine weights for blocks
 //   and optionally for edges

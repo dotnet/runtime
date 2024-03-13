@@ -658,8 +658,6 @@ public:
         return m_edgeWeightMax;
     }
 
-    void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
-
     weight_t getLikelihood() const
     {
         return m_likelihood;

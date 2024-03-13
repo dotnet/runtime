@@ -1322,11 +1322,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
                 (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
         }
 
-        // Fix B1 true edge likelihood and min/max weights
+        // Fix B1 true edge likelihood
         //
         origB1TrueEdge->setLikelihood(newB1TrueLikelihood);
-        weight_t const newB1TrueWeight = m_b1->bbWeight * newB1TrueLikelihood;
-        origB1TrueEdge->setEdgeWeights(newB1TrueWeight, newB1TrueWeight, m_b1->GetTrueTarget());
 
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
@@ -1341,11 +1339,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         FlowEdge* const newB1FalseEdge = origB2FalseEdge;
         m_b1->SetFalseEdge(newB1FalseEdge);
 
-        // Fix B1 false edge likelihood and min/max weights.
+        // Fix B1 false edge likelihood
         //
         newB1FalseEdge->setLikelihood(1.0 - newB1TrueLikelihood);
-        weight_t const newB1FalseWeight = m_b1->bbWeight * (1.0 - newB1TrueLikelihood);
-        newB1FalseEdge->setEdgeWeights(newB1FalseWeight, newB1FalseWeight, m_b1->GetTrueTarget());
     }
 
     // Get rid of the second block
