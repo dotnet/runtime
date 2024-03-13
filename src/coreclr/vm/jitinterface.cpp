@@ -4562,7 +4562,7 @@ TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 
     JIT_TO_EE_TRANSITION();    
 
-    if (!typeHandle.IsCanonicalSubtype())
+    if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
     {
         result = typeHandle.HasInstantiation() ? TypeCompareState::Must : TypeCompareState::MustNot;
     }
