@@ -5932,7 +5932,7 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     if (imm == 0)
         return true; // Encodable using IF_LS_2A
 
-    if ((imm >= -256) && (imm <= 255))
+    if (isValidSimm<9>(imm))
         return true; // Encodable using IF_LS_2C (or possibly IF_LS_2B)
 
     if (imm < 0)
@@ -10727,7 +10727,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
         }
         else if (insOptsIndexed(opt) || unscaledOp || (imm < 0) || ((imm & mask) != 0))
         {
-            if ((imm >= -256) && (imm <= 255))
+            if (isValidSimm<9>(imm))
             {
                 fmt = IF_LS_2C;
             }
@@ -17438,7 +17438,7 @@ void emitter::emitIns_R_S(instruction     ins,
         }
         else if ((imm < 0) || ((imm & mask) != 0))
         {
-            if ((imm >= -256) && (imm <= 255))
+            if (isValidSimm<9>(imm))
             {
                 scalarfmt = IF_LS_2C;
             }
@@ -17710,7 +17710,7 @@ void emitter::emitIns_S_R(instruction     ins,
     }
     else if ((imm < 0) || ((imm & mask) != 0))
     {
-        if (isValidSimm9(imm))
+        if (isValidSimm<9>(imm))
         {
             scalarfmt = IF_LS_2C;
         }
