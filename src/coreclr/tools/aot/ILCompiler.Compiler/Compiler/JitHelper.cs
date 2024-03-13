@@ -204,9 +204,6 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2Int:
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToInt", null);
                     break;
-                case ReadyToRunHelper.Dbl2UInt:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DoubleToUInt", null);
-                    break;
                 case ReadyToRunHelper.DblRound:
                     DefType doubleType = context.GetWellKnownType(WellKnownType.Double);
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("Round",
@@ -219,6 +216,9 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Dbl2Lng:
+                    mangledName = "RhpDbl2Lng";
+                    break;
+                case ReadyToRunHelper.Dbl2UInt:
                     mangledName = "RhpDbl2Lng";
                     break;
 

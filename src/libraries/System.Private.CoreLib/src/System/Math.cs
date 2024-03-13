@@ -1661,13 +1661,6 @@ namespace System
             return ret;
         }
 
-        private static uint DoubleToUInt(double val)
-        {
-            int a = (int)val;
-            int b = (int)(val - IntMaxValueOffset);
-            return (uint)(a | (b & (a >> 31)));
-        }
-
         [StackTraceHidden]
         private static int DoubleToIntOverflow(double val)
         {
