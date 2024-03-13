@@ -156,7 +156,6 @@ set(mini_common_sources
     aot-compiler.h
     aot-compiler.c
     aot-runtime.c
-    aot-runtime-wasm.c
     graph.c
     mini-codegen.c
     mini-exceptions.c
