@@ -6435,9 +6435,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-                // Masks must be converted to vectors before being stored to memory.
-                // But, for local stores we can optimise away the conversion
-                if (op1->OperIsHWIntrinsic() && op1->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector)
+                // Masks which as stored to locals as a vector can remove the conversion step as type mask is
+                // the typical consumption.
+                if (op1->OperIsHWIntrinsic() && op1->AsHWIntrinsic()->OperIsConvertMaskToVector())
                 {
                     op1                     = op1->AsHWIntrinsic()->Op(1);
                     lvaTable[lclNum].lvType = TYP_MASK;

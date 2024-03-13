@@ -6396,6 +6396,25 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
+
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(TARGET_ARM64)
+        return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
+#else
+        return false;
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(TARGET_ARM64)
+        return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
+#else
+        return false;
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+    }
+
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
     bool OperRequiresGlobRefFlag() const;
