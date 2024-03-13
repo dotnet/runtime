@@ -1219,18 +1219,6 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     }
 #endif // FEATURE_METADATA_UPDATER
 
-#ifdef TARGET_RISCV64
-    if (pMT->HasLayout() &&
-        pMT->GetVerifierCorElementType() == ELEMENT_TYPE_VALUETYPE &&
-        pMT->GetNumInstanceFieldBytes() <= ENREGISTERED_RETURNTYPE_MAXSIZE &&
-        SystemDomain::IsSystemActive())
-    {
-        // To calculate how a small struct is enregistered RISC-V needs native layout info.
-        // Initialize now so ArgIterator doesn't trigger undue class loads during GC stack walks.
-        pMT->EnsureNativeLayoutInfoInitialized();
-    }
-#endif
-
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
 

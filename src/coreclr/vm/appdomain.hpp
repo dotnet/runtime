@@ -2416,14 +2416,6 @@ public:
         return System()->m_pSystemAssembly != NULL;
     }
 
-    static BOOL IsSystemActive()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Assembly* sa = SystemAssembly();
-        return sa != nullptr && sa->GetDomainAssembly()->IsActive();
-    }
-
 #ifndef DACCESS_COMPILE
     static GlobalStringLiteralMap *GetGlobalStringLiteralMap()
     {
