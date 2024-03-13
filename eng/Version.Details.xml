@@ -16,38 +16,6 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>a5f4de78fca42544771977f8e8e04c4aa83e1d02</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
-      <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
-    </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24154.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>3ac1a8b8d575b4bfe28f3cfb11a32589b6a05eca</Sha>
