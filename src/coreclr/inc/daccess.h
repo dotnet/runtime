@@ -806,7 +806,6 @@ struct COR_ILMETHOD* DacGetIlMethod(TADDR methAddr);
 struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 
 // virtually unwind a CONTEXT out-of-process
-struct _KNONVOLATILE_CONTEXT_POINTERS;
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2433,7 +2432,7 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #endif
 
 #ifndef NATIVEAOT
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 #endif
 
