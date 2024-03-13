@@ -93,6 +93,12 @@ inline bool varTypeIsMask(T vt)
 }
 
 template <class T>
+inline bool varTypeIsSIMDOrMask(T vt)
+{
+    return varTypeIsSIMD(vt) || varTypeIsMask(vt);
+}
+
+template <class T>
 inline bool varTypeIsIntegral(T vt)
 {
     return ((varTypeClassification[TypeGet(vt)] & (VTF_INT)) != 0);
