@@ -5174,14 +5174,10 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading;
-    bool          fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights TODO: remove
-    bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights TODO: remove
-    bool          fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights TODO: remove
-    bool          fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form TODO: remove
-    weight_t      fgCalledCount;            // count of the number of times this method was called
-                                            // This is derived from the profile data
-                                            // or is BB_UNITY_WEIGHT when we don't have profile data
+    bool          fgCanRelocateEHRegions; // true if we are allowed to relocate the EH regions
+    weight_t      fgCalledCount;          // count of the number of times this method was called
+                                          // This is derived from the profile data
+                                          // or is BB_UNITY_WEIGHT when we don't have profile data
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool fgFuncletsCreated; // true if the funclet creation phase has been run

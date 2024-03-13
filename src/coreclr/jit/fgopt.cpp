@@ -1684,31 +1684,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
-            // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile
-            // weight.
-            // Make sure we don't break that invariant.
-            if (fgIsUsingProfileWeights() && block->hasProfileWeight() && !block->HasFlag(BBF_INTERNAL))
-            {
-                BasicBlock* bNext = block->Next();
-
-                // Check if the next block can't maintain the invariant.
-                if ((bNext == nullptr) || bNext->HasFlag(BBF_INTERNAL) || !bNext->hasProfileWeight())
-                {
-                    // Check if the current block is the first non-internal block.
-                    BasicBlock* curBB = bPrev;
-                    while ((curBB != nullptr) && curBB->HasFlag(BBF_INTERNAL))
-                    {
-                        curBB = curBB->Prev();
-                    }
-                    if (curBB == nullptr)
-                    {
-                        // This block is the first non-internal block and it has profile weight.
-                        // Don't delete it.
-                        break;
-                    }
-                }
-            }
-
             /* Remove the block */
             compCurBB = block;
             fgRemoveBlock(block, /* unreachable */ false);
@@ -3625,87 +3600,45 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     // We will consider all blocks that have less weight than profHotWeight to be
                     // uncommonly run blocks as compared with the hot path of bPrev taken-jump to bDest
                     //
-                    if (fgHaveValidEdgeWeights)
-                    {
-                        // We have valid edge weights, however even with valid edge weights
-                        // we may have a minimum and maximum range for each edges value
-                        //
-                        // We will check that the min weight of the bPrev to bDest edge
-                        //  is more than twice the max weight of the bPrev to block edge.
-                        //
-                        //                  bPrev -->   [BB04, weight 31]
-                        //                                     |         \.
-                        //          edgeToBlock -------------> O          \.
-                        //          [min=8,max=10]             V           \.
-                        //                  block -->   [BB05, weight 10]   \.
-                        //                                                   \.
-                        //          edgeToDest ----------------------------> O
-                        //          [min=21,max=23]                          |
-                        //                                                   V
-                        //                  bDest --------------->   [BB08, weight 21]
-                        //
-                        assert(bPrev->FalseTargetIs(block));
-                        FlowEdge* edgeToDest  = bPrev->GetTrueEdge();
-                        FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
-                        noway_assert(edgeToDest != nullptr);
-                        noway_assert(edgeToBlock != nullptr);
-                        //
-                        // Calculate the taken ratio
-                        //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
-                        //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
-                        //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
-                        //
-                        double takenCount = edgeToDest->getLikelyWeight();
-                        double notTakenCount = edgeToBlock->getLikelyWeight();
-                        double totalCount = takenCount + notTakenCount;
+                    // We will check that the weight of the bPrev to bDest edge
+                    //  is more than twice the weight of the bPrev to block edge.
+                    //
+                    //                  bPrev -->   [BB04, weight 31]
+                    //                                     |         \.
+                    //          edgeToBlock -------------> O          \.
+                    //          [min=8,max=10]             V           \.
+                    //                  block -->   [BB05, weight 10]   \.
+                    //                                                   \.
+                    //          edgeToDest ----------------------------> O
+                    //          [min=21,max=23]                          |
+                    //                                                   V
+                    //                  bDest --------------->   [BB08, weight 21]
+                    //
+                    assert(bPrev->FalseTargetIs(block));
+                    FlowEdge* edgeToDest  = bPrev->GetTrueEdge();
+                    FlowEdge* edgeToBlock = bPrev->GetFalseEdge();
+                    noway_assert(edgeToDest != nullptr);
+                    noway_assert(edgeToBlock != nullptr);
+                    //
+                    // Calculate the taken ratio
+                    //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
+                    //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
+                    //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
+                    //
+                    double takenCount = edgeToDest->getLikelyWeight();
+                    double notTakenCount = edgeToBlock->getLikelyWeight();
+                    double totalCount = takenCount + notTakenCount;
 
-                        // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
-                        // the branch
-                        if (takenCount < (0.51 * totalCount))
-                        {
-                            reorderBlock = false;
-                        }
-                        else
-                        {
-                            // set profHotWeight
-                            profHotWeight = edgeToBlock->getLikelyWeight() - 1;
-                        }
+                    // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
+                    // the branch
+                    if (takenCount < (0.51 * totalCount))
+                    {
+                        reorderBlock = false;
                     }
                     else
                     {
-                        // We don't have valid edge weight so we will be more conservative
-                        // We could have bPrev, block or bDest as part of a loop and thus have extra weight
-                        //
-                        // We will do two checks:
-                        //   1. Check that the weight of bDest is at least two times more than block
-                        //   2. Check that the weight of bPrev is at least three times more than block
-                        //
-                        //                  bPrev -->   [BB04, weight 31]
-                        //                                     |         \.
-                        //                                     V          \.
-                        //                  block -->   [BB05, weight 10]  \.
-                        //                                                  \.
-                        //                                                  |
-                        //                                                  V
-                        //                  bDest --------------->   [BB08, weight 21]
-                        //
-                        //  For this case weightDest is calculated as (21+1)/2  or 11
-                        //            and weightPrev is calculated as (31+2)/3  also 11
-                        //
-                        //  Generally both weightDest and weightPrev should calculate
-                        //  the same value unless bPrev or bDest are part of a loop
-                        //
-                        weight_t weightDest = bDest->isMaxBBWeight() ? bDest->bbWeight : (bDest->bbWeight + 1) / 2;
-                        weight_t weightPrev = bPrev->isMaxBBWeight() ? bPrev->bbWeight : (bPrev->bbWeight + 2) / 3;
-
-                        // select the lower of weightDest and weightPrev
-                        profHotWeight = (weightDest < weightPrev) ? weightDest : weightPrev;
-
-                        // if the weight of block is greater (or equal) to profHotWeight then we don't reverse the cond
-                        if (block->bbWeight >= profHotWeight)
-                        {
-                            reorderBlock = false;
-                        }
+                        // set profHotWeight
+                        profHotWeight = edgeToBlock->getLikelyWeight() - 1;
                     }
                 }
             }
@@ -4834,9 +4767,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     //
                     if (fgIsUsingProfileWeights())
                     {
-                        // if block and bdest are in different hot/cold regions we can't do this optimization
+                        // if block and bDest are in different hot/cold regions we can't do this optimization
                         // because we can't allow fall-through into the cold region.
-                        if (!fgEdgeWeightsComputed || fgInDifferentRegions(block, bDest))
+                        if (fgInDifferentRegions(block, bDest))
                         {
                             optimizeJump = false;
                         }

@@ -4260,7 +4260,6 @@ PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
     const bool usingProfileWeights = fgIsUsingProfileWeights();
     bool       madeChanges         = false;
     fgModified                     = false;
-    fgHaveValidEdgeWeights         = false;
     fgCalledCount                  = BB_UNITY_WEIGHT;
 
 #if DEBUG

@@ -1859,9 +1859,8 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileWeights())
         {
-            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
-                   compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
-                   compiler->fgCalledCount);
+            printf("; with %s: fgCalledCount is " FMT_WT "\n",
+                   compiler->compGetPgoSourceName(), compiler->fgCalledCount);
         }
 
         if (compiler->fgPgoFailReason != nullptr)
