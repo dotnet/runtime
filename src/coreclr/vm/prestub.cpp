@@ -1271,6 +1271,64 @@ namespace
         return true;
     }
 
+    bool AreConstraintsEqual(const Instantiation& left, const Instantiation& right)
+    {
+        STANDARD_VM_CONTRACT;
+
+        DWORD argCount = left.GetNumArgs();
+        if (argCount != right.GetNumArgs())
+            return false;
+
+        for (DWORD i = 0; i < argCount; ++i)
+        {
+            TypeHandle tL = left[i];
+            TypeHandle tR = right[i];
+
+            // Check generic variable state are the same.
+            BOOL isGeneric = tL.IsGenericVariable();
+            if (isGeneric != tR.IsGenericVariable())
+                return false;
+
+            // Only generic variables have constraints.
+            if (!isGeneric)
+                continue;
+
+            TypeVarTypeDesc* tsL = tL.AsGenericVariable();
+            TypeVarTypeDesc* tsR = tR.AsGenericVariable();
+
+            //
+            // Verify general constraints
+            //
+            IMDInternalImport* importL = tsL->GetModule()->GetMDImport();
+            IMDInternalImport* importR = tsR->GetModule()->GetMDImport();
+
+            DWORD flagsL;
+            DWORD flagsR;
+            IfFailThrow(importL->GetGenericParamProps(tsL->GetToken(), NULL, &flagsL, NULL, NULL, NULL));
+            IfFailThrow(importR->GetGenericParamProps(tsR->GetToken(), NULL, &flagsR, NULL, NULL, NULL));
+            if ((flagsL & gpSpecialConstraintMask) != (flagsR & gpSpecialConstraintMask))
+                return false;
+
+            //
+            // Verify type constraints
+            //
+            DWORD constraintCountL;
+            DWORD constraintCountR;
+            TypeHandle* cL = tsL->GetConstraints(&constraintCountL);
+            TypeHandle* cR = tsR->GetConstraints(&constraintCountR);
+            if (constraintCountL != constraintCountR)
+                return false;
+
+            for (DWORD j = 0; j < constraintCountL; ++j)
+            {
+                if (cL[j] != cR[j])
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     bool TrySetTargetMethod(
         GenerationContext& cxt,
         LPCUTF8 methodName,
@@ -1285,11 +1343,13 @@ namespace
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
 
+        MethodTable* pMT = targetType.AsMethodTable();
+
         MethodDesc* targetMaybe = NULL;
 
         // Following a similar iteration pattern found in MemberLoader::FindMethod().
         // However, we are only operating on the current type not walking the type hierarchy.
-        MethodTable::IntroducedMethodIterator iter(targetType.AsMethodTable());
+        MethodTable::IntroducedMethodIterator iter(pMT);
         for (; iter.IsValid(); iter.Next())
         {
             MethodDesc* curr = iter.GetMethodDesc();
@@ -1323,6 +1383,22 @@ namespace
                 COMPlusThrow(kAmbiguousMatchException, W("Arg_AmbiguousMatchException_UnsafeAccessor"));
             }
             targetMaybe = curr;
+        }
+
+        if (pMT->HasInstantiation())
+        {
+            Instantiation decl = cxt.Declaration->GetMethodTable()->GetTypicalMethodTable()->GetInstantiation();
+            Instantiation target = pMT->GetTypicalMethodTable()->GetInstantiation();
+            if (!AreConstraintsEqual(decl, target))
+                COMPlusThrow(kInvalidProgramException, W("Argument_GenTypeConstraintsNotEqual"));
+        }
+
+        if (targetMaybe->HasMethodInstantiation())
+        {
+            Instantiation decl = cxt.Declaration->LoadTypicalMethodDefinition()->GetMethodInstantiation();
+            Instantiation target = targetMaybe->LoadTypicalMethodDefinition()->GetMethodInstantiation();
+            if (!AreConstraintsEqual(decl, target))
+                COMPlusThrow(kInvalidProgramException, W("Argument_GenMethodConstraintsNotEqual"));
         }
 
         cxt.TargetMethod = targetMaybe;

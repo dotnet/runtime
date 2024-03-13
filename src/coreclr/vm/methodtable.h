@@ -1183,6 +1183,8 @@ public:
         return !HasInstantiation() || IsGenericTypeDefinition();
     }
 
+    PTR_MethodTable GetTypicalMethodTable();
+
     BOOL HasSameTypeDefAs(MethodTable *pMT);
 
     //-------------------------------------------------------------------
