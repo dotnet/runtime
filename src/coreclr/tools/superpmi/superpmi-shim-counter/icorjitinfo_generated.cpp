@@ -979,6 +979,14 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
 }
 
+void interceptor_ICJI::getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering)
+{
+    mcs->AddCall("getSwiftLowering");
+    original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
+}
+
 uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd)
 {
