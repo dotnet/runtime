@@ -582,10 +582,6 @@ private:
     // The destination of the control flow
     BasicBlock* m_destBlock;
 
-    // Edge weights
-    weight_t m_edgeWeightMin;
-    weight_t m_edgeWeightMax;
-
     // Likelihood that m_sourceBlock transfers control along this edge.
     // Values in range [0..1]
     weight_t m_likelihood;
@@ -601,8 +597,6 @@ public:
         : m_nextPredEdge(rest)
         , m_sourceBlock(sourceBlock)
         , m_destBlock(destBlock)
-        , m_edgeWeightMin(0)
-        , m_edgeWeightMax(0)
         , m_likelihood(0)
         , m_dupCount(0)
         , m_likelihoodSet(false)
@@ -646,16 +640,6 @@ public:
     {
         assert(newBlock != nullptr);
         m_destBlock = newBlock;
-    }
-
-    weight_t edgeWeightMin() const
-    {
-        return m_edgeWeightMin;
-    }
-
-    weight_t edgeWeightMax() const
-    {
-        return m_edgeWeightMax;
     }
 
     weight_t getLikelihood() const

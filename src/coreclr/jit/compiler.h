@@ -1582,7 +1582,7 @@ enum API_ICorJitInfo_Names
 enum class ProfileChecks : unsigned int
 {
     CHECK_NONE          = 0,
-    CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
+    CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights TODO REMOVE
     CHECK_HASLIKELIHOOD = 1 << 1, // check all FlowEdges for hasLikelihood
     CHECK_LIKELIHOODSUM = 1 << 2, // check block succesor likelihoods sum to 1                              
     CHECK_LIKELY        = 1 << 3, // fully check likelihood based weights

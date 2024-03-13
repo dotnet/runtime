@@ -28,26 +28,17 @@ void Compiler::fgPrintEdgeWeights()
 
                 printf(FMT_BB " ", bSrc->bbNum);
 
-                if (edge->edgeWeightMin() < BB_MAX_WEIGHT)
+                const weight_t weight = edge->getLikelyWeight();
+
+                if (weight < BB_MAX_WEIGHT)
                 {
-                    printf("(%f", edge->edgeWeightMin());
+                    printf("(%f)", weight);
                 }
                 else
                 {
-                    printf("(MAX");
+                    printf("(MAX)");
                 }
-                if (edge->edgeWeightMin() != edge->edgeWeightMax())
-                {
-                    if (edge->edgeWeightMax() < BB_MAX_WEIGHT)
-                    {
-                        printf("..%f", edge->edgeWeightMax());
-                    }
-                    else
-                    {
-                        printf("..MAX");
-                    }
-                }
-                printf(")");
+
                 if (edge->getNextPredEdge() != nullptr)
                 {
                     printf(", ");
@@ -735,7 +726,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     JITDUMP("Writing out flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
             PhaseNames[phase]);
 
-    bool        validWeights  = fgHaveValidEdgeWeights;
     double      weightDivisor = (double)BasicBlock::getCalledCount(this);
     const char* escapedString;
     const char* regionString = "NONE";
@@ -790,14 +780,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         if (fgHasLoops)
         {
             fprintf(fgxFile, "\n    hasLoops=\"true\"");
-        }
-        if (validWeights)
-        {
-            fprintf(fgxFile, "\n    validEdgeWeights=\"true\"");
-            if (!fgSlopUsedInEdgeWeights && !fgRangeUsedInEdgeWeights)
-            {
-                fprintf(fgxFile, "\n    exactEdgeWeights=\"true\"");
-            }
         }
         if (fgFirstColdBlock != nullptr)
         {
@@ -1081,11 +1063,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         fprintf(fgxFile, " [");
                     }
 
-                    if (validWeights)
-                    {
-                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
-                        fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
-                    }
+                    const weight_t edgeWeight = edge->getLikelyWeight();
+                    fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
 
                     fprintf(fgxFile, "];\n");
                 }
@@ -1106,32 +1085,22 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
                     }
-                    if (validWeights)
+                    
+                    const weight_t edgeWeight = edge->getLikelyWeight();
+                    fprintf(fgxFile, "\n            weight=");
+                    fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
+
+                    if (edgeWeight > 0)
                     {
-                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
-                        fprintf(fgxFile, "\n            weight=");
-                        fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
-
-                        if (edge->edgeWeightMin() != edge->edgeWeightMax())
+                        if (edgeWeight < bSource->bbWeight)
                         {
-                            fprintf(fgxFile, "\n            minWeight=");
-                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
-                            fprintf(fgxFile, "\n            maxWeight=");
-                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
+                            fprintf(fgxFile, "\n            out=");
+                            fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
                         }
-
-                        if (edgeWeight > 0)
+                        if (edgeWeight < bTarget->bbWeight)
                         {
-                            if (edgeWeight < bSource->bbWeight)
-                            {
-                                fprintf(fgxFile, "\n            out=");
-                                fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
-                            }
-                            if (edgeWeight < bTarget->bbWeight)
-                            {
-                                fprintf(fgxFile, "\n            in=");
-                                fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
-                            }
+                            fprintf(fgxFile, "\n            in=");
+                            fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
                         }
                     }
                 }

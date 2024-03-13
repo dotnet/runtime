@@ -3131,7 +3131,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 //
 void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
 {
-    assert(!block->HasAnyFlag(BBF_RUN_RARELY | BBF_PROF_WEIGHT));
     bool hasProfWeight = true;
     weight_t newWeight = BB_ZERO_WEIGHT;
 
@@ -3142,16 +3141,23 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     }
 
     block->bbWeight = newWeight;
-    
+
     if (hasProfWeight)
     {
         block->SetFlags(BBF_PROF_WEIGHT);
+    }
+    else
+    {
+        block->RemoveFlags(BBF_PROF_WEIGHT);
     }
 
     if (newWeight == BB_ZERO_WEIGHT)
     {
         block->SetFlags(BBF_RUN_RARELY);
-        return;
+    }
+    else
+    {
+        block->RemoveFlags(BBF_RUN_RARELY);
     }
 }
 

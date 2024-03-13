@@ -1780,29 +1780,24 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         {
             //
             // When we optimize a branch to branch we need to update the profile weight
-            // of bDest by subtracting out the block/edge weight of the path that is being optimized.
+            // of bDest by subtracting out the block weight of the path that is being optimized.
             //
+            FlowEdge* const oldEdge = *jmpTab;
+
             if (fgIsUsingProfileWeights() && bDest->hasProfileWeight())
             {
-                if (fgHaveValidEdgeWeights)
+                weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
+                if (bDest->bbWeight > branchThroughWeight)
                 {
-                    FlowEdge* edge                = *jmpTab;
-                    weight_t  branchThroughWeight = edge->edgeWeightMin();
-
-                    if (bDest->bbWeight > branchThroughWeight)
-                    {
-                        bDest->bbWeight -= branchThroughWeight;
-                    }
-                    else
-                    {
-                        bDest->bbWeight = BB_ZERO_WEIGHT;
-                        bDest->SetFlags(BBF_RUN_RARELY);
-                    }
+                    bDest->bbWeight -= branchThroughWeight;
+                }
+                else
+                {
+                    bDest->bbSetRunRarely();
                 }
             }
 
             // Update the switch jump table
-            FlowEdge* const oldEdge = *jmpTab;
             fgRemoveRefPred(oldEdge);
             FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, oldEdge);
             *jmpTab                 = newEdge;
@@ -3575,43 +3570,19 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         //
                         bool moveDestUp = true;
 
-                        if (fgHaveValidEdgeWeights)
-                        {
-                            //
-                            // The edge bPrev -> bDest must have a higher minimum weight
-                            // than every other edge into bDest
-                            //
-                            FlowEdge* edgeFromPrev = bPrev->GetTargetEdge();
-                            noway_assert(edgeFromPrev != nullptr);
+                        //
+                        // The edge bPrev -> bDest must have a higher weight
+                        // than every other edge into bDest
+                        //
+                        weight_t const weightToBeat = bPrev->GetTargetEdge()->getLikelyWeight();
 
-                            // Examine all of the other edges into bDest
-                            for (FlowEdge* const edge : bDest->PredEdges())
-                            {
-                                if (edge != edgeFromPrev)
-                                {
-                                    if (edge->edgeWeightMax() >= edgeFromPrev->edgeWeightMin())
-                                    {
-                                        moveDestUp = false;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
+                        // Examine all of the other edges into bDest
+                        for (FlowEdge* const edge : bDest->PredEdges())
                         {
-                            //
-                            // The block bPrev must have a higher weight
-                            // than every other block that goes into bDest
-                            //
-
-                            // Examine all of the other edges into bDest
-                            for (BasicBlock* const predBlock : bDest->PredBlocks())
+                            if (edge->getLikelyWeight() > weightToBeat)
                             {
-                                if ((predBlock != bPrev) && (predBlock->bbWeight >= bPrev->bbWeight))
-                                {
-                                    moveDestUp = false;
-                                    break;
-                                }
+                                moveDestUp = false;
+                                break;
                             }
                         }
 
@@ -3680,14 +3651,12 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         noway_assert(edgeToBlock != nullptr);
                         //
                         // Calculate the taken ratio
-                        //   A takenRation of 0.10 means taken 10% of the time, not taken 90% of the time
-                        //   A takenRation of 0.50 means taken 50% of the time, not taken 50% of the time
-                        //   A takenRation of 0.90 means taken 90% of the time, not taken 10% of the time
+                        //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
+                        //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
+                        //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
                         //
-                        double takenCount =
-                            ((double)edgeToDest->edgeWeightMin() + (double)edgeToDest->edgeWeightMax()) / 2.0;
-                        double notTakenCount =
-                            ((double)edgeToBlock->edgeWeightMin() + (double)edgeToBlock->edgeWeightMax()) / 2.0;
+                        double takenCount = edgeToDest->getLikelyWeight();
+                        double notTakenCount = edgeToBlock->getLikelyWeight();
                         double totalCount = takenCount + notTakenCount;
 
                         // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
@@ -3699,7 +3668,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         else
                         {
                             // set profHotWeight
-                            profHotWeight = (edgeToBlock->edgeWeightMin() + edgeToBlock->edgeWeightMax()) / 2 - 1;
+                            profHotWeight = edgeToBlock->getLikelyWeight() - 1;
                         }
                     }
                     else

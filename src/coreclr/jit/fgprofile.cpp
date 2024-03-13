@@ -4802,26 +4802,21 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 //
 bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
+    if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
         return true;
     }
 
     weight_t const blockWeight          = block->bbWeight;
-    weight_t       incomingWeightMin    = 0;
-    weight_t       incomingWeightMax    = 0;
     weight_t       incomingLikelyWeight = 0;
     unsigned       missingLikelyWeight  = 0;
     bool           foundPreds           = false;
 
     for (FlowEdge* const predEdge : block->PredEdges())
     {
-        incomingWeightMin += predEdge->edgeWeightMin();
-        incomingWeightMax += predEdge->edgeWeightMax();
         if (predEdge->hasLikelihood())
         {
             if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
@@ -4839,35 +4834,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundPreds = true;
     }
 
-    bool classicWeightsValid = true;
     bool likelyWeightsValid  = true;
 
     if (foundPreds)
     {
-        if (verifyClassicWeights)
-        {
-            if (!fgProfileWeightsConsistent(incomingWeightMin, incomingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - incoming min " FMT_WT " inconsistent with incoming max " FMT_WT "\n",
-                        block->bbNum, incomingWeightMin, incomingWeightMax);
-                classicWeightsValid = false;
-            }
-
-            if (!fgProfileWeightsConsistent(blockWeight, incomingWeightMin))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with incoming min " FMT_WT "\n",
-                        block->bbNum, blockWeight, incomingWeightMin);
-                classicWeightsValid = false;
-            }
-
-            if (!fgProfileWeightsConsistent(blockWeight, incomingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with incoming max " FMT_WT "\n",
-                        block->bbNum, blockWeight, incomingWeightMax);
-                classicWeightsValid = false;
-            }
-        }
-
         if (verifyLikelyWeights)
         {
             if (!fgProfileWeightsConsistent(blockWeight, incomingLikelyWeight))
@@ -4889,7 +4859,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         }
     }
 
-    return classicWeightsValid && likelyWeightsValid;
+    return likelyWeightsValid;
 }
 
 //------------------------------------------------------------------------
@@ -4908,16 +4878,14 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 //
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
 
-    if (!(verifyClassicWeights || verifyHasLikelihood || verifyLikelihoodSum))
+    if (!verifyHasLikelihood && !verifyLikelihoodSum)
     {
         return true;
     }
 
-    bool classicWeightsValid = true;
     bool likelyWeightsValid  = true;
 
     // We want switch targets unified, but not EH edges.
@@ -4927,8 +4895,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
-        weight_t       outgoingWeightMin  = 0;
-        weight_t       outgoingWeightMax  = 0;
         weight_t       outgoingLikelihood = 0;
 
         // Walk successor edges and add up flow counts.
@@ -4940,9 +4906,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         {
             assert(succEdge != nullptr);
             BasicBlock* succBlock = succEdge->getDestinationBlock();
-
-            outgoingWeightMin += succEdge->edgeWeightMin();
-            outgoingWeightMax += succEdge->edgeWeightMax();
 
             if (succEdge->hasLikelihood())
             {
@@ -4958,32 +4921,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         if (missingEdges > 0)
         {
             JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
-            classicWeightsValid = false;
             likelyWeightsValid  = false;
-        }
-
-        if (verifyClassicWeights)
-        {
-            if (!fgProfileWeightsConsistent(outgoingWeightMin, outgoingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - outgoing min " FMT_WT " inconsistent with outgoing max " FMT_WT "\n",
-                        block->bbNum, outgoingWeightMin, outgoingWeightMax);
-                classicWeightsValid = false;
-            }
-
-            if (!fgProfileWeightsConsistent(blockWeight, outgoingWeightMin))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with outgoing min " FMT_WT "\n",
-                        block->bbNum, blockWeight, outgoingWeightMin);
-                classicWeightsValid = false;
-            }
-
-            if (!fgProfileWeightsConsistent(blockWeight, outgoingWeightMax))
-            {
-                JITDUMP("  " FMT_BB " - block weight " FMT_WT " inconsistent with outgoing max " FMT_WT "\n",
-                        block->bbNum, blockWeight, outgoingWeightMax);
-                classicWeightsValid = false;
-            }
         }
 
         if (verifyHasLikelihood)
@@ -5017,7 +4955,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         }
     }
 
-    return classicWeightsValid && likelyWeightsValid;
+    return likelyWeightsValid;
 }
 
 #endif // DEBUG
