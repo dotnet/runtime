@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
@@ -19,6 +20,11 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors")]
+#pragma warning disable IL4000
+        internal static bool SupportsInstanceBasedDescriptors => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors", out bool result) ? result : true;
+#pragma warning restore IL4000
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
@@ -3238,6 +3244,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3461,9 +3468,22 @@ namespace System.ComponentModel
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
                 object? instance)
             {
+                if (!SupportsInstanceBasedDescriptors) {
+                    if (_instance != null)
+                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                }
                 _node = node;
                 _objectType = objectType;
                 _instance = instance;
+            }
+
+            internal DefaultTypeDescriptor(
+                TypeDescriptionNode node,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
+            {
+                _node = node;
+                _objectType = objectType;
+                _instance = null;
             }
 
             /// <summary>
@@ -3555,7 +3575,10 @@ namespace System.ComponentModel
                 TypeConverter? converter;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    converter = rp.GetConverter(_objectType, _instance);
+                    if (SupportsInstanceBasedDescriptors)
+                        converter = rp.GetConverter(_objectType, _instance);
+                    else
+                        converter = rp.GetConverter(_objectType);
                 }
                 else
                 {

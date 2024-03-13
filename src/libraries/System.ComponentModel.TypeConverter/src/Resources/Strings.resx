@@ -94,6 +94,9 @@
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
   </data>
+  <data name="InstanceBasedTypeDescriptorsNotSupported" xml:space="preserve">
+    <value>Instance-based type descriptors are disabled in the app configuration and are not supported.</value>
+  </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
   </data>

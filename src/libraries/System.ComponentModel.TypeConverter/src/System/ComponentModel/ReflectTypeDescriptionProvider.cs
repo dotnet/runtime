@@ -154,6 +154,7 @@ namespace System.ComponentModel
         /// </remarks>
         private static Dictionary<object, IntrinsicTypeConverterData> IntrinsicTypeConverters
         {
+            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
             get
             {
                 return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(32)
@@ -199,18 +200,9 @@ namespace System.ComponentModel
             }
         }
 
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-#pragma warning disable IL4000
-        private static bool IntrinsicNullableConverterIsSupported => false;
-#pragma warning restore IL4000
-
-        private static NullableConverter CreateNullableConverter(Type type)
-        {
-            if (IntrinsicNullableConverterIsSupported)
-                new NullableConverter(type);
-
-            throw new Exception("Unable to create nullable converter. Members of the underlying type may not have been preserved.");
-        }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
+        private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "Trimmer does not trim enums")]
@@ -375,10 +367,17 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
+        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
         internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetConverter(instance);
+        }
+
+        internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        {
+            ReflectedTypeData td = GetTypeData(type, true)!;
+            return td.GetConverter();
         }
 
         /// <summary>
@@ -395,6 +394,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
         internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
@@ -806,6 +806,7 @@ namespace System.ComponentModel
         /// Provides a type descriptor for the given object. We only support this
         /// if the object is a component that
         /// </summary>
+        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             Debug.Fail("This should never be invoked. TypeDescriptionNode should wrap for us.");
@@ -867,6 +868,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the properties for this type.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
@@ -1233,6 +1235,7 @@ namespace System.ComponentModel
         /// Static helper API around reflection to get and cache
         /// properties. This does not recurse to the base class.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         private static PropertyDescriptor[] ReflectGetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
@@ -1452,6 +1455,7 @@ namespace System.ComponentModel
         /// The strongly-typed dictionary maps object types to converter data objects which lazily
         /// creates (and caches for re-use, where applicable) converter instances.
         /// </summary>
+        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
         private static TypeConverter GetIntrinsicTypeConverter(Type callingType)
         {
             TypeConverter converter;

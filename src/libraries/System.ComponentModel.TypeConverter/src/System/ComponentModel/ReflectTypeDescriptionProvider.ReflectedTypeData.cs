@@ -197,6 +197,13 @@ namespace System.ComponentModel
                 }
 
                 // If we got here, we return our type-based converter.
+                return GetConverterHelper(typeAttr);
+            }
+
+            internal TypeConverter GetConverter() => GetConverterHelper(null);
+
+            private TypeConverter GetConverterHelper(TypeConverterAttribute? typeAttr)
+            {
                 if (_converter == null)
                 {
                     typeAttr ??= (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
