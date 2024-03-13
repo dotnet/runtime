@@ -792,84 +792,7 @@ static bool isStackRegister(regNumber reg)
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
-// Returns true if 'value' is a legal signed immediate 4 bit encoding (such as for LDNF1SW).
-static bool isValidSimm4(ssize_t value)
-{
-    return (-8 <= value) && (value <= 7);
-};
-
-// Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
-static bool isValidSimm9(ssize_t value)
-{
-    return (-0x100 <= value) && (value <= 0xFF);
-};
-
-// Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
-static bool isValidSimm4_MultipleOf2(ssize_t value)
-{
-    return (-16 <= value) && (value <= 14) && (value % 2 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 3 immediate 4 bit encoding (such as for LD3Q).
-static bool isValidSimm4_MultipleOf3(ssize_t value)
-{
-    return (-24 <= value) && (value <= 21) && (value % 3 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 4 immediate 4 bit encoding (such as for LD4Q).
-static bool isValidSimm4_MultipleOf4(ssize_t value)
-{
-    return (-32 <= value) && (value <= 28) && (value % 4 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 16 immediate 4 bit encoding (such as for LD1RQB).
-static bool isValidSimm4_MultipleOf16(ssize_t value)
-{
-    return (-128 <= value) && (value <= 112) && (value % 16 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 32 immediate 4 bit encoding (such as for LD1ROB).
-static bool isValidSimm4_MultipleOf32(ssize_t value)
-{
-    return (-256 <= value) && (value <= 224) && (value % 32 == 0);
-};
-
-// Returns true if 'value' is a legal unsigned multiple of 2 immediate 5 bit encoding (such as for LD1H).
-static bool isValidUimm5_MultipleOf2(ssize_t value)
-{
-    return (0 <= value) && (value <= 62) && (value % 2 == 0);
-};
-
-// Returns true if 'value' is a legal unsigned multiple of 4 immediate 5 bit encoding (such as for LD1W).
-static bool isValidUimm5_MultipleOf4(ssize_t value)
-{
-    return (0 <= value) && (value <= 124) && (value % 4 == 0);
-};
-
-// Returns true if 'value' is a legal unsigned multiple of 8 immediate 5 bit encoding (such as for LD1D).
-static bool isValidUimm5_MultipleOf8(ssize_t value)
-{
-    return (0 <= value) && (value <= 248) && (value % 8 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 2 immediate 6 bit encoding (such as for LD1RH).
-static bool isValidUimm6_MultipleOf2(ssize_t value)
-{
-    return (0 <= value) && (value <= 126) && (value % 2 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 4 immediate 6 bit encoding (such as for LD1RSW).
-static bool isValidUimm6_MultipleOf4(ssize_t value)
-{
-    return (0 <= value) && (value <= 252) && (value % 4 == 0);
-};
-
-// Returns true if 'value' is a legal signed multiple of 8 immediate 6 bit encoding (such as for LD1RD).
-static bool isValidUimm6_MultipleOf8(ssize_t value)
-{
-    return (0 <= value) && (value <= 504) && (value % 8 == 0);
-};
-
+// Returns true if 'value' is a legal unsigned immediate with 'bits' number of bits.
 template <const size_t bits>
 static bool isValidUimm(ssize_t value)
 {
@@ -877,137 +800,36 @@ static bool isValidUimm(ssize_t value)
     return (0 <= value) && (value < max);
 }
 
-// Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
-static bool isValidImm1(ssize_t value)
+// Returns true if 'value' is a legal unsigned immediate with 'bits' number of bits, starting from 1.
+template <const size_t bits>
+static bool isValidUimmFrom1(ssize_t value)
 {
-    return (value == 0) || (value == 1);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 2 bit encoding (such as for PEXT).
-static bool isValidUimm2(ssize_t value)
-{
-    return (0 <= value) || (value <= 3);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 3 bit encoding.
-static bool isValidUimm3(ssize_t value)
-{
-    return (0 <= value) && (value <= 7);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 3 bit encoding, starting from 1 (such as for SHRNB).
-static bool isValidUimm3From1(ssize_t value)
-{
-    return (1 <= value) && (value <= 8);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
-static bool isValidUimm4(ssize_t value)
-{
-    return (0 <= value) && (value <= 0xF);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
-static bool isValidUimm4From1(ssize_t value)
-{
-    return (1 <= value) && (value <= 0x10);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
-static bool isValidUimm5(ssize_t value)
-{
-    return (0 <= value) && (value <= 0x1FLL);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 6 bit encoding (such as for LD1RD).
-static bool isValidUimm6(ssize_t value)
-{
-    return (0 <= value) && (value <= 63);
+    return isValidUimm<bits>(value - 1);
 }
 
-// Returns true if 'value' is a legal unsigned immediate 5 bit encoding, starting from 1 (such as for SHRNB).
-static bool isValidUimm5From1(ssize_t value)
+// Returns true if 'value' is a legal unsigned multiple of 'mod' immediate with 'bits' number of bits.
+template <const size_t bits, const size_t mod>
+static bool isValidUimm_MultipleOf(ssize_t value)
 {
-    return (1 <= value) && (value <= 0x20);
-};
+    static_assert(mod != 0);
+    return isValidUimm<bits>(value / mod) && (value % mod == 0);
+}
 
-// Returns true if 'value' is a legal unsigned immediate 6 bit encoding, starting from 1 (such as for XAR).
-static bool isValidUimm6From1(ssize_t value)
+// Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
+template <const size_t bits>
+static bool isValidSimm(ssize_t value)
 {
-    return (1 <= value) && (value <= 0x40);
-};
+    constexpr ssize_t max = 1 << (bits - 1);
+    return (-max <= value) && (value < max);
+}
 
-// Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).
-static bool isValidUimm7(ssize_t value)
+// Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
+template <const size_t bits, const ssize_t mod>
+static bool isValidSimm_MultipleOf(ssize_t value)
 {
-    return (0 <= value) && (value <= 0x7FLL);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for FMOV).
-static bool isValidUimm8(ssize_t value)
-{
-    return (0 <= value) && (value <= 0xFFLL);
-};
-
-// Returns true if 'value' is a legal unsigned multiple of 256 immediate 8 bit encoding (such as for ADD).
-static bool isValidUimm8_MultipleOf256(ssize_t value)
-{
-    return (0 <= value) && (value <= 0xFF00) && (value % 256 == 0);
-};
-
-// Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
-static bool isValidSimm8(ssize_t value)
-{
-    return (-0x80 <= value) && (value <= 0x7F);
-};
-
-// Returns true if 'value' is a legal signed multiple of 256 immediate 8 bit encoding (such as for MOV).
-static bool isValidSimm8_MultipleOf256(ssize_t value)
-{
-    return (-0x8000 <= value) && (value <= 0x7F00) && (value % 256 == 0);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
-static bool isValidUimm12(ssize_t value)
-{
-    return (0 <= value) && (value <= 0xFFFLL);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 16 bit encoding (such as for MOVZ, MOVN, MOVK).
-static bool isValidUimm16(ssize_t value)
-{
-    return (0 <= value) && (value <= 0xFFFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 26 bit encoding (such as for B or BL).
-static bool isValidSimm26(ssize_t value)
-{
-    return (-0x2000000LL <= value) && (value <= 0x1FFFFFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 19 bit encoding (such as for B.cond, CBNZ, CBZ).
-static bool isValidSimm19(ssize_t value)
-{
-    return (-0x40000LL <= value) && (value <= 0x3FFFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 14 bit encoding (such as for TBNZ, TBZ).
-static bool isValidSimm14(ssize_t value)
-{
-    return (-0x2000LL <= value) && (value <= 0x1FFFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 5 bit encoding (such as for CMPLO, CMPHI).
-static bool isValidSimm5(ssize_t value)
-{
-    return (-0x10LL <= value) && (value <= 0xFLL);
-};
-
-// Returns true if 'value' is a legal signed immediate 6 bit encoding (such as for PRFB).
-static bool isValidSimm6(ssize_t value)
-{
-    return (-32 <= value) && (value <= 31);
-};
+    static_assert(mod != 0);
+    return isValidSimm<bits>(value / mod) && (value % mod == 0);
+}
 
 // Returns true if 'imm' is a valid broadcast immediate for some SVE DUP variants
 static bool isValidBroadcastImm(ssize_t imm, emitAttr laneSize)
@@ -1057,10 +879,10 @@ static bool isValidImmNRS(size_t value, emitAttr size)
 // 0xmnmnmnmnmnmnmnmn
 static ssize_t getBitMaskOnes(const ssize_t imm, const unsigned width)
 {
-    assert(isValidUimm16(imm));
+    assert(isValidUimm<16>(imm));
     assert((width % 8) == 0);
     assert(isValidGeneralLSDatasize((emitAttr)(width / 8)));
-    const unsigned immWidth = isValidUimm8(imm) ? 8 : 16;
+    const unsigned immWidth = isValidUimm<8>(imm) ? 8 : 16;
 
     const unsigned numIterations = 64 / width;
     const ssize_t  ones          = ((UINT64)-1) >> (64 - width + immWidth);
@@ -1081,7 +903,7 @@ static ssize_t getBitMaskOnes(const ssize_t imm, const unsigned width)
 // 0xmnmnmnmnmnmnmnmn
 static ssize_t getBitMaskZeroes(const ssize_t imm, const unsigned width)
 {
-    assert(isValidUimm16(imm));
+    assert(isValidUimm<16>(imm));
     assert((width % 8) == 0);
     assert(isValidGeneralLSDatasize((emitAttr)(width / 8)));
     const unsigned numIterations = 64 / width;
@@ -1118,7 +940,7 @@ static bool useMovDisasmForBitMask(const ssize_t value)
         minFieldSize = 8;
     }
 
-    assert(isValidUimm16(imm));
+    assert(isValidUimm<16>(imm));
 
     // Check for all possible bit field sizes
     for (unsigned width = minFieldSize; width <= 64; width <<= 1)

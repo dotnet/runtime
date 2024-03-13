@@ -757,6 +757,10 @@ public:
     bool repGetSystemVAmd64PassStructInRegisterDescriptor(
         CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
 
+    void recGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
+    void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
+    void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
+
     void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
     void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
     DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
@@ -1154,6 +1158,7 @@ enum mcPackets
     Packet_HaveSameMethodDefinition = 213,
     Packet_NotifyMethodInfoUsage = 214,
     Packet_IsExactType = 215,
+    Packet_GetSwiftLowering = 216,
 };
 
 void SetDebugDumpVariables();

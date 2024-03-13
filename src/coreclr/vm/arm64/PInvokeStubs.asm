@@ -188,8 +188,6 @@ RarePath
 
         LEAF_END
 
-        INLINE_GETTHREAD_CONSTANT_POOL
-
 ; ------------------------------------------------------------------
 ; VarargPInvokeStub & VarargPInvokeGenILStub
 ;
