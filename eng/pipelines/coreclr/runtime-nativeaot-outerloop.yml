@@ -164,6 +164,7 @@ extends:
           buildConfig: Checked
           platforms:
           - windows_x64
+          - windows_x86
           - linux_x64
           - linux_arm
           variables:
