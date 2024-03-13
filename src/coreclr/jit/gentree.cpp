@@ -21328,8 +21328,6 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types      type,
                                     CorInfoType    simdSourceBaseJitType,
                                     unsigned       simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(IsBaselineVector512IsaSupportedDebugOnly());
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
     assert(op1 != nullptr);
@@ -21342,13 +21340,29 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types      type,
     assert(varTypeIsFloating(simdSourceBaseType));
     assert(varTypeIsIntegral(simdTargetBaseType));
 
-    GenTreeVecCon* tbl = gtCvtCtrlTbl(type, simdSourceBaseType, simdTargetBaseType, simdSize);
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+    assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           ((simdTargetBaseType == TYP_INT) && compIsaSupportedDebugOnly(InstructionSet_SSE41)));
 
-    GenTree* op1Clone = fgMakeMultiUse(&op1);
+    GenTree* fixupVal;
 
-    // run vfixupimmsd base on table and no flags reporting
-    GenTree* fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tbl, gtNewIconNode(0), NI_AVX512F_Fixup,
-                                                 simdSourceBaseJitType, simdSize);
+    if (IsBaselineVector512IsaSupportedOpportunistically())
+    {
+        GenTreeVecCon* tbl = gtCvtCtrlTbl(type, simdSourceBaseType, simdTargetBaseType, simdSize);
+
+        GenTree* op1Clone = fgMakeMultiUse(&op1);
+
+        // run vfixupimmsd base on table and no flags reporting
+        fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tbl, gtNewIconNode(0), NI_AVX512F_Fixup,
+                                            simdSourceBaseJitType, simdSize);
+    }
+    else
+    {
+        GenTree* op1Clone1 = fgMakeMultiUse(&op1);
+        GenTree* op1Clone2 = fgMakeMultiUse(&op1);
+        GenTree* mask1     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op1Clone1, simdSourceBaseJitType, simdSize);
+        fixupVal           = gtNewSimdBinOpNode(GT_AND, type, op1Clone2, mask1, simdSourceBaseJitType, simdSize);
+    }
 
     if (varTypeIsSigned(simdTargetBaseType))
     {

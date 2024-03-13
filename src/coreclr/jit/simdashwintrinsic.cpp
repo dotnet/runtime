@@ -528,6 +528,17 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 
         case NI_VectorT_ConvertToInt32:
+        {
+#ifdef TARGET_XARCH
+            if ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE41)) ||
+                IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                break;
+            }
+#endif // TARGET_XARCH
+            return nullptr;
+        }
+
         case NI_VectorT_ConvertToInt64:
         case NI_VectorT_ConvertToUInt32:
         case NI_VectorT_ConvertToUInt64:
@@ -1235,6 +1246,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                              : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
                                                                 : NI_AVX512F_ConvertToVector512Int32WithTruncation;
 
+                        return gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+                    }
+                    else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    {
+                        NamedIntrinsic intrinsic = NI_SSE2_ConvertToVector128Int32WithTruncation;
                         return gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
                     }
                     return nullptr;

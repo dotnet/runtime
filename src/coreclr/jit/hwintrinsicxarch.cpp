@@ -1511,6 +1511,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
             }
+            else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                op1       = impSIMDPopStack();
+                intrinsic = NI_SSE2_ConvertToVector128Int32WithTruncation;
+                retNode   = gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+            }
             break;
         }
 
