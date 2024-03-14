@@ -51,13 +51,17 @@ public:
 
 uint64_t gc_rand::x = 0;
 
-// Define min/max as macros
-#ifndef min
-#define min(_a, _b) ((_a) < (_b) ? (_a) : (_b))
-#endif
-#ifndef max
-#define max(_a, _b) ((_a) < (_b) ? (_b) : (_a))
-#endif
+template <typename T, typename U>
+auto max(T&& t, U&& u) -> decltype(t > u ? t : u)
+{
+    return t > u ? t : u;
+}
+
+template <typename T, typename U>
+auto min(T&& t, U&& u) -> decltype(t < u ? t : u)
+{
+    return t < u ? t : u;
+}
 
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
 BOOL bgc_heap_walk_for_etw_p = FALSE;

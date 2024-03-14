@@ -2405,10 +2405,8 @@ extern "C" {
      Annotates a pointer p. States that pointer p is never null or maybe null.
     */
 
-#ifndef PAL_STDCPP_COMPAT
     #define __notnull               _Notnull_impl_
     #define __maybenull             _Maybenull_impl_
-#endif // !PAL_STDCPP_COMPAT
 
     /*
      __readonly l
@@ -2595,10 +2593,8 @@ extern "C" {
 
 
 #else // ][
-#ifndef PAL_STDCPP_COMPAT
     #define __notnull
     #define __deref
-#endif // !PAL_STDCPP_COMPAT
     #define __maybenull
     #define __readonly
     #define __notreadonly

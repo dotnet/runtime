@@ -16,46 +16,6 @@ typedef DPTR(SLOT) PTR_SLOT;
 
 typedef LPVOID  DictionaryEntry;
 
-/* Define the implementation dependent size types */
-
-#ifndef _INTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             intptr_t;
-#else
-typedef int                 intptr_t;
-#endif
-#define _INTPTR_T_DEFINED
-#endif
-
-#ifndef _UINTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64    uintptr_t;
-#else
-typedef unsigned int        uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
-#endif
-
-#ifndef _PTRDIFF_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             ptrdiff_t;
-#else
-typedef int                 ptrdiff_t;
-#endif
-#define _PTRDIFF_T_DEFINED
-#endif
-
-
-#ifndef _SIZE_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64 size_t;
-#else
-typedef unsigned int     size_t;
-#endif
-#define _SIZE_T_DEFINED
-#endif
-
-
 #include "util.hpp"
 #include <corpriv.h>
 #include <cordbpriv.h>

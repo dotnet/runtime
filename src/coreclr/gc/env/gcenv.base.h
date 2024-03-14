@@ -100,14 +100,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-#ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-
-#ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#endif
-
 #define C_ASSERT(cond) static_assert( cond, #cond )
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)

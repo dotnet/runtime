@@ -561,7 +561,7 @@
 #ifndef NATIVEAOT
 #include <stdint.h>
 
-#if !defined(HOST_WINDOWS) && !defined(NATIVEAOT)
+#if !defined(HOST_WINDOWS)
 #include <pal_mstypes.h>
 #endif
 
@@ -573,9 +573,7 @@
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #include <type_traits>
-#ifndef PAL_STDCPP_COMPAT
 #include "crosscomp.h"
-#endif
 
 #include <dn-u16.h>
 

@@ -45,8 +45,6 @@
 #define NOINLINE __attribute__((noinline))
 #endif
 
-#undef max
-#undef min
 using std::max;
 using std::min;
 #endif  // VXSORT_DEFS_H
