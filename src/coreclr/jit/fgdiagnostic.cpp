@@ -1085,7 +1085,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
                     }
-                    
+
                     const weight_t edgeWeight = edge->getLikelyWeight();
                     fprintf(fgxFile, "\n            weight=");
                     fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);

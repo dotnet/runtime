@@ -1859,8 +1859,8 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileWeights())
         {
-            printf("; with %s: fgCalledCount is " FMT_WT "\n",
-                   compiler->compGetPgoSourceName(), compiler->fgCalledCount);
+            printf("; with %s: fgCalledCount is " FMT_WT "\n", compiler->compGetPgoSourceName(),
+                   compiler->fgCalledCount);
         }
 
         if (compiler->fgPgoFailReason != nullptr)

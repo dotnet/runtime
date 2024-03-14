@@ -4610,11 +4610,11 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //   and/or
     // new likelihood based weights.
     //
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
-    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
-    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
-    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
+    const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool assertOnFailure     = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool checkAllBlocks      = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
@@ -4800,8 +4800,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 //
 bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
 
     if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
@@ -4832,7 +4832,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundPreds = true;
     }
 
-    bool likelyWeightsValid  = true;
+    bool likelyWeightsValid = true;
 
     if (foundPreds)
     {
@@ -4876,15 +4876,15 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 //
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
-    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
 
     if (!verifyHasLikelihood && !verifyLikelihoodSum)
     {
         return true;
     }
 
-    bool likelyWeightsValid  = true;
+    bool likelyWeightsValid = true;
 
     // We want switch targets unified, but not EH edges.
     //
@@ -4919,7 +4919,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         if (missingEdges > 0)
         {
             JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
-            likelyWeightsValid  = false;
+            likelyWeightsValid = false;
         }
 
         if (verifyHasLikelihood)

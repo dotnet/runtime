@@ -3131,8 +3131,8 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 //
 void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
 {
-    bool hasProfWeight = true;
-    weight_t newWeight = BB_ZERO_WEIGHT;
+    bool     hasProfWeight = true;
+    weight_t newWeight     = BB_ZERO_WEIGHT;
 
     for (FlowEdge* const edge : block->PredEdges())
     {
