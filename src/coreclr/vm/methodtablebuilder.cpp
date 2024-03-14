@@ -10053,8 +10053,9 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #elif defined(TARGET_RISCV64)
-                    // The alignment requirement for the fixed length vector shall be equivalent to
-                    // the alignment requirement of its elemental type.
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
@@ -10074,8 +10075,9 @@ void MethodTableBuilder::CheckForSystemTypes()
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
 
     #elif defined(TARGET_RISCV64)
-                    // The alignment requirement for the fixed length vector shall be equivalent to
-                    // the alignment requirement of its elemental type.
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 64; // sizeof(__m512)
