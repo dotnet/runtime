@@ -64,6 +64,7 @@ namespace ILCompiler
                     // shall be equivalent to the alignment requirement of its elemental type.
                     // For other vector types in RISC-V Vector Extenstion Intrinsic Document,
                     // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
                     alignment = new LayoutInt(16);
                 }
                 else
@@ -93,6 +94,7 @@ namespace ILCompiler
                     // shall be equivalent to the alignment requirement of its elemental type.
                     // For other vector types in RISC-V Vector Extenstion Intrinsic Document,
                     // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
                     alignment = new LayoutInt(16);
                 }
                 else
