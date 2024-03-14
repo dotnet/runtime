@@ -39,4 +39,5 @@ case "$opt" in
 esac
 
 # save the commit hash of the currently built assemblies, so developers know which version was built
+mkdir -p ./artifacts/
 git rev-parse HEAD > ./artifacts/prebuild.sha
