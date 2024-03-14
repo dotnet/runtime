@@ -664,27 +664,27 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
             // These are "pseudo-blocks" and control never actually flows into them
             // (codegen directly jumps to its successor after finally calls).
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbTarget));
+            RETURN_ON_ABORT(func(GetTarget()));
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -694,7 +694,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -744,14 +744,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbTarget);
+            return func(GetTarget());
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbFalseTarget));
+            RETURN_ON_ABORT(func(GetFalseTarget()));
 
-            if (bbTrueTarget != bbFalseTarget)
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(bbTrueTarget));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
             return BasicBlockVisit::Continue;
@@ -761,7 +761,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
             }
 
             return BasicBlockVisit::Continue;
@@ -2443,7 +2443,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 {
     if (info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE))
     {
-        assert(info.compTypeCtxtArg != -1);
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
 
         // If the VM requires us to keep the generics context alive and report it (for example, if any catch
         // clause catches a type that uses a generic parameter of this method) this flag will be set.
@@ -2773,13 +2773,13 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
-    if (ILargNum >= (unsigned)info.compTypeCtxtArg)
+    if (ILargNum >= info.compTypeCtxtArg)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
-    if (ILargNum >= (unsigned)lvaVarargsHandleArg)
+    if (ILargNum >= lvaVarargsHandleArg)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -3163,6 +3163,24 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 inline bool Compiler::fgIsBigOffset(size_t offset)
 {
     return (offset > compMaxUncheckedOffsetForNullObject);
+}
+
+//------------------------------------------------------------------------
+// IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+//
+// Local address nodes cannot point beyond the local and can only store
+// 16 bits worth of offset.
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The address' offset
+//
+// Return Value:
+//    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+//
+inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
+{
+    return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
 /*
@@ -4359,21 +4377,6 @@ void GenTree::VisitOperands(TVisitor visitor)
                     return;
                 }
             }
-            return;
-        }
-
-        case GT_STORE_DYN_BLK:
-        {
-            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(dynBlock->gtOp2) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
             return;
         }
 

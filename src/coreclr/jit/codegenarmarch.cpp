@@ -513,7 +513,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -3375,17 +3374,6 @@ void CodeGen::genCall(GenTreeCall* call)
         genDefineTempLabel(genCreateTempLabel());
     }
 
-#ifdef SWIFT_SUPPORT
-    // Clear the Swift error register before calling a Swift method,
-    // so we can check if it set the error register after returning.
-    // (Flag is only set if we know we need to check the error register)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
-    {
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
-    }
-#endif // SWIFT_SUPPORT
-
     genCallInstruction(call);
 
     genDefinePendingCallLabel(call);
@@ -4568,14 +4556,14 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_BLK));
 
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 

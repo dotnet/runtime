@@ -90,9 +90,11 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         // Set the new objects MethodTable pointer on success.
         cbz         x0, LOCAL_LABEL(NewOutOfMemory)
 
+        .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
+        .cfi_restore_state
 LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
@@ -262,9 +264,11 @@ LOCAL_LABEL(RhpNewArray_Rare):
         // Set the new objects MethodTable pointer and length on success.
         cbz         x0, LOCAL_LABEL(ArrayOutOfMemory)
 
+        .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
+        .cfi_restore_state
 LOCAL_LABEL(ArrayOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.

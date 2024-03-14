@@ -437,6 +437,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
 #if defined(TARGET_XARCH)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
+    , m_simdMaskCnsMap(nullptr)
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
@@ -1706,6 +1707,12 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     m_defs = new (alloc) Alloc<TYP_SIMD64>::Type[ChunkSize];
                     break;
                 }
+
+                case TYP_MASK:
+                {
+                    m_defs = new (alloc) Alloc<TYP_MASK>::Type[ChunkSize];
+                    break;
+                }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -1870,6 +1877,11 @@ ValueNum ValueNumStore::VNForSimd64Con(simd64_t cnsVal)
 {
     return VnForConst(cnsVal, GetSimd64CnsMap(), TYP_SIMD64);
 }
+
+ValueNum ValueNumStore::VNForSimdMaskCon(simdmask_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimdMaskCnsMap(), TYP_MASK);
+}
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -1970,6 +1982,11 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
         {
             READ_VALUE(simd64_t);
             return VNForSimd64Con(val);
+        }
+        case TYP_MASK:
+        {
+            READ_VALUE(simdmask_t);
+            return VNForSimdMaskCon(val);
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2085,6 +2102,11 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         {
             return VNForSimd64Con(simd64_t::Zero());
         }
+
+        case TYP_MASK:
+        {
+            return VNForSimdMaskCon(simdmask_t::Zero());
+        }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -2174,6 +2196,11 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
         case TYP_SIMD64:
         {
             return VNForSimd64Con(simd64_t::AllBitsSet());
+        }
+
+        case TYP_MASK:
+        {
+            return VNForSimdMaskCon(simdmask_t::AllBitsSet());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2295,6 +2322,13 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
             simd64_t simd64Val;
             memcpy(&simd64Val, &simdVal, sizeof(simd64_t));
             return VNForSimd64Con(simd64Val);
+        }
+
+        case TYP_MASK:
+        {
+            // '1' doesn't make sense for TYP_MASK?
+            // Or should it be AllBitsSet?
+            unreached();
         }
 #endif // TARGET_XARCH
 
@@ -3741,7 +3775,7 @@ simd32_t ValueNumStore::GetConstantSimd32(ValueNum argVN)
     return ConstantValue<simd32_t>(argVN);
 }
 
-// Given a simd64 constant value number return its value as a simd32.
+// Given a simd64 constant value number return its value as a simd64.
 //
 simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
 {
@@ -3749,6 +3783,16 @@ simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
     assert(TypeOfVN(argVN) == TYP_SIMD64);
 
     return ConstantValue<simd64_t>(argVN);
+}
+
+// Given a simdmask constant value number return its value as a simdmask.
+//
+simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_MASK);
+
+    return ConstantValue<simdmask_t>(argVN);
 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -9221,6 +9265,13 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                     cnsVal.u64[6], cnsVal.u64[7]);
                 break;
             }
+
+            case TYP_MASK:
+            {
+                simdmask_t cnsVal = GetConstantSimdMask(vn);
+                printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
+                break;
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -9573,8 +9624,8 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
-                                                 GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
+                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_LCL_VAR,
+                                                 GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ARR_ADDR, GT_BOUNDS_CHECK,
@@ -9874,7 +9925,7 @@ public:
             return false;
         }
 
-        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueTargetIs(predBlock->GetFalseTarget()))
+        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueEdgeIs(predBlock->GetFalseEdge()))
         {
             return true;
         }
@@ -10659,6 +10710,15 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             memcpy(&simd64Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd64_t));
 
             tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(simd64Val));
+            break;
+        }
+
+        case TYP_MASK:
+        {
+            simdmask_t simdmaskVal;
+            memcpy(&simdmaskVal, &tree->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimdMaskCon(simdmaskVal));
             break;
         }
 #endif // TARGET_XARCH
@@ -11488,12 +11548,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 unsigned  loadSize = tree->AsIndir()->Size();
                 VNFuncApp funcApp{VNF_COUNT};
 
-                // TODO-1stClassStructs: delete layout-less "IND(struct)" nodes and the "loadSize == 0" condition.
-                if (loadSize == 0)
-                {
-                    tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadType));
-                }
-                else if (fgValueNumberConstLoad(tree->AsIndir()))
+                if (fgValueNumberConstLoad(tree->AsIndir()))
                 {
                     // VN is assigned inside fgValueNumberConstLoad
                 }
@@ -11759,30 +11814,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 fgValueNumberHWIntrinsic(tree->AsHWIntrinsic());
                 break;
 #endif // FEATURE_HW_INTRINSICS
-
-            case GT_STORE_DYN_BLK:
-            {
-                // Conservatively, mutate the heaps - we don't analyze these rare stores.
-                // Likewise, any locals possibly defined by them we mark as address-exposed.
-                fgMutateGcHeap(tree DEBUGARG("dynamic block store"));
-
-                GenTreeStoreDynBlk* store     = tree->AsStoreDynBlk();
-                ValueNumPair        vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
-
-                // Propagate the exceptions...
-                vnpExcSet = vnStore->VNPUnionExcSet(store->Addr()->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(store->Data()->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(store->gtDynamicSize->gtVNPair, vnpExcSet);
-
-                // This is a store, it produces no value. Thus we use VNPForVoid().
-                store->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
-
-                // Note that we are only adding the exception for the destination address.
-                // Currently, "Data()" is an explicit indirection in case this is a "cpblk".
-                assert(store->Data()->gtEffectiveVal()->OperIsIndir() || store->OperIsInitBlkOp());
-                fgValueNumberAddExceptionSetForIndirection(store, store->Addr());
-                break;
-            }
 
             case GT_CMPXCHG: // Specialop
             {

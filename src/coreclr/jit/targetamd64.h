@@ -206,11 +206,11 @@
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
 
-  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
-
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
 
   // We have two register classifications
   // * callee trash: aka     volatile or caller saved
@@ -566,6 +566,6 @@
   #define SWIFT_SUPPORT
   #define REG_SWIFT_ERROR REG_R12
   #define RBM_SWIFT_ERROR RBM_R12
-  #define SWIFT_SELF_REG  REG_R13
+  #define REG_SWIFT_SELF  REG_R13
 
 // clang-format on
