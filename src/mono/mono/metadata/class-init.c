@@ -2953,7 +2953,7 @@ mono_class_init_internal (MonoClass *klass)
 	if (klass->inited || mono_class_has_failure (klass))
 		return !mono_class_has_failure (klass);
 
-	/*g_print ("Init class %s\n", mono_type_get_full_name (klass));*/
+	// g_print ("Init class %s\n", mono_type_get_full_name (klass));
 
 	/*
 	 * This function can recursively call itself.
