@@ -4243,6 +4243,8 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 						    basename,
 						    (const char*)NULL);
 
+		g_assert (fullpath);
+
 		utf8_fullpath = utf8_from_external (fullpath);
 		if(utf8_fullpath == NULL) {
 			/* Printing the arg text will cause glib to
@@ -5355,7 +5357,7 @@ MonoObjectHandle
 mono_object_new_handle (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	
+
 	if (MONO_CLASS_IS_IMPORT(klass)) {
 		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
 		return MONO_HANDLE_NEW (MonoObject, NULL);
