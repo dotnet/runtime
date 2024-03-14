@@ -4249,13 +4249,12 @@ bool Compiler::fgIncorporateEdgeCounts()
 }
 
 //-------------------------------------------------------------
-// fgComputeBlockAndEdgeWeights: determine weights for blocks
-//   and optionally for edges
+// fgComputeBlockWeights: determine weights for blocks
 //
 // Returns:
 //    Suitable phase status
 //
-PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
+PhaseStatus Compiler::fgComputeBlockWeights()
 {
     const bool usingProfileWeights = fgIsUsingProfileWeights();
     bool       madeChanges         = false;

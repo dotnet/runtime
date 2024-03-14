@@ -6007,7 +6007,7 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    PhaseStatus fgComputeBlockAndEdgeWeights();
+    PhaseStatus fgComputeBlockWeights();
     bool fgComputeMissingBlockWeights(weight_t* returnWeight);
     bool fgComputeCalledCount(weight_t returnWeight);
 
