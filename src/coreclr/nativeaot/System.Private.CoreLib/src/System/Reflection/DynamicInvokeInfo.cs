@@ -891,12 +891,6 @@ namespace System.Reflection
                 Debug.Assert((uint)length <= MaxStackAllocArgCount);
                 return new Span<T>(ref _arg0, length);
             }
-
-            public void Set(int index, T value)
-            {
-                Debug.Assert((uint)index < MaxStackAllocArgCount);
-                Unsafe.Add(ref _arg0, index) = value;
-            }
         }
 
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.

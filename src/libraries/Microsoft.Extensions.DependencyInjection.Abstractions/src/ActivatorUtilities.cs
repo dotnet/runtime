@@ -67,27 +67,21 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             // Attempt to use the stack allocated arg values if <= 4 ctor args.
-            Span<object?> values;
             StackAllocatedObjects stackValues = default;
             int maxArgs = GetMaxArgCount();
-            if (maxArgs <= StackAllocatedObjects.MaxStackAllocArgCount / 2)
-            {
-                values = MemoryMarshal.CreateSpan(ref stackValues._args._arg0, maxArgs * 2);
-            }
-            else
-            {
-                values = new Span<object?>(new object?[maxArgs * 2], 0, maxArgs * 2);
-            }
+            Span<object?> values = maxArgs <= StackAllocatedObjects.MaxStackAllocArgCount / 2 ?
+                stackValues :
+                new object?[maxArgs * 2];
 
             Span<object?> ctorArgs = values.Slice(0, maxArgs);
-            Span<object?> bestCtorArgs = values.Slice(maxArgs);
+            Span<object?> bestCtorArgs = values.Slice(maxArgs, maxArgs);
 #else
             constructors = CreateConstructorInfoExs(instanceType);
             object?[]? ctorArgs = null;
             object?[]? bestCtorArgs = null;
 #endif
 
-            ConstructorMatcher matcher = default;
+            scoped ConstructorMatcher matcher = default;
             ConstructorInfoEx? constructor;
             IServiceProviderIsService? serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
             // if container supports using IServiceProviderIsService, we try to find the longest ctor that
@@ -124,7 +118,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
 
                 int bestLength = -1;
-                ConstructorMatcher bestMatcher = default;
+                scoped ConstructorMatcher bestMatcher = default;
                 bool multipleBestLengthFound = false;
 
                 // Find the constructor with the most matches.
@@ -1223,17 +1217,11 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private ref struct StackAllocatedObjects
+        [InlineArray(MaxStackAllocArgCount)]
+        private struct StackAllocatedObjects
         {
             internal const int MaxStackAllocArgCount = 8;
-            internal StackAllocatedObjectValues _args;
-
-            [InlineArray(MaxStackAllocArgCount)]
-            internal struct StackAllocatedObjectValues
-            {
-                internal object? _arg0;
-            }
+            private object? _arg0;
         }
 #endif
 

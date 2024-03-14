@@ -67,8 +67,8 @@ namespace System.Reflection
             }
 
             StackAllocatedArguments argStorage = default;
-            argStorage._args.Set(0, arg1);
-            argStorage._args.Set(1, arg2);
+            argStorage._args[0] = arg1;
+            argStorage._args[1] = arg2;
             object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
@@ -83,9 +83,9 @@ namespace System.Reflection
             }
 
             StackAllocatedArguments argStorage = default;
-            argStorage._args.Set(0, arg1);
-            argStorage._args.Set(1, arg2);
-            argStorage._args.Set(2, arg3);
+            argStorage._args[0] = arg1;
+            argStorage._args[1] = arg2;
+            argStorage._args[2] = arg3;
             object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
@@ -100,10 +100,10 @@ namespace System.Reflection
             }
 
             StackAllocatedArguments argStorage = default;
-            argStorage._args.Set(0, arg1);
-            argStorage._args.Set(1, arg2);
-            argStorage._args.Set(2, arg3);
-            argStorage._args.Set(3, arg4);
+            argStorage._args[0] = arg1;
+            argStorage._args[1] = arg2;
+            argStorage._args[2] = arg3;
+            argStorage._args[3] = arg4;
             object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
