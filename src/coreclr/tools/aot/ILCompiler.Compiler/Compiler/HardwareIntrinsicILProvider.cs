@@ -37,14 +37,25 @@ namespace ILCompiler
         public override MethodIL GetMethodIL(MethodDesc method)
         {
             TypeDesc owningType = method.OwningType;
-            string intrinsicId = InstructionSetSupport.GetHardwareIntrinsicId(_context.Target.Architecture, owningType);
+            string intrinsicId = InstructionSetSupport.GetHardwareIntrinsicId(_context.Target.Architecture, owningType, out bool unsupportedSubset);
             if (!string.IsNullOrEmpty(intrinsicId)
                 && HardwareIntrinsicHelpers.IsIsSupportedMethod(method))
             {
                 InstructionSet instructionSet = _instructionSetMap[intrinsicId];
 
-                bool isSupported = _isaSupport.IsInstructionSetSupported(instructionSet);
-                bool isOptimisticallySupported = _isaSupport.OptimisticFlags.HasInstructionSet(instructionSet);
+                bool isSupported;
+                bool isOptimisticallySupported;
+
+                if (unsupportedSubset)
+                {
+                    isSupported = false;
+                    isOptimisticallySupported = false;
+                }
+                else
+                {
+                    isSupported = _isaSupport.IsInstructionSetSupported(instructionSet);
+                    isOptimisticallySupported = _isaSupport.OptimisticFlags.HasInstructionSet(instructionSet);
+                }
 
                 // If this is an instruction set that is optimistically supported, but is not one of the
                 // intrinsics that are known to be always available, emit IL that checks the support level

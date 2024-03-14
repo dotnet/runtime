@@ -64,38 +64,32 @@ namespace ILCompiler
 
         public InstructionSetSupportFlags Flags => _flags;
 
-        public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
+        public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc, out bool unsupportedSubset)
         {
+            unsupportedSubset = false;
+
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
-            if (architecture == TargetArchitecture.X64)
+            if (architecture is TargetArchitecture.X64 or TargetArchitecture.X86)
             {
                 if (potentialType.Name == "X64")
+                {
                     potentialType = (MetadataType)potentialType.ContainingType;
+                    unsupportedSubset = architecture == TargetArchitecture.X86;
+                }
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
-            else if (architecture == TargetArchitecture.X86)
-            {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM64)
+            else if (architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
                 if (potentialType.Name == "Arm64")
+                {
                     potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM)
-            {
+                    unsupportedSubset = architecture == TargetArchitecture.ARM;
+                }
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
