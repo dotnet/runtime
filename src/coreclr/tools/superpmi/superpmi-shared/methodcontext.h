@@ -1168,12 +1168,9 @@ enum mcPackets
     Packet_HaveSameMethodDefinition = 213,
     Packet_NotifyMethodInfoUsage = 214,
     Packet_IsExactType = 215,
-<<<<<<< HEAD
-    Packet_GetClassStaticDynamicInfo = 216,
-    Packet_GetClassThreadStaticDynamicInfo = 217,
-=======
     Packet_GetSwiftLowering = 216,
->>>>>>> 9b40636087d24c8e9107d4a112589b053317591d
+    Packet_GetClassStaticDynamicInfo = 217,
+    Packet_GetClassThreadStaticDynamicInfo = 218,
 };
 
 void SetDebugDumpVariables();

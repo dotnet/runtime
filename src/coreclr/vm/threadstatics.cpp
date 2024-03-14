@@ -454,7 +454,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 #ifndef TARGET_64BIT
                 // On non 64 bit platforms, the static data may need to be 8 byte aligned to allow for good performance
                 // for doubles and 64bit ints, come as close as possible, by simply allocating the data as a double array
-                gc.tlsEntry = AllocatePrimiteveArray(ELEMENT_TYPE_R8, static_cast<DWORD>(AlignUp(pMT->GetClass()->GetNonGCThreadStaticFieldBytes(), 8)/8));
+                gc.tlsEntry = AllocatePrimitiveArray(ELEMENT_TYPE_R8, static_cast<DWORD>(AlignUp(pMT->GetClass()->GetNonGCThreadStaticFieldBytes(), 8)/8));
 #else
                 gc.tlsEntry = AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(pMT->GetClass()->GetNonGCThreadStaticFieldBytes()));
 #endif
