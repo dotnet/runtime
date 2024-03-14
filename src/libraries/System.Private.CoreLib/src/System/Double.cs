@@ -448,35 +448,36 @@ namespace System
         private const double UIntMaxValueOffset = 4294967296.0; // 2^32, uint.MaxValue + 1
 
         // TODO: make the helpers saturating when implementing https://github.com/dotnet/runtime/issues/61885
-        private static int ConvertToInt32(double val) => (int)(long)val;
+        private static int ConvertToInt32(double value) => (int)(long)value;
+        private static uint ConvertToUInt32(double value) => (uint)(long)value;
 
-        private static ulong ConvertToUInt64(double val)
+        private static ulong ConvertToUInt64(double value)
         {
             const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
             ulong ret;
             // don't remove the double casts, the runtime would call this method recursively without them
-            if (val < two63)
+            if (value < two63)
             {
-                ret = (ulong)(long)val;
+                ret = (ulong)(long)value;
             }
             else
             {
                 // subtract 0x8000000000000000, do the convert then add it back again
-                ret = (ulong)(long)(val - two63) + 0x8000000000000000UL;
+                ret = (ulong)(long)(value - two63) + 0x8000000000000000UL;
             }
             return ret;
         }
 
         [StackTraceHidden]
-        private static int ConvertToInt32Checked(double val)
+        private static int ConvertToInt32Checked(double value)
         {
             // Note that this expression also works properly for val = NaN case
-            if (val is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
+            if (value is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
             {
-                int ret = (int)val;
+                int ret = (int)value;
                 // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(val - 1.0 <= ret);
-                Debug.Assert(ret <= val + 1.0);
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
                 return ret;
             }
 
@@ -485,15 +486,15 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static uint ConvertToUInt32Checked(double val)
+        private static uint ConvertToUInt32Checked(double value)
         {
             // Note that this expression also works properly for val = NaN case
-            if (val is > -1.0 and < UIntMaxValueOffset)
+            if (value is > -1.0 and < UIntMaxValueOffset)
             {
-                uint ret = (uint)val;
+                uint ret = (uint)value;
                 // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(val - 1.0 <= ret);
-                Debug.Assert(ret <= val + 1.0);
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
                 return ret;
             }
 
@@ -502,18 +503,18 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static long ConvertToInt64Checked(double val)
+        private static long ConvertToInt64Checked(double value)
         {
             const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
 
             // Note that this expression also works properly for val = NaN case
             // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-            if (val is > -two63 - 0x402 and < two63)
+            if (value is > -two63 - 0x402 and < two63)
             {
-                long ret = (long)val;
+                long ret = (long)value;
                 // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(val - 1.0 <= ret);
-                Debug.Assert(ret <= val + 1.0);
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
                 return ret;
             }
 
@@ -522,16 +523,16 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static ulong ConvertToUInt64Checked(double val)
+        private static ulong ConvertToUInt64Checked(double value)
         {
             const double two64 = UIntMaxValueOffset * UIntMaxValueOffset;
             // Note that this expression also works properly for val = NaN case
-            if (val is > -1.0 and < two64)
+            if (value is > -1.0 and < two64)
             {
-                ulong ret = (ulong)val;
+                ulong ret = (ulong)value;
                 // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(val - 1.0 <= ret);
-                Debug.Assert(ret <= val + 1.0);
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
                 return ret;
             }
 
@@ -541,10 +542,10 @@ namespace System
 
         private static ref double DoubleConversionTable => ref MemoryMarshal.GetReference([0.0, UIntMaxValueOffset]);
 
-        private static double ConvertFromInt64(long val)
+        private static double ConvertFromInt64(long value)
         {
-            uint upper = (uint)(val >>> 32);
-            uint lower = (uint)val;
+            uint upper = (uint)(value >>> 32);
+            uint lower = (uint)value;
             double a = (int)upper;
             // X86 has no uint -> double casts, we need to do this to avoid recursion here
 #if TARGET_X86
@@ -556,10 +557,10 @@ namespace System
             return a * UIntMaxValueOffset + b;
         }
 
-        private static double ConvertFromUInt64(ulong val)
+        private static double ConvertFromUInt64(ulong value)
         {
-            uint upper = (uint)(val >> 32);
-            uint lower = (uint)val;
+            uint upper = (uint)(value >> 32);
+            uint lower = (uint)value;
             // X86 has no uint -> double casts, we need to do this to avoid recursion here
 #if TARGET_X86
             double a = (int)upper;

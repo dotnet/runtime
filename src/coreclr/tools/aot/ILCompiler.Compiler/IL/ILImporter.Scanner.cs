@@ -1290,6 +1290,10 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u4_ovf");
                     }
+                    else
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UInt), "conv_u4");
+                    }
                     break;
                 case WellKnownType.UInt64:
                     if (checkOverflow)

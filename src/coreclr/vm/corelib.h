@@ -263,6 +263,7 @@ DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,    
 DEFINE_CLASS(DOUBLE,                System,                 Double)
 #endif
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32,       ConvertToInt32,             NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT32,      ConvertToUInt32,            NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64,      ConvertToUInt64,            NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32_CHECKED,ConvertToInt32Checked,     NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT32_CHECKED,ConvertToUInt32Checked,   NoSig)

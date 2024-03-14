@@ -451,7 +451,7 @@ namespace System
             // ***"negated for -infinity" has been removed from the spec
             if (divisor == 0 || !IsFinite(dividend))
             {
-                return float.NaN;
+                return NaN;
             }
 
             if (!IsFinite(divisor) && !IsNaN(divisor))

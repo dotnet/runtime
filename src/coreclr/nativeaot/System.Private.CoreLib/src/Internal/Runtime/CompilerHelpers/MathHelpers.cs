@@ -9,8 +9,7 @@ using System.Runtime.InteropServices;
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
-    /// Math helpers for generated code. The helpers marked with [RuntimeExport] and the type
-    /// itself need to be public because they constitute a public contract with the .NET Native toolchain.
+    /// Math helpers for generated code. The helpers here are referenced by the runtime.
     /// </summary>
     internal static partial class MathHelpers
     {
@@ -19,107 +18,107 @@ namespace Internal.Runtime.CompilerHelpers
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        private static partial ulong RhpULMod(ulong i, ulong j);
+        private static partial ulong RhpULMod(ulong dividend, ulong divisor);
 
-        public static ulong ULMod(ulong i, ulong j)
+        public static ulong ULMod(ulong dividend, ulong divisor)
         {
-            if (j == 0)
-                return ThrowULngDivByZero();
-            else
-                return RhpULMod(i, j);
+            if (divisor == 0)
+                ThrowULngDivByZero();
+
+            return RhpULMod(dividend, divisor);
         }
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        private static partial long RhpLMod(long i, long j);
+        private static partial long RhpLMod(long dividend, long divisor);
 
-        public static long LMod(long i, long j)
+        public static long LMod(long dividend, long divisor)
         {
-            if (j == 0)
-                return ThrowLngDivByZero();
-            else if (j == -1 && i == long.MinValue)
-                return ThrowLngOvf();
-            else
-                return RhpLMod(i, j);
+            if (divisor == 0)
+                ThrowLngDivByZero();
+            if (divisor == -1 && dividend == long.MinValue)
+                ThrowLngOvf();
+
+            return RhpLMod(dividend, divisor);
         }
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        private static partial ulong RhpULDiv(ulong i, ulong j);
+        private static partial ulong RhpULDiv(ulong dividend, ulong divisor);
 
-        public static ulong ULDiv(ulong i, ulong j)
+        public static ulong ULDiv(ulong dividend, ulong divisor)
         {
-            if (j == 0)
-                return ThrowULngDivByZero();
-            else
-                return RhpULDiv(i, j);
+            if (divisor == 0)
+                ThrowULngDivByZero();
+
+            return RhpULDiv(dividend, divisor);
         }
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        private static partial long RhpLDiv(long i, long j);
+        private static partial long RhpLDiv(long dividend, long divisor);
 
-        public static long LDiv(long i, long j)
+        public static long LDiv(long dividend, long divisor)
         {
-            if (j == 0)
-                return ThrowLngDivByZero();
-            else if (j == -1 && i == long.MinValue)
-                return ThrowLngOvf();
-            else
-                return RhpLDiv(i, j);
+            if (divisor == 0)
+                ThrowLngDivByZero();
+            if (divisor == -1 && dividend == long.MinValue)
+                ThrowLngOvf();
+
+            return RhpLDiv(dividend, divisor);
         }
 
 #if TARGET_ARM
         [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int RhpIDiv(int i, int j);
+        private static extern int RhpIDiv(int dividend, int j);
 
-        public static int IDiv(int i, int j)
+        public static int IDiv(int dividend, int divisor)
         {
-            if (j == 0)
-                return ThrowIntDivByZero();
-            else if (j == -1 && i == int.MinValue)
-                return ThrowIntOvf();
-            else
-                return RhpIDiv(i, j);
+            if (divisor == 0)
+                ThrowIntDivByZero();
+            if (divisor == -1 && dividend == int.MinValue)
+                ThrowIntOvf();
+
+            return RhpIDiv(dividend, divisor);
         }
 
         [RuntimeImport(RuntimeLibrary, "RhpUDiv")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint RhpUDiv(uint i, uint j);
+        private static extern uint RhpUDiv(uint dividend, uint divisor);
 
-        public static long UDiv(uint i, uint j)
+        public static long UDiv(uint dividend, uint divisor)
         {
-            if (j == 0)
-                return ThrowUIntDivByZero();
-            else
-                return RhpUDiv(i, j);
+            if (divisor == 0)
+                ThrowUIntDivByZero();
+
+            return RhpUDiv(dividend, divisor);
         }
 
         [RuntimeImport(RuntimeLibrary, "RhpIMod")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int RhpIMod(int i, int j);
+        private static extern int RhpIMod(int dividend, int divisor);
 
-        public static int IMod(int i, int j)
+        public static int IMod(int dividend, int divisor)
         {
-            if (j == 0)
-                return ThrowIntDivByZero();
-            else if (j == -1 && i == int.MinValue)
-                return ThrowIntOvf();
-            else
-                return RhpIMod(i, j);
+            if (divisor == 0)
+                ThrowIntDivByZero();
+            if (divisor == -1 && dividend == int.MinValue)
+                ThrowIntOvf();
+
+            return RhpIMod(dividend, divisor);
         }
 
         [RuntimeImport(RuntimeLibrary, "RhpUMod")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint RhpUMod(uint i, uint j);
+        private static extern uint RhpUMod(uint dividend, uint divisor);
 
-        public static long UMod(uint i, uint j)
+        public static long UMod(uint dividend, uint divisor)
         {
-            if (j == 0)
-                return ThrowUIntDivByZero();
-            else
-                return RhpUMod(i, j);
+            if (divisor == 0)
+                ThrowUIntDivByZero();
+
+            return RhpUMod(dividend, divisor);
         }
 #endif // TARGET_ARM
 
@@ -127,39 +126,33 @@ namespace Internal.Runtime.CompilerHelpers
         // Matching return types of throw helpers enables tailcalling them. It improves performance
         // of the hot path because of it does not need to raise full stackframe.
         //
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngOvf()
+        private static void ThrowLngOvf()
         {
             throw new OverflowException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngDivByZero()
+        private static void ThrowLngDivByZero()
         {
             throw new DivideByZeroException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ulong ThrowULngDivByZero()
+        private static void ThrowULngDivByZero()
         {
             throw new DivideByZeroException();
         }
 
 #if TARGET_ARM
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ThrowIntOvf()
+        private static void ThrowIntOvf()
         {
             throw new OverflowException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ThrowIntDivByZero()
+        private static void ThrowIntDivByZero()
         {
             throw new DivideByZeroException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static uint ThrowUIntDivByZero()
+        private static void ThrowUIntDivByZero()
         {
             throw new DivideByZeroException();
         }
