@@ -62,7 +62,7 @@ private:
     {
         // compute a thres based on an exponential distribution
         double probability = pRandomizer->NextDouble();
-        size_t threshold = (size_t)(-log((1 - probability) * SamplingDistributionMean));
+        size_t threshold = (size_t)(-log(1 - probability) * SamplingDistributionMean);
         return threshold;
     }
 } ee_alloc_context;
