@@ -156,56 +156,61 @@ namespace System.ComponentModel
         {
             get
             {
-                return LazyInitializer.EnsureInitialized<Dictionary<object, IntrinsicTypeConverterData>>(ref s_intrinsicTypeConverters, () =>
-                {
-                    var converters = new Dictionary<object, IntrinsicTypeConverterData>(32)
-                    {
-                        // Add the intrinsics
-                        //
-                        // When modifying this list, be sure to update the initial dictionary capacity above
-                        [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
-                        [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
-                        [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),
-                        [typeof(char)] = new IntrinsicTypeConverterData((type) => new CharConverter()),
-                        [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
-                        [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
-                        [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
-                        [typeof(Int128)] = new IntrinsicTypeConverterData((type) => new Int128Converter()),
-                        [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
-                        [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
-                        [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
-                        [typeof(Half)] = new IntrinsicTypeConverterData((type) => new HalfConverter()),
-                        [typeof(UInt128)] = new IntrinsicTypeConverterData((type) => new UInt128Converter()),
-                        [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
-                        [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
-                        [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
-                        [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
-                        [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
-                        [typeof(DateOnly)] = new IntrinsicTypeConverterData((type) => new DateOnlyConverter()),
-                        [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
-                        [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
-                        [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
-                        [typeof(TimeOnly)] = new IntrinsicTypeConverterData((type) => new TimeOnlyConverter()),
-                        [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
-                        [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
-                        [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
-                        [typeof(Version)] = new IntrinsicTypeConverterData((type) => new VersionConverter()),
-                        // Special cases for things that are not bound to a specific type
-                        //
-                        [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
-                        [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
-                        [typeof(Enum)] = new IntrinsicTypeConverterData(CreateEnumConverter, cacheConverterInstance: false),
-                        [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
-                    };
-                    if (NullableConverter.IsSupported)
-                        converters[s_intrinsicNullableKey] = new IntrinsicTypeConverterData(CreateNullableConverter, cacheConverterInstance: false);
-                    return converters;
-                });
+                return LazyInitializer.EnsureInitialized<Dictionary<object, IntrinsicTypeConverterData>>(ref s_intrinsicTypeConverters, SetupIntrinsicConverters);
             }
         }
 
+        private static Dictionary<object, IntrinsicTypeConverterData> SetupIntrinsicConverters()
+        {
+            var converters = new Dictionary<object, IntrinsicTypeConverterData>(32)
+            {
+                // Add the intrinsics
+                //
+                // When modifying this list, be sure to update the initial dictionary capacity above
+                [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
+                [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
+                [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),
+                [typeof(char)] = new IntrinsicTypeConverterData((type) => new CharConverter()),
+                [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
+                [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
+                [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
+                [typeof(Int128)] = new IntrinsicTypeConverterData((type) => new Int128Converter()),
+                [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
+                [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
+                [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
+                [typeof(Half)] = new IntrinsicTypeConverterData((type) => new HalfConverter()),
+                [typeof(UInt128)] = new IntrinsicTypeConverterData((type) => new UInt128Converter()),
+                [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
+                [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
+                [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
+                [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
+                [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
+                [typeof(DateOnly)] = new IntrinsicTypeConverterData((type) => new DateOnlyConverter()),
+                [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
+                [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
+                [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
+                [typeof(TimeOnly)] = new IntrinsicTypeConverterData((type) => new TimeOnlyConverter()),
+                [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
+                [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
+                [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
+                [typeof(Version)] = new IntrinsicTypeConverterData((type) => new VersionConverter()),
+                // Special cases for things that are not bound to a specific type
+                //
+                [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
+                [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
+                [typeof(Enum)] = new IntrinsicTypeConverterData(CreateEnumConverter, cacheConverterInstance: false),
+                [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
+            };
+            if (NullableConverter.IsSupported)
+                AddNullableConverter(converters);
+            return converters;
+        }
+
         [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
-        private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
+        private static void AddNullableConverter(Dictionary<object, IntrinsicTypeConverterData> converters)
+        {
+            converters[s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => new NullableConverter(type), cacheConverterInstance: false);
+        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "Trimmer does not trim enums")]
