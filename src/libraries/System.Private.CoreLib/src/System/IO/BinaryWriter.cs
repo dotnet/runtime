@@ -243,9 +243,14 @@ namespace System.IO
         //
         public virtual void Write(double value)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(double)];
-            BinaryPrimitives.WriteDoubleLittleEndian(buffer, value);
-            OutStream.Write(buffer);
+            if (BitConverter.IsLittleEndian)
+            {
+                WriteBytes(value);
+            }
+            else
+            {
+                WriteBytes(BinaryPrimitives.ReverseEndianness(BitConverter.DoubleToUInt64Bits(value)));
+            }
         }
 
         public virtual void Write(decimal value)
@@ -258,74 +263,49 @@ namespace System.IO
         // Writes a two-byte signed integer to this stream. The current position of
         // the stream is advanced by two.
         //
-        public virtual void Write(short value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(short)];
-            BinaryPrimitives.WriteInt16LittleEndian(buffer, value);
-            OutStream.Write(buffer);
-        }
+        public virtual void Write(short value) => WriteBytes(BitConverter.IsLittleEndian ? (ushort)value : BinaryPrimitives.ReverseEndianness((ushort)value));
 
         // Writes a two-byte unsigned integer to this stream. The current position
         // of the stream is advanced by two.
         //
         [CLSCompliant(false)]
-        public virtual void Write(ushort value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(ushort)];
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
-            OutStream.Write(buffer);
-        }
+        public virtual void Write(ushort value) => WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
 
         // Writes a four-byte signed integer to this stream. The current position
         // of the stream is advanced by four.
         //
-        public virtual void Write(int value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
-            OutStream.Write(buffer);
-        }
+        public virtual void Write(int value) => WriteBytes(BitConverter.IsLittleEndian ? (uint)value : BinaryPrimitives.ReverseEndianness((uint)value));
 
         // Writes a four-byte unsigned integer to this stream. The current position
         // of the stream is advanced by four.
         //
         [CLSCompliant(false)]
-        public virtual void Write(uint value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(uint)];
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
-            OutStream.Write(buffer);
-        }
+        public virtual void Write(uint value) => WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
 
         // Writes an eight-byte signed integer to this stream. The current position
         // of the stream is advanced by eight.
         //
-        public virtual void Write(long value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(long)];
-            BinaryPrimitives.WriteInt64LittleEndian(buffer, value);
-            OutStream.Write(buffer);
-        }
+        public virtual void Write(long value) => WriteBytes(BitConverter.IsLittleEndian ? (ulong)value : BinaryPrimitives.ReverseEndianness((ulong)value));
 
         // Writes an eight-byte unsigned integer to this stream. The current
         // position of the stream is advanced by eight.
         //
         [CLSCompliant(false)]
-        public virtual void Write(ulong value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-            BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
-            OutStream.Write(buffer);
-        }
+        public virtual void Write(ulong value) => WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
 
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         //
         public virtual void Write(float value)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(float)];
-            BinaryPrimitives.WriteSingleLittleEndian(buffer, value);
-            OutStream.Write(buffer);
+            if (BitConverter.IsLittleEndian)
+            {
+                WriteBytes(value);
+            }
+            else
+            {
+                WriteBytes(BinaryPrimitives.ReverseEndianness(BitConverter.SingleToUInt32Bits(value)));
+            }
         }
 
         // Writes a half to this stream. The current position of the stream is
@@ -333,9 +313,20 @@ namespace System.IO
         //
         public virtual void Write(Half value)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(ushort) /* = sizeof(Half) */];
-            BinaryPrimitives.WriteHalfLittleEndian(buffer, value);
-            OutStream.Write(buffer);
+            if (BitConverter.IsLittleEndian)
+            {
+                WriteBytes(value);
+            }
+            else
+            {
+                WriteBytes(BinaryPrimitives.ReverseEndianness(BitConverter.HalfToUInt16Bits(value)));
+            }
+        }
+
+        private void WriteBytes<T>(T value)
+            where T : unmanaged
+        {
+            OutStream.Write(MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value)));
         }
 
         // Writes a length-prefixed string to this stream in the BinaryWriter's
