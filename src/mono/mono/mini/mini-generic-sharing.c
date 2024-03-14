@@ -584,12 +584,14 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
@@ -648,12 +650,14 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 

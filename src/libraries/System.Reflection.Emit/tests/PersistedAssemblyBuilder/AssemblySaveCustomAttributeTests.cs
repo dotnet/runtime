@@ -125,7 +125,7 @@ namespace System.Reflection.Emit.Tests
             List<CustomAttributeBuilder>? moduleAttributes = null, List<CustomAttributeBuilder>? typeAttributes = null,
             List<CustomAttributeBuilder>? methodAttributes = null, List<CustomAttributeBuilder>? fieldAttributes = null)
         {
-            AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName, assemblyAttributes);
+            PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName, assemblyAttributes);
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types, moduleAttributes, typeAttributes, methodAttributes, fieldAttributes);
             assemblyBuilder.Save(fileLocation);
@@ -194,7 +194,7 @@ namespace System.Reflection.Emit.Tests
                                                               new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), new object[] { })
                                                             };
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 DefineFieldsAndSetAttributes(fieldAttributes.ToList(), type.GetFields(), tb);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
@@ -286,7 +286,7 @@ namespace System.Reflection.Emit.Tests
                         new CustomAttributeBuilder(marshalAsEnumCtor, new object[] { UnmanagedType.CustomMarshaler },
                                 new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalType")}, new object[] { typeof(EmptyTestClass).AssemblyQualifiedName })};
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.GetMethods(), parameterAttributes);
@@ -439,7 +439,7 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 Type type = typeof(StructWithFields);
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 FieldInfo stringField = type.GetFields()[1];
                 FieldBuilder fb = tb.DefineField(stringField.Name, stringField.FieldType, stringField.Attributes);
@@ -477,7 +477,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 EnumBuilder enumBuilder = ab.DefineDynamicModule("Module").DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
 
                 ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
