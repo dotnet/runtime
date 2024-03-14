@@ -8551,6 +8551,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, -25);
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, -256);
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, 255);
+    theEmitter->emitIns_R_S(INS_sve_ldr, EA_8BYTE, REG_P0, 1, 0, INS_SCALABLE_OPTS_PREDICATE_DEST);
+    theEmitter->emitIns_R_S(INS_sve_ldr, EA_8BYTE, REG_P15, 1, 6, INS_SCALABLE_OPTS_PREDICATE_DEST);
 
     // IF_SVE_JG_2A
     // STR <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -8559,6 +8561,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, -117);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, -256);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, 255);
+    theEmitter->emitIns_S_R(INS_sve_str, EA_8BYTE, REG_P5, 1, 0, INS_SCALABLE_OPTS_PREDICATE_DEST);
+    theEmitter->emitIns_S_R(INS_sve_str, EA_8BYTE, REG_P7, 1, 4, INS_SCALABLE_OPTS_PREDICATE_DEST);
 
     // IF_SVE_IE_2A
     // LDR <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -8572,6 +8576,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED);
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 255, INS_OPTS_NONE,
                               INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_S(INS_sve_ldr, EA_8BYTE, REG_V17, 1, 0);
+    theEmitter->emitIns_R_S(INS_sve_ldr, EA_8BYTE, REG_V9, 1, 24);
 
     // IF_SVE_JH_2A
     // STR <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -8585,6 +8591,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 255, INS_OPTS_NONE,
                               INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_S_R(INS_sve_str, EA_8BYTE, REG_V3, 1, 0);
+    theEmitter->emitIns_S_R(INS_sve_str, EA_8BYTE, REG_V0, 1, 28);
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     // IF_SVE_GG_3A
