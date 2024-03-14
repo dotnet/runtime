@@ -122,6 +122,9 @@ namespace System.Runtime.InteropServices
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
 
+            if (typeof(TFrom) == typeof(TTo))
+                return new Span<TTo>(ref Unsafe.As<TFrom, TTo>(ref span._reference), span.Length);
+
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
             uint fromSize = (uint)Unsafe.SizeOf<TFrom>();
@@ -176,6 +179,9 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            if (typeof(TFrom) == typeof(TTo))
+                return new ReadOnlySpan<TTo>(ref Unsafe.As<TFrom, TTo>(ref span._reference), span.Length);
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
