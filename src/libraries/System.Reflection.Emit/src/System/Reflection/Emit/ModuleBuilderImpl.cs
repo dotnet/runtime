@@ -609,7 +609,7 @@ namespace System.Reflection.Emit
             Type declaringType = methodBase.DeclaringType!;
             if (declaringType.IsConstructedGenericType &&
                 declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl &&
-                !ContainsNotBakedTypeBuilder(declaringType.GetGenericArguments()))
+                !ContainsTypeBuilder(declaringType.GetGenericArguments()))
             {
                 return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
             }
@@ -883,7 +883,7 @@ namespace System.Reflection.Emit
 
         private EntityHandle GetHandleForMember(MemberInfo member)
         {
-            if (IsConstructedFromNotBakedTypeBuilder(member.DeclaringType!))
+            if (IsConstructedFromTypeBuilder(member.DeclaringType!))
             {
                 return default;
             }
@@ -891,11 +891,11 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
+        private static bool IsConstructedFromTypeBuilder(Type type) => type.IsConstructedGenericType &&
             (type.GetGenericTypeDefinition() is TypeBuilderImpl ||
-             ContainsNotBakedTypeBuilder(type.GetGenericArguments()));
+             ContainsTypeBuilder(type.GetGenericArguments()));
 
-        private static bool ContainsNotBakedTypeBuilder(Type[] genericArguments)
+        internal static bool ContainsTypeBuilder(Type[] genericArguments)
         {
             foreach (Type type in genericArguments)
             {
@@ -904,7 +904,7 @@ namespace System.Reflection.Emit
                     return true;
                 }
 
-                if (IsConstructedFromNotBakedTypeBuilder(type))
+                if (IsConstructedFromTypeBuilder(type))
                 {
                     return true;
                 }
@@ -925,7 +925,7 @@ namespace System.Reflection.Emit
                 return eb._typeBuilder._handle;
             }
 
-            if (IsConstructedFromNotBakedTypeBuilder(type))
+            if (IsConstructedFromTypeBuilder(type))
             {
                 return default;
             }
@@ -967,7 +967,7 @@ namespace System.Reflection.Emit
             arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && tb._handle == default;
 
         private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
-            (method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default || ContainsNotBakedTypeBuilder(method.GetGenericArguments()));
+            (method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default || ContainsTypeBuilder(method.GetGenericArguments()));
 
         internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
