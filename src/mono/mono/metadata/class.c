@@ -807,6 +807,33 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 				return type;
 		}
 
+		// Compare accept byreflike constraint of generic parameters between parent (gclass->context.class_inst) and
+		// child (context->class_inst) interfaces
+		for (int i = 0; i < gclass->context.class_inst->type_argc; ++i) {
+			MonoType *child_param_type = NULL;
+			MonoType *parent_param_type = gclass->context.class_inst->type_argv [i];
+			switch (parent_param_type->type) {
+			case MONO_TYPE_VAR:
+				child_param_type = context->class_inst->type_argv [i];
+				break;
+			case MONO_TYPE_MVAR:
+				child_param_type = context->method_inst->type_argv [i];
+				break;
+			default:
+				continue;
+			}
+			MonoGenericParam *child_gparam = child_param_type->data.generic_param;
+			MonoGenericParamInfo *child_tinfo = mono_generic_param_info (child_gparam);
+			if ((child_tinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_ACCEPT_BYREFLIKE_CONSTRAINTS) != 0) {
+				MonoGenericParam *parent_gparam = parent_param_type->data.generic_param;
+				MonoGenericParamInfo *parent_tinfo = mono_generic_param_info (parent_gparam);
+				if ((parent_tinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_ACCEPT_BYREFLIKE_CONSTRAINTS) == 0) {
+					mono_error_set_type_load_name (error, NULL, NULL, "Derived class can't allow byreflike, when parent doesn't allow it");
+					return NULL;
+				}
+			}
+		}
+
 		inst = mono_metadata_inflate_generic_inst (gclass->context.class_inst, context, error);
 		return_val_if_nok (error, NULL);
 
@@ -2888,7 +2915,7 @@ mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_toke
 
 	if (klass && context && mono_metadata_token_table (type_token) == MONO_TABLE_TYPESPEC)
 		klass = mono_class_inflate_generic_class_checked (klass, context, error);
-
+	
 	return klass;
 }
 /**
