@@ -6012,11 +6012,6 @@ BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool ex
 
     newBlk->bbRefs = 0;
 
-    if (newBlk->bbFallsThrough() && block->isRunRarely())
-    {
-        newBlk->bbSetRunRarely();
-    }
-
     if (extendRegion)
     {
         fgExtendEHRegionBefore(block);
@@ -6050,11 +6045,6 @@ BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool ext
     fgInsertBBafter(block, newBlk);
 
     newBlk->bbRefs = 0;
-
-    if (block->bbFallsThrough() && block->isRunRarely())
-    {
-        newBlk->bbSetRunRarely();
-    }
 
     if (extendRegion)
     {
