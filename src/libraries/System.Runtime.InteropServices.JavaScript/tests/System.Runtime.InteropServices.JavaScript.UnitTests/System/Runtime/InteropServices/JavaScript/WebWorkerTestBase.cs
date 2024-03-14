@@ -45,9 +45,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return Enum.GetValues<ExecutorType>().Select(type => new object[] { new Executor(type) });
         }
 
-        public static IEnumerable<object[]> GetSpecificTargetThreads()
+        public static IEnumerable<object[]> GetBlockingFriendlyTargetThreads()
         {
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.Main) };
+            yield return new object[] { new Executor(ExecutorType.Main) };
+            yield return new object[] { new Executor(ExecutorType.NewThread) };
+            yield return new object[] { new Executor(ExecutorType.ThreadPool) };
+            // JSWebWorker is missing here because JS can't resolve promises while blocked
+        }
+
+        public static IEnumerable<object[]> GetSpecificTargetThreads2x()
+        {
+            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.Main) };
             yield break;
         }
 
@@ -135,15 +143,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 throw;
             }
-        }
-
-        public class NamedCall
-        {
-            public string Name { get; set; }
-            public delegate void Method(CancellationToken ct);
-            public Method Call { get; set; }
-
-            override public string ToString() => Name;
         }
 
         public static IEnumerable<NamedCall> BlockingCalls = new List<NamedCall>
