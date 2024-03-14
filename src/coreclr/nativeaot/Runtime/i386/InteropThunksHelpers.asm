@@ -7,6 +7,8 @@
 option  casemap:none
 .code
 
+include AsmMacros.inc
+
 ;; -----------------------------------------------------------------------------------------------------------
 ;; standard macros
 ;; -----------------------------------------------------------------------------------------------------------
@@ -66,7 +68,8 @@ LEAF_ENTRY RhCommonStub, _TEXT
         ;; store thunk address in thread static
         mov     edx, [eax]
         mov     eax, [eax + POINTER_SIZE]                          ;;   eax <- target slot data
-        mov     [ecx + OFFSET ThunkParamSlot], edx                 ;;   ThunkParamSlot <- context slot data
+        add     ecx, SECTIONREL ThunkParamSlot
+        mov     [ecx], edx                 ;;   ThunkParamSlot <- context slot data
 
         ;; restore the regs we used
         pop     edx
@@ -80,22 +83,23 @@ LEAF_END RhCommonStub, _TEXT
 ;;
 ;; IntPtr RhGetCommonStubAddress()
 ;;
-LEAF_ENTRY RhGetCommonStubAddress, _TEXT
+FASTCALL_FUNC RhGetCommonStubAddress, 0
         lea     eax, [RhCommonStub]
         ret
-LEAF_END RhGetCommonStubAddress, _TEXT
+FASTCALL_ENDFUNC
 
 
 ;;
 ;; IntPtr RhGetCurrentThunkContext()
 ;;
-LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
+FASTCALL_FUNC RhGetCurrentThunkContext, 0
         mov     ecx, [__tls_index]
         mov     edx, fs:[__tls_array]
         mov     ecx, [edx + ecx * POINTER_SIZE]
-        mov     eax, [ecx + OFFSET ThunkParamSlot]                 ;;   eax <- ThunkParamSlot
+        add     ecx, SECTIONREL ThunkParamSlot
+        mov     eax, [ecx]                 ;;   eax <- ThunkParamSlot
         ret
-LEAF_END RhGetCurrentThunkContext, _TEXT
+FASTCALL_ENDFUNC
 
 
 end

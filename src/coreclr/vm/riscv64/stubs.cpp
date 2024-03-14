@@ -1932,7 +1932,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 4;
         }
 
-        BYTE* pBLTCall = NULL;
+        BYTE* pBLECall = NULL;
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
@@ -1962,8 +1962,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 p += 4;
                 *(DWORD*)p = ITypeInstr(0x13, 0, RegT4, RegT4, slotOffset & 0xfff);// addi  t4, t4, (slotOffset&0xfff)
                 p += 4;
-                // blt  t4, t5, CALL HELPER
-                pBLTCall = p;       // Offset filled later
+                // bge  t4, t5, CALL HELPER
+                pBLECall = p;       // Offset filled later
                 p += 4;
             }
 
@@ -2005,8 +2005,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 4;
 
             // CALL HELPER:
-            if (pBLTCall != NULL)
-                *(DWORD*)pBLTCall = BTypeInstr(0x63, 0x4, RegT4, RegT5, (UINT32)(p - pBLTCall));
+            if (pBLECall != NULL)
+                *(DWORD*)pBLECall = BTypeInstr(0x63, 0x5, RegT4, RegT5, (UINT32)(p - pBLECall));
 
             *(DWORD*)p = ITypeInstr(0x13, 0, RegA0, RegT2, 0);// addi  a0, t2, 0
             p += 4;

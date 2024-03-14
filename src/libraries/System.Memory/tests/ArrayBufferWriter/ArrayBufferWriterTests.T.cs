@@ -424,14 +424,7 @@ namespace System.Buffers.Tests
                 Assert.True(span.Length >= 256);
                 Span<T> newSpan = output.GetSpan();
                 Assert.Equal(span.Length, newSpan.Length);
-
-                unsafe
-                {
-                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-                    void* pNewSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(newSpan));
-                    Assert.Equal((IntPtr)pSpan, (IntPtr)pNewSpan);
-                }
-
+                Assert.Equal(0, Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(newSpan)));
                 Assert.Equal(span.Length, output.GetSpan().Length);
             }
             finally
