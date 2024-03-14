@@ -3435,6 +3435,19 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
 
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
+
+                if (hasImpliedRepeatedFields)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields != 1)
+                    {
+                        goto _End_arg;
+                    }
+                }
+
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     ret = true;
