@@ -71,8 +71,14 @@
 
 G_ATTR_NORETURN
 static inline void eg_unreachable (void) {
+#if defined(_MSC_VER)
+	 __assume(0);
+#elif defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 5)))
+	__builtin_unreachable();
+#else
 	for (;;)
-		;
+	;
+#endif
 }
 
 #ifdef __cplusplus
