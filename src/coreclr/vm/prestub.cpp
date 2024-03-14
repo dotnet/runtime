@@ -1271,62 +1271,72 @@ namespace
         return true;
     }
 
-    bool AreConstraintsEqual(const Instantiation& left, const Instantiation& right)
+    void VerifyDeclarationSatifiesTargetConstraints(MethodDesc* declaration, MethodTable* targetType, MethodDesc* targetMethod)
     {
-        STANDARD_VM_CONTRACT;
-
-        DWORD argCount = left.GetNumArgs();
-        if (argCount != right.GetNumArgs())
-            return false;
-
-        for (DWORD i = 0; i < argCount; ++i)
+        CONTRACTL
         {
-            TypeHandle tL = left[i];
-            TypeHandle tR = right[i];
+            STANDARD_VM_CHECK;
+            PRECONDITION(declaration != NULL);
+            PRECONDITION(targetType != NULL);
+            PRECONDITION(targetMethod != NULL);
+        }
+        CONTRACTL_END;
 
-            // Check generic variable state are the same.
-            BOOL isGeneric = tL.IsGenericVariable();
-            if (isGeneric != tR.IsGenericVariable())
-                return false;
+        // If the target method has no generic parameters there is nothing to verify
+        if (!targetMethod->HasClassOrMethodInstantiation())
+            return;
 
-            // Only generic variables have constraints.
-            if (!isGeneric)
-                continue;
-
-            TypeVarTypeDesc* tsL = tL.AsGenericVariable();
-            TypeVarTypeDesc* tsR = tR.AsGenericVariable();
-
-            //
-            // Verify general constraints
-            //
-            IMDInternalImport* importL = tsL->GetModule()->GetMDImport();
-            IMDInternalImport* importR = tsR->GetModule()->GetMDImport();
-
-            DWORD flagsL;
-            DWORD flagsR;
-            IfFailThrow(importL->GetGenericParamProps(tsL->GetToken(), NULL, &flagsL, NULL, NULL, NULL));
-            IfFailThrow(importR->GetGenericParamProps(tsR->GetToken(), NULL, &flagsR, NULL, NULL, NULL));
-            if ((flagsL & gpSpecialConstraintMask) != (flagsR & gpSpecialConstraintMask))
-                return false;
-
-            //
-            // Verify type constraints
-            //
-            DWORD constraintCountL;
-            DWORD constraintCountR;
-            TypeHandle* cL = tsL->GetConstraints(&constraintCountL);
-            TypeHandle* cR = tsR->GetConstraints(&constraintCountR);
-            if (constraintCountL != constraintCountR)
-                return false;
-
-            for (DWORD j = 0; j < constraintCountL; ++j)
-            {
-                if (cL[j] != cR[j])
-                    return false;
-            }
+        // Construct a context for verifying target's constraints are
+        // satisfied by the declaration.
+        Instantiation declClassInst;
+        Instantiation declMethodInst;
+        Instantiation targetClassInst;
+        Instantiation targetMethodInst;
+        if (targetType->HasInstantiation())
+        {
+            declClassInst = declaration->GetMethodTable()->GetInstantiation();
+            targetClassInst = targetType->GetTypicalMethodTable()->GetInstantiation();
+        }
+        if (targetMethod->HasMethodInstantiation())
+        {
+            declMethodInst = declaration->LoadTypicalMethodDefinition()->GetMethodInstantiation();
+            targetMethodInst = targetMethod->LoadTypicalMethodDefinition()->GetMethodInstantiation();
         }
 
-        return true;
+        SigTypeContext typeContext;
+        SigTypeContext::InitTypeContext(declClassInst, declMethodInst, &typeContext);
+
+        InstantiationContext instContext{ &typeContext };
+
+        //
+        // Validate constraints on Type parameters
+        //
+        DWORD typeParamCount = targetClassInst.GetNumArgs();
+        if (typeParamCount != declClassInst.GetNumArgs())
+            COMPlusThrow(kInvalidProgramException, W("Argument_GenTypeConstraintsNotEqual"));
+
+        for (DWORD i = 0; i < typeParamCount; ++i)
+        {
+            TypeHandle arg = declClassInst[i];
+            TypeVarTypeDesc* param = targetClassInst[i].AsGenericVariable();
+            if (!param->SatisfiesConstraints(&typeContext, arg, &instContext))
+                COMPlusThrow(kInvalidProgramException, W("Argument_GenTypeConstraintsNotEqual"));
+        }
+
+        //
+        // Validate constraints on Method parameters
+        //
+        DWORD methodParamCount = targetMethodInst.GetNumArgs();
+        if (methodParamCount != declMethodInst.GetNumArgs())
+            COMPlusThrow(kInvalidProgramException, W("Argument_GenMethodConstraintsNotEqual"));
+
+        for (DWORD i = 0; i < methodParamCount; ++i)
+        {
+            TypeHandle arg = declMethodInst[i];
+            TypeVarTypeDesc* param = targetMethodInst[i].AsGenericVariable();
+            if (!param->SatisfiesConstraints(&typeContext, arg, &instContext))
+                COMPlusThrow(kInvalidProgramException, W("Argument_GenMethodConstraintsNotEqual"));
+        }
     }
 
     bool TrySetTargetMethod(
@@ -1385,21 +1395,8 @@ namespace
             targetMaybe = curr;
         }
 
-        if (pMT->HasInstantiation())
-        {
-            Instantiation decl = cxt.Declaration->GetMethodTable()->GetTypicalMethodTable()->GetInstantiation();
-            Instantiation target = pMT->GetTypicalMethodTable()->GetInstantiation();
-            if (!AreConstraintsEqual(decl, target))
-                COMPlusThrow(kInvalidProgramException, W("Argument_GenTypeConstraintsNotEqual"));
-        }
-
-        if (targetMaybe != NULL && targetMaybe->HasMethodInstantiation())
-        {
-            Instantiation decl = cxt.Declaration->LoadTypicalMethodDefinition()->GetMethodInstantiation();
-            Instantiation target = targetMaybe->LoadTypicalMethodDefinition()->GetMethodInstantiation();
-            if (!AreConstraintsEqual(decl, target))
-                COMPlusThrow(kInvalidProgramException, W("Argument_GenMethodConstraintsNotEqual"));
-        }
+        if (targetMaybe != NULL)
+            VerifyDeclarationSatifiesTargetConstraints(cxt.Declaration, pMT, targetMaybe);
 
         cxt.TargetMethod = targetMaybe;
         return cxt.TargetMethod != NULL;
