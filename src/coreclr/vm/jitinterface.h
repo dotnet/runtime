@@ -548,6 +548,7 @@ public:
                                                    CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                    CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
+                                                   MethodDesc * pCallerMD,
                                                    CORINFO_LOOKUP *pResultLookup);
 
 #if defined(FEATURE_GDBJIT)

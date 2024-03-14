@@ -15,7 +15,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
                 ModuleBuilder module = ab.DefineDynamicModule("MyModule");
                 MethodBuilder method = module.DefineGlobalMethod("TestMethod", MethodAttributes.Static | MethodAttributes.Public, null, null);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineGlobalMethodAndCreateGlobalFunctions_Validations()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             ModuleBuilder module = ab.DefineDynamicModule("MyModule");
             Assert.Throws<ArgumentException>(() => module.DefineGlobalMethod("TestMethod", MethodAttributes.Public, null, null)); // must be static
             MethodBuilder method = module.DefineGlobalMethod("TestMethod", MethodAttributes.Static | MethodAttributes.Public, null, null);
@@ -85,7 +85,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
                 DpmParams p = new DpmParams() { MethodName = "A2", LibName = "Foo2.dll", EntrypointName = "Wha2", ReturnType = typeof(int),
                     ParameterTypes = [typeof(int)], NativeCallConv = CallingConvention.Cdecl };
 
@@ -117,7 +117,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(FieldAttributes.Assembly | FieldAttributes.SpecialName)]
         public void DefineUninitializedDataTest(FieldAttributes attributes)
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             ModuleBuilder module = ab.DefineDynamicModule("MyModule");
             foreach (int size in new int[] { 1, 2, 0x003f0000 - 1 })
             {
@@ -133,7 +133,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineUninitializedData_Validations()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             ModuleBuilder module = ab.DefineDynamicModule("MyModule");
 
             AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineUninitializedData(null, 1, FieldAttributes.Family));
@@ -154,7 +154,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(FieldAttributes.Private)]
         public void DefineInitializedDataTest(FieldAttributes attributes)
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             ModuleBuilder module = ab.DefineDynamicModule("MyModule");
             FieldBuilder field = module.DefineInitializedData("MyField", [01, 00, 01], attributes);
 
@@ -167,7 +167,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineInitializedData_Validations()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             ModuleBuilder module = ab.DefineDynamicModule("MyModule");
 
             AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineInitializedData(null, [1, 0, 1], FieldAttributes.Public));
@@ -190,7 +190,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
                 ModuleBuilder module = ab.DefineDynamicModule("MyModule");
                 TypeBuilder tb = module.DefineType("MyType", TypeAttributes.Public);
                 // Create static field data in a variety of orders that requires the runtime to actively apply alignment
@@ -265,7 +265,7 @@ namespace System.Reflection.Emit.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96389", TestRuntimes.Mono)]
         public void GetABCMetadataToken_Validations()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             ModuleBuilder module = ab.DefineDynamicModule("MyModule");
             TypeBuilder type = module.DefineType("MyType", TypeAttributes.Public);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Static | MethodAttributes.Public);
@@ -294,7 +294,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
 
                 ModuleBuilder mb = ab.DefineDynamicModule("MyModule");
                 TypeBuilder tb = mb.DefineType("TestClass", TypeAttributes.Public);
