@@ -17368,19 +17368,20 @@ void emitter::emitIns_R_S(instruction     ins,
             attr = size;
 
             // TODO-SVE: Use register number instead of enum
-            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            // TODO-SVE: Don't assume 128bit vectors
+            if (sopt == INS_SCALABLE_OPTS_PREDICATE_DEST)
             {
-                fmt = IF_SVE_IE_2A;
-                // TODO-SVE: Don't assume 128bit vectors
-                scale = NaturalScale_helper(EA_16BYTE);
+                assert(isPredicateRegister(reg1));
+                fmt = IF_SVE_ID_2A;
+                // Predicate size is vector length / 8
+                scale = NaturalScale_helper(EA_2BYTE);
             }
             else
             {
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_ID_2A;
-                // TODO-SVE: Don't assume 128bit vectors
-                // Predicate size is vector length / 8
-                scale = NaturalScale_helper(EA_2BYTE);
+                assert(isVectorRegister(reg1));
+                fmt   = IF_SVE_IE_2A;
+                scale = NaturalScale_helper(EA_16BYTE);
             }
             break;
 
@@ -17653,24 +17654,25 @@ void emitter::emitIns_S_R(instruction     ins,
             assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
             isScalable = true;
 
-            // TODO-SVE: This should probably be set earlier in the caller
+            // TODO-SVE: This should probably be set in the caller
             size = EA_SCALABLE;
             attr = size;
 
             // TODO-SVE: Use register number instead of enum
-            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            // TODO-SVE: Don't assume 128bit vectors
+            if (sopt == INS_SCALABLE_OPTS_PREDICATE_DEST)
             {
-                fmt = IF_SVE_JH_2A;
-                // TODO-SVE: Don't assume 128bit vectors
-                scale = NaturalScale_helper(EA_16BYTE);
+                assert(isPredicateRegister(reg1));
+                fmt = IF_SVE_JG_2A;
+                // Predicate size is vector length / 8
+                scale = NaturalScale_helper(EA_2BYTE);
             }
             else
             {
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_JG_2A;
-                // TODO-SVE: Don't assume 128bit vectors
-                // Predicate size is vector length / 8
-                scale = NaturalScale_helper(EA_2BYTE);
+                assert(isVectorRegister(reg1));
+                fmt   = IF_SVE_JH_2A;
+                scale = NaturalScale_helper(EA_16BYTE);
             }
             break;
 

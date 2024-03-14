@@ -6396,7 +6396,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
-
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_ARM64)

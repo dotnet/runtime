@@ -2215,9 +2215,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 //    The node converted to the a mask type
 //
 GenTree* Compiler::gtNewSimdConvertVectorToMaskNode(var_types   type,
-                                            GenTree*    node,
-                                            CorInfoType simdBaseJitType,
-                                            unsigned    simdSize)
+                                                    GenTree*    node,
+                                                    CorInfoType simdBaseJitType,
+                                                    unsigned    simdSize)
 {
     assert(varTypeIsSIMD(node));
 
