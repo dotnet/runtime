@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         arg_2.ToManaged(out Exception? fail);
                         if (!tcs.TrySetException(fail!))
                         {
-                            Environment.FailFast("Failed to set exception to TaskCompletionSource");
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (exception raised)");
                         }
                     }
                     else
