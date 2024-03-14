@@ -107,7 +107,8 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         pop_register r11
         POP_ARGUMENT_REGISTERS
 
-    TAILJMP_R10
+        jmp r10
+    
 NESTED_END NDirectImportThunk, _TEXT
 
 //------------------------------------------------

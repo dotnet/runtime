@@ -86,12 +86,6 @@ C_FUNC(\Name\()_End):
         .byte 0xE0
 .endm
 
-.macro TAILJMP_R10
-        .byte 0x49
-        .byte 0xFF
-        .byte 0xE2
-.endm
-
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
         mov \HelperReg, [rip + C_FUNC(\Name)@GOTPCREL]
 .endm
