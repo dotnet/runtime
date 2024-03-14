@@ -827,13 +827,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     {
         genStackPointerAdjustment(frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
 
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, SP_to_CalleeSaved_delta, 0);
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
+        compiler->unwindSaveReg(REG_FP, FP_offset);
 
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
         compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-        compiler->unwindSaveReg(REG_FP, FP_offset);
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, SP_to_CalleeSaved_delta, 0);
     }
     else
     {
@@ -844,13 +844,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
         genStackPointerAdjustment(frameSize + SP_to_CalleeSaved_delta, REG_R21, nullptr, true);
 
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
+        compiler->unwindSaveReg(REG_FP, FP_offset);
 
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
         compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-        compiler->unwindSaveReg(REG_FP, FP_offset);
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
 
         genStackPointerAdjustment(-SP_to_CalleeSaved_delta, REG_R21, nullptr, true);
     }
@@ -7704,13 +7704,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         }
         genStackPointerAdjustment(-totalFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
     }
-    genSaveCalleeSavedRegistersHelp(rsPushRegs, FP_offset + 16, 0);
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
+    compiler->unwindSaveReg(REG_FP, FP_offset);
 
     GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-    compiler->unwindSaveReg(REG_FP, FP_offset);
+    genSaveCalleeSavedRegistersHelp(rsPushRegs, FP_offset + 16, 0);
 
     JITDUMP("    offsetSpToSavedFp=%d\n", FP_offset);
     genEstablishFramePointer(FP_offset, /* reportUnwindData */ true);
