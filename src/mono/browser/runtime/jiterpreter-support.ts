@@ -1392,19 +1392,16 @@ class Cfg {
                 case "branch": {
                     const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
                     let indexInStack = this.blockStack.indexOf(lookupTarget),
-                        successfulBackBranch = false;
+                        successfulBackBranch = false,
+                        disp : number | undefined = undefined;
 
                     // Back branches will target the dispatcher loop so we need to update the dispatch index
                     //  which will be used by the loop dispatch br_table to jump to the correct location
                     if (segment.isBackward) {
                         if (this.dispatchTable.has(segment.target)) {
-                            const disp = this.dispatchTable.get(segment.target)!;
+                            disp = this.dispatchTable.get(segment.target)!;
                             if (this.trace > 1)
                                 mono_log_info(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
-
-                            // set the dispatch index for the br_table
-                            this.builder.i32_const(disp);
-                            this.builder.local("disp", WasmOpcode.set_local);
                             successfulBackBranch = true;
                         } else {
                             if (this.trace > 0)
@@ -1418,20 +1415,40 @@ class Cfg {
                         switch (segment.branchType) {
                             case CfgBranchType.SafepointUnconditional:
                                 append_safepoint(this.builder, segment.from);
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 break;
                             case CfgBranchType.SafepointConditional:
                                 // Wrap the safepoint + branch in an if
                                 this.builder.block(WasmValtype.void, WasmOpcode.if_);
                                 append_safepoint(this.builder, segment.from);
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 offset = 1;
                                 break;
                             case CfgBranchType.Unconditional:
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 break;
                             case CfgBranchType.Conditional:
-                                this.builder.appendU8(WasmOpcode.br_if);
+                                if (disp !== undefined) {
+                                    this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                    offset = 1;
+                                    this.builder.appendU8(WasmOpcode.br);
+                                } else {
+                                    this.builder.appendU8(WasmOpcode.br_if);
+                                }
                                 break;
                             default:
                                 throw new Error("Unimplemented branch type");
