@@ -6164,7 +6164,7 @@ void BlockToNaturalLoopMap::Dump() const
     printf("Block -> natural loop map: %u blocks\n", blockCount);
     if (blockCount > 0)
     {
-        printf("PO : loop index\n");
+        printf("block : loop index\n");
         for (unsigned i = 0; i < blockCount; i++)
         {
             if (m_indices[i] == UINT_MAX)
