@@ -10715,18 +10715,19 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMSET ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMZERO ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LNG2DBL ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULNG2DBL ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT_OVF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2LNG_OVF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LNG2DBL ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULNG2DBL ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBLREM ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_FLTREM)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_FLTREM ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
