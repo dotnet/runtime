@@ -60,8 +60,10 @@ namespace ILCompiler
                 }
                 else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
                 {
-                    // The alignment requirement for the fixed length vector shall be equivalent to
-                    // the alignment requirement of its elemental type.
+                    // For fixed-length vector, the alignment requirement for the fixed length vector
+                    // shall be equivalent to the alignment requirement of its elemental type.
+                    // For other vector types in RISC-V Vector Extenstion Intrinsic Document,
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
                     alignment = new LayoutInt(16);
                 }
                 else
@@ -87,8 +89,10 @@ namespace ILCompiler
                 }
                 else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
                 {
-                    // The alignment requirement for the fixed length vector shall be equivalent to
-                    // the alignment requirement of its elemental type.
+                    // For fixed-length vector, the alignment requirement for the fixed length vector
+                    // shall be equivalent to the alignment requirement of its elemental type.
+                    // For other vector types in RISC-V Vector Extenstion Intrinsic Document,
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
                     alignment = new LayoutInt(16);
                 }
                 else
