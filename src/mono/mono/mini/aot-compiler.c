@@ -15355,10 +15355,10 @@ set_paths (MonoAotCompile *acfg)
 			}
 
 			acfg->tmpbasename = g_build_filename (temp_path, "temp", (const char*)NULL);
+			g_assert (acfg->tmpbasename);
+
 			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
-
-			g_assert (acfg->tmpbasename);
 
 			if (acfg->aot_opts.static_link)
 				acfg->llvm_ofile = g_strdup (acfg->aot_opts.llvm_outfile);
@@ -15391,9 +15391,9 @@ set_paths (MonoAotCompile *acfg)
 			/* Done later */
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
-			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
-
 			g_assert (acfg->tmpbasename);
+
+			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 		}
 	}
 }
