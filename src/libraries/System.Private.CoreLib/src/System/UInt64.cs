@@ -182,7 +182,7 @@ namespace System
         //
 
         [StackTraceHidden]
-        private static ulong MultiplyOverflow(ulong i, ulong j)
+        private static ulong MultiplyChecked(ulong i, ulong j)
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static uint High32Bits(ulong a)

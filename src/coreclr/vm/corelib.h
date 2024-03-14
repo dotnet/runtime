@@ -264,10 +264,10 @@ DEFINE_CLASS(DOUBLE,                System,                 Double)
 #endif
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32,       ConvertToInt32,             NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64,      ConvertToUInt64,            NoSig)
-DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32_OVERFLOW,ConvertToInt32Overflow,   NoSig)
-DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT32_OVERFLOW,ConvertToUInt32Overflow, NoSig)
-DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT64_OVERFLOW,ConvertToInt64Overflow,   NoSig)
-DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64_OVERFLOW,ConvertToUInt64Overflow, NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32_CHECKED,ConvertToInt32Checked,     NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT32_CHECKED,ConvertToUInt32Checked,   NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT64_CHECKED,ConvertToInt64Checked,     NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64_CHECKED,ConvertToUInt64Checked,   NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_FROM_INT64,     ConvertFromInt64,           NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_FROM_UINT64,    ConvertFromUInt64,          NoSig)
 DEFINE_METHOD(DOUBLE,               REMAINDER,              Remainder,                  NoSig)
@@ -280,12 +280,12 @@ DEFINE_METHOD(SINGLE,               REMAINDER,              Remainder,          
 #ifdef FOR_ILLINK
 DEFINE_CLASS(INT64,                 System,                 Int64)
 #endif
-DEFINE_METHOD(INT64,                MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)
+DEFINE_METHOD(INT64,                MULTIPLY_CHECKED,       MultiplyChecked,            NoSig)
 
 #ifdef FOR_ILLINK
 DEFINE_CLASS(UINT64,                System,                 UInt64)
 #endif
-DEFINE_METHOD(UINT64,               MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)
+DEFINE_METHOD(UINT64,               MULTIPLY_CHECKED,       MultiplyChecked,            NoSig)
 
 DEFINE_CLASS(INT128,                System,                 Int128)
 DEFINE_CLASS(UINT128,               System,                 UInt128)

@@ -172,16 +172,16 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt32Overflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt32Checked", null);
                     break;
                 case ReadyToRunHelper.Dbl2UIntOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt32Overflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt32Checked", null);
                     break;
                 case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt64Overflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt64Checked", null);
                     break;
                 case ReadyToRunHelper.Dbl2ULngOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt64Overflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt64Checked", null);
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
@@ -199,10 +199,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LMulOfv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Int64").GetKnownMethod("MultiplyOverflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Int64").GetKnownMethod("MultiplyChecked", null);
                     break;
                 case ReadyToRunHelper.ULMulOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "UInt64").GetKnownMethod("MultiplyOverflow", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "UInt64").GetKnownMethod("MultiplyChecked", null);
                     break;
 
                 case ReadyToRunHelper.DblRound:

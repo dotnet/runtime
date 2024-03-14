@@ -184,7 +184,7 @@ namespace System
         //
 
         [StackTraceHidden]
-        private static long MultiplyOverflow(long i, long j)
+        private static long MultiplyChecked(long i, long j)
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static uint High32Bits(ulong a)

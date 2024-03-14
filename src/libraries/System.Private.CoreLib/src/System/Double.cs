@@ -468,7 +468,7 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static int ConvertToInt32Overflow(double val)
+        private static int ConvertToInt32Checked(double val)
         {
             // Note that this expression also works properly for val = NaN case
             if (val is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
@@ -485,7 +485,7 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static uint ConvertToUInt32Overflow(double val)
+        private static uint ConvertToUInt32Checked(double val)
         {
             // Note that this expression also works properly for val = NaN case
             if (val is > -1.0 and < UIntMaxValueOffset)
@@ -502,7 +502,7 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static long ConvertToInt64Overflow(double val)
+        private static long ConvertToInt64Checked(double val)
         {
             const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
 
@@ -522,7 +522,7 @@ namespace System
         }
 
         [StackTraceHidden]
-        private static ulong ConvertToUInt64Overflow(double val)
+        private static ulong ConvertToUInt64Checked(double val)
         {
             const double two64 = UIntMaxValueOffset * UIntMaxValueOffset;
             // Note that this expression also works properly for val = NaN case
