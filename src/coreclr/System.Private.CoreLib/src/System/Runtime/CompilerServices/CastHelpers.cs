@@ -395,9 +395,12 @@ namespace System.Runtime.CompilerServices
             return ref Unbox_Helper(toTypeHnd, obj);
         }
 
-        internal struct ArrayElement
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        private static void ThrowIndexOutOfRangeException()
         {
-            public object? Value;
+            throw new IndexOutOfRangeException();
         }
 
         [DebuggerHidden]
@@ -413,9 +416,13 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static ref object? LdelemaRef(Array array, nint index, void* type)
         {
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            Debug.Assert(array is object[]);
+            object[] a = Unsafe.As<object[]>(array);
+            if (index > a.Length)
+                ThrowIndexOutOfRangeException();
+            
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), index);
+            void* elementType = RuntimeHelpers.GetMethodTable(a)->ElementType;
 
             if (elementType == type)
                 return ref element;
@@ -428,9 +435,13 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static void StelemRef(Array array, nint index, object? obj)
         {
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            Debug.Assert(array is object[]);
+            object[] a = Unsafe.As<object[]>(array);
+            if (index > a.Length)
+                ThrowIndexOutOfRangeException();
+            
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), index);
+            void* elementType = RuntimeHelpers.GetMethodTable(a)->ElementType;
 
             if (obj == null)
                 goto assigningNull;
