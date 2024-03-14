@@ -63,7 +63,7 @@ namespace System.Numerics.Tensors
 
                     if (Vector128.GreaterThanAny(y.AsUInt32(), Vector128.Create(Single_MAX_VECTORIZED_VALUE)))
                     {
-                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>(); ;
+                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>();
                     }
 
                     Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create(Single_LOGV));
@@ -79,7 +79,7 @@ namespace System.Numerics.Tensors
 
                     if (Vector128.GreaterThanAny(y.AsUInt64(), Vector128.Create(Double_MAX_VECTORIZED_VALUE)))
                     {
-                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>(); ;
+                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>();
                     }
 
                     Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(Double_LOGV));
@@ -98,7 +98,7 @@ namespace System.Numerics.Tensors
 
                     if (Vector256.GreaterThanAny(y.AsUInt32(), Vector256.Create(Single_MAX_VECTORIZED_VALUE)))
                     {
-                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>(); ;
+                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>();
                     }
 
                     Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create(Single_LOGV));
@@ -114,7 +114,7 @@ namespace System.Numerics.Tensors
 
                     if (Vector256.GreaterThanAny(y.AsUInt64(), Vector256.Create(Double_MAX_VECTORIZED_VALUE)))
                     {
-                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>(); ;
+                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>();
                     }
 
                     Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(Double_LOGV));
@@ -133,7 +133,7 @@ namespace System.Numerics.Tensors
 
                     if (Vector512.GreaterThanAny(y.AsUInt32(), Vector512.Create(Single_MAX_VECTORIZED_VALUE)))
                     {
-                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>(); ;
+                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>();
                     }
 
                     Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create(Single_LOGV));
@@ -149,7 +149,7 @@ namespace System.Numerics.Tensors
 
                     if (Vector512.GreaterThanAny(y.AsUInt64(), Vector512.Create(Double_MAX_VECTORIZED_VALUE)))
                     {
-                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>(); ;
+                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>();
                     }
 
                     Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(Double_LOGV));
