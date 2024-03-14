@@ -1617,15 +1617,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     break;
                 }
             }
-            else
-            {
-                // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
-                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block's target.
-                if (bPrev->bbFallsThrough() && !block->JumpsToNext())
-                {
-                    break;
-                }
-            }
 
             /* Do not remove a block that jumps to itself - used for while (true){} */
             if (block->TargetIs(block))
@@ -1928,6 +1919,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         {
             printf("\nRemoving a switch jump with a single target (" FMT_BB ")\n", block->bbNum);
             printf("BEFORE:\n");
+            fgDispBasicBlocks();
         }
 #endif // DEBUG
 

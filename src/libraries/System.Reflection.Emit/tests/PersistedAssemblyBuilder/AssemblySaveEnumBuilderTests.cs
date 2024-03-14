@@ -64,7 +64,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out TypeBuilder type, underlyingType);
+                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out PersistedAssemblyBuilder assemblyBuilder, out TypeBuilder type, underlyingType);
                 FieldBuilder literal = enumBuilder.DefineLiteral("FieldOne", literalValue);
                 enumBuilder.CreateTypeInfo();
                 type.CreateTypeInfo();
@@ -97,7 +97,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder ab, out TypeBuilder tb);
+                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out PersistedAssemblyBuilder ab, out TypeBuilder tb);
                 Type arrayType = rank == 0 ? enumBuilder.MakeArrayType() : enumBuilder.MakeArrayType(rank);
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        private EnumBuilder CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder,
+        private EnumBuilder CreateAssemblyAndDefineEnum(out PersistedAssemblyBuilder assemblyBuilder,
             out TypeBuilder type, Type? underlyingType = null)
         {
             assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
@@ -140,7 +140,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder eb = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out TypeBuilder tb);
+                EnumBuilder eb = CreateAssemblyAndDefineEnum(out PersistedAssemblyBuilder assemblyBuilder, out TypeBuilder tb);
                 Type byrefType = eb.MakeByRefType();
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
@@ -173,7 +173,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder eb = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out TypeBuilder tb);
+                EnumBuilder eb = CreateAssemblyAndDefineEnum(out PersistedAssemblyBuilder assemblyBuilder, out TypeBuilder tb);
                 Type pointerType = eb.MakePointerType();
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
@@ -213,7 +213,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestType", TypeAttributes.Class | TypeAttributes.Public);
                 EnumBuilder eb =  mb.DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
