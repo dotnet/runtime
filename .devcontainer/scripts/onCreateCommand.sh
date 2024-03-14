@@ -4,8 +4,6 @@ set -e
 
 function wasm_common() {
     # prebuild for WASM, so it is ready for wasm development
-    echo "[$(date)] removing hidden directories..." >> build.txt
-    rm -rf /workspaces/.codespaces/shared/editors/jetbrains/
     echo "[$(date)] provisioning..." >> build.txt
     make -C src/mono/browser provision-wasm
     echo "[$(date)] export emsdk path..." >> build.txt
@@ -42,6 +40,9 @@ function wasm_common() {
     esac
 }
 
+echo "[$(date)] removing hidden directories..." >> build.txt
+sudo rm -rf /workspaces/.codespaces/shared/editors/jetbrains/
+
 # Start background jobs that run df -i, free -h, and df -h every second
 while true; do echo -e "$(date)\n$(df -i)"; sleep 5; done >> inodes.txt &
 inode_pid=$!
@@ -52,7 +53,7 @@ ram_pid=$!
 while true; do echo -e "$(date)\n$(df -h)"; sleep 5; done >> disk.txt &
 disk_pid=$!
 
-while true; do echo -e "$(date)\n$(sudo du -sh /workspaces/{*,.*})"; sleep 5; done >> dirs.txt &
+while true; do echo -e "$(date)\n$(sudo du -sh /workspaces/.codespaces/shared)"; sleep 5; done >> dirs.txt &
 dirs_pid=$!
 
 # Set traps to kill the background jobs when the script exits
