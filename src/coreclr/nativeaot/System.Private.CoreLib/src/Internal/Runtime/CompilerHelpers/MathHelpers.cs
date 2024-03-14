@@ -23,7 +23,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static ulong ULMod(ulong dividend, ulong divisor)
         {
             if (divisor == 0)
-                ThrowULngDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
 
             return RhpULMod(dividend, divisor);
         }
@@ -35,9 +35,9 @@ namespace Internal.Runtime.CompilerHelpers
         public static long LMod(long dividend, long divisor)
         {
             if (divisor == 0)
-                ThrowLngDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
             if (divisor == -1 && dividend == long.MinValue)
-                ThrowLngOvf();
+                ThrowHelper.ThrowOverflowException();
 
             return RhpLMod(dividend, divisor);
         }
@@ -49,7 +49,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static ulong ULDiv(ulong dividend, ulong divisor)
         {
             if (divisor == 0)
-                ThrowULngDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
 
             return RhpULDiv(dividend, divisor);
         }
@@ -61,9 +61,9 @@ namespace Internal.Runtime.CompilerHelpers
         public static long LDiv(long dividend, long divisor)
         {
             if (divisor == 0)
-                ThrowLngDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
             if (divisor == -1 && dividend == long.MinValue)
-                ThrowLngOvf();
+                ThrowHelper.ThrowOverflowException();
 
             return RhpLDiv(dividend, divisor);
         }
@@ -71,14 +71,14 @@ namespace Internal.Runtime.CompilerHelpers
 #if TARGET_ARM
         [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int RhpIDiv(int dividend, int j);
+        private static extern int RhpIDiv(int dividend, int divisor);
 
         public static int IDiv(int dividend, int divisor)
         {
             if (divisor == 0)
-                ThrowIntDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
             if (divisor == -1 && dividend == int.MinValue)
-                ThrowIntOvf();
+                ThrowHelper.ThrowOverflowException();
 
             return RhpIDiv(dividend, divisor);
         }
@@ -90,7 +90,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static long UDiv(uint dividend, uint divisor)
         {
             if (divisor == 0)
-                ThrowUIntDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
 
             return RhpUDiv(dividend, divisor);
         }
@@ -102,9 +102,9 @@ namespace Internal.Runtime.CompilerHelpers
         public static int IMod(int dividend, int divisor)
         {
             if (divisor == 0)
-                ThrowIntDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
             if (divisor == -1 && dividend == int.MinValue)
-                ThrowIntOvf();
+                ThrowHelper.ThrowOverflowException();
 
             return RhpIMod(dividend, divisor);
         }
@@ -116,45 +116,9 @@ namespace Internal.Runtime.CompilerHelpers
         public static long UMod(uint dividend, uint divisor)
         {
             if (divisor == 0)
-                ThrowUIntDivByZero();
+                ThrowHelper.ThrowDivideByZeroException();
 
             return RhpUMod(dividend, divisor);
-        }
-#endif // TARGET_ARM
-
-        //
-        // Matching return types of throw helpers enables tailcalling them. It improves performance
-        // of the hot path because of it does not need to raise full stackframe.
-        //
-        private static void ThrowLngOvf()
-        {
-            throw new OverflowException();
-        }
-
-        private static void ThrowLngDivByZero()
-        {
-            throw new DivideByZeroException();
-        }
-
-        private static void ThrowULngDivByZero()
-        {
-            throw new DivideByZeroException();
-        }
-
-#if TARGET_ARM
-        private static void ThrowIntOvf()
-        {
-            throw new OverflowException();
-        }
-
-        private static void ThrowIntDivByZero()
-        {
-            throw new DivideByZeroException();
-        }
-
-        private static void ThrowUIntDivByZero()
-        {
-            throw new DivideByZeroException();
         }
 #endif // TARGET_ARM
 #endif // TARGET_64BIT
