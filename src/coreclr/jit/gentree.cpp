@@ -26975,7 +26975,10 @@ void ReturnTypeDesc::InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HAN
 {
     const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(clsHnd);
     assert(!lowering->byReference);
+
+    static_assert_no_msg(MAX_SWIFT_LOWERED_ELEMENTS <= MAX_RET_REG_COUNT);
     assert(lowering->numLoweredElements <= MAX_RET_REG_COUNT);
+
     for (size_t i = 0; i < lowering->numLoweredElements; i++)
     {
         m_regType[i] = JITtype2varType(lowering->loweredElements[i]);
