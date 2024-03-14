@@ -10,11 +10,11 @@ function wasm_common() {
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        ./build.sh mono+libs -os browser -c Release
+        ./build.sh libs -os browser -c Release
         ;;
     wasm-multithreaded)
         # Put your common commands for wasm-multithread here        
-        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=tru
+        ./build.sh libs -os browser -c Release /p:WasmEnableThreads=true
         ;;
     *)
     # install dotnet-serve for running wasm samples
