@@ -95,16 +95,6 @@
 #endif
 #endif
 
-/* uintptr_t */
-#if !defined(_UINTPTR_T_DEFINED)
-#if defined(HOST_64BIT)
-typedef unsigned __int64    uintptr_t;
-#else
-typedef _W64 unsigned int   uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
-#endif
-
 #ifdef __GNUC__
 #define SAFECRT_DEPRECATED __attribute__((deprecated))
 #else

@@ -64,8 +64,6 @@ extern "C" {
 #define _cdecl
 #define CDECL
 
-#undef __fastcall
-#undef _fastcall
 #define __fastcall
 #define _fastcall
 
