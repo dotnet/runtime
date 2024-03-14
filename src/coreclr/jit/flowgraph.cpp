@@ -6170,11 +6170,11 @@ void BlockToNaturalLoopMap::Dump() const
             if (m_indices[i] == UINT_MAX)
             {
                 // Just leave the loop space empty if there is no enclosing loop
-                printf("%02u : \n", i);
+                printf(FMT_BB " : \n", dfs->GetPostOrder(i)->bbNum);
             }
             else
             {
-                printf("%02u : %02u\n", i, m_indices[i]);
+                printf(FMT_BB " : " FMT_LP "\n", dfs->GetPostOrder(i)->bbNum, m_indices[i]);
             }
         }
     }
