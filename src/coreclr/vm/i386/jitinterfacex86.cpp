@@ -952,8 +952,8 @@ void InitJITHelpers1()
 
     if (dwCPUFeaturesECX & 1)  // check SSE3
     {
-        SetJitHelperFunction(CORINFO_HELP_DBL2UINT, JIT_Dbl2LngFpu);
-        SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngFpu);
+        SetJitHelperFunction(CORINFO_HELP_DBL2UINT, JIT_Dbl2LngSse3);
+        SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngSse3);
     }
 
     if (!(TrackAllocationsEnabled()

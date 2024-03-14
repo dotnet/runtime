@@ -36,7 +36,7 @@ JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
 JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
 JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
 JIT_LMul                        TEXTEQU <@JIT_LMul@16>
-JIT_Dbl2LngFpu                  TEXTEQU <@JIT_Dbl2LngFpu@8>
+JIT_Dbl2LngSse3                 TEXTEQU <@JIT_Dbl2LngSse3@8>
 JIT_InternalThrowFromHelper     TEXTEQU <@JIT_InternalThrowFromHelper@4>
 JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
 JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
@@ -634,19 +634,20 @@ LMul_hard:
 JIT_LMul ENDP
 
 ;*********************************************************************/
-; JIT_Dbl2LngFpu
+; JIT_Dbl2LngSse3
 ;
 ;Purpose:
-;   converts a double to a long truncating toward zero (C semantics)
+;   Converts a double to a long truncating toward zero (C semantics)
 ;
-;	uses stdcall calling conventions
+;   Uses stdcall calling convention
 ;
-;   This code is faster than C++ even on modern CPUs but it requires SSE3
+;   This code is faster than C++ even on modern CPUs despite using the FPU
+;   but it requires SSE3
 ;
 .686P
 .XMM
-PUBLIC JIT_Dbl2LngFpu
-JIT_Dbl2LngFpu PROC
+PUBLIC JIT_Dbl2LngSse3
+JIT_Dbl2LngSse3 PROC
 arg1	equ	<[esp+0Ch]>
 
     sub esp, 8                      ; get some local space
@@ -659,7 +660,7 @@ arg1	equ	<[esp+0Ch]>
     add esp, 8                      ; restore stack
 
     ret	8
-JIT_Dbl2LngFpu ENDP
+JIT_Dbl2LngSse3 ENDP
 .586
 
 ;*********************************************************************/

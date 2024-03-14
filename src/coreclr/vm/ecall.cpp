@@ -157,51 +157,51 @@ void ECall::PopulateManagedHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_TO_INT32));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_INT32));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2INT, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_TO_UINT64));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_UINT64));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2ULNG, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_TO_INT32_OVERFLOW));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_INT32_OVERFLOW));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2INT_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_TO_UINT32_OVERFLOW));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_UINT32_OVERFLOW));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2UINT_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_TO_INT64_OVERFLOW));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_INT64_OVERFLOW));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2LNG_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_TO_UINT64_OVERFLOW));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_UINT64_OVERFLOW));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_FROM_INT64));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_FROM_INT64));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LNG2DBL, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__CONVERT_FROM_UINT64));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_FROM_UINT64));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ULNG2DBL, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE_SPC__REMAINDER));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__REMAINDER));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBLREM, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SINGLE_SPC__REMAINDER));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SINGLE__REMAINDER));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_FLTREM, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__INT64_SPC__MULTIPLY_OVERFLOW));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__INT64__MULTIPLY_OVERFLOW));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__UINT64_SPC__MULTIPLY_OVERFLOW));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__UINT64__MULTIPLY_OVERFLOW));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
 

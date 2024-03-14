@@ -259,25 +259,33 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
-DEFINE_CLASS(DOUBLE_SPC,            System,                 Double)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_INT32,       ConvertToInt32,             NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_UINT64,      ConvertToUInt64,            NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_INT32_OVERFLOW,ConvertToInt32Overflow,   NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_UINT32_OVERFLOW,ConvertToUInt32Overflow, NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_INT64_OVERFLOW,ConvertToInt64Overflow,   NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_TO_UINT64_OVERFLOW,ConvertToUInt64Overflow, NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_FROM_INT64,     ConvertFromInt64,           NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           CONVERT_FROM_UINT64,    ConvertFromUInt64,          NoSig)
-DEFINE_METHOD(DOUBLE_SPC,           REMAINDER,              Remainder,                  NoSig)
+#ifdef FOR_ILLINK
+DEFINE_CLASS(DOUBLE,                System,                 Double)
+#endif
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32,       ConvertToInt32,             NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64,      ConvertToUInt64,            NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT32_OVERFLOW,ConvertToInt32Overflow,   NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT32_OVERFLOW,ConvertToUInt32Overflow, NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT64_OVERFLOW,ConvertToInt64Overflow,   NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64_OVERFLOW,ConvertToUInt64Overflow, NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_FROM_INT64,     ConvertFromInt64,           NoSig)
+DEFINE_METHOD(DOUBLE,               CONVERT_FROM_UINT64,    ConvertFromUInt64,          NoSig)
+DEFINE_METHOD(DOUBLE,               REMAINDER,              Remainder,                  NoSig)
 
-DEFINE_CLASS(SINGLE_SPC,            System,                 Single)
-DEFINE_METHOD(SINGLE_SPC,           REMAINDER,              Remainder,                  NoSig)
+#ifdef FOR_ILLINK
+DEFINE_CLASS(SINGLE,                System,                 Single)
+#endif
+DEFINE_METHOD(SINGLE,               REMAINDER,              Remainder,                  NoSig)
 
-DEFINE_CLASS(INT64_SPC,             System,                 Int64)
-DEFINE_METHOD(INT64_SPC,            MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)
+#ifdef FOR_ILLINK
+DEFINE_CLASS(INT64,                 System,                 Int64)
+#endif
+DEFINE_METHOD(INT64,                MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)
 
-DEFINE_CLASS(UINT64_SPC,            System,                 UInt64)
-DEFINE_METHOD(UINT64_SPC,           MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)
+#ifdef FOR_ILLINK
+DEFINE_CLASS(UINT64,                System,                 UInt64)
+#endif
+DEFINE_METHOD(UINT64,               MULTIPLY_OVERFLOW,      MultiplyOverflow,           NoSig)
 
 DEFINE_CLASS(INT128,                System,                 Int128)
 DEFINE_CLASS(UINT128,               System,                 UInt128)
