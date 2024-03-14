@@ -193,7 +193,6 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
-    delete inputs.assertAfterExit;
     delete inputs.interopCleanupOnExit;
     delete inputs.dumpThreadsOnNonZeroExit;
     delete inputs.logExitCode;

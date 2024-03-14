@@ -4,7 +4,11 @@
     <!-- Define the name of the runtime specific compiler package to import -->
     <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
 
+    <_targetsNonPortableSdkRid>false</_targetsNonPortableSdkRid>
+    <_targetsNonPortableSdkRid Condition="'$(RuntimeIdentifier)' == '$(NETCoreSdkRuntimeIdentifier)' and '$(RuntimeIdentifier)' != '$(NETCoreSdkPortableRuntimeIdentifier)'">true</_targetsNonPortableSdkRid>
+
     <_originalTargetOS>$(RuntimeIdentifier.SubString(0, $(RuntimeIdentifier.LastIndexOf('-'))))</_originalTargetOS>
+    <_originalTargetOS Condition="'$(_targetsNonPortableSdkRid)' == 'true'">$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_originalTargetOS>
     <_originalTargetOS Condition="$(_originalTargetOS.Contains('.'))">$(_originalTargetOS.SubString(0, $(_originalTargetOS.IndexOf('.'))))</_originalTargetOS>
     <_originalTargetOS Condition="$(_originalTargetOS.StartsWith('win'))">win</_originalTargetOS>
 
@@ -17,7 +21,9 @@
     <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
 
     <_hostPackageName>runtime.$(_hostOS)-$(_hostArchitecture).Microsoft.DotNet.ILCompiler</_hostPackageName>
+    <_hostPackageName Condition="'$(_targetsNonPortableSdkRid)' == 'true'">runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</_hostPackageName>
     <_targetPackageName>runtime.$(_originalTargetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
+    <_targetPackageName Condition="'$(_targetsNonPortableSdkRid)' == 'true'">runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</_targetPackageName>
 
     <!-- Treat linux-musl and linux-bionic etc. as linux -->
     <_targetOS>$(_originalTargetOS)</_targetOS>

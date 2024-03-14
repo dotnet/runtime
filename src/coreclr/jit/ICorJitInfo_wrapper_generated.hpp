@@ -202,10 +202,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
 
 void WrapICorJitInfo::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(expandRawHandleIntrinsic);
-    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
     API_LEAVE(expandRawHandleIntrinsic);
 }
 
@@ -694,10 +695,11 @@ bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunHelper);
-    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, pLookup);
+    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
     API_LEAVE(getReadyToRunHelper);
     return temp;
 }
@@ -706,10 +708,11 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
           mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunDelegateCtorHelper);
-    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
+    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
@@ -1199,6 +1202,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     return temp;
 }
 
+void WrapICorJitInfo::getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering)
+{
+    API_ENTER(getSwiftLowering);
+    wrapHnd->getSwiftLowering(structHnd, pLowering);
+    API_LEAVE(getSwiftLowering);
+}
+
 uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd)
 {
@@ -1327,10 +1339,11 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
 void WrapICorJitInfo::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(embedGenericHandle);
-    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
     API_LEAVE(embedGenericHandle);
 }
 

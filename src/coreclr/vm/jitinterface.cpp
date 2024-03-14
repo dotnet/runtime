@@ -2531,6 +2531,37 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #endif // !defined(UNIX_AMD64_ABI_ITF)
 }
 
+void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(structHnd);
+
+    bool useNativeLayout = false;
+    MethodTable* methodTablePtr = nullptr;
+    if (!th.IsTypeDesc())
+    {
+        methodTablePtr = th.AsMethodTable();
+    }
+    else
+    {
+        _ASSERTE(th.IsNativeValueType());
+
+        useNativeLayout = true;
+        methodTablePtr = th.AsNativeValueType();
+    }
+
+    methodTablePtr->GetNativeSwiftPhysicalLowering(pLowering, useNativeLayout);
+
+    EE_TO_JIT_TRANSITION();
+}
+
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -2696,6 +2727,7 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
 void CEEInfo::embedGenericHandle(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             bool                     fEmbedParent,
+            CORINFO_METHOD_HANDLE    callerHandle,
             CORINFO_GENERICHANDLE_RESULT *pResult)
 {
     CONTRACTL {
@@ -2798,6 +2830,7 @@ void CEEInfo::embedGenericHandle(
                                                   pResolvedToken,
                                                   NULL,
                                                   pTemplateMD,
+                                                  GetMethod(callerHandle),
                                                   &pResult->lookup);
     }
     else
@@ -2895,7 +2928,7 @@ MethodDesc * CEEInfo::GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle)
         return m_pMethodForSecurity_Value;
     }
 
-    MethodDesc * pCallerMethod = (MethodDesc *)callerHandle;
+    MethodDesc * pCallerMethod = GetMethod(callerHandle);
 
     //If the caller is generic, load the open type and then load the field again,  This allows us to
     //differentiate between BadGeneric<T> containing a memberRef for a field of type InaccessibleClass and
@@ -2968,12 +3001,15 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
                                                         MethodDesc * pTemplateMD /* for method-based slots */,
+                                                        MethodDesc * pCallerMD,
                                                         CORINFO_LOOKUP *pResultLookup)
 {
     CONTRACTL{
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResultLookup));
     } CONTRACTL_END;
+
+    _ASSERT(pCallerMD != nullptr);
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
     pResultLookup->lookupKind.runtimeLookupFlags = 0;
@@ -2990,16 +3026,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    // Runtime lookups in inlined contexts are not supported by the runtime for now
-    if (pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT())
-    {
-        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
-        return;
-    }
-
-    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    MethodDesc* pContextMD = pCallerMD;
     MethodTable* pContextMT = pContextMD->GetMethodTable();
-    bool isStaticVirtual = (pConstrainedResolvedToken != nullptr && pContextMD != nullptr && pContextMD->IsStatic());
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
     if (!pContextMD->IsSharedByGenericInstantiations())
@@ -5140,19 +5168,6 @@ void CEEInfo::getCallInfo(
         {
             pResult->exactContextNeedsRuntimeLookup = TRUE;
         }
-
-        // Use main method as the context as long as the methods are called on the same type
-        if (pResult->exactContextNeedsRuntimeLookup &&
-            pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
-            constrainedType.IsNull() &&
-            exactType == m_pMethodBeingCompiled->GetMethodTable() &&
-            ((pResolvedToken->cbTypeSpec  == 0) || IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec))))
-        {
-            // The typespec signature should be only missing for dynamic methods
-            _ASSERTE((pResolvedToken->cbTypeSpec != 0) || m_pMethodBeingCompiled->IsDynamicMethod());
-
-            pResult->contextHandle = METHOD_BEING_COMPILED_CONTEXT();
-        }
     }
 
     //
@@ -5304,6 +5319,7 @@ void CEEInfo::getCallInfo(
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
+                                                        GetMethod(callerHandle),
                                                         &pResult->codePointerLookup);
         }
         else
@@ -5355,6 +5371,7 @@ void CEEInfo::getCallInfo(
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
+                                                        GetMethod(callerHandle),
                                                         &pResult->stubLookup);
         }
         else
@@ -5396,7 +5413,7 @@ void CEEInfo::getCallInfo(
     pResult->hMethod = CORINFO_METHOD_HANDLE(pTargetMD);
 
     pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
-    MethodDesc* callerMethod = (MethodDesc*)callerHandle;
+    MethodDesc* callerMethod = GetMethod(callerHandle);
     if ((flags & CORINFO_CALLINFO_SECURITYCHECKS)
         && RequiresAccessCheck(pResolvedToken->tokenScope))
     {
@@ -6135,6 +6152,7 @@ bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_LOOKUP_KIND *           pGenericLookupKind,
         CorInfoHelpFunc                 id,
+        CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_CONST_LOOKUP *          pLookup
         )
 {
@@ -6147,7 +6165,8 @@ void CEEInfo::getReadyToRunDelegateCtorHelper(
         CORINFO_RESOLVED_TOKEN * pTargetMethod,
         mdToken                  targetConstraint,
         CORINFO_CLASS_HANDLE     delegateType,
-        CORINFO_LOOKUP *   pLookup
+        CORINFO_METHOD_HANDLE    callerHandle,
+        CORINFO_LOOKUP *         pLookup
         )
 {
     LIMITED_METHOD_CONTRACT;
@@ -8780,6 +8799,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
 /*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_METHOD_HANDLE           callerHandle,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {
     LIMITED_METHOD_CONTRACT;

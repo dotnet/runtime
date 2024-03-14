@@ -765,6 +765,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "ValidateIndirectCallTarget";
         case WellKnownArg::DispatchIndirectCallTarget:
             return "DispatchIndirectCallTarget";
+        case WellKnownArg::SwiftError:
+            return "SwiftError";
         case WellKnownArg::SwiftSelf:
             return "SwiftSelf";
     }
@@ -3181,9 +3183,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 
         // TODO-ARGS: Review this, is it really necessary to treat them specially here?
-        // Exception: Lower SwiftSelf struct arg to GT_LCL_FLD
-        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters() &&
-            (arg.GetWellKnownArg() != WellKnownArg::SwiftSelf))
+        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters())
         {
             flagsSummary |= argx->gtFlags;
             continue;
@@ -7006,7 +7006,8 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
-// getTokenHandleTree: get a handle tree for a token
+// getTokenHandleTree: get a handle tree for a token. This method should never
+//    be called for tokens imported from inlinees.
 //
 // Arguments:
 //    pResolvedToken - token to get a handle for
@@ -7018,7 +7019,14 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, &embedInfo);
+
+    // NOTE: inlining is done at this point, so we don't know which method contained this token.
+    // It's fine because currently this is never used for something that belongs to an inlinee.
+    // Namely, we currently use it for:
+    //   1) Methods with EH are never inlined
+    //   2) Methods with explicit tail calls are never inlined
+    //
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);
@@ -14613,7 +14621,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
     BasicBlockFlags propagateFlagsToAll = block->GetFlagsRaw() & BBF_COPY_PROPAGATE;
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
-    fgRemoveRefPred(block->GetTargetEdge()); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14637,10 +14644,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->bbWeight == remainderBlock->bbWeight);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    {
-        FlowEdge* const newEdge = fgAddRefPred(condBlock, block);
-        block->SetTargetEdge(newEdge);
-    }
+    fgRedirectTargetEdge(block, condBlock);
 
     {
         FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
@@ -14679,15 +14683,20 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
             thenBlock->SetFlags(BBF_IMPORTED);
         }
 
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
+
         FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
         thenBlock->SetTargetEdge(newEdge);
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
-        condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);
-
-        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
-        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
+        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
+        thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
+        elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasTrueExpr)
     {
@@ -14699,15 +14708,21 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //
         gtReverseCond(condExpr);
 
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
+
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
-        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
 
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
 
-        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
+        thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasFalseExpr)
     {
@@ -14717,11 +14732,17 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
-        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
-        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
+
+        elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
 
     assert(condBlock->KindIs(BBJ_COND));

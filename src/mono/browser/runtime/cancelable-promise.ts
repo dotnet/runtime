@@ -9,7 +9,6 @@ import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
 import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
 import { mono_log_debug } from "./logging";
-import { settleUnsettledPromise } from "./pthreads";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
 
@@ -36,6 +35,10 @@ export function wrap_as_cancelable<T>(inner: Promise<T>): ControllablePromise<T>
 }
 
 export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
+    if (!loaderHelpers.is_runtime_running()) {
+        mono_log_debug("This promise can't be canceled, mono runtime already exited.");
+        return;
+    }
     const holder = _lookup_js_owned_object(task_holder_gc_handle) as PromiseHolder;
     mono_assert(!!holder, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
     holder.cancel();
@@ -74,7 +77,12 @@ export class PromiseHolder extends ManagedObject {
     }
 
     resolve(data: any) {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise resolution can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
         mono_assert(!this.isResolved, "resolve could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (WasmEnableThreads && !this.setIsResolving()) {
             // we know that cancelation is in flight
             // because we need to keep the GCHandle alive until until the cancelation arrives
@@ -89,11 +97,16 @@ export class PromiseHolder extends ManagedObject {
             return;
         }
         this.isResolved = true;
-        this.complete_task(data, null);
+        this.complete_task_wrapper(data, null);
     }
 
     reject(reason: any) {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise rejection can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
         mono_assert(!this.isResolved, "reject could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
         const isCancelation = reason && reason[promise_holder_symbol] === this;
         if (WasmEnableThreads && !isCancelation && !this.setIsResolving()) {
             // we know that cancelation is in flight
@@ -109,11 +122,16 @@ export class PromiseHolder extends ManagedObject {
             return;
         }
         this.isResolved = true;
-        this.complete_task(null, reason);
+        this.complete_task_wrapper(null, reason);
     }
 
     cancel() {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise cancelation can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
         mono_assert(!this.isResolved, "cancel could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
 
         if (this.isPostponed) {
             // there was racing resolve/reject which was postponed, to retain valid GCHandle
@@ -121,9 +139,9 @@ export class PromiseHolder extends ManagedObject {
             // and we need to use the postponed data/reason
             this.isResolved = true;
             if (this.reason !== undefined) {
-                this.complete_task(null, this.reason);
+                this.complete_task_wrapper(null, this.reason);
             } else {
-                this.complete_task(this.data, null);
+                this.complete_task_wrapper(this.data, null);
             }
         } else {
             // there is no racing resolve/reject, we can reject/cancel the promise
@@ -138,17 +156,12 @@ export class PromiseHolder extends ManagedObject {
     }
 
     // we can do this just once, because it will be dispose the GCHandle
-    complete_task(data: any, reason: any) {
-        if (!loaderHelpers.is_runtime_running()) {
-            mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.");
-            return;
-        }
+    complete_task_wrapper(data: any, reason: any) {
         try {
             mono_assert(!this.isPosted, "Promise is already posted to managed.");
             this.isPosted = true;
             if (WasmEnableThreads) {
                 forceThreadMemoryViewRefresh();
-                settleUnsettledPromise();
             }
 
             // we can unregister the GC handle just on JS side

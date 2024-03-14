@@ -3285,7 +3285,7 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
+            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
@@ -3427,6 +3427,11 @@ namespace Internal.JitInterface
 
             SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
             return true;
+        }
+
+        private void getSwiftLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_SWIFT_LOWERING lowering)
+        {
+            lowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(HandleToObject(structHnd));
         }
 
         private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
@@ -4017,8 +4022,10 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                     return (ushort)RelocType.IMAGE_REL_BASED_REL32;
 
+#if READYTORUN
                 case TargetArchitecture.ARM:
                     return (ushort)RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
+#endif
 
                 default:
                     return ushort.MaxValue;

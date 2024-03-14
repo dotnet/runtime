@@ -47,6 +47,7 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection ArmUnwindIndexSection = new ObjectNodeSection(".ARM.exidx", SectionType.UnwindData);
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmAttributesSection = new ObjectNodeSection(".ARM.attributes", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection ArmTextThunkSection = new ObjectNodeSection(".text.thunks", SectionType.Executable);
 
         public ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -262,6 +263,10 @@ namespace ILCompiler.ObjectWriter
                 });
             }
 
+            bool useArmThunks = _machine is EM_ARM && undefinedSymbols.Count > 0;
+            int thunkSectionIndex = useArmThunks ? GetOrCreateSection(ArmTextThunkSection).SectionIndex : 0;
+            int thunkSymbolsIndex = 0;
+
             foreach (string externSymbol in undefinedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
@@ -271,6 +276,20 @@ namespace ILCompiler.ObjectWriter
                         Name = externSymbol,
                         Info = (STB_GLOBAL << 4),
                     });
+
+                    if (useArmThunks)
+                    {
+                        sortedSymbols.Add(new ElfSymbol
+                        {
+                            Name = $"{externSymbol}$thunk",
+                            Value = (ulong)((thunkSymbolsIndex * 4) | 1u),
+                            Size = 4u,
+                            Section = _sections[thunkSectionIndex],
+                            Info = (byte)(STT_FUNC | (STB_GLOBAL << 4)),
+                            Other = STV_HIDDEN,
+                        });
+                        thunkSymbolsIndex++;
+                    }
                 }
             }
 
@@ -282,6 +301,35 @@ namespace ILCompiler.ObjectWriter
             {
                 _symbolNameToIndex[definedSymbol.Name] = symbolIndex;
                 symbolIndex++;
+            }
+
+            if (useArmThunks)
+            {
+                // For ARM32 we use MOVW/MOVT for branch relocations. That cannot be done for
+                // external code since the MOVW/MOVT relocations are static only and equivalents
+                // don't exist for the dynamic linker. In order to circumvent this issue we
+                // create thunks in the .text.thunk section that contain BL.W jumps to the external
+                // code. Our MOVW/MOVT relocations are then redirected to point to those thunks.
+                SectionWriter thunkSectionWriter = GetOrCreateSection(ArmTextThunkSection);
+                Span<byte> relocationEntry = stackalloc byte[8];
+                var relocationStream = new MemoryStream(8 * undefinedSymbols.Count);
+                _sections[thunkSectionWriter.SectionIndex].RelocationStream = relocationStream;
+                foreach (string externSymbol in undefinedSymbols)
+                {
+                    if (_symbolNameToIndex.TryGetValue($"{externSymbol}$thunk", out uint thunkSymbolIndex))
+                    {
+                        // Write the relocation to external symbol for the thunk
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)thunkSectionWriter.Position);
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)_symbolNameToIndex[externSymbol] << 8) | R_ARM_THM_JUMP24);
+                        relocationStream.Write(relocationEntry);
+                        // Write the thunk code:
+                        // B.W <offset>
+                        thunkSectionWriter.WriteLittleEndian<uint>(0xBFFEF7FF);
+                        // Redirect the extern symbol to our thunk to make our relocations point
+                        // to the thunk
+                        _symbolNameToIndex[externSymbol] = thunkSymbolIndex;
+                    }
+                }
             }
 
             // Update group sections links
