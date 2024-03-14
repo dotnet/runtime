@@ -16,7 +16,7 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType, out bool _));
+            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType, out _));
         }
 
         public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, int flags)
