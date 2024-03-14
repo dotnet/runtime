@@ -10810,9 +10810,9 @@ bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
 
     // All handle types are assumed invariant except those specifically listed here.
 
-    return !((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
-             (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-             (handleKind == GTF_ICON_GLOBAL_PTR));  // Pointer to mutable data from the VM state
+    return (handleKind != GTF_ICON_STATIC_HDL) && // Pointer to a mutable class Static variable
+           (handleKind != GTF_ICON_BBC_PTR) &&    // Pointer to a mutable basic block count value
+           (handleKind != GTF_ICON_GLOBAL_PTR);   // Pointer to mutable data from the VM state
 }
 
 #ifdef DEBUG
