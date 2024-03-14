@@ -2874,12 +2874,22 @@ namespace Internal.JitInterface
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
-            return TypeExtensions.CompareTypesForEquality(type1, type2) switch
+            TypeCompareState result = TypeExtensions.CompareTypesForEquality(type1, type2) switch
             {
                 true => TypeCompareState.Must,
                 false => TypeCompareState.MustNot,
                 _ => TypeCompareState.May,
             };
+
+#if !READYTORUN
+            if (result == TypeCompareState.May
+                && (canNeverHaveInstanceOfSubclassOf(type1) || canNeverHaveInstanceOfSubclassOf(type2)))
+            {
+                return TypeCompareState.MustNot;
+            }
+#endif
+
+            return result;
         }
 
         private bool isMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
@@ -4284,7 +4294,7 @@ namespace Internal.JitInterface
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream
 #if !READYTORUN
-                        , _compilation.CanConstructType
+                        , _compilation.CanReferenceConstructedMethodTable
 #endif
                         );
 #pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly

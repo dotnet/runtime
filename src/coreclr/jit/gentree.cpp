@@ -14050,13 +14050,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return compare;
     }
 
-    // If one operand creates a type from a handle and the other operand is fetching the type from an object,
-    // we can sometimes optimize the type compare into a simpler
-    // method table comparison.
-    //
-    // TODO: if other operand is null...
-    if (!(((op1Kind == TPK_GetType) && (op2Kind == TPK_Handle)) ||
-          ((op1Kind == TPK_Handle) && (op2Kind == TPK_GetType))))
+    // In the following code, we need one of these to be a handle.
+    if (op1Kind != TPK_Handle && op2Kind != TPK_Handle)
     {
         return tree;
     }
@@ -14070,6 +14065,28 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // If we couldn't find the class handle, give up.
     if (clsHnd == NO_CLASS_HANDLE)
+    {
+        return tree;
+    }
+
+    // Check if an object of this type can even exist
+    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == CORINFO_NEVER_INSTANTIATED)
+    {
+        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
+
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+        GenTree* result = gtNewIconNode(compareResult);
+        return result;
+    }
+
+    // If one operand creates a type from a handle and the other operand is fetching the type from an object,
+    // we can sometimes optimize the type compare into a simpler
+    // method table comparison.
+    //
+    // TODO: if other operand is null...
+    if (op1Kind != TPK_GetType && op2Kind != TPK_GetType)
     {
         return tree;
     }

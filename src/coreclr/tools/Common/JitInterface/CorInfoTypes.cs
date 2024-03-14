@@ -26,6 +26,7 @@ namespace Internal.JitInterface
         public const ushort USEHELPER = 0xffff;
         public const ushort USENULL = 0xfffe;
         public const ushort CORINFO_NO_SIZE_CHECK = 0xffff;
+        public const int CORINFO_NEVER_INSTANTIATED = -1;
     }
 
     public struct CORINFO_METHOD_STRUCT_
