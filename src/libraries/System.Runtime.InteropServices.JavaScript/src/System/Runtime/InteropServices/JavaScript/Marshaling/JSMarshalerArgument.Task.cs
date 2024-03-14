@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
                         if (!tcs.TrySetException(fail))
                         {
-                            Environment.FailFast("Failed to set exception to TaskCompletionSource");
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (exception raised)");
                         }
                     }
                     else
