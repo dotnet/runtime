@@ -72,7 +72,7 @@ states:
 * BlockingSelfSuspended: The current thread finished executing blocking code but there was a pending suspend against it, it's waiting to be resumed.
 * BlockingAsyncSuspended: The current thread was executing in blocking code, but it was preemptively suspended.  This is done in "hybrid" suspend mode.  When the thread resumes, it will go back to executing blocking code.
 
-![Coop state machine transition diagram](coop-state-machine.png)
+![Coop state machine transition diagram](images/coop-state-machine.png)
 
 In addition to those states, there are a number of transitions, that are used to move a thread from one state to another.
 
