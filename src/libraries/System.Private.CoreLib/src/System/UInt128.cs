@@ -1104,9 +1104,10 @@ namespace System
                     ulong highRes = 0ul;
                     ulong remainder = left._upper;
 
-                    // We might need 2 division to avoid overflow
                     if (remainder >= right._lower)
-                        (highRes, remainder) = X86Base.X64.DivRem(remainder, 0, right._lower);
+                    {
+                        (highRes, remainder) = X86Base.X64.DivRem(left._upper, 0, right._lower);
+                    }
 
                     return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
                 }
