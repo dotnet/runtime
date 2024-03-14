@@ -21342,7 +21342,8 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types      type,
 
     assert(IsBaselineSimdIsaSupportedDebugOnly());
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
-           ((simdTargetBaseType == TYP_INT) && compIsaSupportedDebugOnly(InstructionSet_SSE41)));
+           ((simdTargetBaseType == TYP_INT) && ((simdSize == 16 && compIsaSupportedDebugOnly(InstructionSet_SSE41)) ||
+                                                (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
     GenTree* fixupVal;
 

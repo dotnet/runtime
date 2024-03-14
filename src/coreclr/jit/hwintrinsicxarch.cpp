@@ -1474,7 +1474,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_UINT, simdBaseJitType, simdSize);
             }
-#
             break;
         }
 
@@ -1502,14 +1501,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (simdSize == 64 && IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1       = impSIMDPopStack();
-                intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
-                                             : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
-                                                                : NI_AVX512F_ConvertToVector512Int32WithTruncation;
-
-                retNode = gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+                intrinsic = NI_AVX512F_ConvertToVector512Int32WithTruncation;
+                retNode   = gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
+            }
+            else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                op1       = impSIMDPopStack();
+                intrinsic = NI_AVX_ConvertToVector256Int32WithTruncation;
+                retNode   = gtNewSimdCvtNode(retType, op1, intrinsic, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
             }
             else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
