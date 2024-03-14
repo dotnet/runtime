@@ -3,13 +3,11 @@
 set -e
 
 function wasm_common() {
-    echo "[$(date)] provisioning..." >> build.txt
     make -C src/mono/browser provision-wasm
 }
 
 # hidden dir are occupying disc space that could be better used (~12GB)
 # active discussion: https://github.com/orgs/community/discussions/57767
-echo "[$(date)] removing not used hidden directories..." >> build.txt
 sudo rm -rf /workspaces/.codespaces/shared/editors/jetbrains/
 
 opt=$1
