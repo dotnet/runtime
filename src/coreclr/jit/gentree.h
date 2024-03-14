@@ -6398,7 +6398,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperIsConvertMaskToVector() const
     {
-#if defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+        return GetHWIntrinsicId() == NI_AVX512F_ConvertMaskToVector;
+#elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
 #else
         return false;
@@ -6407,11 +6409,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperIsConvertVectorToMask() const
     {
-#if defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+        return GetHWIntrinsicId() == NI_AVX512F_ConvertVectorToMask;
+#elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
 #else
         return false;
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+#endif
     }
 
     bool OperRequiresAsgFlag() const;
