@@ -11,8 +11,14 @@ function wasm_common() {
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        echo "[$(date)] restoring for wasm..." >> build.txt
-        ./build.sh mono+libs -os browser -c Release --restore
+        echo "[$(date)] cleaning the packages cache..." >> build.txt
+        sudo apt-get clean
+        echo "[$(date)] restoring for wasm mono subset..." >> build.txt
+        ./build.sh mono -os browser -c Release --restore
+        echo "[$(date)] cleaning cache after restore..." >> build.txt
+        dotnet nuget locals all --clear
+        echo "[$(date)] restoring for wasm libs subset..." >> build.txt
+        ./build.sh libs -os browser -c Release --restore
         echo "[$(date)] building for wasm..." >> build.txt
         ./build.sh mono+libs -os browser -c Release --build
         echo "[$(date)] building succeeded" >> build.txt
