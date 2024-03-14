@@ -458,7 +458,7 @@ namespace System.Runtime.CompilerServices
                 return;
 
             notExactMatch:
-                if (array.GetType() == typeof(object[]))
+                if (a.GetType() == typeof(object[]))
                     goto doWrite;
 
             StelemRef_Helper(ref element, elementType, obj);
