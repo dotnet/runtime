@@ -159,7 +159,10 @@ namespace System.DirectoryServices.Protocols.Tests
 
                 // Content: sequence containing three octet strings
                 // Parsed as two sequences of octet strings
-                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { new string[] { "abc", "" }, null } };
+                // This is parsed differently between Windows 7 and later versions: the first element returned by Windows 7 will be an array of length 2,
+                // while this will be an array of length 3 in later versions.
+                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 },
+                    Environment.OSVersion.Version <= new Version(6, 1) ? new object[] { new string[] { "abc", "" }, null } : new object[] { new string[] { "abc", "", "" }, null } };
 
                 // Content: sequence containing two sequences of octet strings
                 // Parsed as such
@@ -179,7 +182,10 @@ namespace System.DirectoryServices.Protocols.Tests
 
                 // Content: sequence of octet strings
                 // Parsed as two sequences of octet strings (returned as bytes)
-                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { new byte[][] { [97, 98, 99], [] }, null } };
+                // This is parsed differently between Windows 7 and later versions: the first element returned by Windows 7 will be an array of length 2,
+                // while this will be an array of length 3 in later versions.
+                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 },
+                    Environment.OSVersion.Version <= new Version(6, 1) ? new object[] { new byte[][] { [97, 98, 99], [] }, null } : new object[]{ new byte[][] { [97, 98, 99], [], [] }, null } };
 
                 // Content: sequence containing two booleans
                 // Parsed as a sequence containing two sequences of octet strings (returned as bytes)
