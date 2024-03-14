@@ -186,6 +186,7 @@ enum ICodeManagerFlags
     NoReportUntracked
                     =   0x0080, // EnumGCRefs/EnumerateLiveSlots should *not* include
                                 // any untracked slots
+    ReportFPBasedSlotsOnly = 0, // Unused by nativeaot, the gc info decoder checks that. Set to 0 to let the compiler optimize out the related code.
 };
 
 #endif // !_strike_h
@@ -675,11 +676,12 @@ private:
     {
         _ASSERTE(slotIndex < slotDecoder.GetNumSlots());
         const GcSlotDesc* pSlot = slotDecoder.GetSlotDesc(slotIndex);
+        bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly);
 
         if(slotIndex < slotDecoder.GetNumRegisters())
         {
             UINT32 regNum = pSlot->Slot.RegisterNumber;
-            if( reportScratchSlots || !IsScratchRegister( regNum, pRD ) )
+            if( ( reportScratchSlots || !IsScratchRegister( regNum, pRD ) ) && !reportFpBasedSlotsOnly )
             {
                 ReportRegisterToGC(
                             regNum,
@@ -699,7 +701,9 @@ private:
         {
             INT32 spOffset = pSlot->Slot.Stack.SpOffset;
             GcStackSlotBase spBase = pSlot->Slot.Stack.Base;
-            if( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) )
+
+            if( ( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) ) &&
+                ( !reportFpBasedSlotsOnly || (GC_FRAMEREG_REL == spBase ) ) )
             {
                 ReportStackSlotToGC(
                             spOffset,

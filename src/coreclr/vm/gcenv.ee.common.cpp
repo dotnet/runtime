@@ -149,8 +149,6 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
 
-    STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "GcEnumObject at slot %p, object %p, pinned=%d\n", pObj, *ppObj, (flags & GC_CALL_PINNED) ? 1 : 0);
-
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
     // any long operation

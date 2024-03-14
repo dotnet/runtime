@@ -680,9 +680,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
     // previously visited a child funclet
     if (WantsReportOnlyLeaf() && (inputFlags & ParentOfFuncletStackFrame))
     {
-#ifndef NATIVEAOT        
-        STRESS_LOG0(LF_GCROOTS, LL_INFO100, "Not reporting this frame because it was already reported via another funclet.\n");
-#endif
+        LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
 
@@ -1512,13 +1510,6 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
 {
     GCINFODECODER_CONTRACT;
 
-#ifndef NATIVEAOT
-    if (flags & ReportFPBasedSlotsOnly)
-    {
-        return;
-    }
-#endif                
-
     _ASSERTE(regNum >= 0 && regNum <= 16);
     _ASSERTE(regNum != 4);  // rsp
 
@@ -2213,13 +2204,6 @@ void GcInfoDecoder::ReportStackSlotToGC(
 
     OBJECTREF* pObjRef = GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE(IS_ALIGNED(pObjRef, sizeof(OBJECTREF*)));
-
-#ifndef NATIVEAOT
-    if ((flags & ReportFPBasedSlotsOnly) && (GC_FRAMEREG_REL != spBase))
-    {
-        return;
-    }
-#endif                
 
 #ifdef _DEBUG
     LOG((LF_GCROOTS, LL_INFO1000, /* Part One */
