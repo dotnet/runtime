@@ -84,8 +84,8 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<CoshOperator<float>>(x).As<float, T>();
                     }
 
-                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)Single_LOGV));
-                    return (Vector128.Create((float)Single_HALFV) * (z + (Vector128.Create((float)Single_INVV2) / z))).As<float, T>();
+                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create(Single_LOGV));
+                    return (Vector128.Create(Single_HALFV) * (z + (Vector128.Create(Single_INVV2) / z))).As<float, T>();
                 }
                 else
                 {
@@ -115,8 +115,8 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<CoshOperator<float>>(x).As<float, T>();
                     }
 
-                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)Single_LOGV));
-                    return (Vector256.Create((float)Single_HALFV) * (z + (Vector256.Create((float)Single_INVV2) / z))).As<float, T>();
+                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create(Single_LOGV));
+                    return (Vector256.Create(Single_HALFV) * (z + (Vector256.Create(Single_INVV2) / z))).As<float, T>();
                 }
                 else
                 {
@@ -146,8 +146,8 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<CoshOperator<float>>(x).As<float, T>();
                     }
 
-                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)Single_LOGV));
-                    return (Vector512.Create((float)Single_HALFV) * (z + (Vector512.Create((float)Single_INVV2) / z))).As<float, T>();
+                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create(Single_LOGV));
+                    return (Vector512.Create(Single_HALFV) * (z + (Vector512.Create(Single_INVV2) / z))).As<float, T>();
                 }
                 else
                 {
