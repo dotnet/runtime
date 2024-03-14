@@ -395,7 +395,7 @@ private:
         // candidates.
         //
         // Do the deferred work now.
-        if ((*use)->IsCall() && (*use)->AsCall()->HasMultiRegRetVal())
+        if ((*use)->IsCall() && varTypeIsStruct(*use) && (*use)->AsCall()->HasMultiRegRetVal())
         {
             // See assert below, we only look one level above for a store parent.
             if (parent->OperIsStore())
