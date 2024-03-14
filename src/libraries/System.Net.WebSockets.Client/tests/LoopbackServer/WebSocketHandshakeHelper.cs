@@ -57,6 +57,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             var connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 })
                 .WaitAsync(cancellationToken).ConfigureAwait(false);
+            connection.IgnoreWindowUpdates();
 
             (int streamId, var httpRequestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false)
                 .WaitAsync(cancellationToken).ConfigureAwait(false);
