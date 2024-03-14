@@ -6383,8 +6383,27 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #elif defined(TARGET_LOONGARCH64)
 
+    int PSP_MonAcquire_Size = 0;
     assert(compCalleeRegsPushed >= 2);
     stkOffs = (compCalleeRegsPushed << 3);
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        originalFrameStkOffs += lvaLclSize(lvaMonAcquired);
+        if (!opts.IsOSR())
+        {
+            PSP_MonAcquire_Size = lvaLclSize(lvaMonAcquired);
+            stkOffs += lvaLclSize(lvaMonAcquired);
+        }
+    }
+
+#if FEATURE_EH_FUNCLETS
+    if (lvaPSPSym != BAD_VAR_NUM)
+    {
+        PSP_MonAcquire_Size += TARGET_POINTER_SIZE;
+        originalFrameStkOffs += TARGET_POINTER_SIZE;
+        stkOffs += TARGET_POINTER_SIZE;
+    }
+#endif
 
 #elif defined(TARGET_RISCV64)
 
@@ -6487,59 +6506,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-#if defined(TARGET_LOONGARCH64)
-    // For LoongArch64, after the `lvaAssignVirtualFrameOffsetsToLocals`, there is no need
-    // to recompute the LclVarDsc's StackOffset within the `lvaFixVirtualFrameOffsets`.
-    assert(codeGen->isFramePointerUsed());
-    int PSP_MonAcquire_Size = 0;
-#if FEATURE_EH_FUNCLETS
-    if (lvaPSPSym != BAD_VAR_NUM)
-    {
-        // If we need a PSPSym, allocate it first, before anything else, including
-        // padding (so we can avoid computing the same padding in the funclet
-        // frame). Note that there is no special padding requirement for the PSPSym.
-        noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs + TARGET_POINTER_SIZE);
-        PSP_MonAcquire_Size += TARGET_POINTER_SIZE;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
-    if (lvaMonAcquired != BAD_VAR_NUM)
-    {
-        // For OSR we use the flag set up by the original method.
-        if (opts.IsOSR())
-        {
-            originalFrameStkOffs += lvaLclSize(lvaMonAcquired);
-            assert(info.compPatchpointInfo->HasMonitorAcquired());
-            int originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
-            int offset         = originalFrameStkOffs + PSP_MonAcquire_Size + originalOffset;
-
-            JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor acquired) tier0 FP-rel offset %d tier0 frame offset %d new "
-                "virt offset %d\n",
-                lvaMonAcquired, originalOffset, originalFrameStkOffs + PSP_MonAcquire_Size, offset);
-
-            lvaTable[lvaMonAcquired].SetStackOffset(offset);
-        }
-        else
-        {
-            // This var must go first, in what is called the 'frame header' for EnC so that it is
-            // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
-            // layout requirements for EnC to work.
-            stkOffs = stkOffs + PSP_MonAcquire_Size + lvaLclSize(lvaMonAcquired);
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
-            stkOffs -= PSP_MonAcquire_Size;
-            PSP_MonAcquire_Size += lvaLclSize(lvaMonAcquired);
-        }
-    }
-    if (opts.IsOSR())
-    {
-        originalFrameStkOffs += PSP_MonAcquire_Size;
-        originalFrameSize = originalFrameStkOffs;
-    }
-    stkOffs = stkOffs - (compCalleeRegsPushed << 3);
-
-#else
     if (lvaMonAcquired != BAD_VAR_NUM)
     {
         // For OSR we use the flag set up by the original method.
@@ -6565,9 +6531,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
         }
     }
-#endif
 
-#if defined(FEATURE_EH_FUNCLETS) && (defined(TARGET_ARMARCH) || defined(TARGET_RISCV64))
+#if defined(FEATURE_EH_FUNCLETS) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On ARM/ARM64, if we need a PSPSym we allocate it early since funclets
@@ -6576,7 +6541,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
-#endif // FEATURE_EH_FUNCLETS && (TARGET_ARMARCH || TARGET_RISCV64)
+#endif // FEATURE_EH_FUNCLETS && (TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64)
+
+#if defined(TARGET_LOONGARCH64)
+    // From here, all the stack local values are below the FP, so the offset is negative.
+    stkOffs = 0;
+#endif
 
     if (mustDoubleAlign)
     {
@@ -7194,9 +7164,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // FEATURE_FIXED_OUT_ARGS
 
 #if defined(TARGET_LOONGARCH64)
-    noway_assert(compLclFrameSize + originalFrameSize ==
-                 (unsigned)(originalFrameStkOffs + PSP_MonAcquire_Size - stkOffs));
-
+    noway_assert(compLclFrameSize == (unsigned)(PSP_MonAcquire_Size - stkOffs));
 #else
 
 #if defined(TARGET_RISCV64)
