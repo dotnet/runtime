@@ -1742,12 +1742,10 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             testCopyStmt->SetRootNode(sideEffList);
         }
 
-        fgRemoveRefPred(prevTestBlock->GetTrueEdge());
-        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
-
         // Redirect exit edge from previous iteration to new entry.
-        FlowEdge* const newEdge = fgAddRefPred(target, prevTestBlock);
-        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
+        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
         JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
                 target->bbNum);
@@ -3120,6 +3118,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     BasicBlock* newExit;
 
+    JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
+            loop->GetIndex());
+
 #if FEATURE_EH_CALLFINALLY_THUNKS
     if (exit->KindIs(BBJ_CALLFINALLY))
     {
@@ -3142,7 +3143,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
     else
-#endif
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
     {
         newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
         newExit->SetFlags(BBF_NONE_QUIRK);
@@ -3156,9 +3157,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     newExit->bbCodeOffs = exit->bbCodeOffs;
 
-    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
-            loop->GetIndex());
-
     for (BasicBlock* pred : exit->PredBlocksEditing())
     {
         if (loop->ContainsBlock(pred))
@@ -3168,6 +3166,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     }
 
     optSetWeightForPreheaderOrExit(loop, newExit);
+
+    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
+            loop->GetIndex());
     return true;
 }
 

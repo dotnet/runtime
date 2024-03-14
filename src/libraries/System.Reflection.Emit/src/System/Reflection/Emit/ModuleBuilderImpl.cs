@@ -16,7 +16,7 @@ namespace System.Reflection.Emit
         private readonly Assembly _coreAssembly;
         private readonly string _name;
         private readonly MetadataBuilder _metadataBuilder;
-        private readonly AssemblyBuilderImpl _assemblyBuilder;
+        private readonly PersistedAssemblyBuilder _assemblyBuilder;
         private readonly TypeBuilderImpl _globalTypeBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, EntityHandle> _typeReferences = new();
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
 
-        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, AssemblyBuilderImpl assemblyBuilder)
+        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, PersistedAssemblyBuilder assemblyBuilder)
         {
             _coreAssembly = coreAssembly;
             _name = name;

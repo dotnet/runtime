@@ -3406,6 +3406,13 @@ AGAIN:
                 {
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
+                    case TYP_MASK:
+                    {
+                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
+                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
+                        break;
+                    }
+
                     case TYP_SIMD64:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[15]);
@@ -9092,7 +9099,9 @@ GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 //    can't be represented in jitted code. If this happens, this method will return
 //    nullptr.
 //
-GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool useParent)
+GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_METHOD_HANDLE   callerHandle,
+                                             bool                    useParent)
 {
     const bool      mustRestoreHandle     = true;
     bool* const     pRuntimeLookup        = nullptr;
@@ -9108,7 +9117,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
         helper                                        = CORINFO_HELP_READYTORUN_NEW;
         CORINFO_LOOKUP_KIND* const pGenericLookupKind = nullptr;
         usingReadyToRunHelper =
-            info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup);
+            info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, callerHandle, &lookup);
     }
 #endif
 
@@ -12233,6 +12242,12 @@ void Compiler::gtDispConst(GenTree* tree)
                            vecCon->gtSimdVal.u64[0], vecCon->gtSimdVal.u64[1], vecCon->gtSimdVal.u64[2],
                            vecCon->gtSimdVal.u64[3], vecCon->gtSimdVal.u64[4], vecCon->gtSimdVal.u64[5],
                            vecCon->gtSimdVal.u64[6], vecCon->gtSimdVal.u64[7]);
+                    break;
+                }
+
+                case TYP_MASK:
+                {
+                    printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
                     break;
                 }
 #endif // TARGET_XARCH
@@ -26067,8 +26082,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-
                 addr = Op(3);
+                break;
+
+            case NI_Sve_LoadVector:
+                addr = Op(2);
                 break;
 #endif // TARGET_ARM64
 

@@ -17,7 +17,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("MImpl", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldc_I4, 2);
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 type.SetParent(typeof(DefineMethodOverrideClass));
                 MethodBuilder method = type.DefineMethod("M2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 type.AddInterfaceImplementation(typeof(GenericInterface<string>));
                 MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Virtual, typeof(string), Type.EmptyTypes);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -219,7 +219,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_StaticVirtualInterfaceMethodWorks()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
             TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
@@ -249,7 +249,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_InterfaceImplementationWithByRefArrayTypes()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
             TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
@@ -279,7 +279,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TypeBuilderImplementsGenericInterfaceWithTypeBuilderGenericConstraint()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
             TypeBuilder ifaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public);
@@ -302,7 +302,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TypeBuilderImplementsGenericInterfaceWithTypeBuilderArgument()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
             Type constructedGenericInterface = typeof(IComparable<>).MakeGenericType(type);
 
@@ -320,7 +320,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TypeBuilderImplementsGenericInterface()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
             TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public);
 
@@ -341,7 +341,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TypeBuilderImplementsConstructedGenericInterface()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
             TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), [typeof(IComparable<string>)]);
@@ -358,7 +358,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetInterfaceMap_WithImplicitOverride_DefineMethodOverride()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
             TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
@@ -448,7 +448,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void CreateType_ValidateMethods()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder concreteTypeWithAbstractMethod);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder concreteTypeWithAbstractMethod);
             concreteTypeWithAbstractMethod.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
             Assert.Throws<InvalidOperationException>(() => concreteTypeWithAbstractMethod.CreateType()); // Type must be declared abstract if any of its methods are abstract.
 
@@ -514,7 +514,7 @@ namespace System.Reflection.Emit.Tests
                 Type[] cmodsReq2 = [typeof(uint)];
                 Type[] cmodsOpt1 = [typeof(int)];
                 Type[] cmodsOpt2 = [typeof(long), typeof(byte), typeof(bool)];
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder methodAll = type.DefineMethod("AllModifiers", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
                     typeof(string), [typeof(int), typeof(short)], [typeof(Version)], [typeof(int), typeof(long)], [cmodsReq1, cmodsReq2], [cmodsOpt1, cmodsOpt2]);
                 ILGenerator ilGenerator = methodAll.GetILGenerator();
@@ -555,7 +555,7 @@ namespace System.Reflection.Emit.Tests
 
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("DefinePInvokeMethodExecution_Windows"));
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("DefinePInvokeMethodExecution_Windows"));
                 TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 MethodBuilder mb = tb.DefinePInvokeMethod(
                     "GetEnvironmentVariableW",
@@ -624,7 +624,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder mb = tb.DefinePInvokeMethod(p.MethodName, p.LibName, p.EntrypointName, p.Attributes, p.ManagedCallConv, p.ReturnType,
                     p.ReturnTypeReqMods, p.ReturnTypeOptMods, p.ParameterTypes, p.ParameterTypeReqMods, p.ParameterTypeOptMods, p.NativeCallConv, p.Charset);
                 mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
@@ -756,7 +756,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 FieldBuilder greetingField = tb.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
                 ConstructorBuilder constructor = tb.DefineTypeInitializer();
                 ILGenerator constructorIlGenerator = constructor.GetILGenerator();
@@ -780,7 +780,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 FieldBuilder myFieldBuilder = tb.DefineUninitializedData("MyGreeting", 4, FieldAttributes.Public);
                 var loadAddressMethod = tb.DefineMethod("LoadAddress", MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
                 var methodIL = loadAddressMethod.GetILGenerator();
@@ -870,7 +870,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 TypeBuilder baseType = ab.GetDynamicModule("MyModule").DefineType("Base", TypeAttributes.Public | TypeAttributes.Abstract);
                 MethodBuilder getBase = baseType.DefineMethod("Get", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, baseType, null);
                 type.SetParent(baseType);

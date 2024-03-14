@@ -46,8 +46,12 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // Use this format for loop indices
 #define FMT_LP "L%02u"
 
-// And this format for profile weights
+// Use this format for profile weights
 #define FMT_WT "%.7g"
+
+// Use this format for profile weights where we want to conserve horizontal space, at the expense of displaying
+// less precision.
+#define FMT_WT_NARROW "%.3g"
 
 /*****************************************************************************
  *
@@ -1037,6 +1041,27 @@ public:
         return (bbFalseEdge == nullptr) ? nullptr : bbFalseEdge->getDestinationBlock();
     }
 
+    // Return the target edge; it might be null. Only used during dumping.
+    FlowEdge* GetTargetEdgeRaw() const
+    {
+        assert(HasTarget());
+        return bbTargetEdge;
+    }
+
+    // Return the BBJ_COND true target edge; it might be null. Only used during dumping.
+    FlowEdge* GetTrueEdgeRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbTrueEdge;
+    }
+
+    // Return the BBJ_COND false target edge; it might be null. Only used during dumping.
+    FlowEdge* GetFalseEdgeRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbFalseEdge;
+    }
+
 #endif // DEBUG
 
 private:
@@ -1537,7 +1562,7 @@ public:
     }
 
     // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
-    //    for (BasicBlock* const predBlock : block->PredBlocksList()) ...
+    //    for (BasicBlock* const predBlock : block->PredBlocksEditing()) ...
     // This iterator tolerates modifications to bbPreds.
     //
     PredBlockList<true> PredBlocksEditing() const

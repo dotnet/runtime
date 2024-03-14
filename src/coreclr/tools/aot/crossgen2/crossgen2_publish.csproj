@@ -7,8 +7,6 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <!-- Can't use NativeAOT in non-portable build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(PortableBuild)' != 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.EndsWith('-x86')) == 'true'">false</NativeAotSupported>

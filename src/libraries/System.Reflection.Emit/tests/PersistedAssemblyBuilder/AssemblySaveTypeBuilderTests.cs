@@ -100,7 +100,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 tb.DefineMethod("TestMethod", MethodAttributes.Public).GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 assemblyBuilder.Save(file.Path);
@@ -124,7 +124,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        private static TypeBuilder CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder)
+        private static TypeBuilder CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder)
         {
             assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
             return assemblyBuilder.DefineDynamicModule("MyModule")
@@ -136,7 +136,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract, null, [typeof(IOneMethod)]);
                 tb.AddInterfaceImplementation(typeof(INoMethod));
@@ -176,7 +176,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 MethodBuilder method = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 method.GetILGenerator().Emit(OpCodes.Ldarg_0);
                 GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(typeParamNames);
@@ -245,7 +245,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 MethodBuilder method = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 GenericTypeParameterBuilder[] typeParams = method.DefineGenericParameters(typeParamNames);
                 method.GetILGenerator().Emit(OpCodes.Ldarg_0);
@@ -282,7 +282,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 Type arrayType = rank == 0 ? tb.MakeArrayType() : tb.MakeArrayType(rank);
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
@@ -320,7 +320,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 Type byrefType = tb.MakeByRefType();
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
@@ -352,7 +352,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 Type pointerType = tb.MakePointerType();
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
@@ -423,7 +423,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 GenericTypeParameterBuilder[] typeGenParam = tb.DefineGenericParameters(genericParams);
                 Type genericType = tb.MakeGenericType(typeArguments);
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
@@ -504,7 +504,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder);
                 GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(["U", "T", "P"]);
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 GenericTypeParameterBuilder[] methodParams = mb.DefineGenericParameters(["M", "N"]);
@@ -545,7 +545,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface1", TypeAttributes.Interface | TypeAttributes.Abstract);
                 GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(["U", "T"]);
@@ -610,7 +610,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void MethodBuilderGetParametersReturnParameterTest()
         {
-            AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), [typeof(int), typeof(string)]);
             MethodBuilder method2 = type.DefineMethod("Method2", MethodAttributes.Static);
             MethodBuilder method3 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(int), [typeof(string)]);
