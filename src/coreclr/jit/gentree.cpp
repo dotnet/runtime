@@ -2528,27 +2528,22 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg() const
     //
     if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
     {
-        // There are three possible helper calls that use this path:
-        //  CORINFO_HELP_GETFIELDSTRUCT,  CORINFO_HELP_UNBOX_NULLABLE
-        //  CORINFO_HELP_PINVOKE_CALLI
+        // There are two helpers that return structs through an argument,
+        // ignoring the ABI, but where we want to handle them during import as
+        // if they have return buffers:
+        //   - CORINFO_HELP_GETFIELDSTRUCT
+        //   - CORINFO_HELP_UNBOX_NULLABLE
+        //
+        // Other TYP_STRUCT returning helpers follow the ABI normally and
+        // should return true for `ShouldHaveRetBufArg` if they need a retbuf
+        // arg, so when we get here, those cases never need retbufs. They
+        // include:
+        //   - CORINFO_HELP_PINVOKE_CALLI
+        //   - CORINFO_HELP_DISPATCH_INDIRECT_CALL
+        //
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(gtCallMethHnd);
 
-        if (helpFunc == CORINFO_HELP_GETFIELDSTRUCT)
-        {
-            return true;
-        }
-        else if (helpFunc == CORINFO_HELP_UNBOX_NULLABLE)
-        {
-            return true;
-        }
-        else if (helpFunc == CORINFO_HELP_PINVOKE_CALLI)
-        {
-            return false;
-        }
-        else
-        {
-            assert(!"Unexpected JIT helper in TreatAsShouldHaveRetBufArg");
-        }
+        return (helpFunc == CORINFO_HELP_GETFIELDSTRUCT) || (helpFunc == CORINFO_HELP_UNBOX_NULLABLE);
     }
     return false;
 }
