@@ -416,11 +416,11 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static ref object? LdelemaRef(Array array, nint index, void* type)
         {
-            Debug.Assert(array is object[]);
-            object[] a = Unsafe.As<object[]>(array);
-            if (index > a.Length)
+            Debug.Assert(array is null or object?[]);
+            object?[] a = Unsafe.As<object?[]>(array);
+            if ((nuint)index >= (uint)a.Length)
                 ThrowIndexOutOfRangeException();
-            
+
             ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), index);
             void* elementType = RuntimeHelpers.GetMethodTable(a)->ElementType;
 
@@ -435,11 +435,11 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static void StelemRef(Array array, nint index, object? obj)
         {
-            Debug.Assert(array is object[]);
-            object[] a = Unsafe.As<object[]>(array);
-            if (index > a.Length)
+            Debug.Assert(array is null or object?[]);
+            object?[] a = Unsafe.As<object?[]>(array);
+            if ((nuint)index >= (uint)a.Length)
                 ThrowIndexOutOfRangeException();
-            
+
             ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), index);
             void* elementType = RuntimeHelpers.GetMethodTable(a)->ElementType;
 
