@@ -58,10 +58,12 @@ namespace System.Numerics.Tensors
             //
             // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
 
+            private const uint Single_MAX_VECTORIZED_VALUE = 0x4E8565AAu;
             private const float Single_LOGV = 0.693161f;
             private const float Single_HALFV = 1.0000138f;
             private const float Single_INVV2 = 0.24999309f;
 
+            private const ulong Double_MAX_VECTORIZED_VALUE = 0x41600000000000ul;
             private const double Double_LOGV = 0.6931471805599453;
             private const double Double_HALFV = 1.0;
             private const double Double_INVV2 = 0.25;
@@ -75,8 +77,13 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float))
                 {
                     Vector128<float> x = t.AsSingle();
-
                     Vector128<float> y = Vector128.Abs(x);
+
+                    if (Vector128.GreaterThanAny(y.AsUInt32(), Vector128.Create(Single_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<CoshOperator<float>>(x).As<float, T>(); ;
+                    }
+
                     Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)Single_LOGV));
                     return (Vector128.Create((float)Single_HALFV) * (z + (Vector128.Create((float)Single_INVV2) / z))).As<float, T>();
                 }
@@ -84,8 +91,13 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(typeof(T) == typeof(double));
                     Vector128<double> x = t.AsDouble();
-
                     Vector128<double> y = Vector128.Abs(x);
+
+                    if (Vector128.GreaterThanAny(y.AsUInt64(), Vector128.Create(Double_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<CoshOperator<double>>(x).As<double, T>(); ;
+                    }
+
                     Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(Double_LOGV));
                     return (Vector128.Create(Double_HALFV) * (z + (Vector128.Create(Double_INVV2) / z))).As<double, T>();
                 }
@@ -96,8 +108,13 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float))
                 {
                     Vector256<float> x = t.AsSingle();
-
                     Vector256<float> y = Vector256.Abs(x);
+
+                    if (Vector256.GreaterThanAny(y.AsUInt32(), Vector256.Create(Single_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<CoshOperator<float>>(x).As<float, T>(); ;
+                    }
+
                     Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)Single_LOGV));
                     return (Vector256.Create((float)Single_HALFV) * (z + (Vector256.Create((float)Single_INVV2) / z))).As<float, T>();
                 }
@@ -105,8 +122,13 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(typeof(T) == typeof(double));
                     Vector256<double> x = t.AsDouble();
-
                     Vector256<double> y = Vector256.Abs(x);
+
+                    if (Vector256.GreaterThanAny(y.AsUInt64(), Vector256.Create(Double_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<CoshOperator<double>>(x).As<double, T>(); ;
+                    }
+
                     Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(Double_LOGV));
                     return (Vector256.Create(Double_HALFV) * (z + (Vector256.Create(Double_INVV2) / z))).As<double, T>();
                 }
@@ -117,8 +139,13 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float))
                 {
                     Vector512<float> x = t.AsSingle();
-
                     Vector512<float> y = Vector512.Abs(x);
+
+                    if (Vector512.GreaterThanAny(y.AsUInt32(), Vector512.Create(Single_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<CoshOperator<float>>(x).As<float, T>(); ;
+                    }
+
                     Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)Single_LOGV));
                     return (Vector512.Create((float)Single_HALFV) * (z + (Vector512.Create((float)Single_INVV2) / z))).As<float, T>();
                 }
@@ -126,8 +153,13 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(typeof(T) == typeof(double));
                     Vector512<double> x = t.AsDouble();
-
                     Vector512<double> y = Vector512.Abs(x);
+
+                    if (Vector512.GreaterThanAny(y.AsUInt64(), Vector512.Create(Double_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<CoshOperator<double>>(x).As<double, T>(); ;
+                    }
+
                     Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(Double_LOGV));
                     return (Vector512.Create(Double_HALFV) * (z + (Vector512.Create(Double_INVV2) / z))).As<double, T>();
                 }

@@ -40,10 +40,12 @@ namespace System.Numerics.Tensors
             // Same as cosh, but with `z -` rather than `z +`, and with the sign
             // flipped on the result based on the sign of the input.
 
+            private const uint Single_MAX_VECTORIZED_VALUE = 0x4E8565AAu;
             private const float Single_LOGV = 0.693161f;
             private const float Single_HALFV = 1.0000138f;
             private const float Single_INVV2 = 0.24999309f;
 
+            private const ulong Double_MAX_VECTORIZED_VALUE = 0x41600000000000ul;
             private const double Double_LOGV = 0.6931471805599453;
             private const double Double_HALFV = 1.0;
             private const double Double_INVV2 = 0.25;
@@ -57,10 +59,15 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float))
                 {
                     Vector128<float> x = t.AsSingle();
-
                     Vector128<float> y = Vector128.Abs(x);
-                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)Single_LOGV));
-                    Vector128<float> result = Vector128.Create((float)Single_HALFV) * (z - (Vector128.Create((float)Single_INVV2) / z));
+
+                    if (Vector128.GreaterThanAny(y.AsUInt32(), Vector128.Create(Single_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>(); ;
+                    }
+
+                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create(Single_LOGV));
+                    Vector128<float> result = Vector128.Create(Single_HALFV) * (z - (Vector128.Create(Single_INVV2) / z));
                     Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~(uint)int.MaxValue);
                     return (sign ^ result.AsUInt32()).As<uint, T>();
                 }
@@ -68,8 +75,13 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(typeof(T) == typeof(double));
                     Vector128<double> x = t.AsDouble();
-
                     Vector128<double> y = Vector128.Abs(x);
+
+                    if (Vector128.GreaterThanAny(y.AsUInt64(), Vector128.Create(Double_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>(); ;
+                    }
+
                     Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(Double_LOGV));
                     Vector128<double> result = Vector128.Create(Double_HALFV) * (z - (Vector128.Create(Double_INVV2) / z));
                     Vector128<ulong> sign = x.AsUInt64() & Vector128.Create(~(ulong)long.MaxValue);
@@ -82,10 +94,15 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float))
                 {
                     Vector256<float> x = t.AsSingle();
-
                     Vector256<float> y = Vector256.Abs(x);
-                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)Single_LOGV));
-                    Vector256<float> result = Vector256.Create((float)Single_HALFV) * (z - (Vector256.Create((float)Single_INVV2) / z));
+
+                    if (Vector256.GreaterThanAny(y.AsUInt32(), Vector256.Create(Single_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>(); ;
+                    }
+
+                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create(Single_LOGV));
+                    Vector256<float> result = Vector256.Create(Single_HALFV) * (z - (Vector256.Create(Single_INVV2) / z));
                     Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~(uint)int.MaxValue);
                     return (sign ^ result.AsUInt32()).As<uint, T>();
                 }
@@ -93,8 +110,13 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(typeof(T) == typeof(double));
                     Vector256<double> x = t.AsDouble();
-
                     Vector256<double> y = Vector256.Abs(x);
+
+                    if (Vector256.GreaterThanAny(y.AsUInt64(), Vector256.Create(Double_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>(); ;
+                    }
+
                     Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(Double_LOGV));
                     Vector256<double> result = Vector256.Create(Double_HALFV) * (z - (Vector256.Create(Double_INVV2) / z));
                     Vector256<ulong> sign = x.AsUInt64() & Vector256.Create(~(ulong)long.MaxValue);
@@ -107,10 +129,15 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float))
                 {
                     Vector512<float> x = t.AsSingle();
-
                     Vector512<float> y = Vector512.Abs(x);
-                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)Single_LOGV));
-                    Vector512<float> result = Vector512.Create((float)Single_HALFV) * (z - (Vector512.Create((float)Single_INVV2) / z));
+
+                    if (Vector512.GreaterThanAny(y.AsUInt32(), Vector512.Create(Single_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<SinhOperator<float>>(x).As<float, T>(); ;
+                    }
+
+                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create(Single_LOGV));
+                    Vector512<float> result = Vector512.Create(Single_HALFV) * (z - (Vector512.Create(Single_INVV2) / z));
                     Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~(uint)int.MaxValue);
                     return (sign ^ result.AsUInt32()).As<uint, T>();
                 }
@@ -118,8 +145,13 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(typeof(T) == typeof(double));
                     Vector512<double> x = t.AsDouble();
-
                     Vector512<double> y = Vector512.Abs(x);
+
+                    if (Vector512.GreaterThanAny(y.AsUInt64(), Vector512.Create(Double_MAX_VECTORIZED_VALUE)))
+                    {
+                        return ApplyScalar<SinhOperator<double>>(x).As<double, T>(); ;
+                    }
+
                     Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(Double_LOGV));
                     Vector512<double> result = Vector512.Create(Double_HALFV) * (z - (Vector512.Create(Double_INVV2) / z));
                     Vector512<ulong> sign = x.AsUInt64() & Vector512.Create(~(ulong)long.MaxValue);
