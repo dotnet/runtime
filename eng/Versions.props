@@ -220,7 +220,7 @@
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>9.0.0-preview.3.24161.1</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-preview.3.24155.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-preview.3.24163.3</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.3.5</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24162.1</SystemNetMsQuicTransportVersion>
