@@ -3067,7 +3067,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_CopyTo:
 		return NULL;
-	break;
 	case SN_Clamp: {
 		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
 			return NULL;
@@ -3107,9 +3106,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		default:
 			g_assert_not_reached ();
 		}
+#else
+		return NULL;
 #endif
 	}
-	break;
 	case SN_Length:
 	case SN_LengthSquared: {
 #if defined (TARGET_ARM64)
@@ -3135,9 +3135,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		default:
 			g_assert_not_reached ();
 		}
+#else
+		return NULL;
 #endif
 	}
-	break;
 	case SN_Lerp: {
 #if defined (TARGET_ARM64)
 		MonoInst* v1 = args [1];
@@ -3156,9 +3157,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		result->inst_c1 = MONO_TYPE_R4;
 
 		return result;
+#else
+		return NULL;
 #endif
 	}
-	break;
 	case SN_Normalize: {
 #if defined (TARGET_ARM64)
 	MonoInst* vec = args[0];
@@ -3187,9 +3189,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	normalized_vec->inst_c1 = MONO_TYPE_R4;
 	
 	return normalized_vec;
+#else
+		return NULL;
 #endif
 	}
-	break;
 	case SN_Conjugate: {
 #if defined (TARGET_ARM64)
 		float value[4];
@@ -3202,9 +3205,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		result->inst_c0 = OP_FMUL;
 		result->inst_c1 = MONO_TYPE_R4;
 		return result;
+#else
+		return NULL;
 #endif
 	}
-	break;
 	default:
 		g_assert_not_reached ();
 	}
