@@ -5895,6 +5895,10 @@ void Compiler::RecomputeFlowGraphAnnotations()
     fgInvalidateDfsTree();
     fgDfsBlocksAndRemove();
     optFindLoops();
+
+    // Should we call this using the phase method:
+    //    DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+    // ? It could be called multiple times.
     optSetBlockWeights();
 
     if (m_domTree == nullptr)
