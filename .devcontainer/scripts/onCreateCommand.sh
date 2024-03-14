@@ -50,8 +50,11 @@ ram_pid=$!
 while true; do echo -e "$(date)\n$(df -h)"; sleep 5; done >> disk.txt &
 disk_pid=$!
 
+while true; do echo -e "$(date)\n$(du -sh /workspaces/{*,.*})"; sleep 5; done >> dirs.txt &
+dirs_pid=$!
+
 # Set traps to kill the background jobs when the script exits
-trap "kill $inode_pid $ram_pid $disk_pid" EXIT
+trap "kill $inode_pid $ram_pid $disk_pid $dirs_pid" EXIT
 
 opt=$1
 case "$opt" in
