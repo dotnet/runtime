@@ -6434,6 +6434,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Spill before store to pinned local"));
                 }
 
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+                // Masks which as stored to locals as a vector can remove the conversion step as type mask is
+                // the typical consumption.
+                if (op1->OperIsHWIntrinsic() && op1->AsHWIntrinsic()->OperIsConvertMaskToVector())
+                {
+                    op1                     = op1->AsHWIntrinsic()->Op(1);
+                    lvaTable[lclNum].lvType = TYP_MASK;
+                    lclTyp                  = lvaGetActualType(lclNum);
+                }
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+
                 op1 = gtNewStoreLclVarNode(lclNum, op1);
 
                 // TODO-ASG: delete this zero-diff quirk. Requires some forward substitution work.
