@@ -2235,7 +2235,28 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
         }
         else
         {
+            uint32_t initialcbMem = cbMem;
+            if (initialcbMem >= 8)
+            {
+                cbMem = ALIGN_UP(cbMem, sizeof(double));
+#ifndef TARGET_64BIT
+                cbMem += 4; // We need to align the memory to 8 bytes so that static doubles, and static int64's work
+                            // and this allocator doesn't guarantee 8 byte alignment, so allocate 4 bytes extra, and alignup.
+                            // Technically this isn't necessary on X86, but it's simpler to do it unconditionally.
+#endif
+            }
+            else
+            {
+                // Always allocate in multiples of pointer size
+                cbMem = sizeof(TADDR);
+            }
             uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
+            if (initialcbMem >= 8)
+            {
+#ifdef TARGET_64BIT
+                pbMem = (uint8_t*)ALIGN_UP(pbMem, 8);
+#endif
+            }
             pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
         }
     }

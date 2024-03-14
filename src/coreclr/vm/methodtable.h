@@ -556,7 +556,6 @@ public:
     TADDR m_pGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     TADDR m_pNonGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     PTR_MethodTable m_pMethodTable;
-    MethodTableAuxiliaryData m_AuxData;
     PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
     PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
     PTR_OBJECTREF GetGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_OBJECTREF>(staticsVal); }

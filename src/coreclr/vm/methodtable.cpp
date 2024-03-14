@@ -4385,7 +4385,7 @@ void MethodTable::EnsureStaticDataAllocated()
             GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes());
 
         if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this);
+            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL);
     }
     pAuxiliaryData->SetIsStaticDataAllocated();
 }

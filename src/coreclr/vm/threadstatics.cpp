@@ -30,15 +30,13 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(ThreadLocalData* pThreadLocalData, TLS
     SpinLockHolder spinLock(&pThreadLocalData->pThread->m_TlsSpinLock);
 #endif
     TADDR pTLSBaseAddress = NULL;
-    PTR_TLSArray pTLSArray = dac_cast<PTR_TLSArray>(dac_cast<PTR_BYTE>(pThreadLocalData) + index.GetTLSArrayOffset());
-
-    int32_t cTLSData = pTLSArray->cTLSData;
+    int32_t cTLSData = pThreadLocalData->cTLSData;
     if (cTLSData <= index.GetByteIndex())
     {
         return NULL;
     }
 
-    TADDR pTLSArrayData = pTLSArray->pTLSArrayData;
+    TADDR pTLSArrayData = pThreadLocalData->pTLSArrayData;
     pTLSBaseAddress = *dac_cast<PTR_TADDR>(dac_cast<PTR_BYTE>(pTLSArrayData) + index.GetByteIndex());
     if (pTLSBaseAddress == NULL)
     {
@@ -364,12 +362,11 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     }
     CONTRACTL_END;
 
-    TLSArray* pTLSArray = reinterpret_cast<TLSArray*>((uint8_t*)&t_ThreadStatics + index.GetTLSArrayOffset());
     bool isGCStatic;
     bool isCollectible;
     MethodTable *pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
 
-    int32_t cTLSData = pTLSArray->cTLSData;
+    int32_t cTLSData = t_ThreadStatics.cTLSData;
     if (cTLSData <= index.GetByteIndex())
     {
         // Grow the underlying TLS array
@@ -378,11 +375,11 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         uint8_t* pNewTLSArrayData = new uint8_t[newcTLSData];
         memset(pNewTLSArrayData, 0, newcTLSData);
         if (cTLSData > 0)
-            memcpy(pNewTLSArrayData, (void*)pTLSArray->pTLSArrayData, cTLSData + 1);
-        uint8_t* pOldArray = (uint8_t*)pTLSArray->pTLSArrayData;
-        pTLSArray->pTLSArrayData = (TADDR)pNewTLSArrayData;
+            memcpy(pNewTLSArrayData, (void*)t_ThreadStatics.pTLSArrayData, cTLSData + 1);
+        uint8_t* pOldArray = (uint8_t*)t_ThreadStatics.pTLSArrayData;
+        t_ThreadStatics.pTLSArrayData = (TADDR)pNewTLSArrayData;
         cTLSData = newcTLSData - 1;
-        pTLSArray->cTLSData = cTLSData;
+        t_ThreadStatics.cTLSData = cTLSData;
         delete[] pOldArray;
         t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
     }
@@ -405,7 +402,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
     }
 
-    TADDR pTLSArrayData = pTLSArray->pTLSArrayData;
+    TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
     TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
     TADDR pTLSBaseAddress = *ppTLSBaseAddress;
 
@@ -454,7 +451,13 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             }
             else
             {
+#ifndef TARGET_64BIT
+                // On non 64 bit platforms, the static data may need to be 8 byte aligned to allow for good performance
+                // for doubles and 64bit ints, come as close as possible, by simply allocating the data as a double array
+                gc.tlsEntry = AllocatePrimiteveArray(ELEMENT_TYPE_R8, static_cast<DWORD>(AlignUp(pMT->GetClass()->GetNonGCThreadStaticFieldBytes(), 8)/8));
+#else
                 gc.tlsEntry = AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(pMT->GetClass()->GetNonGCThreadStaticFieldBytes()));
+#endif
             }
 
             NewHolder<InFlightTLSData> pInFlightData = NULL;

@@ -96,19 +96,11 @@ struct TLSIndex
     TLSIndex(uint32_t rawIndex) : TLSIndexRawIndex(rawIndex) { }
     uint32_t TLSIndexRawIndex;
     int32_t GetByteIndex() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex & 0xFFFFFF; }
-    int8_t GetTLSArrayOffset() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex >> 24; }
     bool IsAllocated() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != 0xFFFFFFFF;}
     static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }
     bool operator != (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != index.TLSIndexRawIndex; }
 };
-
-struct TLSArray
-{
-    int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
-    TADDR pTLSArrayData; // Points at the Thread local array data.
-};
-typedef DPTR(TLSArray) PTR_TLSArray;
 
 // Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
 struct InFlightTLSData;
