@@ -12,6 +12,12 @@ using System.Text;
 
 namespace System.Data.Common
 {
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
+        Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
+            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+        Justification = "The use of GetType preserves implementation of ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
+            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
@@ -388,6 +394,10 @@ namespace System.Data.Common
             return attributes;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -413,6 +423,10 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
@@ -425,16 +439,7 @@ namespace System.Data.Common
                 // show all strongly typed properties (not already added)
                 // except ConnectionString iff BrowsableConnectionString
                 Attribute[]? attributes;
-                PropertyDescriptorCollection props;
-                if (TypeDescriptor.SupportsInstanceTypeDescriptor) {
-                    props = TypeDescriptor.GetProperties(this, true);
-                } else {
-                    if (this.GetType() != typeof(DbConnectionStringBuilder)) {
-                        throw new Exception("Not supported derived type!");
-                    }
-                    props = TypeDescriptor.GetProperties(typeof(DbConnectionStringBuilder));
-                }
-                foreach (PropertyDescriptor reflected in props)
+                foreach (PropertyDescriptor reflected in TypeDescriptor.GetProperties(this, true))
                 {
                     Debug.Assert(reflected != null);
                     if (ADP.ConnectionString != reflected.Name)
@@ -528,16 +533,12 @@ namespace System.Data.Common
             }
         }
 
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-#pragma warning disable IL4000
-        private static bool SupportsFilteredGetProperties => false;
-#pragma warning restore IL4000
-
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
-            if (!SupportsFilteredGetProperties)
-                throw new NotSupportedException("Filtered GetProperties");
-
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
             if ((null == attributes) || (0 == attributes.Length))
             {
@@ -610,40 +611,32 @@ namespace System.Data.Common
         [RequiresUnreferencedCode("Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.")]
         object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
-            // return TypeDescriptor.GetEditor(this, editorBaseType, true);
-            return TypeDescriptor.GetEditor(typeof(DbConnectionStringBuilder), editorBaseType);
+            return TypeDescriptor.GetEditor(this, editorBaseType, true);
         }
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
-            // RUC on GetConverter comes down to the 'this' argument type needing All, for the reflection type descriptor provider.
-            // which reflects over the type to get members and attributes.
-            // means we have to bubble up the RUC, or make the reflection provider as a whole unsafe.
-            // Bubbling up means it goes all the way to ICustomTypeDescriptor.GetConverter.
-            // Let's try to instead disable the reflection-based custom type descriptor.
-            // ok, doing it!
-            // Doesn't really make sense. Would require keeping the object-based APIs around, but they can effectively do nothing
-            // since the type info isn't available.
-            // Let's keep these as unsafe, but use a different API instead.
+            throw new NotImplementedException();
             // return TypeDescriptor.GetConverter(this, true);
-            return TypeDescriptor.GetConverter(typeof(DbConnectionStringBuilder));
         }
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
-            // return TypeDescriptor.GetDefaultProperty(this, true);
-            return TypeDescriptor.GetDefaultProperty(typeof(DbConnectionStringBuilder));
+            return TypeDescriptor.GetDefaultProperty(this, true);
         }
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
         {
             return GetProperties();
         }
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
         {
             return GetProperties(attributes);
         }
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
         {
-            // return TypeDescriptor.GetDefaultEvent(this, true);
-            return TypeDescriptor.GetDefaultEvent(typeof(DbConnectionStringBuilder));
+            return TypeDescriptor.GetDefaultEvent(this, true);
         }
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The component type's events are preserved because this class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
@@ -654,15 +647,10 @@ namespace System.Data.Common
             GetType();
             return TypeDescriptor.GetEvents(this, true);
         }
-
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
         {
-            if (!SupportsFilteredGetProperties)
-                throw new NotSupportedException("Filtered attributes not supported!");
-            // return TypeDescriptor.GetEvents(this, attributes, true);
-            if (attributes == null)
-                throw new InvalidOperationException();
-            return TypeDescriptor.GetEvents(typeof(DbConnectionStringBuilder), attributes);
+            return TypeDescriptor.GetEvents(this, attributes, true);
         }
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {

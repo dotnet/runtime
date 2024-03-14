@@ -235,8 +235,10 @@ namespace System.Data
 
         TypeConverter? ICustomTypeDescriptor.GetConverter() => null;
 
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent() => null;
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty() => null;
 
         [RequiresUnreferencedCode("Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.")]
@@ -244,10 +246,13 @@ namespace System.Data
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
 
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes) => new EventDescriptorCollection(null);
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() => ((ICustomTypeDescriptor)this).GetProperties(null);
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
             (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection() : s_zeroPropertyDescriptorCollection);
 

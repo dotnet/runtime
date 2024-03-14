@@ -496,6 +496,9 @@ namespace System.ComponentModel
                 Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
                 Justification = "Using the non-assembly qualified type name will still work.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:AssemblyGetType",
+                Justification = "Assembly.GetType is only called for non-assembly qualified type names, which will warn at the callsite to GetTypeFromName")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             private Type? GetTypeFromName(
                 // this method doesn't create the type, but all callers are annotated with PublicConstructors,
                 // so use that value to ensure the Type will be preserved
