@@ -4,28 +4,32 @@ set -e
 
 function wasm_common() {
     # prebuild for WASM, so it is ready for wasm development
+    echo "[$(date)] provisioning..." >> build.txt
     make -C src/mono/browser provision-wasm
+    echo "[$(date)] export emsdk path..." >> build.txt
     export EMSDK_PATH=$PWD/src/mono/browser/emsdk
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        echo "[DEBUG] restoring for wasm..."
+        echo "[$(date)] restoring for wasm..." >> build.txt
         ./build.sh mono+libs -os browser -c Release --restore
-        echo "[DEBUG] building for wasm..."
+        echo "[$(date)] building for wasm..." >> build.txt
         ./build.sh mono+libs -os browser -c Release --build
-        echo "[DEBUG] building succeeded"
+        echo "[$(date)] building succeeded" >> build.txt
         ;;
     wasm-multithreaded)
         # Put your common commands for wasm-multithread here
-        echo "[DEBUG] restoring for wasm-multithreaded..."
+        echo "[$(date)] restoring for wasm-multithreaded..." >> build.txt
         ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true --restore
-        echo "[DEBUG] building for wasm-multithreaded..."
+        echo "[$(date)] building for wasm-multithreaded..." >> build.txt
         ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true --build
-        echo "[DEBUG] building succeeded"
+        echo "[$(date)] building succeeded" >> build.txt
         ;;
     *)
+    echo "[$(date)] installing dotnet serve" >> build.txt
         # install dotnet-serve for running wasm samples
     ./dotnet.sh tool install dotnet-serve --version 1.10.172 --tool-path ./.dotnet-tools-global
+    echo "[$(date)] finish" >> build.txt
     ;;
     esac
 }
