@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         if (!tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated.")))
                         {
-                            Environment.FailFast("Failed to set exception to TaskCompletionSource");
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (arguments buffer is null)");
                         }
                         return;
                     }
