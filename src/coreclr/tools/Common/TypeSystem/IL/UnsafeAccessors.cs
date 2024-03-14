@@ -236,12 +236,11 @@ namespace Internal.IL
             return validated != null;
         }
 
-        private static bool DoesMethodMatchUnsafeAccessorDeclaration(
-            ref GenerationContext context,
-            MethodSignature declSig,
-            MethodSignature maybeSig,
-            bool ignoreCustomModifiers)
+        private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)
         {
+            MethodSignature declSig = context.Declaration.Signature;
+            MethodSignature maybeSig = method.Signature;
+
             // Check if we need to also validate custom modifiers.
             // If we are, do it first.
             if (!ignoreCustomModifiers)
@@ -387,10 +386,7 @@ namespace Internal.IL
                 }
 
                 // Check signature
-                if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context,
-                    context.Declaration.Signature,
-                    md.Signature,
-                    ignoreCustomModifiers))
+                if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context, md, ignoreCustomModifiers))
                 {
                     continue;
                 }
