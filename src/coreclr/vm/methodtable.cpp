@@ -3527,6 +3527,44 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
 
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
+
+                if (hasImpliedRepeatedFields)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields > 2)
+                    {
+                        goto _End_arg;
+                    }
+
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                        }
+                        goto _End_arg;
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FIELD_TWO_DOUBLES;
+                        }
+                        goto _End_arg;
+                    }
+                }
+
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
