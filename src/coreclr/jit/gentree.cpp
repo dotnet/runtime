@@ -7710,8 +7710,8 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 //    Returns a GT_IND node representing value at the address provided by 'addr'
 //
 // Notes:
-//    The GT_IND node is marked as non-faulting
-//    If the indType is GT_REF we also mark the indNode as GTF_GLOB_REF
+//    The GT_IND node is marked as non-faulting.
+//    If the indirection is not invariant, we also mark the indNode as GTF_GLOB_REF.
 //
 GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant)
 {
@@ -7720,9 +7720,7 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
     if (isInvariant)
     {
-        assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
-        assert(iconFlags != GTF_ICON_BBC_PTR);    // Pointer to a mutable basic block count value
-        assert(iconFlags != GTF_ICON_GLOBAL_PTR); // Pointer to mutable data from the VM state
+        assert(GenTree::HandleKindDataIsInvariant(iconFlags));
 
         // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
@@ -10794,6 +10792,27 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
         gtFlags |= AsCmpXchg()->Data()->gtFlags & GTF_EXCEPT;
         gtFlags |= AsCmpXchg()->Comparand()->gtFlags & GTF_EXCEPT;
     }
+}
+
+//------------------------------------------------------------------------------
+// HandleKindDataIsInvariant: Returns true if the data referred to by a handle
+// address is guaranteed to be invariant. Note that GTF_ICON_FTN_ADDR handles may
+// or may not point to invariant data.
+//
+// Arguments:
+//    flags - GenTree flags for handle.
+//
+/* static */
+bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
+{
+    GenTreeFlags handleKind = flags & GTF_ICON_HDL_MASK;
+    assert(handleKind != GTF_EMPTY);
+
+    // All handle types are assumed invariant except those specifically listed here.
+
+    return !((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+             (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+             (handleKind == GTF_ICON_GLOBAL_PTR));  // Pointer to mutable data from the VM state
 }
 
 #ifdef DEBUG

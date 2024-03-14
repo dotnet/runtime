@@ -2249,6 +2249,7 @@ public:
     }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+
     bool IsEmbMaskOp()
     {
         return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
@@ -2262,6 +2263,8 @@ public:
     }
 
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+    static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
     bool IsCall() const
     {
