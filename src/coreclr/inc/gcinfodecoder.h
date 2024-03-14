@@ -186,7 +186,9 @@ enum ICodeManagerFlags
     NoReportUntracked
                     =   0x0080, // EnumGCRefs/EnumerateLiveSlots should *not* include
                                 // any untracked slots
-    ReportFPBasedSlotsOnly = 0, // Unused by nativeaot, the gc info decoder checks that. Set to 0 to let the compiler optimize out the related code.
+    ReportFPBasedSlotsOnly
+                    =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
+                                // slots that are based on the frame pointer
 };
 
 #endif // !_strike_h

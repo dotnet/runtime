@@ -8261,7 +8261,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 // Update context pointers using the skipped frame. This is needed when exception handling continues
                 // from ProcessCLRExceptionNew, since the RtlUnwind doesn't maintain context pointers.
                 Frame *pSkippedFrame = pThis->m_crawl.GetFrame();
-                _ASSERTE(pSkippedFrame->NeedsUpdateRegDisplay() && pSkippedFrame->GetReturnAddress() == GetControlPC(pThis->m_crawl.GetRegisterSet()));
+                _ASSERTE(pSkippedFrame->NeedsUpdateRegDisplay());
                 pSkippedFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet());
             }
         }
