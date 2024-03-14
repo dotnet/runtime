@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
                 PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.SpecialName | PropertyAttributes.HasDefault, typeof(int), null);
                 MethodBuilder getMethod = type.DefineMethod("GetMethod", MethodAttributes.Public | MethodAttributes.HideBySig, typeof(int), null);
@@ -84,7 +84,7 @@ namespace System.Reflection.Emit.Tests
                 PropertyInfo prop = typeof(CustomAttributeBuilder).GetProperty("Data", BindingFlags.NonPublic | BindingFlags.Instance);
                 byte[] binaryData = (byte[])prop.GetValue(customAttrBuilder, null);
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
                 property.SetCustomAttribute(con, binaryData);
                 property.SetCustomAttribute(new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), []));

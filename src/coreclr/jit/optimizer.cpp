@@ -1742,12 +1742,10 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             testCopyStmt->SetRootNode(sideEffList);
         }
 
-        fgRemoveRefPred(prevTestBlock->GetTrueEdge());
-        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
-
         // Redirect exit edge from previous iteration to new entry.
-        FlowEdge* const newEdge = fgAddRefPred(target, prevTestBlock);
-        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
+        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
         JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
                 target->bbNum);

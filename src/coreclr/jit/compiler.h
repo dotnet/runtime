@@ -3440,7 +3440,7 @@ public:
     GenTreeAllocObj* gtNewAllocObjNode(
         unsigned int helper, bool helperHasSideEffects, CORINFO_CLASS_HANDLE clsHnd, var_types type, GenTree* op1);
 
-    GenTreeAllocObj* gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool useParent);
+    GenTreeAllocObj* gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool useParent);
 
     GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
 
@@ -4377,7 +4377,9 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg);
+    void impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg);
+    void impRetypeUnmanagedCallArgs(GenTreeCall* call);
 
 #ifdef SWIFT_SUPPORT
     void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
@@ -4921,7 +4923,7 @@ private:
 
     unsigned impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reason));
 
-    GenTree* impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclTypeInfo);
+    GenTree* impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo);
 
     bool impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
 
@@ -5233,14 +5235,6 @@ public:
     void fgCleanupContinuation(BasicBlock* continuation);
 
     PhaseStatus fgTailMergeThrows();
-    void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
-                                            BasicBlock* nonCanonicalBlock,
-                                            BasicBlock* canonicalBlock,
-                                            FlowEdge*   predEdge);
-    void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
-                                       BasicBlock* nonCanonicalBlock,
-                                       BasicBlock* canonicalBlock,
-                                       FlowEdge*   predEdge);
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -5919,6 +5913,10 @@ private:
 
 public:
     void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
+
+    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 
@@ -6631,6 +6629,7 @@ private:
 
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
+    void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
 
@@ -10219,8 +10218,9 @@ public:
         unsigned compArgStackSize; // Incoming argument stack size in bytes
 #endif                             // FEATURE_FASTTAILCALL
 
-        unsigned compRetBuffArg; // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
-        int compTypeCtxtArg; // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)
+        unsigned compRetBuffArg;    // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
+        unsigned compTypeCtxtArg;   // position of hidden param for type context for generic code
+                                    // (CORINFO_CALLCONV_PARAMTYPE)
         unsigned       compThisArg; // position of implicit this pointer param (not to be confused with lvaArg0Var)
         unsigned       compILlocalsCount; // Number of vars : args + locals (incl. implicit but not hidden)
         unsigned       compLocalsCount;   // Number of vars : args + locals (incl. implicit and     hidden)

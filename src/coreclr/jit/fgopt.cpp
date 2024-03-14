@@ -1548,16 +1548,12 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 if (block->TrueTargetIs(bDest))
                 {
                     assert(!block->FalseTargetIs(bDest));
-                    fgRemoveRefPred(block->GetTrueEdge());
-                    FlowEdge* const trueEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetTrueEdge());
-                    block->SetTrueEdge(trueEdge);
+                    fgRedirectTrueEdge(block, bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
-                    fgRemoveRefPred(block->GetFalseEdge());
-                    FlowEdge* const falseEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetFalseEdge());
-                    block->SetFalseEdge(falseEdge);
+                    fgRedirectFalseEdge(block, bDest->GetTarget());
                 }
                 break;
 
@@ -2478,11 +2474,11 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRemoveRefPred(block->GetTargetEdge());
+    fgRedirectTargetEdge(block, target->GetTrueTarget());
+    block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
 
-    FlowEdge* const trueEdge  = fgAddRefPred(target->GetTrueTarget(), block, target->GetTrueEdge());
     FlowEdge* const falseEdge = fgAddRefPred(target->GetFalseTarget(), block, target->GetFalseEdge());
-    block->SetCond(trueEdge, falseEdge);
+    block->SetCond(block->GetTargetEdge(), falseEdge);
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), modified " FMT_BB "\n",
             block->bbNum, target->bbNum, block->bbNum);
@@ -2911,15 +2907,12 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     //
     FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump, destFalseEdge);
 
-    // bJump no longer jumps to bDest
-    //
-    fgRemoveRefPred(bJump->GetTargetEdge());
-
     // bJump now jumps to bDest's normal jump target
     //
-    FlowEdge* const trueEdge = fgAddRefPred(bDestNormalTarget, bJump, destTrueEdge);
+    fgRedirectTargetEdge(bJump, bDestNormalTarget);
+    bJump->GetTargetEdge()->setLikelihood(destTrueEdge->getLikelihood());
 
-    bJump->SetCond(trueEdge, falseEdge);
+    bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
 
     if (weightJump > 0)
     {
@@ -5036,8 +5029,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         // Rewire flow from block
                         //
                         block->SetFalseEdge(oldTrueEdge);
-                        FlowEdge* const newTrueEdge = fgAddRefPred(bNext->GetTarget(), block, oldFalseEdge);
-                        block->SetTrueEdge(newTrueEdge);
+                        block->SetTrueEdge(oldFalseEdge);
+                        fgRedirectTrueEdge(block, bNext->GetTarget());
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
@@ -5683,11 +5676,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 //
                 if (commSucc != nullptr)
                 {
-                    fgRemoveRefPred(predBlock->GetTargetEdge());
+                    assert(predBlock->KindIs(BBJ_ALWAYS));
+                    fgRedirectTargetEdge(predBlock, crossJumpTarget);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
-                predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
+                    predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
             }
 
             // We changed things

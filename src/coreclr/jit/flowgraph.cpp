@@ -1038,7 +1038,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                                  clsHnd, &pLookup);
+                                                                  clsHnd, info.compMethodHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
                     call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
@@ -1050,7 +1050,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     assert(oper != GT_FTN_ADDR);
                     CORINFO_CONST_LOOKUP genericLookup;
                     info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
+                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, info.compMethodHnd,
+                                                          &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers, ctxTree);
@@ -1073,7 +1074,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                              clsHnd, &entryPoint);
+                                                              clsHnd, info.compMethodHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
         }
@@ -2774,7 +2775,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (BasicBlock* const predBlock : block->PredBlocks())
+    for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
@@ -2786,9 +2787,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRemoveRefPred(predBlock->GetTargetEdge());
-                    FlowEdge* const newEdge = fgAddRefPred(newHead, predBlock);
-                    predBlock->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(predBlock, newHead);
                     break;
                 }
 
