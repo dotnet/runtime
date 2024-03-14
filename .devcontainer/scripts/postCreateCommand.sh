@@ -4,31 +4,19 @@ set -e
 
 function wasm_common() {
     # prebuild for WASM, so it is ready for wasm development
-    echo "[$(date)] provisioning..." >> build.txt
-    make -C src/mono/browser provision-wasm
     echo "[$(date)] export emsdk path..." >> build.txt
     export EMSDK_PATH=$PWD/src/mono/browser/emsdk
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        echo "[$(date)] cleaning the packages cache..." >> build.txt
-        sudo apt-get clean
-        echo "[$(date)] restoring for wasm mono subset..." >> build.txt
-        ./build.sh mono -os browser -c Release --restore
-        echo "[$(date)] cleaning cache after restore..." >> build.txt
-        dotnet nuget locals all --clear
-        echo "[$(date)] restoring for wasm libs subset..." >> build.txt
-        ./build.sh libs -os browser -c Release --restore
-        echo "[$(date)] building for wasm..." >> build.txt
-        ./build.sh mono+libs -os browser -c Release --build
+        echo "[$(date)] building for wasm mono subset..." >> build.txt
+        ./build.sh mono+libs -os browser -c Release
         echo "[$(date)] building succeeded" >> build.txt
         ;;
     wasm-multithreaded)
-        # Put your common commands for wasm-multithread here
-        echo "[$(date)] restoring for wasm-multithreaded..." >> build.txt
-        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true --restore
-        echo "[$(date)] building for wasm-multithreaded..." >> build.txt
-        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true --build
+        # Put your common commands for wasm-multithread here        
+        echo "[$(date)] building for wasm mono subset..." >> build.txt
+        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=tru
         echo "[$(date)] building succeeded" >> build.txt
         ;;
     *)
