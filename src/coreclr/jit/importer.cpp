@@ -5350,9 +5350,9 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
     }
 
     CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
-    if (info.compCompHnd->getExactClasses(toClass, 0, nullptr) == CORINFO_NEVER_INSTANTIATED)
+    if (info.compCompHnd->getExactClasses(toClass, 0, nullptr) == 0)
     {
-        JITDUMP("\nClass %s%p (%s) can never be allocated\n", dspPtr(toClass), eeGetClassName(toClass));
+        JITDUMP("\nClass %p (%s) can never be allocated\n", dspPtr(toClass), eeGetClassName(toClass));
 
         if (!isCastClass)
         {

@@ -14070,7 +14070,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
 
     // Check if an object of this type can even exist
-    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == CORINFO_NEVER_INSTANTIATED)
+    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
     {
         JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
 

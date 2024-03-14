@@ -1247,7 +1247,6 @@ struct CORINFO_LOOKUP_KIND
 #define CORINFO_USEHELPER ((uint16_t) 0xffff)
 #define CORINFO_USENULL ((uint16_t) 0xfffe)
 #define CORINFO_NO_SIZE_CHECK ((uint16_t) 0xffff)
-#define CORINFO_NEVER_INSTANTIATED (-1)
 
 struct CORINFO_RUNTIME_LOOKUP
 {
@@ -2981,11 +2980,9 @@ public:
             CORINFO_CLASS_HANDLE*       vcTypeRet       /* OUT */
             ) = 0;
 
-    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
+    // Obtains a list of exact classes for a given base type. Returns -1 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
-    // When called with maxExactClasses == 0, returns CORINFO_NEVER_INSTANTIATED if an
-    // exact class of this type cannot exist. Returns 0 otherwise.
     virtual int getExactClasses(
             CORINFO_CLASS_HANDLE        baseType,            /* IN */
             int                         maxExactClasses,     /* IN */

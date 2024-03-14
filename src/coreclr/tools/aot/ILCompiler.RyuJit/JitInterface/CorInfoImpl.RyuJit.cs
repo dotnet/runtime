@@ -2284,15 +2284,17 @@ namespace Internal.JitInterface
             MetadataType type = HandleToObject(baseType) as MetadataType;
             if (type == null)
             {
+                return -1;
+            }
+
+            if (canNeverHaveInstanceOfSubclassOf(type))
+            {
                 return 0;
             }
 
             if (maxExactClasses == 0)
             {
-                if (canNeverHaveInstanceOfSubclassOf(type))
-                    return CORINFO.CORINFO_NEVER_INSTANTIATED;
-
-                return 0;
+                return -1;
             }
 
             // type is already sealed, return it
@@ -2305,7 +2307,7 @@ namespace Internal.JitInterface
             TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
             if (implClasses == null || implClasses.Length > maxExactClasses)
             {
-                return 0;
+                return -1;
             }
 
             int index = 0;
