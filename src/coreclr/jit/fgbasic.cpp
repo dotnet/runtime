@@ -5441,13 +5441,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         //
         if (fgHaveProfileWeights())
         {
-            jmpBlk->bbWeight = newEdge->getLikelyWeight();
-            jmpBlk->SetFlags(BBF_PROF_WEIGHT);
-
-            if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
-            {
-                jmpBlk->SetFlags(BBF_RUN_RARELY);
-            }
+            jmpBlk->setBBProfileWeight(newEdge->getLikelyWeight());
         }
         else
         {
